@@ -1,0 +1,82 @@
+﻿@model Manage_KPI_or_OKR_System.Controllers.CreateEmployeeViewModel
+
+@{
+    ViewData["Title"] = "Thêm Mới Nhân Viên";
+}
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i> Tạo Nhân Viên & Phân Bổ Công Tác</h5>
+                </div>
+                <div class="card-body p-4">
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success fw-bold">
+                            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+                        </div>
+                    }
+
+                    <form asp-action="Create" method="post">
+                        <h6 class="text-uppercase text-muted fw-bold mb-3 border-bottom pb-2">1. Thông tin cá nhân</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Mã nhân viên <span class="text-danger">*</span></label>
+                                <input asp-for="EmployeeCode" class="form-control" required placeholder="VD: NV001" />
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
+                                <input asp-for="FullName" class="form-control" required placeholder="Nhập họ và tên đầy đủ" />
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Email</label>
+                                <input asp-for="Email" type="email" class="form-control" placeholder="example@company.com" />
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Số điện thoại</label>
+                                <input asp-for="Phone" class="form-control" placeholder="Nhập SĐT liên hệ" />
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Ngày sinh</label>
+                                <input asp-for="DateOfBirth" type="date" class="form-control" />
+                            </div>
+                        </div>
+
+                        <h6 class="text-uppercase text-muted fw-bold mb-3 mt-3 border-bottom pb-2">2. Gán Phòng Ban & Chức Danh</h6>
+                        <div class="row bg-light p-3 rounded">
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Chọn phòng ban <span class="text-danger">*</span></label>
+                                <select asp-for="DepartmentId" class="form-select" asp-items="ViewBag.Departments" required>
+                                    <option value="">-- Vui lòng chọn --</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Chọn chức danh <span class="text-danger">*</span></label>
+                                <select asp-for="PositionId" class="form-select" asp-items="ViewBag.Positions" required>
+                                    <option value="">-- Vui lòng chọn --</option>
+                                </select>
+                            </div>
+
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="reset" class="btn btn-secondary me-2">Nhập lại</button>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fas fa-save me-1"></i> Lưu Nhân Viên
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

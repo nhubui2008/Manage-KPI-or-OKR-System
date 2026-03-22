@@ -1,0 +1,77 @@
+@{
+    ViewData["Title"] = "Đăng ký tài khoản";
+    Layout = null; // Set null để dùng giao diện toàn màn hình riêng biệt cho trang đăng ký
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Quản lý KPI/OKR</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body {
+            background-color: #f4f6f9; /* Màu nền nhẹ nhàng */
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .register-box {
+            background: #ffffff;
+            padding: 40px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-box">
+        <div class="text-center mb-4">
+            <h2 class="fw-bold text-primary">ĐĂNG KÝ</h2>
+            <p class="text-muted">Hệ thống Quản lý KPI & OKR</p>
+        </div>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger text-center">
+                @ViewBag.Error
+            </div>
+        }
+
+        <form asp-controller="Account" asp-action="Register" method="post">
+            
+            <div class="form-group mb-3">
+                <label for="username" class="form-label fw-semibold">Tên đăng nhập <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="username" name="username" placeholder="Nhập tên đăng nhập" required />
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="email" class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" required />
+            </div>
+
+            <div class="form-group mb-4">
+                <label for="password" class="form-label fw-semibold">Mật khẩu <span class="text-danger">*</span></label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Nhập mật khẩu" required />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mb-3 fw-bold py-2">
+                Đăng Ký Tài Khoản
+            </button>
+
+            <div class="text-center mt-3">
+                <span class="text-muted">Bạn đã có tài khoản? </span>
+                <a asp-controller="Account" asp-action="Login" class="text-decoration-none fw-bold">Đăng nhập ngay</a>
+            </div>
+        </form>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
