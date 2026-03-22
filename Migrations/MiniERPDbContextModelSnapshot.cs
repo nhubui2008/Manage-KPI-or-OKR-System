@@ -355,15 +355,11 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedById");
-
                     b.HasIndex("DepartmentCode")
                         .IsUnique()
                         .HasFilter("[DepartmentCode] IS NOT NULL");
 
                     b.HasIndex("ManagerId");
-
-                    b.HasIndex("ParentDepartmentId");
 
                     b.ToTable("Departments");
                 });
@@ -416,15 +412,11 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedById");
-
                     b.HasIndex("EmployeeCode")
                         .IsUnique()
                         .HasFilter("[EmployeeCode] IS NOT NULL");
 
-                    b.HasIndex("SystemUserId")
-                        .IsUnique()
-                        .HasFilter("[SystemUserId] IS NOT NULL");
+                    b.HasIndex("SystemUserId");
 
                     b.ToTable("Employees");
                 });
@@ -1920,16 +1912,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.KPICheckIn", null)
                         .WithMany()
-                        .HasForeignKey("CheckInId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("CheckInId");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.CheckInHistoryLog", b =>
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.KPICheckIn", null)
                         .WithMany()
-                        .HasForeignKey("CheckInId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("CheckInId");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Customer", b =>
@@ -1980,27 +1970,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
                         .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
                         .HasForeignKey("ManagerId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Department", null)
-                        .WithMany()
-                        .HasForeignKey("ParentDepartmentId")
                         .OnDelete(DeleteBehavior.NoAction);
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Employee", b =>
                 {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.NoAction);
-
                     b.HasOne("Manage_KPI_or_OKR_System.Models.SystemUser", null)
                         .WithMany()
                         .HasForeignKey("SystemUserId")
@@ -2081,8 +2056,7 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     b.HasOne("Manage_KPI_or_OKR_System.Properties.InventoryReceipt", null)
                         .WithMany()
-                        .HasForeignKey("ReceiptId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("ReceiptId");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Invoice", b =>
@@ -2166,8 +2140,7 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.KPI", null)
                         .WithMany()
-                        .HasForeignKey("KPIId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("KPIId");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.KPI_Department_Assignment", b =>
@@ -2248,8 +2221,7 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.OKR", null)
                         .WithMany()
-                        .HasForeignKey("OKRId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("OKRId");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.OKR_Department_Allocation", b =>
@@ -2345,8 +2317,7 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.Product", null)
                         .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("ProductId");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.RealtimeExpectedBonus", b =>
@@ -2407,8 +2378,7 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.SalesOrder", null)
                         .WithMany()
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("OrderId");
 
                     b.HasOne("Manage_KPI_or_OKR_System.Models.Product", null)
                         .WithMany()
@@ -2428,16 +2398,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.ShippingPartner", null)
                         .WithMany()
-                        .HasForeignKey("PartnerId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("PartnerId");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.ShippingTracking", b =>
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.DeliveryNote", null)
                         .WithMany()
-                        .HasForeignKey("DeliveryNoteId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("DeliveryNoteId");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.SystemAlert", b =>
