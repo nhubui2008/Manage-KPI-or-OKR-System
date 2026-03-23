@@ -1,5 +1,11 @@
+@model IEnumerable<Manage_KPI_or_OKR_System.Models.KPI>
 @{
     ViewData["Title"] = "Danh mục KPI";
+    
+    var kpiDetails = ViewBag.KPIDetails as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
+    var assignments = ViewBag.Assignments as Dictionary<int, List<int>> ?? new Dictionary<int, List<int>>();
+    var employeesDict = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var periodsDict = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
 }
 
 <div class="page-header">
@@ -12,196 +18,245 @@
         </div>
     </div>
     <div class="d-flex gap-2">
-        <button class="btn-outline-custom">
-            <i class="bi bi-download"></i> Phân bổ KPI
-        </button>
-        <button class="btn-primary-custom">
+        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createKpiModal">
             <i class="bi bi-plus-lg"></i> Thêm KPI mới
         </button>
     </div>
 </div>
 
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+    </div>
+}
+
 <div class="row g-4 mb-4">
     <div class="col-md-3">
-        <div class="stat-card p-3">
-            <div class="text-muted" style="font-size: 0.8rem;">Tổng KPI đang chạy</div>
-            <div class="fw-bold text-dark fs-4 mt-1">125</div>
+        <div class="stat-card p-3 border-start border-4 border-primary shadow-sm bg-white rounded-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="text-muted fw-semibold" style="font-size: 0.85rem;">Tổng số KPI</div>
+                <div class="icon-box bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                    <i class="bi bi-target"></i>
+                </div>
+            </div>
+            <div class="fw-bold text-dark fs-3">@(Model?.Count() ?? 0)</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="stat-card p-3">
-            <div class="text-muted" style="font-size: 0.8rem;">Đã phân bổ</div>
-            <div class="fw-bold text-success fs-4 mt-1">120</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card p-3">
-            <div class="text-muted" style="font-size: 0.8rem;">Chưa phân bổ</div>
-            <div class="fw-bold text-warning fs-4 mt-1">5</div>
+        <div class="stat-card p-3 border-start border-4 border-success shadow-sm bg-white rounded-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="text-muted fw-semibold" style="font-size: 0.85rem;">Đã phân bổ</div>
+                <div class="icon-box bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+            <div class="fw-bold text-dark fs-3">@assignments.Count</div>
         </div>
     </div>
 </div>
 
-<div class="content-card">
-    <div class="card-body-custom">
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <div class="toolbar-search">
-                    <i class="bi bi-search"></i>
-                    <input type="text" placeholder="Tìm kiếm KPI...">
+<div class="content-card shadow-sm border-0">
+    <div class="card-body-custom p-4">
+        <div class="toolbar mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="toolbar-left d-flex gap-2 flex-wrap">
+                <div class="toolbar-search position-relative">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <input type="text" class="form-control rounded-pill ps-5 border-light bg-light" placeholder="Tìm kiếm KPI...">
                 </div>
-                <select class="filter-select">
-                    <option value="">Kỳ: Tháng 2/2026</option>
-                    <option value="">Kỳ: Tháng 1/2026</option>
-                </select>
-                <select class="filter-select">
-                    <option value="">Tính chất: Tất cả</option>
-                    <option value="1">Số lượng</option>
-                    <option value="2">Chất lượng</option>
-                    <option value="3">Thời gian</option>
-                </select>
-                <select class="filter-select">
-                    <option value="">Loại: Tất cả</option>
-                    <option value="1">Kết quả</option>
-                    <option value="2">Hành vi</option>
+                <select class="form-select border-light bg-light rounded-pill w-auto">
+                    <option value="">Lọc theo kỳ: Tất cả</option>
+                    @foreach(var p in periodsDict.Values.Distinct())
+                    {
+                        <option value="@p">@p</option>
+                    }
                 </select>
             </div>
         </div>
 
         <div class="table-responsive">
-            <table class="data-table">
-                <thead>
+            <table class="table table-hover align-middle custom-table">
+                <thead class="table-light text-muted" style="font-size: 0.85rem; text-transform: uppercase;">
                     <tr>
-                        <th style="width: 40px;"><input type="checkbox" class="form-check-input"></th>
-                        <th>Tên KPI</th>
-                        <th>Mục tiêu & Trọng số</th>
-                        <th>Phân bổ cho</th>
-                        <th>Kỳ đánh giá</th>
-                        <th class="text-end">Thao tác</th>
+                        <th class="fw-medium">Tên KPI</th>
+                        <th class="fw-medium">Chỉ tiêu (Target)</th>
+                        <th class="fw-medium">Kỳ đánh giá</th>
+                        <th class="fw-medium">Phân bổ cho</th>
+                        <th class="text-end fw-medium">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-semibold text-dark mb-1">Doanh thu bán hàng</div>
-                            <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem;">
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-1">Kết quả</span>
-                                <span class="text-muted"><i class="bi bi-bar-chart-fill"></i> Số lượng</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-success">5,000,000,000 VNĐ</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">Trọng số: <span class="fw-bold text-dark">40%</span></div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="user-avatar bg-info border border-white position-relative" style="width: 28px; height: 28px; font-size: 0.6rem; z-index: 3;">VA</div>
-                                <div class="user-avatar bg-success border border-white position-relative" style="width: 28px; height: 28px; font-size: 0.6rem; margin-left: -10px; z-index: 2;">LC</div>
-                                <div class="user-avatar bg-secondary border border-white position-relative" style="width: 28px; height: 28px; font-size: 0.6rem; margin-left: -10px; z-index: 1;">+3</div>
-                            </div>
-                        </td>
-                        <td><span class="badge bg-light text-dark">Tháng 2/2026</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Phân bổ"><i class="bi bi-people"></i></button>
-                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-semibold text-dark mb-1">Tỷ lệ khách hàng hài lòng</div>
-                            <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem;">
-                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 py-1">Hành vi</span>
-                                <span class="text-muted"><i class="bi bi-star-fill"></i> Chất lượng</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-primary">≥ 90.00 %</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">Trọng số: <span class="fw-bold text-dark">20%</span></div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="badge bg-light border text-dark"><i class="bi bi-diagram-3 me-1"></i>Phòng Kinh doanh</div>
-                            </div>
-                        </td>
-                        <td><span class="badge bg-light text-dark">Tháng 2/2026</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Phân bổ"><i class="bi bi-people"></i></button>
-                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-semibold text-dark mb-1">Thời gian giao hàng trung bình</div>
-                            <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem;">
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-1">Kết quả</span>
-                                <span class="text-muted"><i class="bi bi-clock-fill"></i> Thời gian</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-warning">≤ 3.00 Ngày</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">Trọng số: <span class="fw-bold text-dark">30%</span></div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="badge bg-light border text-dark"><i class="bi bi-diagram-3 me-1"></i>Phòng Kho vận</div>
-                            </div>
-                        </td>
-                        <td><span class="badge bg-light text-dark">Tháng 2/2026</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Phân bổ"><i class="bi bi-people"></i></button>
-                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-semibold text-dark mb-1">Chi phí vận hành kho</div>
-                            <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem;">
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-1">Kết quả</span>
-                                <span class="text-muted"><i class="bi bi-cash-coin"></i> Chi phí</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-danger">≤ 500,000,000 VNĐ</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">Trọng số: <span class="fw-bold text-dark">15%</span></div>
-                        </td>
-                        <td>
-                            <div class="text-warning" style="font-size: 0.8rem;"><i class="bi bi-exclamation-circle-fill me-1"></i>Chưa phân bổ</div>
-                        </td>
-                        <td><span class="badge bg-light text-dark">Tháng 2/2026</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Phân bổ"><i class="bi bi-people text-primary"></i></button>
-                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var kpi in Model)
+                        {
+                            var detail = kpiDetails.ContainsKey(kpi.Id) ? kpiDetails[kpi.Id] : null;
+                            var assignedEmployees = assignments.ContainsKey(kpi.Id) ? assignments[kpi.Id] : new List<int>();
+
+                            <tr class="bg-white">
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="bg-primary bg-opacity-10 text-primary p-2 rounded">
+                                            <i class="bi bi-graph-up-arrow fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark mb-1">@kpi.KPIName</div>
+                                            <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem;">
+                                                <span class="badge bg-light text-secondary border">@(kpi.KPITypeId == 1 ? "Kết quả" : "Hành vi")</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if(detail != null)
+                                    {
+                                        <div class="fw-bold text-success fs-6">@String.Format("{0:N0}", detail.TargetValue) @detail.MeasurementUnit</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">Ngưỡng qua: @String.Format("{0:N0}", detail.PassThreshold)</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fst-italic">Chưa thiết lập chỉ tiêu</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">
+                                        <i class="bi bi-calendar-event me-1"></i> @(kpi.PeriodId.HasValue && periodsDict.ContainsKey(kpi.PeriodId.Value) ? periodsDict[kpi.PeriodId.Value] : "N/A")
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (assignedEmployees.Any())
+                                    {
+                                        <div class="d-flex align-items-center">
+                                            @foreach(var empId in assignedEmployees.Take(3))
+                                            {
+                                                var name = employeesDict.ContainsKey(empId) ? employeesDict[empId] : "NV";
+                                                var initials = string.Join("", name.Split(' ').Select(n => n[0])).ToUpper();
+                                                if (initials.Length > 2) initials = initials.Substring(0, 2);
+                                                
+                                                <div class="user-avatar bg-primary text-white border border-2 border-white position-relative rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 3;" title="@name">
+                                                    @initials
+                                                </div>
+                                            }
+                                            @if (assignedEmployees.Count > 3)
+                                            {
+                                                <div class="user-avatar bg-secondary text-white border border-2 border-white position-relative rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 1;">
+                                                    +@(assignedEmployees.Count - 3)
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill border border-warning border-opacity-25">
+                                            <i class="bi bi-exclamation-circle me-1"></i> Chưa phân bổ
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-light rounded-circle shadow-sm" style="width: 32px; height: 32px;" data-bs-toggle="dropdown">
+                                                <i class="bi bi-three-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                                <li><a class="dropdown-item py-2" href="#"><i class="bi bi-people text-primary me-2"></i> Phân bổ nhân sự</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <form asp-action="Delete" asp-route-id="@kpi.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận vô hiệu hóa KPI này?');">
+                                                        <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Xóa KPI</button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <div class="mb-3"><i class="bi bi-folder-x fs-1 opacity-50"></i></div>
+                                <h5>Chưa có dữ liệu KPI</h5>
+                                <p>Bắt đầu bằng cách thêm một KPI mới cho hệ thống.</p>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
+    </div>
+</div>
 
-        <div class="pagination-custom mt-3">
-            <div>Hiển thị 1-4 trong số 45 bản ghi</div>
-            <div class="pagination-pages">
-                <a href="#" class="page-btn"><i class="bi bi-chevron-left"></i></a>
-                <a href="#" class="page-btn active">1</a>
-                <a href="#" class="page-btn">2</a>
-                <a href="#" class="page-btn">3</a>
-                <a href="#" class="page-btn"><i class="bi bi-chevron-right"></i></a>
+<!-- Modal Create KPI -->
+<div class="modal fade" id="createKpiModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0 bg-light rounded-top p-4">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-plus-circle text-primary me-2"></i>Thêm KPI Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form asp-controller="KPIs" asp-action="Create" method="post">
+                    <h6 class="fw-bold text-primary mb-3">Thông tin chung</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Tên KPI <span class="text-danger">*</span></label>
+                            <input type="text" name="kpi.KPIName" class="form-control" placeholder="VD: Doanh thu bán hàng tháng" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Phân loại KPI <span class="text-danger">*</span></label>
+                            <select name="kpi.KPITypeId" class="form-select" required>
+                                <option value="1">Kết quả</option>
+                                <option value="2">Hành vi</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Kỳ đánh giá <span class="text-danger">*</span></label>
+                            <select name="kpi.PeriodId" class="form-select" required>
+                                @foreach(var kvp in periodsDict)
+                                {
+                                    <option value="@kvp.Key">@kvp.Value</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-sliders me-2"></i>Chi tiết Chỉ tiêu</h6>
+                    <div class="row g-3 mb-4 bg-light p-3 rounded-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" name="detail.TargetValue" class="form-control" placeholder="1000000" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Đơn vị đo lường</label>
+                            <input type="text" name="detail.MeasurementUnit" class="form-control" placeholder="VD: VNĐ, Sản phẩm, Khách hàng, Lần...">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Ngưỡng đạt (Pass Threshold)</label>
+                            <input type="number" step="0.01" name="detail.PassThreshold" class="form-control" placeholder="Mức tối thiểu để Đạt">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-danger">Ngưỡng trượt (Fail Threshold)</label>
+                            <input type="number" step="0.01" name="detail.FailThreshold" class="form-control" placeholder="Mức xác định là Không đạt">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-light border rounded-pill px-4" data-bs-dismiss="modal">Hủy thao tác</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4"><i class="bi bi-save me-2"></i>Lưu KPI mới</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .custom-table th { padding: 1rem 1.25rem; }
+    .custom-table td { padding: 1.25rem; vertical-align: middle; }
+    .custom-table tbody tr { transition: all 0.2s ease; border-bottom: 1px solid #f1f5f9; }
+    .custom-table tbody tr:hover { background-color: #f8fafc !important; transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,.05); }
+    .stat-card:hover { transform: translateY(-3px); transition: all 0.3s ease; }
+</style>

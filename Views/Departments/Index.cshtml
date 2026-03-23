@@ -1,5 +1,30 @@
+@model IEnumerable<Manage_KPI_or_OKR_System.Models.Department>
 @{
     ViewData["Title"] = "Quản lý Phòng ban";
+    var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var employeeCounts = ViewBag.EmployeeCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+}
+
+@functions {
+    public async Task RenderDeptTree(IEnumerable<Manage_KPI_or_OKR_System.Models.Department> allDepts, int? parentId, int depth, Dictionary<int, int> counts)
+    {
+        var children = allDepts.Where(d => d.ParentDepartmentId == parentId).ToList();
+        if (!children.Any()) return;
+        
+        string indent = depth > 0 ? "ps-3 ms-1 border-start" : "";
+        <div class="@indent">
+            @foreach (var child in children)
+            {
+                var icon = depth == 0 ? "bi-folder-fill text-warning" : "bi-files text-secondary";
+                var count = counts.ContainsKey(child.Id) ? counts[child.Id] : 0;
+                <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded hover-bg-light" style="margin-left: -5px; cursor: pointer;">
+                    <span class="d-flex align-items-center gap-2"><i class="bi @icon"></i> @child.DepartmentName</span>
+                    <span class="badge bg-secondary rounded-pill">@count</span>
+                </div>
+                await RenderDeptTree(allDepts, child.Id, depth + 1, counts);
+            }
+        </div>
+    }
 }
 
 <div class="page-header">
@@ -12,48 +37,43 @@
         </div>
     </div>
     <div class="d-flex gap-2">
-        <button class="btn-primary-custom">
+        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createDepartmentModal">
             <i class="bi bi-plus-lg"></i> Thêm phòng ban mới
         </button>
     </div>
 </div>
 
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+    </div>
+}
+
 <div class="row g-4">
     <!-- Tree View (Left) -->
     <div class="col-lg-4">
         <div class="content-card h-100">
-            <div class="card-header-custom">
-                <h5><i class="bi bi-diagram-3"></i> Cây tổ chức</h5>
+            <div class="card-header-custom border-bottom">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-diagram-3 me-2"></i> Cây tổ chức</h5>
             </div>
-            <div class="card-body-custom">
+            <div class="card-body-custom pt-3">
                 <div class="d-flex align-items-center gap-2 mb-3 px-2 py-2 rounded bg-primary bg-opacity-10 border border-primary border-opacity-25">
                     <i class="bi bi-building text-primary fs-5"></i>
-                    <span class="fw-bold text-dark">Công ty TNHH VietMach</span>
+                    <span class="fw-bold text-dark">Tổ Chức / Công Ty</span>
                 </div>
                 
                 <div class="ps-3 ms-2 border-start">
-                    <div class="d-flex align-items-center gap-2 mb-3 py-1 px-2 rounded fw-semibold bg-light" style="margin-left: -5px; cursor: pointer;">
-                        <i class="bi bi-briefcase text-muted"></i> Ban Giám đốc
-                    </div>
-                    
-                    <div class="ps-3 ms-1 border-start">
-                        <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded" style="margin-left: -5px; cursor: pointer;">
-                            <span class="d-flex align-items-center gap-2"><i class="bi bi-graph-up text-primary"></i> Phòng Kinh doanh</span>
-                            <span class="badge bg-secondary rounded-pill">15</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded" style="margin-left: -5px; cursor: pointer;">
-                            <span class="d-flex align-items-center gap-2"><i class="bi bi-people text-success"></i> Phòng Nhân sự</span>
-                            <span class="badge bg-secondary rounded-pill">5</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded" style="margin-left: -5px; cursor: pointer;">
-                            <span class="d-flex align-items-center gap-2"><i class="bi bi-box-seam text-warning"></i> Phòng Kho vận</span>
-                            <span class="badge bg-secondary rounded-pill">12</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded" style="margin-left: -5px; cursor: pointer;">
-                            <span class="d-flex align-items-center gap-2"><i class="bi bi-calculator text-danger"></i> Phòng Kế toán</span>
-                            <span class="badge bg-secondary rounded-pill">4</span>
-                        </div>
-                    </div>
+                    @{
+                        if (Model != null && Model.Any())
+                        {
+                            await RenderDeptTree(Model, null, 0, employeeCounts);
+                        }
+                        else
+                        {
+                            <div class="text-muted fst-italic py-2">Chưa có phòng ban nào trong hệ thống</div>
+                        }
+                    }
                 </div>
             </div>
         </div>
@@ -83,77 +103,112 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td class="fw-semibold">BGD</td>
-                                <td class="fw-bold">Ban Giám đốc</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="user-avatar" style="width: 24px; height: 24px; font-size: 0.6rem;">AD</div>
-                                        <span>Nguyễn Văn Admin</span>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-light text-dark">3</span></td>
-                                <td><span class="status-badge active"><span class="status-dot"></span> Hoạt động</span></td>
-                                <td>
-                                    <div class="action-btns justify-content-end">
-                                        <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-semibold">PKD</td>
-                                <td class="fw-bold">Phòng Kinh doanh</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="user-avatar bg-success" style="width: 24px; height: 24px; font-size: 0.6rem;">VA</div>
-                                        <span>Nguyễn Văn An</span>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-light text-dark">15</span></td>
-                                <td><span class="status-badge active"><span class="status-dot"></span> Hoạt động</span></td>
-                                <td>
-                                    <div class="action-btns justify-content-end">
-                                        <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-semibold">PNS</td>
-                                <td class="fw-bold">Phòng Nhân sự</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="user-avatar bg-info" style="width: 24px; height: 24px; font-size: 0.6rem;">TB</div>
-                                        <span>Trần Thị Bình</span>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-light text-dark">5</span></td>
-                                <td><span class="status-badge active"><span class="status-dot"></span> Hoạt động</span></td>
-                                <td>
-                                    <div class="action-btns justify-content-end">
-                                        <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-semibold">PKH</td>
-                                <td class="fw-bold">Phòng Kho vận</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="user-avatar bg-warning" style="width: 24px; height: 24px; font-size: 0.6rem;">LC</div>
-                                        <span>Lê Văn Cường</span>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-light text-dark">12</span></td>
-                                <td><span class="status-badge active"><span class="status-dot"></span> Hoạt động</span></td>
-                                <td>
-                                    <div class="action-btns justify-content-end">
-                                        <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                    </div>
-                                </td>
-                            </tr>
+                            @if (Model != null && Model.Any())
+                            {
+                                foreach (var dept in Model)
+                                {
+                                    var managerName = dept.ManagerId.HasValue && employees.ContainsKey(dept.ManagerId.Value) 
+                                                      ? employees[dept.ManagerId.Value] : "Chưa cập nhật";
+                                    var count = employeeCounts.ContainsKey(dept.Id) ? employeeCounts[dept.Id] : 0;
+                                    var statusClass = dept.IsActive == true ? "active" : "inactive";
+                                    var statusDot = dept.IsActive == true ? "" : "text-danger bg-danger";
+                                    var statusText = dept.IsActive == true ? "Hoạt động" : "Ngừng HĐ";
+                                    var avatarLetter = managerName != "Chưa cập nhật" ? managerName[0].ToString().ToUpper() : "?";
+
+                                    <tr>
+                                        <td class="fw-semibold text-muted">@dept.DepartmentCode</td>
+                                        <td class="fw-bold text-dark">@dept.DepartmentName</td>
+                                        <td>
+                                            @if (managerName != "Chưa cập nhật")
+                                            {
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="user-avatar bg-secondary text-white fw-bold d-flex justify-content-center align-items-center" style="width: 24px; height: 24px; font-size: 0.7rem;">
+                                                        @avatarLetter
+                                                    </div>
+                                                    <span>@managerName</span>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted fst-italic">@managerName</span>
+                                            }
+                                        </td>
+                                        <td><span class="badge bg-light text-dark border">@count</span></td>
+                                        <td><span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span></td>
+                                        <td>
+                                            <div class="action-btns justify-content-end">
+                                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                                @if (dept.IsActive == true)
+                                                {
+                                                    <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận vô hiệu hóa phòng ban này?');">
+                                                        <button type="submit" class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                                                    </form>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">Chưa có phòng ban nào trong hệ thống.</td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm Phòng Ban -->
+<div class="modal fade" id="createDepartmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-building-add text-primary me-2"></i>Thêm Phòng Ban Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form asp-controller="Departments" asp-action="Create" method="post">
+                    <div class="mb-3">
+                        <label class="form-label">Mã phòng ban <span class="text-danger">*</span></label>
+                        <input type="text" name="DepartmentCode" class="form-control" placeholder="VD: PKD, HR" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tên phòng ban <span class="text-danger">*</span></label>
+                        <input type="text" name="DepartmentName" class="form-control" placeholder="VD: Phòng Kinh doanh" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phòng ban cấp trên</label>
+                        <select name="ParentDepartmentId" class="form-select">
+                            <option value="">-- Không có (Phòng ban gốc) --</option>
+                            @if (Model != null)
+                            {
+                                foreach (var d in Model.Where(m => m.IsActive == true))
+                                {
+                                    <option value="@d.Id">@d.DepartmentName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Trưởng phòng</label>
+                        <select name="ManagerId" class="form-select">
+                            <option value="">-- Chọn trưởng phòng --</option>
+                            @foreach (var emp in employees)
+                            {
+                                <option value="@emp.Key">@emp.Value</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu phòng ban</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

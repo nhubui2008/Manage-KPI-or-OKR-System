@@ -1,5 +1,19 @@
+@model IEnumerable<Manage_KPI_or_OKR_System.Models.KPICheckIn>
 @{
     ViewData["Title"] = "Lịch sử Check-in KPI";
+    
+    var detailsDict = ViewBag.Details as Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail>();
+    var employeesDict = ViewBag.Employees as Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>();
+    var kpisDict = ViewBag.KPIs as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI>();
+
+    int inTimeCount = Model.Count(c => c.StatusId == 1 || c.StatusId == null);
+    int riskCount = Model.Count(c => c.StatusId == 2);
+    int lateCount = Model.Count(c => c.StatusId == 3);
+    int totalCount = Model.Count();
+    
+    int inTimePct = totalCount > 0 ? (inTimeCount * 100) / totalCount : 0;
+    int riskPct = totalCount > 0 ? (riskCount * 100) / totalCount : 0;
+    int latePct = totalCount > 0 ? (lateCount * 100) / totalCount : 0;
 }
 
 <div class="page-header">
@@ -14,7 +28,7 @@
         </div>
     </div>
     <div class="d-flex gap-2">
-        <button class="btn-primary-custom">
+        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createCheckinModal">
             <i class="bi bi-calendar-check text-white"></i> Thực hiện Check-in
         </button>
     </div>
@@ -23,28 +37,28 @@
 <div class="row g-4 mb-4">
     <!-- Phân tích Check-in -->
     <div class="col-lg-4">
-        <div class="content-card h-100">
-            <div class="card-header-custom">
-                <h5 class="mb-0 fs-6"><i class="bi bi-pie-chart-fill text-primary"></i> Trạng thái Check-in (Tuần này)</h5>
+        <div class="content-card h-100 shadow-sm border-0">
+            <div class="card-header-custom border-bottom p-3">
+                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-pie-chart-fill text-primary me-2"></i> Trạng thái (Tuần này)</h5>
             </div>
-            <div class="card-body-custom pt-3 text-center">
-                <div class="position-relative d-inline-block mx-auto mb-3" style="width: 150px; height: 150px;">
+            <div class="card-body-custom p-4 text-center">
+                <div class="position-relative d-inline-block mx-auto mb-4" style="width: 140px; height: 140px;">
                     <!-- Placeholder for Doughnut Chart -->
                     <svg viewBox="0 0 36 36" class="circular-chart w-100 h-100">
                         <path class="circle-bg" stroke="#f1f5f9" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <!-- Green section (65%) -->
-                        <path class="circle" stroke="#10b981" stroke-dasharray="65, 100" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <!-- Yellow section (25%) -->
-                        <path class="circle" stroke="#f59e0b" stroke-dasharray="25, 100" stroke-dashoffset="-65" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <!-- Red section (10%) -->
-                        <path class="circle" stroke="#ef4444" stroke-dasharray="10, 100" stroke-dashoffset="-90" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <text x="18" y="20.35" class="percentage" font-size="8" text-anchor="middle" fill="#0f172a" font-weight="bold">86%</text>
+                        <!-- Green section -->
+                        <path class="circle" stroke="#10b981" stroke-dasharray="@inTimePct, 100" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <!-- Yellow section -->
+                        <path class="circle" stroke="#f59e0b" stroke-dasharray="@riskPct, 100" stroke-dashoffset="-@inTimePct" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <!-- Red section -->
+                        <path class="circle" stroke="#ef4444" stroke-dasharray="@latePct, 100" stroke-dashoffset="-@(inTimePct + riskPct)" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <text x="18" y="20.35" class="percentage" font-size="7.5" text-anchor="middle" fill="#1e293b" font-weight="700">@((inTimePct + riskPct).ToString())%</text>
                     </svg>
                 </div>
-                <div class="d-flex justify-content-center gap-3 mt-2 text-start" style="font-size: 0.75rem;">
-                    <div><span class="status-dot rounded-circle text-success bg-success d-inline-block me-1"></span>Đúng hạn (65%)</div>
-                    <div><span class="status-dot rounded-circle text-warning bg-warning d-inline-block me-1"></span>Có nguy cơ (25%)</div>
-                    <div><span class="status-dot rounded-circle text-danger bg-danger d-inline-block me-1"></span>Trễ tiến độ (10%)</div>
+                <div class="d-flex justify-content-center gap-3 mt-2 text-start px-2" style="font-size: 0.8rem;">
+                    <div><span class="status-dot rounded-circle bg-success d-inline-block me-1 shadow-sm"></span>Tốt (@inTimePct%)</div>
+                    <div><span class="status-dot rounded-circle bg-warning d-inline-block me-1 shadow-sm"></span>Nguy cơ (@riskPct%)</div>
+                    <div><span class="status-dot rounded-circle bg-danger d-inline-block me-1 shadow-sm"></span>Trễ (@latePct%)</div>
                 </div>
             </div>
         </div>
@@ -52,102 +66,93 @@
     
     <!-- Checklist -->
     <div class="col-lg-8">
-        <div class="content-card h-100">
-            <div class="card-header-custom">
-                <h5 class="mb-0 fs-6"><i class="bi bi-card-checklist text-primary"></i> Lịch sử Check-in</h5>
-                <div class="d-flex gap-2">
-                    <select class="form-select form-select-sm w-auto">
-                        <option>Trong tuần</option>
-                        <option>Tháng này</option>
-                    </select>
-                </div>
+        <div class="content-card h-100 shadow-sm border-0">
+            <div class="card-header-custom border-bottom p-3 d-flex justify-content-between align-items-center bg-light bg-opacity-50">
+                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-card-checklist text-primary me-2"></i> Lịch sử Check-in</h5>
             </div>
             <div class="card-body-custom p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
-                        <thead class="bg-light text-muted">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                        <thead class="table-light text-muted">
                             <tr>
-                                <th class="ps-4">Nhân viên</th>
-                                <th>KPI</th>
-                                <th>Ngày Check-in</th>
-                                <th>Tiến độ</th>
-                                <th>Trạng thái</th>
+                                <th class="ps-4 fw-medium border-0">Nhân viên</th>
+                                <th class="fw-medium border-0">Thực tế KPI</th>
+                                <th class="fw-medium border-0">Ngày CI</th>
+                                <th class="fw-medium border-0">Tiến độ</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td class="ps-4">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="user-avatar bg-info" style="width: 28px; height: 28px; font-size: 0.7rem;">LC</div>
-                                        <span class="fw-medium text-dark">Lê Văn Cường</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="fw-semibold text-dark">Doanh thu bán hàng</div>
-                                    <div class="text-muted" style="font-size: 0.75rem;">Đạt 1.5 tỷ / 5 tỷ</div>
-                                </td>
-                                <td>Hôm nay, 10:30</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="text-success fw-bold">30%</span>
-                                        <div class="progress-custom flex-grow-1" style="width: 50px; height: 4px;">
-                                            <div class="progress-bar-custom green" style="width: 30%;"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1">Đúng tiến độ</span></td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="user-avatar bg-warning" style="width: 28px; height: 28px; font-size: 0.7rem;">TD</div>
-                                        <span class="fw-medium text-dark">Phạm Thị Dung</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="fw-semibold text-dark">Thời gian giao hàng</div>
-                                    <div class="text-muted" style="font-size: 0.75rem;">Trễ 1.5 ngày so với mục tiêu</div>
-                                </td>
-                                <td>Hôm qua, 15:45</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="text-danger fw-bold">66%</span>
-                                        <div class="progress-custom flex-grow-1" style="width: 50px; height: 4px;">
-                                            <div class="progress-bar-custom red" style="width: 66%;"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2 py-1">Chậm tiến độ</span></td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="user-avatar" style="width: 28px; height: 28px; font-size: 0.7rem;">VA</div>
-                                        <span class="fw-medium text-dark">Nguyễn Văn An</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="fw-semibold text-dark">Tỷ lệ hài lòng</div>
-                                    <div class="text-muted" style="font-size: 0.75rem;">Đạt 85% / 90%</div>
-                                </td>
-                                <td>15/01/2026</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="text-warning fw-bold">94%</span>
-                                        <div class="progress-custom flex-grow-1" style="width: 50px; height: 4px;">
-                                            <div class="progress-bar-custom orange" style="width: 94%;"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1">Đúng tiến độ</span></td>
-                            </tr>
+                            @if (Model != null && Model.Any())
+                            {
+                                foreach (var ci in Model)
+                                {
+                                    var detail = detailsDict.ContainsKey(ci.Id) ? detailsDict[ci.Id] : new Manage_KPI_or_OKR_System.Models.CheckInDetail();
+                                    var employee = (ci.EmployeeId.HasValue && employeesDict.ContainsKey(ci.EmployeeId.Value)) ? employeesDict[ci.EmployeeId.Value] : null;
+                                    string empName = employee?.FullName ?? "Chưa gán";
+                                    string initials = string.Join("", empName.Split(' ').Select(n => n.Length > 0 ? n[0].ToString() : "")).ToUpper();
+                                    if (initials.Length > 2) initials = initials.Substring(0, 2);
+
+                                    var kpi = (ci.KPIId.HasValue && kpisDict.ContainsKey(ci.KPIId.Value)) ? kpisDict[ci.KPIId.Value] : null;
+                                    string kpiName = kpi?.KPIName ?? "KPI Đã xóa";
+
+                                    decimal progressVal = detail.ProgressPercentage ?? 0;
+                                    string colorClass = "danger";
+                                    string barColor = "red";
+                                    if(progressVal >= 80) { colorClass = "success"; barColor = "green"; }
+                                    else if(progressVal >= 50) { colorClass = "warning"; barColor = "orange"; }
+
+                                    <tr class="bg-white">
+                                        <td class="ps-4 py-3 border-bottom-0">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="user-avatar bg-primary text-white flex-shrink-0 d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 36px; height: 36px; font-size: 0.85rem; border-radius: 10px;">@initials</div>
+                                                <div class="fw-bold text-dark">@empName</div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 border-bottom-0">
+                                            <div class="fw-bold text-dark mb-1">@kpiName</div>
+                                            <div class="text-muted d-flex align-items-center gap-1" style="font-size: 0.8rem;">
+                                                <i class="bi bi-arrow-right-short"></i> @String.Format("{0:N0}", detail.AchievedValue)
+                                                @if (!string.IsNullOrEmpty(detail.Note))
+                                                {
+                                                    <span class="ms-2" title="@detail.Note"><i class="bi bi-info-circle text-info"></i></span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td class="py-3 border-bottom-0">
+                                            <div class="text-muted" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i> @(ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</div>
+                                        </td>
+                                        <td class="py-3 border-bottom-0" style="min-width: 140px;">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <span class="text-@colorClass fw-bold" style="font-size: 0.85rem;">@progressVal%</span>
+                                            </div>
+                                            <div class="progress-custom shadow-sm bg-light" style="height: 6px; border-radius: 10px;">
+                                                <div class="progress-bar-custom @barColor" style="width: @progressVal%; border-radius: 10px;"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted bg-white">
+                                        <i class="bi bi-journal-x fs-2 opacity-50 mb-2 d-block"></i>
+                                        Chưa có bản ghi Check-in nào
+                                    </td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
-                </div>
-                <div class="p-3 border-top text-center bg-light bg-opacity-50">
-                    <a href="#" class="text-decoration-none text-primary" style="font-size: 0.85rem;">Xem tất cả lịch sử check-in</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    /* Styling adjustments for KPI checkins */
+    .status-dot {
+        width: 10px;
+        height: 10px;
+    }
+</style>
