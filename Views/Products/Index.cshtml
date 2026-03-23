@@ -1,0 +1,153 @@
+@{
+    ViewData["Title"] = "Danh mục Sản phẩm";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="h3 font-weight-bold mb-1">Sản phẩm & Vật tư</h1>
+        <div class="page-breadcrumb">
+            <a href="/">Trang chủ</a>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Kho</span>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Sản phẩm</span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-outline-custom">
+            <i class="bi bi-file-earmark-excel text-success"></i> Nhập Excel
+        </button>
+        <button class="btn-primary-custom">
+            <i class="bi bi-plus-lg"></i> Thêm sản phẩm
+        </button>
+    </div>
+</div>
+
+<div class="content-card">
+    <div class="card-body-custom">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="toolbar-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" placeholder="Tìm kiếm theo mã, tên SKU...">
+                </div>
+                <select class="filter-select">
+                    <option value="">Lọc theo danh mục</option>
+                    <option value="1">Máy móc công nghiệp</option>
+                    <option value="2">Thiết bị điện</option>
+                    <option value="3">Vật tư tiêu hao</option>
+                </select>
+                <select class="filter-select">
+                    <option value="">Trạng thái kho</option>
+                    <option value="in-stock">Còn hàng</option>
+                    <option value="low-stock">Sắp hết</option>
+                    <option value="out-of-stock">Hết hàng</option>
+                </select>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-sm btn-outline-secondary border-0"><i class="bi bi-grid-fill"></i></button>
+                <button class="btn btn-sm btn-outline-secondary border-0 text-primary"><i class="bi bi-list-ul"></i></button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"><input type="checkbox" class="form-check-input"></th>
+                        <th style="width: 80px;">Hình ảnh</th>
+                        <th>Thông tin sản phẩm</th>
+                        <th>Phân loại</th>
+                        <th class="text-end">Giá bán (VNĐ)</th>
+                        <th class="text-center">Tồn kho</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="align-middle"><input type="checkbox" class="form-check-input"></td>
+                        <td>
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                <i class="bi bi-box-seam text-secondary fs-4"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">Máy bơm nước công nghiệp 15HP</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Mã SP: SP001 • ĐVT: Cái</div>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">Máy móc công nghiệp</span></td>
+                        <td class="text-end fw-medium">12,500,000</td>
+                        <td class="text-center">
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">45</span>
+                        </td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Lịch sử nhập/xuất"><i class="bi bi-clock-history"></i></button>
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="align-middle"><input type="checkbox" class="form-check-input"></td>
+                        <td>
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                <i class="bi bi-plugin text-secondary fs-4"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">Motor điện 3 pha 5kW</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Mã SP: SP002 • ĐVT: Cái</div>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">Thiết bị điện</span></td>
+                        <td class="text-end fw-medium">4,800,000</td>
+                        <td class="text-center">
+                            <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3">5</span>
+                        </td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Lịch sử nhập/xuất"><i class="bi bi-clock-history"></i></button>
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="align-middle"><input type="checkbox" class="form-check-input"></td>
+                        <td>
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                <i class="bi bi-nut text-secondary fs-4"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">Dầu nhớt bôi trơn BP 15W40</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Mã SP: SP003 • ĐVT: Thùng (20L)</div>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">Vật tư tiêu hao</span></td>
+                        <td class="text-end fw-medium">1,200,000</td>
+                        <td class="text-center">
+                            <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3">0</span>
+                        </td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Lịch sử nhập/xuất"><i class="bi bi-clock-history"></i></button>
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination-custom mt-3">
+            <div>Hiển thị 1-3 trong số 450 sản phẩm</div>
+            <div class="pagination-pages">
+                <a href="#" class="page-btn"><i class="bi bi-chevron-left"></i></a>
+                <a href="#" class="page-btn active">1</a>
+                <a href="#" class="page-btn">2</a>
+                <a href="#" class="page-btn">3</a>
+                <span class="px-2 text-muted">...</span>
+                <a href="#" class="page-btn">45</a>
+                <a href="#" class="page-btn"><i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>

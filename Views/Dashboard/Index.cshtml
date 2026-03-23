@@ -1,0 +1,281 @@
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="h3 font-weight-bold mb-1">Tổng quan hệ thống</h1>
+        <div class="page-breadcrumb">
+            <a href="/">Trang chủ</a>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Dashboard</span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <select class="form-select form-select-sm" style="width: 150px;">
+            <option>Quý 1 - 2026</option>
+            <option>Quý 2 - 2026</option>
+            <option>Năm 2026</option>
+        </select>
+        <button class="btn-primary-custom">
+            <i class="bi bi-download"></i> Xuất báo cáo
+        </button>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Tổng Nhân Viên</div>
+                    <div class="stat-value">124</div>
+                </div>
+                <div class="stat-icon blue">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+            <div class="mt-2">
+                <span class="stat-change up"><i class="bi bi-arrow-up-short"></i> 5.2%</span>
+                <span class="text-muted" style="font-size: 0.75rem; margin-left: 5px;">So với tháng trước</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Tổng OKR</div>
+                    <div class="stat-value">45</div>
+                </div>
+                <div class="stat-icon teal">
+                    <i class="bi bi-bullseye"></i>
+                </div>
+            </div>
+            <div class="mt-2">
+                <span class="stat-change up"><i class="bi bi-arrow-up-short"></i> 12</span>
+                <span class="text-muted" style="font-size: 0.75rem; margin-left: 5px;">Thêm mới trong quý</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Tỷ Lệ Check-in KPI</div>
+                    <div class="stat-value">86%</div>
+                </div>
+                <div class="stat-icon orange">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+            </div>
+            <div class="mt-2">
+                <span class="stat-change down"><i class="bi bi-arrow-down-short"></i> 2.1%</span>
+                <span class="text-muted" style="font-size: 0.75rem; margin-left: 5px;">Cần cải thiện</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Doanh Thu Đơn Hàng</div>
+                    <div class="stat-value">4.2B</div>
+                </div>
+                <div class="stat-icon green">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+            </div>
+            <div class="mt-2">
+                <span class="stat-change up"><i class="bi bi-arrow-up-short"></i> 15%</span>
+                <span class="text-muted" style="font-size: 0.75rem; margin-left: 5px;">Vượt mục tiêu Q1</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Charts Placeholder -->
+    <div class="col-lg-8">
+        <div class="content-card h-100">
+            <div class="card-header-custom">
+                <h5><i class="bi bi-bar-chart-fill"></i> Tiến độ OKR Khối Doanh Nghiệp</h5>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-link text-muted p-0 text-decoration-none" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#">Lọc theo phòng ban</a></li>
+                        <li><a class="dropdown-item" href="#">Tải xuống hình ảnh</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body-custom d-flex align-items-center justify-content-center" style="min-height: 300px; background: rgba(0,0,0,0.01);">
+                <div class="text-center text-muted">
+                    <i class="bi bi-bar-chart text-primary opacity-25" style="font-size: 6rem;"></i>
+                    <p class="mt-3 mb-0">Khu vực hiển thị biểu đồ Chart.js / ApexCharts</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hoạt động gần đây -->
+    <div class="col-lg-4">
+        <div class="content-card h-100">
+            <div class="card-header-custom">
+                <h5><i class="bi bi-activity"></i> Hoạt động Check-in (Hôm nay)</h5>
+            </div>
+            <div class="card-body-custom pt-3">
+                <div class="activity-item">
+                    <div class="activity-icon bg-primary text-white"><i class="bi bi-check-lg"></i></div>
+                    <div class="activity-content">
+                        <div class="activity-text fw-medium">Nguyễn Văn An <span class="fw-normal">đã check-in KPI: Doanh thu tháng</span></div>
+                        <div class="activity-time">10 phút trước • Đạt 100%</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon bg-warning text-dark"><i class="bi bi-exclamation-lg"></i></div>
+                    <div class="activity-content">
+                        <div class="activity-text fw-medium">Trần Thị Bình <span class="fw-normal">báo cáo rủi ro OKR: Tuyển dụng IT</span></div>
+                        <div class="activity-time">1 giờ trước • Cần hỗ trợ</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon bg-success text-white"><i class="bi bi-flag-fill"></i></div>
+                    <div class="activity-content">
+                        <div class="activity-text fw-medium">Lê Văn Cường <span class="fw-normal">đã hoàn thành Key Result: Ký 5 hợp đồng mới</span></div>
+                        <div class="activity-time">3 giờ trước • Xuất sắc</div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-icon bg-info text-white"><i class="bi bi-chat-dots-fill"></i></div>
+                    <div class="activity-content">
+                        <div class="activity-text fw-medium">Giám đốc <span class="fw-normal">đã nhận xét vào mục tiêu của Ban Kinh doanh</span></div>
+                        <div class="activity-time">Hôm qua, 15:30</div>
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <a href="#" class="text-decoration-none text-primary" style="font-size: 0.85rem; font-weight: 500;">Xem tất cả <i class="bi bi-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Top KPI -->
+    <div class="col-lg-6">
+        <div class="content-card">
+            <div class="card-header-custom border-bottom-0 pb-0">
+                <h5><i class="bi bi-trophy-fill text-warning"></i> Top Nhân Viên Đạt KPI (Q1)</h5>
+                <a href="#" class="btn btn-sm btn-link text-decoration-none p-0">Chi tiết</a>
+            </div>
+            <div class="card-body-custom pt-2">
+                <div class="table-responsive">
+                    <table class="table table-borderless table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead>
+                            <tr class="text-muted border-bottom">
+                                <th class="fw-semibold">Nhân viên</th>
+                                <th class="fw-semibold">Phòng ban</th>
+                                <th class="fw-semibold">Điểm số</th>
+                                <th class="fw-semibold text-end">Tiến độ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="user-avatar" style="width: 28px; height: 28px; font-size: 0.7rem;">VA</div>
+                                        <span class="fw-medium text-dark">Nguyễn Văn An</span>
+                                    </div>
+                                </td>
+                                <td class="text-muted">Kinh doanh</td>
+                                <td><span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2">98.5đ</span></td>
+                                <td class="text-end" style="width: 120px;">
+                                    <div class="d-flex align-items-center gap-2 justify-content-end">
+                                        <span class="text-muted" style="font-size: 0.75rem;">110%</span>
+                                        <div class="progress-custom flex-grow-1" style="max-width: 60px;">
+                                            <div class="progress-bar-custom green" style="width: 100%;"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="user-avatar bg-info" style="width: 28px; height: 28px; font-size: 0.7rem;">LC</div>
+                                        <span class="fw-medium text-dark">Lê Văn Cường</span>
+                                    </div>
+                                </td>
+                                <td class="text-muted">Kinh doanh</td>
+                                <td><span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2">95.0đ</span></td>
+                                <td class="text-end" style="width: 120px;">
+                                    <div class="d-flex align-items-center gap-2 justify-content-end">
+                                        <span class="text-muted" style="font-size: 0.75rem;">102%</span>
+                                        <div class="progress-custom flex-grow-1" style="max-width: 60px;">
+                                            <div class="progress-bar-custom green" style="width: 100%;"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="user-avatar bg-warning" style="width: 28px; height: 28px; font-size: 0.7rem;">TB</div>
+                                        <span class="fw-medium text-dark">Trần Thị Bình</span>
+                                    </div>
+                                </td>
+                                <td class="text-muted">Nhân sự</td>
+                                <td><span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2">89.5đ</span></td>
+                                <td class="text-end" style="width: 120px;">
+                                    <div class="d-flex align-items-center gap-2 justify-content-end">
+                                        <span class="text-muted" style="font-size: 0.75rem;">95%</span>
+                                        <div class="progress-custom flex-grow-1" style="max-width: 60px;">
+                                            <div class="progress-bar-custom" style="width: 95%;"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cảnh báo / Vấn đề -->
+    <div class="col-lg-6">
+        <div class="content-card h-100">
+            <div class="card-header-custom">
+                <h5><i class="bi bi-exclamation-triangle-fill text-danger"></i> Cần Lưu Ý</h5>
+            </div>
+            <div class="card-body-custom pt-3">
+                <div class="alert-item unread">
+                    <div class="alert-icon text-danger"><i class="bi bi-exclamation-circle-fill"></i></div>
+                    <div>
+                        <div class="fw-medium text-dark" style="font-size: 0.85rem;">OKR: Tuyển dụng nhân sự IT đang trễ tiến độ</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">Kỳ vọng 60% nhưng hiện chỉ đạt 20%. Cần hành động quyết liệt.</div>
+                    </div>
+                </div>
+                <div class="alert-item unread">
+                    <div class="alert-icon text-warning"><i class="bi bi-shield-exclamation"></i></div>
+                    <div>
+                        <div class="fw-medium text-dark" style="font-size: 0.85rem;">15 Nhân viên chưa nộp bảng Check-in tuần</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">Hạn chót là 17:00 hôm nay. Đã gửi email nhắc nhở tự động.</div>
+                    </div>
+                </div>
+                <div class="alert-item">
+                    <div class="alert-icon text-primary"><i class="bi bi-info-circle-fill"></i></div>
+                    <div>
+                        <div class="fw-medium text-dark" style="font-size: 0.85rem;">Kho Tân Bình: Vật tư CAT đạt mức tồn kho tối thiểu</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">Hệ thống đã tự động tạo phiếu đề xuất mua hàng.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

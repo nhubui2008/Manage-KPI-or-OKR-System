@@ -1,0 +1,103 @@
+@{
+    ViewData["Title"] = "Chính sách Thưởng/Phạt";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="h3 font-weight-bold mb-1">Quy định Thưởng & Phạt KPI</h1>
+        <div class="page-breadcrumb">
+            <a href="/">Trang chủ</a>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Chính sách thưởng/phạt</span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-primary-custom">
+            <i class="bi bi-plus-lg"></i> Thêm quy định mới
+        </button>
+    </div>
+</div>
+
+<div class="content-card">
+    <div class="card-body-custom">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="toolbar-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" placeholder="Tìm kiếm quy định...">
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Tên quy định</th>
+                        <th>Xếp loại áp dụng</th>
+                        <th>Mức độ</th>
+                        <th>Hình thức / Giá trị</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="fw-semibold text-dark">Thưởng hoàn thành xuất sắc KPI tháng (A)</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Áp dụng cho kỳ đánh giá tháng</div>
+                        </td>
+                        <td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">Xếp loại A</span></td>
+                        <td><span class="badge bg-success text-white">Thưởng</span></td>
+                        <td>
+                            <div class="fw-medium text-dark">+ 1,000,000 VNĐ</div>
+                        </td>
+                        <td><span class="status-badge active"><span class="status-dot"></span> Đang hiệu lực</span></td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="fw-semibold text-dark">Phạt không đạt KPI tháng (D)</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Áp dụng cho kỳ đánh giá tháng</div>
+                        </td>
+                        <td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">Xếp loại D</span></td>
+                        <td><span class="badge bg-danger text-white">Phạt</span></td>
+                        <td>
+                            <div class="fw-medium text-dark">- 500,000 VNĐ</div>
+                        </td>
+                        <td><span class="status-badge active"><span class="status-dot"></span> Đang hiệu lực</span></td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="fw-semibold text-dark">Thưởng nóng vượt doanh thu 120%</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Chỉ áp dụng cho phòng Kinh doanh</div>
+                        </td>
+                        <td><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1">Vượt mục tiêu (>120%)</span></td>
+                        <td><span class="badge bg-success text-white">Thưởng nóng</span></td>
+                        <td>
+                            <div class="fw-medium text-dark">5% phần doanh thu vượt</div>
+                        </td>
+                        <td><span class="status-badge active"><span class="status-dot"></span> Đang hiệu lực</span></td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

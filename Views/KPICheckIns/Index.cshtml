@@ -1,0 +1,153 @@
+@{
+    ViewData["Title"] = "Lịch sử Check-in KPI";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="h3 font-weight-bold mb-1">Check-in KPI</h1>
+        <div class="page-breadcrumb">
+            <a href="/">Trang chủ</a>
+            <i class="bi bi-chevron-right separator"></i>
+            <a href="/KPIs">KPI</a>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Check-in</span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-primary-custom">
+            <i class="bi bi-calendar-check text-white"></i> Thực hiện Check-in
+        </button>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Phân tích Check-in -->
+    <div class="col-lg-4">
+        <div class="content-card h-100">
+            <div class="card-header-custom">
+                <h5 class="mb-0 fs-6"><i class="bi bi-pie-chart-fill text-primary"></i> Trạng thái Check-in (Tuần này)</h5>
+            </div>
+            <div class="card-body-custom pt-3 text-center">
+                <div class="position-relative d-inline-block mx-auto mb-3" style="width: 150px; height: 150px;">
+                    <!-- Placeholder for Doughnut Chart -->
+                    <svg viewBox="0 0 36 36" class="circular-chart w-100 h-100">
+                        <path class="circle-bg" stroke="#f1f5f9" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <!-- Green section (65%) -->
+                        <path class="circle" stroke="#10b981" stroke-dasharray="65, 100" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <!-- Yellow section (25%) -->
+                        <path class="circle" stroke="#f59e0b" stroke-dasharray="25, 100" stroke-dashoffset="-65" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <!-- Red section (10%) -->
+                        <path class="circle" stroke="#ef4444" stroke-dasharray="10, 100" stroke-dashoffset="-90" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <text x="18" y="20.35" class="percentage" font-size="8" text-anchor="middle" fill="#0f172a" font-weight="bold">86%</text>
+                    </svg>
+                </div>
+                <div class="d-flex justify-content-center gap-3 mt-2 text-start" style="font-size: 0.75rem;">
+                    <div><span class="status-dot rounded-circle text-success bg-success d-inline-block me-1"></span>Đúng hạn (65%)</div>
+                    <div><span class="status-dot rounded-circle text-warning bg-warning d-inline-block me-1"></span>Có nguy cơ (25%)</div>
+                    <div><span class="status-dot rounded-circle text-danger bg-danger d-inline-block me-1"></span>Trễ tiến độ (10%)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Checklist -->
+    <div class="col-lg-8">
+        <div class="content-card h-100">
+            <div class="card-header-custom">
+                <h5 class="mb-0 fs-6"><i class="bi bi-card-checklist text-primary"></i> Lịch sử Check-in</h5>
+                <div class="d-flex gap-2">
+                    <select class="form-select form-select-sm w-auto">
+                        <option>Trong tuần</option>
+                        <option>Tháng này</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body-custom p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                        <thead class="bg-light text-muted">
+                            <tr>
+                                <th class="ps-4">Nhân viên</th>
+                                <th>KPI</th>
+                                <th>Ngày Check-in</th>
+                                <th>Tiến độ</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="user-avatar bg-info" style="width: 28px; height: 28px; font-size: 0.7rem;">LC</div>
+                                        <span class="fw-medium text-dark">Lê Văn Cường</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark">Doanh thu bán hàng</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">Đạt 1.5 tỷ / 5 tỷ</div>
+                                </td>
+                                <td>Hôm nay, 10:30</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-success fw-bold">30%</span>
+                                        <div class="progress-custom flex-grow-1" style="width: 50px; height: 4px;">
+                                            <div class="progress-bar-custom green" style="width: 30%;"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1">Đúng tiến độ</span></td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="user-avatar bg-warning" style="width: 28px; height: 28px; font-size: 0.7rem;">TD</div>
+                                        <span class="fw-medium text-dark">Phạm Thị Dung</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark">Thời gian giao hàng</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">Trễ 1.5 ngày so với mục tiêu</div>
+                                </td>
+                                <td>Hôm qua, 15:45</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-danger fw-bold">66%</span>
+                                        <div class="progress-custom flex-grow-1" style="width: 50px; height: 4px;">
+                                            <div class="progress-bar-custom red" style="width: 66%;"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2 py-1">Chậm tiến độ</span></td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="user-avatar" style="width: 28px; height: 28px; font-size: 0.7rem;">VA</div>
+                                        <span class="fw-medium text-dark">Nguyễn Văn An</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark">Tỷ lệ hài lòng</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">Đạt 85% / 90%</div>
+                                </td>
+                                <td>15/01/2026</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-warning fw-bold">94%</span>
+                                        <div class="progress-custom flex-grow-1" style="width: 50px; height: 4px;">
+                                            <div class="progress-bar-custom orange" style="width: 94%;"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1">Đúng tiến độ</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-3 border-top text-center bg-light bg-opacity-50">
+                    <a href="#" class="text-decoration-none text-primary" style="font-size: 0.85rem;">Xem tất cả lịch sử check-in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

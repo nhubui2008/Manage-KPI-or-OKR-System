@@ -1,0 +1,86 @@
+@{
+    ViewData["Title"] = "Quản lý Vai trò (Roles)";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="h3 font-weight-bold mb-1">Phân quyền Hệ thống</h1>
+        <div class="page-breadcrumb">
+            <a href="/">Trang chủ</a>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Hệ thống</span>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Quản lý roles</span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-primary-custom">
+            <i class="bi bi-shield-plus"></i> Tạo Role mới
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="content-card h-100 position-relative">
+            <div class="position-absolute top-0 end-0 p-3">
+                <span class="badge bg-danger rounded-pill"><i class="bi bi-star-fill me-1"></i>Toàn quyền</span>
+            </div>
+            <div class="card-body-custom p-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle mb-3 border border-danger border-opacity-25" style="width: 48px; height: 48px; font-size: 1.25rem;">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1">Administrator</h5>
+                <p class="text-muted mb-4" style="font-size: 0.85rem;">Quản trị viên hệ thống có toàn quyền truy cập tất cả chức năng, cấu hình và dữ liệu.</p>
+                
+                <div class="d-flex align-items-center gap-2 mb-3 pb-3 border-bottom">
+                    <div class="user-avatar bg-dark text-white" style="width: 24px; height: 24px; font-size: 0.6rem;">AD</div>
+                    <span class="fw-medium" style="font-size: 0.85rem;">1 người dùng</span>
+                </div>
+                
+                <button class="btn btn-sm btn-outline-danger w-100">Chỉnh sửa quyền (Disabled)</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="content-card h-100">
+            <div class="card-body-custom p-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 border border-primary border-opacity-25" style="width: 48px; height: 48px; font-size: 1.25rem;">
+                    <i class="bi bi-person-badge-fill"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1">Manager</h5>
+                <p class="text-muted mb-4" style="font-size: 0.85rem;">Quyền quản lý cho các trưởng phòng: Quản lý nhân sự trong phòng, duyệt KPI, tạo báo cáo.</p>
+                
+                <div class="d-flex align-items-center gap-2 mb-3 pb-3 border-bottom">
+                    <div class="user-avatar bg-success text-white" style="width: 24px; height: 24px; font-size: 0.6rem; z-index: 2">LC</div>
+                    <div class="user-avatar bg-info text-white" style="width: 24px; height: 24px; font-size: 0.6rem; margin-left: -10px; z-index: 1">TB</div>
+                    <span class="fw-medium ms-2" style="font-size: 0.85rem;">5 người dùng</span>
+                </div>
+                
+                <button class="btn btn-sm btn-outline-primary w-100">Chỉnh sửa quyền (Permissions)</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="content-card h-100">
+            <div class="card-body-custom p-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-secondary bg-opacity-10 text-secondary rounded-circle mb-3 border border-secondary border-opacity-25" style="width: 48px; height: 48px; font-size: 1.25rem;">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1">User</h5>
+                <p class="text-muted mb-4" style="font-size: 0.85rem;">Quyền nhân viên cơ bản: Check-in KPI cá nhân, xem lương thưởng, gửi yêu cầu.</p>
+                
+                <div class="d-flex align-items-center gap-2 mb-3 pb-3 border-bottom">
+                    <div class="user-avatar bg-warning text-dark" style="width: 24px; height: 24px; font-size: 0.6rem; z-index: 3">TD</div>
+                    <div class="user-avatar bg-primary text-white" style="width: 24px; height: 24px; font-size: 0.6rem; margin-left: -10px; z-index: 2">VA</div>
+                    <div class="user-avatar bg-light text-dark border" style="width: 24px; height: 24px; font-size: 0.6rem; margin-left: -10px; z-index: 1">+118</div>
+                    <span class="fw-medium ms-2" style="font-size: 0.85rem;">120 người dùng</span>
+                </div>
+                
+                <button class="btn btn-sm btn-outline-primary w-100">Chỉnh sửa quyền (Permissions)</button>
+            </div>
+        </div>
+    </div>
+</div>

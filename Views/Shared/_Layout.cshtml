@@ -1,47 +1,201 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Manage_KPI_or_OKR_System</title>
-    <script type="importmap"></script>
+    <title>@ViewData["Title"] - VietMach KPI/OKR System</title>
+    <!-- Fonts && Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Manage_KPI_or_OKR_System.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Manage_KPI_or_OKR_System</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
+    @if (ViewData["IsLoginPage"] != null && (bool)ViewData["IsLoginPage"])
+    {
+        @RenderBody()
+    }
+    else
+    {
+        <div class="app-wrapper">
+            <!-- Sidebar -->
+            <nav id="sidebar" class="sidebar">
+                <div class="sidebar-brand">
+                    <div class="brand-icon"><i class="bi bi-hexagon-fill"></i></div>
+                    <div class="brand-info">
+                        <div class="brand-text">VietMach System</div>
+                        <div class="brand-sub">Manage KPI & OKR</div>
+                    </div>
                 </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Manage_KPI_or_OKR_System - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                <div class="sidebar-nav">
+                    <!-- Dashboard -->
+                    <div class="sidebar-group">
+                        <div class="sidebar-group-label">Overview</div>
+                        <a href="/" class="sidebar-link">
+                            <i class="bi bi-grid-1x2-fill"></i> Dashboard
+                        </a>
+                    </div>
+
+                    <!-- Nhân sự -->
+                    <div class="sidebar-group">
+                        <div class="sidebar-group-label">Nhân sự</div>
+                        <a href="/Employees" class="sidebar-link">
+                            <i class="bi bi-people-fill"></i> Nhân sự
+                        </a>
+                        <a href="/Departments" class="sidebar-link">
+                            <i class="bi bi-diagram-3-fill"></i> Phòng ban
+                        </a>
+                        <a href="/Positions" class="sidebar-link">
+                            <i class="bi bi-person-badge-fill"></i> Chức vụ
+                        </a>
+                    </div>
+
+                    <!-- Mục tiêu OKR -->
+                    <div class="sidebar-group">
+                        <div class="sidebar-group-label">Mục tiêu chiến lược</div>
+                        <a href="/MissionVisions" class="sidebar-link">
+                            <i class="bi bi-compass-fill"></i> Sứ mệnh & Tầm nhìn
+                        </a>
+                        <a href="/OKRs" class="sidebar-link">
+                            <i class="bi bi-bullseye"></i> Quản lý OKR
+                        </a>
+                    </div>
+
+                    <!-- KPI -->
+                    <div class="sidebar-group">
+                        <div class="sidebar-group-label">Đo lường hiệu suất</div>
+                        <a href="/EvaluationPeriods" class="sidebar-link">
+                            <i class="bi bi-calendar3"></i> Kỳ đánh giá
+                        </a>
+                        <a href="/KPIs" class="sidebar-link">
+                            <i class="bi bi-speedometer2"></i> Quản lý KPI
+                        </a>
+                        <a href="/KPICheckIns" class="sidebar-link">
+                            <i class="bi bi-check2-square"></i> Check-in KPI
+                        </a>
+                    </div>
+
+                    <!-- Đánh giá -->
+                    <div class="sidebar-group">
+                        <div class="sidebar-group-label">Đánh giá & Thưởng</div>
+                        <a href="/EvaluationResults" class="sidebar-link">
+                            <i class="bi bi-award-fill"></i> Kết quả đánh giá
+                        </a>
+                        <a href="/BonusRules" class="sidebar-link">
+                            <i class="bi bi-cash-coin"></i> Quy tắc thưởng
+                        </a>
+                    </div>
+
+                    <!-- Modules ERP -->
+                    <div class="sidebar-group">
+                        <div class="sidebar-group-label">Phân hệ nghiệp vụ</div>
+                        <a href="#salesSubMenu" class="sidebar-link" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="salesSubMenu">
+                            <i class="bi bi-cart-fill"></i> Bán hàng
+                            <i class="bi bi-chevron-right menu-arrow"></i>
+                        </a>
+                        <ul class="collapse sidebar-submenu" id="salesSubMenu">
+                            <li><a href="/SalesOrders" class="sidebar-link">Đơn hàng</a></li>
+                            <li><a href="/Invoices" class="sidebar-link">Hóa đơn</a></li>
+                            <li><a href="/Customers" class="sidebar-link">Khách hàng</a></li>
+                        </ul>
+
+                        <a href="#inventorySubMenu" class="sidebar-link" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="inventorySubMenu">
+                            <i class="bi bi-box-seam-fill"></i> Kho hàng
+                            <i class="bi bi-chevron-right menu-arrow"></i>
+                        </a>
+                        <ul class="collapse sidebar-submenu" id="inventorySubMenu">
+                            <li><a href="/Products" class="sidebar-link">Sản phẩm</a></li>
+                            <li><a href="/InventoryReceipts" class="sidebar-link">Nhập kho</a></li>
+                            <li><a href="/Warehouses" class="sidebar-link">Danh sách kho</a></li>
+                        </ul>
+
+                        <a href="#shippingSubMenu" class="sidebar-link" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="shippingSubMenu">
+                            <i class="bi bi-truck"></i> Vận chuyển
+                            <i class="bi bi-chevron-right menu-arrow"></i>
+                        </a>
+                        <ul class="collapse sidebar-submenu" id="shippingSubMenu">
+                            <li><a href="/DeliveryNotes" class="sidebar-link">Phiếu giao hàng</a></li>
+                            <li><a href="/ShippingPartners" class="sidebar-link">Đối tác vận chuyển</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Hệ thống -->
+                    <div class="sidebar-group mt-2">
+                        <div class="sidebar-group-label">Hệ thống</div>
+                        <a href="/SystemUsers" class="sidebar-link">
+                            <i class="bi bi-shield-lock-fill"></i> Người dùng
+                        </a>
+                        <a href="/Roles" class="sidebar-link">
+                            <i class="bi bi-person-lines-fill"></i> Phân quyền
+                        </a>
+                        <a href="/AuditLogs" class="sidebar-link">
+                            <i class="bi bi-journal-text"></i> Lịch sử hệ thống
+                        </a>
+                    </div>
+                </div>
+            </nav>
+
+            <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <!-- Top Header -->
+                <header class="top-header">
+                    <div class="header-left">
+                        <button id="sidebarToggle" class="sidebar-toggle">
+                            <i class="bi bi-list"></i>
+                        </button>
+                        <div class="header-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" placeholder="Tìm kiếm nhanh nhân viên, KPI, thiết bị...">
+                        </div>
+                    </div>
+
+                    <div class="header-right">
+                        <button class="header-icon-btn" title="Thông báo hệ thống">
+                            <i class="bi bi-bell"></i>
+                            <span class="badge-dot"></span>
+                        </button>
+                        
+                        <div class="dropdown">
+                            <div class="header-user" data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="user-avatar">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div class="user-info">
+                                    <div class="user-name">Đăng Nhập</div>
+                                    <div class="user-role">Quản trị viên</div>
+                                </div>
+                                <i class="bi bi-chevron-down text-muted ms-1" style="font-size: 0.75rem;"></i>
+                            </div>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2 text-muted"></i> Hồ sơ cá nhân</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2 text-muted"></i> Cài đặt</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="/Auth/Login"><i class="bi bi-box-arrow-right me-2 text-danger"></i> Đăng nhập</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Page Content -->
+                <main class="page-content" role="main">
+                    @RenderBody()
+                </main>
+
+                <!-- Footer -->
+                <footer class="app-footer">
+                    <div>&copy; @DateTime.Now.Year VietMach - KPI & OKR Management System. All rights reserved.</div>
+                </footer>
+            </div>
         </div>
-    </footer>
+    }
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

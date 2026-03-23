@@ -1,0 +1,131 @@
+@{
+    ViewData["Title"] = "Quản lý Kỳ Đánh giá";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="h3 font-weight-bold mb-1">Kỳ Đánh giá</h1>
+        <div class="page-breadcrumb">
+            <a href="/">Trang chủ</a>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Kỳ Đánh giá</span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-primary-custom">
+            <i class="bi bi-plus-lg"></i> Thêm kỳ đánh giá
+        </button>
+    </div>
+</div>
+
+<div class="content-card">
+    <div class="card-body-custom">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="toolbar-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" placeholder="Tìm kiếm...">
+                </div>
+                <select class="filter-select">
+                    <option value="">Năm 2026</option>
+                    <option value="">Năm 2025</option>
+                </select>
+                <select class="filter-select">
+                    <option value="">Loại: Tất cả</option>
+                    <option value="month">Tháng</option>
+                    <option value="quarter">Quý</option>
+                    <option value="year">Năm</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Tên kỳ đánh giá</th>
+                        <th>Loại kỳ</th>
+                        <th>Thời gian</th>
+                        <th>Tổng KPI</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="fw-bold">
+                            <span class="text-primary-custom"><i class="bi bi-calendar-check me-2"></i>Tháng 1/2026</span>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">Hàng tháng</span></td>
+                        <td class="text-muted">01/01/2026 - 31/01/2026</td>
+                        <td>125 KPI</td>
+                        <td><span class="status-badge inactive"><span class="status-dot"></span> Đã đóng</span></td>
+                         <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Xem báo cáo"><i class="bi bi-file-earmark-bar-graph"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">
+                            <span class="text-primary-custom"><i class="bi bi-calendar-check me-2"></i>Tháng 2/2026</span>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">Hàng tháng</span></td>
+                        <td class="text-muted">01/02/2026 - 28/02/2026</td>
+                        <td>130 KPI</td>
+                        <td><span class="status-badge active"><span class="status-dot"></span> Đang mở</span></td>
+                         <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                <button class="action-btn" title="Chốt sổ"><i class="bi bi-lock"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">
+                            <span class="text-primary-custom"><i class="bi bi-calendar3 py-2 me-2"></i>Quý 1/2026</span>
+                        </td>
+                        <td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">Hàng quý</span></td>
+                        <td class="text-muted">01/01/2026 - 31/03/2026</td>
+                        <td>45 KPI</td>
+                        <td><span class="status-badge active"><span class="status-dot"></span> Đang mở</span></td>
+                         <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">
+                            <span class="text-primary-custom"><i class="bi bi-calendar3 py-2 me-2"></i>Quý 2/2026</span>
+                        </td>
+                        <td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">Hàng quý</span></td>
+                        <td class="text-muted">01/04/2026 - 30/06/2026</td>
+                        <td>0 KPI</td>
+                        <td><span class="status-badge pending"><span class="status-dot"></span> Chưa bắt đầu</span></td>
+                         <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">
+                            <span class="text-primary-custom"><i class="bi bi-calendar3-range py-2 me-2"></i>Năm 2026</span>
+                        </td>
+                        <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">Hàng năm</span></td>
+                        <td class="text-muted">01/01/2026 - 31/12/2026</td>
+                        <td>15 KPI</td>
+                        <td><span class="status-badge active"><span class="status-dot"></span> Đang mở</span></td>
+                         <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

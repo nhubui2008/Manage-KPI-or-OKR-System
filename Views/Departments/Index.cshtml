@@ -1,0 +1,160 @@
+@{
+    ViewData["Title"] = "Quản lý Phòng ban";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="h3 font-weight-bold mb-1">Cơ cấu tổ chức</h1>
+        <div class="page-breadcrumb">
+            <a href="/">Trang chủ</a>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Phòng ban</span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-primary-custom">
+            <i class="bi bi-plus-lg"></i> Thêm phòng ban mới
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Tree View (Left) -->
+    <div class="col-lg-4">
+        <div class="content-card h-100">
+            <div class="card-header-custom">
+                <h5><i class="bi bi-diagram-3"></i> Cây tổ chức</h5>
+            </div>
+            <div class="card-body-custom">
+                <div class="d-flex align-items-center gap-2 mb-3 px-2 py-2 rounded bg-primary bg-opacity-10 border border-primary border-opacity-25">
+                    <i class="bi bi-building text-primary fs-5"></i>
+                    <span class="fw-bold text-dark">Công ty TNHH VietMach</span>
+                </div>
+                
+                <div class="ps-3 ms-2 border-start">
+                    <div class="d-flex align-items-center gap-2 mb-3 py-1 px-2 rounded fw-semibold bg-light" style="margin-left: -5px; cursor: pointer;">
+                        <i class="bi bi-briefcase text-muted"></i> Ban Giám đốc
+                    </div>
+                    
+                    <div class="ps-3 ms-1 border-start">
+                        <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded" style="margin-left: -5px; cursor: pointer;">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-graph-up text-primary"></i> Phòng Kinh doanh</span>
+                            <span class="badge bg-secondary rounded-pill">15</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded" style="margin-left: -5px; cursor: pointer;">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-people text-success"></i> Phòng Nhân sự</span>
+                            <span class="badge bg-secondary rounded-pill">5</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded" style="margin-left: -5px; cursor: pointer;">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-box-seam text-warning"></i> Phòng Kho vận</span>
+                            <span class="badge bg-secondary rounded-pill">12</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded" style="margin-left: -5px; cursor: pointer;">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-calculator text-danger"></i> Phòng Kế toán</span>
+                            <span class="badge bg-secondary rounded-pill">4</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table (Right) -->
+    <div class="col-lg-8">
+        <div class="content-card h-100">
+            <div class="card-body-custom">
+                <div class="toolbar">
+                    <div class="toolbar-search w-100" style="max-width: 300px;">
+                        <i class="bi bi-search"></i>
+                        <input type="text" placeholder="Tìm kiếm phòng ban...">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Mã PB</th>
+                                <th>Tên phòng ban</th>
+                                <th>Trưởng phòng</th>
+                                <th>Số lượng NV</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="fw-semibold">BGD</td>
+                                <td class="fw-bold">Ban Giám đốc</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="user-avatar" style="width: 24px; height: 24px; font-size: 0.6rem;">AD</div>
+                                        <span>Nguyễn Văn Admin</span>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-light text-dark">3</span></td>
+                                <td><span class="status-badge active"><span class="status-dot"></span> Hoạt động</span></td>
+                                <td>
+                                    <div class="action-btns justify-content-end">
+                                        <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-semibold">PKD</td>
+                                <td class="fw-bold">Phòng Kinh doanh</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="user-avatar bg-success" style="width: 24px; height: 24px; font-size: 0.6rem;">VA</div>
+                                        <span>Nguyễn Văn An</span>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-light text-dark">15</span></td>
+                                <td><span class="status-badge active"><span class="status-dot"></span> Hoạt động</span></td>
+                                <td>
+                                    <div class="action-btns justify-content-end">
+                                        <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-semibold">PNS</td>
+                                <td class="fw-bold">Phòng Nhân sự</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="user-avatar bg-info" style="width: 24px; height: 24px; font-size: 0.6rem;">TB</div>
+                                        <span>Trần Thị Bình</span>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-light text-dark">5</span></td>
+                                <td><span class="status-badge active"><span class="status-dot"></span> Hoạt động</span></td>
+                                <td>
+                                    <div class="action-btns justify-content-end">
+                                        <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-semibold">PKH</td>
+                                <td class="fw-bold">Phòng Kho vận</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="user-avatar bg-warning" style="width: 24px; height: 24px; font-size: 0.6rem;">LC</div>
+                                        <span>Lê Văn Cường</span>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-light text-dark">12</span></td>
+                                <td><span class="status-badge active"><span class="status-dot"></span> Hoạt động</span></td>
+                                <td>
+                                    <div class="action-btns justify-content-end">
+                                        <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

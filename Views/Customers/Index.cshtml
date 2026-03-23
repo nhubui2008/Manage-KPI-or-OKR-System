@@ -1,0 +1,146 @@
+@{
+    ViewData["Title"] = "Quản lý Khách hàng";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="h3 font-weight-bold mb-1">Khách hàng & Đối tác</h1>
+        <div class="page-breadcrumb">
+            <a href="/">Trang chủ</a>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Bán hàng</span>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Khách hàng</span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-primary-custom">
+            <i class="bi bi-person-plus-fill"></i> Thêm khách hàng mới
+        </button>
+    </div>
+</div>
+
+<div class="content-card">
+    <div class="card-body-custom">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="toolbar-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" placeholder="Tìm theo tên, SĐT, Email, MST...">
+                </div>
+                <select class="filter-select">
+                    <option value="">Loại khách hàng: Tất cả</option>
+                    <option value="company">Doanh nghiệp (B2B)</option>
+                    <option value="individual">Cá nhân (B2C)</option>
+                </select>
+                <select class="filter-select">
+                    <option value="">Phân loại (Hạng)</option>
+                    <option value="vip">VIP / Kim cương</option>
+                    <option value="gold">Vàng</option>
+                    <option value="silver">Bạc</option>
+                    <option value="normal">Thành viên</option>
+                </select>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-sm btn-outline-secondary border-0"><i class="bi bi-funnel"></i></button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"><input type="checkbox" class="form-check-input"></th>
+                        <th>Thông tin Khách hàng</th>
+                        <th>Liên hệ</th>
+                        <th>Loại KH</th>
+                        <th>Hạng KH</th>
+                        <th class="text-end">Tổng chi tiêu (VNĐ)</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="checkbox" class="form-check-input"></td>
+                        <td>
+                            <div class="fw-semibold text-dark mb-1">Tập đoàn Xây dựng Hòa Bình</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">MST: 0302029191 • Mã KH: KH-00125</div>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column gap-1" style="font-size: 0.8rem;">
+                                <span><i class="bi bi-telephone text-muted me-1"></i>028 3822 2222</span>
+                                <span><i class="bi bi-envelope text-muted me-1"></i>contact@hoabinh.com</span>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-1 px-2">Doanh nghiệp</span></td>
+                        <td><span class="badge bg-dark bg-gradient text-warning rounded-pill px-3 py-1"><i class="bi bi-gem me-1"></i>Kim Cương</span></td>
+                        <td class="text-end fw-bold text-dark">5,250,500,000</td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Tạo đơn hàng"><i class="bi bi-cart-plus text-success"></i></button>
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="form-check-input"></td>
+                        <td>
+                            <div class="fw-semibold text-dark mb-1">Công ty TNHH Thương mại Dịch vụ Nam Phong</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">MST: 0314567890 • Mã KH: KH-00342</div>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column gap-1" style="font-size: 0.8rem;">
+                                <span><i class="bi bi-telephone text-muted me-1"></i>0903 456 789</span>
+                                <span><i class="bi bi-envelope text-muted me-1"></i>info@namphongtrading.vn</span>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-1 px-2">Doanh nghiệp</span></td>
+                        <td><span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 rounded-pill px-3 py-1 fw-bold">Vàng</span></td>
+                        <td class="text-end fw-medium text-dark">850,000,000</td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Tạo đơn hàng"><i class="bi bi-cart-plus text-success"></i></button>
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="form-check-input"></td>
+                        <td>
+                            <div class="fw-semibold text-dark mb-1">Nguyễn Thị Hoa</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Mã KH: KH-01056</div>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column gap-1" style="font-size: 0.8rem;">
+                                <span><i class="bi bi-telephone text-muted me-1"></i>0988 123 456</span>
+                                <span><i class="bi bi-envelope text-muted me-1"></i>hoanguyen@gmail.com</span>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2">Cá nhân</span></td>
+                        <td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-3 py-1">Bạc</span></td>
+                        <td class="text-end fw-medium text-dark">45,000,000</td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Tạo đơn hàng"><i class="bi bi-cart-plus text-success"></i></button>
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination-custom mt-3">
+            <div>Hiển thị 1-3 trong số 2,560 khách hàng</div>
+            <div class="pagination-pages">
+                <a href="#" class="page-btn"><i class="bi bi-chevron-left"></i></a>
+                <a href="#" class="page-btn active">1</a>
+                <a href="#" class="page-btn">2</a>
+                <a href="#" class="page-btn">3</a>
+                <span class="px-2 text-muted">...</span>
+                <a href="#" class="page-btn">256</a>
+                <a href="#" class="page-btn"><i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>

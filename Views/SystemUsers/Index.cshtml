@@ -1,0 +1,138 @@
+@{
+    ViewData["Title"] = "Tài khoản Hệ thống";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="h3 font-weight-bold mb-1">Tài khoản Hệ thống</h1>
+        <div class="page-breadcrumb">
+            <a href="/">Trang chủ</a>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Hệ thống</span>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Tài khoản users</span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-primary-custom">
+            <i class="bi bi-person-plus-fill"></i> Tạo tài khoản mới
+        </button>
+    </div>
+</div>
+
+<div class="content-card">
+    <div class="card-body-custom">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="toolbar-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" placeholder="Tìm tên đăng nhập, email...">
+                </div>
+                <select class="filter-select">
+                    <option value="">Phân quyền (Role)</option>
+                    <option value="admin">Quản trị viên (Admin)</option>
+                    <option value="manager">Quản lý (Manager)</option>
+                    <option value="user">Nhân viên (User)</option>
+                </select>
+                <select class="filter-select">
+                    <option value="">Trạng thái tài khoản</option>
+                    <option value="active">Đang hoạt động</option>
+                    <option value="locked">Bị khóa</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Tài khoản</th>
+                        <th>Thông tin Nhân sự</th>
+                        <th>Phân quyền</th>
+                        <th>Đăng nhập cuối</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-dark">admin</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">admin@vietmach.com</div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="user-avatar bg-dark text-white" style="width: 28px; height: 28px; font-size: 0.7rem;">AD</div>
+                                <div>
+                                    <div class="fw-medium text-dark" style="font-size: 0.85rem;">Nguyễn Văn Admin</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Ban Giám đốc</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-danger text-white rounded-pill px-3">Administrator</span></td>
+                        <td class="text-muted" style="font-size: 0.85rem;">Vừa xong</td>
+                        <td><span class="status-badge active"><span class="status-dot"></span> Kích hoạt</span></td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Đổi mật khẩu"><i class="bi bi-key"></i></button>
+                                <button class="action-btn" title="Phân quyền"><i class="bi bi-shield-lock"></i></button>
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-dark">cuonglv</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">cuonglv@vietmach.com</div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="user-avatar bg-success" style="width: 28px; height: 28px; font-size: 0.7rem;">LC</div>
+                                <div>
+                                    <div class="fw-medium text-dark" style="font-size: 0.85rem;">Lê Văn Cường</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Phòng Kinh doanh</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3">Manager</span></td>
+                        <td class="text-muted" style="font-size: 0.85rem;">Hôm qua, 15:30</td>
+                        <td><span class="status-badge active"><span class="status-dot"></span> Kích hoạt</span></td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Đổi mật khẩu"><i class="bi bi-key"></i></button>
+                                <button class="action-btn" title="Phân quyền"><i class="bi bi-shield-lock"></i></button>
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                <button class="action-btn danger" title="Khóa tài khoản"><i class="bi bi-lock-fill"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="fw-bold text-dark">dungpt</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">dungpt@vietmach.com</div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="user-avatar bg-warning" style="width: 28px; height: 28px; font-size: 0.7rem;">TD</div>
+                                <div>
+                                    <div class="fw-medium text-dark" style="font-size: 0.85rem;">Phạm Thị Dung</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Phòng Kho vận</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-3">User</span></td>
+                        <td class="text-muted" style="font-size: 0.85rem;">15/02/2026</td>
+                        <td><span class="status-badge pending"><span class="status-dot text-danger bg-danger"></span> Bị khóa</span></td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Mở khóa tài khoản"><i class="bi bi-unlock-fill text-success"></i></button>
+                                <button class="action-btn" title="Đổi mật khẩu"><i class="bi bi-key"></i></button>
+                                <button class="action-btn" title="Phân quyền"><i class="bi bi-shield-lock"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

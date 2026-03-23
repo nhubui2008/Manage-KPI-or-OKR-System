@@ -1,0 +1,154 @@
+@{
+    ViewData["Title"] = "Nhật ký Hệ thống (Audit Logs)";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="h3 font-weight-bold mb-1">Nhật ký Hệ thống</h1>
+        <div class="page-breadcrumb">
+            <a href="/">Trang chủ</a>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Hệ thống</span>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Audit Logs</span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-outline-custom">
+            <i class="bi bi-cloud-download"></i> Tải báo cáo
+        </button>
+    </div>
+</div>
+
+<div class="content-card">
+    <div class="card-body-custom">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="toolbar-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" placeholder="Tìm kiếm hành động, kết quả...">
+                </div>
+                <div class="d-flex align-items-center gap-2 border rounded px-2 bg-light bg-opacity-50">
+                    <i class="bi bi-calendar3 text-muted"></i>
+                    <input type="date" class="form-control form-control-sm border-0 bg-transparent shadow-none w-auto" value="2026-02-20">
+                    <span class="text-muted">-</span>
+                    <input type="date" class="form-control form-control-sm border-0 bg-transparent shadow-none w-auto" value="2026-02-20">
+                </div>
+                <select class="filter-select">
+                    <option value="">Người dùng (Tất cả)</option>
+                    <option value="admin">admin</option>
+                    <option value="cuonglv">cuonglv</option>
+                    <option value="dungpt">dungpt</option>
+                </select>
+                <select class="filter-select">
+                    <option value="">Module (Tất cả)</option>
+                    <option value="auth">Đăng nhập</option>
+                    <option value="sales">Bán hàng</option>
+                    <option value="hr">Nhân sự</option>
+                </select>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-sm btn-outline-secondary border-0 text-danger"><i class="bi bi-trash"></i> Xóa log cũ</button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Thời gian</th>
+                        <th style="width: 15%;">Tài khoản</th>
+                        <th style="width: 15%;">IP Address</th>
+                        <th style="width: 10%;">Module</th>
+                        <th style="width: 35%;">Hành động chi tiết</th>
+                        <th style="width: 10%;" class="text-center">Kết quả</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="text-dark fw-medium">20/02/2026</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">15:42:10</div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="user-avatar bg-dark text-white" style="width: 20px; height: 20px; font-size: 0.5rem;">AD</div>
+                                <span class="fw-semibold text-dark" style="font-size: 0.85rem;">admin</span>
+                            </div>
+                        </td>
+                        <td class="text-muted" style="font-size: 0.85rem;">192.168.1.105</td>
+                        <td><span class="badge bg-light text-dark border">SystemUsers</span></td>
+                        <td>
+                            <div class="text-dark" style="font-size: 0.85rem;">Thay đổi trạng thái tài khoản <span class="fw-bold">dungpt</span> thành <span class="text-danger">Khóa</span></div>
+                        </td>
+                        <td class="text-center"><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2">Thành công</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="text-dark fw-medium">20/02/2026</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">14:30:05</div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="user-avatar bg-success text-white" style="width: 20px; height: 20px; font-size: 0.5rem;">LC</div>
+                                <span class="fw-semibold text-dark" style="font-size: 0.85rem;">cuonglv</span>
+                            </div>
+                        </td>
+                        <td class="text-muted" style="font-size: 0.85rem;">115.79.14.22</td>
+                        <td><span class="badge bg-light text-dark border">SalesOrders</span></td>
+                        <td>
+                            <div class="text-dark" style="font-size: 0.85rem;">Tạo mới đơn hàng <a href="#" class="text-primary text-decoration-none fw-medium">SO-2602-0051</a> (Giá trị: 45,500,000 VNĐ)</div>
+                        </td>
+                        <td class="text-center"><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2">Thành công</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="text-dark fw-medium">20/02/2026</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">14:28:15</div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="user-avatar bg-success text-white" style="width: 20px; height: 20px; font-size: 0.5rem;">LC</div>
+                                <span class="fw-semibold text-dark" style="font-size: 0.85rem;">cuonglv</span>
+                            </div>
+                        </td>
+                        <td class="text-muted" style="font-size: 0.85rem;">115.79.14.22</td>
+                        <td><span class="badge bg-light text-dark border">Auth</span></td>
+                        <td>
+                            <div class="text-dark" style="font-size: 0.85rem;">Đăng nhập hệ thống (Session ID: a8f9...2c)</div>
+                        </td>
+                        <td class="text-center"><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2">Thành công</span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="text-dark fw-medium">20/02/2026</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">14:25:00</div>
+                        </td>
+                        <td>
+                            <span class="text-muted fst-italic" style="font-size: 0.85rem;">Unknown</span>
+                        </td>
+                        <td class="text-muted" style="font-size: 0.85rem;">115.79.14.22</td>
+                        <td><span class="badge bg-light text-dark border">Auth</span></td>
+                        <td>
+                            <div class="text-dark" style="font-size: 0.85rem;">Đăng nhập thất bại (Sai mật khẩu cho tài khoản: <span class="fw-medium">cuonglv</span>)</div>
+                        </td>
+                        <td class="text-center"><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2">Thất bại</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination-custom mt-3">
+            <div>Hiển thị 1-4 trong số 15,240 bản ghi</div>
+            <div class="pagination-pages">
+                <a href="#" class="page-btn"><i class="bi bi-chevron-left"></i></a>
+                <a href="#" class="page-btn active">1</a>
+                <a href="#" class="page-btn">2</a>
+                <a href="#" class="page-btn">3</a>
+                <span class="px-2 text-muted">...</span>
+                <a href="#" class="page-btn">1524</a>
+                <a href="#" class="page-btn"><i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,207 @@
+@{
+    ViewData["Title"] = "Danh mục KPI";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="h3 font-weight-bold mb-1">Quản lý KPI</h1>
+        <div class="page-breadcrumb">
+            <a href="/">Trang chủ</a>
+            <i class="bi bi-chevron-right separator"></i>
+            <span>Danh mục KPI</span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-outline-custom">
+            <i class="bi bi-download"></i> Phân bổ KPI
+        </button>
+        <button class="btn-primary-custom">
+            <i class="bi bi-plus-lg"></i> Thêm KPI mới
+        </button>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card p-3">
+            <div class="text-muted" style="font-size: 0.8rem;">Tổng KPI đang chạy</div>
+            <div class="fw-bold text-dark fs-4 mt-1">125</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card p-3">
+            <div class="text-muted" style="font-size: 0.8rem;">Đã phân bổ</div>
+            <div class="fw-bold text-success fs-4 mt-1">120</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card p-3">
+            <div class="text-muted" style="font-size: 0.8rem;">Chưa phân bổ</div>
+            <div class="fw-bold text-warning fs-4 mt-1">5</div>
+        </div>
+    </div>
+</div>
+
+<div class="content-card">
+    <div class="card-body-custom">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="toolbar-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" placeholder="Tìm kiếm KPI...">
+                </div>
+                <select class="filter-select">
+                    <option value="">Kỳ: Tháng 2/2026</option>
+                    <option value="">Kỳ: Tháng 1/2026</option>
+                </select>
+                <select class="filter-select">
+                    <option value="">Tính chất: Tất cả</option>
+                    <option value="1">Số lượng</option>
+                    <option value="2">Chất lượng</option>
+                    <option value="3">Thời gian</option>
+                </select>
+                <select class="filter-select">
+                    <option value="">Loại: Tất cả</option>
+                    <option value="1">Kết quả</option>
+                    <option value="2">Hành vi</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"><input type="checkbox" class="form-check-input"></th>
+                        <th>Tên KPI</th>
+                        <th>Mục tiêu & Trọng số</th>
+                        <th>Phân bổ cho</th>
+                        <th>Kỳ đánh giá</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="checkbox" class="form-check-input"></td>
+                        <td>
+                            <div class="fw-semibold text-dark mb-1">Doanh thu bán hàng</div>
+                            <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem;">
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-1">Kết quả</span>
+                                <span class="text-muted"><i class="bi bi-bar-chart-fill"></i> Số lượng</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-medium text-success">5,000,000,000 VNĐ</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Trọng số: <span class="fw-bold text-dark">40%</span></div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar bg-info border border-white position-relative" style="width: 28px; height: 28px; font-size: 0.6rem; z-index: 3;">VA</div>
+                                <div class="user-avatar bg-success border border-white position-relative" style="width: 28px; height: 28px; font-size: 0.6rem; margin-left: -10px; z-index: 2;">LC</div>
+                                <div class="user-avatar bg-secondary border border-white position-relative" style="width: 28px; height: 28px; font-size: 0.6rem; margin-left: -10px; z-index: 1;">+3</div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-light text-dark">Tháng 2/2026</span></td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Phân bổ"><i class="bi bi-people"></i></button>
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="form-check-input"></td>
+                        <td>
+                            <div class="fw-semibold text-dark mb-1">Tỷ lệ khách hàng hài lòng</div>
+                            <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem;">
+                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 py-1">Hành vi</span>
+                                <span class="text-muted"><i class="bi bi-star-fill"></i> Chất lượng</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-medium text-primary">≥ 90.00 %</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Trọng số: <span class="fw-bold text-dark">20%</span></div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="badge bg-light border text-dark"><i class="bi bi-diagram-3 me-1"></i>Phòng Kinh doanh</div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-light text-dark">Tháng 2/2026</span></td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Phân bổ"><i class="bi bi-people"></i></button>
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="form-check-input"></td>
+                        <td>
+                            <div class="fw-semibold text-dark mb-1">Thời gian giao hàng trung bình</div>
+                            <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem;">
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-1">Kết quả</span>
+                                <span class="text-muted"><i class="bi bi-clock-fill"></i> Thời gian</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-medium text-warning">≤ 3.00 Ngày</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Trọng số: <span class="fw-bold text-dark">30%</span></div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="badge bg-light border text-dark"><i class="bi bi-diagram-3 me-1"></i>Phòng Kho vận</div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-light text-dark">Tháng 2/2026</span></td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Phân bổ"><i class="bi bi-people"></i></button>
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="form-check-input"></td>
+                        <td>
+                            <div class="fw-semibold text-dark mb-1">Chi phí vận hành kho</div>
+                            <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem;">
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 py-1">Kết quả</span>
+                                <span class="text-muted"><i class="bi bi-cash-coin"></i> Chi phí</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-medium text-danger">≤ 500,000,000 VNĐ</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Trọng số: <span class="fw-bold text-dark">15%</span></div>
+                        </td>
+                        <td>
+                            <div class="text-warning" style="font-size: 0.8rem;"><i class="bi bi-exclamation-circle-fill me-1"></i>Chưa phân bổ</div>
+                        </td>
+                        <td><span class="badge bg-light text-dark">Tháng 2/2026</span></td>
+                        <td>
+                            <div class="action-btns justify-content-end">
+                                <button class="action-btn" title="Phân bổ"><i class="bi bi-people text-primary"></i></button>
+                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
+                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination-custom mt-3">
+            <div>Hiển thị 1-4 trong số 45 bản ghi</div>
+            <div class="pagination-pages">
+                <a href="#" class="page-btn"><i class="bi bi-chevron-left"></i></a>
+                <a href="#" class="page-btn active">1</a>
+                <a href="#" class="page-btn">2</a>
+                <a href="#" class="page-btn">3</a>
+                <a href="#" class="page-btn"><i class="bi bi-chevron-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
