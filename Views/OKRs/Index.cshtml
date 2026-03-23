@@ -1,5 +1,7 @@
+@model IEnumerable<Manage_KPI_or_OKR_System.Models.OKR>
 @{
     ViewData["Title"] = "Quản lý OKR";
+    var keyResultsDict = ViewBag.KeyResults as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>> ?? new Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>>();
 }
 
 <div class="page-header">
@@ -12,11 +14,18 @@
         </div>
     </div>
     <div class="d-flex gap-2">
-        <button class="btn-primary-custom">
+        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createOkrModal">
             <i class="bi bi-plus-lg"></i> Tạo OKR mới
         </button>
     </div>
 </div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+    </div>
+}
 
 <div class="content-card">
     <div class="card-body-custom">
@@ -26,187 +35,180 @@
                     <i class="bi bi-search"></i>
                     <input type="text" placeholder="Tìm kiếm OKR...">
                 </div>
-                <select class="filter-select">
-                    <option value="">Quý 1 - 2026</option>
-                    <option value="">Quý 2 - 2026</option>
-                    <option value="">Năm 2026</option>
-                </select>
-                <select class="filter-select">
-                    <option value="">Loại OKR: Tất cả</option>
-                    <option value="1">Công ty</option>
-                    <option value="2">Phòng ban</option>
-                    <option value="3">Cá nhân</option>
-                </select>
-                <select class="filter-select">
-                    <option value="">Trạng thái</option>
-                    <option value="active">Đang thực hiện</option>
-                    <option value="completed">Hoàn thành</option>
-                </select>
             </div>
             <div class="toolbar-right">
                 <button class="btn btn-sm btn-outline-secondary border-0"><i class="bi bi-list-task"></i> Xem dạng danh sách</button>
-                <button class="btn btn-sm btn-primary border-0 bg-primary bg-opacity-10 text-primary fw-semibold"><i class="bi bi-diagram-3-fill"></i> Sơ đồ liên kết</button>
             </div>
         </div>
 
         <!-- OKR Items list -->
         <div class="okr-list">
-            
-            <!-- OKR Item 1 -->
-            <div class="border rounded-3 mb-3 hover-shadow-sm transition-base bg-white overflow-hidden">
-                <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-light bg-opacity-50">
-                    <div class="d-flex align-items-start gap-3">
-                        <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="collapse" data-bs-target="#okr1">
-                            <i class="bi bi-chevron-down fs-5"></i>
-                        </button>
-                        <div>
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2">Công ty</span>
-                                <h5 class="mb-0 fw-bold fs-6">Tăng doanh thu Q1 20%</h5>
-                            </div>
-                            <div class="text-muted" style="font-size: 0.8rem;">
-                                <i class="bi bi-person"></i> Ban Giám đốc • 
-                                <i class="bi bi-calendar3"></i> Q1-2026
-                            </div>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center gap-4">
-                        <div class="text-end" style="width: 150px;">
-                            <div class="d-flex align-items-center justify-content-between mb-1">
-                                <span class="text-muted" style="font-size: 0.75rem;">Tiến độ chung</span>
-                                <span class="fw-bold" style="font-size: 0.85rem;">45%</span>
-                            </div>
-                            <div class="progress-custom">
-                                <div class="progress-bar-custom" style="width: 45%;"></div>
-                            </div>
-                        </div>
-                        <div class="badge bg-warning text-dark px-3 py-2 rounded-pill">Đang thực hiện</div>
-                        <div class="action-btns">
-                            <button class="action-btn"><i class="bi bi-pencil"></i></button>
-                            <button class="action-btn"><i class="bi bi-three-dots-vertical"></i></button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="okr1" class="collapse show">
-                    <div class="p-3 bg-white">
-                        <h6 class="fs-6 fw-semibold text-muted mb-3"><i class="bi bi-key-fill text-warning me-1"></i> Key Results (Kết quả then chốt)</h6>
-                        
-                        <!-- KR 1 -->
-                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                            <div class="ps-4">
-                                <div class="fw-medium text-dark">1. Doanh thu đạt 12 tỷ VNĐ</div>
-                                <div class="text-muted" style="font-size: 0.75rem;">Mục tiêu: 12,000,000,000 VNĐ • Cập nhật lần cuối: 15/01/2026</div>
-                            </div>
-                            <div class="d-flex align-items-center gap-4" style="width: 40%;">
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                        <span class="text-muted">4.5 tỷ</span>
-                                        <span class="fw-bold text-success">37.5%</span>
+            @if (Model != null && Model.Any())
+            {
+                int index = 0;
+                foreach (var okr in Model)
+                {
+                    index++;
+                    string collapseId = $"okr{index}";
+                    var krs = keyResultsDict.ContainsKey(okr.Id) ? keyResultsDict[okr.Id] : new List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>();
+                    
+                    <div class="border rounded-3 mb-3 hover-shadow-sm transition-base bg-white overflow-hidden">
+                        <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-light bg-opacity-50">
+                            <div class="d-flex align-items-start gap-3">
+                                <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="collapse" data-bs-target="#@collapseId">
+                                    <i class="bi bi-chevron-down fs-5"></i>
+                                </button>
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2">Mục tiêu (O)</span>
+                                        <h5 class="mb-0 fw-bold fs-6">@okr.ObjectiveName</h5>
                                     </div>
-                                    <div class="progress-custom" style="height: 4px;">
-                                        <div class="progress-bar-custom green" style="width: 37.5%;"></div>
+                                    <div class="text-muted" style="font-size: 0.8rem;">
+                                        <i class="bi bi-calendar3"></i> @Html.Raw(okr.Cycle ?? "Chưa rõ chu kỳ")
                                     </div>
                                 </div>
-                                <button class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem;">Check-in</button>
+                            </div>
+                            <div class="d-flex align-items-center gap-4">
+                                <div class="badge bg-warning text-dark px-3 py-2 rounded-pill">Đang thực hiện</div>
+                                <div class="action-btns dropdown">
+                                    <button class="action-btn" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                        <li><a class="dropdown-item" href="#" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2"></i>Thêm KR</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận xóa OKR này?');">
+                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa OKR</button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                         
-                        <!-- KR 2 -->
-                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                            <div class="ps-4">
-                                <div class="fw-medium text-dark">2. Ký 10 hợp đồng mới với đối tác chiến lược</div>
-                                <div class="text-muted" style="font-size: 0.75rem;">Mục tiêu: 10 Hợp đồng • Cập nhật lần cuối: 12/01/2026</div>
-                            </div>
-                            <div class="d-flex align-items-center gap-4" style="width: 40%;">
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                        <span class="text-muted">6 hợp đồng</span>
-                                        <span class="fw-bold text-success">60%</span>
-                                    </div>
-                                    <div class="progress-custom" style="height: 4px;">
-                                        <div class="progress-bar-custom green" style="width: 60%;"></div>
-                                    </div>
-                                </div>
-                                <button class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem;">Check-in</button>
+                        <div id="@collapseId" class="collapse show">
+                            <div class="p-3 bg-white">
+                                <h6 class="fs-6 fw-semibold text-muted mb-3"><i class="bi bi-key-fill text-warning me-1"></i> Key Results (Kết quả then chốt)</h6>
+                                
+                                @if (krs.Any())
+                                {
+                                    int krIndex = 1;
+                                    foreach (var kr in krs)
+                                    {
+                                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                                            <div class="ps-4">
+                                                <div class="fw-medium text-dark">@krIndex. @kr.KeyResultName</div>
+                                                <div class="text-muted" style="font-size: 0.75rem;">Mục tiêu: @String.Format("{0:N0}", kr.TargetValue) @kr.Unit</div>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-4" style="width: 40%;">
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
+                                                        <span class="text-muted">Chưa cập nhật thực tế</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        krIndex++;
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="text-muted fst-italic ps-4 py-2">Chưa có kết quả then chốt nào được thiết lập.</div>
+                                }
                             </div>
                         </div>
                     </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-info border-0 shadow-sm text-center p-5">
+                    <h5>Chưa có mục tiêu OKR nào.</h5>
+                    <p class="text-muted mb-0">Hãy bấm "Tạo OKR mới" để thiết lập mục tiêu.</p>
                 </div>
-            </div>
-
-            <!-- OKR Item 2 -->
-            <div class="border rounded-3 mb-3 hover-shadow-sm transition-base bg-white overflow-hidden">
-                <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-light bg-opacity-50">
-                    <div class="d-flex align-items-start gap-3">
-                        <button class="btn btn-sm btn-link text-muted p-0 collapsed" data-bs-toggle="collapse" data-bs-target="#okr2">
-                            <i class="bi bi-chevron-down fs-5"></i>
-                        </button>
-                        <div>
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2">Phòng ban</span>
-                                <h5 class="mb-0 fw-bold fs-6">Nâng cao chất lượng sản phẩm & Dịch vụ</h5>
-                            </div>
-                            <div class="text-muted" style="font-size: 0.8rem;">
-                                <i class="bi bi-diagram-3"></i> Phòng Sản xuất • 
-                                <i class="bi bi-calendar3"></i> Q1-2026
-                            </div>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center gap-4">
-                        <div class="text-end" style="width: 150px;">
-                            <div class="d-flex align-items-center justify-content-between mb-1">
-                                <span class="text-muted" style="font-size: 0.75rem;">Tiến độ chung</span>
-                                <span class="fw-bold" style="font-size: 0.85rem;">85%</span>
-                            </div>
-                            <div class="progress-custom">
-                                <div class="progress-bar-custom green" style="width: 85%;"></div>
-                            </div>
-                        </div>
-                        <div class="badge bg-success text-white px-3 py-2 rounded-pill">Sắp hoàn thành</div>
-                        <div class="action-btns">
-                            <button class="action-btn"><i class="bi bi-pencil"></i></button>
-                            <button class="action-btn"><i class="bi bi-three-dots-vertical"></i></button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="okr2" class="collapse">
-                    <div class="p-3 bg-white">
-                        <h6 class="fs-6 fw-semibold text-muted mb-3"><i class="bi bi-key-fill text-warning me-1"></i> Key Results (Kết quả then chốt)</h6>
-                        
-                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
-                            <div class="ps-4">
-                                <div class="fw-medium text-dark">1. Giảm lỗi sản phẩm trả về xuống dưới 2%</div>
-                                <div class="text-muted" style="font-size: 0.75rem;">Mục tiêu: < 2% • Cập nhật lần cuối: Hôm qua</div>
-                            </div>
-                            <div class="d-flex align-items-center gap-4" style="width: 40%;">
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                        <span class="text-muted">2.1%</span>
-                                        <span class="fw-bold text-success">95%</span>
-                                    </div>
-                                    <div class="progress-custom" style="height: 4px;">
-                                        <div class="progress-bar-custom green" style="width: 95%;"></div>
-                                    </div>
-                                </div>
-                                <button class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem;">Check-in</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="text-center mt-4">
-            <button class="btn btn-outline-secondary btn-sm px-4 rounded-pill">Tải thêm OKR</button>
+            }
         </div>
     </div>
 </div>
 
+<!-- Modal Create OKR -->
+<div class="modal fade" id="createOkrModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-target text-primary me-2"></i>Tạo Objective mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form asp-controller="OKRs" asp-action="Create" method="post">
+                    <div class="mb-3">
+                        <label class="form-label">Tên Objective (Mục tiêu) <span class="text-danger">*</span></label>
+                        <input type="text" name="ObjectiveName" class="form-control" placeholder="VD: Tăng cường mức độ hài lòng của khách hàng" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Chu kỳ <span class="text-danger">*</span></label>
+                        <select name="Cycle" class="form-select" required>
+                            <option value="Q1-@DateTime.Now.Year">Quý 1 - @DateTime.Now.Year</option>
+                            <option value="Q2-@DateTime.Now.Year">Quý 2 - @DateTime.Now.Year</option>
+                            <option value="Q3-@DateTime.Now.Year">Quý 3 - @DateTime.Now.Year</option>
+                            <option value="Q4-@DateTime.Now.Year">Quý 4 - @DateTime.Now.Year</option>
+                            <option value="Năm @DateTime.Now.Year">Cả năm @DateTime.Now.Year</option>
+                        </select>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">Tạo OKR</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Key Result -->
+<div class="modal fade" id="addKrModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-key text-warning me-2"></i>Thêm Kết quả then chốt (KR)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-light border border-warning" id="krOkrNameDisplay">Objective: </div>
+                <form asp-controller="OKRs" asp-action="AddKeyResult" method="post">
+                    <input type="hidden" name="OKRId" id="krOkrId" />
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả Key Result <span class="text-danger">*</span></label>
+                        <input type="text" name="KeyResultName" class="form-control" placeholder="VD: Giảm thời gian phản hồi hỗ trợ xuống còn 5 phút" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-4">
+                            <label class="form-label">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" name="TargetValue" class="form-control" placeholder="VD: 5" required>
+                        </div>
+                        <div class="col-6 mb-4">
+                            <label class="form-label">Đơn vị đo lường</label>
+                            <input type="text" name="Unit" class="form-control" placeholder="VD: Phút, Khách hàng, VNĐ...">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu KR</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openAddKrModal(okrId, okrName) {
+        document.getElementById('krOkrId').value = okrId;
+        document.getElementById('krOkrNameDisplay').innerText = "Objective: " + okrName;
+        new bootstrap.Modal(document.getElementById('addKrModal')).show();
+    }
+</script>
+
 <style>
-    /* Styling for the accordion arrows */
     .btn-link[data-bs-toggle="collapse"] i {
         display: inline-block;
         transition: transform 0.3s ease;
