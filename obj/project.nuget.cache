@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "oc1EXnKVnMQ=",
+  "dgSpecHash": "Dlqp3TR+k9M=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Cua\\Desktop\\Manage-KPI-or-OKR-System\\Manage-KPI-or-OKR-System.csproj",
+  "projectFilePath": "C:\\Users\\Cua\\Downloads\\Manage-KPI-or-OKR-System\\Manage-KPI-or-OKR-System.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Cua\\.nuget\\packages\\azure.core\\1.47.1\\azure.core.1.47.1.nupkg.sha512",
     "C:\\Users\\Cua\\.nuget\\packages\\azure.identity\\1.14.2\\azure.identity.1.14.2.nupkg.sha512",

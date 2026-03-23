@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Manage-KPI-or-OKR-System")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4d06a5eb372aaf7332b73481be609d3b138080a9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3256e61e4bdf2090ddf5417e9ae44a01f995265d")]
 [assembly: System.Reflection.AssemblyProductAttribute("Manage-KPI-or-OKR-System")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Manage-KPI-or-OKR-System")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
