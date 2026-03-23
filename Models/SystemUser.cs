@@ -17,5 +17,6 @@ namespace Manage_KPI_or_OKR_System.Models
         public bool? IsActive { get; set; } = true;
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
         public int? CreatedById { get; set; }
+        public int? EmployeeId { get; set; }
     }
 }

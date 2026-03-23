@@ -548,7 +548,6 @@ E:\PMA1012_TC\Manage-KPI-or-OKR-System\obj\Debug\net10.0\Manage-KPI-or-OKR-Syste
 E:\PMA1012_TC\Manage-KPI-or-OKR-System\obj\Debug\net10.0\ref\Manage-KPI-or-OKR-System.dll
 E:\PMA1012_TC\Manage-KPI-or-OKR-System\bin\Debug\net10.0\BCrypt.Net-Next.dll
 E:\PMA1012_TC\Manage-KPI-or-OKR-System\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
-E:\PMA1012_TC\Manage-KPI-or-OKR-System\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
 E:\PMA1012_TC\Manage-KPI-or-OKR-System\bin\Debug\net10.0\BouncyCastle.Cryptography.dll
 E:\PMA1012_TC\Manage-KPI-or-OKR-System\bin\Debug\net10.0\MailKit.dll
 E:\PMA1012_TC\Manage-KPI-or-OKR-System\bin\Debug\net10.0\MimeKit.dll

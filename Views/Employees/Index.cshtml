@@ -1,0 +1,93 @@
+﻿@model IEnumerable<Manage_KPI_or_OKR_System.Controllers.EmployeeListViewModel>
+
+@{
+    ViewData["Title"] = "Danh sách Nhân viên";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-primary">Quản lý Nhân viên</h3>
+        <a asp-action="Create" class="btn btn-success fw-bold shadow-sm text-white">
+            + Thêm Nhân Viên
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <strong>Thành công!</strong> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="ps-3">Mã NV</th>
+                            <th>Họ và tên</th>
+                            <th>Phòng ban</th>
+                            <th>Chức danh</th>
+                            <th>Điện thoại</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center" style="width: 180px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">Chưa có dữ liệu nhân viên nào.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold text-primary">@item.EmployeeCode</td>
+                                    <td class="fw-semibold">@item.FullName</td>
+                                    <td><span class="badge bg-info text-dark">@item.DepartmentName</span></td>
+                                    <td><span class="badge bg-secondary">@item.PositionName</span></td>
+                                    <td>@item.Phone</td>
+                                    
+                                    <td class="text-center">
+                                        @if (item.IsActive == true)
+                                        {
+                                            <span class="badge bg-success">Đang làm việc</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Đã nghỉ việc</span>
+                                        }
+                                    </td>
+
+                                    <td class="text-center">
+                                        @if (item.IsActive == true)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-primary text-white me-1">
+                                                Sửa
+                                            </a>
+                                            
+                                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Xác nhận đổi trạng thái nhân viên @item.FullName thành Nghỉ việc?');">
+                                                <button type="submit" class="btn btn-sm btn-danger text-white">
+                                                    Cho nghỉ
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small"><em>Không có thao tác</em></span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
