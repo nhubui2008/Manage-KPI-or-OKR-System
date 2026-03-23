@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Cua\\Desktop\\Manage-KPI-or-OKR-System\\Manage-KPI-or-OKR-System.csproj": {}
+    "C:\\Users\\Cua\\Downloads\\Manage-KPI-or-OKR-System\\Manage-KPI-or-OKR-System.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Cua\\Desktop\\Manage-KPI-or-OKR-System\\Manage-KPI-or-OKR-System.csproj": {
+    "C:\\Users\\Cua\\Downloads\\Manage-KPI-or-OKR-System\\Manage-KPI-or-OKR-System.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Cua\\Desktop\\Manage-KPI-or-OKR-System\\Manage-KPI-or-OKR-System.csproj",
+        "projectUniqueName": "C:\\Users\\Cua\\Downloads\\Manage-KPI-or-OKR-System\\Manage-KPI-or-OKR-System.csproj",
         "projectName": "Manage-KPI-or-OKR-System",
-        "projectPath": "C:\\Users\\Cua\\Desktop\\Manage-KPI-or-OKR-System\\Manage-KPI-or-OKR-System.csproj",
+        "projectPath": "C:\\Users\\Cua\\Downloads\\Manage-KPI-or-OKR-System\\Manage-KPI-or-OKR-System.csproj",
         "packagesPath": "C:\\Users\\Cua\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Cua\\Desktop\\Manage-KPI-or-OKR-System\\obj\\",
+        "outputPath": "C:\\Users\\Cua\\Downloads\\Manage-KPI-or-OKR-System\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Cua\\AppData\\Roaming\\NuGet\\NuGet.Config"
