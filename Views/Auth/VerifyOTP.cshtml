@@ -1,0 +1,84 @@
+﻿@{
+    ViewData["Title"] = "Xác nhận mã OTP";
+}
+<style>
+    body {
+        background-color: #f8f9fa;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .auth-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    }
+
+    .btn-primary {
+        border: none;
+        padding: 10px;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    .otp-input {
+        letter-spacing: 12px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .icon-box {
+        width: 60px;
+        height: 60px;
+        background: rgba(13, 110, 253, 0.1);
+        color: #0d6efd;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 24px;
+    }
+</style>
+
+<div class="container">
+    <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="col-md-5 col-lg-4">
+            <div class="card auth-card">
+                <div class="card-body p-4 p-sm-5">
+                    <div class="icon-box"><i class="bi bi-envelope-check-fill"></i></div>
+                    <h3 class="text-center fw-bold mb-2">Nhập mã xác nhận</h3>
+                    <p class="text-muted text-center mb-4" style="font-size: 0.9rem;">
+                        Chúng tôi đã gửi một mã OTP gồm 6 chữ số đến email của bạn.
+                    </p>
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success d-flex align-items-center" style="font-size: 0.85rem; border-radius: 8px;">
+                            <i class="bi bi-check-circle-fill me-2"></i><div>@TempData["SuccessMessage"]</div>
+                        </div>
+                    }
+
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger d-flex align-items-center" style="font-size: 0.85rem; border-radius: 8px;">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i><div>@ViewBag.Error</div>
+                        </div>
+                    }
+
+                    <form asp-action="VerifyOTP" method="post">
+                        <div class="mb-4">
+                            <input type="text" name="code" class="form-control otp-input text-primary" required placeholder="------" maxlength="6" autocomplete="off" />
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-shield-check me-2"></i>Xác nhận mã</button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-4">
+                        <a asp-action="Login" class="text-decoration-none fw-medium text-muted" style="font-size: 0.9rem;">Hủy bỏ</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

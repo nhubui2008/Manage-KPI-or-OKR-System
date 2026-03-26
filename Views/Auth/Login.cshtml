@@ -68,11 +68,11 @@
         <form asp-controller="Auth" asp-action="Login" method="post" class="comfort-form" id="loginForm" novalidate>
             <div class="soft-field">
                 <div class="field-container">
-                    <input type="email" id="email" name="email" required autocomplete="email" placeholder=" " />
-                    <label for="email">Email address</label>
+                    <input type="text" id="username" name="username" required autocomplete="username" placeholder=" " />
+                    <label for="username">Username</label>
                     <div class="field-accent"></div>
                 </div>
-                <span class="gentle-error" id="emailError"></span>
+                <span class="gentle-error" id="usernameError"></span>
             </div>
 
             <div class="soft-field">
@@ -106,7 +106,7 @@
                     </span>
                     <span class="checkbox-text">Remember me</span>
                 </label>
-                <a href="#" class="comfort-link">Forgot password?</a>
+                <a asp-controller="Auth" asp-action="ForgotPassword" class="comfort-link">Forgot password?</a>
             </div>
 
             <button type="submit" class="comfort-button">
