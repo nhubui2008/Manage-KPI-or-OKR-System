@@ -34,18 +34,18 @@
                 <label class="form-label" for="username">Tên đăng nhập</label>
                 <div class="position-relative">
                     <input type="text" id="username" name="username" class="form-control" placeholder="Nhập tên tài khoản" required autocomplete="username">
-                    <i class="bi bi-person position-absolute text-muted" style="top: 50%; right: 16px; transform: translateY(-50%);"></i>
+                    <i class="bi bi-person position-absolute text-muted" style="top: 50%; right: 16px; transform: translateY(-50%); pointer-events: none;"></i>
                 </div>
             </div>
 
             <div class="mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="d-flex justify-content-between align-items-center mb-2">
                     <label class="form-label mb-0" for="password">Mật khẩu</label>
-                    <a href="#" class="text-primary text-decoration-none" style="font-size: 0.8125rem; font-weight: 500;">Quên mật khẩu?</a>
+                    <a asp-controller="Auth" asp-action="ForgotPassword" class="text-primary text-decoration-none fw-medium" style="font-size: 0.85rem;">Quên mật khẩu?</a>
                 </div>
                 <div class="position-relative">
-                    <input type="password" id="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required autocomplete="current-password">
-                    <i class="bi bi-lock position-absolute text-muted" style="top: 50%; right: 16px; transform: translateY(-50%);"></i>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required autocomplete="current-password" style="padding-right: 40px;">
+                    <i class="bi bi-eye-slash position-absolute text-muted toggle-password" data-target="password" style="top: 50%; right: 16px; transform: translateY(-50%); cursor: pointer; transition: color 0.2s; font-size: 1.1rem;"></i>
                 </div>
             </div>
 
@@ -73,3 +73,26 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggleIcons = document.querySelectorAll('.toggle-password');
+
+        toggleIcons.forEach(icon => {
+            icon.addEventListener('click', function () {
+                const targetId = this.getAttribute('data-target');
+                const passwordInput = document.getElementById(targetId);
+
+                if (passwordInput.type === "password") {
+                    passwordInput.type = "text";
+                    this.classList.remove('bi-eye-slash', 'text-muted');
+                    this.classList.add('bi-eye', 'text-primary'); // Highlight màu xanh khi hiện
+                } else {
+                    passwordInput.type = "password";
+                    this.classList.remove('bi-eye', 'text-primary');
+                    this.classList.add('bi-eye-slash', 'text-muted'); // Trở lại màu xám khi ẩn
+                }
+            });
+        });
+    });
+</script>

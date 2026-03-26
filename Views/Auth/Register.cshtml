@@ -28,7 +28,7 @@
                 <label class="form-label" for="username">Tên đăng nhập <span class="text-danger">*</span></label>
                 <div class="position-relative">
                     <input type="text" id="username" name="username" class="form-control" placeholder="Tên tài khoản (username)" required autocomplete="username">
-                    <i class="bi bi-person position-absolute text-muted" style="top: 50%; right: 16px; transform: translateY(-50%);"></i>
+                    <i class="bi bi-person position-absolute text-muted" style="top: 50%; right: 16px; transform: translateY(-50%); pointer-events: none;"></i>
                 </div>
             </div>
 
@@ -36,30 +36,30 @@
                 <label class="form-label" for="email">Email liên hệ <span class="text-danger">*</span></label>
                 <div class="position-relative">
                     <input type="email" id="email" name="email" class="form-control" placeholder="Email công việc" required autocomplete="email">
-                    <i class="bi bi-envelope position-absolute text-muted" style="top: 50%; right: 16px; transform: translateY(-50%);"></i>
+                    <i class="bi bi-envelope position-absolute text-muted" style="top: 50%; right: 16px; transform: translateY(-50%); pointer-events: none;"></i>
                 </div>
             </div>
 
             <div class="mb-3">
                 <label class="form-label" for="password">Mật khẩu <span class="text-danger">*</span></label>
                 <div class="position-relative">
-                    <input type="password" id="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required autocomplete="new-password">
-                    <i class="bi bi-lock position-absolute text-muted" style="top: 50%; right: 16px; transform: translateY(-50%);"></i>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required autocomplete="new-password" style="padding-right: 40px;">
+                    <i class="bi bi-eye-slash position-absolute text-muted toggle-password" data-target="password" style="top: 50%; right: 16px; transform: translateY(-50%); cursor: pointer; transition: color 0.2s; font-size: 1.1rem;"></i>
                 </div>
             </div>
 
             <div class="mb-4">
                 <label class="form-label" for="confirmPassword">Xác nhận mật khẩu <span class="text-danger">*</span></label>
                 <div class="position-relative">
-                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Nhập lại mật khẩu" required autocomplete="new-password">
-                    <i class="bi bi-shield-check position-absolute text-muted" style="top: 50%; right: 16px; transform: translateY(-50%);"></i>
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Nhập lại mật khẩu" required autocomplete="new-password" style="padding-right: 40px;">
+                    <i class="bi bi-eye-slash position-absolute text-muted toggle-password" data-target="confirmPassword" style="top: 50%; right: 16px; transform: translateY(-50%); cursor: pointer; transition: color 0.2s; font-size: 1.1rem;"></i>
                 </div>
             </div>
 
             <button type="submit" class="btn-login mb-4">
                 Đăng Ký Tài Khoản <i class="bi bi-check-circle-fill ms-1 fs-5 align-middle"></i>
             </button>
-            
+
             <div class="text-center mt-3">
                 <span class="text-muted" style="font-size: 0.875rem;">Đã có tài khoản?</span>
                 <a href="/Auth/Login" class="text-primary text-decoration-none fw-semibold ms-1" style="font-size: 0.875rem;">Đăng nhập ngay</a>
@@ -71,3 +71,26 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggleIcons = document.querySelectorAll('.toggle-password');
+
+        toggleIcons.forEach(icon => {
+            icon.addEventListener('click', function () {
+                const targetId = this.getAttribute('data-target');
+                const passwordInput = document.getElementById(targetId);
+
+                if (passwordInput.type === "password") {
+                    passwordInput.type = "text";
+                    this.classList.remove('bi-eye-slash', 'text-muted');
+                    this.classList.add('bi-eye', 'text-primary'); // Highlight lên màu xanh khi hiện
+                } else {
+                    passwordInput.type = "password";
+                    this.classList.remove('bi-eye', 'text-primary');
+                    this.classList.add('bi-eye-slash', 'text-muted'); // Trở lại màu xám khi ẩn
+                }
+            });
+        });
+    });
+</script>

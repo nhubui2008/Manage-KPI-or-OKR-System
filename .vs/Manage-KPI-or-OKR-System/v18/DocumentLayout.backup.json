@@ -1,0 +1,236 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|e:\\net202_ct\\manage-kpi-or-okr-system\\views\\auth\\login.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|solutionrelative:views\\auth\\login.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|e:\\net202_ct\\manage-kpi-or-okr-system\\views\\auth\\register.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|solutionrelative:views\\auth\\register.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|e:\\net202_ct\\manage-kpi-or-okr-system\\views\\auth\\setnewpassword.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|solutionrelative:views\\auth\\setnewpassword.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|e:\\net202_ct\\manage-kpi-or-okr-system\\views\\auth\\forgotpassword.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|solutionrelative:views\\auth\\forgotpassword.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|e:\\net202_ct\\manage-kpi-or-okr-system\\views\\auth\\changepassword.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|solutionrelative:views\\auth\\changepassword.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|e:\\net202_ct\\manage-kpi-or-okr-system\\views\\auth\\verifyotp.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|solutionrelative:views\\auth\\verifyotp.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|e:\\net202_ct\\manage-kpi-or-okr-system\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|solutionrelative:controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|e:\\net202_ct\\manage-kpi-or-okr-system\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|e:\\net202_ct\\manage-kpi-or-okr-system\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|e:\\net202_ct\\manage-kpi-or-okr-system\\helpers\\encryptionhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|solutionrelative:helpers\\encryptionhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|e:\\net202_ct\\manage-kpi-or-okr-system\\services\\emailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|solutionrelative:services\\emailservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|e:\\net202_ct\\manage-kpi-or-okr-system\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{679B4021-C235-432D-D4B5-AA5D6023EAFB}|Manage-KPI-or-OKR-System.csproj|solutionrelative:views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 4,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{eefa5220-e298-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Register.cshtml",
+              "DocumentMoniker": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Auth\\Register.cshtml",
+              "RelativeDocumentMoniker": "Views\\Auth\\Register.cshtml",
+              "ToolTip": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Auth\\Register.cshtml*",
+              "RelativeToolTip": "Views\\Auth\\Register.cshtml*",
+              "ViewState": "AgIAADsAAAAAAAAAAAAowF8AAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-03-26T16:13:38.102Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Login.cshtml",
+              "DocumentMoniker": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Auth\\Login.cshtml",
+              "RelativeDocumentMoniker": "Views\\Auth\\Login.cshtml",
+              "ToolTip": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Auth\\Login.cshtml*",
+              "RelativeToolTip": "Views\\Auth\\Login.cshtml*",
+              "ViewState": "AgIAAEYAAAAAAAAAAAAowGEAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-03-26T16:13:35.411Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "VerifyOTP.cshtml",
+              "DocumentMoniker": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Auth\\VerifyOTP.cshtml",
+              "RelativeDocumentMoniker": "Views\\Auth\\VerifyOTP.cshtml",
+              "ToolTip": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Auth\\VerifyOTP.cshtml",
+              "RelativeToolTip": "Views\\Auth\\VerifyOTP.cshtml",
+              "ViewState": "AgIAACUAAAAAAAAAAAAUwFMAAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-03-26T16:07:22.96Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "_Layout.cshtml",
+              "DocumentMoniker": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Shared\\_Layout.cshtml",
+              "RelativeDocumentMoniker": "Views\\Shared\\_Layout.cshtml",
+              "ToolTip": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Shared\\_Layout.cshtml",
+              "RelativeToolTip": "Views\\Shared\\_Layout.cshtml",
+              "ViewState": "AgIAAK4AAAAAAAAAAAAAALoAAACpAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-03-26T11:11:33.617Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "ChangePassword.cshtml",
+              "DocumentMoniker": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Auth\\ChangePassword.cshtml",
+              "RelativeDocumentMoniker": "Views\\Auth\\ChangePassword.cshtml",
+              "ToolTip": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Auth\\ChangePassword.cshtml",
+              "RelativeToolTip": "Views\\Auth\\ChangePassword.cshtml",
+              "ViewState": "AgIAAEgAAAAAAAAAAAAUwIMAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-03-26T11:03:25.215Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "ForgotPassword.cshtml",
+              "DocumentMoniker": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Auth\\ForgotPassword.cshtml",
+              "RelativeDocumentMoniker": "Views\\Auth\\ForgotPassword.cshtml",
+              "ToolTip": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Auth\\ForgotPassword.cshtml",
+              "RelativeToolTip": "Views\\Auth\\ForgotPassword.cshtml",
+              "ViewState": "AgIAAEIAAAAAAAAAAAAAAHEAAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-03-26T11:02:50.014Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SetNewPassword.cshtml",
+              "DocumentMoniker": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Auth\\SetNewPassword.cshtml",
+              "RelativeDocumentMoniker": "Views\\Auth\\SetNewPassword.cshtml",
+              "ToolTip": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Views\\Auth\\SetNewPassword.cshtml",
+              "RelativeToolTip": "Views\\Auth\\SetNewPassword.cshtml",
+              "ViewState": "AgIAAHAAAAAAAAAAAAAUwJgAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-03-26T16:07:43.54Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\appsettings.json",
+              "RelativeDocumentMoniker": "appsettings.json",
+              "ToolTip": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\appsettings.json",
+              "RelativeToolTip": "appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAACsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-03-26T14:59:13.167Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Controllers\\AuthController.cs",
+              "RelativeDocumentMoniker": "Controllers\\AuthController.cs",
+              "ToolTip": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Controllers\\AuthController.cs",
+              "RelativeToolTip": "Controllers\\AuthController.cs",
+              "ViewState": "AgIAAEsBAAAAAAAAAAAowGYBAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-26T11:01:56.95Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "EmailService.cs",
+              "DocumentMoniker": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Services\\EmailService.cs",
+              "RelativeDocumentMoniker": "Services\\EmailService.cs",
+              "ToolTip": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Services\\EmailService.cs",
+              "RelativeToolTip": "Services\\EmailService.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAADIAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-26T15:00:26.252Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Program.cs",
+              "DocumentMoniker": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAABgAAAAAAAAAAAAAACgAAAA0AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-26T15:00:45.307Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "EncryptionHelper.cs",
+              "DocumentMoniker": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Helpers\\EncryptionHelper.cs",
+              "RelativeDocumentMoniker": "Helpers\\EncryptionHelper.cs",
+              "ToolTip": "E:\\NET202_CT\\Manage-KPI-or-OKR-System\\Helpers\\EncryptionHelper.cs",
+              "RelativeToolTip": "Helpers\\EncryptionHelper.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-26T15:41:37.502Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
