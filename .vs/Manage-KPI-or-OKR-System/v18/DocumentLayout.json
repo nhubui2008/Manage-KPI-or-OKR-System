@@ -82,8 +82,7 @@
               "RelativeToolTip": "Views\\Auth\\Register.cshtml",
               "ViewState": "AgIAADsAAAAAAAAAAAAowF8AAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-03-26T16:13:38.102Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-26T16:13:38.102Z"
             },
             {
               "$type": "Document",
@@ -108,8 +107,7 @@
               "RelativeToolTip": "Views\\Auth\\VerifyOTP.cshtml",
               "ViewState": "AgIAACUAAAAAAAAAAAAUwFMAAAAGAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-03-26T16:07:22.96Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-26T16:07:22.96Z"
             },
             {
               "$type": "Document",
@@ -121,8 +119,7 @@
               "RelativeToolTip": "Views\\Shared\\_Layout.cshtml",
               "ViewState": "AgIAAK4AAAAAAAAAAAAAALoAAACpAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-03-26T11:11:33.617Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-26T11:11:33.617Z"
             },
             {
               "$type": "Document",
@@ -134,8 +131,7 @@
               "RelativeToolTip": "Views\\Auth\\ChangePassword.cshtml",
               "ViewState": "AgIAAEgAAAAAAAAAAAAUwIMAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-03-26T11:03:25.215Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-26T11:03:25.215Z"
             },
             {
               "$type": "Document",
@@ -147,8 +143,7 @@
               "RelativeToolTip": "Views\\Auth\\ForgotPassword.cshtml",
               "ViewState": "AgIAAEIAAAAAAAAAAAAAAHEAAAAGAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-03-26T11:02:50.014Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-26T11:02:50.014Z"
             },
             {
               "$type": "Document",
@@ -160,8 +155,7 @@
               "RelativeToolTip": "Views\\Auth\\SetNewPassword.cshtml",
               "ViewState": "AgIAAHAAAAAAAAAAAAAUwJgAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2026-03-26T16:07:43.54Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-26T16:07:43.54Z"
             },
             {
               "$type": "Document",
@@ -173,8 +167,7 @@
               "RelativeToolTip": "appsettings.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAACsAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-03-26T14:59:13.167Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-26T14:59:13.167Z"
             },
             {
               "$type": "Document",
@@ -186,8 +179,7 @@
               "RelativeToolTip": "Controllers\\AuthController.cs",
               "ViewState": "AgIAAEsBAAAAAAAAAAAowGYBAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-26T11:01:56.95Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-26T11:01:56.95Z"
             },
             {
               "$type": "Document",
@@ -199,8 +191,7 @@
               "RelativeToolTip": "Services\\EmailService.cs",
               "ViewState": "AgIAAAMAAAAAAAAAAAAAADIAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-26T15:00:26.252Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-26T15:00:26.252Z"
             },
             {
               "$type": "Document",
@@ -212,8 +203,7 @@
               "RelativeToolTip": "Program.cs",
               "ViewState": "AgIAABgAAAAAAAAAAAAAACgAAAA0AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-26T15:00:45.307Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-26T15:00:45.307Z"
             },
             {
               "$type": "Document",
@@ -225,8 +215,7 @@
               "RelativeToolTip": "Helpers\\EncryptionHelper.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-26T15:41:37.502Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-26T15:41:37.502Z"
             }
           ]
         }
