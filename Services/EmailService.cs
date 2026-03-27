@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using System.Net.Mail;
-using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.Extensions.Configuration;
 
 namespace Manage_KPI_or_OKR_System.Services
@@ -8,13 +7,11 @@ namespace Manage_KPI_or_OKR_System.Services
     public class EmailService
     {
         private readonly IConfiguration _config;
-        private readonly EncryptionHelper _encryptionHelper;
 
-        // ĐÃ SỬA: Thêm EncryptionHelper encryptionHelper vào tham số ở đây
-        public EmailService(IConfiguration config, EncryptionHelper encryptionHelper)
+        // ĐÃ SỬA: Xóa EncryptionHelper khỏi constructor
+        public EmailService(IConfiguration config)
         {
             _config = config;
-            _encryptionHelper = encryptionHelper;
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
@@ -24,18 +21,16 @@ namespace Manage_KPI_or_OKR_System.Services
             var senderEmail = _config["SmtpSettings:SenderEmail"];
             var senderName = _config["SmtpSettings:SenderName"];
 
-            // Lấy mật khẩu đã mã hóa từ cấu hình và giải mã nó
-            var encryptedPassword = _config["SmtpSettings:Password"];
-            var decryptedPassword = _encryptionHelper.Decrypt(encryptedPassword!);
+            // ĐÃ SỬA: Lấy trực tiếp mật khẩu từ file .env (không cần giải mã)
+            var password = _config["SmtpSettings:Password"];
 
             using (var client = new SmtpClient(smtpServer, smtpPort))
             {
                 client.UseDefaultCredentials = false;
-                // ĐÃ SỬA: Phải dùng decryptedPassword ở đây mới đúng mật khẩu thực của Gmail
-                client.Credentials = new NetworkCredential(senderEmail, decryptedPassword);
+                client.Credentials = new NetworkCredential(senderEmail, password);
                 client.EnableSsl = true;
 
-                var mailMessage = new MailMessage
+                var mailMessage = new MailMessage 
                 {
                     From = new MailAddress(senderEmail!, senderName),
                     Subject = subject,
