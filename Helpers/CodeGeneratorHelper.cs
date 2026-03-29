@@ -1,7 +1,7 @@
 using Manage_KPI_or_OKR_System.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace Manage_KPI_or_OKR_System.Helper
+namespace Manage_KPI_or_OKR_System.Helpers
 {
     public class CodeGeneratorHelper
     {

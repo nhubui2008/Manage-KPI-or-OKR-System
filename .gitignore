@@ -1,3 +1,6 @@
+# key
+.env
+
 ## .NET / ASP.NET Core
 bin/
 obj/

@@ -1,4 +1,4 @@
-﻿using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
@@ -20,12 +20,19 @@ builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.EmailService>();
 builder.Services.AddDataProtection();
 builder.Services.AddSingleton<EncryptionHelper>();
 
-builder.Services.AddAuthentication("Cookies").AddCookie("Cookies", options =>
-{
-    options.LoginPath = "/Auth/Login";
-    options.LogoutPath = "/Auth/Logout";
-    options.AccessDeniedPath = "/Auth/AccessDenied";
-});
+builder.Services.AddAuthentication("Cookies")
+    .AddCookie("Cookies", options =>
+    {
+        options.LoginPath = "/Auth/Login";
+        options.LogoutPath = "/Auth/Logout";
+        options.AccessDeniedPath = "/Auth/AccessDenied";
+    })
+    .AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["GOOGLE_CLIENT_ID"] ?? string.Empty;
+        options.ClientSecret = builder.Configuration["GOOGLE_CLIENT_SECRET"] ?? string.Empty;
+    });
+
 
 builder.Services.AddDbContext<MiniERPDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

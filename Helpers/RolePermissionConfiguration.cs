@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Manage_KPI_or_OKR_System.Helper
+namespace Manage_KPI_or_OKR_System.Helpers
 {
     /// <summary>
     /// Defines the permission configuration for each role in the system

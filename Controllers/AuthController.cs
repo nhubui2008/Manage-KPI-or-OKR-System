@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Manage_KPI_or_OKR_System.Data;
-using Manage_KPI_or_OKR_System.Helper;
 using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -406,5 +406,101 @@ public async Task<IActionResult> MyProfile()
 
     return View(user);
 }
+
+// ==========================================
+// GOOGLE AUTHENTICATION
+// ==========================================
+[AllowAnonymous]
+public IActionResult GoogleLogin()
+{
+    var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleResponse") };
+    return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+}
+
+[AllowAnonymous]
+public async Task<IActionResult> GoogleResponse()
+{
+    var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+
+    if (!result.Succeeded || result.Principal == null)
+    {
+        ViewBag.Error = "Đăng nhập bằng Google thất bại.";
+        return RedirectToAction("Login");
+    }
+
+    var email = result.Principal.FindFirstValue(ClaimTypes.Email);
+    var name = result.Principal.FindFirstValue(ClaimTypes.Name);
+
+    if (string.IsNullOrEmpty(email))
+    {
+        ViewBag.Error = "Không thể lấy thông tin Email từ tài khoản Google của bạn.";
+        return RedirectToAction("Login");
+    }
+
+    // 1. Tìm người dùng theo Email
+    var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email == email);
+
+    // 2. Nếu chưa có, tạo tự động (hoặc liên kết)
+    if (user == null)
+    {
+        // Tên đăng nhập mặc định là phần trước @ của email
+        var defaultUsername = email.Split('@')[0];
+        
+        // Kiểm tra xem username đã tồn tại chưa (nếu có thì thêm số ngẫu nhiên)
+        if (await _context.SystemUsers.AnyAsync(u => u.Username == defaultUsername))
+        {
+            defaultUsername += new Random().Next(100, 999).ToString();
+        }
+
+        var defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "User");
+        int? roleId = defaultRole?.Id;
+
+        user = new SystemUser
+        {
+            Username = defaultUsername,
+            Email = email,
+            RoleId = roleId,
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+
+        _context.SystemUsers.Add(user);
+        await _context.SaveChangesAsync();
+    }
+
+    if (user.IsActive == false)
+    {
+        ViewBag.Error = "Tài khoản của bạn đã bị vô hiệu hóa.";
+        return RedirectToAction("Login");
+    }
+
+    // 3. Đăng nhập vào hệ thống MiniERP qua Cookie
+    var roleName = "User";
+    if (user.RoleId.HasValue)
+    {
+        var role = await _context.Roles.FindAsync(user.RoleId);
+        if (role != null) roleName = role.RoleName ?? "User";
+    }
+    var permissions = RolePermissionConfiguration.GetPermissionsForRole(roleName);
+
+    var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+        new Claim(ClaimTypes.Name, user.Username ?? "Unknown"),
+        new Claim(ClaimTypes.Role, roleName),
+        new Claim(ClaimTypes.Email, email)
+    };
+
+    foreach (var p in permissions) claims.Add(new Claim("Permission", p));
+
+    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+    var principal = new ClaimsPrincipal(identity);
+
+    // Sign path to Cookies scheme
+    await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+    return RedirectToAction("Index", "Dashboard");
+}
+
     }
 }
