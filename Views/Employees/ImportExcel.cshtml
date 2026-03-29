@@ -1,0 +1,139 @@
+@{
+    ViewData["Title"] = "Import Excel Nhân Viên";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h3 class="text-primary fw-bold">
+                <i class="bi bi-file-earmark-excel me-2"></i>Import Excel Nhân Viên
+            </h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0 m-0">
+                    <li class="breadcrumb-item"><a href="/Dashboard" class="text-decoration-none">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Danh sách nhân viên</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Import Excel</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-4">
+                    
+                    @if (ViewBag.ErrorMessage != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                            <strong><i class="bi bi-exclamation-triangle-fill me-2"></i> Lỗi!</strong>
+                            @Html.Raw(ViewBag.ErrorMessage)
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <form asp-action="ImportExcel" method="post" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <label for="excelFile" class="form-label fw-semibold">Chọn file Excel (.xlsx)</label>
+                            <input type="file" class="form-control" id="excelFile" name="excelFile" accept=".xlsx" required />
+                            <div class="form-text">
+                                Chọn file Excel chứa danh sách nhân viên cần import
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a asp-action="Index" class="btn btn-light border px-4">
+                                <i class="bi bi-x-circle me-1"></i> Hủy bỏ
+                            </a>
+                            <button type="submit" class="btn btn-success px-4">
+                                <i class="bi bi-upload me-1"></i> Import dữ liệu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0 fw-semibold">
+                        <i class="bi bi-info-circle text-info me-2"></i>Hướng dẫn
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6 class="fw-semibold mb-3">Cấu trúc file Excel:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Cột</th>
+                                    <th>Tên trường</th>
+                                    <th>Bắt buộc</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>A</td>
+                                    <td>Mã nhân viên</td>
+                                    <td class="text-muted">Không (tự sinh nếu trống)</td>
+                                </tr>
+                                <tr>
+                                    <td>B</td>
+                                    <td>Họ tên</td>
+                                    <td class="text-danger">Có</td>
+                                </tr>
+                                <tr>
+                                    <td>C</td>
+                                    <td>Ngày sinh</td>
+                                    <td class="text-muted">Không</td>
+                                </tr>
+                                <tr>
+                                    <td>D</td>
+                                    <td>Số điện thoại</td>
+                                    <td class="text-muted">Không</td>
+                                </tr>
+                                <tr>
+                                    <td>E</td>
+                                    <td>Email</td>
+                                    <td class="text-muted">Không</td>
+                                </tr>
+                                <tr>
+                                    <td>F</td>
+                                    <td>Mã số thuế</td>
+                                    <td class="text-muted">Không</td>
+                                </tr>
+                                <tr>
+                                    <td>G</td>
+                                    <td>Ngày vào làm</td>
+                                    <td class="text-muted">Không</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="alert alert-warning p-3 mt-3" style="font-size: 0.875rem;">
+                        <strong>Lưu ý:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Dòng đầu tiên là tiêu đề (sẽ bị bỏ qua)</li>
+                            <li>Ngày tháng có thể nhập dạng dd/MM/yyyy hoặc MM/dd/yyyy</li>
+                            <li>Mã nhân viên nếu trùng sẽ báo lỗi</li>
+                            <li>Email và số điện thoại sẽ được validate</li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-3">
+                        <a asp-action="DownloadTemplate" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-download me-1"></i> Tải file mẫu
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

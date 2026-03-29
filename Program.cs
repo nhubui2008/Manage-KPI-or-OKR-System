@@ -2,6 +2,10 @@
 using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
+using OfficeOpenXml;
+
+// EPPlus yêu cầu cấu hình LicenseContext để hoạt động trong môi trường non-commercial
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 var builder = WebApplication.CreateBuilder(args);
 Env.Load();

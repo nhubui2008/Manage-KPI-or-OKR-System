@@ -146,6 +146,7 @@ namespace Manage_KPI_or_OKR_System.Data
 
             modelBuilder.Entity<Department>().HasOne<Department>().WithMany().HasForeignKey(d => d.ParentDepartmentId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<Department>().HasOne<Employee>().WithMany().HasForeignKey(d => d.ManagerId).OnDelete(DeleteBehavior.NoAction);
+            //ymodelBuilder.Entity<Department>().HasOne(d => d.ParentDepartment).WithMany(d => d.ChildDepartments).HasForeignKey(d => d.ParentDepartmentId).OnDelete(DeleteBehavior.Restrict); // Không tự động xóa phòng ban con khi xóa phòng ban cha
 
             modelBuilder.Entity<EmployeeAssignment>().HasOne<Employee>().WithMany().HasForeignKey(ea => ea.EmployeeId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<EmployeeAssignment>().HasOne<Position>().WithMany().HasForeignKey(ea => ea.PositionId).OnDelete(DeleteBehavior.NoAction);

@@ -1,0 +1,135 @@
+@model Manage_KPI_or_OKR_System.Models.Employee
+
+@{
+    ViewData["Title"] = "Xác nhận xóa nhân viên";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h3 class="text-danger fw-bold">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận vô hiệu hóa nhân viên
+            </h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0 m-0">
+                    <li class="breadcrumb-item"><a href="/Dashboard" class="text-decoration-none">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Danh sách nhân viên</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Xóa nhân viên</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="alert alert-warning alert-dismissible fade show shadow-sm border-0" role="alert">
+        <i class="bi bi-exclamation-circle-fill me-2"></i>
+        <strong>Cảnh báo!</strong> Hành động này sẽ vô hiệu hóa nhân viên. Dữ liệu vẫn được lưu trữ nhưng nhân viên sẽ không được hiển thị trong danh sách hoạt động.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-4">
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="user-avatar bg-danger text-white d-flex justify-content-center align-items-center" 
+                             style="width: 60px; height: 60px; font-weight: bold; border-radius: 50%; font-size: 1.5rem;">
+                            @(string.IsNullOrEmpty(Model.FullName) ? "U" : Model.FullName[0].ToString().ToUpper())
+                        </div>
+                        <div>
+                            <h5 class="mb-1 text-dark fw-semibold">@Model.FullName</h5>
+                            <p class="mb-0 text-muted">Mã: <strong>@Model.EmployeeCode</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="info-box">
+                        <label class="form-label fw-semibold text-muted small">Email công việc</label>
+                        <p class="form-control-plaintext text-dark">@(Model.Email ?? "Chưa cập nhật")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="info-box">
+                        <label class="form-label fw-semibold text-muted small">Số điện thoại</label>
+                        <p class="form-control-plaintext text-dark">@(Model.Phone ?? "Chưa cập nhật")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="info-box">
+                        <label class="form-label fw-semibold text-muted small">Ngày sinh</label>
+                        <p class="form-control-plaintext text-dark">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="info-box">
+                        <label class="form-label fw-semibold text-muted small">Ngày vào làm</label>
+                        <p class="form-control-plaintext text-dark">@(Model.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="info-box">
+                        <label class="form-label fw-semibold text-muted small">Mã số thuế</label>
+                        <p class="form-control-plaintext text-dark">@(Model.TaxCode ?? "Chưa cập nhật")</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="info-box">
+                        <label class="form-label fw-semibold text-muted small">Trạng thái</label>
+                        <p class="form-control-plaintext">
+                            @if (Model.IsActive == true)
+                            {
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle me-1"></i> Đang làm việc
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-x-circle me-1"></i> Đã nghỉ việc
+                                </span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info p-3 mb-4" style="background-color: #e7f3ff; border-left: 4px solid #0066cc;">
+                <p class="mb-0 text-dark">
+                    <strong><i class="bi bi-info-circle me-2"></i>Lưu ý:</strong> 
+                    Vô hiệu hóa nhân viên này sẽ:
+                </p>
+                <ul class="mt-2 mb-0 ps-4">
+                    <li>Ẩn nhân viên khỏi danh sách hoạt động</li>
+                    <li>Giữ lại tất cả dữ liệu lịch sử (không xóa vĩnh viễn)</li>
+                    <li>Tạm dừng các kế hoạch hoặc nhiệm vụ liên quan</li>
+                </ul>
+            </div>
+
+            <form asp-action="Delete" method="post">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="hidden" name="confirm" value="true" />
+                
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a asp-action="Index" class="btn btn-light border px-4">
+                        <i class="bi bi-x-circle me-1"></i> Hủy bỏ
+                    </a>
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-person-dash me-1"></i> Xác nhận vô hiệu hóa
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

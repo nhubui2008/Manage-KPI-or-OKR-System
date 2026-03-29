@@ -3,10 +3,9 @@
     ViewData["Title"] = "Quản lý Phòng ban";
     var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
     var employeeCounts = ViewBag.EmployeeCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
-}
 
-@functions {
-    public async Task RenderDeptTree(IEnumerable<Manage_KPI_or_OKR_System.Models.Department> allDepts, int? parentId, int depth, Dictionary<int, int> counts)
+    // SỬ DỤNG LOCAL FUNCTION THAY CHO @functions
+    void RenderDeptTree(IEnumerable<Manage_KPI_or_OKR_System.Models.Department> allDepts, int? parentId, int depth, Dictionary<int, int> counts)
     {
         var children = allDepts.Where(d => d.ParentDepartmentId == parentId).ToList();
         if (!children.Any()) return;
@@ -21,7 +20,9 @@
                     <span class="d-flex align-items-center gap-2"><i class="bi @icon"></i> @child.DepartmentName</span>
                     <span class="badge bg-secondary rounded-pill">@count</span>
                 </div>
-                await RenderDeptTree(allDepts, child.Id, depth + 1, counts);
+                
+                // Gọi đệ quy trực tiếp, không dùng await
+                RenderDeptTree(allDepts, child.Id, depth + 1, counts);
             }
         </div>
     }
@@ -51,7 +52,6 @@
 }
 
 <div class="row g-4">
-    <!-- Tree View (Left) -->
     <div class="col-lg-4">
         <div class="content-card h-100">
             <div class="card-header-custom border-bottom">
@@ -67,7 +67,8 @@
                     @{
                         if (Model != null && Model.Any())
                         {
-                            await RenderDeptTree(Model, null, 0, employeeCounts);
+                            // Gọi hàm in cây đa cấp không cần await
+                            RenderDeptTree(Model, null, 0, employeeCounts);
                         }
                         else
                         {
@@ -79,7 +80,6 @@
         </div>
     </div>
 
-    <!-- Data Table (Right) -->
     <div class="col-lg-8">
         <div class="content-card h-100">
             <div class="card-body-custom">
@@ -163,7 +163,6 @@
     </div>
 </div>
 
-<!-- Modal Thêm Phòng Ban -->
 <div class="modal fade" id="createDepartmentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">

@@ -1,0 +1,146 @@
+@model Manage_KPI_or_OKR_System.Models.Employee
+
+@{
+    ViewData["Title"] = "Chỉnh sửa Nhân Viên";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var assignment = ViewBag.Assignment as Manage_KPI_or_OKR_System.Models.EmployeeAssignment;
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h3 class="text-primary fw-bold">
+                <i class="bi bi-pencil-square me-2"></i>Chỉnh sửa Nhân Viên
+            </h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0 m-0">
+                    <li class="breadcrumb-item"><a href="/Dashboard" class="text-decoration-none">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Danh sách nhân viên</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Id" class="text-decoration-none">@Model.FullName</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Chỉnh sửa</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-4">
+            
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                    <strong><i class="bi bi-exclamation-triangle-fill me-2"></i> Lỗi!</strong> @ViewBag.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <form asp-action="Edit" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <input type="hidden" name="id" value="@Model.Id" />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="EmployeeCode" class="form-label fw-semibold">Mã nhân viên <span class="badge bg-info">Không thể sửa</span></label>
+                        <div class="input-group">
+                            <input asp-for="EmployeeCode" class="form-control" readonly />
+                            <span class="input-group-text" title="Mã nhân viên không thể thay đổi">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="FullName" class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
+                        <input asp-for="FullName" class="form-control" placeholder="Nhập đầy đủ họ tên" required />
+                        <span asp-validation-for="FullName" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="DateOfBirth" class="form-label fw-semibold">Ngày sinh</label>
+                        <input asp-for="DateOfBirth" type="date" class="form-control" />
+                        <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="JoinDate" class="form-label fw-semibold">Ngày vào làm</label>
+                        <input asp-for="JoinDate" type="date" class="form-control" />
+                        <span asp-validation-for="JoinDate" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Phone" class="form-label fw-semibold">Số điện thoại</label>
+                        <input asp-for="Phone" class="form-control" placeholder="Nhập số điện thoại liên hệ" />
+                        <span asp-validation-for="Phone" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Email" class="form-label fw-semibold">Email công việc</label>
+                        <input asp-for="Email" type="email" class="form-control" placeholder="Nhập địa chỉ email" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="TaxCode" class="form-label fw-semibold">Mã số thuế</label>
+                        <input asp-for="TaxCode" class="form-control" placeholder="Nhập MST (nếu có)" />
+                        <span asp-validation-for="TaxCode" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="SystemUserId" class="form-label fw-semibold">Tài khoản đăng nhập (Liên kết)</label>
+                        <select asp-for="SystemUserId" class="form-select" asp-items="ViewBag.SystemUserId">
+                            <option value="">-- Chọn tài khoản (Không bắt buộc) --</option>
+                        </select>
+                        <span asp-validation-for="SystemUserId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="DepartmentId" class="form-label fw-semibold">Phòng ban</label>
+                        <select name="departmentId" class="form-select" asp-items="ViewBag.DepartmentId">
+                            <option value="">-- Chọn phòng ban (Không bắt buộc) --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="PositionId" class="form-label fw-semibold">Vị trí công việc</label>
+                        <select name="positionId" class="form-select" asp-items="ViewBag.PositionId">
+                            <option value="">-- Chọn vị trí (Không bắt buộc) --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 mt-4">
+    <div class="form-check form-switch fs-5">
+        <input type="checkbox" class="form-check-input" id="isActiveSwitch" name="IsActive" value="true" @(Model.IsActive == true ? "checked" : "")>
+        
+        <input type="hidden" name="IsActive" value="false">
+        
+        <label class="form-check-label fw-semibold ms-2" style="font-size: 1rem; margin-top: 2px;" for="isActiveSwitch">Đang làm việc (Kích hoạt)</label>
+    </div>
+</div>
+
+                    @if (Model.CreatedAt.HasValue)
+                    {
+                        <div class="col-12">
+                            <small class="text-muted d-block">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Tạo ngày: @Model.CreatedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                            </small>
+                        </div>
+                    }
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-light border px-4">
+                        <i class="bi bi-x-circle me-1"></i> Hủy bỏ
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-save me-1"></i> Lưu Thay Đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

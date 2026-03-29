@@ -1,0 +1,173 @@
+@model Manage_KPI_or_OKR_System.Models.Employee
+
+@{
+    ViewData["Title"] = "Chi tiết nhân viên";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var assignment = ViewBag.Assignment as Manage_KPI_or_OKR_System.Models.EmployeeAssignment;
+    var departments = ViewBag.Departments as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var positions = ViewBag.Positions as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var deptName = assignment?.DepartmentId.HasValue == true && departments.ContainsKey(assignment.DepartmentId.Value)
+                   ? departments[assignment.DepartmentId.Value] : "Chưa phân bổ";
+    var posName = assignment?.PositionId.HasValue == true && positions.ContainsKey(assignment.PositionId.Value)
+                  ? positions[assignment.PositionId.Value] : "Chưa phân bổ";
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h3 class="text-primary fw-bold">
+                <i class="bi bi-person-vcard me-2"></i>Chi tiết nhân viên
+            </h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0 m-0">
+                    <li class="breadcrumb-item"><a href="/Dashboard" class="text-decoration-none">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Danh sách nhân viên</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@Model.FullName</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-4">
+            <!-- Header với avatar và thông tin cơ bản -->
+            <div class="row g-4 mb-4 pb-4 border-bottom">
+                <div class="col-md-3 text-center">
+                    <div class="user-avatar bg-primary text-white d-flex justify-content-center align-items-center mx-auto mb-3" 
+                         style="width: 120px; height: 120px; font-weight: bold; border-radius: 50%; font-size: 3rem;">
+                        @(string.IsNullOrEmpty(Model.FullName) ? "U" : Model.FullName[0].ToString().ToUpper())
+                    </div>
+                    <h5 class="fw-semibold text-dark">@Model.FullName</h5>
+                    <p class="text-muted mb-2">Mã: <strong>@Model.EmployeeCode</strong></p>
+                    <span class="badge bg-@(Model.IsActive == true ? "success" : "danger") fs-6">
+                        <i class="bi bi-@(Model.IsActive == true ? "check-circle" : "x-circle") me-1"></i>
+                        @(Model.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc")
+                    </span>
+                </div>
+
+                <div class="col-md-9">
+                    <div class="row g-3">
+                        <!-- Thông tin liên hệ -->
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="text-muted small fw-semibold mb-2">
+                                    <i class="bi bi-envelope text-primary me-2"></i>Email
+                                </h6>
+                                <p class="text-dark fs-6">@(Model.Email ?? "Chưa cập nhật")</p>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="text-muted small fw-semibold mb-2">
+                                    <i class="bi bi-telephone text-primary me-2"></i>Số điện thoại
+                                </h6>
+                                <p class="text-dark fs-6">@(Model.Phone ?? "Chưa cập nhật")</p>
+                            </div>
+                        </div>
+
+                        <!-- Ngày sinh và ngày vào làm -->
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="text-muted small fw-semibold mb-2">
+                                    <i class="bi bi-calendar-heart text-primary me-2"></i>Ngày sinh
+                                </h6>
+                                <p class="text-dark fs-6">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</p>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="text-muted small fw-semibold mb-2">
+                                    <i class="bi bi-calendar-check text-primary me-2"></i>Ngày vào làm
+                                </h6>
+                                <p class="text-dark fs-6">@(Model.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</p>
+                            </div>
+                        </div>
+
+                        <!-- Mã số thuế -->
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h6 class="text-muted small fw-semibold mb-2">
+                                    <i class="bi bi-file-earmark-text text-primary me-2"></i>Mã số thuế
+                                </h6>
+                                <p class="text-dark fs-6">@(Model.TaxCode ?? "Chưa cập nhật")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phòng ban và chức vụ -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="card bg-light border-0 p-3">
+                        <h6 class="text-muted small fw-semibold mb-2">
+                            <i class="bi bi-building text-info me-2"></i>Phòng ban
+                        </h6>
+                        <p class="text-dark fs-5 fw-semibold">@deptName</p>
+                        @if (assignment?.EffectiveDate.HasValue == true)
+                        {
+                            <small class="text-muted d-block">Từ ngày: @assignment.EffectiveDate.Value.ToString("dd/MM/yyyy")</small>
+                        }
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card bg-light border-0 p-3">
+                        <h6 class="text-muted small fw-semibold mb-2">
+                            <i class="bi bi-briefcase text-info me-2"></i>Vị trí công việc
+                        </h6>
+                        <p class="text-dark fs-5 fw-semibold">@posName</p>
+                        @if (assignment?.EffectiveDate.HasValue == true)
+                        {
+                            <small class="text-muted d-block">Từ ngày: @assignment.EffectiveDate.Value.ToString("dd/MM/yyyy")</small>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thông tin thêm -->
+            @if (Model.CreatedAt.HasValue)
+            {
+                <div class="alert alert-info p-3 mb-4" style="background-color: #f0f8ff; border-left: 4px solid #0066cc;">
+                    <small class="text-dark">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Tạo ngày:</strong> @Model.CreatedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                    </small>
+                </div>
+            }
+
+            <!-- Nút hành động -->
+            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                <a asp-action="Index" class="btn btn-light border px-4">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại
+                </a>
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning text-dark px-4">
+                    <i class="bi bi-pencil me-1"></i> Chỉnh sửa
+                </a>
+                @if (Model.IsActive == true)
+                {
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger px-4">
+                        <i class="bi bi-person-dash me-1"></i> Xóa
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .info-section {
+        padding: 0.5rem 0;
+    }
+    
+    .info-section h6 {
+        display: flex;
+        align-items: center;
+    }
+</style>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

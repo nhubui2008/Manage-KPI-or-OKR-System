@@ -37,33 +37,34 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(departments);
         }
 
-        [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager")]
-        public async Task<IActionResult> Create(Department dept)
-        {
-            if (ModelState.IsValid)
-            {
-                dept.CreatedAt = DateTime.Now;
-                dept.IsActive = true;
-                _context.Departments.Add(dept);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã thêm phòng ban thành công!";
-            }
-            return RedirectToAction(nameof(Index));
-        }
+        // Đổi Roles thành "Director,Admin,Administrator" để khớp yêu cầu Giám đốc/Admin
+[HttpPost]
+[Authorize(Roles = "Director,Admin,Administrator")] 
+public async Task<IActionResult> Create(Department dept)
+{
+    if (ModelState.IsValid)
+    {
+        dept.CreatedAt = DateTime.Now;
+        dept.IsActive = true;
+        _context.Departments.Add(dept);
+        await _context.SaveChangesAsync();
+        TempData["SuccessMessage"] = "Đã thêm phòng ban thành công!";
+    }
+    return RedirectToAction(nameof(Index));
+}
 
-        [HttpPost]
-        [Authorize(Roles = "Administrator,Admin")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var dept = await _context.Departments.FindAsync(id);
-            if (dept != null)
-            {
-                dept.IsActive = false;
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã xóa (vô hiệu hóa) phòng ban!";
-            }
-            return RedirectToAction(nameof(Index));
-        }
+[HttpPost]
+[Authorize(Roles = "Director,Admin,Administrator")]
+public async Task<IActionResult> Delete(int id)
+{
+    var dept = await _context.Departments.FindAsync(id);
+    if (dept != null)
+    {
+        dept.IsActive = false;
+        await _context.SaveChangesAsync();
+        TempData["SuccessMessage"] = "Đã xóa (vô hiệu hóa) phòng ban!";
+    }
+    return RedirectToAction(nameof(Index));
+}
     }
 }

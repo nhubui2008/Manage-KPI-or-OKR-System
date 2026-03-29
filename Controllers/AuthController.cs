@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Models;
@@ -46,7 +49,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var user = await _context.SystemUsers
                 .FirstOrDefaultAsync(u => u.Username == username && u.IsActive == true);
 
-            if (user == null || !PasswordHelper.VerifyPassword(password, user.PasswordHash))
+            if (user == null || user.PasswordHash == null || !PasswordHelper.VerifyPassword(password, user.PasswordHash))
             {
                 ViewBag.Error = "Tên đăng nhập hoặc mật khẩu không chính xác.";
                 return View();
@@ -56,7 +59,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (user.RoleId.HasValue)
             {
                 var role = await _context.Roles.FindAsync(user.RoleId);
-                if (role != null) roleName = role.RoleName;
+                if (role != null) roleName = role.RoleName ?? "User";
             }
 
             var claims = new List<Claim>
@@ -181,7 +184,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     <br/>
                     <p>Trân trọng,<br/>Đội ngũ hỗ trợ hệ thống</p>";
 
-                await _emailService.SendEmailAsync(user.Email, subject, body);
+                await _emailService.SendEmailAsync(user.Email ?? "", subject, body);
 
                 TempData["SuccessMessage"] = "Mã xác nhận đã được gửi đến Email của bạn!";
                 // SỬA: Chuyển sang màn hình xác nhận mã OTP
@@ -222,7 +225,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
-            string savedCode = TempData["ResetCode"] as string;
+            string? savedCode = TempData["ResetCode"] as string;
 
             // So sánh mã người dùng nhập với mã đã gửi
             if (code != savedCode)
@@ -249,7 +252,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             TempData.Keep("IsOtpVerified");
 
             // Kiểm tra bảo mật: Nếu chưa qua bước nhập OTP đúng thì không cho vào trang này
-            if (TempData["IsOtpVerified"] == null || (bool)TempData["IsOtpVerified"] == false)
+            if (TempData["IsOtpVerified"] is not bool isVerified || !isVerified)
             {
                 return RedirectToAction("ForgotPassword");
             }
@@ -264,7 +267,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             TempData.Keep("ResetUsername");
             TempData.Keep("IsOtpVerified");
 
-            if (TempData["IsOtpVerified"] == null || (bool)TempData["IsOtpVerified"] == false)
+            if (TempData["IsOtpVerified"] is not bool isVerified || !isVerified)
             {
                 return RedirectToAction("ForgotPassword");
             }
@@ -281,7 +284,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
-            string username = TempData["ResetUsername"] as string;
+            string? username = TempData["ResetUsername"] as string;
             var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == username);
 
             if (user != null)
@@ -339,7 +342,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (user == null) return RedirectToAction("Login");
 
             // Kiểm tra mật khẩu cũ
-            if (!PasswordHelper.VerifyPassword(oldPassword, user.PasswordHash))
+            if (user.PasswordHash == null || !PasswordHelper.VerifyPassword(oldPassword, user.PasswordHash))
             {
                 ViewBag.Error = "Mật khẩu cũ không chính xác.";
                 return View();
@@ -355,5 +358,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             TempData["SuccessMessage"] = "Đổi mật khẩu thành công!";
             return RedirectToAction("Index", "Dashboard");
         }
+        [AllowAnonymous]
+public IActionResult AccessDenied()
+{
+    return View();
+}
     }
 }
