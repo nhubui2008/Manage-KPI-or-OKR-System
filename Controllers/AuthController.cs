@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helper;
 using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Services;
@@ -56,10 +57,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var roleName = "User";
+            var permissions = new List<string>();
+
             if (user.RoleId.HasValue)
             {
                 var role = await _context.Roles.FindAsync(user.RoleId);
-                if (role != null) roleName = role.RoleName ?? "User";
+                if (role != null)
+                {
+                    roleName = role.RoleName ?? "User";
+                    // Get permissions for this role from configuration
+                    permissions = RolePermissionConfiguration.GetPermissionsForRole(roleName);
+                }
             }
 
             var claims = new List<Claim>
@@ -68,6 +76,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 new Claim(ClaimTypes.Name, user.Username ?? "Unknown"),
                 new Claim(ClaimTypes.Role, roleName)
             };
+
+            // Add permission claims
+            foreach (var permission in permissions)
+            {
+                claims.Add(new Claim("Permission", permission));
+            }
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
@@ -362,6 +376,35 @@ namespace Manage_KPI_or_OKR_System.Controllers
 public IActionResult AccessDenied()
 {
     return View();
+}
+// ==========================================
+// HỒ SƠ CÁ NHÂN
+// ==========================================
+[Authorize]
+public async Task<IActionResult> MyProfile()
+{
+    // 1. Lấy ID của người dùng đang đăng nhập
+    var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (!int.TryParse(userIdStr, out int userId)) return RedirectToAction("Login");
+
+    // 2. Lấy thông tin tài khoản
+    var user = await _context.SystemUsers.FindAsync(userId);
+    if (user == null) return NotFound();
+
+    // 3. Lấy tên Quyền (Role)
+    var roleName = "User";
+    if (user.RoleId.HasValue)
+    {
+        var role = await _context.Roles.FindAsync(user.RoleId);
+        if (role != null) roleName = role.RoleName;
+    }
+    ViewBag.RoleName = roleName;
+
+    // 4. Tìm xem tài khoản này có được liên kết với nhân viên nào không
+    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
+    ViewBag.EmployeeInfo = employee;
+
+    return View(user);
 }
     }
 }

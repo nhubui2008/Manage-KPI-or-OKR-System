@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helper;
 using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Manage_KPI_or_OKR_System.Helper;
 using System.Threading.Tasks;
 using System.Linq;
 using System;
@@ -16,6 +16,7 @@ using System.IO;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
+    [HasPermission("HR_MANAGE_EMPLOYEES")]
     public class EmployeesController : Controller
     {
         private readonly MiniERPDbContext _context;

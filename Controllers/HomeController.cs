@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Manage_KPI_or_OKR_System.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Manage_KPI_or_OKR_System.Controllers;
 
@@ -11,6 +12,7 @@ public class HomeController : Controller
         return View();
     }
 
+    [AllowAnonymous]
     public IActionResult Privacy()
     {
         return View();

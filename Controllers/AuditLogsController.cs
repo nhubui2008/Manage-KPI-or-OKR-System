@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Manage_KPI_or_OKR_System.Helper;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
-    [Authorize(Roles = "Administrator,Admin")]
+    [Authorize]
+    [HasPermission("ADMIN_VIEW_AUDIT_LOGS")]
     public class AuditLogsController : Controller
     {
         public IActionResult Index()

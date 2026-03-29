@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helper;
 using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +12,7 @@ using System;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
+    [HasPermission("MANAGER_ASSIGN_KPI")]
     public class KPIsController : Controller
     {
         private readonly MiniERPDbContext _context;
