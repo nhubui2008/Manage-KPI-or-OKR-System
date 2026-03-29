@@ -38,9 +38,9 @@
         </div>
     </div>
     <div class="d-flex gap-2">
-        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createDepartmentModal">
+        <a class="btn-primary-custom" asp-action="Create" asp-controller="Departments">
             <i class="bi bi-plus-lg"></i> Thêm phòng ban mới
-        </button>
+        </a>
     </div>
 </div>
 
@@ -83,12 +83,51 @@
     <div class="col-lg-8">
         <div class="content-card h-100">
             <div class="card-body-custom">
-                <div class="toolbar">
-                    <div class="toolbar-search w-100" style="max-width: 300px;">
-                        <i class="bi bi-search"></i>
-                        <input type="text" placeholder="Tìm kiếm phòng ban...">
+                <form asp-action="Index" method="get" class="toolbar">
+                    <div class="toolbar-left">
+                        <div class="toolbar-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" name="searchString" value="@(ViewData["CurrentFilter"] ?? "")" class="form-control" placeholder="Tìm kiếm mã hoặc tên phòng ban..." />
+                        </div>
+
+                        <select name="isActive" class="filter-select">
+                            @if (string.IsNullOrEmpty(ViewBag.CurrentStatus))
+                            {
+                                <option value="" selected>Tất cả trạng thái</option>
+                            }
+                            else
+                            {
+                                <option value="">Tất cả trạng thái</option>
+                            }
+
+                            @if (ViewBag.CurrentStatus == "true")
+                            {
+                                <option value="true" selected>Hoạt động</option>
+                            }
+                            else
+                            {
+                                <option value="true">Hoạt động</option>
+                            }
+
+                            @if (ViewBag.CurrentStatus == "false")
+                            {
+                                <option value="false" selected>Ngừng HĐ</option>
+                            }
+                            else
+                            {
+                                <option value="false">Ngừng HĐ</option>
+                            }
+                        </select>
                     </div>
-                </div>
+                    <div class="toolbar-right">
+                        <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0" title="Làm mới">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </a>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary border-0" title="Lọc kết quả">
+                            <i class="bi bi-funnel"></i>
+                        </button>
+                    </div>
+                </form>
 
                 <div class="table-responsive">
                     <table class="data-table">
@@ -137,16 +176,47 @@
                                         <td><span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span></td>
                                         <td>
                                             <div class="action-btns justify-content-end">
-                                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                                @if (dept.IsActive == true)
-                                                {
-                                                    <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận vô hiệu hóa phòng ban này?');">
-                                                        <button type="submit" class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
-                                                    </form>
-                                                }
-                                            </div>
+                                            <a asp-action="Details" asp-route-id="@dept.Id" class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
+                                            <a asp-action="Edit" asp-route-id="@dept.Id" class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
+
+                                            @if (dept.IsActive == true)
+                                            {
+                                                <button class="action-btn danger" title="Ngưng hoạt động" data-bs-toggle="modal" data-bs-target="#deleteModal-@dept.Id">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <form asp-action="Activate" asp-route-id="@dept.Id" method="post" class="m-0">
+                                                    <button type="submit" class="action-btn success" title="Kích hoạt lại"><i class="bi bi-arrow-clockwise"></i></button>
+                                                </form>
+                                            }
+                                        </div>
                                         </td>
                                     </tr>
+
+                                    @if (dept.IsActive == true)
+                                    {
+                                        <div class="modal fade" id="deleteModal-@dept.Id" tabindex="-1" aria-labelledby="deleteModalLabel-@dept.Id" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger text-white">
+                                                        <h5 class="modal-title" id="deleteModalLabel-@dept.Id">Xác nhận ngưng hoạt động</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        Bạn có chắc muốn ngưng hoạt động phòng ban <strong>@dept.DepartmentName</strong>?
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                                        <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0">
+                                                            <button type="submit" class="btn btn-danger">Xác nhận</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
                                 }
                             }
                             else
@@ -161,54 +231,3 @@
             </div>
         </div>
     </div>
-</div>
-
-<div class="modal fade" id="createDepartmentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-building-add text-primary me-2"></i>Thêm Phòng Ban Mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form asp-controller="Departments" asp-action="Create" method="post">
-                    <div class="mb-3">
-                        <label class="form-label">Mã phòng ban <span class="text-danger">*</span></label>
-                        <input type="text" name="DepartmentCode" class="form-control" placeholder="VD: PKD, HR" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Tên phòng ban <span class="text-danger">*</span></label>
-                        <input type="text" name="DepartmentName" class="form-control" placeholder="VD: Phòng Kinh doanh" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Phòng ban cấp trên</label>
-                        <select name="ParentDepartmentId" class="form-select">
-                            <option value="">-- Không có (Phòng ban gốc) --</option>
-                            @if (Model != null)
-                            {
-                                foreach (var d in Model.Where(m => m.IsActive == true))
-                                {
-                                    <option value="@d.Id">@d.DepartmentName</option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label">Trưởng phòng</label>
-                        <select name="ManagerId" class="form-select">
-                            <option value="">-- Chọn trưởng phòng --</option>
-                            @foreach (var emp in employees)
-                            {
-                                <option value="@emp.Key">@emp.Value</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu phòng ban</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>

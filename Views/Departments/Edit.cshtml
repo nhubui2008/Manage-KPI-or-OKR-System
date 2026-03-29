@@ -1,0 +1,92 @@
+@model Manage_KPI_or_OKR_System.Models.Department
+
+@{
+    ViewData["Title"] = "Chỉnh sửa Phòng Ban";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var departments = ViewBag.Departments as List<Manage_KPI_or_OKR_System.Models.Department> ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h3 class="text-primary fw-bold">
+                <i class="bi bi-pencil-square me-2"></i>Chỉnh sửa Phòng Ban
+            </h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0 m-0">
+                    <li class="breadcrumb-item"><a href="/Dashboard" class="text-decoration-none">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Danh sách phòng ban</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">@Model.DepartmentName</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-4">
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                    <strong><i class="bi bi-exclamation-triangle-fill me-2"></i> Lỗi!</strong> @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <form asp-action="Edit" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <input type="hidden" asp-for="Id" />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="DepartmentCode" class="form-label fw-semibold">Mã phòng ban <span class="text-danger">*</span></label>
+                        <input asp-for="DepartmentCode" class="form-control" placeholder="VD: PKD, HR" required />
+                        <span asp-validation-for="DepartmentCode" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="DepartmentName" class="form-label fw-semibold">Tên phòng ban <span class="text-danger">*</span></label>
+                        <input asp-for="DepartmentName" class="form-control" placeholder="VD: Phòng Kinh doanh" required />
+                        <span asp-validation-for="DepartmentName" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="ParentDepartmentId" class="form-label fw-semibold">Phòng ban cấp trên</label>
+                        <select asp-for="ParentDepartmentId" class="form-select">
+                            <option value="">-- Không có (Phòng ban gốc) --</option>
+                            @foreach (var dept in departments)
+                            {
+                                <option value="@dept.Id" selected="@(Model.ParentDepartmentId == dept.Id ? "selected" : null)">@dept.DepartmentName</option>
+                            }
+                        </select>
+                        <span asp-validation-for="ParentDepartmentId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="ManagerId" class="form-label fw-semibold">Trưởng phòng</label>
+                        <select asp-for="ManagerId" class="form-select">
+                            <option value="">-- Chọn trưởng phòng --</option>
+                            @foreach (var emp in employees)
+                            {
+                                <option value="@emp.Key" selected="@(Model.ManagerId == emp.Key ? "selected" : null)">@emp.Value</option>
+                            }
+                        </select>
+                        <span asp-validation-for="ManagerId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="d-flex justify-content-end gap-2 pt-3">
+                            <a asp-action="Index" class="btn btn-secondary rounded-pill px-4">
+                                <i class="bi bi-arrow-left me-2"></i>Hủy
+                            </a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                <i class="bi bi-check-lg me-2"></i>Cập nhật phòng ban
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

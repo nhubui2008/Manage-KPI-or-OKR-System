@@ -1,3 +1,4 @@
+@model IEnumerable<Manage_KPI_or_OKR_System.Models.Position>
 @{
     ViewData["Title"] = "Danh mục Chức vụ";
 }
@@ -12,14 +13,38 @@
         </div>
     </div>
     <div class="d-flex gap-2">
-        <button class="btn-primary-custom">
+        <a asp-action="Create" class="btn-primary-custom">
             <i class="bi bi-plus-lg"></i> Thêm chức vụ
-        </button>
+        </a>
     </div>
 </div>
 
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <div class="content-card">
     <div class="card-body-custom">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Danh sách chức vụ (@Model.Count())</h5>
+            <form asp-action="Index" method="get" class="d-flex gap-2">
+                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Tìm kiếm chức vụ..." style="width: 250px;" />
+                <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i></button>
+            </form>
+        </div>
+        
         <div class="table-responsive">
             <table class="data-table">
                 <thead>
@@ -32,66 +57,63 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td class="fw-semibold">GD</td>
-                        <td class="fw-bold text-dark">Giám đốc</td>
-                        <td><span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3">Cấp 1</span></td>
-                        <td><span class="status-badge active"><span class="status-dot"></span> Đang sử dụng</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">PGD</td>
-                        <td class="fw-bold text-dark">Phó Giám đốc</td>
-                        <td><span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3">Cấp 2</span></td>
-                        <td><span class="status-badge active"><span class="status-dot"></span> Đang sử dụng</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">TP</td>
-                        <td class="fw-bold text-dark">Trưởng phòng</td>
-                        <td><span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3">Cấp 3</span></td>
-                        <td><span class="status-badge active"><span class="status-dot"></span> Đang sử dụng</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">PP</td>
-                        <td class="fw-bold text-dark">Phó phòng</td>
-                        <td><span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3">Cấp 4</span></td>
-                        <td><span class="status-badge active"><span class="status-dot"></span> Đang sử dụng</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">NV</td>
-                        <td class="fw-bold text-dark">Nhân viên</td>
-                        <td><span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Cấp 5</span></td>
-                        <td><span class="status-badge active"><span class="status-dot"></span> Đang sử dụng</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></button>
-                                <button class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
+                    @if (Model.Any())
+                    {
+                        @foreach (var position in Model)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@position.PositionCode</td>
+                                <td class="fw-bold text-dark">@position.PositionName</td>
+                                <td>
+                                    @if (position.RankLevel.HasValue)
+                                    {
+                                        <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3">Cấp @position.RankLevel</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="status-badge active">
+                                        <span class="status-dot"></span> Đang sử dụng
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-btns justify-content-end">
+                                        <a asp-action="Details" asp-route-id="@position.Id" class="action-btn" title="Chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@position.Id" class="action-btn" title="Chỉnh sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@position.Id" method="post" class="d-inline"
+                                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa chức vụ này?')">
+                                            <button type="submit" class="action-btn danger" title="Xóa">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                <i class="bi bi-info-circle me-2"></i>
+                                @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"] as string))
+                                {
+                                    <span>Không tìm thấy chức vụ nào phù hợp với từ khóa "@ViewData["CurrentFilter"]"</span>
+                                }
+                                else
+                                {
+                                    <span>Chưa có chức vụ nào được tạo.</span>
+                                }
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
