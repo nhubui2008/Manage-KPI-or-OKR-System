@@ -1,0 +1,87 @@
+@model Manage_KPI_or_OKR_System.Models.SystemUser
+
+@{
+    ViewData["Title"] = "Chi tiết Tài khoản";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var roles = ViewBag.Roles as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var roleName = Model.RoleId.HasValue && roles.ContainsKey(Model.RoleId.Value) ? roles[Model.RoleId.Value] : "N/A";
+    var statusClass = Model.IsActive == true ? "bg-success" : "bg-danger";
+    var statusText = Model.IsActive == true ? "Đang hoạt động" : "Bị khóa";
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="row mb-3">
+        <div class="col-12 flex-grow-1">
+            <h3 class="text-primary fw-bold"><i class="bi bi-person-lines-fill me-2"></i>Hồ sơ Tài khoản</h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0 m-0">
+                    <li class="breadcrumb-item"><a href="/Dashboard" class="text-decoration-none">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Tài khoản Hệ thống</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Hồ sơ</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row align-items-start g-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 text-center">
+                <div class="card-body p-5">
+                    <div class="user-avatar bg-primary text-white mx-auto mb-3 fw-bold d-flex justify-content-center align-items-center" style="width: 80px; height: 80px; font-size: 2.5rem; border-radius: 50%;">
+                        @(Model.Username?[0].ToString().ToUpper() ?? "U")
+                    </div>
+                    <h4 class="fw-bold mb-1">@Model.Username</h4>
+                    <span class="badge @statusClass mb-3 px-3 py-2 rounded-pill">@statusText</span>
+                    
+                    <div class="d-flex justify-content-center gap-2 mt-2">
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                            <i class="bi bi-pencil me-1"></i> Chỉnh sửa
+                        </a>
+                        @if (Model.IsActive == false)
+                        {
+                            <form asp-action="ToggleLock" method="post" class="d-inline m-0">
+                                <input type="hidden" name="userId" value="@Model.Id" />
+                                <button type="submit" class="btn btn-outline-success btn-sm rounded-pill px-3"><i class="bi bi-unlock-fill me-1"></i> Mở khóa</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle me-2 text-primary"></i>Thông tin tổng quan</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row mb-4">
+                        <div class="col-sm-4 text-muted fw-semibold">Đăng nhập ID</div>
+                        <div class="col-sm-8 text-dark fw-bold">@Model.Username</div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-sm-4 text-muted fw-semibold">Địa chỉ Email</div>
+                        <div class="col-sm-8 text-dark"><a href="mailto:@Model.Email">@Model.Email</a></div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-sm-4 text-muted fw-semibold">Phân quyền Hệ thống</div>
+                        <div class="col-sm-8">
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 rounded-pill">@roleName</span>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-sm-4 text-muted fw-semibold">Thời gian tạo (Đăng ký)</div>
+                        <div class="col-sm-8 text-dark">@(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Không có dữ liệu")</div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-sm-4 text-muted fw-semibold">Thay đổi MK cuối cùng</div>
+                        <div class="col-sm-8 text-dark">@(Model.LastPasswordChange?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Không có dữ liệu")</div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top text-end py-3">
+                    <a asp-action="Index" class="btn btn-light rounded-pill px-4">Quay về danh sách</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

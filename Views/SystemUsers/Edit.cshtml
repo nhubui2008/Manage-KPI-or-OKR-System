@@ -1,0 +1,85 @@
+@model Manage_KPI_or_OKR_System.Models.SystemUser
+
+@{
+    ViewData["Title"] = "Chỉnh sửa tài khoản";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var roles = ViewBag.Roles as Dictionary<int, string> ?? new Dictionary<int, string>();
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h3 class="text-primary fw-bold"><i class="bi bi-pencil-square me-2"></i>Chỉnh sửa thông tin</h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0 m-0">
+                    <li class="breadcrumb-item"><a href="/Dashboard" class="text-decoration-none">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Tài khoản Hệ thống</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Chỉnh sửa</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body p-4">
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-4">
+                    <!-- Thông tin cơ bản -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Tên đăng nhập <span class="text-muted fw-normal">(Không thể sửa)</span></label>
+                        <input asp-for="Username" class="form-control bg-light" readonly />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Email" class="form-label fw-semibold">Cập nhật Email</label>
+                        <input asp-for="Email" type="email" class="form-control" required />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <!-- Phân quyền & Trạng thái -->
+                    <div class="col-md-6">
+                        <label asp-for="RoleId" class="form-label fw-semibold">Nhóm Quyền (Role) <span class="text-danger">*</span></label>
+                        <select asp-for="RoleId" class="form-select" required>
+                            <option value="">-- Chọn nhóm quyền --</option>
+                            @foreach (var role in roles)
+                            {
+                                <option value="@role.Key">@role.Value</option>
+                            }
+                        </select>
+                        <span asp-validation-for="RoleId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="IsActive" class="form-label fw-semibold">Trạng thái tài khoản</label>
+                        <select asp-for="IsActive" class="form-select">
+                            <option value="true">Đang hoạt động</option>
+                            <option value="false">Ngưng HĐ (Bị khóa)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 mt-4 pt-3 border-top">
+                        <h6 class="fw-bold text-dark"><i class="bi bi-key me-2"></i>Chỉnh sửa Mật khẩu (Tùy chọn)</h6>
+                        <p class="text-muted small">Để trống nếu bạn không muốn đổi mật khẩu.</p>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Đổi mật khẩu mới</label>
+                            <input name="newPassword" type="password" class="form-control" placeholder="Nhập mật khẩu mới..." minlength="6" />
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-5">
+                        <div class="d-flex justify-content-end gap-2 text-end border-top pt-3">
+                            <a asp-action="Index" class="btn btn-light rounded-pill px-4">Hủy thao tác</a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                <i class="bi bi-cloud-check me-1"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
