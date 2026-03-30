@@ -29,7 +29,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         // Sửa hàm Index để nhận thêm 2 tham số: searchString và isActive
-public async Task<IActionResult> Index(string searchString, string isActive)
+public async Task<IActionResult> Index(string searchString, string isActive, int? departmentId)
 {
     // Bắt đầu bằng việc lấy toàn bộ danh sách (chưa thực hiện truy vấn xuống DB vội)
     var employeesQuery = _context.Employees.AsQueryable();
@@ -38,8 +38,8 @@ public async Task<IActionResult> Index(string searchString, string isActive)
     if (!string.IsNullOrEmpty(searchString))
     {
         // Tìm kiếm không phân biệt chữ hoa chữ thường
-        employeesQuery = employeesQuery.Where(e => 
-            (e.FullName ?? string.Empty).Contains(searchString) || 
+        employeesQuery = employeesQuery.Where(e =>
+            (e.FullName ?? string.Empty).Contains(searchString) ||
             (e.EmployeeCode ?? string.Empty).Contains(searchString));
     }
 
@@ -56,11 +56,22 @@ public async Task<IActionResult> Index(string searchString, string isActive)
         }
     }
 
-    // 3. LƯU LẠI GIÁ TRỊ TÌM KIẾM ĐỂ HIỂN THỊ LÊN GIAO DIỆN SAU KHI LỌC XONG
+    // 3. XỬ LÝ LỌC THEO PHÒNG BAN
+    if (departmentId.HasValue)
+    {
+        employeesQuery = employeesQuery.Where(e =>
+            _context.EmployeeAssignments.Any(a =>
+                a.EmployeeId == e.Id &&
+                a.DepartmentId == departmentId &&
+                a.IsActive == true));
+    }
+
+    // 4. LƯU LẠI GIÁ TRỊ TÌM KIẾM ĐỂ HIỂN THỊ LÊN GIAO DIỆN SAU KHI LỌC XONG
     ViewBag.CurrentSearch = searchString;
     ViewBag.CurrentStatus = isActive;
+    ViewBag.CurrentDepartment = departmentId;
 
-    // 4. LẤY KẾT QUẢ CUỐI CÙNG SAU KHI LỌC VÀ TRẢ VỀ VIEW
+    // 5. LẤY KẾT QUẢ CUỐI CÙNG SAU KHI LỌC VÀ TRẢ VỀ VIEW
     var result = await employeesQuery.OrderByDescending(e => e.CreatedAt).ToListAsync();
     
     // 5. LẤY DANH SÁCH ASSIGNMENTS VÀ CÁC TỪ ĐIỂN CHO VIEW

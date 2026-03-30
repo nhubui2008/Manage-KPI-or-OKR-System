@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Authorization;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("MANAGER_CREATE_MISSION")]
     public class MissionVisionsController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -38,7 +37,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager")]
         public async Task<IActionResult> Create(MissionVision model)
         {
             if (ModelState.IsValid)
@@ -53,7 +51,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager")]
         public async Task<IActionResult> Delete(int id)
         {
             var mv = await _context.MissionVisions.FindAsync(id);

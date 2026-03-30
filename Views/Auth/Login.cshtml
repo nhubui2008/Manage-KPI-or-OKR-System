@@ -68,7 +68,14 @@
         <form asp-controller="Auth" asp-action="Login" method="post" class="comfort-form" id="loginForm" novalidate>
             <div class="soft-field">
                 <div class="field-container">
-                    <input type="text" id="username" name="username" required autocomplete="username" placeholder=" " />
+                    @if (ViewBag.IsRelogin != null && ViewBag.IsRelogin)
+                    {
+                        <input type="text" id="username" name="username" required autocomplete="username" placeholder=" " value="@ViewBag.Username" readonly="readonly" style="background-color: #f8f9fa; cursor: not-allowed; color: #6c757d;" />
+                    }
+                    else
+                    {
+                        <input type="text" id="username" name="username" required autocomplete="username" placeholder=" " value="@ViewBag.Username" />
+                    }
                     <label for="username">Username</label>
                     <div class="field-accent"></div>
                 </div>
@@ -96,16 +103,25 @@
             </div>
 
             <div class="comfort-options">
-                <label class="gentle-checkbox" for="remember" style="cursor:pointer;">
-                    <input type="checkbox" id="remember" name="remember" style="display:none;">
-                    <span class="checkbox-soft" tabindex="0">
-                        <div class="check-circle"></div>
-                        <svg class="check-mark" width="12" height="10" viewBox="0 0 12 10" fill="none">
-                            <path d="M1 5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
+                @if (ViewBag.IsRelogin != null && ViewBag.IsRelogin)
+                {
+                    <span style="font-size: 0.95rem; color: #666; font-weight: 500;">
+                        Không phải bạn? <a asp-controller="Auth" asp-action="Logout" class="comfort-link" style="color: #dc3545; font-weight: bold; margin-left: 4px; text-decoration: underline;">Đổi tài khoản</a>
                     </span>
-                    <span class="checkbox-text">Remember me</span>
-                </label>
+                }
+                else
+                {
+                    <label class="gentle-checkbox" for="remember" style="cursor:pointer;">
+                        <input type="checkbox" id="remember" name="remember" style="display:none;">
+                        <span class="checkbox-soft" tabindex="0">
+                            <div class="check-circle"></div>
+                            <svg class="check-mark" width="12" height="10" viewBox="0 0 12 10" fill="none">
+                                <path d="M1 5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <span class="checkbox-text">Remember me</span>
+                    </label>
+                }
                 <a asp-controller="Auth" asp-action="ForgotPassword" class="comfort-link">Forgot password?</a>
             </div>
 

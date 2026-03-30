@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Manage_KPI_or_OKR_System.Data;
@@ -28,11 +29,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public IActionResult Login()
         {
+            ViewData["IsLoginPage"] = true;
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                return RedirectToAction("Index", "Dashboard");
+                ViewBag.Username = User.Identity.Name;
+                ViewBag.IsRelogin = true;
             }
-            ViewData["IsLoginPage"] = true;
             return View();
         }
 
@@ -41,8 +43,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             ViewData["IsLoginPage"] = true;
 
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                ViewBag.IsRelogin = true;
+                if (!string.Equals(username, User.Identity.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    ViewBag.Error = "Bạn không thể đổi tên đăng nhập. Vui lòng đăng xuất trước khi đăng nhập tài khoản khác.";
+                    ViewBag.Username = User.Identity.Name;
+                    return View();
+                }
+            }
+
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
+                ViewBag.Username = username;
                 ViewBag.Error = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.";
                 return View();
             }
@@ -65,8 +79,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 if (role != null)
                 {
                     roleName = role.RoleName ?? "User";
-                    // Get permissions for this role from configuration
-                    permissions = RolePermissionConfiguration.GetPermissionsForRole(roleName);
+                    permissions = await _context.Role_Permissions
+                        .Where(rp => rp.RoleId == role.Id)
+                        .Join(_context.Permissions, rp => rp.PermissionId, p => p.Id, (rp, p) => p.PermissionCode)
+                        .Where(code => !string.IsNullOrEmpty(code))
+                        .Select(code => code!)
+                        .ToListAsync();
                 }
             }
 
@@ -476,12 +494,19 @@ public async Task<IActionResult> GoogleResponse()
 
     // 3. Đăng nhập vào hệ thống MiniERP qua Cookie
     var roleName = "User";
+    var permissions = new List<string>();
     if (user.RoleId.HasValue)
     {
         var role = await _context.Roles.FindAsync(user.RoleId);
         if (role != null) roleName = role.RoleName ?? "User";
+
+        permissions = await _context.Role_Permissions
+            .Where(rp => rp.RoleId == user.RoleId.Value)
+            .Join(_context.Permissions, rp => rp.PermissionId, p => p.Id, (rp, p) => p.PermissionCode)
+            .Where(code => !string.IsNullOrEmpty(code))
+            .Select(code => code!)
+            .ToListAsync();
     }
-    var permissions = RolePermissionConfiguration.GetPermissionsForRole(roleName);
 
     var claims = new List<Claim>
     {
