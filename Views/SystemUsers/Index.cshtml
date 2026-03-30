@@ -17,7 +17,7 @@
         </div>
     </div>
     <div class="d-flex gap-2">
-        <a href="/Auth/Register" class="btn btn-primary-custom text-decoration-none">
+        <a asp-action="Create" class="btn btn-primary-custom text-decoration-none">
             <i class="bi bi-person-plus-fill"></i> Tạo tài khoản mới
         </a>
     </div>
@@ -32,26 +32,41 @@
 
 <div class="content-card">
     <div class="card-body-custom">
-        <div class="toolbar">
+        <form asp-action="Index" method="get" class="toolbar">
             <div class="toolbar-left">
                 <div class="toolbar-search">
                     <i class="bi bi-search"></i>
-                    <input type="text" placeholder="Tìm tên đăng nhập, email...">
+                    <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control" placeholder="Tìm tên đăng nhập, email..." />
                 </div>
-                <select class="filter-select">
+                <select name="roleId" class="filter-select">
                     <option value="">Phân quyền (Role)</option>
                     @foreach (var role in roles)
                     {
-                        <option value="@role.Key">@role.Value</option>
+                        if (ViewBag.RoleId != null && ViewBag.RoleId == role.Key)
+                        {
+                            <option value="@role.Key" selected>@role.Value</option>
+                        }
+                        else
+                        {
+                            <option value="@role.Key">@role.Value</option>
+                        }
                     }
                 </select>
-                <select class="filter-select">
+                <select name="status" class="filter-select">
                     <option value="">Trạng thái tài khoản</option>
-                    <option value="active">Đang hoạt động</option>
-                    <option value="locked">Bị khóa</option>
+                    @if(ViewBag.Status == "active") { <option value="active" selected>Đang hoạt động</option> } else { <option value="active">Đang hoạt động</option> }
+                    @if(ViewBag.Status == "locked") { <option value="locked" selected>Bị khóa</option> } else { <option value="locked">Bị khóa</option> }
                 </select>
             </div>
-        </div>
+            <div class="toolbar-right">
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0" title="Làm mới">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
+                <button type="submit" class="btn btn-sm btn-outline-secondary border-0" title="Lọc kết quả">
+                    <i class="bi bi-funnel"></i>
+                </button>
+            </div>
+        </form>
 
         <div class="table-responsive">
             <table class="data-table">
@@ -104,52 +119,46 @@
                                 </td>
                                 <td>
                                     <div class="action-btns justify-content-end">
-                                        @if (user.IsActive == false)
-                                        {
-                                            <button class="action-btn" title="Mở khóa tài khoản"><i class="bi bi-unlock-fill text-success"></i></button>
-                                        }
-                                        else
-                                        {
-                                            <button class="action-btn danger" title="Khóa tài khoản"><i class="bi bi-lock-fill"></i></button>
-                                        }
-                                        <button class="action-btn" title="Đổi mật khẩu"><i class="bi bi-key"></i></button>
-                                        <button class="action-btn" title="Phân quyền" data-bs-toggle="modal" data-bs-target="#assignRoleModal-@user.Id"><i class="bi bi-shield-lock"></i></button>
+                                        <a asp-action="Details" asp-route-id="@user.Id" class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
+                                        <a asp-action="Edit" asp-route-id="@user.Id" class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
+                                        
+                                        <form asp-action="ToggleLock" method="post" class="d-inline m-0">
+                                            <input type="hidden" name="userId" value="@user.Id" />
+                                            @if (user.IsActive == false)
+                                            {
+                                                <button type="submit" class="action-btn" title="Mở khóa tài khoản"><i class="bi bi-unlock-fill text-success"></i></button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit" class="action-btn danger" title="Khóa tài khoản"><i class="bi bi-lock-fill"></i></button>
+                                            }
+                                        </form>
+
+                                        <button class="action-btn" title="Đổi mật khẩu" data-bs-toggle="modal" data-bs-target="#resetPasswordModal-@user.Id"><i class="bi bi-key"></i></button>
+                                        
+                                        <a asp-action="Delete" asp-route-id="@user.Id" class="action-btn danger" title="Xóa tài khoản"><i class="bi bi-trash-fill text-danger"></i></a>
                                     </div>
                                 </td>
                             </tr>
 
-                            <!-- Modal Phân quyền -->
-                            <div class="modal fade" id="assignRoleModal-@user.Id" tabindex="-1" aria-hidden="true">
+                            <!-- Modal Đổi mật khẩu -->
+                            <div class="modal fade" id="resetPasswordModal-@user.Id" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content border-0 shadow-lg">
                                         <div class="modal-header border-bottom-0 pb-0">
-                                            <h5 class="modal-title fw-bold text-dark"><i class="bi bi-shield-lock text-primary me-2"></i>Phân quyền tài khoản</h5>
+                                            <h5 class="modal-title fw-bold text-dark"><i class="bi bi-key text-info me-2"></i>Làm mới mật khẩu</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body p-4">
-                                            <p class="text-muted mb-4">Chọn nhóm quyền mới cho tài khoản <strong>@user.Username</strong> (@user.Email)</p>
-                                            <form asp-controller="SystemUsers" asp-action="AssignRole" method="post">
+                                            <form asp-controller="SystemUsers" asp-action="ResetPassword" method="post">
                                                 <input type="hidden" name="userId" value="@user.Id" />
                                                 <div class="mb-4">
-                                                    <label class="form-label">Chọn Role</label>
-                                                    <select name="roleId" class="form-select" required>
-                                                        <option value="">-- Chọn nhóm quyền --</option>
-                                                        @foreach (var role in roles)
-                                                        {
-                                                            if (user.RoleId == role.Key)
-                                                            {
-                                                                <option value="@role.Key" selected>@role.Value</option>
-                                                            }
-                                                            else
-                                                            {
-                                                                <option value="@role.Key">@role.Value</option>
-                                                            }
-                                                        }
-                                                    </select>
+                                                    <label class="form-label">Mật khẩu mới cho <strong>@user.Username</strong></label>
+                                                    <input type="password" name="newPassword" class="form-control" required minlength="6" placeholder="Nhập ít nhất 6 ký tự..." />
                                                 </div>
                                                 <div class="d-flex justify-content-end gap-2">
                                                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                                                    <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu cấu hình</button>
+                                                    <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu</button>
                                                 </div>
                                             </form>
                                         </div>
