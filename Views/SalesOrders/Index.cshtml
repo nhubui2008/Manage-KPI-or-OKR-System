@@ -1,245 +1,73 @@
+@model List<Manage_KPI_or_OKR_System.Models.SalesOrder>
 @{
     ViewData["Title"] = "Quản lý Đơn hàng";
+    var customers = ViewBag.Customers as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var allCustomers = ViewBag.AllCustomers as List<Manage_KPI_or_OKR_System.Models.Customer> ?? new List<Manage_KPI_or_OKR_System.Models.Customer>();
+    var allEmployees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
 }
+@if (TempData["SuccessMessage"] != null)
+{<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
 
 <div class="page-header">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Đơn hàng Bán (Sales Orders)</h1>
-        <div class="page-breadcrumb">
-            <a href="/">Trang chủ</a>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Bán hàng</span>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Đơn hàng</span>
-        </div>
-    </div>
-    <div class="d-flex gap-2">
-        <button class="btn-outline-custom">
-            <i class="bi bi-file-earmark-arrow-up"></i> Xuất Excel
-        </button>
-        <button class="btn-primary-custom">
-            <i class="bi bi-plus-lg"></i> Tạo đơn hàng mới
-        </button>
-    </div>
+    <div><h1 class="h3 font-weight-bold mb-1">Đơn hàng Bán (Sales Orders)</h1><div class="page-breadcrumb"><a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span>Bán hàng</span><i class="bi bi-chevron-right separator"></i><span>Đơn hàng</span></div></div>
+    <div class="d-flex gap-2"><button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg"></i> Tạo đơn hàng mới</button></div>
 </div>
 
 <div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="stat-card p-3 border-start border-4 border-primary">
-            <div class="text-muted" style="font-size: 0.8rem;">Tổng đơn hàng (Tháng này)</div>
-            <div class="fw-bold text-dark fs-4 mt-1">1,245</div>
-            <div class="text-success mt-2" style="font-size: 0.75rem;"><i class="bi bi-arrow-up-right"></i> +12% so với tháng trước</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card p-3 border-start border-4 border-success">
-            <div class="text-muted" style="font-size: 0.8rem;">Đã hoàn thành</div>
-            <div class="fw-bold text-success fs-4 mt-1">980</div>
-            <div class="text-muted mt-2" style="font-size: 0.75rem;">Chiếm 78.7% tổng số đơn</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card p-3 border-start border-4 border-warning">
-            <div class="text-muted" style="font-size: 0.8rem;">Đang xử lý</div>
-            <div class="fw-bold text-warning fs-4 mt-1">215</div>
-            <div class="text-muted mt-2" style="font-size: 0.75rem;">15 đơn cần xử lý gấp</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card p-3 border-start border-4 border-danger">
-            <div class="text-muted" style="font-size: 0.8rem;">Khách hàng hủy</div>
-            <div class="fw-bold text-danger fs-4 mt-1">50</div>
-            <div class="text-danger mt-2" style="font-size: 0.75rem;"><i class="bi bi-arrow-up-right"></i> Tăng 5% so với tháng trước</div>
-        </div>
-    </div>
+    <div class="col-md-3"><div class="stat-card p-3 border-start border-4 border-primary"><div class="text-muted" style="font-size:0.8rem;">Tổng đơn hàng</div><div class="fw-bold text-dark fs-4 mt-1">@(ViewBag.TotalOrders ?? 0)</div></div></div>
+    <div class="col-md-3"><div class="stat-card p-3 border-start border-4 border-success"><div class="text-muted" style="font-size:0.8rem;">Đã hoàn thành</div><div class="fw-bold text-success fs-4 mt-1">@(ViewBag.CompletedOrders ?? 0)</div></div></div>
+    <div class="col-md-3"><div class="stat-card p-3 border-start border-4 border-warning"><div class="text-muted" style="font-size:0.8rem;">Đang xử lý</div><div class="fw-bold text-warning fs-4 mt-1">@(ViewBag.ProcessingOrders ?? 0)</div></div></div>
+    <div class="col-md-3"><div class="stat-card p-3 border-start border-4 border-danger"><div class="text-muted" style="font-size:0.8rem;">Đã hủy</div><div class="fw-bold text-danger fs-4 mt-1">@(ViewBag.CancelledOrders ?? 0)</div></div></div>
 </div>
 
-<div class="content-card">
-    <div class="card-body-custom">
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <div class="toolbar-search">
-                    <i class="bi bi-search"></i>
-                    <input type="text" placeholder="Tìm theo mã đơn, khách hàng...">
-                </div>
-                <div class="d-flex align-items-center gap-2 border rounded px-2 bg-light bg-opacity-50">
-                    <i class="bi bi-calendar3 text-muted"></i>
-                    <input type="date" class="form-control form-control-sm border-0 bg-transparent shadow-none w-auto" value="2026-02-01">
-                    <span class="text-muted">-</span>
-                    <input type="date" class="form-control form-control-sm border-0 bg-transparent shadow-none w-auto" value="2026-02-28">
-                </div>
-                <select class="filter-select">
-                    <option value="">Trạng thái</option>
-                    <option value="pending">Chờ xác nhận</option>
-                    <option value="processing">Đang xử lý</option>
-                    <option value="shipping">Đang giao</option>
-                    <option value="completed">Hoàn thành</option>
-                    <option value="cancelled">Đã hủy</option>
-                </select>
-            </div>
-            <div class="toolbar-right">
-                <button class="btn btn-sm btn-outline-secondary border-0"><i class="bi bi-gear"></i> Setup cột</button>
-            </div>
-        </div>
+<div class="content-card"><div class="card-body-custom">
+    <div class="toolbar"><div class="toolbar-left">
+        <form method="get" class="d-flex gap-2"><div class="toolbar-search"><i class="bi bi-search"></i><input type="text" name="searchString" value="@ViewBag.CurrentSearch" placeholder="Tìm theo mã đơn..."></div>
+        <select name="status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="Chờ xác nhận">Chờ xác nhận</option><option value="Đang xử lý">Đang xử lý</option><option value="Đang giao">Đang giao</option><option value="Hoàn thành">Hoàn thành</option><option value="Đã hủy">Đã hủy</option></select>
+        <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-funnel"></i></button></form>
+    </div></div>
 
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
+    <div class="table-responsive"><table class="data-table">
+        <thead><tr><th>Mã Đơn</th><th>Ngày tạo</th><th>Khách hàng</th><th>Nhân viên</th><th class="text-end">Tổng tiền (VNĐ)</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var s in Model)
+                {
+                    var custName = s.CustomerId.HasValue && customers.ContainsKey(s.CustomerId.Value) ? customers[s.CustomerId.Value] : "N/A";
+                    var empName = s.SalesStaffId.HasValue && employees.ContainsKey(s.SalesStaffId.Value) ? employees[s.SalesStaffId.Value] : "N/A";
+                    var statusClass = s.Status == "Hoàn thành" ? "bg-success text-white" : s.Status == "Đã hủy" ? "bg-danger bg-opacity-10 text-danger" : s.Status == "Đang giao" ? "bg-info text-white" : "bg-warning text-dark";
                     <tr>
-                        <th style="width: 40px;"><input type="checkbox" class="form-check-input"></th>
-                        <th>Mã Đơn</th>
-                        <th>Ngày tạo</th>
-                        <th>Khách hàng</th>
-                        <th>Nhân viên phụ trách</th>
-                        <th class="text-end">Tổng tiền (VNĐ)</th>
-                        <th>Trạng thái</th>
-                        <th class="text-end">Thao tác</th>
+                        <td><span class="fw-bold text-primary">@s.OrderCode</span></td>
+                        <td><div class="fw-medium text-dark">@(s.CreatedAt?.ToString("dd/MM/yyyy") ?? "")</div><div class="text-muted" style="font-size:0.75rem;">@(s.CreatedAt?.ToString("HH:mm") ?? "")</div></td>
+                        <td class="fw-semibold text-dark">@custName</td>
+                        <td class="text-dark" style="font-size:0.85rem;">@empName</td>
+                        <td class="text-end fw-semibold @(s.Status == "Đã hủy" ? "text-muted text-decoration-line-through" : "")">@(s.TotalAmount?.ToString("N0") ?? "0")</td>
+                        <td><span class="badge @statusClass px-2 py-1 rounded-pill">@(s.Status ?? "N/A")</span></td>
+                        <td><div class="action-btns justify-content-end">
+                            <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@s.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Vô hiệu hóa đơn hàng?')"><i class="bi bi-trash"></i></button></form>
+                        </div></td>
                     </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <a href="#" class="fw-bold text-primary text-decoration-none">SO-2602-0051</a>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-dark">20/02/2026</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">14:30 PM</div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.7rem;"><i class="bi bi-building"></i></div>
-                                <div>
-                                    <div class="fw-semibold text-dark">CTY XD Tân Tiến</div>
-                                    <div class="text-muted" style="font-size: 0.75rem;">0909 123 456</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="user-avatar bg-success" style="width: 24px; height: 24px; font-size: 0.6rem;">LC</div>
-                                <span class="text-dark" style="font-size: 0.85rem;">Lê Văn Cường</span>
-                            </div>
-                        </td>
-                        <td class="text-end fw-semibold">45,500,000</td>
-                        <td><span class="badge bg-warning text-dark px-2 py-1 rounded-pill">Đang xử lý</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <a href="#" class="fw-bold text-primary text-decoration-none">SO-2602-0050</a>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-dark">19/02/2026</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">09:15 AM</div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.7rem;"><i class="bi bi-person"></i></div>
-                                <div>
-                                    <div class="fw-semibold text-dark">Nguyễn Hải Nam</div>
-                                    <div class="text-muted" style="font-size: 0.75rem;">0988 765 432</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="user-avatar" style="width: 24px; height: 24px; font-size: 0.6rem;">VA</div>
-                                <span class="text-dark" style="font-size: 0.85rem;">Nguyễn Văn An</span>
-                            </div>
-                        </td>
-                        <td class="text-end fw-semibold">12,000,000</td>
-                        <td><span class="badge bg-info text-white px-2 py-1 rounded-pill">Đang giao</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <a href="#" class="fw-bold text-primary text-decoration-none">SO-2602-0049</a>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-dark">18/02/2026</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">16:45 PM</div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.7rem;"><i class="bi bi-building"></i></div>
-                                <div>
-                                    <div class="fw-semibold text-dark">Tập đoàn Alpha</div>
-                                    <div class="text-muted" style="font-size: 0.75rem;">028 3812 3456</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="user-avatar bg-success" style="width: 24px; height: 24px; font-size: 0.6rem;">LC</div>
-                                <span class="text-dark" style="font-size: 0.85rem;">Lê Văn Cường</span>
-                            </div>
-                        </td>
-                        <td class="text-end fw-semibold">150,000,000</td>
-                        <td><span class="status-badge active"><span class="status-dot"></span> Hoàn thành</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                     <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <a href="#" class="fw-bold text-primary text-decoration-none">SO-2602-0048</a>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-dark">18/02/2026</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">10:00 AM</div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; font-size: 0.7rem;"><i class="bi bi-person"></i></div>
-                                <div>
-                                    <div class="fw-semibold text-dark">Trần Minh Thắng</div>
-                                    <div class="text-muted" style="font-size: 0.75rem;">0912 345 678</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="user-avatar" style="width: 24px; height: 24px; font-size: 0.6rem;">VA</div>
-                                <span class="text-dark" style="font-size: 0.85rem;">Nguyễn Văn An</span>
-                            </div>
-                        </td>
-                        <td class="text-end fw-semibold text-muted text-decoration-line-through">5,500,000</td>
-                        <td><span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2 py-1">Đã hủy</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+                }
+            }
+            else
+            {<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có đơn hàng nào</p></td></tr>}
+        </tbody>
+    </table></div>
+</div></div>
 
-        <div class="pagination-custom mt-3">
-            <div>Hiển thị 1-4 trong số 1,245 đơn hàng</div>
-            <div class="pagination-pages">
-                <a href="#" class="page-btn"><i class="bi bi-chevron-left"></i></a>
-                <a href="#" class="page-btn active">1</a>
-                <a href="#" class="page-btn">2</a>
-                <a href="#" class="page-btn">3</a>
-                <span class="px-2 text-muted">...</span>
-                <a href="#" class="page-btn">125</a>
-                <a href="#" class="page-btn"><i class="bi bi-chevron-right"></i></a>
-            </div>
-        </div>
+<div class="modal fade" id="createModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content border-0 shadow">
+    <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-cart-plus me-2"></i>Tạo Đơn hàng</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form asp-action="Create" method="post"><div class="modal-body">
+        <div class="mb-3"><label class="form-label fw-semibold">Mã đơn hàng</label><input type="text" name="OrderCode" class="form-control" required placeholder="VD: SO-2603-0001" /></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Khách hàng</label><select name="CustomerId" class="form-select" required>
+            <option value="">-- Chọn khách hàng --</option>@foreach(var c in allCustomers){<option value="@c.Id">@c.CustomerName (@c.CustomerCode)</option>}</select></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Nhân viên phụ trách</label><select name="SalesStaffId" class="form-select">
+            <option value="">-- Chọn nhân viên --</option>@foreach(var e in allEmployees){<option value="@e.Id">@e.FullName</option>}</select></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Địa chỉ giao hàng</label><textarea name="ShippingAddress" class="form-control" rows="2"></textarea></div>
+        <div class="row"><div class="col-6 mb-3"><label class="form-label fw-semibold">Tổng tiền (VNĐ)</label><input type="number" name="TotalAmount" class="form-control" step="1000" /></div>
+        <div class="col-6 mb-3"><label class="form-label fw-semibold">Ngày giao dự kiến</label><input type="date" name="ExpectedDeliveryDate" class="form-control" /></div></div>
     </div>
-</div>
+    <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom">Tạo đơn hàng</button></div></form>
+</div></div></div>

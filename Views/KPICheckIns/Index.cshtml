@@ -149,6 +149,31 @@
     </div>
 </div>
 
+@{
+    var allEmployeesList = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
+    var allKPIsList = ViewBag.AllKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new List<Manage_KPI_or_OKR_System.Models.KPI>();
+    var allStatusesList = ViewBag.AllStatuses as List<Manage_KPI_or_OKR_System.Models.CheckInStatus> ?? new List<Manage_KPI_or_OKR_System.Models.CheckInStatus>();
+}
+
+@if (TempData["SuccessMessage"] != null)
+{<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
+
+<!-- Create Check-in Modal -->
+<div class="modal fade" id="createCheckinModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content border-0 shadow">
+        <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-calendar-check me-2"></i>Thực hiện Check-in KPI</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form asp-action="Create" asp-controller="KPICheckIns" method="post"><div class="modal-body">
+            <div class="mb-3"><label class="form-label fw-semibold">Nhân viên</label><select name="EmployeeId" class="form-select" required>
+                <option value="">-- Chọn nhân viên --</option>@foreach(var e in allEmployeesList){<option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>}</select></div>
+            <div class="mb-3"><label class="form-label fw-semibold">KPI</label><select name="KPIId" class="form-select" required>
+                <option value="">-- Chọn KPI --</option>@foreach(var k in allKPIsList){<option value="@k.Id">@k.KPIName</option>}</select></div>
+            <div class="mb-3"><label class="form-label fw-semibold">Trạng thái</label><select name="StatusId" class="form-select">
+                @foreach(var s in allStatusesList){<option value="@s.Id">@s.StatusName</option>}</select></div>
+        </div>
+        <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom">Check-in</button></div></form>
+    </div></div>
+</div>
+
 <style>
     /* Styling adjustments for KPI checkins */
     .status-dot {

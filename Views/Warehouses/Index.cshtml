@@ -1,91 +1,44 @@
-@{
-    ViewData["Title"] = "Quản lý Kho bãi";
-}
+@model List<Manage_KPI_or_OKR_System.Models.Warehouse>
+@{ ViewData["Title"] = "Danh sách Kho"; }
+@if (TempData["SuccessMessage"] != null)
+{<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
 
 <div class="page-header">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Hệ thống Kho</h1>
-        <div class="page-breadcrumb">
-            <a href="/">Trang chủ</a>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Danh sách Kho</span>
-        </div>
-    </div>
-    <div class="d-flex gap-2">
-        <button class="btn-primary-custom">
-            <i class="bi bi-plus-lg"></i> Thêm kho mới
-        </button>
-    </div>
+    <div><h1 class="h3 font-weight-bold mb-1">Danh sách Kho</h1><div class="page-breadcrumb"><a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span>Kho</span><i class="bi bi-chevron-right separator"></i><span>Danh sách kho</span></div></div>
+    <div class="d-flex gap-2"><button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg"></i> Thêm kho mới</button></div>
 </div>
 
-<div class="row g-4">
-    <!-- Warehouse 1 -->
-    <div class="col-md-6 col-xl-4">
-        <div class="content-card h-100 position-relative overflow-hidden">
-            <div class="position-absolute top-0 end-0 p-3">
-                <span class="badge bg-success bg-opacity-10 text-success rounded-pill"><i class="bi bi-check-circle-fill me-1"></i>Hoạt động</span>
-            </div>
-            <div class="card-body-custom p-4">
-                <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 50px; height: 50px; font-size: 1.5rem;">
-                    <i class="bi bi-building"></i>
-                </div>
-                <h5 class="fw-bold text-dark mb-1">Kho Tổng Miền Nam</h5>
-                <p class="text-muted" style="font-size: 0.85rem;"><i class="bi bi-geo-alt-fill text-danger me-1"></i>KCN Tân Bình, TP.HCM</p>
-                
-                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                    <div>
-                        <div class="text-muted" style="font-size: 0.75rem;">Sức chứa</div>
-                        <div class="fw-semibold text-dark">Thường <span class="badge bg-light text-dark ms-1">Mức 1</span></div>
-                    </div>
-                    <div>
-                        <div class="text-muted text-end" style="font-size: 0.75rem;">Quản lý kho</div>
-                        <div class="d-flex align-items-center gap-2 mt-1">
-                            <div class="user-avatar bg-primary" style="width: 20px; height: 20px; font-size: 0.5rem;">LC</div>
-                            <span class="fw-medium text-dark" style="font-size: 0.85rem;">Nguyễn Kho A</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="d-flex gap-2 mt-4">
-                    <button class="btn btn-sm btn-outline-primary flex-grow-1">Xem chi tiết</button>
-                    <button class="btn btn-sm btn-outline-secondary px-3"><i class="bi bi-pencil"></i></button>
-                </div>
-            </div>
-        </div>
+<div class="content-card"><div class="card-body-custom">
+    <div class="table-responsive"><table class="data-table">
+        <thead><tr><th>Mã kho</th><th>Tên kho</th><th>Địa chỉ</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var w in Model)
+                {
+                    <tr>
+                        <td class="fw-bold text-primary">@w.WarehouseCode</td>
+                        <td class="fw-semibold text-dark">@w.WarehouseName</td>
+                        <td class="text-muted">@(w.Address ?? "—")</td>
+                        <td><span class="status-badge active"><span class="status-dot"></span> Hoạt động</span></td>
+                        <td><div class="action-btns justify-content-end">
+                            <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@w.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Vô hiệu hóa kho?')"><i class="bi bi-trash"></i></button></form>
+                        </div></td>
+                    </tr>
+                }
+            }
+            else
+            {<tr><td colspan="5" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có kho nào</p></td></tr>}
+        </tbody>
+    </table></div>
+</div></div>
+
+<div class="modal fade" id="createModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content border-0 shadow">
+    <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-building me-2"></i>Thêm Kho</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form asp-action="Create" method="post"><div class="modal-body">
+        <div class="mb-3"><label class="form-label fw-semibold">Mã kho</label><input type="text" name="WarehouseCode" class="form-control" required placeholder="VD: WH-03" /></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Tên kho</label><input type="text" name="WarehouseName" class="form-control" required /></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Địa chỉ</label><textarea name="Address" class="form-control" rows="2"></textarea></div>
     </div>
-    
-    <!-- Warehouse 2 -->
-    <div class="col-md-6 col-xl-4">
-        <div class="content-card h-100 position-relative overflow-hidden">
-            <div class="position-absolute top-0 end-0 p-3">
-                <span class="badge bg-success bg-opacity-10 text-success rounded-pill"><i class="bi bi-check-circle-fill me-1"></i>Hoạt động</span>
-            </div>
-            <div class="card-body-custom p-4">
-                <div class="d-inline-flex align-items-center justify-content-center bg-info bg-opacity-10 text-info rounded-circle mb-3" style="width: 50px; height: 50px; font-size: 1.5rem;">
-                    <i class="bi bi-building"></i>
-                </div>
-                <h5 class="fw-bold text-dark mb-1">Kho Miền Trung</h5>
-                <p class="text-muted" style="font-size: 0.85rem;"><i class="bi bi-geo-alt-fill text-danger me-1"></i>KCN Hải Châu, Đà Nẵng</p>
-                
-                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                    <div>
-                        <div class="text-muted" style="font-size: 0.75rem;">Sức chứa</div>
-                        <div class="fw-semibold text-dark">Trung bình <span class="badge bg-light text-dark ms-1">Mức 2</span></div>
-                    </div>
-                    <div>
-                        <div class="text-muted text-end" style="font-size: 0.75rem;">Quản lý kho</div>
-                        <div class="d-flex align-items-center gap-2 mt-1">
-                            <div class="user-avatar bg-warning" style="width: 20px; height: 20px; font-size: 0.5rem;">B</div>
-                            <span class="fw-medium text-dark" style="font-size: 0.85rem;">Trần Kho B</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="d-flex gap-2 mt-4">
-                    <button class="btn btn-sm btn-outline-primary flex-grow-1">Xem chi tiết</button>
-                    <button class="btn btn-sm btn-outline-secondary px-3"><i class="bi bi-pencil"></i></button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+    <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom">Tạo mới</button></div></form>
+</div></div></div>

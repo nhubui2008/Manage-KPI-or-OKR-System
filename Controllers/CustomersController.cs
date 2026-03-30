@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
+using Microsoft.EntityFrameworkCore;
+using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Manage_KPI_or_OKR_System.Controllers
@@ -8,9 +11,70 @@ namespace Manage_KPI_or_OKR_System.Controllers
     [HasPermission("SALES_MANAGE_CUSTOMERS")]
     public class CustomersController : Controller
     {
-        public IActionResult Index()
+        private readonly MiniERPDbContext _context;
+        public CustomersController(MiniERPDbContext context) { _context = context; }
+
+        public async Task<IActionResult> Index(string searchString)
         {
-            return View();
+            var query = _context.Customers.Where(c => c.IsActive == true).AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                query = query.Where(c =>
+                    (c.CustomerName ?? "").Contains(searchString) ||
+                    (c.CustomerCode ?? "").Contains(searchString) ||
+                    (c.Phone ?? "").Contains(searchString) ||
+                    (c.Email ?? "").Contains(searchString) ||
+                    (c.TaxCode ?? "").Contains(searchString));
+            }
+
+            ViewBag.CurrentSearch = searchString;
+            var customers = await query.OrderByDescending(c => c.CreatedAt).ToListAsync();
+            return View(customers);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(Customer model)
+        {
+            if (ModelState.IsValid)
+            {
+                model.IsActive = true;
+                model.CreatedAt = DateTime.Now;
+                _context.Customers.Add(model);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Đã thêm khách hàng mới thành công!";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(int id, Customer model)
+        {
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer != null)
+            {
+                customer.CustomerName = model.CustomerName;
+                customer.Phone = model.Phone;
+                customer.Email = model.Email;
+                customer.TaxCode = model.TaxCode;
+                customer.Address = model.Address;
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Đã cập nhật thông tin khách hàng!";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer != null)
+            {
+                customer.IsActive = false;
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Đã vô hiệu hóa khách hàng!";
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }

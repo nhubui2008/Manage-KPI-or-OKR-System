@@ -1,146 +1,60 @@
+@model List<Manage_KPI_or_OKR_System.Models.DeliveryNote>
 @{
-    ViewData["Title"] = "Quản lý Giao hàng";
+    ViewData["Title"] = "Phiếu Giao hàng";
+    var orders = ViewBag.Orders as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var partners = ViewBag.Partners as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var methods = ViewBag.Methods as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var allOrders = ViewBag.AllOrders as List<Manage_KPI_or_OKR_System.Models.SalesOrder> ?? new List<Manage_KPI_or_OKR_System.Models.SalesOrder>();
+    var allPartners = ViewBag.AllPartners as List<Manage_KPI_or_OKR_System.Models.ShippingPartner> ?? new List<Manage_KPI_or_OKR_System.Models.ShippingPartner>();
 }
+@if (TempData["SuccessMessage"] != null)
+{<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
 
 <div class="page-header">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Phiếu Giao hàng</h1>
-        <div class="page-breadcrumb">
-            <a href="/">Trang chủ</a>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Giao nhận & Vận chuyển</span>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Phiếu giao hàng</span>
-        </div>
-    </div>
-    <div class="d-flex gap-2">
-        <button class="btn-primary-custom">
-            <i class="bi bi-plus-lg"></i> Tạo phiếu giao
-        </button>
-    </div>
+    <div><h1 class="h3 font-weight-bold mb-1">Phiếu Giao hàng</h1><div class="page-breadcrumb"><a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span>Vận chuyển</span><i class="bi bi-chevron-right separator"></i><span>Phiếu giao hàng</span></div></div>
+    <div class="d-flex gap-2"><button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg"></i> Tạo phiếu giao</button></div>
 </div>
 
-<div class="content-card">
-    <div class="card-body-custom">
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <div class="toolbar-search">
-                    <i class="bi bi-search"></i>
-                    <input type="text" placeholder="Tìm mã phiếu, mã đơn hàng...">
-                </div>
-                <div class="d-flex align-items-center gap-2 border rounded px-2 bg-light bg-opacity-50">
-                    <i class="bi bi-calendar3 text-muted"></i>
-                    <input type="date" class="form-control form-control-sm border-0 bg-transparent shadow-none w-auto" value="2026-02-01">
-                    <span class="text-muted">-</span>
-                    <input type="date" class="form-control form-control-sm border-0 bg-transparent shadow-none w-auto" value="2026-02-28">
-                </div>
-                <select class="filter-select">
-                    <option value="">Đơn vị vận chuyển</option>
-                    <option value="internal">Đội xe nội bộ</option>
-                    <option value="viettel">Viettel Post</option>
-                    <option value="ghtk">GHTK</option>
-                </select>
-                <select class="filter-select">
-                    <option value="">Trạng thái</option>
-                    <option value="processing">Chờ lấy hàng</option>
-                    <option value="delivering">Đang giao</option>
-                    <option value="delivered">Đã giao thành công</option>
-                    <option value="returned">Hoàn hàng</option>
-                </select>
-            </div>
-            <div class="toolbar-right">
-                <button class="btn btn-sm btn-outline-secondary border-0 text-primary fw-medium"><i class="bi bi-truck me-1"></i> Theo dõi lộ trình</button>
-            </div>
-        </div>
+<div class="content-card"><div class="card-body-custom">
+    <div class="table-responsive"><table class="data-table">
+        <thead><tr><th>Tracking Code</th><th>Đơn hàng</th><th>Đối tác VC</th><th>Ngày xuất</th><th>Hạn giao</th><th class="text-end">Phí ship (VNĐ)</th><th class="text-end">Thao tác</th></tr></thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var dn in Model)
+                {
+                    var orderCode = dn.OrderId.HasValue && orders.ContainsKey(dn.OrderId.Value) ? orders[dn.OrderId.Value] : "N/A";
+                    var partnerName = dn.PartnerId.HasValue && partners.ContainsKey(dn.PartnerId.Value) ? partners[dn.PartnerId.Value] : "N/A";
+                    <tr>
+                        <td class="fw-bold text-primary">@dn.TrackingCode</td>
+                        <td class="text-muted">@orderCode</td>
+                        <td><span class="badge bg-light text-dark border">@partnerName</span></td>
+                        <td class="text-muted">@(dn.DispatchDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="text-muted">@(dn.Deadline?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="text-end fw-medium">@(dn.ShippingFee?.ToString("N0") ?? "0")</td>
+                        <td><div class="action-btns justify-content-end">
+                            <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@dn.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Vô hiệu hóa phiếu giao?')"><i class="bi bi-trash"></i></button></form>
+                        </div></td>
+                    </tr>
+                }
+            }
+            else
+            {<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có phiếu giao hàng nào</p></td></tr>}
+        </tbody>
+    </table></div>
+</div></div>
 
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th style="width: 40px;"><input type="checkbox" class="form-check-input"></th>
-                        <th>Thông tin giao hàng</th>
-                        <th>Đơn hàng</th>
-                        <th>Đơn vị vận chuyển</th>
-                        <th>Bảng giá (VNĐ)</th>
-                        <th>Trạng thái</th>
-                        <th class="text-end">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-bold text-dark">DO-2602-085</div>
-                            <div class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-calendar-event me-1"></i>Hôm nay, 10:30 AM</div>
-                        </td>
-                        <td>
-                            <a href="#" class="fw-semibold text-primary text-decoration-none">SO-2602-0050</a>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-light border rounded px-2 py-1" style="font-size: 0.75rem; font-weight: 600;">Viettel Post</div>
-                                <span class="text-muted" style="font-size: 0.75rem;">VT-992812</span>
-                            </div>
-                        </td>
-                        <td class="fw-medium">45,000</td>
-                        <td><span class="badge bg-info text-white px-2 py-1 rounded-pill"><i class="bi bi-truck me-1"></i>Đang giao</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="In vận đơn"><i class="bi bi-printer"></i></button>
-                                <button class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-bold text-dark">DO-2602-084</div>
-                            <div class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-calendar-event me-1"></i>Hôm qua, 15:00 PM</div>
-                        </td>
-                        <td>
-                            <a href="#" class="fw-semibold text-primary text-decoration-none">SO-2602-0049</a>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-primary text-white rounded px-2 py-1" style="font-size: 0.75rem; font-weight: 600;">Đội xe nội bộ</div>
-                                <span class="text-muted" style="font-size: 0.75rem;">Tài xế: Minh (59C-12345)</span>
-                            </div>
-                        </td>
-                        <td class="fw-medium text-muted">N/A</td>
-                        <td><span class="status-badge active"><span class="status-dot"></span> Đã giao thành công</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="In vận đơn"><i class="bi bi-printer"></i></button>
-                                <button class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-bold text-dark">DO-2602-083</div>
-                            <div class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-calendar-event me-1"></i>18/02/2026, 09:15 AM</div>
-                        </td>
-                        <td>
-                            <a href="#" class="fw-semibold text-primary text-decoration-none">SO-2602-0045</a>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-success text-white rounded px-2 py-1" style="font-size: 0.75rem; font-weight: 600;">GHTK</div>
-                                <span class="text-muted" style="font-size: 0.75rem;">S123.456.789</span>
-                            </div>
-                        </td>
-                        <td class="fw-medium">35,000</td>
-                        <td><span class="badge bg-warning text-dark px-2 py-1 rounded-pill"><i class="bi bi-box-seam me-1"></i>Chờ lấy hàng</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="In vận đơn"><i class="bi bi-printer"></i></button>
-                                <button class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+<div class="modal fade" id="createModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content border-0 shadow">
+    <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-truck me-2"></i>Tạo Phiếu Giao hàng</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form asp-action="Create" method="post"><div class="modal-body">
+        <div class="mb-3"><label class="form-label fw-semibold">Mã tracking</label><input type="text" name="TrackingCode" class="form-control" required placeholder="VD: GH-2603-001" /></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Đơn hàng</label><select name="OrderId" class="form-select" required>
+            <option value="">-- Chọn đơn --</option>@foreach(var o in allOrders){<option value="@o.Id">@o.OrderCode</option>}</select></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Đối tác vận chuyển</label><select name="PartnerId" class="form-select">
+            <option value="">-- Chọn đối tác --</option>@foreach(var p in allPartners){<option value="@p.Id">@p.PartnerName</option>}</select></div>
+        <div class="row"><div class="col-6 mb-3"><label class="form-label fw-semibold">Ngày xuất hàng</label><input type="date" name="DispatchDate" class="form-control" /></div>
+        <div class="col-6 mb-3"><label class="form-label fw-semibold">Hạn giao</label><input type="date" name="Deadline" class="form-control" /></div></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Phí vận chuyển (VNĐ)</label><input type="number" name="ShippingFee" class="form-control" step="1000" /></div>
     </div>
-</div>
+    <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom">Tạo phiếu</button></div></form>
+</div></div></div>

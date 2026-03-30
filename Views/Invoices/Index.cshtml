@@ -1,141 +1,62 @@
+@model List<Manage_KPI_or_OKR_System.Models.Invoice>
 @{
     ViewData["Title"] = "Quản lý Hóa đơn";
+    var orders = ViewBag.Orders as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var allOrders = ViewBag.AllOrders as List<Manage_KPI_or_OKR_System.Models.SalesOrder> ?? new List<Manage_KPI_or_OKR_System.Models.SalesOrder>();
 }
+@if (TempData["SuccessMessage"] != null)
+{<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
 
 <div class="page-header">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Danh sách Hóa đơn</h1>
-        <div class="page-breadcrumb">
-            <a href="/">Trang chủ</a>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Bán hàng</span>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Hóa đơn</span>
-        </div>
-    </div>
-    <div class="d-flex gap-2">
-        <button class="btn-primary-custom">
-            <i class="bi bi-plus-lg"></i> Tạo hóa đơn
-        </button>
-    </div>
+    <div><h1 class="h3 font-weight-bold mb-1">Hóa đơn (Invoices)</h1><div class="page-breadcrumb"><a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span>Bán hàng</span><i class="bi bi-chevron-right separator"></i><span>Hóa đơn</span></div></div>
+    <div class="d-flex gap-2"><button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg"></i> Tạo hóa đơn</button></div>
 </div>
 
-<div class="content-card">
-    <div class="card-body-custom">
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <div class="toolbar-search">
-                    <i class="bi bi-search"></i>
-                    <input type="text" placeholder="Tìm theo số HĐ, chứng từ...">
-                </div>
-                <div class="d-flex align-items-center gap-2 border rounded px-2 bg-light bg-opacity-50">
-                    <i class="bi bi-calendar3 text-muted"></i>
-                    <input type="date" class="form-control form-control-sm border-0 bg-transparent shadow-none w-auto" value="2026-02-01">
-                    <span class="text-muted">-</span>
-                    <input type="date" class="form-control form-control-sm border-0 bg-transparent shadow-none w-auto" value="2026-02-28">
-                </div>
-                <select class="filter-select">
-                    <option value="">Trạng thái thanh toán</option>
-                    <option value="paid">Đã thanh toán (100%)</option>
-                    <option value="partial">Thanh toán một phần</option>
-                    <option value="unpaid">Chưa thanh toán</option>
-                </select>
-            </div>
-            <div class="toolbar-right">
-                <button class="btn btn-sm btn-outline-secondary border-0 text-success"><i class="bi bi-file-earmark-excel"></i></button>
-            </div>
-        </div>
+<div class="content-card"><div class="card-body-custom">
+    <div class="table-responsive"><table class="data-table">
+        <thead><tr><th>Số hóa đơn</th><th>Đơn hàng</th><th>MST KH</th><th class="text-end">Tổng trước thuế</th><th class="text-end">VAT</th><th class="text-end">Tổng cộng</th><th>Thanh toán</th><th class="text-end">Thao tác</th></tr></thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var inv in Model)
+                {
+                    var orderCode = inv.OrderId.HasValue && orders.ContainsKey(inv.OrderId.Value) ? orders[inv.OrderId.Value] : "N/A";
+                    <tr>
+                        <td class="fw-bold text-primary">@inv.InvoiceNo</td>
+                        <td class="text-muted">@orderCode</td>
+                        <td class="text-muted">@(inv.CustomerTaxCode ?? "—")</td>
+                        <td class="text-end">@(inv.SubTotal?.ToString("N0") ?? "0")</td>
+                        <td class="text-end">@(inv.VATRate?.ToString("N0") ?? "0")%</td>
+                        <td class="text-end fw-bold">@(inv.GrandTotal?.ToString("N0") ?? "0")</td>
+                        <td><span class="badge bg-light text-dark border">@(inv.PaymentMethod ?? "N/A")</span></td>
+                        <td><div class="action-btns justify-content-end">
+                            <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@inv.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Vô hiệu hóa hóa đơn?')"><i class="bi bi-trash"></i></button></form>
+                        </div></td>
+                    </tr>
+                }
+            }
+            else
+            {<tr><td colspan="8" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có hóa đơn nào</p></td></tr>}
+        </tbody>
+    </table></div>
+</div></div>
 
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th style="width: 40px;"><input type="checkbox" class="form-check-input"></th>
-                        <th>Số Hóa đơn</th>
-                        <th>Ngày lập</th>
-                        <th>Khách hàng</th>
-                        <th class="text-end">Tổng tiền (VNĐ)</th>
-                        <th>Trạng thái TT</th>
-                        <th class="text-end">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-bold text-dark">INV-2602-159</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">Đơn: SO-2602-0049</div>
-                        </td>
-                        <td>
-                            <div class="text-dark">18/02/2026</div>
-                            <div class="text-danger" style="font-size: 0.75rem;"><i class="bi bi-exclamation-circle me-1"></i>Hạn: 25/02/2026</div>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-primary">Tập đoàn Alpha</div>
-                        </td>
-                        <td class="text-end fw-semibold">165,000,000</td>
-                        <td><span class="status-badge inactive"><span class="status-dot"></span> Chưa thanh toán</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Ghi nhận TT"><i class="bi bi-cash-coin text-success"></i></button>
-                                <button class="action-btn" title="In HĐ"><i class="bi bi-printer"></i></button>
-                                <button class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-bold text-dark">INV-2602-158</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">Đơn: SO-2602-0045</div>
-                        </td>
-                        <td>
-                            <div class="text-dark">15/02/2026</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">Hạn: 22/02/2026</div>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-primary">CTY XD Tân Tiến</div>
-                        </td>
-                        <td class="text-end fw-semibold">25,500,000</td>
-                        <td>
-                            <div><span class="badge bg-warning text-dark px-2 rounded-pill">Thanh toán 1 phần</span></div>
-                            <div class="progress-custom mt-1" style="height: 4px;">
-                                <div class="progress-bar-custom orange" style="width: 50%;"></div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Ghi nhận TT"><i class="bi bi-cash-coin text-success"></i></button>
-                                <button class="action-btn" title="In HĐ"><i class="bi bi-printer"></i></button>
-                                <button class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-bold text-dark">INV-2602-157</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">Đơn: SO-2602-0043</div>
-                        </td>
-                        <td>
-                            <div class="text-dark">12/02/2026</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">Hạn: 12/02/2026</div>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-primary">Nguyễn Hải Nam</div>
-                        </td>
-                        <td class="text-end fw-semibold">12,000,000</td>
-                        <td><span class="status-badge active"><span class="status-dot"></span> Đã thanh toán</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Ghi nhận TT"><i class="bi bi-cash-coin text-success"></i></button>
-                                <button class="action-btn" title="In HĐ"><i class="bi bi-printer"></i></button>
-                                <button class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+<div class="modal fade" id="createModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content border-0 shadow">
+    <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-receipt me-2"></i>Tạo Hóa đơn</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form asp-action="Create" method="post"><div class="modal-body">
+        <div class="row">
+            <div class="col-6 mb-3"><label class="form-label fw-semibold">Số hóa đơn</label><input type="text" name="InvoiceNo" class="form-control" required /></div>
+            <div class="col-6 mb-3"><label class="form-label fw-semibold">Đơn hàng</label><select name="OrderId" class="form-select"><option value="">-- Chọn đơn hàng --</option>@foreach(var o in allOrders){<option value="@o.Id">@o.OrderCode</option>}</select></div>
         </div>
+        <div class="row"><div class="col-6 mb-3"><label class="form-label fw-semibold">MST Khách hàng</label><input type="text" name="CustomerTaxCode" class="form-control" /></div>
+        <div class="col-6 mb-3"><label class="form-label fw-semibold">PP Thanh toán</label><select name="PaymentMethod" class="form-select"><option value="Chuyển khoản">Chuyển khoản</option><option value="Tiền mặt">Tiền mặt</option><option value="Thẻ tín dụng">Thẻ tín dụng</option></select></div></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Địa chỉ xuất hóa đơn</label><textarea name="BillingAddress" class="form-control" rows="2"></textarea></div>
+        <div class="row">
+            <div class="col-4 mb-3"><label class="form-label fw-semibold">Tổng trước thuế</label><input type="number" name="SubTotal" class="form-control" step="1000" /></div>
+            <div class="col-4 mb-3"><label class="form-label fw-semibold">VAT (%)</label><input type="number" name="VATRate" class="form-control" value="10" step="0.5" /></div>
+            <div class="col-4 mb-3"><label class="form-label fw-semibold">Tổng cộng</label><input type="number" name="GrandTotal" class="form-control" step="1000" /></div>
+        </div>
+        <div class="mb-3"><label class="form-label fw-semibold">Ngày thanh toán</label><input type="date" name="PaymentDate" class="form-control" /></div>
     </div>
-</div>
+    <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom">Tạo hóa đơn</button></div></form>
+</div></div></div>

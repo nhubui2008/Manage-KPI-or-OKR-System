@@ -37,12 +37,30 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var employees = await _context.Employees.ToDictionaryAsync(e => e.Id);
             var kpis = await _context.KPIs.ToDictionaryAsync(k => k.Id);
+            var statuses = await _context.CheckInStatuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
 
             ViewBag.Details = checkInDetails;
             ViewBag.Employees = employees;
             ViewBag.KPIs = kpis;
+            ViewBag.CheckInStatuses = statuses;
+            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.AllKPIs = await _context.KPIs.Where(k => k.IsActive == true).ToListAsync();
+            ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
 
             return View(checkIns);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(KPICheckIn model)
+        {
+            if (ModelState.IsValid)
+            {
+                model.CheckInDate = DateTime.Now;
+                _context.KPICheckIns.Add(model);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Đã tạo check-in KPI mới thành công!";
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }

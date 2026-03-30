@@ -1,136 +1,55 @@
+@model List<Manage_KPI_or_OKR_System.Properties.InventoryReceipt>
 @{
-    ViewData["Title"] = "Quản lý Phiếu Nhập kho";
+    ViewData["Title"] = "Phiếu Nhập kho";
+    var warehouses = ViewBag.Warehouses as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var allWarehouses = ViewBag.AllWarehouses as List<Manage_KPI_or_OKR_System.Models.Warehouse> ?? new List<Manage_KPI_or_OKR_System.Models.Warehouse>();
+    var allEmployees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
 }
+@if (TempData["SuccessMessage"] != null)
+{<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
 
 <div class="page-header">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Phiếu Nhập kho</h1>
-        <div class="page-breadcrumb">
-            <a href="/">Trang chủ</a>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Kho</span>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Phiếu Nhập kho</span>
-        </div>
-    </div>
-    <div class="d-flex gap-2">
-        <button class="btn-primary-custom">
-            <i class="bi bi-plus-lg"></i> Tạo phiếu nhập
-        </button>
-    </div>
+    <div><h1 class="h3 font-weight-bold mb-1">Phiếu Nhập kho</h1><div class="page-breadcrumb"><a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span>Kho</span><i class="bi bi-chevron-right separator"></i><span>Nhập kho</span></div></div>
+    <div class="d-flex gap-2"><button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg"></i> Tạo phiếu nhập</button></div>
 </div>
 
-<div class="content-card">
-    <div class="card-body-custom">
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <div class="toolbar-search">
-                    <i class="bi bi-search"></i>
-                    <input type="text" placeholder="Tìm kiếm mã phiếu...">
-                </div>
-                <div class="d-flex align-items-center gap-2 border rounded px-2 bg-light bg-opacity-50">
-                    <i class="bi bi-calendar3 text-muted"></i>
-                    <input type="date" class="form-control form-control-sm border-0 bg-transparent shadow-none w-auto" value="2026-02-01">
-                    <span class="text-muted">-</span>
-                    <input type="date" class="form-control form-control-sm border-0 bg-transparent shadow-none w-auto" value="2026-02-28">
-                </div>
-                <select class="filter-select">
-                    <option value="">Trạng thái</option>
-                    <option value="draft">Bản nháp</option>
-                    <option value="completed">Đã nhập</option>
-                    <option value="cancelled">Đã hủy</option>
-                </select>
-            </div>
-        </div>
+<div class="content-card"><div class="card-body-custom">
+    <div class="table-responsive"><table class="data-table">
+        <thead><tr><th>Mã phiếu</th><th>Kho nhập</th><th>NV kho</th><th>Ngày nhập</th><th class="text-end">Tổng tiền (VNĐ)</th><th class="text-end">Thao tác</th></tr></thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var r in Model)
+                {
+                    var whName = r.WarehouseId.HasValue && warehouses.ContainsKey(r.WarehouseId.Value) ? warehouses[r.WarehouseId.Value] : "N/A";
+                    var empName = r.WarehouseStaffId.HasValue && employees.ContainsKey(r.WarehouseStaffId.Value) ? employees[r.WarehouseStaffId.Value] : "N/A";
+                    <tr>
+                        <td class="fw-bold text-primary">PN-@r.Id.ToString("D5")</td>
+                        <td class="fw-semibold text-dark">@whName</td>
+                        <td class="text-muted">@empName</td>
+                        <td class="text-muted">@(r.ReceiptDate?.ToString("dd/MM/yyyy") ?? "")</td>
+                        <td class="text-end fw-semibold">@(r.TotalAmount?.ToString("N0") ?? "0")</td>
+                        <td><div class="action-btns justify-content-end">
+                            <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa phiếu nhập?')"><i class="bi bi-trash"></i></button></form>
+                        </div></td>
+                    </tr>
+                }
+            }
+            else
+            {<tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có phiếu nhập nào</p></td></tr>}
+        </tbody>
+    </table></div>
+</div></div>
 
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th style="width: 40px;"><input type="checkbox" class="form-check-input"></th>
-                        <th>Mã Phiếu</th>
-                        <th>Ngày nhập</th>
-                        <th>Nhà cung cấp</th>
-                        <th>Kho nhập</th>
-                        <th class="text-end">Tổng tiền (VNĐ)</th>
-                        <th>Trạng thái</th>
-                        <th class="text-end">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-bold text-primary">PN2602-001</div>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-dark">15/02/2026</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">08:30 AM</div>
-                        </td>
-                        <td><div class="text-dark">Công ty TNHH Cung cấp Thiết bị Kỹ thuật Á Châu</div></td>
-                        <td><div class="badge bg-light border text-dark"><i class="bi bi-building me-1"></i>Kho Tổng Miền Nam</div></td>
-                        <td class="text-end fw-semibold">120,500,000</td>
-                        <td><span class="status-badge active"><span class="status-dot"></span> Đã nhập kho</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="In phiếu"><i class="bi bi-printer"></i></button>
-                                <button class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-bold text-primary">PN2602-002</div>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-dark">16/02/2026</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">14:15 PM</div>
-                        </td>
-                        <td><div class="text-dark">Nhà phân phối Vật tư Công nghiệp Long Phụng</div></td>
-                        <td><div class="badge bg-light border text-dark"><i class="bi bi-building me-1"></i>Kho Miền Trung</div></td>
-                        <td class="text-end fw-semibold">45,000,000</td>
-                        <td><span class="status-badge active"><span class="status-dot"></span> Đã nhập kho</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="In phiếu"><i class="bi bi-printer"></i></button>
-                                <button class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input"></td>
-                        <td>
-                            <div class="fw-bold text-primary">PN2602-003</div>
-                        </td>
-                        <td>
-                            <div class="fw-medium text-dark">20/02/2026</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">10:00 AM</div>
-                        </td>
-                        <td><div class="text-dark">Công ty Cổ phần Thương mại Dịch vụ Global Tech</div></td>
-                        <td><div class="badge bg-light border text-dark"><i class="bi bi-building me-1"></i>Kho Tổng Miền Nam</div></td>
-                        <td class="text-end fw-semibold">210,000,000</td>
-                        <td><span class="status-badge pending"><span class="status-dot"></span> Bản nháp</span></td>
-                        <td>
-                            <div class="action-btns justify-content-end">
-                                <button class="action-btn" title="Sửa phiếu"><i class="bi bi-pencil"></i></button>
-                                <button class="action-btn danger" title="Hủy phiếu"><i class="bi bi-x-circle"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="pagination-custom mt-3">
-            <div>Hiển thị 1-3 trong số 45 bản ghi</div>
-            <div class="pagination-pages">
-                <a href="#" class="page-btn"><i class="bi bi-chevron-left"></i></a>
-                <a href="#" class="page-btn active">1</a>
-                <a href="#" class="page-btn">2</a>
-                <a href="#" class="page-btn">3</a>
-                <a href="#" class="page-btn"><i class="bi bi-chevron-right"></i></a>
-            </div>
-        </div>
+<div class="modal fade" id="createModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content border-0 shadow">
+    <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-box-arrow-in-down me-2"></i>Tạo Phiếu Nhập kho</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form asp-action="Create" method="post"><div class="modal-body">
+        <div class="mb-3"><label class="form-label fw-semibold">Kho nhập</label><select name="WarehouseId" class="form-select" required>
+            <option value="">-- Chọn kho --</option>@foreach(var w in allWarehouses){<option value="@w.Id">@w.WarehouseName (@w.WarehouseCode)</option>}</select></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Nhân viên kho</label><select name="WarehouseStaffId" class="form-select">
+            <option value="">-- Chọn NV --</option>@foreach(var e in allEmployees){<option value="@e.Id">@e.FullName</option>}</select></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Tổng tiền (VNĐ)</label><input type="number" name="TotalAmount" class="form-control" step="1000" /></div>
     </div>
-</div>
+    <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom">Tạo phiếu</button></div></form>
+</div></div></div>
