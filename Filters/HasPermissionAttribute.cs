@@ -21,6 +21,12 @@ public class HasPermissionFilter : IAuthorizationFilter
 
     public void OnAuthorization(AuthorizationFilterContext context)
     {
+        // Đặc quyền cho Admin: Truy cập được tất cả các tính năng
+        if (context.HttpContext.User.IsInRole("Admin") || context.HttpContext.User.IsInRole("Administrator"))
+        {
+            return;
+        }
+
         // Kiểm tra xem User có Claim nào mang Type "Permission" và Value khớp với _permission không
         bool hasClaim = context.HttpContext.User.Claims
             .Any(c => c.Type == "Permission" && c.Value == _permission);
