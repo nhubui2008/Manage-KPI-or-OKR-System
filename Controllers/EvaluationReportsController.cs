@@ -25,7 +25,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // Default to Sales if not specified (per user request example)
             if (!departmentId.HasValue)
             {
-                var salesDept = await _context.Departments.FirstOrDefaultAsync(d => d.DepartmentName.Contains("Sale"));
+                var salesDept = await _context.Departments.FirstOrDefaultAsync(d => d.DepartmentName != null && d.DepartmentName.Contains("Sale"));
                 departmentId = salesDept?.Id ?? 0;
             }
 

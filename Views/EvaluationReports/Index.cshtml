@@ -83,7 +83,8 @@
                                 // Here we use the KR's CurrentValue for demonstration of the logic.
                                 decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, alloc.AllocatedValue ?? 1, kr.IsInverse);
                                 string status = ProgressHelper.GetResultStatus(progress);
-                                string statusColor = status == "Đạt" ? "text-success" : (status == "Gần đạt" ? "text-info" : "text-danger");
+                                string statusColor = ProgressHelper.GetProgressTextColorClass(progress);
+                                string statusBgColor = ProgressHelper.GetProgressColorClass(progress);
                                 
                                 <tr>
                                     @if(first){ <td rowspan="@krAllocations.Count" class="fw-bold align-middle">@okr.ObjectiveName</td> }
@@ -95,11 +96,11 @@
                                         <div class="d-flex align-items-center gap-2 justify-content-center">
                                             <span class="fw-bold @statusColor">@((int)progress)%</span>
                                             <div class="progress" style="width: 50px; height: 5px;">
-                                                <div class="progress-bar @(status == "Đạt" ? "bg-success" : (status == "Gần đạt" ? "bg-info" : "bg-danger"))" style="width: @((int)progress)%"></div>
+                                                <div class="progress-bar @statusBgColor" style="width: @((int)progress)%"></div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="text-center"><span class="badge @(status == "Đạt" ? "bg-success" : (status == "Gần đạt" ? "bg-info" : "bg-danger")) bg-opacity-10 @(status == "Đạt" ? "text-success" : (status == "Gần đạt" ? "text-info" : "text-danger")) px-3">@status</span></td>
+                                    <td class="text-center"><span class="badge @statusBgColor bg-opacity-10 @statusColor px-3">@status</span></td>
                                     <td class="text-muted small">@(kr.FailReasonId.HasValue && failReasons.ContainsKey(kr.FailReasonId.Value) ? failReasons[kr.FailReasonId.Value] : (progress < 100 ? "Chưa rõ lý do / Đang cập nhật" : "-"))</td>
                                 </tr>
                                 first = false;

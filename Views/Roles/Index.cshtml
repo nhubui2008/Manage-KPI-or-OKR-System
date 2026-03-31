@@ -54,8 +54,9 @@
     {
         foreach (var role in Model)
         {
-            var color = GetRoleColor(role.RoleName);
-            var icon = GetRoleIcon(role.RoleName);
+            var roleName = role.RoleName ?? "";
+            var color = GetRoleColor(roleName);
+            var icon = GetRoleIcon(roleName);
 
             <div class="col-md-4">
                 <div class="content-card h-100 position-relative">

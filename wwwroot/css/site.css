@@ -793,31 +793,41 @@ body {
 }
 
 /* --- PROGRESS BAR --- */
-.progress-custom {
-    height: 8px;
-    background: var(--body-bg);
-    border-radius: 4px;
+.progress, .progress-custom {
+    height: 8px !important;
+    background-color: #f1f5f9 !important;
+    border-radius: 10px !important;
     overflow: hidden;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+    border: none;
 }
 
-.progress-custom .progress-bar-custom {
+.progress-bar, .progress-bar-custom {
     height: 100%;
-    border-radius: 4px;
-    background: linear-gradient(90deg, var(--primary-light), var(--accent));
-    transition: width 0.5s ease;
+    border-radius: 10px !important;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
 }
 
-.progress-custom .progress-bar-custom.green {
-    background: linear-gradient(90deg, #a7f3d0, var(--success));
+/* Soft Premium Gradients */
+.bg-soft-success, .progress-bar-custom.green {
+    background: linear-gradient(90deg, #6bd7a3, #4fd195) !important;
+    box-shadow: 0 2px 6px rgba(107, 215, 163, 0.3);
 }
 
-.progress-custom .progress-bar-custom.orange {
-    background: linear-gradient(90deg, #fde68a, var(--warning));
+.bg-soft-primary {
+    background: linear-gradient(90deg, #6b7fd7, #5a6ec4) !important;
+    box-shadow: 0 2px 6px rgba(107, 127, 215, 0.3);
 }
 
-.progress-custom .progress-bar-custom.red {
-    background: linear-gradient(90deg, #fecaca, var(--danger));
+.bg-soft-warning, .progress-bar-custom.orange {
+    background: linear-gradient(90deg, #fbc7a2, #f9a37a) !important;
+    box-shadow: 0 2px 6px rgba(251, 199, 162, 0.3);
+}
+
+.bg-soft-danger, .progress-bar-custom.red {
+    background: linear-gradient(90deg, #e57373, #ef5350) !important;
+    box-shadow: 0 2px 6px rgba(229, 115, 115, 0.3);
 }
 
 /* --- ACTION BUTTONS IN TABLE --- */
@@ -1005,3 +1015,215 @@ body.sidebar-collapsed .main-content { margin-left: 0; }
         display: none;
     }
 }
+
+/* --- SOFT MODAL DESIGN --- */
+.modal-content {
+    border-radius: var(--radius-lg) !important;
+    border: none !important;
+    box-shadow: 0 15px 50px rgba(45, 53, 89, 0.15) !important;
+}
+
+.modal-header-soft {
+    padding: 24px 32px;
+    border-bottom: 1px solid rgba(0,0,0,0.03);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.modal-header-soft.warning {
+    background: linear-gradient(135deg, #fffbf0 0%, #fff3cd 100%);
+}
+
+.modal-header-soft.primary {
+    background: linear-gradient(135deg, #f0f7ff 0%, #e0efff 100%);
+}
+
+.modal-title-custom {
+    font-size: var(--font-size-lg);
+    font-weight: 800;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+}
+
+.modal-title-custom i {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    color: inherit;
+}
+
+.modal-body-soft {
+    padding: 32px;
+}
+
+/* Form Icon Groups */
+.form-icon-group {
+    position: relative;
+    margin-bottom: 24px;
+}
+
+.form-icon-group label {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.form-icon-group .input-wrapper {
+    position: relative;
+}
+
+.form-icon-group .input-wrapper i {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--primary);
+    font-size: 1.1rem;
+    opacity: 0.6;
+    z-index: 5;
+}
+
+.form-icon-group .form-control, 
+.form-icon-group .form-select {
+    height: 52px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border-color);
+    padding-left: 48px;
+    font-size: var(--font-size-base);
+    transition: all var(--transition-fast);
+    background-color: #fcfdfe;
+}
+
+.form-icon-group .form-control:focus,
+.form-icon-group .form-select:focus {
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.15);
+    background: #fff;
+    outline: none;
+}
+
+/* Soft Tag for Modal */
+.soft-tag-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #f8fafc;
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 28px;
+    border: 1px solid var(--border-color);
+    width: 100%;
+}
+
+.soft-tag-indicator i {
+    color: var(--warning);
+}
+
+/* Modern Toggle Switch */
+.form-switch-premium {
+    padding: 16px 20px;
+    background-color: #f8fafc;
+    border-radius: var(--radius-md);
+    border: 1.5px dashed var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    transition: all var(--transition-fast);
+}
+
+.form-switch-premium:hover {
+    border-color: var(--primary-light);
+    background-color: #fff;
+}
+
+.form-switch-premium .form-check-input {
+    width: 3.2rem;
+    height: 1.6rem;
+    margin-top: 0;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(0,0,0,0.25)'/%3e%3c/svg%3e");
+}
+
+.form-switch-premium .form-check-input:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.form-switch-premium .label-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-switch-premium .label-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.form-switch-premium .label-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* --- PREMIUM STATUS BADGES (KPI/OKR) --- */
+.status-badge-soft {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid transparent;
+    transition: all var(--transition-fast);
+}
+
+.status-badge-soft .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+    box-shadow: 0 0 8px currentColor;
+}
+
+/* On Track / Tốt */
+.badge-on-track {
+    background-color: var(--success-bg);
+    color: var(--success);
+    border-color: rgba(107, 215, 163, 0.2);
+}
+
+/* At Risk / Nguy cơ */
+.badge-at-risk {
+    background-color: var(--warning-bg);
+    color: var(--warning);
+    border-color: rgba(251, 199, 162, 0.2);
+}
+
+/* Off Track or Late / Trễ */
+.badge-late {
+    background-color: var(--danger-bg);
+    color: var(--danger);
+    border-color: rgba(229, 115, 115, 0.2);
+}
+
+.badge-on-track:hover { background-color: rgba(107, 215, 163, 0.25); }
+.badge-at-risk:hover { background-color: rgba(251, 199, 162, 0.25); }
+.badge-late:hover { background-color: rgba(229, 115, 115, 0.25); }

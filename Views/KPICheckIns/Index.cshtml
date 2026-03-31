@@ -1,4 +1,5 @@
 @model IEnumerable<Manage_KPI_or_OKR_System.Models.KPICheckIn>
+@using Manage_KPI_or_OKR_System.Helpers
 @{
     ViewData["Title"] = "Lịch sử Check-in KPI";
     
@@ -57,10 +58,19 @@
                         <text x="18" y="20.35" class="percentage" font-size="7.5" text-anchor="middle" fill="#1e293b" font-weight="700">@((inTimePct + riskPct).ToString())%</text>
                     </svg>
                 </div>
-                <div class="d-flex justify-content-center gap-3 mt-2 text-start px-2" style="font-size: 0.8rem;">
-                    <div><span class="status-dot rounded-circle bg-success d-inline-block me-1 shadow-sm"></span>Tốt (@inTimePct%)</div>
-                    <div><span class="status-dot rounded-circle bg-warning d-inline-block me-1 shadow-sm"></span>Nguy cơ (@riskPct%)</div>
-                    <div><span class="status-dot rounded-circle bg-danger d-inline-block me-1 shadow-sm"></span>Trễ (@latePct%)</div>
+                <div class="d-flex flex-column gap-2 mt-2 px-3">
+                    <div class="status-badge-soft badge-on-track w-100 justify-content-between">
+                        <span><i class="bi bi-check-circle-fill me-2"></i>Tốt (On Track)</span>
+                        <span>@inTimePct%</span>
+                    </div>
+                    <div class="status-badge-soft badge-at-risk w-100 justify-content-between">
+                        <span><i class="bi bi-exclamation-triangle-fill me-2"></i>Nguy cơ (At Risk)</span>
+                        <span>@riskPct%</span>
+                    </div>
+                    <div class="status-badge-soft badge-late w-100 justify-content-between">
+                        <span><i class="bi bi-x-circle-fill me-2"></i>Trễ (Late)</span>
+                        <span>@latePct%</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -98,10 +108,8 @@
                                     string kpiName = kpi?.KPIName ?? "KPI Đã xóa";
 
                                     decimal progressVal = detail.ProgressPercentage ?? 0;
-                                    string colorClass = "danger";
-                                    string barColor = "red";
-                                    if(progressVal >= 80) { colorClass = "success"; barColor = "green"; }
-                                    else if(progressVal >= 50) { colorClass = "warning"; barColor = "orange"; }
+                                    string colorClass = ProgressHelper.GetProgressTextColorClass(progressVal);
+                                    string barColor = ProgressHelper.GetProgressColorClass(progressVal);
 
                                     <tr class="bg-white">
                                         <td class="ps-4 py-3 border-bottom-0">
@@ -124,11 +132,18 @@
                                             <div class="text-muted" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i> @(ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</div>
                                         </td>
                                         <td class="py-3 border-bottom-0" style="min-width: 140px;">
-                                            <div class="d-flex align-items-center justify-content-between mb-1">
-                                                <span class="text-@colorClass fw-bold" style="font-size: 0.85rem;">@progressVal%</span>
+                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <span class="@colorClass fw-bold" style="font-size: 0.85rem;">@progressVal%</span>
+                                                @{
+                                                    string badgeClass = ci.StatusId == 2 ? "badge-at-risk" : (ci.StatusId == 3 ? "badge-late" : "badge-on-track");
+                                                    string badgeText = ci.StatusId == 2 ? "At Risk" : (ci.StatusId == 3 ? "Late" : "On Track");
+                                                }
+                                                <span class="status-badge-soft @badgeClass" style="font-size: 0.65rem; padding: 2px 8px;">
+                                                    <span class="status-dot"></span> @badgeText
+                                                </span>
                                             </div>
-                                            <div class="progress-custom shadow-sm bg-light" style="height: 6px; border-radius: 10px;">
-                                                <div class="progress-bar-custom @barColor" style="width: @progressVal%; border-radius: 10px;"></div>
+                                            <div class="progress shadow-sm" style="height: 6px;">
+                                                <div class="progress-bar @barColor" style="width: @progressVal%;"></div>
                                             </div>
                                         </td>
                                     </tr>
@@ -162,42 +177,102 @@
 
 <!-- Create Check-in Modal -->
 <div class="modal fade" id="createCheckinModal" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content border-0 shadow">
-        <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-calendar-check me-2"></i>Thực hiện Check-in KPI</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <form asp-action="Create" asp-controller="KPICheckIns" method="post"><div class="modal-body">
-            <div class="mb-3"><label class="form-label fw-semibold">Nhân viên</label><select name="EmployeeId" class="form-select" required>
-                <option value="">-- Chọn nhân viên --</option>@foreach(var e in allEmployeesList){<option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>}</select></div>
-            <div class="mb-3"><label class="form-label fw-semibold">KPI</label><select name="KPIId" class="form-select" required>
-                <option value="">-- Chọn KPI --</option>@foreach(var k in allKPIsList){<option value="@k.Id">@k.KPIName</option>}</select></div>
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Trạng thái</label>
-                <select name="StatusId" class="form-select">
-                    @foreach(var s in allStatusesList){<option value="@s.Id">@s.StatusName</option>}
-                </select>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header-soft primary">
+                <h5 class="modal-title-custom">
+                    <i class="bi bi-calendar-check-fill text-primary"></i>
+                    Thực hiện Check-in KPI
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Kết quả đạt được (Thực tế)</label>
-                <div class="input-group">
-                    <input type="number" step="0.01" name="AchievedValue" class="form-control" placeholder="Nhập con số thực tế..." required>
-                    <span class="input-group-text"><i class="bi bi-graph-up-arrow"></i></span>
+            <form asp-action="Create" asp-controller="KPICheckIns" method="post">
+                <div class="modal-body-soft">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-icon-group">
+                                <label>Nhân viên</label>
+                                <div class="input-wrapper">
+                                    <i class="bi bi-person-circle"></i>
+                                    <select name="EmployeeId" class="form-select" required>
+                                        <option value="">-- Chọn nhân viên --</option>
+                                        @foreach(var e in (ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>())){
+                                            <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-icon-group">
+                                <label>KPI Mục tiêu</label>
+                                <div class="input-wrapper">
+                                    <i class="bi bi-speedometer2"></i>
+                                    <select name="KPIId" class="form-select" required>
+                                        <option value="">-- Chọn KPI --</option>
+                                        @foreach(var k in (ViewBag.AllKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new List<Manage_KPI_or_OKR_System.Models.KPI>())){
+                                            <option value="@k.Id">@k.KPIName</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-icon-group">
+                                <label>Trạng thái tiến độ</label>
+                                <div class="input-wrapper">
+                                    <i class="bi bi-flag-fill"></i>
+                                    <select name="StatusId" class="form-select">
+                                        @foreach(var s in (ViewBag.AllStatuses as List<Manage_KPI_or_OKR_System.Models.CheckInStatus> ?? new List<Manage_KPI_or_OKR_System.Models.CheckInStatus>())){
+                                            <option value="@s.Id">@s.StatusName</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-icon-group">
+                                <label>Kết quả thực tế</label>
+                                <div class="input-wrapper">
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                    <input type="number" step="0.01" name="AchievedValue" class="form-control" placeholder="0.00" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-icon-group">
+                        <label>Ghi chú / Trở ngại</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-chat-left-dots"></i>
+                            <textarea name="Note" class="form-control" placeholder="Nhập ghi chú hoặc các khó khăn gặp phải..." rows="2" style="padding-top: 12px;"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-icon-group mb-0">
+                        <label>Lý do (Nếu chưa đạt)</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <select name="FailReasonId" class="form-select">
+                                <option value="">-- Không có / Đã đạt --</option>
+                                @foreach(var r in (ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>())){
+                                    <option value="@r.Id">@r.ReasonName</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-3 mt-4">
+                        <button type="button" class="btn-outline-custom px-4" data-bs-dismiss="modal">Hủy bỏ</button>
+                        <button type="submit" class="btn-primary-custom px-4">Xác nhận Check-in</button>
+                    </div>
                 </div>
-            </div>
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Ghi chú / Trở ngại</label>
-                <textarea name="Note" class="form-control" placeholder="Nhập ghi chú hoặc các khó khăn gặp phải..." rows="3"></textarea>
-            </div>
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Lý do (Nếu chưa đạt mục tiêu)</label>
-                <select name="FailReasonId" class="form-select">
-                    <option value="">-- Chọn lý do --</option>
-                    @foreach(var r in ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>()){
-                        <option value="@r.Id">@r.ReasonName</option>
-                    }
-                </select>
-            </div>
+            </form>
         </div>
-        <div class="modal-footer border-0"><button type="button" class="btn-outline-custom" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Check-in</button></div></form>
-    </div></div>
+    </div>
 </div>
 
 <style>
