@@ -70,6 +70,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             ViewBag.KeyResults = krDict;
+            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
 
             return View(okrs);
         }
@@ -101,6 +102,47 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã thêm Kết quả Then chốt thành công!";
             }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateKeyResultProgress(int krId, decimal currentValue)
+        {
+            var kr = await _context.OKRKeyResults.FindAsync(krId);
+            if (kr != null)
+            {
+                kr.CurrentValue = currentValue;
+                
+                // Calculate Status using ProgressHelper
+                decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, kr.TargetValue ?? 0, kr.IsInverse);
+                kr.ResultStatus = ProgressHelper.GetResultStatus(progress);
+
+                _context.Update(kr);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Đã cập nhật tiến độ Key Result và Đánh giá thành công!";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AllocateTarget(int okrId, int employeeId, decimal allocatedValue)
+        {
+            var okr = await _context.OKRs.FindAsync(okrId);
+            if (okr == null) return NotFound();
+
+            // Validation logic: Sum of employee allocations must not exceed OKR total (if applicable)
+            // Or we treat this as a per-employee task within the OKR.
+            
+            var allocation = new OKR_Employee_Allocation {
+                OKRId = okrId,
+                EmployeeId = employeeId,
+                AllocatedValue = allocatedValue
+            };
+
+            _context.OKR_Employee_Allocations.Add(allocation);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Đã phân bổ chỉ tiêu cho nhân viên thành công!";
             return RedirectToAction(nameof(Index));
         }
 

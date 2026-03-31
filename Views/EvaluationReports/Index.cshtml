@@ -1,0 +1,138 @@
+@model IEnumerable<Manage_KPI_or_OKR_System.Models.OKR_Employee_Allocation>
+@using Manage_KPI_or_OKR_System.Helpers
+@{
+    ViewData["Title"] = "Báo cáo Đánh giá Chi tiết (Director's View)";
+    var okrs = (ViewBag.OKRs as List<Manage_KPI_or_OKR_System.Models.OKR>) ?? new List<Manage_KPI_or_OKR_System.Models.OKR>();
+    var krs = (ViewBag.KRs as List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>) ?? new List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>();
+    var employees = (ViewBag.Employees as Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>) ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>();
+    var failReasons = (ViewBag.FailReasons as Dictionary<int, string>) ?? new Dictionary<int, string>();
+    var departments = (ViewBag.Departments as List<Manage_KPI_or_OKR_System.Models.Department>) ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
+}
+
+<div class="container-fluid px-0">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Báo cáo Phân bổ & Đánh giá Chỉ tiêu</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Giám đốc đánh giá</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-custom" onclick="window.print()"><i class="bi bi-printer me-1"></i> In báo cáo</button>
+            <button class="btn-primary-custom"><i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel</button>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="content-card mb-4 shadow-sm border-0">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Phòng ban</label>
+                    <select name="departmentId" class="form-select">
+                        @foreach(var d in departments){
+                            <option value="@d.Id" selected="@(ViewBag.CurrentDeptId == d.Id ? "selected" : null)">@d.DepartmentName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Chu kỳ (Quý/Năm)</label>
+                    <select name="cycle" class="form-select">
+                        <option value="Q1-2026" selected="@(ViewBag.CurrentCycle == "Q1-2026" ? "selected" : null)">Quý 1 - 2026</option>
+                        <option value="Q2-2026" selected="@(ViewBag.CurrentCycle == "Q2-2026" ? "selected" : null)">Quý 2 - 2026</option>
+                        <option value="Năm 2026" selected="@(ViewBag.CurrentCycle == "Năm 2026" ? "selected" : null)">Cả năm 2026</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary-custom w-100">Lọc dữ liệu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Report Table -->
+    <div class="content-card shadow-sm border-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="data-table w-100">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Bộ phận / Mục tiêu</th>
+                        <th>Kết quả then chốt</th>
+                        <th>Người phụ trách</th>
+                        <th class="text-end">Chỉ tiêu riêng</th>
+                        <th class="text-end">Thực tế đạt</th>
+                        <th class="text-center">Hoàn thành</th>
+                        <th class="text-center">Đánh giá</th>
+                        <th>Lý do (Nếu chưa đạt)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var okr in okrs)
+                    {
+                        var okrKrs = krs.Where(k => k.OKRId == okr.Id).ToList();
+                        foreach (var kr in okrKrs)
+                        {
+                            var krAllocations = Model.Where(a => a.OKRId == okr.Id).ToList(); // Simplifying allocation link
+                            bool first = true;
+                            foreach (var alloc in krAllocations)
+                            {
+                                var emp = employees.ContainsKey(alloc.EmployeeId) ? employees[alloc.EmployeeId] : null;
+                                // In a real system, the allocation might link to the KR specifically. 
+                                // Here we use the KR's CurrentValue for demonstration of the logic.
+                                decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, alloc.AllocatedValue ?? 1, kr.IsInverse);
+                                string status = ProgressHelper.GetResultStatus(progress);
+                                string statusColor = status == "Đạt" ? "text-success" : (status == "Gần đạt" ? "text-info" : "text-danger");
+                                
+                                <tr>
+                                    @if(first){ <td rowspan="@krAllocations.Count" class="fw-bold align-middle">@okr.ObjectiveName</td> }
+                                    @if(first){ <td rowspan="@krAllocations.Count" class="align-middle">@kr.KeyResultName</td> }
+                                    <td>@(emp?.FullName ?? "N/A")</td>
+                                    <td class="text-end">@String.Format("{0:N0}", alloc.AllocatedValue) @kr.Unit</td>
+                                    <td class="text-end fw-bold">@String.Format("{0:N1}", kr.CurrentValue) @kr.Unit</td>
+                                    <td class="text-center">
+                                        <div class="d-flex align-items-center gap-2 justify-content-center">
+                                            <span class="fw-bold @statusColor">@((int)progress)%</span>
+                                            <div class="progress" style="width: 50px; height: 5px;">
+                                                <div class="progress-bar @(status == "Đạt" ? "bg-success" : (status == "Gần đạt" ? "bg-info" : "bg-danger"))" style="width: @((int)progress)%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center"><span class="badge @(status == "Đạt" ? "bg-success" : (status == "Gần đạt" ? "bg-info" : "bg-danger")) bg-opacity-10 @(status == "Đạt" ? "text-success" : (status == "Gần đạt" ? "text-info" : "text-danger")) px-3">@status</span></td>
+                                    <td class="text-muted small">@(kr.FailReasonId.HasValue && failReasons.ContainsKey(kr.FailReasonId.Value) ? failReasons[kr.FailReasonId.Value] : (progress < 100 ? "Chưa rõ lý do / Đang cập nhật" : "-"))</td>
+                                </tr>
+                                first = false;
+                            }
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Director's Summative Analysis Section -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="content-card">
+                <div class="card-header-custom"><i class="bi bi-chat-left-text me-2"></i>Tổng hợp của Giám đốc</div>
+                <div class="card-body-custom">
+                    <textarea class="form-control" rows="4" placeholder="Nhập nhận định chung về tình hình thực hiện OKR/KPI của Sale Q1..."></textarea>
+                    <button class="btn-primary-custom mt-3 float-end">Lưu nhận xét</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="content-card h-100">
+                <div class="card-header-custom"><i class="bi bi-exclamation-triangle me-2"></i>Các rủi ro vận hành (P.S.)</div>
+                <div class="card-body-custom">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><span class="badge bg-danger rounded-pill me-2">!</span>Sự cố cúp điện 2h (Tháng 2) - Ảnh hưởng 15% năng suất KPI sản xuất.</li>
+                        <li class="mb-2"><span class="badge bg-warning rounded-pill me-2">!</span>Biến động tỷ giá - Ảnh hưởng chỉ tiêu chi phí/lợi nhuận.</li>
+                        <li><i class="bi bi-plus-circle text-primary me-2 cursor-pointer"></i> Thêm sự cố vận hành năm nay</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

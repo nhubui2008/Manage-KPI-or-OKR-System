@@ -21,8 +21,8 @@
 
     <div class="row">
         <div class="col-md-8">
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-body p-4">
+            <div class="content-card rounded-3">
+                <div class="card-body-custom p-4">
                     
                     @if (ViewBag.ErrorMessage != null)
                     {
@@ -43,10 +43,10 @@
                         </div>
 
                         <div class="d-flex justify-content-end gap-2">
-                            <a asp-action="Index" class="btn btn-light border px-4">
+                            <a asp-action="Index" class="btn-outline-custom px-4">
                                 <i class="bi bi-x-circle me-1"></i> Hủy bỏ
                             </a>
-                            <button type="submit" class="btn btn-success px-4">
+                            <button type="submit" class="btn-primary-custom px-4">
                                 <i class="bi bi-upload me-1"></i> Import dữ liệu
                             </button>
                         </div>
@@ -56,8 +56,8 @@
         </div>
 
         <div class="col-md-4">
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-header bg-light">
+            <div class="content-card rounded-3">
+                <div class="card-header-custom bg-light">
                     <h6 class="mb-0 fw-semibold">
                         <i class="bi bi-info-circle text-info me-2"></i>Hướng dẫn
                     </h6>

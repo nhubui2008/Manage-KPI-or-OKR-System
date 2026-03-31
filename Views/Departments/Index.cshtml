@@ -28,7 +28,9 @@
     }
 }
 
-<div class="page-header">
+<div class="container-fluid px-0">
+    
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h3 font-weight-bold mb-1">Cơ cấu tổ chức</h1>
         <div class="page-breadcrumb">
@@ -37,9 +39,9 @@
             <span>Phòng ban</span>
         </div>
     </div>
-    <div class="d-flex gap-2">
-        <a class="btn-primary-custom" asp-action="Create" asp-controller="Departments">
-            <i class="bi bi-plus-lg"></i> Thêm phòng ban mới
+    <div class="d-flex justify-content-end gap-2">
+        <a class="btn-primary-custom d-flex align-items-center" asp-action="Create" asp-controller="Departments">
+            <i class="bi bi-plus-lg me-1"></i> Thêm phòng ban mới
         </a>
     </div>
 </div>
@@ -51,7 +53,9 @@
     </div>
 }
 
-<div class="row g-4">
+<div class="row justify-content-center w-100 m-0">
+        <div class="col-12 px-0">
+            <div class="row g-4 w-100">
     <div class="col-lg-4">
         <div class="content-card h-100">
             <div class="card-header-custom border-bottom">
@@ -129,8 +133,8 @@
                     </div>
                 </form>
 
-                <div class="table-responsive">
-                    <table class="data-table">
+                <div class="table-responsive w-100">
+                    <table class="data-table w-100">
                         <thead>
                             <tr>
                                 <th>Mã PB</th>
@@ -231,3 +235,7 @@
             </div>
         </div>
     </div>
+
+        </div>
+    </div>
+</div>

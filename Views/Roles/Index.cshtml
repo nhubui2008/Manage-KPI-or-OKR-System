@@ -20,7 +20,9 @@
     }
 }
 
-<div class="page-header">
+<div class="container-fluid px-0">
+    
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h3 font-weight-bold mb-1">Phân quyền Hệ thống</h1>
         <div class="page-breadcrumb">
@@ -31,9 +33,9 @@
             <span>Quản lý roles</span>
         </div>
     </div>
-    <div class="d-flex gap-2">
-        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createRoleModal">
-            <i class="bi bi-shield-plus"></i> Tạo Role mới
+    <div class="d-flex justify-content-end gap-2">
+        <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createRoleModal">
+            <i class="bi bi-shield-plus me-1"></i> Tạo Role mới
         </button>
     </div>
 </div>
@@ -45,7 +47,9 @@
     </div>
 }
 
-<div class="row g-4">
+<div class="row justify-content-center w-100 m-0">
+        <div class="col-12 px-0">
+            <div class="row g-4 w-100">
     @if (Model != null && Model.Any())
     {
         foreach (var role in Model)
@@ -79,7 +83,7 @@
                             <span class="fw-medium text-muted" style="font-size: 0.85rem;">Phân quyền người dùng</span>
                         </div>
                         
-                        <div class="d-flex gap-2">
+                        <div class="d-flex justify-content-end gap-2">
                             <button class="btn btn-sm btn-outline-@color flex-grow-1">Cấu hình chi tiết</button>
                             <form asp-action="Delete" asp-route-id="@role.Id" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa quyền này?');">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa role" @(color == "danger" ? "disabled" : "")>
@@ -99,7 +103,7 @@
                 <i class="bi bi-shield-x display-4 text-info mb-3 d-block"></i>
                 <h5>Chưa có nhóm quyền nào</h5>
                 <p class="text-muted mb-4">Bạn cần tạo mới các nhóm quyền để có thể phân loại người dùng trong hệ thống.</p>
-                <button class="btn btn-primary px-4 rounded-pill" data-bs-toggle="modal" data-bs-target="#createRoleModal">Tạo Role đầu tiên</button>
+                <button class="btn-primary-custom px-4 rounded-pill" data-bs-toggle="modal" data-bs-target="#createRoleModal">Tạo Role đầu tiên</button>
             </div>
         </div>
     }
@@ -125,11 +129,15 @@
                         <textarea id="description" name="description" class="form-control" rows="3" placeholder="Nhập mô tả các chức năng mà nhóm quyền này có thể thao tác..."></textarea>
                     </div>
                     <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-primary rounded-pill px-4">Tạo mới</button>
+                        <button type="button" class="btn-outline-custom rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn-primary-custom rounded-pill px-4">Tạo mới</button>
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+</div>
+
         </div>
     </div>
 </div>

@@ -6,169 +6,187 @@
     var positions = ViewBag.Positions as Dictionary<int, string> ?? new Dictionary<int, string>();
 }
 
-<div class="page-header">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Quản lý Nhân sự</h1>
-        <div class="page-breadcrumb">
-            <a href="/">Trang chủ</a>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Nhân sự</span>
+<div class="container-fluid px-0">
+    
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Quản lý Nhân sự</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Nhân sự</span>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
+            {
+                <a asp-action="ExportReport" class="btn-outline-custom text-success border-success d-flex align-items-center" title="Xuất báo cáo nhân sự">
+                    <i class="bi bi-file-earmark-arrow-down me-1"></i> Xuất báo cáo NS
+                </a>
+                <a asp-action="ImportExcel" class="btn-outline-custom d-flex align-items-center">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Nhập Excel
+                </a>
+                <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
+                    <i class="bi bi-plus-lg me-1"></i> Thêm nhân viên mới
+                </a>
+            }
         </div>
     </div>
-    <div class="d-flex gap-2">
-        <a asp-action="ImportExcel" class="btn-outline-custom">
-            <i class="bi bi-file-earmark-excel"></i> Nhập Excel
-        </a>
-        <a asp-action="Create" class="btn-primary-custom">
-            <i class="bi bi-plus-lg"></i> Thêm nhân viên mới
-        </a>
-    </div>
-</div>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
-    </div>
-}
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        </div>
+    }
 
-<div class="content-card">
-    <div class="card-body-custom">
-        
-        <form asp-action="Index" method="get" class="toolbar">
-            <div class="toolbar-left">
-                <div class="toolbar-search">
-                    <i class="bi bi-search"></i>
-                    <input type="text" name="searchString" value="@ViewBag.CurrentSearch" placeholder="Tìm kiếm theo mã, tên, SĐT...">
+    <div class="row justify-content-center w-100 m-0">
+        <div class="col-12 px-0">
+            <div class="content-card w-100">
+                <div class="card-body-custom">
+                    
+                    <form asp-action="Index" method="get" class="toolbar">
+                        <div class="toolbar-left">
+                            <div class="toolbar-search">
+                                <i class="bi bi-search"></i>
+                                <input type="text" name="searchString" value="@ViewBag.CurrentSearch" placeholder="Tìm kiếm theo mã, tên, SĐT...">
+                            </div>
+                            
+                            <select name="departmentId" class="filter-select">
+                                <option value="">Tất cả phòng ban</option>
+                                @foreach (var dept in departments)
+                                {
+                                    if (ViewBag.CurrentDepartment?.ToString() == dept.Key.ToString())
+                                    {
+                                        <option value="@dept.Key" selected>@dept.Value</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@dept.Key">@dept.Value</option>
+                                    }
+                                }
+                            </select>
+                            
+                            <select name="isActive" class="filter-select">
+                                @if (string.IsNullOrEmpty(ViewBag.CurrentStatus))
+                                {
+                                    <option value="" selected>Trạng thái</option>
+                                }
+                                else
+                                {
+                                    <option value="">Trạng thái</option>
+                                }
+                                
+                                @if (ViewBag.CurrentStatus == "true")
+                                {
+                                    <option value="true" selected>Đang làm việc</option>
+                                }
+                                else
+                                {
+                                    <option value="true">Đang làm việc</option>
+                                }
+                                
+                                @if (ViewBag.CurrentStatus == "false")
+                                {
+                                    <option value="false" selected>Đã nghỉ việc</option>
+                                }
+                                else
+                                {
+                                    <option value="false">Đã nghỉ việc</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="toolbar-right">
+                            <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0" title="Làm mới">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </a>
+                            <button type="submit" class="btn btn-sm btn-outline-secondary border-0" title="Lọc kết quả">
+                                <i class="bi bi-funnel"></i>
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="table-responsive w-100">
+                        <table class="data-table w-100">
+                            <thead>
+                                <tr>
+                                    <th>Thông tin nhân viên</th>
+                                    <th>Phòng ban</th>
+                                    <th>Chức vụ</th>
+                                    <th>Liên hệ</th>
+                                    <th>Ngày vào làm</th>
+                                    <th>Trạng thái</th>
+                                    <th class="text-end">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    foreach (var emp in Model)
+                                    {
+                                        var hasAssignment = assignments.TryGetValue(emp.Id, out var assign);
+                                        var deptId = hasAssignment ? assign?.DepartmentId : null;
+                                        var posId = hasAssignment ? assign?.PositionId : null;
+                                        var deptName = deptId.HasValue && departments.ContainsKey(deptId.Value)
+                                                       ? departments[deptId.Value] : "Chưa phân bổ";
+                                        var posName = posId.HasValue && positions.ContainsKey(posId.Value)
+                                                       ? positions[posId.Value] : "Chưa phân bổ";
+                                        var statusClass = emp.IsActive == true ? "active" : "inactive";
+                                        var statusDot = emp.IsActive == true ? "" : "text-danger bg-danger";
+                                        var statusText = emp.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc";
+                                        var avatarLetter = !string.IsNullOrEmpty(emp.FullName) ? emp.FullName[0].ToString().ToUpper() : "U";
+
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div class="user-avatar bg-primary text-white d-flex justify-content-center align-items-center" style="width: 36px; height: 36px; font-weight: bold; border-radius: 50%;">
+                                                        @avatarLetter
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-semibold text-dark">@emp.FullName</div>
+                                                        <div class="text-muted" style="font-size: 0.75rem;">@emp.EmployeeCode</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>@deptName</td>
+                                            <td>@posName</td>
+                                            <td>
+                                                <div class="text-dark" style="font-size: 0.85rem;"><i class="bi bi-envelope text-muted me-1"></i>@emp.Email</div>
+                                                <div class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-telephone text-muted me-1"></i>@emp.Phone</div>
+                                            </td>
+                                            <td>@(emp.JoinDate?.ToString("dd/MM/yyyy"))</td>
+                                            <td><span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span></td>
+                                            <td>
+                                                <div class="action-btns justify-content-end">
+                                                    <a asp-action="Details" asp-route-id="@emp.Id" class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
+                                                    @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
+                                                    {
+                                                        <a asp-action="Edit" asp-route-id="@emp.Id" class="action-btn" title="Chỉnh sửa thông tin"><i class="bi bi-pencil"></i></a>
+                                                        @if (emp.IsActive == true)
+                                                        {
+                                                            <a asp-action="Delete" asp-route-id="@emp.Id" class="action-btn danger" title="Nghỉ việc"><i class="bi bi-person-dash"></i></a>
+                                                        }
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5 text-muted">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            Không tìm thấy kết quả nào phù hợp.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                
-                <select name="departmentId" class="filter-select">
-                    <option value="">Tất cả phòng ban</option>
-                    @foreach (var dept in departments)
-                    {
-                        if (ViewBag.CurrentDepartment?.ToString() == dept.Key.ToString())
-                        {
-                            <option value="@dept.Key" selected>@dept.Value</option>
-                        }
-                        else
-                        {
-                            <option value="@dept.Key">@dept.Value</option>
-                        }
-                    }
-                </select>
-                
-                <select name="isActive" class="filter-select">
-                    @if (string.IsNullOrEmpty(ViewBag.CurrentStatus))
-                    {
-                        <option value="" selected>Trạng thái</option>
-                    }
-                    else
-                    {
-                        <option value="">Trạng thái</option>
-                    }
-                    
-                    @if (ViewBag.CurrentStatus == "true")
-                    {
-                        <option value="true" selected>Đang làm việc</option>
-                    }
-                    else
-                    {
-                        <option value="true">Đang làm việc</option>
-                    }
-                    
-                    @if (ViewBag.CurrentStatus == "false")
-                    {
-                        <option value="false" selected>Đã nghỉ việc</option>
-                    }
-                    else
-                    {
-                        <option value="false">Đã nghỉ việc</option>
-                    }
-                </select>
             </div>
-            <div class="toolbar-right">
-                <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0" title="Làm mới">
-                    <i class="bi bi-arrow-clockwise"></i>
-                </a>
-                <button type="submit" class="btn btn-sm btn-outline-secondary border-0" title="Lọc kết quả">
-                    <i class="bi bi-funnel"></i>
-                </button>
-            </div>
-        </form>
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Thông tin nhân viên</th>
-                        <th>Phòng ban</th>
-                        <th>Chức vụ</th>
-                        <th>Liên hệ</th>
-                        <th>Ngày vào làm</th>
-                        <th>Trạng thái</th>
-                        <th class="text-end">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        foreach (var emp in Model)
-                        {
-                            var hasAssignment = assignments.TryGetValue(emp.Id, out var assign);
-                            var deptId = hasAssignment ? assign?.DepartmentId : null;
-                            var posId = hasAssignment ? assign?.PositionId : null;
-                            var deptName = deptId.HasValue && departments.ContainsKey(deptId.Value)
-                                           ? departments[deptId.Value] : "Chưa phân bổ";
-                            var posName = posId.HasValue && positions.ContainsKey(posId.Value)
-                                           ? positions[posId.Value] : "Chưa phân bổ";
-                            var statusClass = emp.IsActive == true ? "active" : "inactive";
-                            var statusDot = emp.IsActive == true ? "" : "text-danger bg-danger";
-                            var statusText = emp.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc";
-                            var avatarLetter = !string.IsNullOrEmpty(emp.FullName) ? emp.FullName[0].ToString().ToUpper() : "U";
-
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="user-avatar bg-primary text-white d-flex justify-content-center align-items-center" style="width: 36px; height: 36px; font-weight: bold; border-radius: 50%;">
-                                            @avatarLetter
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold text-dark">@emp.FullName</div>
-                                            <div class="text-muted" style="font-size: 0.75rem;">@emp.EmployeeCode</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>@deptName</td>
-                                <td>@posName</td>
-                                <td>
-                                    <div class="text-dark" style="font-size: 0.85rem;"><i class="bi bi-envelope text-muted me-1"></i>@emp.Email</div>
-                                    <div class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-telephone text-muted me-1"></i>@emp.Phone</div>
-                                </td>
-                                <td>@(emp.JoinDate?.ToString("dd/MM/yyyy"))</td>
-                                <td><span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span></td>
-                                <td>
-                                    <div class="action-btns justify-content-end">
-                                        <a asp-action="Details" asp-route-id="@emp.Id" class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
-                                        <a asp-action="Edit" asp-route-id="@emp.Id" class="action-btn" title="Chỉnh sửa thông tin"><i class="bi bi-pencil"></i></a>
-                                        @if (emp.IsActive == true)
-                                        {
-                                            <a asp-action="Delete" asp-route-id="@emp.Id" class="action-btn danger" title="Nghỉ việc"><i class="bi bi-person-dash"></i></a>
-                                        }
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
-                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                Không tìm thấy kết quả nào phù hợp.
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
         </div>
     </div>
 </div>

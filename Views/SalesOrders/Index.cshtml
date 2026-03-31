@@ -9,9 +9,11 @@
 @if (TempData["SuccessMessage"] != null)
 {<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
 
-<div class="page-header">
+<div class="container-fluid px-0">
+    
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
     <div><h1 class="h3 font-weight-bold mb-1">Đơn hàng Bán (Sales Orders)</h1><div class="page-breadcrumb"><a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span>Bán hàng</span><i class="bi bi-chevron-right separator"></i><span>Đơn hàng</span></div></div>
-    <div class="d-flex gap-2"><button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg"></i> Tạo đơn hàng mới</button></div>
+    <div class="d-flex justify-content-end gap-2"><button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg me-1"></i> Tạo đơn hàng mới</button></div>
 </div>
 
 <div class="row g-4 mb-4">
@@ -21,14 +23,16 @@
     <div class="col-md-3"><div class="stat-card p-3 border-start border-4 border-danger"><div class="text-muted" style="font-size:0.8rem;">Đã hủy</div><div class="fw-bold text-danger fs-4 mt-1">@(ViewBag.CancelledOrders ?? 0)</div></div></div>
 </div>
 
-<div class="content-card"><div class="card-body-custom">
+<div class="row justify-content-center w-100 m-0">
+        <div class="col-12 px-0">
+            <div class="content-card w-100"><div class="card-body-custom">
     <div class="toolbar"><div class="toolbar-left">
         <form method="get" class="d-flex gap-2"><div class="toolbar-search"><i class="bi bi-search"></i><input type="text" name="searchString" value="@ViewBag.CurrentSearch" placeholder="Tìm theo mã đơn..."></div>
         <select name="status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="Chờ xác nhận">Chờ xác nhận</option><option value="Đang xử lý">Đang xử lý</option><option value="Đang giao">Đang giao</option><option value="Hoàn thành">Hoàn thành</option><option value="Đã hủy">Đã hủy</option></select>
         <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-funnel"></i></button></form>
     </div></div>
 
-    <div class="table-responsive"><table class="data-table">
+    <div class="table-responsive w-100"><table class="data-table w-100">
         <thead><tr><th>Mã Đơn</th><th>Ngày tạo</th><th>Khách hàng</th><th>Nhân viên</th><th class="text-end">Tổng tiền (VNĐ)</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead>
         <tbody>
             @if (Model != null && Model.Any())
@@ -69,5 +73,9 @@
         <div class="row"><div class="col-6 mb-3"><label class="form-label fw-semibold">Tổng tiền (VNĐ)</label><input type="number" name="TotalAmount" class="form-control" step="1000" /></div>
         <div class="col-6 mb-3"><label class="form-label fw-semibold">Ngày giao dự kiến</label><input type="date" name="ExpectedDeliveryDate" class="form-control" /></div></div>
     </div>
-    <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom">Tạo đơn hàng</button></div></form>
+    <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Tạo đơn hàng</button></div></form>
 </div></div></div>
+
+        </div>
+    </div>
+</div>

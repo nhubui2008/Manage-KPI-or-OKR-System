@@ -3,21 +3,18 @@
 @if (TempData["SuccessMessage"] != null)
 {<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
 
-<div class="page-header">
+<div class="container-fluid px-0">
+    
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
     <div><h1 class="h3 font-weight-bold mb-1">Đối tác Vận chuyển</h1><div class="page-breadcrumb"><a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span>Vận chuyển</span><i class="bi bi-chevron-right separator"></i><span>Đối tác</span></div></div>
-    <div class="d-flex gap-2">
-        @if (!User.IsInRole("Warehouse") && !User.IsInRole("warehouse"))
-        {
-            <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg"></i> Thêm đối tác</button>
-        }
-    </div>
+    <div class="d-flex justify-content-end gap-2"><button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg me-1"></i> Thêm đối tác</button></div>
 </div>
 
-<div class="content-card"><div class="card-body-custom">
-    <div class="table-responsive"><table class="data-table">
-        <thead><tr><th>Tên đối tác</th><th>API Endpoint</th><th>Trạng thái</th>
-            @if (!User.IsInRole("Warehouse") && !User.IsInRole("warehouse")) { <th class="text-end">Thao tác</th> }
-        </tr></thead>
+<div class="row justify-content-center w-100 m-0">
+        <div class="col-12 px-0">
+            <div class="content-card w-100"><div class="card-body-custom">
+    <div class="table-responsive w-100"><table class="data-table w-100">
+        <thead><tr><th>Tên đối tác</th><th>API Endpoint</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead>
         <tbody>
             @if (Model != null && Model.Any())
             {
@@ -48,5 +45,9 @@
         <div class="mb-3"><label class="form-label fw-semibold">Tên đối tác</label><input type="text" name="PartnerName" class="form-control" required placeholder="VD: Giao Hàng Nhanh" /></div>
         <div class="mb-3"><label class="form-label fw-semibold">API Endpoint</label><input type="text" name="APIEndpoint" class="form-control" placeholder="https://api.partner.com/v1" /></div>
     </div>
-    <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom">Tạo mới</button></div></form>
+    <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Tạo mới</button></div></form>
 </div></div></div>
+
+        </div>
+    </div>
+</div>

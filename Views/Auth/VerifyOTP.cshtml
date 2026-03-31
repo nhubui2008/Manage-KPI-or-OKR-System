@@ -1,84 +1,65 @@
-﻿@{
+@{
     ViewData["Title"] = "Xác nhận mã OTP";
+    ViewData["IsLoginPage"] = true;
 }
-<style>
-    body {
-        background-color: #f8f9fa;
-        font-family: 'Inter', sans-serif;
-    }
+<link rel="stylesheet" href="~/css/login.css" />
 
-    .auth-card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-    }
+<div class="soft-background">
+    <div class="floating-shapes">
+        <div class="soft-blob blob-1"></div>
+        <div class="soft-blob blob-2"></div>
+        <div class="soft-blob blob-3"></div>
+        <div class="soft-blob blob-4"></div>
+    </div>
+</div>
 
-    .btn-primary {
-        border: none;
-        padding: 10px;
-        border-radius: 8px;
-        font-weight: 600;
-    }
-
-    .otp-input {
-        letter-spacing: 12px;
-        font-size: 1.5rem;
-        font-weight: bold;
-        text-align: center;
-    }
-
-    .icon-box {
-        width: 60px;
-        height: 60px;
-        background: rgba(13, 110, 253, 0.1);
-        color: #0d6efd;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 20px;
-        font-size: 24px;
-    }
-</style>
-
-<div class="container">
-    <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
-        <div class="col-md-5 col-lg-4">
-            <div class="card auth-card">
-                <div class="card-body p-4 p-sm-5">
-                    <div class="icon-box"><i class="bi bi-envelope-check-fill"></i></div>
-                    <h3 class="text-center fw-bold mb-2">Nhập mã xác nhận</h3>
-                    <p class="text-muted text-center mb-4" style="font-size: 0.9rem;">
-                        Chúng tôi đã gửi một mã OTP gồm 6 chữ số đến email của bạn.
-                    </p>
-
-                    @if (TempData["SuccessMessage"] != null)
-                    {
-                        <div class="alert alert-success d-flex align-items-center" style="font-size: 0.85rem; border-radius: 8px;">
-                            <i class="bi bi-check-circle-fill me-2"></i><div>@TempData["SuccessMessage"]</div>
-                        </div>
-                    }
-
-                    @if (ViewBag.Error != null)
-                    {
-                        <div class="alert alert-danger d-flex align-items-center" style="font-size: 0.85rem; border-radius: 8px;">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i><div>@ViewBag.Error</div>
-                        </div>
-                    }
-
-                    <form asp-action="VerifyOTP" method="post">
-                        <div class="mb-4">
-                            <input type="text" name="code" class="form-control otp-input text-primary" required placeholder="------" maxlength="6" autocomplete="off" />
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary"><i class="bi bi-shield-check me-2"></i>Xác nhận mã</button>
-                        </div>
-                    </form>
-                    <div class="text-center mt-4">
-                        <a asp-action="Login" class="text-decoration-none fw-medium text-muted" style="font-size: 0.9rem;">Hủy bỏ</a>
+<div class="login-container">
+    <div class="soft-card" style="text-align: center;">
+        <div class="comfort-header">
+            <div class="gentle-logo" style="margin-bottom: 24px;">
+                <div class="logo-circle" style="width: 72px; height: 72px; margin: 0 auto;">
+                    <div class="comfort-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
                     </div>
                 </div>
             </div>
+            <h1 class="comfort-title">Xác nhận OTP</h1>
+            <p class="gentle-subtitle mt-2">Mã 6 chữ số đã được gửi đến email của bạn</p>
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="gentle-success active">
+                <p class="success-desc">@TempData["SuccessMessage"]</p>
+            </div>
+        }
+
+        @if (ViewBag.Error != null)
+        {
+            <span class="gentle-error" style="display: block; margin-bottom: 16px;">@ViewBag.Error</span>
+        }
+
+        <form asp-action="VerifyOTP" method="post" class="comfort-form">
+            <div class="soft-field" style="margin-bottom: 24px;">
+                <div class="field-container">
+                    <input type="text" name="code" id="code" required autocomplete="off" placeholder=" " maxlength="6" style="letter-spacing: 12px; font-size: 1.5rem; text-align: center; font-weight: bold;" />
+                    <label for="code" style="left:50%; transform:translateX(-50%); white-space:nowrap; top:-10px; font-size:0.85rem; color:#6b7fd7; background:#fff; padding:0 4px;">Nhập mã (6 số)</label>
+                    <div class="field-accent"></div>
+                </div>
+            </div>
+            
+            <button type="submit" class="comfort-button mt-2">
+                <div class="button-background"></div>
+                <span class="button-text">Xác nhận mã</span>
+                <div class="button-glow"></div>
+            </button>
+        </form>
+
+        <div class="comfort-signup" style="margin-top: 24px;">
+            <a asp-action="Login" class="comfort-link" style="color: #7a7e9a;">Hủy bỏ & Quay lại</a>
         </div>
     </div>
 </div>

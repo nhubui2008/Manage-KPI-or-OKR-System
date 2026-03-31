@@ -187,17 +187,36 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var dept = await _context.Departments.FindAsync(id);
-            if (dept != null)
-            {
-                // Soft delete: chuyển sang ngưng hoạt động
-                dept.IsActive = false;
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã ngưng hoạt động phòng ban thành công!";
-            }
-            else
+            if (dept == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy phòng ban cần xóa!";
+                return RedirectToAction(nameof(Index));
             }
+
+            // 1. Kiểm tra nhân viên đang hoạt động trong phòng ban
+            var activeEmployeesCount = await _context.EmployeeAssignments
+                .CountAsync(a => a.DepartmentId == id && a.IsActive == true);
+            
+            if (activeEmployeesCount > 0)
+            {
+                TempData["ErrorMessage"] = $"Không thể ngưng hoạt động phòng ban '{dept.DepartmentName}' vì đang có {activeEmployeesCount} nhân viên đang làm việc. Vui lòng chuyển nhân viên sang bộ phận khác hoặc cho nghỉ việc trước.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // 2. Kiểm tra các phòng ban con đang hoạt động
+            var activeSubDeptsCount = await _context.Departments
+                .CountAsync(d => d.ParentDepartmentId == id && d.IsActive == true);
+
+            if (activeSubDeptsCount > 0)
+            {
+                TempData["ErrorMessage"] = $"Phòng ban này vẫn còn {activeSubDeptsCount} đơn vị cấp dưới đang hoạt động. Vui lòng xử lý các đơn vị con trước.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // 3. Thực hiện ngưng hoạt động (Soft delete)
+            dept.IsActive = false;
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = $"Đã ngưng hoạt động phòng ban '{dept.DepartmentName}' thành công!";
             
             return RedirectToAction(nameof(Index));
         }

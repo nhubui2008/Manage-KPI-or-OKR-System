@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Manage_KPI_or_OKR_System</RootNamespace>
+    <DefaultItemExcludes>$(DefaultItemExcludes);tmp\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

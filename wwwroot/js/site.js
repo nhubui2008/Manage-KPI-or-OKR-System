@@ -70,4 +70,29 @@ document.addEventListener('DOMContentLoaded', function () {
             overlay.classList.remove('show');
         }
     });
+
+    // =========================================================
+    // THÊM MỚI: Lưu và phục hồi vị trí thanh cuộn của Sidebar
+    // =========================================================
+    
+    // Tìm thẻ chứa thanh cuộn (thường là .sidebar-nav hoặc chính thẻ #sidebar)
+    const sidebarNav = document.querySelector('.sidebar-nav') || document.getElementById('sidebar');
+
+    if (sidebarNav) {
+        // 1. Phục hồi vị trí cuộn cũ ngay khi trang vừa load xong
+        const savedScrollPosition = sessionStorage.getItem("sidebarScrollPosition");
+        if (savedScrollPosition) {
+            sidebarNav.scrollTop = parseInt(savedScrollPosition, 10);
+        }
+
+        // 2. Lắng nghe sự kiện cuộn để lưu vị trí mới nhất vào sessionStorage
+        sidebarNav.addEventListener("scroll", function () {
+            sessionStorage.setItem("sidebarScrollPosition", sidebarNav.scrollTop);
+        });
+
+        // 3. Dự phòng: Lưu lại lần cuối trước khi trình duyệt chuyển trang
+        window.addEventListener("beforeunload", function () {
+            sessionStorage.setItem("sidebarScrollPosition", sidebarNav.scrollTop);
+        });
+    }
 });

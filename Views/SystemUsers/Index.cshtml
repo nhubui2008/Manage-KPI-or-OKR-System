@@ -5,7 +5,9 @@
     var roles = ViewBag.Roles as Dictionary<int, string> ?? new Dictionary<int, string>();
 }
 
-<div class="page-header">
+<div class="container-fluid px-0">
+    
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h3 font-weight-bold mb-1">Tài khoản Hệ thống</h1>
         <div class="page-breadcrumb">
@@ -16,8 +18,8 @@
             <span>Tài khoản users</span>
         </div>
     </div>
-    <div class="d-flex gap-2">
-        <a asp-action="Create" class="btn btn-primary-custom text-decoration-none">
+    <div class="d-flex justify-content-end gap-2">
+        <a href="/Auth/Register" class="btn-primary-custom text-decoration-none">
             <i class="bi bi-person-plus-fill"></i> Tạo tài khoản mới
         </a>
     </div>
@@ -30,7 +32,9 @@
     </div>
 }
 
-<div class="content-card">
+<div class="row justify-content-center w-100 m-0">
+        <div class="col-12 px-0">
+            <div class="content-card w-100">
     <div class="card-body-custom">
         <form asp-action="Index" method="get" class="toolbar">
             <div class="toolbar-left">
@@ -68,8 +72,8 @@
             </div>
         </form>
 
-        <div class="table-responsive">
-            <table class="data-table">
+        <div class="table-responsive w-100">
+            <table class="data-table w-100">
                 <thead>
                     <tr>
                         <th>Tài khoản</th>
@@ -157,8 +161,8 @@
                                                     <input type="password" name="newPassword" class="form-control" required minlength="6" placeholder="Nhập ít nhất 6 ký tự..." />
                                                 </div>
                                                 <div class="d-flex justify-content-end gap-2">
-                                                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                                                    <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu</button>
+                                                    <button type="button" class="btn-outline-custom rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                                                    <button type="submit" class="btn-primary-custom rounded-pill px-4">Lưu cấu hình</button>
                                                 </div>
                                             </form>
                                         </div>
@@ -175,6 +179,10 @@
                     }
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
         </div>
     </div>
 </div>
