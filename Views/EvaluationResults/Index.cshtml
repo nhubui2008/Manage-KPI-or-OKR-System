@@ -13,14 +13,21 @@
 
 <div class="page-header">
     <div><h1 class="h3 font-weight-bold mb-1">Kết quả Đánh giá</h1><div class="page-breadcrumb"><a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span>Kết quả Đánh giá</span></div></div>
-    <div class="d-flex gap-2"><button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg"></i> Thêm kết quả</button></div>
+    <div class="d-flex gap-2">
+        @if (!User.IsInRole("Sales") && !User.IsInRole("sales"))
+        {
+            <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg"></i> Thêm kết quả</button>
+        }
+    </div>
 </div>
 
 <div class="content-card">
     <div class="card-body-custom">
         <div class="table-responsive">
             <table class="data-table">
-                <thead><tr><th>Nhân viên</th><th>Kỳ đánh giá</th><th>Tổng điểm</th><th>Xếp hạng</th><th>Phân loại</th><th class="text-end">Thao tác</th></tr></thead>
+                <thead><tr><th>Nhân viên</th><th>Kỳ đánh giá</th><th>Tổng điểm</th><th>Xếp hạng</th><th>Phân loại</th>
+                    @if (!User.IsInRole("Sales") && !User.IsInRole("sales")) { <th class="text-end">Thao tác</th> }
+                </tr></thead>
                 <tbody>
                     @if (Model != null && Model.Any())
                     {
@@ -36,14 +43,17 @@
                                 <td><span class="badge bg-@scoreColor bg-opacity-10 text-@scoreColor rounded-pill px-2">@(r.TotalScore?.ToString("N1") ?? "0")đ</span></td>
                                 <td><span class="badge bg-dark text-white px-2">@rankCode</span></td>
                                 <td>@(r.Classification ?? "Chưa phân loại")</td>
-                                <td><div class="action-btns justify-content-end">
-                                    <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa kết quả này?')"><i class="bi bi-trash"></i></button></form>
-                                </div></td>
+                                @if (!User.IsInRole("Sales") && !User.IsInRole("sales"))
+                                {
+                                    <td><div class="action-btns justify-content-end">
+                                        <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa kết quả này?')"><i class="bi bi-trash"></i></button></form>
+                                    </div></td>
+                                }
                             </tr>
                         }
                     }
                     else
-                    {<tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có kết quả đánh giá</p></td></tr>}
+                    {<tr><td colspan="@(User.IsInRole("Sales") || User.IsInRole("sales") ? "5" : "6")" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có kết quả đánh giá</p></td></tr>}
                 </tbody>
             </table>
         </div>

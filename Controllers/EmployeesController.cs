@@ -293,7 +293,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             return View(emp);
         }
 
-        [Authorize(Roles = "Administrator,Admin,Manager")]
+        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
         public async Task<IActionResult> Delete(int id)
         {
             var emp = await _context.Employees.FindAsync(id);
@@ -305,7 +305,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager")]
+        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
         public async Task<IActionResult> Delete(int id, bool confirm = false)
         {
             var emp = await _context.Employees.FindAsync(id);
@@ -318,14 +318,14 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             return RedirectToAction(nameof(Index));
         }
 
-        [Authorize(Roles = "Administrator,Admin,Manager")]
+        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
         public IActionResult ImportExcel()
         {
             return View();
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager")]
+        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ImportExcel(IFormFile excelFile)
         {
@@ -494,7 +494,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             return errors;
         }
 
-        [Authorize(Roles = "Administrator,Admin,Manager")]
+        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
         // Hàm tạo và tải file Excel mẫu
 [HttpGet]
 public IActionResult DownloadTemplate()

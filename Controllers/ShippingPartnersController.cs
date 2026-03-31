@@ -23,6 +23,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(ShippingPartner model)
         {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse")) return Forbid();
+
             if (ModelState.IsValid)
             {
                 model.IsActive = true;
@@ -36,6 +38,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse")) return Forbid();
+
             var partner = await _context.ShippingPartners.FindAsync(id);
             if (partner != null)
             {

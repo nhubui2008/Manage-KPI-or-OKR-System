@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using System.Security.Claims;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -24,10 +25,32 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var okrs = await _context.OKRs
-                .Where(o => o.IsActive == true)
-                .OrderByDescending(o => o.CreatedAt)
-                .ToListAsync();
+            var query = _context.OKRs.Where(o => o.IsActive == true);
+
+            // Filter OKRs if Warehouse or Employee
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee"))
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int userId))
+                {
+                    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
+                    if (employee != null)
+                    {
+                        var allocatedOkrIds = await _context.OKR_Employee_Allocations
+                            .Where(a => a.EmployeeId == employee.Id)
+                            .Select(a => a.OKRId)
+                            .ToListAsync();
+                        query = query.Where(o => allocatedOkrIds.Contains(o.Id) || o.CreatedById == employee.Id);
+                    }
+                    else
+                    {
+                        query = query.Where(o => false);
+                    }
+                }
+            }
+
+            var okrs = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
 
             var okrIds = okrs.Select(o => o.Id).ToList();
             
@@ -54,6 +77,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(OKR model)
         {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                return Forbid();
+
             if (ModelState.IsValid)
             {
                 model.CreatedAt = DateTime.Now;
@@ -80,6 +107,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                return Forbid();
+
             var okr = await _context.OKRs.FindAsync(id);
             if (okr != null)
             {

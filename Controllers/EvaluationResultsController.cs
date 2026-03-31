@@ -4,6 +4,7 @@ using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -16,7 +17,30 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var results = await _context.EvaluationResults.OrderByDescending(r => r.Id).ToListAsync();
+            var resultsQuery = _context.EvaluationResults.OrderByDescending(r => r.Id).AsQueryable();
+
+            // Filter Results if Sales or Warehouse or Employee
+            if (User.IsInRole("Sales") || User.IsInRole("sales") || 
+                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee"))
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int userId))
+                {
+                    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
+                    if (employee != null)
+                    {
+                        resultsQuery = resultsQuery.Where(r => r.EmployeeId == employee.Id);
+                    }
+                    else
+                    {
+                        resultsQuery = resultsQuery.Where(r => false);
+                    }
+                }
+            }
+
+            var results = await resultsQuery.ToListAsync();
+
             var employees = await _context.Employees.ToDictionaryAsync(e => e.Id, e => e.FullName);
             var periods = await _context.EvaluationPeriods.ToDictionaryAsync(p => p.Id, p => p.PeriodName);
             var ranks = await _context.GradingRanks.ToDictionaryAsync(r => r.Id, r => r.RankCode);
@@ -34,6 +58,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(EvaluationResult model)
         {
+            if (User.IsInRole("Sales") || User.IsInRole("sales") || 
+                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                return Forbid();
+
             if (ModelState.IsValid)
             {
                 _context.EvaluationResults.Add(model);
@@ -46,6 +75,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
+            if (User.IsInRole("Sales") || User.IsInRole("sales") || 
+                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                return Forbid();
+
             var result = await _context.EvaluationResults.FindAsync(id);
             if (result != null)
             {

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using System.Security.Claims;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -24,10 +25,32 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var kpis = await _context.KPIs
-                .Where(k => k.IsActive == true)
-                .OrderByDescending(k => k.CreatedAt)
-                .ToListAsync();
+            var query = _context.KPIs.Where(k => k.IsActive == true);
+
+            // Cấp quyền cho Warehouse và Employee chỉ xem KPI của chính mình
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee"))
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int userId))
+                {
+                    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
+                    if (employee != null)
+                    {
+                        var allocatedKpiIds = await _context.KPI_Employee_Assignments
+                            .Where(a => a.EmployeeId == employee.Id)
+                            .Select(a => a.KPIId)
+                            .ToListAsync();
+                        query = query.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
+                    }
+                    else
+                    {
+                        query = query.Where(k => false);
+                    }
+                }
+            }
+
+            var kpis = await query.OrderByDescending(k => k.CreatedAt).ToListAsync();
 
             var kpiIds = kpis.Select(k => k.Id).ToList();
 
@@ -59,7 +82,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager")]
+        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
         public async Task<IActionResult> Create(KPI kpi, KPIDetail detail)
         {
             if (ModelState.IsValid)
@@ -79,9 +102,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager")]
+        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
         public async Task<IActionResult> Delete(int id)
         {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                return Forbid();
+
             var kpi = await _context.KPIs.FindAsync(id);
             if (kpi != null)
             {

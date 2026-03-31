@@ -7,8 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
-    [Authorize]
-    [HasPermission("HR_MANAGE_EMPLOYEES")]
+    [Authorize(Roles = "Administrator,Admin,Manager,HR,hr,Employee,employee")]
     public class BonusRulesController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -30,6 +29,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(BonusRule model)
         {
+            if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
+
             if (ModelState.IsValid)
             {
                 _context.BonusRules.Add(model);
@@ -42,6 +43,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
+            if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
+
             var rule = await _context.BonusRules.FindAsync(id);
             if (rule != null)
             {
