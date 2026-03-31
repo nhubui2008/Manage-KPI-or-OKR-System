@@ -177,7 +177,20 @@
                         <label class="form-label">Tên Objective (Mục tiêu) <span class="text-danger">*</span></label>
                         <input type="text" name="ObjectiveName" class="form-control" placeholder="VD: Tăng cường mức độ hài lòng của khách hàng" required>
                     </div>
-                    <div class="mb-4">
+                    <div class="mb-3">
+                        <label class="form-label">Loại OKR <span class="text-danger">*</span></label>
+                        <select name="OKRTypeId" class="form-select" required>
+                            <option value="">-- Chọn loại --</option>
+                            @if (ViewBag.OKRTypes != null)
+                            {
+                                foreach (var type in ViewBag.OKRTypes as IEnumerable<Manage_KPI_or_OKR_System.Models.OKRType>)
+                                {
+                                    <option value="@type.Id">@type.TypeName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Chu kỳ <span class="text-danger">*</span></label>
                         <select name="Cycle" class="form-select" required>
                             <option value="Q1-@DateTime.Now.Year">Quý 1 - @DateTime.Now.Year</option>
@@ -185,6 +198,47 @@
                             <option value="Q3-@DateTime.Now.Year">Quý 3 - @DateTime.Now.Year</option>
                             <option value="Q4-@DateTime.Now.Year">Quý 4 - @DateTime.Now.Year</option>
                             <option value="Năm @DateTime.Now.Year">Cả năm @DateTime.Now.Year</option>
+                        </select>
+                    </div>
+                    <hr class="my-4 text-muted">
+                    <h6 class="text-muted fw-bold mb-3" style="font-size: 0.8rem; letter-spacing: 0.5px; text-transform: uppercase;">Phân bổ mục tiêu (Tùy chọn)</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Sứ mệnh / Tầm nhìn</label>
+                        <select name="missionId" class="form-select">
+                            <option value="">-- Không phân bổ --</option>
+                            @if (ViewBag.Missions != null)
+                            {
+                                foreach (var m in ViewBag.Missions as IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>)
+                                {
+                                    <option value="@m.Id">Năm @m.TargetYear: @(m.Content?.Length > 50 ? m.Content.Substring(0, 50) + "..." : m.Content)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phòng ban</label>
+                        <select name="departmentId" class="form-select">
+                            <option value="">-- Không phân bổ --</option>
+                            @if (ViewBag.Departments != null)
+                            {
+                                foreach (var d in ViewBag.Departments as IEnumerable<Manage_KPI_or_OKR_System.Models.Department>)
+                                {
+                                    <option value="@d.Id">@d.DepartmentName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Nhân viên</label>
+                        <select name="employeeId" class="form-select">
+                            <option value="">-- Không phân bổ --</option>
+                            @if (ViewBag.Employees != null)
+                            {
+                                foreach (var e in ViewBag.Employees as IEnumerable<Manage_KPI_or_OKR_System.Models.Employee>)
+                                {
+                                    <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                }
+                            }
                         </select>
                     </div>
                     <div class="d-flex justify-content-end gap-2">

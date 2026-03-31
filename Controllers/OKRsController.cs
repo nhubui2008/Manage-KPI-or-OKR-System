@@ -59,11 +59,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var okrs = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
 
+            // Lấy dữ liệu danh mục cho modal Tạo OKR
+            ViewBag.Missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
+            ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
+            ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
+
             return View(okrs);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(OKR model)
+        public async Task<IActionResult> Create(OKR model, int? missionId, int? departmentId, int? employeeId)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
                 User.IsInRole("Employee") || User.IsInRole("employee")) 
@@ -71,11 +77,42 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (ModelState.IsValid)
             {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int userId))
+                {
+                    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
+                    if (employee != null)
+                    {
+                        model.CreatedById = employee.Id;
+                    }
+                }
+
                 model.CreatedAt = DateTime.Now;
                 model.IsActive = true;
                 _context.OKRs.Add(model);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã tạo OKR mới thành công!";
+
+                // Lưu phân bổ Sứ mệnh
+                if (missionId.HasValue)
+                {
+                    _context.OKR_Mission_Mappings.Add(new OKR_Mission_Mapping { OKRId = model.Id, MissionId = missionId.Value });
+                }
+
+                // Lưu phân bổ Phòng ban
+                if (departmentId.HasValue)
+                {
+                    _context.OKR_Department_Allocations.Add(new OKR_Department_Allocation { OKRId = model.Id, DepartmentId = departmentId.Value });
+                }
+
+                // Lưu phân bổ Nhân viên
+                if (employeeId.HasValue)
+                {
+                    _context.OKR_Employee_Allocations.Add(new OKR_Employee_Allocation { OKRId = model.Id, EmployeeId = employeeId.Value });
+                }
+
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Đã tạo OKR mới và phân bổ thành công!";
             }
             return RedirectToAction(nameof(Index));
         }
@@ -132,6 +169,92 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 TempData["SuccessMessage"] = $"Đã xóa KR thành công! Tiến độ mục tiêu còn lại: {okr?.TotalProgress}%";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet("Tree")]
+        public async Task<IActionResult> GetTree()
+        {
+            // 1. Lấy tất cả Sứ mệnh (Nút gốc)
+            var missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
+            
+            // 2. Lấy tất cả OKRs và KeyResults
+            var okrs = await _context.OKRs.Where(o => o.IsActive == true).Include(o => o.KeyResults).ToListAsync();
+            
+            // 3. Lấy mapping
+            var missionMappings = await _context.OKR_Mission_Mappings.ToListAsync();
+            var deptAllocations = await _context.OKR_Department_Allocations.ToListAsync();
+            var depts = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
+
+            var tree = new List<object>();
+
+            // Nhóm OKR theo MissionId
+            var okrByMission = missionMappings
+                .GroupBy(m => m.MissionId)
+                .ToDictionary(g => g.Key, g => g.Select(m => m.OKRId).ToList());
+
+            foreach (var mission in missions)
+            {
+                var missionNode = new
+                {
+                    id = $"mission_{mission.Id}",
+                    name = $"Sứ mệnh {mission.TargetYear}: {mission.Content}",
+                    type = "Mission",
+                    children = new List<object>()
+                };
+
+                if (okrByMission.TryGetValue(mission.Id, out var okrIds))
+                {
+                    var missionOkrs = okrs.Where(o => okrIds.Contains(o.Id)).ToList();
+                    foreach (var okr in missionOkrs)
+                    {
+                        var okrNode = CreateOkrNode(okr);
+                        missionNode.children.Add(okrNode);
+                    }
+                }
+
+                tree.Add(missionNode);
+            }
+
+            // Thêm các OKR không thuộc Sứ mệnh nào vào nhóm "Khác"
+            var mappedOkrIds = missionMappings.Select(m => m.OKRId).Distinct().ToList();
+            var unmappedOkrs = okrs.Where(o => !mappedOkrIds.Contains(o.Id)).ToList();
+
+            if (unmappedOkrs.Any())
+            {
+                var othersNode = new
+                {
+                    id = "mission_others",
+                    name = "Các mục tiêu khác",
+                    type = "Mission",
+                    children = unmappedOkrs.Select(o => CreateOkrNode(o)).ToList()
+                };
+                tree.Add(othersNode);
+            }
+
+            return Ok(tree);
+        }
+
+        private object CreateOkrNode(OKR okr)
+        {
+            return new
+            {
+                id = $"okr_{okr.Id}",
+                name = okr.ObjectiveName,
+                type = "Objective",
+                progress = okr.TotalProgress,
+                children = okr.KeyResults?.Select(kr => new
+                {
+                    id = $"kr_{kr.Id}",
+                    name = kr.KeyResultName,
+                    type = "KeyResult",
+                    progress = kr.TargetValue.HasValue && kr.TargetValue.Value > 0 
+                        ? Math.Round((kr.CurrentValue ?? 0) / kr.TargetValue.Value * 100, 2) 
+                        : 0,
+                    target = kr.TargetValue,
+                    current = kr.CurrentValue,
+                    unit = kr.Unit
+                }).ToList()
+            };
         }
 
         [HttpPost]

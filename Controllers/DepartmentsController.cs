@@ -116,6 +116,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Department dept)
         {
+            // Kiểm tra tính duy nhất của DepartmentCode
+            if (!string.IsNullOrEmpty(dept.DepartmentCode))
+            {
+                var existingCode = await _context.Departments
+                    .AnyAsync(d => d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower() && d.IsActive == true);
+                if (existingCode)
+                {
+                    ModelState.AddModelError("DepartmentCode", "Mã phòng ban này đã tồn tại trong hệ thống");
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 dept.CreatedAt = DateTime.Now;
@@ -151,6 +162,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Edit(int id, Department dept)
         {
             if (id != dept.Id) return NotFound();
+
+            // Kiểm tra tính duy nhất của DepartmentCode (exclude bản ghi hiện tại)
+            if (!string.IsNullOrEmpty(dept.DepartmentCode))
+            {
+                var existingCode = await _context.Departments
+                    .AnyAsync(d => d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower() 
+                                && d.Id != id && d.IsActive == true);
+                if (existingCode)
+                {
+                    ModelState.AddModelError("DepartmentCode", "Mã phòng ban này đã tồn tại trong hệ thống");
+                }
+            }
 
             if (ModelState.IsValid)
             {
