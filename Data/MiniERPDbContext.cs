@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Properties;
 
@@ -158,7 +158,7 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<OKR>().HasOne<OKRType>().WithMany().HasForeignKey(o => o.OKRTypeId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<OKR>().HasOne<Status>().WithMany().HasForeignKey(o => o.StatusId).OnDelete(DeleteBehavior.NoAction);
 
-            modelBuilder.Entity<OKRKeyResult>().HasOne<OKR>().WithMany().HasForeignKey(okr => okr.OKRId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<OKRKeyResult>().HasOne<OKR>().WithMany(okr => okr.KeyResults).HasForeignKey(okr => okr.OKRId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<OKR_Mission_Mapping>().HasOne<OKR>().WithMany().HasForeignKey(omm => omm.OKRId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<OKR_Mission_Mapping>().HasOne<MissionVision>().WithMany().HasForeignKey(omm => omm.MissionId).OnDelete(DeleteBehavior.Cascade);
 

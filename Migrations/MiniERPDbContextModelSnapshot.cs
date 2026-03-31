@@ -1082,6 +1082,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal?>("CurrentValue")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("KeyResultName")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -2247,7 +2250,7 @@ namespace Manage_KPI_or_OKR_System.Migrations
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.OKRKeyResult", b =>
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.OKR", null)
-                        .WithMany()
+                        .WithMany("KeyResults")
                         .HasForeignKey("OKRId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
@@ -2485,6 +2488,11 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("WarehouseStaffId")
                         .OnDelete(DeleteBehavior.NoAction);
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.OKR", b =>
+                {
+                    b.Navigation("KeyResults");
                 });
 #pragma warning restore 612, 618
         }

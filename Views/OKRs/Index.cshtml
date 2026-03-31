@@ -1,7 +1,6 @@
 @model IEnumerable<Manage_KPI_or_OKR_System.Models.OKR>
 @{
     ViewData["Title"] = "Quản lý OKR";
-    var keyResultsDict = ViewBag.KeyResults as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>> ?? new Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>>();
 }
 
 <div class="page-header">
@@ -50,7 +49,9 @@
                 {
                     index++;
                     string collapseId = $"okr{index}";
-                    var krs = keyResultsDict.ContainsKey(okr.Id) ? keyResultsDict[okr.Id] : new List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>();
+                    var krs = okr.KeyResults ?? new List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>();
+                    var totalProgress = okr.TotalProgress;
+                    string progressColor = totalProgress >= 100 ? "success" : totalProgress > 0 ? "primary" : "secondary";
                     
                     <div class="border rounded-3 mb-3 hover-shadow-sm transition-base bg-white overflow-hidden">
                         <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-light bg-opacity-50">
@@ -69,6 +70,14 @@
                                 </div>
                             </div>
                             <div class="d-flex align-items-center gap-4">
+                                <div class="text-end me-2" style="min-width: 120px;">
+                                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
+                                        <span class="text-muted fw-bold">Tiến độ: @totalProgress%</span>
+                                    </div>
+                                    <div class="progress" style="height: 6px; width: 100px;">
+                                        <div class="progress-bar bg-@progressColor" role="progressbar" style="width: @totalProgress%;" aria-valuenow="@totalProgress" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </div>
                                 <div class="badge bg-warning text-dark px-3 py-2 rounded-pill">Đang thực hiện</div>
                                 <div class="action-btns dropdown">
                                     <button class="action-btn" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
@@ -94,16 +103,40 @@
                                     int krIndex = 1;
                                     foreach (var kr in krs)
                                     {
+                                        decimal krProgress = 0;
+                                        if (kr.TargetValue.HasValue && kr.TargetValue.Value > 0)
+                                        {
+                                            krProgress = Math.Min(100, (kr.CurrentValue ?? 0) / kr.TargetValue.Value * 100);
+                                        }
+                                        string krProgressColor = krProgress >= 100 ? "success" : krProgress > 0 ? "primary" : "secondary";
+
                                         <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
                                             <div class="ps-4">
                                                 <div class="fw-medium text-dark">@krIndex. @kr.KeyResultName</div>
-                                                <div class="text-muted" style="font-size: 0.75rem;">Mục tiêu: @String.Format("{0:N0}", kr.TargetValue) @kr.Unit</div>
+                                                <div class="text-muted" style="font-size: 0.75rem;">
+                                                    Hiện tại: <span class="fw-bold text-primary">@String.Format("{0:N0}", kr.CurrentValue ?? 0)</span> / 
+                                                    Mục tiêu: @String.Format("{0:N0}", kr.TargetValue) @kr.Unit
+                                                </div>
                                             </div>
-                                            <div class="d-flex align-items-center gap-4" style="width: 40%;">
+                                            <div class="d-flex align-items-center gap-4" style="width: 45%;">
                                                 <div class="flex-grow-1">
                                                     <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                                        <span class="text-muted">Chưa cập nhật thực tế</span>
+                                                        <span class="text-muted">Hoàn thành: @krProgress.ToString("N1")%</span>
                                                     </div>
+                                                    <div class="progress" style="height: 5px;">
+                                                        <div class="progress-bar bg-@krProgressColor" role="progressbar" style="width: @krProgress%;" aria-valuenow="@krProgress" aria-valuemin="0" aria-valuemax="100"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex gap-1">
+                                                    <button class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle" 
+                                                            onclick="openEditKrModal(@kr.Id, '@kr.KeyResultName', @kr.TargetValue, @(kr.CurrentValue ?? 0), '@kr.Unit')" title="Sửa KR">
+                                                        <i class="bi bi-pencil-square"></i>
+                                                    </button>
+                                                    <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
+                                                        <button type="submit" class="btn btn-sm btn-light-danger text-danger border-0 rounded-circle" title="Xóa KR">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
@@ -200,11 +233,59 @@
     </div>
 </div>
 
+<!-- Modal Edit Key Result -->
+<div class="modal fade" id="editKrModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-2"></i>Cập nhật Kết quả then chốt (KR)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form asp-controller="OKRs" asp-action="EditKeyResult" method="post">
+                    <input type="hidden" name="Id" id="editKrId" />
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả Key Result <span class="text-danger">*</span></label>
+                        <input type="text" name="KeyResultName" id="editKrName" class="form-control" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Hiện tại <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" name="CurrentValue" id="editKrCurrent" class="form-control" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" name="TargetValue" id="editKrTarget" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Đơn vị đo lường</label>
+                        <input type="text" name="Unit" id="editKrUnit" class="form-control">
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">Cập nhật KR</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     function openAddKrModal(okrId, okrName) {
         document.getElementById('krOkrId').value = okrId;
         document.getElementById('krOkrNameDisplay').innerText = "Objective: " + okrName;
         new bootstrap.Modal(document.getElementById('addKrModal')).show();
+    }
+
+    function openEditKrModal(id, name, target, current, unit) {
+        document.getElementById('editKrId').value = id;
+        document.getElementById('editKrName').value = name;
+        document.getElementById('editKrTarget').value = target;
+        document.getElementById('editKrCurrent').value = current;
+        document.getElementById('editKrUnit').value = unit || '';
+        new bootstrap.Modal(document.getElementById('editKrModal')).show();
     }
 </script>
 

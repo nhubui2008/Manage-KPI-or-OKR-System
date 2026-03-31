@@ -25,7 +25,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var query = _context.OKRs.Where(o => o.IsActive == true);
+            try
+            {
+                // Đảm bảo cột CurrentValue tồn tại trong database (fix lỗi schema mismatch)
+                await _context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('OKRKeyResults') AND name = 'CurrentValue') ALTER TABLE OKRKeyResults ADD CurrentValue decimal(18,2) NULL;");
+            }
+            catch { }
+
+            var query = _context.OKRs.Where(o => o.IsActive == true).Include(o => o.KeyResults).AsQueryable();
 
             // Filter OKRs if Warehouse or Employee
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -51,25 +58,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var okrs = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
-
-            var okrIds = okrs.Select(o => o.Id).ToList();
-            
-            var keyResults = await _context.OKRKeyResults
-                .Where(k => okrIds.Contains(k.OKRId ?? 0))
-                .ToListAsync();
-
-            var krDict = new Dictionary<int, List<OKRKeyResult>>();
-            foreach (var kr in keyResults)
-            {
-                if (kr.OKRId.HasValue)
-                {
-                    if (!krDict.ContainsKey(kr.OKRId.Value))
-                        krDict[kr.OKRId.Value] = new List<OKRKeyResult>();
-                    krDict[kr.OKRId.Value].Add(kr);
-                }
-            }
-
-            ViewBag.KeyResults = krDict;
 
             return View(okrs);
         }
@@ -97,9 +85,51 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (ModelState.IsValid)
             {
+                kr.CurrentValue = 0; // Khởi tạo tiến độ ban đầu là 0
                 _context.OKRKeyResults.Add(kr);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã thêm Kết quả Then chốt thành công!";
+                
+                // Lấy thông tin OKR để tính toán tiến độ mới
+                var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
+                TempData["SuccessMessage"] = $"Đã thêm KR thành công! Tiến độ mục tiêu: {okr?.TotalProgress}%";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EditKeyResult(OKRKeyResult model)
+        {
+            if (ModelState.IsValid)
+            {
+                var kr = await _context.OKRKeyResults.FindAsync(model.Id);
+                if (kr != null)
+                {
+                    kr.KeyResultName = model.KeyResultName;
+                    kr.TargetValue = model.TargetValue;
+                    kr.CurrentValue = model.CurrentValue;
+                    kr.Unit = model.Unit;
+                    
+                    await _context.SaveChangesAsync();
+                    
+                    var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
+                    TempData["SuccessMessage"] = $"Đã cập nhật KR thành công! Tiến độ mục tiêu hiện tại: {okr?.TotalProgress}%";
+                }
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteKeyResult(int id)
+        {
+            var kr = await _context.OKRKeyResults.FindAsync(id);
+            if (kr != null)
+            {
+                int? okrId = kr.OKRId;
+                _context.OKRKeyResults.Remove(kr);
+                await _context.SaveChangesAsync();
+                
+                var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == okrId);
+                TempData["SuccessMessage"] = $"Đã xóa KR thành công! Tiến độ mục tiêu còn lại: {okr?.TotalProgress}%";
             }
             return RedirectToAction(nameof(Index));
         }
