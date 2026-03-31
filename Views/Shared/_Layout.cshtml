@@ -31,6 +31,21 @@
                 </div>
 
                 <div class="sidebar-nav">
+                    @{
+                        // TÁCH RÕ RÀNG CÁC QUYỀN ĐỂ FRONTEND DỄ KIỂM SOÁT
+                        bool isAdmin = User.IsInRole("Admin") || User.IsInRole("Administrator");
+                        bool isManager = User.IsInRole("Manager");
+                        bool isHR = User.IsInRole("HR");
+                        bool isEmployee = User.IsInRole("Employee");
+                        bool isSales = User.IsInRole("Sales");
+                        bool isWarehouse = User.IsInRole("Warehouse");
+                        bool isDelivery = User.IsInRole("Delivery") || User.IsInRole("Shipping");
+                        bool isCustomer = User.IsInRole("Customer");
+                        
+                        // Nhóm quyền quản trị chung
+                        bool isManagementOrHR = isAdmin || isManager || isHR;
+                    }
+
                     <div class="sidebar-group">
                         <div class="sidebar-group-label">Overview</div>
                         <a href="/" class="sidebar-link">
@@ -38,85 +53,139 @@
                         </a>
                     </div>
 
-                    <div class="sidebar-group">
-                        <div class="sidebar-group-label">Nhân sự</div>
-                        <a href="/Employees" class="sidebar-link">
-                            <i class="bi bi-people-fill"></i> Nhân sự
-                        </a>
-                        <a href="/Departments" class="sidebar-link">
-                            <i class="bi bi-diagram-3-fill"></i> Phòng ban
-                        </a>
-                        <a href="/Positions" class="sidebar-link">
-                            <i class="bi bi-person-badge-fill"></i> Chức vụ
-                        </a>
-                    </div>
+                    @if (isManagementOrHR)
+                    {
+                        <div class="sidebar-group">
+                            <div class="sidebar-group-label">Nhân sự</div>
+                            <a href="/Employees" class="sidebar-link">
+                                <i class="bi bi-people-fill"></i> Nhân sự
+                            </a>
+                            <a href="/Departments" class="sidebar-link">
+                                <i class="bi bi-diagram-3-fill"></i> Phòng ban
+                            </a>
+                            <a href="/Positions" class="sidebar-link">
+                                <i class="bi bi-person-badge-fill"></i> Chức vụ
+                            </a>
+                        </div>
+                    }
 
-                    <div class="sidebar-group">
-                        <div class="sidebar-group-label">Mục tiêu chiến lược</div>
-                        <a href="/MissionVisions" class="sidebar-link">
-                            <i class="bi bi-compass-fill"></i> Sứ mệnh & Tầm nhìn
-                        </a>
-                        <a href="/OKRs" class="sidebar-link">
-                            <i class="bi bi-bullseye"></i> Quản lý OKR
-                        </a>
-                    </div>
+                    @if (isAdmin || isManager || isEmployee)
+                    {
+                        <div class="sidebar-group">
+                            <div class="sidebar-group-label">Mục tiêu chiến lược</div>
+                            @if (isAdmin || isManager)
+                            {
+                                <a href="/MissionVisions" class="sidebar-link">
+                                    <i class="bi bi-compass-fill"></i> Thiết lập tầm nhìn & sứ mệnh
+                                </a>
+                            }
+                            <a href="/OKRs" class="sidebar-link">
+                                <i class="bi bi-bullseye"></i> Quản lý OKR / Mục tiêu
+                            </a>
+                        </div>
+                    }
 
-                    <div class="sidebar-group">
-                        <div class="sidebar-group-label">Đo lường hiệu suất</div>
-                        <a href="/EvaluationPeriods" class="sidebar-link">
-                            <i class="bi bi-calendar3"></i> Kỳ đánh giá
-                        </a>
-                        <a href="/KPIs" class="sidebar-link">
-                            <i class="bi bi-speedometer2"></i> Quản lý KPI
-                        </a>
-                        <a href="/KPICheckIns" class="sidebar-link">
-                            <i class="bi bi-check2-square"></i> Check-in KPI
-                        </a>
-                    </div>
+                    @if (isAdmin || isManager || isHR || isEmployee)
+                    {
+                        <div class="sidebar-group">
+                            <div class="sidebar-group-label">Đo lường hiệu suất</div>
+                            @if (isManagementOrHR)
+                            {
+                                <a href="/EvaluationPeriods" class="sidebar-link">
+                                    <i class="bi bi-calendar3"></i> Kỳ đánh giá
+                                </a>
+                            }
+                            @if (isAdmin || isManager || isEmployee)
+                            {
+                                <a href="/KPIs" class="sidebar-link">
+                                    <i class="bi bi-speedometer2"></i> Giao & Xem KPI cá nhân
+                                </a>
+                                <a href="/KPICheckIns" class="sidebar-link">
+                                    <i class="bi bi-check2-square"></i> Cập nhật tiến độ KPI
+                                </a>
+                            }
+                        </div>
+                    }
 
-                    <div class="sidebar-group">
-                        <div class="sidebar-group-label">Đánh giá & Thưởng</div>
-                        <a href="/EvaluationResults" class="sidebar-link">
-                            <i class="bi bi-award-fill"></i> Kết quả đánh giá
-                        </a>
-                        <a href="/BonusRules" class="sidebar-link">
-                            <i class="bi bi-cash-coin"></i> Quy tắc thưởng
-                        </a>
-                    </div>
+                    @if (isAdmin || isManager || isHR || isEmployee)
+                    {
+                        <div class="sidebar-group">
+                            <div class="sidebar-group-label">Đánh giá & Thưởng</div>
+                            <a href="/EvaluationResults" class="sidebar-link">
+                                <i class="bi bi-award-fill"></i> Đánh giá 1-1 / Kết quả
+                            </a>
+                            @if (isManagementOrHR)
+                            {
+                                <a href="/EvaluationReports" class="sidebar-link">
+                                    <i class="bi bi-file-earmark-bar-graph-fill text-info"></i> Báo cáo Đánh giá (V.Director)
+                                </a>
+                                <a href="/BonusRules" class="sidebar-link">
+                                    <i class="bi bi-cash-coin"></i> Quy tắc thưởng
+                                </a>
+                            }
+                        </div>
+                    }
 
-                    <div class="sidebar-group">
-                        <div class="sidebar-group-label">Phân hệ nghiệp vụ</div>
-                        <a href="#salesSubMenu" class="sidebar-link" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="salesSubMenu">
-                            <i class="bi bi-cart-fill"></i> Bán hàng
-                            <i class="bi bi-chevron-right menu-arrow"></i>
-                        </a>
-                        <ul class="collapse sidebar-submenu" id="salesSubMenu">
-                            <li><a href="/SalesOrders" class="sidebar-link">Đơn hàng</a></li>
-                            <li><a href="/Invoices" class="sidebar-link">Hóa đơn</a></li>
-                            <li><a href="/Customers" class="sidebar-link">Khách hàng</a></li>
-                        </ul>
+                    @if (isAdmin || isSales || isWarehouse || isDelivery)
+                    {
+                        <div class="sidebar-group">
+                            <div class="sidebar-group-label">Phân hệ nghiệp vụ</div>
+                            
+                            @if (isAdmin || isSales)
+                            {
+                                <a href="#salesSubMenu" class="sidebar-link" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="salesSubMenu">
+                                    <i class="bi bi-cart-fill"></i> Bán hàng
+                                    <i class="bi bi-chevron-right menu-arrow"></i>
+                                </a>
+                                <ul class="collapse sidebar-submenu" id="salesSubMenu">
+                                    <li><a href="/Customers" class="sidebar-link">Quản lý khách hàng</a></li>
+                                    <li><a href="/SalesOrders" class="sidebar-link">Tạo đơn hàng bán</a></li>
+                                    <li><a href="/Invoices" class="sidebar-link">Lập hóa đơn</a></li>
+                                </ul>
+                            }
 
-                        <a href="#inventorySubMenu" class="sidebar-link" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="inventorySubMenu">
-                            <i class="bi bi-box-seam-fill"></i> Kho hàng
-                            <i class="bi bi-chevron-right menu-arrow"></i>
-                        </a>
-                        <ul class="collapse sidebar-submenu" id="inventorySubMenu">
-                            <li><a href="/Products" class="sidebar-link">Sản phẩm</a></li>
-                            <li><a href="/InventoryReceipts" class="sidebar-link">Nhập kho</a></li>
-                            <li><a href="/Warehouses" class="sidebar-link">Danh sách kho</a></li>
-                        </ul>
+                            @if (isAdmin || isWarehouse)
+                            {
+                                <a href="#inventorySubMenu" class="sidebar-link" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="inventorySubMenu">
+                                    <i class="bi bi-box-seam-fill"></i> Kho hàng
+                                    <i class="bi bi-chevron-right menu-arrow"></i>
+                                </a>
+                                <ul class="collapse sidebar-submenu" id="inventorySubMenu">
+                                    <li><a href="/Products" class="sidebar-link">Quản lý sản phẩm</a></li>
+                                    <li><a href="/InventoryReceipts" class="sidebar-link">Nhập kho hàng hóa</a></li>
+                                    <li><a href="/Warehouses" class="sidebar-link">Đóng gói đơn hàng</a></li>
+                                </ul>
+                            }
 
-                        <a href="#shippingSubMenu" class="sidebar-link" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="shippingSubMenu">
-                            <i class="bi bi-truck"></i> Vận chuyển
-                            <i class="bi bi-chevron-right menu-arrow"></i>
-                        </a>
-                        <ul class="collapse sidebar-submenu" id="shippingSubMenu">
-                            <li><a href="/DeliveryNotes" class="sidebar-link">Phiếu giao hàng</a></li>
-                            <li><a href="/ShippingPartners" class="sidebar-link">Đối tác vận chuyển</a></li>
-                        </ul>
-                    </div>
+                            @if (isAdmin || isDelivery)
+                            {
+                                <a href="#shippingSubMenu" class="sidebar-link" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="shippingSubMenu">
+                                    <i class="bi bi-truck"></i> Vận chuyển
+                                    <i class="bi bi-chevron-right menu-arrow"></i>
+                                </a>
+                                <ul class="collapse sidebar-submenu" id="shippingSubMenu">
+                                    <li><a href="/DeliveryNotes" class="sidebar-link">Tạo phiếu giao hàng</a></li>
+                                    <li><a href="/ShippingPartners" class="sidebar-link">Cập nhật trạng thái</a></li>
+                                </ul>
+                            }
+                        </div>
+                    }
 
-                    @if (User.IsInRole("Admin") || User.IsInRole("Administrator"))
+                    @if (isAdmin || isCustomer)
+                    {
+                        <div class="sidebar-group">
+                            <div class="sidebar-group-label">Khách hàng</div>
+                            <a href="/Shop" class="sidebar-link">
+                                <i class="bi bi-shop"></i> Đặt hàng
+                            </a>
+                            <a href="/MyOrders" class="sidebar-link">
+                                <i class="bi bi-box-seam"></i> Quản lý nhận sản phẩm
+                            </a>
+                        </div>
+                    }
+
+                    @* HỆ THỐNG: Chỉ Admin *@
+                    @if (isAdmin)
                     {
                         <div class="sidebar-group mt-2">
                             <div class="sidebar-group-label">Hệ thống</div>
@@ -137,7 +206,6 @@
                 {
                     var userName = User.Identity.Name;
                     var userRole = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
-                    
                     <div class="sidebar-footer dropup">
                         <div class="sidebar-user" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
                             <div class="user-avatar">

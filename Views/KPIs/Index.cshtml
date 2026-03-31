@@ -8,7 +8,9 @@
     var periodsDict = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
 }
 
-<div class="page-header">
+<div class="container-fluid px-0">
+    
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h3 font-weight-bold mb-1">Quản lý KPI</h1>
         <div class="page-breadcrumb">
@@ -17,9 +19,9 @@
             <span>Danh mục KPI</span>
         </div>
     </div>
-    <div class="d-flex gap-2">
-        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createKpiModal">
-            <i class="bi bi-plus-lg"></i> Thêm KPI mới
+    <div class="d-flex justify-content-end gap-2">
+        <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createKpiModal">
+            <i class="bi bi-plus-lg me-1"></i> Thêm KPI mới
         </button>
     </div>
 </div>
@@ -74,9 +76,9 @@
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle custom-table">
-                <thead class="table-light text-muted" style="font-size: 0.85rem; text-transform: uppercase;">
+        <div class="table-responsive w-100">
+            <table class="data-table w-100">
+                <thead>
                     <tr>
                         <th class="fw-medium">Tên KPI</th>
                         <th class="fw-medium">Chỉ tiêu (Target)</th>
@@ -160,6 +162,10 @@
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                                                 <li><a class="dropdown-item py-2" href="#"><i class="bi bi-people text-primary me-2"></i> Phân bổ nhân sự</a></li>
+                                                @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager"))
+                                                {
+                                                    <li><a class="dropdown-item py-2" href="#"><i class="bi bi-check-circle text-success me-2"></i> Duyệt KPI</a></li>
+                                                }
                                                 <li><hr class="dropdown-divider"></li>
                                                 <li>
                                                     <form asp-action="Delete" asp-route-id="@kpi.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận vô hiệu hóa KPI này?');">
@@ -244,8 +250,8 @@
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-light border rounded-pill px-4" data-bs-dismiss="modal">Hủy thao tác</button>
-                        <button type="submit" class="btn btn-primary rounded-pill px-4"><i class="bi bi-save me-2"></i>Lưu KPI mới</button>
+                        <button type="button" class="btn-outline-custom rounded-pill px-4" data-bs-dismiss="modal">Hủy thao tác</button>
+                        <button type="submit" class="btn-primary-custom rounded-pill px-4"><i class="bi bi-save me-2"></i>Lưu KPI mới</button>
                     </div>
                 </form>
             </div>
@@ -254,9 +260,7 @@
 </div>
 
 <style>
-    .custom-table th { padding: 1rem 1.25rem; }
-    .custom-table td { padding: 1.25rem; vertical-align: middle; }
-    .custom-table tbody tr { transition: all 0.2s ease; border-bottom: 1px solid #f1f5f9; }
-    .custom-table tbody tr:hover { background-color: #f8fafc !important; transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,.05); }
     .stat-card:hover { transform: translateY(-3px); transition: all 0.3s ease; }
 </style>
+
+</div>

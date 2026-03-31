@@ -23,8 +23,8 @@
         </div>
     </div>
 
-    <div class="card shadow-sm border-0 rounded-3">
-        <div class="card-body p-4">
+    <div class="content-card rounded-3">
+        <div class="card-body-custom p-4">
             
             @if (ViewBag.ErrorMessage != null)
             {
@@ -129,10 +129,10 @@
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-light border px-4">
+                    <a asp-action="Details" asp-route-id="@Model.Id" class="btn-outline-custom px-4">
                         <i class="bi bi-x-circle me-1"></i> Hủy bỏ
                     </a>
-                    <button type="submit" class="btn btn-primary px-4">
+                    <button type="submit" class="btn-primary-custom px-4">
                         <i class="bi bi-save me-1"></i> Lưu Thay Đổi
                     </button>
                 </div>

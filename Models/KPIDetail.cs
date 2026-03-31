@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Manage_KPI_or_OKR_System.Models
@@ -16,5 +16,6 @@ namespace Manage_KPI_or_OKR_System.Models
         public decimal? FailThreshold { get; set; }
         [StringLength(50)]
         public string? MeasurementUnit { get; set; }
+        public bool IsInverse { get; set; } = false;
     }
 }

@@ -7,11 +7,11 @@
 <div class="container-fluid px-4 mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-white border-bottom py-3">
+            <div class="content-card rounded-3">
+                <div class="card-header-custom bg-white border-bottom py-3">
                     <h5 class="mb-0 fw-bold text-primary"><i class="bi bi-pencil-square me-2"></i>Chỉnh sửa chức vụ</h5>
                 </div>
-                <div class="card-body p-4">
+                <div class="card-body-custom p-4">
                     <form asp-action="Edit" method="post">
                         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                         <input type="hidden" asp-for="Id" />
@@ -35,8 +35,8 @@
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                            <a asp-action="Index" class="btn btn-light border px-4">Hủy bỏ</a>
-                            <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-floppy me-2"></i>Cập nhật</button>
+                            <a asp-action="Index" class="btn-outline-custom px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn-primary-custom px-4"><i class="bi bi-floppy me-2"></i>Cập nhật</button>
                         </div>
                     </form>
                 </div>

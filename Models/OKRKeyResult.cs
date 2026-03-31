@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Manage_KPI_or_OKR_System.Models
@@ -12,7 +12,13 @@ namespace Manage_KPI_or_OKR_System.Models
         public string? KeyResultName { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal? TargetValue { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? CurrentValue { get; set; } = 0;
         [StringLength(50)]
         public string? Unit { get; set; }
+        public bool IsInverse { get; set; } = false;
+        public int? FailReasonId { get; set; }
+        [StringLength(50)]
+        public string? ResultStatus { get; set; }
     }
 }

@@ -23,8 +23,8 @@
         </div>
     </div>
 
-    <div class="card shadow-sm border-0 rounded-3">
-        <div class="card-body p-4">
+    <div class="content-card rounded-3">
+        <div class="card-body-custom p-4">
 
             @if (TempData["ErrorMessage"] != null)
             {
@@ -77,10 +77,10 @@
 
                     <div class="col-12">
                         <div class="d-flex justify-content-end gap-2 pt-3">
-                            <a asp-action="Index" class="btn btn-secondary rounded-pill px-4">
+                            <a asp-action="Index" class="btn-outline-custom rounded-pill px-4">
                                 <i class="bi bi-arrow-left me-2"></i>Hủy
                             </a>
-                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                            <button type="submit" class="btn-primary-custom rounded-pill px-4">
                                 <i class="bi bi-check-lg me-2"></i>Cập nhật phòng ban
                             </button>
                         </div>

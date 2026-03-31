@@ -13,7 +13,9 @@
     </div>
 }
 
-<div class="page-header">
+<div class="container-fluid px-0">
+    
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h3 font-weight-bold mb-1">Kỳ Đánh giá</h1>
         <div class="page-breadcrumb">
@@ -22,17 +24,19 @@
             <span>Kỳ Đánh giá</span>
         </div>
     </div>
-    <div class="d-flex gap-2">
-        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createModal">
-            <i class="bi bi-plus-lg"></i> Thêm kỳ đánh giá
+    <div class="d-flex justify-content-end gap-2">
+        <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createModal">
+            <i class="bi bi-plus-lg me-1"></i> Thêm kỳ đánh giá
         </button>
     </div>
 </div>
 
-<div class="content-card">
+<div class="row justify-content-center w-100 m-0">
+        <div class="col-12 px-0">
+            <div class="content-card w-100">
     <div class="card-body-custom">
-        <div class="table-responsive">
-            <table class="data-table">
+        <div class="table-responsive w-100">
+            <table class="data-table w-100">
                 <thead>
                     <tr>
                         <th>Tên kỳ đánh giá</th>
@@ -105,8 +109,12 @@
                             {<option value="@s.Key">@s.Value</option>}
                         </select></div>
                 </div>
-                <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom">Tạo mới</button></div>
+                <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Tạo mới</button></div>
             </form>
+        </div>
+    </div>
+</div>
+
         </div>
     </div>
 </div>

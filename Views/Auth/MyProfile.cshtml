@@ -11,44 +11,102 @@
     var avatarLetter = !string.IsNullOrEmpty(Model.Username) ? Model.Username[0].ToString().ToUpper() : "U";
 }
 
+<style>
+    /* Style avatar giống class .logo-circle trong login.css */
+    .profile-avatar-circle {
+        background: linear-gradient(135deg, var(--primary-bg) 0%, var(--accent-light) 100%);
+        border-radius: 50%;
+        width: 100px;
+        height: 100px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--primary);
+        box-shadow: 0 0 24px 0 rgba(163, 201, 249, 0.4);
+        position: relative;
+    }
+    
+    .profile-avatar-circle::after {
+        content: '';
+        position: absolute;
+        top: -6px; left: -6px; right: -6px; bottom: -6px;
+        border-radius: 50%;
+        border: 2px dashed var(--primary-light);
+        opacity: 0.5;
+    }
+
+    /* Style các field thông tin giống field-container trong login */
+    .info-label {
+        color: var(--text-secondary);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .info-value {
+        color: var(--text-primary);
+        font-size: var(--font-size-md);
+        font-weight: 600;
+        background: #f6f8fb; /* Giống background input login */
+        padding: 12px 16px;
+        border-radius: var(--radius-md);
+        border: none;
+        box-shadow: 0 1.5px 6px rgba(60, 60, 120, 0.04);
+        transition: box-shadow 0.2s;
+    }
+    
+    .info-value:hover {
+        box-shadow: 0 0 0 2px var(--primary-light);
+    }
+</style>
+
 <div class="container-fluid px-4 mt-4">
     <div class="row mb-4">
         <div class="col-12">
-            <h3 class="fw-bold text-primary"><i class="bi bi-person-badge me-2"></i>Hồ sơ cá nhân</h3>
+            <h3 class="fw-bold m-0" style="color: var(--text-primary); font-size: var(--font-size-2xl);">
+                <i class="bi bi-person-badge me-2" style="color: var(--primary);"></i>Hồ sơ cá nhân
+            </h3>
         </div>
     </div>
 
     <div class="row">
         <div class="col-md-4 mb-4">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body text-center p-4">
-                    <div class="bg-primary text-white d-inline-flex justify-content-center align-items-center mb-3 shadow-sm" 
-                         style="width: 100px; height: 100px; border-radius: 50%; font-size: 2.5rem; font-weight: bold;">
+            <div class="content-card h-100">
+                <div class="card-body-custom text-center">
+                    <div class="profile-avatar-circle mb-3">
                         @avatarLetter
                     </div>
-                    <h4 class="fw-bold mb-1">@Model.Username</h4>
-                    <p class="text-muted mb-3">@Model.Email</p>
-                    <span class="badge bg-info text-dark px-3 py-2 rounded-pill shadow-sm mb-3">
+                    <h4 class="fw-bold mb-1" style="color: var(--text-primary);">@Model.Username</h4>
+                    <p style="color: var(--text-secondary);" class="mb-3">@Model.Email</p>
+                    
+                    <span class="status-badge" style="background: var(--info-bg); color: var(--primary);">
                         <i class="bi bi-shield-lock-fill me-1"></i> Quyền: @roleName
                     </span>
-                    <hr class="opacity-25" />
-                    <div class="d-flex justify-content-between text-start mb-2 mt-3">
-                        <span class="text-muted fw-semibold">Trạng thái:</span>
+                    
+                    <hr style="border-color: var(--border-color); opacity: 1; margin: 24px 0;" />
+                    
+                    <div class="d-flex justify-content-between align-items-center text-start mb-3">
+                        <span class="info-label mb-0">Trạng thái:</span>
                         @if (Model.IsActive == true)
                         {
-                            <span class="text-success fw-bold"><i class="bi bi-circle-fill small me-1"></i>Đang hoạt động</span>
+                            <span class="status-badge active"><i class="status-dot"></i> Đang hoạt động</span>
                         }
                         else
                         {
-                            <span class="text-danger fw-bold"><i class="bi bi-circle-fill small me-1"></i>Bị khóa</span>
+                            <span class="status-badge inactive"><i class="status-dot"></i> Bị khóa</span>
                         }
                     </div>
-                    <div class="d-flex justify-content-between text-start mb-2">
-                        <span class="text-muted fw-semibold">Ngày tham gia:</span>
-                        <span class="text-dark fw-medium">@(Model.CreatedAt?.ToString("dd/MM/yyyy"))</span>
+                    <div class="d-flex justify-content-between align-items-center text-start mb-4">
+                        <span class="info-label mb-0">Ngày tham gia:</span>
+                        <span style="color: var(--text-primary); font-weight: 600;">@(Model.CreatedAt?.ToString("dd/MM/yyyy"))</span>
                     </div>
                     
-                    <a href="/Auth/ChangePassword" class="btn btn-outline-primary w-100 mt-4 rounded-pill fw-bold">
+                    <a href="/Auth/ChangePassword" class="btn-primary-custom w-100 justify-content-center" style="padding: 12px 0; border-radius: var(--radius-lg);">
                         <i class="bi bi-key me-1"></i> Đổi mật khẩu
                     </a>
                 </div>
@@ -56,49 +114,51 @@
         </div>
 
         <div class="col-md-8 mb-4">
-            <div class="card border-0 shadow-sm rounded-3 h-100">
-                <div class="card-header bg-white border-bottom py-3">
-                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-person-vcard text-primary me-2"></i>Thông tin hồ sơ nhân sự</h5>
+            <div class="content-card h-100">
+                <div class="card-header-custom">
+                    <h5><i class="bi bi-person-vcard text-primary"></i> Thông tin hồ sơ nhân sự</h5>
                 </div>
-                <div class="card-body p-4">
+                <div class="card-body-custom">
                     @if (employee != null)
                     {
                         <div class="row g-4">
                             <div class="col-sm-6">
-                                <label class="text-muted fw-semibold mb-1 d-block"><i class="bi bi-qr-code me-1"></i> Mã nhân viên</label>
-                                <div class="fs-5 text-dark fw-bold">@employee.EmployeeCode</div>
+                                <div class="info-label"><i class="bi bi-qr-code"></i> Mã nhân viên</div>
+                                <div class="info-value">@employee.EmployeeCode</div>
                             </div>
                             <div class="col-sm-6">
-                                <label class="text-muted fw-semibold mb-1 d-block"><i class="bi bi-person-bounding-box me-1"></i> Họ và tên</label>
-                                <div class="fs-5 text-dark fw-bold">@employee.FullName</div>
+                                <div class="info-label"><i class="bi bi-person-bounding-box"></i> Họ và tên</div>
+                                <div class="info-value">@employee.FullName</div>
                             </div>
                             <div class="col-sm-6">
-                                <label class="text-muted fw-semibold mb-1 d-block"><i class="bi bi-telephone me-1"></i> Số điện thoại</label>
-                                <div class="fs-5 text-dark fw-medium">@(string.IsNullOrEmpty(employee.Phone) ? "Chưa cập nhật" : employee.Phone)</div>
+                                <div class="info-label"><i class="bi bi-telephone"></i> Số điện thoại</div>
+                                <div class="info-value">@(string.IsNullOrEmpty(employee.Phone) ? "Chưa cập nhật" : employee.Phone)</div>
                             </div>
                             <div class="col-sm-6">
-                                <label class="text-muted fw-semibold mb-1 d-block"><i class="bi bi-envelope-at me-1"></i> Email công việc</label>
-                                <div class="fs-5 text-dark fw-medium">@(string.IsNullOrEmpty(employee.Email) ? "Chưa cập nhật" : employee.Email)</div>
+                                <div class="info-label"><i class="bi bi-envelope-at"></i> Email công việc</div>
+                                <div class="info-value">@(string.IsNullOrEmpty(employee.Email) ? "Chưa cập nhật" : employee.Email)</div>
                             </div>
                             <div class="col-sm-6">
-                                <label class="text-muted fw-semibold mb-1 d-block"><i class="bi bi-calendar-event me-1"></i> Ngày sinh</label>
-                                <div class="fs-5 text-dark fw-medium">@(employee.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
+                                <div class="info-label"><i class="bi bi-calendar-event"></i> Ngày sinh</div>
+                                <div class="info-value">@(employee.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
                             </div>
                             <div class="col-sm-6">
-                                <label class="text-muted fw-semibold mb-1 d-block"><i class="bi bi-building-check me-1"></i> Ngày vào làm</label>
-                                <div class="fs-5 text-dark fw-medium">@(employee.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
+                                <div class="info-label"><i class="bi bi-building-check"></i> Ngày vào làm</div>
+                                <div class="info-value">@(employee.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
                             </div>
                         </div>
                     }
                     else
                     {
                         <div class="text-center py-5">
-                            <div class="display-1 text-muted opacity-25 mb-3">
+                            <div class="mb-3" style="font-size: 4rem; color: var(--primary-bg);">
                                 <i class="bi bi-person-exclamation"></i>
                             </div>
-                            <h5 class="text-dark fw-bold mb-2">Chưa liên kết hồ sơ nhân viên</h5>
-                            <p class="text-muted mb-0">Tài khoản này hiện chưa được gắn với bất kỳ hồ sơ nhân sự nào trên hệ thống.</p>
-                            <p class="text-muted mt-2"><em>*Admin có thể cập nhật việc này trong phần "Quản lý nhân sự" -> "Sửa nhân viên" -> Chọn tài khoản ở mục "Liên kết".</em></p>
+                            <h5 style="color: var(--text-primary); font-weight: 700;" class="mb-2">Chưa liên kết hồ sơ nhân viên</h5>
+                            <p style="color: var(--text-secondary);" class="mb-0">Tài khoản này hiện chưa được gắn với bất kỳ hồ sơ nhân sự nào trên hệ thống.</p>
+                            <p style="color: var(--text-muted); font-size: var(--font-size-sm);" class="mt-3">
+                                <em>*Admin có thể cập nhật việc này trong phần "Quản lý nhân sự" -> "Sửa nhân viên" -> Chọn tài khoản ở mục "Liên kết".</em>
+                            </p>
                         </div>
                     }
                 </div>
