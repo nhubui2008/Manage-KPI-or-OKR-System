@@ -153,6 +153,8 @@
     var allEmployeesList = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
     var allKPIsList = ViewBag.AllKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new List<Manage_KPI_or_OKR_System.Models.KPI>();
     var allStatusesList = ViewBag.AllStatuses as List<Manage_KPI_or_OKR_System.Models.CheckInStatus> ?? new List<Manage_KPI_or_OKR_System.Models.CheckInStatus>();
+    var allFailReasonsList = ViewBag.AllFailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>();
+    var kpiDetailsDict = ViewBag.KPIDetails as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
 }
 
 @if (TempData["SuccessMessage"] != null)
@@ -165,10 +167,23 @@
         <form asp-action="Create" asp-controller="KPICheckIns" method="post"><div class="modal-body">
             <div class="mb-3"><label class="form-label fw-semibold">Nhân viên</label><select name="EmployeeId" class="form-select" required>
                 <option value="">-- Chọn nhân viên --</option>@foreach(var e in allEmployeesList){<option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>}</select></div>
-            <div class="mb-3"><label class="form-label fw-semibold">KPI</label><select name="KPIId" class="form-select" required>
-                <option value="">-- Chọn KPI --</option>@foreach(var k in allKPIsList){<option value="@k.Id">@k.KPIName</option>}</select></div>
-            <div class="mb-3"><label class="form-label fw-semibold">Trạng thái</label><select name="StatusId" class="form-select">
+            <div class="mb-3"><label class="form-label fw-semibold">KPI</label><select name="KPIId" id="kpiSelect" class="form-select" required>
+                <option value="" data-target="">-- Chọn KPI --</option>
+                @foreach(var k in allKPIsList)
+                {
+                    var targetValue = kpiDetailsDict.ContainsKey(k.Id) ? (kpiDetailsDict[k.Id].TargetValue ?? 0) : 0;
+                    <option value="@k.Id" data-target="@targetValue">@k.KPIName (Mục tiêu: @targetValue)</option>
+                }
+            </select></div>
+            <div class="mb-3"><label class="form-label fw-semibold">Kết quả thực tế</label><input type="number" id="achievedValueInput" step="0.01" name="AchievedValue" class="form-control" required placeholder="Nhập giá trị hoàn thành" /></div>
+            <div class="mb-3"><label class="form-label fw-semibold">Trạng thái (Tạm tính)</label><select name="StatusId" id="statusSelect" class="form-select" readonly>
                 @foreach(var s in allStatusesList){<option value="@s.Id">@s.StatusName</option>}</select></div>
+            <div class="mb-3" id="failReasonContainer" style="display:none;"><label class="form-label fw-semibold text-danger">Lý do thất bại / Nguy cơ <span class="text-danger">*</span></label>
+                <select name="FailReasonId" id="failReasonSelect" class="form-select">
+                    <option value="">-- Chọn lý do --</option>
+                    @foreach(var f in allFailReasonsList){<option value="@f.Id">@f.ReasonName</option>}
+                </select>
+            </div>
         </div>
         <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom">Check-in</button></div></form>
     </div></div>
@@ -176,8 +191,45 @@
 
 <style>
     /* Styling adjustments for KPI checkins */
-    .status-dot {
-        width: 10px;
-        height: 10px;
-    }
+    .status-dot { width: 10px; height: 10px; }
+    select[readonly] { pointer-events: none; background-color: #e9ecef; }
 </style>
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const kpiSelect = document.getElementById('kpiSelect');
+            const achievedInput = document.getElementById('achievedValueInput');
+            const failReasonContainer = document.getElementById('failReasonContainer');
+            const failReasonSelect = document.getElementById('failReasonSelect');
+            const statusSelect = document.getElementById('statusSelect');
+
+            function checkRisk() {
+                if (!kpiSelect || !achievedInput) return;
+                const selectedOption = kpiSelect.options[kpiSelect.selectedIndex];
+                if (!selectedOption.value || !achievedInput.value) {
+                    failReasonContainer.style.display = 'none';
+                    failReasonSelect.required = false;
+                    return;
+                }
+
+                const target = parseFloat(selectedOption.getAttribute('data-target') || "0");
+                const achieved = parseFloat(achievedInput.value || "0");
+
+                if (achieved < target && target > 0) {
+                    failReasonContainer.style.display = 'block';
+                    failReasonSelect.required = true;
+                    // Tự set trạng thái về Nguy Cảnh/Trễ
+                    if (statusSelect) statusSelect.value = '2'; // Fallback logic tuỳ thiết lập DB của bạn
+                } else {
+                    failReasonContainer.style.display = 'none';
+                    failReasonSelect.required = false;
+                    failReasonSelect.value = '';
+                    if (statusSelect) statusSelect.value = '1'; // Tốt
+                }
+            }
+
+            if(kpiSelect) kpiSelect.addEventListener('change', checkRisk);
+            if(achievedInput) achievedInput.addEventListener('input', checkRisk);
+        });
+    </script>
+}

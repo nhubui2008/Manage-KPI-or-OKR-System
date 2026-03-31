@@ -72,10 +72,10 @@
                             <div class="d-flex align-items-center gap-4">
                                 <div class="text-end me-2" style="min-width: 120px;">
                                     <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                        <span class="text-muted fw-bold">Tiến độ: @totalProgress%</span>
+                                        <span class="text-muted fw-bold" id="okr-text-@okr.Id">Tiến độ: @totalProgress%</span>
                                     </div>
                                     <div class="progress" style="height: 6px; width: 100px;">
-                                        <div class="progress-bar bg-@progressColor" role="progressbar" style="width: @totalProgress%;" aria-valuenow="@totalProgress" aria-valuemin="0" aria-valuemax="100"></div>
+                                        <div class="progress-bar bg-@progressColor" id="okr-bar-@okr.Id" role="progressbar" style="width: @totalProgress%;" aria-valuenow="@totalProgress" aria-valuemin="0" aria-valuemax="100"></div>
                                     </div>
                                 </div>
                                 <div class="badge bg-warning text-dark px-3 py-2 rounded-pill">Đang thực hiện</div>
@@ -114,22 +114,22 @@
                                             <div class="ps-4">
                                                 <div class="fw-medium text-dark">@krIndex. @kr.KeyResultName</div>
                                                 <div class="text-muted" style="font-size: 0.75rem;">
-                                                    Hiện tại: <span class="fw-bold text-primary">@String.Format("{0:N0}", kr.CurrentValue ?? 0)</span> / 
-                                                    Mục tiêu: @String.Format("{0:N0}", kr.TargetValue) @kr.Unit
+                                                    Hiện tại: <span class="fw-bold text-primary" id="kr-current-@kr.Id">@String.Format("{0:N0}", kr.CurrentValue ?? 0)</span> / 
+                                                    Mục tiêu: <span id="kr-target-@kr.Id">@String.Format("{0:N0}", kr.TargetValue)</span> <span id="kr-unit-@kr.Id">@kr.Unit</span>
                                                 </div>
                                             </div>
                                             <div class="d-flex align-items-center gap-4" style="width: 45%;">
                                                 <div class="flex-grow-1">
                                                     <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                                        <span class="text-muted">Hoàn thành: @krProgress.ToString("N1")%</span>
+                                                        <span class="text-muted" id="kr-pct-@kr.Id">Hoàn thành: @krProgress.ToString("N1")%</span>
                                                     </div>
                                                     <div class="progress" style="height: 5px;">
-                                                        <div class="progress-bar bg-@krProgressColor" role="progressbar" style="width: @krProgress%;" aria-valuenow="@krProgress" aria-valuemin="0" aria-valuemax="100"></div>
+                                                        <div class="progress-bar bg-@krProgressColor" id="kr-bar-@kr.Id" role="progressbar" style="width: @krProgress%;" aria-valuenow="@krProgress" aria-valuemin="0" aria-valuemax="100"></div>
                                                     </div>
                                                 </div>
                                                 <div class="d-flex gap-1">
                                                     <button class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle" 
-                                                            onclick="openEditKrModal(@kr.Id, '@kr.KeyResultName', @kr.TargetValue, @(kr.CurrentValue ?? 0), '@kr.Unit')" title="Sửa KR">
+                                                            onclick="openEditKrModal(@kr.Id, @okr.Id, '@kr.KeyResultName', @kr.TargetValue, @(kr.CurrentValue ?? 0), '@kr.Unit')" title="Sửa KR">
                                                         <i class="bi bi-pencil-square"></i>
                                                     </button>
                                                     <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
@@ -296,8 +296,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <form asp-controller="OKRs" asp-action="EditKeyResult" method="post">
+                <form asp-controller="OKRs" asp-action="EditKeyResult" method="post" id="editKrForm">
                     <input type="hidden" name="Id" id="editKrId" />
+                    <input type="hidden" name="OKRId" id="editParentOkrId" />
                     <div class="mb-3">
                         <label class="form-label">Mô tả Key Result <span class="text-danger">*</span></label>
                         <input type="text" name="KeyResultName" id="editKrName" class="form-control" required>
@@ -333,14 +334,80 @@
         new bootstrap.Modal(document.getElementById('addKrModal')).show();
     }
 
-    function openEditKrModal(id, name, target, current, unit) {
+    function openEditKrModal(id, selectedOkrId, name, target, current, unit) {
         document.getElementById('editKrId').value = id;
+        document.getElementById('editParentOkrId').value = selectedOkrId || '';
         document.getElementById('editKrName').value = name;
         document.getElementById('editKrTarget').value = target;
         document.getElementById('editKrCurrent').value = current;
         document.getElementById('editKrUnit').value = unit || '';
         new bootstrap.Modal(document.getElementById('editKrModal')).show();
     }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var editForm = document.getElementById('editKrForm');
+        if(editForm) {
+            editForm.addEventListener("submit", function (e) {
+                e.preventDefault();
+                var formData = new FormData(editForm);
+                
+                fetch(editForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        var krId = document.getElementById('editKrId').value;
+                        var okrId = document.getElementById('editParentOkrId').value;
+
+                        // Cập nhật DOM của KR
+                        var krBar = document.getElementById('kr-bar-' + krId);
+                        var krPct = document.getElementById('kr-pct-' + krId);
+                        var krCurrent = document.getElementById('kr-current-' + krId);
+                        var krTarget = document.getElementById('kr-target-' + krId);
+                        var krUnit = document.getElementById('kr-unit-' + krId);
+
+                        if(krBar) {
+                            krBar.style.width = data.krProgress + '%';
+                            krBar.setAttribute('aria-valuenow', data.krProgress);
+                            krBar.className = 'progress-bar bg-' + (data.krProgress >= 100 ? 'success' : (data.krProgress > 0 ? 'primary' : 'secondary'));
+                        }
+                        if(krPct) krPct.innerText = 'Hoàn thành: ' + parseFloat(data.krProgress).toFixed(1) + '%';
+                        if(krCurrent) krCurrent.innerText = Number(data.current).toLocaleString('en-US');
+                        if(krTarget) krTarget.innerText = Number(data.target).toLocaleString('en-US');
+                        if(krUnit) krUnit.innerText = data.unit || '';
+
+                        // Cập nhật DOM của OKR
+                        if (okrId) {
+                            var okrBar = document.getElementById('okr-bar-' + okrId);
+                            var okrText = document.getElementById('okr-text-' + okrId);
+                            if(okrBar) {
+                                okrBar.style.width = data.okrProgress + '%';
+                                okrBar.setAttribute('aria-valuenow', data.okrProgress);
+                                okrBar.className = 'progress-bar bg-' + (data.okrProgress >= 100 ? 'success' : (data.okrProgress > 0 ? 'primary' : 'secondary'));
+                            }
+                            if(okrText) okrText.innerText = 'Tiến độ: ' + data.okrProgress + '%';
+                        }
+
+                        // Đóng modal Modal thủ công do thẻ button data-bs-dismiss đôi khi k hoạt động với fetch
+                        var myModalEl = document.getElementById('editKrModal');
+                        var modal = bootstrap.Modal.getInstance(myModalEl);
+                        modal.hide();
+
+                        // Create alert success
+                        var alertNode = document.createElement('div');
+                        alertNode.className = 'alert alert-success shadow-sm border-0 mb-4 alert-dismissible fade show';
+                        alertNode.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Đã lưu và cập nhật trực tiếp tiến độ!<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                        document.querySelector('.page-header').insertAdjacentElement('afterend', alertNode);
+                        setTimeout(() => { alertNode.remove(); }, 3000);
+                    }
+                })
+                .catch(err => console.error(err));
+            });
+        }
+    });
 </script>
 
 <style>

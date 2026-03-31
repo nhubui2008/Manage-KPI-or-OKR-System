@@ -149,6 +149,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     await _context.SaveChangesAsync();
                     
                     var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
+                    
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        decimal krProgress = 0;
+                        if (kr.TargetValue.HasValue && kr.TargetValue.Value > 0)
+                        {
+                            krProgress = Math.Min(100, (kr.CurrentValue ?? 0) / kr.TargetValue.Value * 100);
+                        }
+                        return Json(new { success = true, krProgress = krProgress, okrProgress = okr?.TotalProgress, current = kr.CurrentValue, target = kr.TargetValue, unit = kr.Unit });
+                    }
+
                     TempData["SuccessMessage"] = $"Đã cập nhật KR thành công! Tiến độ mục tiêu hiện tại: {okr?.TotalProgress}%";
                 }
             }

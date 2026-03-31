@@ -46,18 +46,45 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.AllKPIs = await _context.KPIs.Where(k => k.IsActive == true).ToListAsync();
             ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
+            ViewBag.AllFailReasons = await _context.FailReasons.ToListAsync();
+            ViewBag.KPIDetails = await _context.KPIDetails.ToDictionaryAsync(d => d.KPIId);
 
             return View(checkIns);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(KPICheckIn model)
+        public async Task<IActionResult> Create(KPICheckIn model, string AchievedValue)
         {
             if (ModelState.IsValid)
             {
                 model.CheckInDate = DateTime.Now;
                 _context.KPICheckIns.Add(model);
                 await _context.SaveChangesAsync();
+
+                // Lưu thêm CheckInDetail
+                if (!string.IsNullOrEmpty(AchievedValue) && decimal.TryParse(AchievedValue, out decimal achieved))
+                {
+                    decimal? progress = null;
+                    var kpi = await _context.KPIs.FindAsync(model.KPIId);
+                    if (kpi != null)
+                    {
+                        var targetDetail = await _context.KPIDetails.FirstOrDefaultAsync(d => d.KPIId == model.KPIId);
+                        if (targetDetail != null && targetDetail.TargetValue > 0)
+                        {
+                            progress = Math.Round((achieved / targetDetail.TargetValue.Value) * 100, 2);
+                        }
+                    }
+
+                    var detail = new CheckInDetail
+                    {
+                        CheckInId = model.Id,
+                        AchievedValue = achieved,
+                        ProgressPercentage = progress
+                    };
+                    _context.CheckInDetails.Add(detail);
+                    await _context.SaveChangesAsync();
+                }
+
                 TempData["SuccessMessage"] = "Đã tạo check-in KPI mới thành công!";
             }
             return RedirectToAction(nameof(Index));

@@ -9,6 +9,21 @@
 @if (TempData["SuccessMessage"] != null)
 {<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
 
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* Styling select2 for bootstrap consistency */
+    .select2-container .select2-selection--single {
+        height: 38px;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+</style>
 <div class="page-header">
     <div><h1 class="h3 font-weight-bold mb-1">Đơn hàng Bán (Sales Orders)</h1><div class="page-breadcrumb"><a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span>Bán hàng</span><i class="bi bi-chevron-right separator"></i><span>Đơn hàng</span></div></div>
     <div class="d-flex gap-2"><button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg"></i> Tạo đơn hàng mới</button></div>
@@ -61,9 +76,9 @@
     <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-cart-plus me-2"></i>Tạo Đơn hàng</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
     <form asp-action="Create" method="post"><div class="modal-body">
         <div class="mb-3"><label class="form-label fw-semibold">Mã đơn hàng</label><input type="text" name="OrderCode" class="form-control" required placeholder="VD: SO-2603-0001" /></div>
-        <div class="mb-3"><label class="form-label fw-semibold">Khách hàng</label><select name="CustomerId" class="form-select" required>
+        <div class="mb-3"><label class="form-label fw-semibold">Khách hàng</label><select name="CustomerId" class="form-select select2-sales" required>
             <option value="">-- Chọn khách hàng --</option>@foreach(var c in allCustomers){<option value="@c.Id">@c.CustomerName (@c.CustomerCode)</option>}</select></div>
-        <div class="mb-3"><label class="form-label fw-semibold">Nhân viên phụ trách</label><select name="SalesStaffId" class="form-select">
+        <div class="mb-3"><label class="form-label fw-semibold">Nhân viên phụ trách</label><select name="SalesStaffId" class="form-select select2-sales">
             <option value="">-- Chọn nhân viên --</option>@foreach(var e in allEmployees){<option value="@e.Id">@e.FullName</option>}</select></div>
         <div class="mb-3"><label class="form-label fw-semibold">Địa chỉ giao hàng</label><textarea name="ShippingAddress" class="form-control" rows="2"></textarea></div>
         <div class="row"><div class="col-6 mb-3"><label class="form-label fw-semibold">Tổng tiền (VNĐ)</label><input type="number" name="TotalAmount" class="form-control" step="1000" /></div>
@@ -71,3 +86,18 @@
     </div>
     <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom">Tạo đơn hàng</button></div></form>
 </div></div></div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('.select2-sales').select2({
+                dropdownParent: $('#createModal'),
+                width: '100%',
+                placeholder: 'Tìm kiếm hoặc chọn...',
+                allowClear: true
+            });
+        });
+    </script>
+}

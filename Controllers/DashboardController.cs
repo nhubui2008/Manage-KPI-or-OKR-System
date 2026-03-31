@@ -47,5 +47,60 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             return View();
         }
+
+        [HttpGet]
+        public IActionResult GetOKRProgress()
+        {
+            var year = System.DateTime.Now.Year;
+            // Fetch all active OKRs created this year along with their Key Results
+            var okrs = _context.OKRs
+                .Include(o => o.KeyResults)
+                .Where(o => o.IsActive == true && o.CreatedAt.HasValue && o.CreatedAt.Value.Year == year)
+                .ToList();
+
+            var monthlyData = new decimal[12];
+            var labels = new string[12];
+
+            for (int i = 1; i <= 12; i++)
+            {
+                labels[i - 1] = $"Tháng {i}";
+                var okrsInMonth = okrs.Where(o => o.CreatedAt.Value.Month == i).ToList();
+                if (okrsInMonth.Any())
+                {
+                    monthlyData[i - 1] = System.Math.Round(okrsInMonth.Average(o => o.TotalProgress), 2);
+                }
+            }
+
+            return Json(new { labels = labels, data = monthlyData });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetKPITrend()
+        {
+            var year = System.DateTime.Now.Year;
+
+            var checkIns = await _context.KPICheckIns
+                .Where(c => c.CheckInDate.HasValue && c.CheckInDate.Value.Year == year)
+                .Join(_context.CheckInDetails,
+                    c => c.Id,
+                    d => d.CheckInId,
+                    (c, d) => new { Month = c.CheckInDate.Value.Month, Progress = d.ProgressPercentage ?? 0 })
+                .ToListAsync();
+
+            var monthlyData = new decimal[12];
+            var labels = new string[12];
+
+            for (int i = 1; i <= 12; i++)
+            {
+                labels[i - 1] = $"Tháng {i}";
+                var checkInsInMonth = checkIns.Where(c => c.Month == i).ToList();
+                if (checkInsInMonth.Any())
+                {
+                    monthlyData[i - 1] = System.Math.Round(checkInsInMonth.Average(c => c.Progress), 2);
+                }
+            }
+
+            return Json(new { labels = labels, data = monthlyData });
+        }
     }
 }

@@ -100,16 +100,27 @@
 </div>
 
 <div class="row g-4 mb-4">
-    <!-- Charts Placeholder -->
+    <!-- Charts Container -->
     <div class="col-lg-8">
-        <div class="content-card h-100">
-            <div class="card-header-custom">
-                <h5><i class="bi bi-bar-chart-fill"></i> Tiến độ OKR Khối Doanh Nghiệp</h5>
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="content-card">
+                    <div class="card-header-custom">
+                        <h5><i class="bi bi-bar-chart-fill"></i> Tiến độ OKR Công Ty (Năm Hiện Tại)</h5>
+                    </div>
+                    <div class="card-body-custom" style="min-height: 300px;">
+                        <div id="okrChart"></div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body-custom d-flex align-items-center justify-content-center" style="min-height: 300px; background: rgba(0,0,0,0.01);">
-                <div class="text-center text-muted">
-                    <i class="bi bi-bar-chart text-primary opacity-25" style="font-size: 6rem;"></i>
-                    <p class="mt-3 mb-0">Khu vực hiển thị biểu đồ Chart.js / ApexCharts</p>
+            <div class="col-12">
+                <div class="content-card">
+                    <div class="card-header-custom">
+                        <h5><i class="bi bi-graph-up text-success"></i> Xu hướng Hiệu suất KPI</h5>
+                    </div>
+                    <div class="card-body-custom" style="min-height: 300px;">
+                        <div id="kpiTrendChart"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -204,3 +215,82 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Load OKR Data
+            fetch('/Dashboard/GetOKRProgress')
+                .then(res => res.json())
+                .then(data => {
+                    var okrOptions = {
+                        series: [{
+                            name: '% Hoàn thành',
+                            data: data.data
+                        }],
+                        chart: {
+                            type: 'bar',
+                            height: 350,
+                            toolbar: { show: false }
+                        },
+                        colors: ['#0d6efd'],
+                        plotOptions: {
+                            bar: {
+                                borderRadius: 4,
+                                horizontal: false,
+                                columnWidth: '55%',
+                            }
+                        },
+                        dataLabels: {
+                            enabled: true,
+                            formatter: function (val) { return val + "%"; }
+                        },
+                        stroke: { show: true, width: 2, colors: ['transparent'] },
+                        xaxis: { categories: data.labels },
+                        yaxis: {
+                            title: { text: '% Tiến độ' },
+                            max: 100
+                        },
+                        fill: { opacity: 1 },
+                        tooltip: {
+                            y: { formatter: function (val) { return val + "%" } }
+                        }
+                    };
+                    var okrChart = new ApexCharts(document.querySelector("#okrChart"), okrOptions);
+                    okrChart.render();
+                });
+
+            // Load KPI Trend Data
+            fetch('/Dashboard/GetKPITrend')
+                .then(res => res.json())
+                .then(data => {
+                    var kpiOptions = {
+                        series: [{
+                            name: 'Trung bình KPI',
+                            data: data.data
+                        }],
+                        chart: {
+                            height: 350,
+                            type: 'line',
+                            zoom: { enabled: false },
+                            toolbar: { show: false }
+                        },
+                        colors: ['#198754'],
+                        dataLabels: { enabled: true },
+                        stroke: { curve: 'smooth' },
+                        xaxis: { categories: data.labels },
+                        yaxis: {
+                            title: { text: '% Hoàn thành trung bình' },
+                            max: 100
+                        },
+                        tooltip: {
+                            y: { formatter: function (val) { return val + "%" } }
+                        }
+                    };
+                    var kpiChart = new ApexCharts(document.querySelector("#kpiTrendChart"), kpiOptions);
+                    kpiChart.render();
+                });
+        });
+    </script>
+}
