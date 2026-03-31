@@ -75,6 +75,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (ModelState.IsValid)
             {
+                // Kiểm tra xem mã chức vụ đã tồn tại chưa (bao gồm cả mã đã bị xóa mềm)
+                bool exists = await _context.Positions.AnyAsync(p => p.PositionCode == position.PositionCode);
+                if (exists)
+                {
+                    ModelState.AddModelError("PositionCode", "Mã chức vụ này đã tồn tại, vui lòng kiểm tra lại.");
+                    return View(position);
+                }
+
                 position.IsActive = true;
                 _context.Positions.Add(position);
                 await _context.SaveChangesAsync();
@@ -105,6 +113,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (ModelState.IsValid)
             {
+                // Kiểm tra xem mã chức vụ đã tồn tại ở bản ghi khác chưa
+                bool exists = await _context.Positions.AnyAsync(p => p.PositionCode == position.PositionCode && p.Id != id);
+                if (exists)
+                {
+                    ModelState.AddModelError("PositionCode", "Mã chức vụ này đã tồn tại, vui lòng kiểm tra lại.");
+                    return View(position);
+                }
+
                 try
                 {
                     var existingPos = await _context.Positions.FindAsync(id);
