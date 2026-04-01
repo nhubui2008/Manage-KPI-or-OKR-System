@@ -1272,3 +1272,19 @@ body.sidebar-collapsed .main-content { margin-left: 0; }
 .badge-on-track:hover { background-color: rgba(107, 215, 163, 0.25); }
 .badge-at-risk:hover { background-color: rgba(251, 199, 162, 0.25); }
 .badge-late:hover { background-color: rgba(229, 115, 115, 0.25); }
+
+/* ============================================
+   CUSTOM PASTEL PINK BADGE CHO OKR
+   ============================================ */
+.badge-pastel-pink {
+    background-color: var(--accent-light) !important; /* Nền hồng pastel nhạt (#fce4ec) */
+    color: var(--text-primary) !important; /* Chữ màu trầm để dễ đọc (#4a3747) */
+    border: 1px solid var(--accent) !important; /* Viền hồng pastel (#f8bbd0) */
+}
+
+/* Nếu bạn muốn hiệu ứng hover nhẹ nhàng cho badge này */
+.badge-pastel-pink:hover {
+    background-color: var(--accent) !important;
+    color: #fff !important;
+    transition: all var(--transition-fast);
+}
