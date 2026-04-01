@@ -25,7 +25,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var query = _context.OKRs.Where(o => o.IsActive == true);
+            try
+            {
+                // Đảm bảo cột CurrentValue tồn tại trong database (fix lỗi schema mismatch)
+                await _context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('OKRKeyResults') AND name = 'CurrentValue') ALTER TABLE OKRKeyResults ADD CurrentValue decimal(18,2) NULL;");
+            }
+            catch { }
+
+            var query = _context.OKRs.Where(o => o.IsActive == true).Include(o => o.KeyResults).AsQueryable();
 
             // Filter OKRs if Warehouse or Employee
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -72,11 +79,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.KeyResults = krDict;
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
 
+            // Lấy dữ liệu danh mục cho modal Tạo OKR
+            ViewBag.Missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
+            ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
+            ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
+
             return View(okrs);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(OKR model)
+        public async Task<IActionResult> Create(OKR model, int? missionId, int? departmentId, int? employeeId)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
                 User.IsInRole("Employee") || User.IsInRole("employee")) 
@@ -84,11 +97,42 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (ModelState.IsValid)
             {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int userId))
+                {
+                    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
+                    if (employee != null)
+                    {
+                        model.CreatedById = employee.Id;
+                    }
+                }
+
                 model.CreatedAt = DateTime.Now;
                 model.IsActive = true;
                 _context.OKRs.Add(model);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã tạo OKR mới thành công!";
+
+                // Lưu phân bổ Sứ mệnh
+                if (missionId.HasValue)
+                {
+                    _context.OKR_Mission_Mappings.Add(new OKR_Mission_Mapping { OKRId = model.Id, MissionId = missionId.Value });
+                }
+
+                // Lưu phân bổ Phòng ban
+                if (departmentId.HasValue)
+                {
+                    _context.OKR_Department_Allocations.Add(new OKR_Department_Allocation { OKRId = model.Id, DepartmentId = departmentId.Value });
+                }
+
+                // Lưu phân bổ Nhân viên
+                if (employeeId.HasValue)
+                {
+                    _context.OKR_Employee_Allocations.Add(new OKR_Employee_Allocation { OKRId = model.Id, EmployeeId = employeeId.Value });
+                }
+
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Đã tạo OKR mới và phân bổ thành công!";
             }
             return RedirectToAction(nameof(Index));
         }
@@ -98,9 +142,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (ModelState.IsValid)
             {
+                kr.CurrentValue = 0; // Khởi tạo tiến độ ban đầu là 0
                 _context.OKRKeyResults.Add(kr);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã thêm Kết quả Then chốt thành công!";
+                
+                // Lấy thông tin OKR để tính toán tiến độ mới
+                var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
+                TempData["SuccessMessage"] = $"Đã thêm KR thành công! Tiến độ mục tiêu: {okr?.TotalProgress}%";
             }
             return RedirectToAction(nameof(Index));
         }
@@ -125,14 +173,33 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> EditKeyResult(OKRKeyResult model)
+        {
+            if (ModelState.IsValid)
+            {
+                var kr = await _context.OKRKeyResults.FindAsync(model.Id);
+                if (kr != null)
+                {
+                    kr.KeyResultName = model.KeyResultName;
+                    kr.TargetValue = model.TargetValue;
+                    kr.CurrentValue = model.CurrentValue;
+                    kr.Unit = model.Unit;
+                    
+                    await _context.SaveChangesAsync();
+                    
+                    var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
+                    TempData["SuccessMessage"] = $"Đã cập nhật KR thành công! Tiến độ mục tiêu hiện tại: {okr?.TotalProgress}%";
+                }
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
         public async Task<IActionResult> AllocateTarget(int okrId, int employeeId, decimal allocatedValue)
         {
             var okr = await _context.OKRs.FindAsync(okrId);
             if (okr == null) return NotFound();
 
-            // Validation logic: Sum of employee allocations must not exceed OKR total (if applicable)
-            // Or we treat this as a per-employee task within the OKR.
-            
             var allocation = new OKR_Employee_Allocation {
                 OKRId = okrId,
                 EmployeeId = employeeId,
@@ -144,6 +211,101 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             TempData["SuccessMessage"] = "Đã phân bổ chỉ tiêu cho nhân viên thành công!";
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteKeyResult(int id)
+        {
+            var kr = await _context.OKRKeyResults.FindAsync(id);
+            if (kr != null)
+            {
+                int? okrId = kr.OKRId;
+                _context.OKRKeyResults.Remove(kr);
+                await _context.SaveChangesAsync();
+                
+                var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == okrId);
+                TempData["SuccessMessage"] = $"Đã xóa KR thành công! Tiến độ mục tiêu còn lại: {okr?.TotalProgress}%";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet("Tree")]
+        public async Task<IActionResult> GetTree()
+        {
+            var missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
+            var okrs = await _context.OKRs.Where(o => o.IsActive == true).Include(o => o.KeyResults).ToListAsync();
+            var missionMappings = await _context.OKR_Mission_Mappings.ToListAsync();
+            var deptAllocations = await _context.OKR_Department_Allocations.ToListAsync();
+            var depts = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
+
+            var tree = new List<object>();
+
+            var okrByMission = missionMappings
+                .GroupBy(m => m.MissionId)
+                .ToDictionary(g => g.Key, g => g.Select(m => m.OKRId).ToList());
+
+            foreach (var mission in missions)
+            {
+                var missionNode = new
+                {
+                    id = $"mission_{mission.Id}",
+                    name = $"Sứ mệnh {mission.TargetYear}: {mission.Content}",
+                    type = "Mission",
+                    children = new List<object>()
+                };
+
+                if (okrByMission.TryGetValue(mission.Id, out var okrIds))
+                {
+                    var missionOkrs = okrs.Where(o => okrIds.Contains(o.Id)).ToList();
+                    foreach (var okr in missionOkrs)
+                    {
+                        var okrNode = CreateOkrNode(okr);
+                        missionNode.children.Add(okrNode);
+                    }
+                }
+
+                tree.Add(missionNode);
+            }
+
+            var mappedOkrIds = missionMappings.Select(m => m.OKRId).Distinct().ToList();
+            var unmappedOkrs = okrs.Where(o => !mappedOkrIds.Contains(o.Id)).ToList();
+
+            if (unmappedOkrs.Any())
+            {
+                var othersNode = new
+                {
+                    id = "mission_others",
+                    name = "Các mục tiêu khác",
+                    type = "Mission",
+                    children = unmappedOkrs.Select(o => CreateOkrNode(o)).ToList()
+                };
+                tree.Add(othersNode);
+            }
+
+            return Ok(tree);
+        }
+
+        private object CreateOkrNode(OKR okr)
+        {
+            return new
+            {
+                id = $"okr_{okr.Id}",
+                name = okr.ObjectiveName,
+                type = "Objective",
+                progress = okr.TotalProgress,
+                children = okr.KeyResults?.Select(kr => new
+                {
+                    id = $"kr_{kr.Id}",
+                    name = kr.KeyResultName,
+                    type = "KeyResult",
+                    progress = kr.TargetValue.HasValue && kr.TargetValue.Value > 0 
+                        ? Math.Round((kr.CurrentValue ?? 0) / kr.TargetValue.Value * 100, 2) 
+                        : 0,
+                    target = kr.TargetValue,
+                    current = kr.CurrentValue,
+                    unit = kr.Unit
+                }).ToList()
+            };
         }
 
         [HttpPost]

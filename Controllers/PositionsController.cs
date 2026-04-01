@@ -75,6 +75,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (ModelState.IsValid)
             {
+                // Kiểm tra xem mã chức vụ đã tồn tại chưa (bao gồm cả mã đã bị xóa mềm)
+                bool exists = await _context.Positions.AnyAsync(p => p.PositionCode == position.PositionCode);
+                if (exists)
+                {
+                    ModelState.AddModelError("PositionCode", "Mã chức vụ này đã tồn tại, vui lòng kiểm tra lại.");
+                    return View(position);
+                }
+
                 position.IsActive = true;
                 _context.Positions.Add(position);
                 await _context.SaveChangesAsync();
@@ -105,6 +113,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (ModelState.IsValid)
             {
+                // Kiểm tra xem mã chức vụ đã tồn tại ở bản ghi khác chưa
+                bool exists = await _context.Positions.AnyAsync(p => p.PositionCode == position.PositionCode && p.Id != id);
+                if (exists)
+                {
+                    ModelState.AddModelError("PositionCode", "Mã chức vụ này đã tồn tại, vui lòng kiểm tra lại.");
+                    return View(position);
+                }
+
                 try
                 {
                     var existingPos = await _context.Positions.FindAsync(id);
@@ -135,17 +151,26 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var position = await _context.Positions.FindAsync(id);
-            if (position != null)
-            {
-                // Chỉ đổi trạng thái IsActive thành false thay vì xóa hẳn (Soft Delete)
-                position.IsActive = false;
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã xóa chức vụ thành công!";
-            }
-            else
+            if (position == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy chức vụ cần xóa!";
+                return RedirectToAction(nameof(Index));
             }
+
+            // Kiểm tra xem có nhân viên nào đang giữ chức vụ này không (thông qua EmployeeAssignments)
+            var activeAssignmentsCount = await _context.EmployeeAssignments
+                .CountAsync(a => a.PositionId == id && a.IsActive == true);
+
+            if (activeAssignmentsCount > 0)
+            {
+                TempData["ErrorMessage"] = $"Không thể xóa chức vụ này! Hiện tại đang có {activeAssignmentsCount} nhân viên đang đảm nhiệm chức vụ này. Vui lòng thay đổi chức vụ của họ trước khi thực hiện.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Chỉ đổi trạng thái IsActive thành false thay vì xóa hẳn (Soft Delete)
+            position.IsActive = false;
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã xóa chức vụ thành công!";
             
             return RedirectToAction(nameof(Index));
         }

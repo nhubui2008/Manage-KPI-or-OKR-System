@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -116,6 +117,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Department dept)
         {
+            // Kiểm tra tính duy nhất của DepartmentCode
+            if (!string.IsNullOrEmpty(dept.DepartmentCode))
+            {
+                var existingCode = await _context.Departments
+                    .AnyAsync(d => d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower() && d.IsActive == true);
+                if (existingCode)
+                {
+                    ModelState.AddModelError("DepartmentCode", "Mã phòng ban này đã tồn tại trong hệ thống");
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 dept.CreatedAt = DateTime.Now;
@@ -152,8 +164,31 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (id != dept.Id) return NotFound();
 
+            // Kiểm tra tính duy nhất của DepartmentCode (exclude bản ghi hiện tại)
+            if (!string.IsNullOrEmpty(dept.DepartmentCode))
+            {
+                var existingCode = await _context.Departments
+                    .AnyAsync(d => d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower() 
+                                && d.Id != id && d.IsActive == true);
+                if (existingCode)
+                {
+                    ModelState.AddModelError("DepartmentCode", "Mã phòng ban này đã tồn tại trong hệ thống");
+                }
+            }
+
             if (ModelState.IsValid)
             {
+                // 1. Kiểm tra tham chiếu vòng
+                if (await IsCircularReference(id, dept.ParentDepartmentId))
+                {
+                    ModelState.AddModelError("ParentDepartmentId", "Phòng ban không thể trực thuộc cấp dưới của mình!");
+                    
+                    // Nạp lại dữ liệu cho Dropdown trước khi trả về View
+                    ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToDictionaryAsync(e => e.Id, e => e.FullName);
+                    ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true && d.Id != id).ToListAsync();
+                    return View(dept);
+                }
+
                 try
                 {
                     var existingDept = await _context.Departments.FindAsync(id);
@@ -181,7 +216,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         // ==========================================
-        // 5. XÓA (DELETE)
+        // 5. XÓA (DELETE) - NGƯNG HOẠT ĐỘNG
         // ==========================================
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
@@ -193,27 +228,29 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // 1. Kiểm tra nhân viên đang hoạt động trong phòng ban
+            // 1. Kiểm tra nhân viên đang thuộc phòng ban
             var activeEmployeesCount = await _context.EmployeeAssignments
                 .CountAsync(a => a.DepartmentId == id && a.IsActive == true);
             
-            if (activeEmployeesCount > 0)
+            // 2. Kiểm tra xem có phòng ban con nào còn hoạt động không
+            var hasChildDepts = await _context.Departments.AnyAsync(d => d.ParentDepartmentId == id && d.IsActive == true);
+
+            // 3. Kiểm tra xem có KPI nào đang gán cho phòng ban không
+            var activeKPIsCount = await _context.KPI_Department_Assignments
+                .CountAsync(k => k.DepartmentId == id);
+
+            if (activeEmployeesCount > 0 || hasChildDepts || activeKPIsCount > 0)
             {
-                TempData["ErrorMessage"] = $"Không thể ngưng hoạt động phòng ban '{dept.DepartmentName}' vì đang có {activeEmployeesCount} nhân viên đang làm việc. Vui lòng chuyển nhân viên sang bộ phận khác hoặc cho nghỉ việc trước.";
+                var errorDetails = new List<string>();
+                if (activeEmployeesCount > 0) errorDetails.Add($"{activeEmployeesCount} nhân viên");
+                if (hasChildDepts) errorDetails.Add("phòng ban trực thuộc");
+                if (activeKPIsCount > 0) errorDetails.Add($"{activeKPIsCount} KPI");
+
+                TempData["ErrorMessage"] = $"Không thể ngưng hoạt động phòng ban '{dept.DepartmentName}' vì đang có: {string.Join(", ", errorDetails)}. Vui lòng xử lý các ràng buộc này trước khi thực hiện.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // 2. Kiểm tra các phòng ban con đang hoạt động
-            var activeSubDeptsCount = await _context.Departments
-                .CountAsync(d => d.ParentDepartmentId == id && d.IsActive == true);
-
-            if (activeSubDeptsCount > 0)
-            {
-                TempData["ErrorMessage"] = $"Phòng ban này vẫn còn {activeSubDeptsCount} đơn vị cấp dưới đang hoạt động. Vui lòng xử lý các đơn vị con trước.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            // 3. Thực hiện ngưng hoạt động (Soft delete)
+            // Soft delete: chuyển sang ngưng hoạt động
             dept.IsActive = false;
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = $"Đã ngưng hoạt động phòng ban '{dept.DepartmentName}' thành công!";
@@ -237,6 +274,35 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // Hàm kiểm tra tham chiếu vòng (Ngăn cản cấu trúc A -> B -> A)
+        private async Task<bool> IsCircularReference(int deptId, int? newParentId)
+        {
+            if (!newParentId.HasValue) return false;
+            
+            var currentCheckId = newParentId;
+            var visited = new HashSet<int>();
+
+            while (currentCheckId.HasValue)
+            {
+                // Nếu gặp chính nó trong chuỗi phả hệ ngược lên => Có vòng lặp
+                if (currentCheckId.Value == deptId) return true;
+                
+                // Tránh lặp vô hạn nếu dữ liệu DB hiện tại đã bị lỗi cấu trúc
+                if (visited.Contains(currentCheckId.Value)) break;
+                visited.Add(currentCheckId.Value);
+
+                var parentDept = await _context.Departments
+                    .AsNoTracking()
+                    .Where(d => d.Id == currentCheckId.Value)
+                    .Select(d => new { d.ParentDepartmentId })
+                    .FirstOrDefaultAsync();
+
+                if (parentDept == null) break;
+                currentCheckId = parentDept.ParentDepartmentId;
+            }
+            return false;
         }
 
         // Hàm hỗ trợ kiểm tra phòng ban có tồn tại không
