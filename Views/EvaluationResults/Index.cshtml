@@ -46,6 +46,7 @@
                                 <td><span class="badge bg-dark text-white px-2">@rankCode</span></td>
                                 <td>@(r.Classification ?? "Chưa phân loại")</td>
                                 <td><div class="action-btns justify-content-end">
+                                    <button type="button" class="action-btn" title="Sửa" onclick="showComingSoonToast('Chỉnh sửa Kết quả Đánh giá')"><i class="bi bi-pencil-square"></i></button>
                                     @if (User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))
                                     {
                                         <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa kết quả này?')"><i class="bi bi-trash"></i></button></form>

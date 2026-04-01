@@ -39,6 +39,7 @@
                         @if (!User.IsInRole("Warehouse") && !User.IsInRole("warehouse"))
                         {
                             <td><div class="action-btns justify-content-end">
+                                <button type="button" class="action-btn" title="Sửa" onclick="showComingSoonToast('Chỉnh sửa Phiếu Giao hàng')"><i class="bi bi-pencil-square"></i></button>
                                 <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@dn.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Vô hiệu hóa phiếu giao?')"><i class="bi bi-trash"></i></button></form>
                             </div></td>
                         }

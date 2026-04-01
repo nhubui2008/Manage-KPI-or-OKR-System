@@ -72,6 +72,7 @@
                                 </td>
                                 <td>
                                     <div class="action-btns justify-content-end">
+                                        <button type="button" class="action-btn" title="Sửa" onclick="showComingSoonToast('Chỉnh sửa Kỳ Đánh giá')"><i class="bi bi-pencil-square"></i></button>
                                         <form asp-action="Delete" method="post" style="display:inline;">
                                             <input type="hidden" name="id" value="@p.Id" />
                                             <button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Bạn có chắc muốn vô hiệu hóa kỳ đánh giá này?')"><i class="bi bi-trash"></i></button>

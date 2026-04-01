@@ -101,7 +101,7 @@
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                                    <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Chỉnh sửa</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault();showComingSoonToast('Chỉnh sửa Mục tiêu Chiến lược')"><i class="bi bi-pencil me-2"></i>Chỉnh sửa</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <form asp-action="Delete" asp-route-id="@goal.Id" method="post" class="m-0" onsubmit="return confirm('Xóa mục tiêu chiến lược năm @goal.TargetYear?');">

@@ -26,6 +26,7 @@
                         <td class="text-muted">@(w.Address ?? "—")</td>
                         <td><span class="status-badge active"><span class="status-dot"></span> Hoạt động</span></td>
                         <td><div class="action-btns justify-content-end">
+                            <button type="button" class="action-btn" title="Sửa" onclick="showComingSoonToast('Chỉnh sửa Kho')"><i class="bi bi-pencil-square"></i></button>
                             <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@w.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Vô hiệu hóa kho?')"><i class="bi bi-trash"></i></button></form>
                         </div></td>
                     </tr>

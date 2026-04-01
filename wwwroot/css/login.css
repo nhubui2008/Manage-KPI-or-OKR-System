@@ -21,10 +21,10 @@ body, html {
     opacity: 0.5;
     animation: floatBlob 12s infinite alternate ease-in-out;
 }
-.blob-1 { background: #a3c9f9; width: 320px; height: 320px; top: 5%; left: 10%; animation-delay: 0s; }
-.blob-2 { background: #f9d6e5; width: 220px; height: 220px; top: 60%; left: 70%; animation-delay: 2s; }
-.blob-3 { background: #fbe7a2; width: 180px; height: 180px; top: 70%; left: 20%; animation-delay: 4s; }
-.blob-4 { background: #b8f2e6; width: 140px; height: 140px; top: 20%; left: 80%; animation-delay: 6s; }
+.blob-1 { background: #8c6a85; width: 320px; height: 320px; top: 5%; left: 10%; animation-delay: 0s; opacity: 0.3; }
+.blob-2 { background: #f8bbd0; width: 220px; height: 220px; top: 60%; left: 70%; animation-delay: 2s; opacity: 0.4; }
+.blob-3 { background: #ffcfda; width: 180px; height: 180px; top: 70%; left: 20%; animation-delay: 4s; opacity: 0.5; }
+.blob-4 { background: #d1c4e9; width: 140px; height: 140px; top: 20%; left: 80%; animation-delay: 6s; opacity: 0.3; }
 
 @keyframes floatBlob {
     0% { transform: translateY(0) scale(1); }
@@ -41,9 +41,12 @@ body, html {
 }
 
 .soft-card {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.45);
     border-radius: 32px;
-    box-shadow: 0 8px 32px rgba(60, 60, 120, 0.12), 0 1.5px 6px rgba(60, 60, 120, 0.06);
+    box-shadow: 0 8px 32px rgba(74, 55, 71, 0.12), 0 1.5px 6px rgba(74, 55, 71, 0.06);
     padding: 48px 36px 32px 36px;
     max-width: 400px;
     width: 100%;
@@ -62,7 +65,7 @@ body, html {
     margin-bottom: 12px;
 }
 .logo-circle {
-    background: linear-gradient(135deg, #e0e7ff 60%, #fbe7a2 100%);
+    background: linear-gradient(135deg, #fce4ec 60%, #ffcfda 100%);
     border-radius: 50%;
     width: 56px;
     height: 56px;
@@ -70,11 +73,11 @@ body, html {
     align-items: center;
     justify-content: center;
     position: relative;
-    box-shadow: 0 0 24px 0 #e0e7ff44;
+    box-shadow: 0 0 24px 0 rgba(248, 187, 208, 0.3);
 }
 .comfort-icon svg {
     display: block;
-    color: #6b7fd7;
+    color: #8c6a85;
 }
 .gentle-glow {
     position: absolute;
@@ -87,7 +90,7 @@ body, html {
 .comfort-title {
     font-size: 2rem;
     font-weight: 700;
-    color: #2d3559;
+    color: #4a3747;
     margin: 0 0 6px 0;
 }
 .gentle-subtitle {
@@ -121,7 +124,8 @@ body, html {
     box-shadow: 0 1.5px 6px rgba(60, 60, 120, 0.04);
 }
 .field-container input:focus {
-    box-shadow: 0 0 0 2px #a3c9f9;
+    box-shadow: 0 0 0 2px #f8bbd0;
+    background: rgba(255, 255, 255, 0.8);
 }
 .field-container label {
     position: absolute;
@@ -138,7 +142,7 @@ body, html {
     top: -10px;
     left: 10px;
     font-size: 0.85rem;
-    color: #6b7fd7;
+    color: #8c6a85;
     background: #fff;
     padding: 0 4px;
 }
@@ -146,7 +150,7 @@ body, html {
     position: absolute;
     left: 0; right: 0; bottom: 0;
     height: 2px;
-    background: linear-gradient(90deg, #a3c9f9, #fbe7a2);
+    background: linear-gradient(90deg, #f8bbd0, #ffcfda);
     border-radius: 2px;
     opacity: 0.2;
 }
@@ -172,8 +176,8 @@ body, html {
 .checkbox-soft {
     width: 20px; height: 20px;
     border-radius: 6px;
-    background: #f6f8fb;
-    border: 1.5px solid #a3c9f9;
+    background: #fdf6f8;
+    border: 1.5px solid #f8bbd0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -182,13 +186,13 @@ body, html {
     transition: border 0.2s;
 }
 .gentle-checkbox input:checked + .checkbox-soft {
-    border: 1.5px solid #6b7fd7;
-    background: #e0e7ff;
+    border: 1.5px solid #8c6a85;
+    background: #f8bbd0;
 }
 .check-circle {
     width: 12px; height: 12px;
     border-radius: 50%;
-    background: #6b7fd7;
+    background: #ffffff;
     opacity: 0;
     transition: opacity 0.2s;
 }
@@ -209,7 +213,7 @@ body, html {
     font-size: 1rem;
 }
 .comfort-link {
-    color: #6b7fd7;
+    color: #8c6a85;
     text-decoration: none;
     font-size: 1rem;
     transition: color 0.2s;
@@ -223,20 +227,25 @@ body, html {
     padding: 14px 0;
     border: none;
     border-radius: 12px;
-    background: linear-gradient(90deg, #a3c9f9, #fbe7a2);
-    color: #2d3559;
+    background: linear-gradient(90deg, #f8bbd0, #ffcfda);
+    color: #4a3747;
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    transition: background 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
     margin-top: 8px;
+    box-shadow: 0 4px 15px rgba(248, 187, 208, 0.3);
+}
+.comfort-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(248, 187, 208, 0.4);
 }
 .button-background {
     position: absolute;
     left: 0; right: 0; top: 0; bottom: 0;
-    background: linear-gradient(90deg, #a3c9f9, #fbe7a2);
+    background: linear-gradient(90deg, #f8bbd0, #ffcfda);
     opacity: 0.2;
     z-index: 0;
 }
@@ -318,7 +327,7 @@ body, html {
     transition: background 0.2s;
 }
 .social-soft:hover {
-    background: #e0e7ff;
+    background: rgba(248, 187, 208, 0.15);
 }
 .social-background {
     position: absolute;
@@ -347,12 +356,12 @@ body, html {
 }
 .signup-link {
     margin-left: 6px;
-    color: #6b7fd7;
+    color: #8c6a85;
     font-weight: 600;
     text-decoration: none;
 }
 .signup-link:hover {
-    color: #2d3559;
+    color: #4a3747;
 }
 
 .gentle-success {
