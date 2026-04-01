@@ -65,7 +65,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // Đếm số lượng nhân viên đang thuộc từng phòng ban
             var employeeCounts = await _context.EmployeeAssignments
                 .Where(a => a.IsActive == true && a.DepartmentId.HasValue)
-                .GroupBy(a => a.DepartmentId.Value)
+                .GroupBy(a => a.DepartmentId ?? 0)
                 .Select(g => new { DeptId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.DeptId, x => x.Count);
 

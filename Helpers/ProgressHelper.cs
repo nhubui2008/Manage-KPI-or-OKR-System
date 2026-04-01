@@ -27,7 +27,6 @@ namespace Manage_KPI_or_OKR_System.Helpers
                 
                 // If it exceeds the target, calculate penalty
                 // Example: Target 2h, Actual 3h. Over by 1h (50% of target). Progress = 50%.
-                // If it's double the limit, it's 0%.
                 decimal penalty = ((actual - target) / target) * 100;
                 decimal progress = 100 - penalty;
                 
@@ -35,11 +34,37 @@ namespace Manage_KPI_or_OKR_System.Helpers
             }
         }
 
+        /// <summary>
+        /// Standardized result status text.
+        /// </summary>
         public static string GetResultStatus(decimal progress)
         {
             if (progress >= 100) return "Đạt";
-            if (progress >= 80) return "Gần đạt";
-            return "Chưa đạt";
+            if (progress >= 70) return "Gần đạt";
+            if (progress >= 40) return "Đang thực hiện";
+            return "Chậm tiến độ";
+        }
+
+        /// <summary>
+        /// Standardized CSS class for progress bars and status badges.
+        /// </summary>
+        public static string GetProgressColorClass(decimal progress)
+        {
+            if (progress >= 100) return "bg-soft-success"; // Completed
+            if (progress >= 70) return "bg-soft-primary";  // Good progress
+            if (progress >= 40) return "bg-soft-warning";  // Risk
+            return "bg-soft-danger";                       // Critical
+        }
+
+        /// <summary>
+        /// Text color class for status labels.
+        /// </summary>
+        public static string GetProgressTextColorClass(decimal progress)
+        {
+            if (progress >= 100) return "text-success";
+            if (progress >= 70) return "text-primary";
+            if (progress >= 40) return "text-warning";
+            return "text-danger";
         }
     }
 }
