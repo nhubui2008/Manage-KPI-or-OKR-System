@@ -1,0 +1,68 @@
+@model Manage_KPI_or_OKR_System.Properties.InventoryReceipt
+@{
+    ViewData["Title"] = "Chỉnh sửa Phiếu Nhập kho";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var allWarehouses = ViewBag.AllWarehouses as List<Manage_KPI_or_OKR_System.Models.Warehouse> ?? new List<Manage_KPI_or_OKR_System.Models.Warehouse>();
+    var allEmployees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="content-card rounded-3">
+                <div class="card-header-custom bg-white border-bottom py-3">
+                    <h5 class="mb-0 fw-bold text-primary"><i class="bi bi-pencil-square me-2"></i>Đang sửa phiếu nhập: PN-@Model.Id.ToString("D5")</h5>
+                </div>
+                <div class="card-body-custom p-4">
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        <input type="hidden" asp-for="Id" />
+
+                        <div class="mb-3">
+                            <label asp-for="WarehouseId" class="form-label fw-semibold text-muted">Kho nhập</label>
+                            <select asp-for="WarehouseId" class="form-select form-control-lg" required>
+                                <option value="">-- Chọn kho --</option>
+                                @foreach (var w in allWarehouses)
+                                {
+                                    <option value="@w.Id">@w.WarehouseName (@w.WarehouseCode)</option>
+                                }
+                            </select>
+                            <span asp-validation-for="WarehouseId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="WarehouseStaffId" class="form-label fw-semibold text-muted">Nhân viên kho</label>
+                            <select asp-for="WarehouseStaffId" class="form-select form-control-lg">
+                                <option value="">-- Chọn nhân viên --</option>
+                                @foreach (var e in allEmployees)
+                                {
+                                    <option value="@e.Id">@e.FullName</option>
+                                }
+                            </select>
+                            <span asp-validation-for="WarehouseStaffId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="TotalAmount" class="form-label fw-semibold text-muted">Tổng tiền (VNĐ)</label>
+                            <input asp-for="TotalAmount" type="number" class="form-control form-control-lg" step="1000" placeholder="Nhập tổng số tiền..." />
+                            <span asp-validation-for="TotalAmount" class="text-danger small"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <a asp-action="Index" class="btn-outline-custom px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn-primary-custom px-4"><i class="bi bi-floppy me-2"></i>Lưu thay đổi</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

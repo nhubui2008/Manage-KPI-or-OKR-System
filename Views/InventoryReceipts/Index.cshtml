@@ -8,6 +8,8 @@
 }
 @if (TempData["SuccessMessage"] != null)
 {<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
+@if (TempData["ErrorMessage"] != null)
+{<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
 
 <div class="container-fluid px-0">
     
@@ -35,7 +37,9 @@
                         <td class="text-muted">@(r.ReceiptDate?.ToString("dd/MM/yyyy") ?? "")</td>
                         <td class="text-end fw-semibold">@(r.TotalAmount?.ToString("N0") ?? "0")</td>
                         <td><div class="action-btns justify-content-end">
-                            <button type="button" class="action-btn" title="Sửa" onclick="showComingSoonToast('Chỉnh sửa Phiếu Nhập kho')"><i class="bi bi-pencil-square"></i></button>
+                            <a asp-action="Edit" asp-route-id="@r.Id" class="action-btn" title="Sửa">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
                             <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa phiếu nhập?')"><i class="bi bi-trash"></i></button></form>
                         </div></td>
                     </tr>

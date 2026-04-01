@@ -82,7 +82,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (id == null) return NotFound();
 
-            var dept = await _context.Departments.FirstOrDefaultAsync(m => m.Id == id);
+            var dept = await _context.Departments.FirstOrDefaultAsync(m => m.Id == id && m.IsActive == true);
             if (dept == null) return NotFound();
 
             // Lấy thêm tên người quản lý
@@ -117,14 +117,26 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Department dept)
         {
-            // Kiểm tra tính duy nhất của DepartmentCode
+            // Kiểm tra tính duy nhất của DepartmentCode (bao gồm cả mã đã bị xóa mềm)
             if (!string.IsNullOrEmpty(dept.DepartmentCode))
             {
-                var existingCode = await _context.Departments
-                    .AnyAsync(d => d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower() && d.IsActive == true);
-                if (existingCode)
+                var existing = await _context.Departments
+                    .FirstOrDefaultAsync(d => d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower());
+
+                if (existing != null)
                 {
-                    ModelState.AddModelError("DepartmentCode", "Mã phòng ban này đã tồn tại trong hệ thống");
+                    if (existing.IsActive == false)
+                    {
+                        // Gửi tín hiệu khôi phục về View (Layout sẽ bắt được)
+                        TempData["RestoreEntityName"] = "Departments";
+                        TempData["RestoreId"] = existing.Id;
+                        TempData["RestoreCode"] = existing.DepartmentCode;
+                        return RedirectToAction(nameof(Index));
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("DepartmentCode", "Mã phòng ban này đã tồn tại trong hệ thống");
+                    }
                 }
             }
 
@@ -149,7 +161,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // ==========================================
         public async Task<IActionResult> Edit(int id)
         {
-            var dept = await _context.Departments.FindAsync(id);
+            var dept = await _context.Departments
+                .FirstOrDefaultAsync(d => d.Id == id && d.IsActive == true);
             if (dept == null) return NotFound();
 
             ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToDictionaryAsync(e => e.Id, e => e.FullName);
@@ -191,7 +204,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 try
                 {
-                    var existingDept = await _context.Departments.FindAsync(id);
+                    var existingDept = await _context.Departments
+                        .FirstOrDefaultAsync(d => d.Id == id && d.IsActive == true);
                     if (existingDept == null) return NotFound();
 
                     existingDept.DepartmentCode = dept.DepartmentCode;
@@ -259,18 +273,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Activate(int id)
+        public async Task<IActionResult> Restore(int id)
         {
             var dept = await _context.Departments.FindAsync(id);
             if (dept != null)
             {
                 dept.IsActive = true;
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã kích hoạt lại phòng ban!";
+                TempData["SuccessMessage"] = "Đã khôi phục phòng ban thành công!";
             }
             else
             {
-                TempData["ErrorMessage"] = "Không tìm thấy phòng ban cần kích hoạt!";
+                TempData["ErrorMessage"] = "Không tìm thấy phòng ban cần khôi phục!";
             }
 
             return RedirectToAction(nameof(Index));

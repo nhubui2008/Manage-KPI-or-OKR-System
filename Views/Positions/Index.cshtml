@@ -91,10 +91,10 @@
                                 </td>
                                 <td>
                                     <div class="action-btns justify-content-end">
-                                        <a asp-action="Details" asp-route-id="@position.Id" class="action-btn" title="Chi tiết">
+                                        <a asp-action="Details" asp-route-code="@position.PositionCode" class="action-btn" title="Chi tiết">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a asp-action="Edit" asp-route-id="@position.Id" class="action-btn" title="Chỉnh sửa">
+                                        <a asp-action="Edit" asp-route-code="@position.PositionCode" class="action-btn" title="Chỉnh sửa">
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         <form asp-action="Delete" asp-route-id="@position.Id" method="post" class="d-inline"
