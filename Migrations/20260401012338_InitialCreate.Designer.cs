@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Manage_KPI_or_OKR_System.Migrations
 {
     [DbContext(typeof(MiniERPDbContext))]
-    [Migration("20260331105119_AddAdvancedEvaluationFields")]
-    partial class AddAdvancedEvaluationFields
+    [Migration("20260401012338_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -2269,7 +2269,7 @@ namespace Manage_KPI_or_OKR_System.Migrations
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.OKRKeyResult", b =>
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.OKR", null)
-                        .WithMany()
+                        .WithMany("KeyResults")
                         .HasForeignKey("OKRId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
@@ -2507,6 +2507,11 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("WarehouseStaffId")
                         .OnDelete(DeleteBehavior.NoAction);
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.OKR", b =>
+                {
+                    b.Navigation("KeyResults");
                 });
 #pragma warning restore 612, 618
         }
