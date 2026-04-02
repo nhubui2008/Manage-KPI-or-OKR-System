@@ -3,32 +3,13 @@
 body, html {
     height: 100%;
     margin: 0;
-    font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
-    background: #f6f8fb;
+    font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+    background: #ffffff;
 }
 
+/* --- Removed Ambient Blobs (Loang màu) --- */
 .soft-background {
-    position: fixed;
-    width: 100vw;
-    height: 100vh;
-    z-index: 0;
-    overflow: hidden;
-}
-.floating-shapes .soft-blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(40px);
-    opacity: 0.5;
-    animation: floatBlob 12s infinite alternate ease-in-out;
-}
-.blob-1 { background: #8c6a85; width: 320px; height: 320px; top: 5%; left: 10%; animation-delay: 0s; opacity: 0.3; }
-.blob-2 { background: #f8bbd0; width: 220px; height: 220px; top: 60%; left: 70%; animation-delay: 2s; opacity: 0.4; }
-.blob-3 { background: #ffcfda; width: 180px; height: 180px; top: 70%; left: 20%; animation-delay: 4s; opacity: 0.5; }
-.blob-4 { background: #d1c4e9; width: 140px; height: 140px; top: 20%; left: 80%; animation-delay: 6s; opacity: 0.3; }
-
-@keyframes floatBlob {
-    0% { transform: translateY(0) scale(1); }
-    100% { transform: translateY(-40px) scale(1.1); }
+    display: none;
 }
 
 .login-container {
@@ -41,12 +22,10 @@ body, html {
 }
 
 .soft-card {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    border-radius: 32px;
-    box-shadow: 0 8px 32px rgba(74, 55, 71, 0.12), 0 1.5px 6px rgba(74, 55, 71, 0.06);
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 24px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
     padding: 48px 36px 32px 36px;
     max-width: 400px;
     width: 100%;
@@ -65,7 +44,7 @@ body, html {
     margin-bottom: 12px;
 }
 .logo-circle {
-    background: linear-gradient(135deg, #fce4ec 60%, #ffcfda 100%);
+    background: #1a1a1a;
     border-radius: 50%;
     width: 56px;
     height: 56px;
@@ -77,20 +56,15 @@ body, html {
 }
 .comfort-icon svg {
     display: block;
-    color: #8c6a85;
+    color: #ffffff;
 }
 .gentle-glow {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    border-radius: 50%;
-    box-shadow: 0 0 32px 8px #e0e7ff66;
-    pointer-events: none;
-    z-index: 0;
+    display: none;
 }
 .comfort-title {
     font-size: 2rem;
     font-weight: 700;
-    color: #4a3747;
+    color: #1a1a1a;
     margin: 0 0 6px 0;
 }
 .gentle-subtitle {
@@ -142,7 +116,7 @@ body, html {
     top: -10px;
     left: 10px;
     font-size: 0.85rem;
-    color: #8c6a85;
+    color: #1a1a1a;
     background: #fff;
     padding: 0 4px;
 }
@@ -150,7 +124,7 @@ body, html {
     position: absolute;
     left: 0; right: 0; bottom: 0;
     height: 2px;
-    background: linear-gradient(90deg, #f8bbd0, #ffcfda);
+    background: #1a1a1a;
     border-radius: 2px;
     opacity: 0.2;
 }
@@ -186,8 +160,8 @@ body, html {
     transition: border 0.2s;
 }
 .gentle-checkbox input:checked + .checkbox-soft {
-    border: 1.5px solid #8c6a85;
-    background: #f8bbd0;
+    border: 1.5px solid #1a1a1a;
+    background: #1a1a1a;
 }
 .check-circle {
     width: 12px; height: 12px;
@@ -213,8 +187,8 @@ body, html {
     font-size: 1rem;
 }
 .comfort-link {
-    color: #8c6a85;
-    text-decoration: none;
+    color: #1a1a1a;
+    text-decoration: underline;
     font-size: 1rem;
     transition: color 0.2s;
 }
@@ -227,8 +201,8 @@ body, html {
     padding: 14px 0;
     border: none;
     border-radius: 12px;
-    background: linear-gradient(90deg, #f8bbd0, #ffcfda);
-    color: #4a3747;
+    background: #1a1a1a;
+    color: #ffffff;
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
@@ -236,11 +210,11 @@ body, html {
     overflow: hidden;
     transition: transform 0.2s, box-shadow 0.2s;
     margin-top: 8px;
-    box-shadow: 0 4px 15px rgba(248, 187, 208, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 .comfort-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(248, 187, 208, 0.4);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 .button-background {
     position: absolute;
@@ -281,13 +255,7 @@ body, html {
     100% { transform: rotate(360deg); }
 }
 .button-glow {
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    height: 8px;
-    background: linear-gradient(90deg, #a3c9f9, #fbe7a2);
-    opacity: 0.18;
-    filter: blur(8px);
-    z-index: 0;
+    display: none;
 }
 
 .gentle-divider {
@@ -337,13 +305,7 @@ body, html {
     z-index: 0;
 }
 .social-glow {
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    height: 6px;
-    background: linear-gradient(90deg, #a3c9f9, #fbe7a2);
-    opacity: 0.12;
-    filter: blur(6px);
-    z-index: 0;
+    display: none;
 }
 
 .comfort-signup {
@@ -356,9 +318,9 @@ body, html {
 }
 .signup-link {
     margin-left: 6px;
-    color: #8c6a85;
+    color: #1a1a1a;
     font-weight: 600;
-    text-decoration: none;
+    text-decoration: underline;
 }
 .signup-link:hover {
     color: #4a3747;

@@ -7,56 +7,56 @@
 
 /* --- CSS Custom Properties --- */
 :root {
-    /* Primary Colors (Tím hồng trầm) */
-    --primary: #8c6a85;
-    --primary-dark: #74576e;
-    --primary-light: #a68ba1;
-    --primary-bg: rgba(140, 106, 133, 0.12);
+    /* Primary Colors (Black & White) */
+    --primary: #1a1a1a;
+    --primary-dark: #000000;
+    --primary-light: #333333;
+    --primary-bg: rgba(0, 0, 0, 0.05);
 
-    /* Accent (Hồng pastel) */
-    --accent: #f8bbd0;
-    --accent-dark: #e18eab;
-    --accent-light: #fce4ec;
+    /* Accent (Neutral Grey) */
+    --accent: #f8f9fa;
+    --accent-dark: #e0e0e0;
+    --accent-light: #ffffff;
 
-    /* Success / Warning / Danger (Pastel-ized) */
-    --success: #6bd7a3;
-    --success-bg: rgba(107, 215, 163, 0.15);
-    --warning: #fbc7a2;
-    --warning-bg: rgba(251, 199, 162, 0.15);
-    --danger: #e57373;
-    --danger-bg: rgba(229, 115, 115, 0.15);
-    --info: #a68ba1;
-    --info-bg: rgba(166, 139, 161, 0.15);
+    /* Success / Warning / Danger (Muted for Monochrome consistency) */
+    --success: #2e7d32;
+    --success-bg: rgba(46, 125, 50, 0.1);
+    --warning: #ed6c02;
+    --warning-bg: rgba(237, 108, 2, 0.1);
+    --danger: #d32f2f;
+    --danger-bg: rgba(211, 47, 47, 0.1);
+    --info: #0288d1;
+    --info-bg: rgba(2, 136, 209, 0.1);
 
-    /* Glassmorphism Tokens */
-    --glass-bg: rgba(255, 255, 255, 0.65);
-    --glass-bg-dark: rgba(74, 55, 71, 0.95); /* Deepened & more opaque for better clarity */
-    --glass-border: rgba(255, 255, 255, 0.45);
-    --glass-blur: blur(14px);
-    --glass-shadow: 0 8px 32px 0 rgba(74, 55, 71, 0.12);
-    --glass-shadow-hover: 0 12px 40px 0 rgba(74, 55, 71, 0.18);
+    /* Monochrome Tokens (Gỡ bỏ loang màu/blur) */
+    --glass-bg: #ffffff;
+    --glass-bg-dark: #1a1a1a;
+    --glass-border: #e0e0e0;
+    --glass-blur: none;
+    --glass-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --glass-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
 
     /* Sidebar */
-    --sidebar-bg: var(--glass-bg-dark);
-    --sidebar-text: rgba(255, 255, 255, 0.85);
+    --sidebar-bg: #1a1a1a;
+    --sidebar-text: rgba(255, 255, 255, 0.7);
     --sidebar-text-active: #ffffff;
-    --sidebar-hover: rgba(255, 255, 255, 0.12);
-    --sidebar-width: 270px;
+    --sidebar-hover: rgba(255, 255, 255, 0.1);
+    --sidebar-width: 300px;
     --sidebar-collapsed-width: 0px;
 
     /* Layout */
     --header-height: 68px;
-    --body-bg: #f8f6f8; /* Very soft pinkish background */
-    --card-bg: var(--glass-bg);
-    --card-border: var(--glass-border);
+    --body-bg: #ffffff; 
+    --card-bg: #ffffff;
+    --card-border: #e0e0e0;
     --card-shadow: var(--glass-shadow);
     --card-shadow-hover: var(--glass-shadow-hover);
 
     /* Text */
-    --text-primary: #4a3747; /* Deep muted purple-brown */
-    --text-secondary: #765d75;
-    --text-muted: #a68ba1;
-    --border-color: rgba(140, 106, 133, 0.15);
+    --text-primary: #1a1a1a;
+    --text-secondary: #4a4a4a;
+    --text-muted: #757575;
+    --border-color: #eeeeee;
 
     /* Typography */
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -103,14 +103,9 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* --- Ambient Background Decoration --- */
+/* --- Removed Ambient Background Decoration (Loang màu) --- */
 .app-blob-container {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    z-index: -1;
-    overflow: hidden;
-    pointer-events: none;
-    background: var(--body-bg);
+    display: none;
 }
 
 .app-blob {
@@ -140,9 +135,7 @@ body {
 .sidebar {
     width: var(--sidebar-width);
     background: var(--sidebar-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border-right: 1px solid var(--glass-border);
+    border-right: 1px solid var(--sidebar-bg);
     position: fixed;
     top: 0;
     left: 0;
@@ -152,7 +145,7 @@ body {
     flex-direction: column;
     transition: transform var(--transition-slow), width var(--transition-slow);
     overflow: hidden;
-    box-shadow: 4px 0 24px rgba(74, 55, 71, 0.1);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-brand {
@@ -175,12 +168,12 @@ body {
 .sidebar-brand .brand-icon {
     width: 38px;
     height: 38px;
-    background: linear-gradient(135deg, var(--primary-light), var(--accent));
+    background: #ffffff;
     border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-primary);
+    color: #1a1a1a;
     font-size: 1.2rem;
     font-weight: 700;
     flex-shrink: 0;
@@ -236,17 +229,24 @@ body {
 }
 
 /* Menu items */
+/* Menu items */
 .sidebar-link {
     display: flex;
     align-items: center;
-    padding: 10px 24px;
+    padding: 10px 16px;
     color: var(--sidebar-text);
     text-decoration: none;
     font-size: var(--font-size-sm);
     font-weight: 500;
     transition: all var(--transition-fast);
     position: relative;
-    white-space: nowrap;
+    
+    /* --- GIỮ CHỮ 1 DÒNG & NỀN BAO BỌC HẾT CHỮ --- */
+    white-space: nowrap; /* Không cho chữ rớt xuống dòng */
+    width: max-content; /* Ép nền (background) giãn dài ra theo nội dung chữ */
+    min-width: calc(100% - 24px); /* Đảm bảo các mục có chữ ngắn vẫn phủ kín chiều rộng sidebar */
+    padding-right: 24px; /* Tạo khoảng trống phía sau để nền không bị sát rịt vào đuôi chữ */
+    
     margin: 2px 12px;
     border-radius: var(--radius-md);
 }
@@ -273,14 +273,17 @@ body {
 
 .sidebar-link.active {
     color: #ffffff;
-    background: linear-gradient(135deg, var(--primary), var(--accent-dark));
+    background: var(--primary-light);
     font-weight: 700;
-    box-shadow: 0 4px 15px rgba(116, 87, 110, 0.4);
+    /* --- HIỆU ỨNG NỔI LÊN (MODERN MONOCHROME) --- */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px) scale(1.02);
+    z-index: 1;
 }
 
 .sidebar-link.active i {
     opacity: 1;
-    color: #ffffff; /* Ensure icon is white on active state */
+    color: #ffffff;
 }
 
 /* Submenu toggle */
@@ -340,16 +343,14 @@ body {
 .top-header {
     height: var(--header-height);
     background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
     padding: 0 32px;
     position: sticky;
     top: 0;
     z-index: 1020;
-    box-shadow: 0 1.5px 6px rgba(140, 106, 133, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .header-left {
@@ -469,11 +470,11 @@ body {
     width: 36px;
     height: 36px;
     border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--primary-light), var(--accent));
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-primary);
+    color: #ffffff;
     font-weight: 700;
     font-size: var(--font-size-sm);
     box-shadow: 0 2px 8px rgba(163, 201, 249, 0.2);
@@ -539,9 +540,7 @@ body {
 /* --- STAT CARDS --- */
 .stat-card {
     background: var(--card-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
     padding: 28px;
     border: 1px solid var(--card-border);
     box-shadow: var(--card-shadow);
@@ -553,7 +552,7 @@ body {
 .stat-card:hover {
     box-shadow: var(--card-shadow-hover);
     transform: translateY(-4px);
-    border-color: rgba(248, 187, 208, 0.5);
+    border-color: var(--primary);
 }
 
 .stat-card .stat-icon {
@@ -606,9 +605,7 @@ body {
 /* --- CONTENT CARDS --- */
 .content-card {
     background: var(--card-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
     border: 1px solid var(--card-border);
     box-shadow: var(--card-shadow);
     overflow: hidden;
@@ -727,9 +724,9 @@ body {
 
 /* --- BUTTONS (Pastel Pink Theme) --- */
 .btn-primary-custom {
-    background: linear-gradient(135deg, var(--accent), #ffcfda);
-    color: #4a3747; /* Deep contrast text */
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: var(--primary);
+    color: #ffffff;
+    border: 1px solid var(--primary);
     padding: 10px 24px;
     border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
@@ -740,21 +737,19 @@ body {
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    box-shadow: 0 4px 15px rgba(248, 187, 208, 0.4);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .btn-primary-custom:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(163, 201, 249, 0.4);
-    color: var(--text-primary);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
     opacity: 0.9;
 }
 
 .btn-outline-custom {
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(4px);
-    color: var(--text-secondary);
-    border: 1.5px solid var(--border-color);
+    background: #ffffff;
+    color: var(--text-primary);
+    border: 1.5px solid var(--primary);
     padding: 8.5px 20px;
     border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
@@ -782,8 +777,8 @@ body {
 }
 
 .data-table thead th {
-    background: rgba(140, 106, 133, 0.05); /* Tím hồng trầm sublte */
-    color: var(--text-secondary);
+    background: var(--accent);
+    color: var(--text-primary);
     font-weight: 700;
     font-size: 0.75rem;
     text-transform: uppercase;
@@ -975,9 +970,83 @@ body {
     .toolbar-search input { width: 100%; }
 }
 
-/* --- Sidebar collapsed state --- */
-body.sidebar-collapsed .sidebar { transform: translateX(-100%); }
-body.sidebar-collapsed .main-content { margin-left: 0; }
+/* =========================================
+   SIDEBAR THU GỌN (CHỈ HIỆN ICON) TÙY CHỈNH
+   ========================================= */
+
+/* Dành cho màn hình máy tính (Desktop) */
+@media (min-width: 992px) {
+    /* 1. Co thanh sidebar còn 80px */
+    body.sidebar-collapsed .sidebar {
+        width: 80px;
+        transform: none; /* Bỏ hiệu ứng trượt mất của bản cũ */
+    }
+    body.sidebar-collapsed .main-content {
+        margin-left: 80px;
+    }
+
+    /* 2. Ẩn chữ Logo, căn giữa Icon Logo */
+    body.sidebar-collapsed .sidebar-brand {
+        padding: 0;
+        justify-content: center;
+    }
+    body.sidebar-collapsed .brand-icon {
+        margin-right: 0;
+    }
+    body.sidebar-collapsed .brand-info {
+        display: none;
+    }
+
+    /* 3. Ẩn chữ tiêu đề phân nhóm (Overview, Nhân sự...) */
+    body.sidebar-collapsed .sidebar-group-label {
+        display: none;
+    }
+
+    /* 4. Menu Items: Ẩn chữ, Căn giữa Icon */
+    body.sidebar-collapsed .sidebar-link {
+        font-size: 0; /* Thủ thuật ẩn chữ cực mượt */
+        padding: 12px 0;
+        justify-content: center;
+        width: auto;
+        min-width: 0;
+        margin: 4px 10px;
+    }
+    body.sidebar-collapsed .sidebar-link i {
+        font-size: 1.3rem; /* Phóng to icon lên một chút */
+        margin-right: 0;
+        margin-top: 0;
+    }
+    
+    /* 5. Ẩn mũi tên của menu thả xuống (Submenu) */
+    body.sidebar-collapsed .menu-arrow {
+        display: none;
+    }
+    
+    /* 6. Xử lý chấm tròn của menu con (Submenu) */
+    body.sidebar-collapsed .sidebar-submenu .sidebar-link {
+        padding-left: 0;
+    }
+    body.sidebar-collapsed .sidebar-submenu .sidebar-link::before {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    /* 7. Phần User Footer dưới cùng: Ẩn tên, căn giữa Avatar */
+    body.sidebar-collapsed .sidebar-user {
+        justify-content: center;
+        padding: 15px 0;
+    }
+    body.sidebar-collapsed .sidebar-user .user-info,
+    body.sidebar-collapsed .sidebar-user .bi-three-dots-vertical {
+        display: none;
+    }
+}
+
+/* Dành cho Mobile/Tablet: Giữ nguyên tính năng trượt ẩn hoàn toàn */
+@media (max-width: 991.98px) {
+    body.sidebar-collapsed .sidebar { transform: translateX(-100%); }
+    body.sidebar-collapsed .main-content { margin-left: 0; }
+}
 
 /* --- UTILITY --- */
 .text-truncate-2 {
@@ -1288,3 +1357,4 @@ body.sidebar-collapsed .main-content { margin-left: 0; }
     color: #fff !important;
     transition: all var(--transition-fast);
 }
+
