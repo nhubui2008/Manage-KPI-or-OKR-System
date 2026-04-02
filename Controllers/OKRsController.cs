@@ -48,7 +48,25 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             .Where(a => a.EmployeeId == employee.Id)
                             .Select(a => a.OKRId)
                             .ToListAsync();
-                        query = query.Where(o => allocatedOkrIds.Contains(o.Id) || o.CreatedById == employee.Id);
+
+                        // Thêm: Lấy các OKR phân bổ cho Phòng ban mà nhân viên thuộc về
+                        var deptIds = await _context.EmployeeAssignments
+                            .Where(ea => ea.EmployeeId == employee.Id && ea.IsActive == true)
+                            .Select(ea => ea.DepartmentId ?? 0)
+                            .ToListAsync();
+
+                        var departmentOkrIds = await _context.OKR_Department_Allocations
+                            .Where(da => deptIds.Contains(da.DepartmentId))
+                            .Select(da => da.OKRId)
+                            .ToListAsync();
+
+                        ViewBag.CurrentEmployeeId = employee.Id;
+                        ViewBag.AllocatedOkrIds = allocatedOkrIds;
+                        ViewBag.DepartmentOkrIds = departmentOkrIds;
+                        query = query.Where(o => allocatedOkrIds.Contains(o.Id) || 
+                                               departmentOkrIds.Contains(o.Id) || 
+                                               o.CreatedById == employee.Id || 
+                                               o.OKRTypeId == 1);
                     }
                     else
                     {
@@ -140,6 +158,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> AddKeyResult(OKRKeyResult kr)
         {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                return Forbid();
+
             if (ModelState.IsValid)
             {
                 kr.CurrentValue = 0; // Khởi tạo tiến độ ban đầu là 0
@@ -175,6 +197,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> EditKeyResult(OKRKeyResult model)
         {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                return Forbid();
+
             if (ModelState.IsValid)
             {
                 var kr = await _context.OKRKeyResults.FindAsync(model.Id);
@@ -197,6 +223,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> AllocateTarget(int okrId, int employeeId, decimal allocatedValue)
         {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                return Forbid();
+
             var okr = await _context.OKRs.FindAsync(okrId);
             if (okr == null) return NotFound();
 
@@ -216,6 +246,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteKeyResult(int id)
         {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                return Forbid();
+
             var kr = await _context.OKRKeyResults.FindAsync(id);
             if (kr != null)
             {

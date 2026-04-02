@@ -1,0 +1,9 @@
+﻿Auto-merging Views/Dashboard/Index.cshtml
+CONFLICT (content): Merge conflict in Views/Dashboard/Index.cshtml
+Auto-merging Views/OKRs/Index.cshtml
+CONFLICT (content): Merge conflict in Views/OKRs/Index.cshtml
+Auto-merging Views/Shared/_Layout.cshtml
+CONFLICT (content): Merge conflict in Views/Shared/_Layout.cshtml
+Auto-merging appsettings.json
+CONFLICT (content): Merge conflict in appsettings.json
+Automatic merge failed; fix conflicts and then commit the result.

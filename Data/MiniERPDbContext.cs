@@ -114,6 +114,7 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<KPIType>().HasIndex(k => k.TypeName).IsUnique();
             modelBuilder.Entity<CheckInStatus>().HasIndex(c => c.StatusName).IsUnique();
             modelBuilder.Entity<Warehouse>().HasIndex(w => w.WarehouseCode).IsUnique();
+            modelBuilder.Entity<Product>().HasIndex(p => p.ProductCode).IsUnique();
             modelBuilder.Entity<SalesOrder>().HasIndex(s => s.OrderCode).IsUnique();
             modelBuilder.Entity<Invoice>().HasIndex(i => i.InvoiceNo).IsUnique();
             modelBuilder.Entity<DeliveryNote>().HasIndex(d => d.TrackingCode).IsUnique();

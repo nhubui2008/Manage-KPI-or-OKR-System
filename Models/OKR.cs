@@ -35,7 +35,7 @@ namespace Manage_KPI_or_OKR_System.Models
                     if (kr.TargetValue.HasValue && kr.TargetValue.Value > 0)
                     {
                         var krProgress = (kr.CurrentValue ?? 0) / kr.TargetValue.Value * 100;
-                        total += Math.Min(100, krProgress);
+                        total += krProgress;
                         count++;
                     }
                 }

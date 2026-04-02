@@ -130,6 +130,24 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
                     return View(employee);
                 }
 
+                // 2.1 KIỂM TRA TRÙNG LẶP TÀI KHOẢN LIÊN KẾT
+                if (employee.SystemUserId.HasValue)
+                {
+                    bool isUserLinked = await _context.Employees.AnyAsync(e => e.SystemUserId == employee.SystemUserId);
+                    if (isUserLinked)
+                    {
+                        ViewBag.ErrorMessage = "Tài khoản này đã được liên kết với nhân viên khác, vui lòng chọn tài khoản khác!";
+                        ModelState.AddModelError("SystemUserId", "Tài khoản này đã bị chiếm dụng.");
+
+                        ViewData["NextEmployeeCode"] = await _codeGenerator.GenerateEmployeeCodeAsync();
+                        ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", employee.SystemUserId);
+                        ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
+                        ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
+
+                        return View(employee);
+                    }
+                }
+
                 // 3. LƯU NHÂN VIÊN VÀO DATABASE
                 employee.CreatedAt = DateTime.Now;
                 _context.Add(employee);
@@ -165,9 +183,12 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
         public async Task<IActionResult> Edit(int id)
         {
             var emp = await _context.Employees.FindAsync(id);
-            if (emp == null)
+            if (emp == null) return NotFound();
+
+            if (emp.IsActive == false)
             {
-                return NotFound();
+                TempData["ErrorMessage"] = "Nhân viên này đã nghỉ việc, không thể chỉnh sửa thông tin!";
+                return RedirectToAction(nameof(Index));
             }
 
             var assignment = await _context.EmployeeAssignments
@@ -194,10 +215,27 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
 
     if (ModelState.IsValid)
     {
+        // KIỂM TRA TRÙNG LẶP TÀI KHOẢN LIÊN KẾT (Trừ chính nhân viên này)
+        if (employee.SystemUserId.HasValue)
+        {
+            bool isUserLinked = await _context.Employees.AnyAsync(e => e.SystemUserId == employee.SystemUserId && e.Id != id);
+            if (isUserLinked)
+            {
+                ViewBag.ErrorMessage = "Tài khoản này đã được liên kết với nhân viên khác, vui lòng chọn tài khoản khác!";
+                ModelState.AddModelError("SystemUserId", "Tài khoản này đã bị chiếm dụng.");
+
+                ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", employee.SystemUserId);
+                ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
+                ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
+
+                return View(employee);
+            }
+        }
+
         try
         {
             // Cập nhật thông tin nhân viên
-            var existingEmp = await _context.Employees.FindAsync(id);
+            var existingEmp = await _context.Employees.FirstOrDefaultAsync(e => e.Id == id && e.IsActive == true);
             if (existingEmp == null)
             {
                 return NotFound();
@@ -277,9 +315,12 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
         public async Task<IActionResult> Details(int id)
         {
             var emp = await _context.Employees.FindAsync(id);
-            if (emp == null)
+            if (emp == null) return NotFound();
+
+            if (emp.IsActive == false)
             {
-                return NotFound();
+                TempData["ErrorMessage"] = "Nhân viên này đã nghỉ việc, không thể xem chi tiết thông tin!";
+                return RedirectToAction(nameof(Index));
             }
             
             var assignment = await _context.EmployeeAssignments

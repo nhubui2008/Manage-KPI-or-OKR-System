@@ -51,11 +51,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // ==========================================
         // 2. CHI TIẾT (DETAILS)
         // ==========================================
-        public async Task<IActionResult> Details(int? id)
+        [Route("Positions/Details/{code}")]
+        public async Task<IActionResult> Details(string code)
         {
-            if (id == null) return NotFound();
+            if (string.IsNullOrEmpty(code)) return NotFound();
 
-            var position = await _context.Positions.FirstOrDefaultAsync(m => m.Id == id);
+            var position = await _context.Positions.FirstOrDefaultAsync(m => m.PositionCode == code && m.IsActive == true);
             if (position == null) return NotFound();
 
             return View(position);
@@ -76,11 +77,24 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (ModelState.IsValid)
             {
                 // Kiểm tra xem mã chức vụ đã tồn tại chưa (bao gồm cả mã đã bị xóa mềm)
-                bool exists = await _context.Positions.AnyAsync(p => p.PositionCode == position.PositionCode);
-                if (exists)
+                var existing = await _context.Positions
+                    .FirstOrDefaultAsync(p => p.PositionCode == position.PositionCode);
+
+                if (existing != null)
                 {
-                    ModelState.AddModelError("PositionCode", "Mã chức vụ này đã tồn tại, vui lòng kiểm tra lại.");
-                    return View(position);
+                    if (existing.IsActive == false)
+                    {
+                        // Gửi tín hiệu khôi phục về View (Layout sẽ bắt được)
+                        TempData["RestoreEntityName"] = "Positions";
+                        TempData["RestoreId"] = existing.Id;
+                        TempData["RestoreCode"] = existing.PositionCode;
+                        return RedirectToAction(nameof(Index));
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("PositionCode", "Mã chức vụ này đã tồn tại, vui lòng kiểm tra lại.");
+                        return View(position);
+                    }
                 }
 
                 position.IsActive = true;
@@ -92,22 +106,37 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(position);
         }
 
+        [HttpPost]
+        public async Task<IActionResult> Restore(int id)
+        {
+            var position = await _context.Positions.FindAsync(id);
+            if (position != null)
+            {
+                position.IsActive = true;
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Đã khôi phục chức vụ thành công!";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
         // ==========================================
         // 4. CHỈNH SỬA (EDIT)
         // ==========================================
-        public async Task<IActionResult> Edit(int? id)
+        [Route("Positions/Edit/{code}")]
+        public async Task<IActionResult> Edit(string code)
         {
-            if (id == null) return NotFound();
+            if (string.IsNullOrEmpty(code)) return NotFound();
 
-            var position = await _context.Positions.FindAsync(id);
+            var position = await _context.Positions
+                .FirstOrDefaultAsync(p => p.PositionCode == code && p.IsActive == true);
             if (position == null) return NotFound();
 
             return View(position);
         }
 
-        [HttpPost]
+        [HttpPost("Positions/Edit/{code}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Position position)
+        public async Task<IActionResult> Edit(string code, int id, Position position)
         {
             if (id != position.Id) return NotFound();
 
@@ -123,7 +152,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 try
                 {
-                    var existingPos = await _context.Positions.FindAsync(id);
+                    var existingPos = await _context.Positions
+                        .FirstOrDefaultAsync(p => p.Id == id && p.IsActive == true);
                     if (existingPos == null) return NotFound();
 
                     // Cập nhật thông tin

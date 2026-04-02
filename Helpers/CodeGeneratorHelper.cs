@@ -14,7 +14,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
 
         /// <summary>
         /// Tự động sinh mã nhân viên tiếp theo
-        /// Format: NV + số thứ tự (e.g., NV001, NV002, NV003...)
+        /// Format: EMP + số thứ tự (e.g., EMP001, EMP002, EMP003...)
         /// </summary>
         public async Task<string> GenerateEmployeeCodeAsync()
         {
@@ -22,23 +22,23 @@ namespace Manage_KPI_or_OKR_System.Helpers
             {
                 // Lấy tất cả mã nhân viên hiện có
                 var existingCodes = await _context.Employees
-                    .Where(e => e.EmployeeCode != null && e.EmployeeCode.StartsWith("NV"))
+                    .Where(e => e.EmployeeCode != null && e.EmployeeCode.StartsWith("EMP"))
                     .Select(e => e.EmployeeCode)
                     .ToListAsync();
 
                 if (!existingCodes.Any())
                 {
-                    // Nếu chưa có mã nào, bắt đầu từ NV001
-                    return "NV001";
+                    // Nếu chưa có mã nào, bắt đầu từ EMP001
+                    return "EMP001";
                 }
 
                 // Trích xuất số từ các mã hiện có
                 var numbers = existingCodes
                     .Select(code =>
                     {
-                        if (code == null || code.Length <= 2) return 0;
-                        // Loại bỏ "NV" và lấy phần số
-                        var numPart = code.Substring(2);
+                        if (code == null || code.Length <= 3) return 0;
+                        // Loại bỏ "EMP" và lấy phần số
+                        var numPart = code.Substring(3);
                         return int.TryParse(numPart, out int num) ? num : 0;
                     })
                     .Where(num => num > 0)
@@ -47,13 +47,13 @@ namespace Manage_KPI_or_OKR_System.Helpers
                 // Tìm số lớn nhất và +1
                 int nextNumber = (numbers.Any() ? numbers.Max() : 0) + 1;
 
-                // Format theo kiểu 3 chữ số (e.g., NV001, NV002, ... NV999)
-                return $"NV{nextNumber:D3}";
+                // Format theo kiểu 3 chữ số (e.g., EMP001, EMP002, ... EMP999)
+                return $"EMP{nextNumber:D3}";
             }
             catch
             {
                 // Nếu có lỗi, trả về mã mặc định
-                return $"NV{DateTime.Now:yyyyMMddHHmmss}";
+                return $"EMP{DateTime.Now:yyyyMMddHHmmss}";
             }
         }
 

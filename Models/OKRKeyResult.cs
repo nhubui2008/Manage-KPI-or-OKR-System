@@ -20,5 +20,6 @@ namespace Manage_KPI_or_OKR_System.Models
         public int? FailReasonId { get; set; }
         [StringLength(50)]
         public string? ResultStatus { get; set; }
+        
     }
 }

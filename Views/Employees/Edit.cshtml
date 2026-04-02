@@ -68,13 +68,13 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Phone" class="form-label fw-semibold">Số điện thoại</label>
+                        <label asp-for="Phone" class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
                         <input asp-for="Phone" class="form-control" placeholder="Nhập số điện thoại liên hệ" />
                         <span asp-validation-for="Phone" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="Email" class="form-label fw-semibold">Email công việc</label>
+                        <label asp-for="Email" class="form-label fw-semibold">Email công việc <span class="text-danger">*</span></label>
                         <input asp-for="Email" type="email" class="form-control" placeholder="Nhập địa chỉ email" />
                         <span asp-validation-for="Email" class="text-danger"></span>
                     </div>

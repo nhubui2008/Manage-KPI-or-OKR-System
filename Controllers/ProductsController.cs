@@ -45,11 +45,71 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (ModelState.IsValid)
             {
+                // 1. Kiểm tra mã sản phẩm (Bắt buộc duy nhất, kể cả bản ghi đã xóa)
+                var cleanCode = model.ProductCode?.Trim() ?? "";
+                var existingByCode = await _context.Products
+                    .FirstOrDefaultAsync(p => p.ProductCode.ToLower() == cleanCode.ToLower());
+
+                if (existingByCode != null)
+                {
+                    if (existingByCode.IsActive == false)
+                    {
+                        TempData["ErrorMessage"] = "Mã sản phẩm này đã từng tồn tại và đang bị vô hiệu hóa.";
+                        TempData["RestoreEntityName"] = "Products";
+                        TempData["RestoreId"] = existingByCode.Id;
+                        TempData["RestoreCode"] = existingByCode.ProductCode;
+                        return RedirectToAction(nameof(Index));
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = "Mã sản phẩm này đã được sử dụng, vui lòng nhập mã khác.";
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
+
+                // 2. Kiểm tra tên sản phẩm (Tránh trùng tên gây nhầm lẫn)
+                var cleanName = model.ProductName?.Trim() ?? "";
+                var existingByName = await _context.Products
+                    .FirstOrDefaultAsync(p => p.ProductName.ToLower() == cleanName.ToLower());
+
+                if (existingByName != null)
+                {
+                    if (existingByName.IsActive == false)
+                    {
+                        TempData["ErrorMessage"] = $"Sản phẩm có tên '{cleanName}' đã từng tồn tại và đang bị vô hiệu hóa.";
+                        TempData["RestoreEntityName"] = "Products";
+                        TempData["RestoreId"] = existingByName.Id;
+                        TempData["RestoreCode"] = existingByName.ProductName;
+                        return RedirectToAction(nameof(Index));
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = $"Tên sản phẩm '{cleanName}' đã tồn tại trong hệ thống, vui lòng chọn tên khác.";
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
+
+                model.ProductCode = cleanCode;
+                model.ProductName = cleanName;
+
                 model.IsActive = true;
                 model.CreatedAt = DateTime.Now;
                 _context.Products.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã thêm sản phẩm mới thành công!";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Restore(int id)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product != null)
+            {
+                product.IsActive = true;
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Đã khôi phục sản phẩm thành công!";
             }
             return RedirectToAction(nameof(Index));
         }
