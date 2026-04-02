@@ -45,7 +45,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (ModelState.IsValid)
             {
-<<<<<<< HEAD
                 // Kiểm tra xem mã khách hàng đã tồn tại chưa (bao gồm cả mã đã bị xóa mềm)
                 if (!string.IsNullOrEmpty(model.CustomerCode))
                 {
@@ -67,16 +66,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             TempData["ErrorMessage"] = "Mã khách hàng này đã tồn tại!";
                             return RedirectToAction(nameof(Index));
                         }
-=======
-                // Kiểm tra trùng mã khách hàng
-                if (!string.IsNullOrEmpty(model.CustomerCode))
-                {
-                    bool exists = await _context.Customers.AnyAsync(c => c.CustomerCode == model.CustomerCode && c.IsActive == true);
-                    if (exists)
-                    {
-                        ModelState.AddModelError("CustomerCode", "Mã khách hàng này đã tồn tại.");
-                        return View(model);
->>>>>>> 425a0c1 (Optimize OKR progress logic, add OKR allocations badges, fix dual arrows in select dropdowns and fix build issues)
                     }
                 }
 

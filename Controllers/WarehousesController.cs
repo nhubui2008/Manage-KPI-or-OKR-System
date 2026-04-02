@@ -4,7 +4,6 @@ using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
-using Manage_KPI_or_OKR_System.Properties;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -33,7 +32,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (ModelState.IsValid)
             {
-<<<<<<< HEAD
                 // Kiểm tra xem mã kho đã tồn tại chưa (bao gồm cả mã đã bị xóa mềm)
                 var existing = await _context.Warehouses
                     .FirstOrDefaultAsync(w => w.WarehouseCode == model.WarehouseCode);
@@ -52,16 +50,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     {
                         TempData["ErrorMessage"] = "Mã kho này đã tồn tại!";
                         return RedirectToAction(nameof(Index));
-=======
-                // Kiểm tra trùng mã kho
-                if (!string.IsNullOrEmpty(model.WarehouseCode))
-                {
-                    bool exists = await _context.Warehouses.AnyAsync(w => w.WarehouseCode == model.WarehouseCode && w.IsActive == true);
-                    if (exists)
-                    {
-                        ModelState.AddModelError("WarehouseCode", "Mã kho này đã tồn tại.");
-                        return View(model);
->>>>>>> 425a0c1 (Optimize OKR progress logic, add OKR allocations badges, fix dual arrows in select dropdowns and fix build issues)
                     }
                 }
 
