@@ -11,16 +11,16 @@
     <div>
         <h1 class="h3 font-weight-bold mb-1">Tài khoản Hệ thống</h1>
         <div class="page-breadcrumb">
-            <a href="/">Trang chủ</a>
+            <a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a>
             <i class="bi bi-chevron-right separator"></i>
-            <span>Hệ thống</span>
+            <span class="text-dark opacity-75">Hệ thống</span>
             <i class="bi bi-chevron-right separator"></i>
-            <span>Tài khoản users</span>
+            <span class="text-dark fw-bold">Tài khoản users</span>
         </div>
     </div>
     <div class="d-flex justify-content-end gap-2">
-        <a href="/Auth/Register" class="btn-primary-custom text-decoration-none">
-            <i class="bi bi-person-plus-fill"></i> Tạo tài khoản mới
+        <a asp-action="Create" class="btn-primary-custom text-decoration-none">
+            <i class="bi bi-person-plus-fill me-1"></i> Tạo tài khoản mới
         </a>
     </div>
 </div>
@@ -62,14 +62,9 @@
                     @if(ViewBag.Status == "locked") { <option value="locked" selected>Bị khóa</option> } else { <option value="locked">Bị khóa</option> }
                 </select>
             </div>
-            <div class="toolbar-right">
-                <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0" title="Làm mới">
-                    <i class="bi bi-arrow-clockwise"></i>
-                </a>
-                <button type="submit" class="btn btn-sm btn-outline-secondary border-0" title="Lọc kết quả">
+                <button type="submit" class="btn-primary-custom" style="padding: 0 16px;">
                     <i class="bi bi-funnel"></i>
                 </button>
-            </div>
         </form>
 
         <div class="table-responsive w-100">
@@ -101,7 +96,7 @@
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="user-avatar bg-primary text-white" style="width: 28px; height: 28px; font-size: 0.7rem;">
+                                        <div class="user-avatar" style="width: 28px; height: 28px; font-size: 0.7rem;">
                                             @(user.Username?[0].ToString().ToUpper() ?? "U")
                                         </div>
                                         <div>
@@ -130,7 +125,7 @@
                                             <input type="hidden" name="userId" value="@user.Id" />
                                             @if (user.IsActive == false)
                                             {
-                                                <button type="submit" class="action-btn" title="Mở khóa tài khoản"><i class="bi bi-unlock-fill text-success"></i></button>
+                                                <button type="submit" class="action-btn" title="Mở khóa tài khoản"><i class="bi bi-unlock-fill"></i></button>
                                             }
                                             else
                                             {
@@ -139,8 +134,7 @@
                                         </form>
 
                                         <button class="action-btn" title="Đổi mật khẩu" data-bs-toggle="modal" data-bs-target="#resetPasswordModal-@user.Id"><i class="bi bi-key"></i></button>
-                                        
-                                        <a asp-action="Delete" asp-route-id="@user.Id" class="action-btn danger" title="Xóa tài khoản"><i class="bi bi-trash-fill text-danger"></i></a>
+                                        <a asp-action="Delete" asp-route-id="@user.Id" class="action-btn danger" title="Xóa tài khoản"><i class="bi bi-trash"></i></a>
                                     </div>
                                 </td>
                             </tr>
@@ -150,7 +144,7 @@
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content border-0 shadow-lg">
                                         <div class="modal-header border-bottom-0 pb-0">
-                                            <h5 class="modal-title fw-bold text-dark"><i class="bi bi-key text-info me-2"></i>Làm mới mật khẩu</h5>
+                                            <h5 class="modal-title fw-bold text-dark"><i class="bi bi-key me-2"></i>Làm mới mật khẩu</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body p-4">

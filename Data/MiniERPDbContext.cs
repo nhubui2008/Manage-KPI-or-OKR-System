@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
-using Manage_KPI_or_OKR_System.Properties;
 
 namespace Manage_KPI_or_OKR_System.Data
 {

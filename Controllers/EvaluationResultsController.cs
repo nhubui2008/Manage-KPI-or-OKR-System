@@ -55,6 +55,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(results);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Create()
+        {
+            if (User.IsInRole("Sales") || User.IsInRole("sales") || 
+                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                return Forbid();
+
+            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
+            ViewBag.AllRanks = await _context.GradingRanks.ToListAsync();
+            return View();
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create(EvaluationResult model)
         {
@@ -68,8 +82,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.EvaluationResults.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã lưu kết quả đánh giá thành công!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+
+            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
+            ViewBag.AllRanks = await _context.GradingRanks.ToListAsync();
+
+            return View(model);
         }
 
         [HttpPost]

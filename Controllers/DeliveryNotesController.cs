@@ -34,7 +34,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(notes);
         }
 
+        // GET: DeliveryNotes/Create
+        public async Task<IActionResult> Create()
+        {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse")) return Forbid();
+
+            ViewBag.AllOrders = await _context.SalesOrders.Where(s => s.IsActive == true).ToListAsync();
+            ViewBag.AllPartners = await _context.ShippingPartners.Where(p => p.IsActive == true).ToListAsync();
+            return View();
+        }
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(DeliveryNote model)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse")) return Forbid();
@@ -46,8 +57,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.DeliveryNotes.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã tạo phiếu giao hàng mới!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+
+            ViewBag.AllOrders = await _context.SalesOrders.Where(s => s.IsActive == true).ToListAsync();
+            ViewBag.AllPartners = await _context.ShippingPartners.Where(p => p.IsActive == true).ToListAsync();
+            return View(model);
         }
 
         [HttpPost]

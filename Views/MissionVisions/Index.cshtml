@@ -18,9 +18,9 @@
         </div>
     </div>
     <div class="d-flex justify-content-end gap-2">
-        <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createMissionModal">
+        <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
             <i class="bi bi-plus-lg me-1"></i> Thêm mục tiêu
-        </button>
+        </a>
     </div>
 </div>
 
@@ -144,38 +144,6 @@
     }
 </div>
 
-<!-- Modal Thêm Mục tiêu -->
-<div class="modal fade" id="createMissionModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-flag-fill text-primary me-2"></i>Thêm Mục Tiêu Chiến Lược</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form asp-controller="MissionVisions" asp-action="Create" method="post">
-                    <div class="mb-3">
-                        <label class="form-label">Nội dung chiến lược / Sứ mệnh <span class="text-danger">*</span></label>
-                        <textarea name="Content" class="form-control" rows="4" placeholder="Nhập định hướng kinh doanh cốt lõi của năm nay hoặc tầm nhìn chung..." required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Mục tiêu tài chính (VNĐ)</label>
-                        <input type="number" step="1000000" name="FinancialTarget" class="form-control" placeholder="VD: 50000000000 (Không bắt buộc)">
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label">Năm áp dụng</label>
-                        <input type="number" name="TargetYear" class="form-control" placeholder="Để trống nếu đây là Tầm nhìn/Sứ mệnh chung dài hạn" value="@DateTime.Now.Year">
-                        <div class="form-text">Xóa trắng năm nếu bạn muốn thiết lập Sứ mệnh công ty.</div>
-                    </div>
-                    <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn-outline-custom rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn-primary-custom rounded-pill px-4">Lưu mục tiêu</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
         </div>
     </div>

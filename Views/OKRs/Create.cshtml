@@ -1,0 +1,124 @@
+@model Manage_KPI_or_OKR_System.Models.OKR
+
+@{
+    ViewData["Title"] = "Khởi tạo OKR";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h3 class="text-dark fw-bold">
+                <i class="bi bi-target me-2"></i>Khởi tạo OKR Mới
+            </h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0 m-0">
+                    <li class="breadcrumb-item"><a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-dark text-decoration-none opacity-75">Quản lý OKR</a></li>
+                    <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Khởi tạo mới</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="content-card rounded-3">
+        <div class="card-body-custom p-4">
+            <form asp-action="Create" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-4">
+                    <div class="col-md-8">
+                        <label asp-for="ObjectiveName" class="form-label fw-bold text-dark">Tên Mục tiêu (Objective) <span class="text-danger">*</span></label>
+                        <input asp-for="ObjectiveName" class="form-control" placeholder="VD: Tăng cường mức độ hài lòng của khách hàng" required />
+                        <span asp-validation-for="ObjectiveName" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label name="OKRTypeId" class="form-label fw-bold text-dark">Loại OKR <span class="text-danger">*</span></label>
+                        <select name="OKRTypeId" class="form-select" required>
+                            <option value="">-- Chọn loại --</option>
+                            @if (ViewBag.OKRTypes != null)
+                            {
+                                foreach (var type in ViewBag.OKRTypes as IEnumerable<Manage_KPI_or_OKR_System.Models.OKRType>)
+                                {
+                                    <option value="@type.Id">@type.TypeName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label name="Cycle" class="form-label fw-bold text-dark">Chu kỳ thực hiện <span class="text-danger">*</span></label>
+                        <select name="Cycle" class="form-select" required>
+                            <option value="Q1-@DateTime.Now.Year">Quý 1 - @DateTime.Now.Year</option>
+                            <option value="Q2-@DateTime.Now.Year">Quý 2 - @DateTime.Now.Year</option>
+                            <option value="Q3-@DateTime.Now.Year">Quý 3 - @DateTime.Now.Year</option>
+                            <option value="Q4-@DateTime.Now.Year">Quý 4 - @DateTime.Now.Year</option>
+                            <option value="Năm @DateTime.Now.Year">Cả năm @DateTime.Now.Year</option>
+                        </select>
+                    </div>
+                </div>
+
+                <hr class="my-4" style="opacity: 0.1;">
+                
+                <h5 class="fw-bold text-dark mb-3"><i class="bi bi-diagram-3 me-2"></i>Phân bổ mục tiêu (Tùy chọn)</h5>
+                <div class="row g-4">
+                    <div class="col-md-12">
+                        <label name="missionId" class="form-label fw-semibold text-muted">Sứ mệnh / Tầm nhìn chiến lược</label>
+                        <select name="missionId" class="form-select">
+                            <option value="">-- Không phân bổ (Cấp độ phòng ban/cá nhân) --</option>
+                            @if (ViewBag.Missions != null)
+                            {
+                                foreach (var m in ViewBag.Missions as IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>)
+                                {
+                                    <option value="@m.Id">Năm @m.TargetYear: @(m.Content?.Length > 50 ? m.Content.Substring(0, 50) + "..." : m.Content)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label name="departmentId" class="form-label fw-semibold text-muted">Phân bổ cho Phòng ban</label>
+                        <select name="departmentId" class="form-select">
+                            <option value="">-- Áp dụng cho toàn tổ chức hoặc cá nhân --</option>
+                            @if (ViewBag.Departments != null)
+                            {
+                                foreach (var d in ViewBag.Departments as IEnumerable<Manage_KPI_or_OKR_System.Models.Department>)
+                                {
+                                    <option value="@d.Id">@d.DepartmentName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label name="employeeId" class="form-label fw-semibold text-muted">Phân bổ cho Cá nhân chịu trách nhiệm</label>
+                        <select name="employeeId" class="form-select">
+                            <option value="">-- Không phân bổ cá nhân --</option>
+                            @if (ViewBag.Employees != null)
+                            {
+                                foreach (var e in ViewBag.Employees as IEnumerable<Manage_KPI_or_OKR_System.Models.Employee>)
+                                {
+                                    <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-5 border-top pt-4">
+                    <a asp-action="Index" class="btn-outline-custom px-4">
+                        <i class="bi bi-x-circle me-1"></i> Hủy bỏ
+                    </a>
+                    <button type="submit" class="btn-primary-custom px-4">
+                        <i class="bi bi-save me-1"></i> Khởi tạo OKR
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

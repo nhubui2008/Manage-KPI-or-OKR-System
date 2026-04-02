@@ -3,7 +3,7 @@ using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
-using Manage_KPI_or_OKR_System.Properties;
+using Manage_KPI_or_OKR_System.Models;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -31,7 +31,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(receipts);
         }
 
+        // GET: InventoryReceipts/Create
+        public async Task<IActionResult> Create()
+        {
+            ViewBag.AllWarehouses = await _context.Warehouses.Where(w => w.IsActive == true).ToListAsync();
+            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            return View();
+        }
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(InventoryReceipt model)
         {
             if (model.TotalAmount <= 0)
@@ -47,8 +56,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.InventoryReceipts.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã tạo phiếu nhập kho mới!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+
+            ViewBag.AllWarehouses = await _context.Warehouses.Where(w => w.IsActive == true).ToListAsync();
+            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            return View(model);
         }
 
         [HttpGet]

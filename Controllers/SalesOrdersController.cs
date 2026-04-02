@@ -49,7 +49,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(orders);
         }
 
+        // GET: SalesOrders/Create
+        public async Task<IActionResult> Create()
+        {
+            ViewBag.Customers = await _context.Customers.Where(c => c.IsActive == true).ToListAsync();
+            ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            return View();
+        }
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(SalesOrder model)
         {
             if (ModelState.IsValid)
@@ -60,8 +69,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.SalesOrders.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã tạo đơn hàng mới thành công!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+
+            ViewBag.Customers = await _context.Customers.Where(c => c.IsActive == true).ToListAsync();
+            ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            return View(model);
         }
 
         [HttpPost]

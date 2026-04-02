@@ -81,6 +81,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(kpis);
         }
 
+        [HttpGet]
+        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
+        public async Task<IActionResult> Create()
+        {
+            var periods = await _context.EvaluationPeriods
+                .Where(p => p.IsActive == true)
+                .ToDictionaryAsync(p => p.Id, p => p.PeriodName);
+            ViewBag.Periods = periods;
+            return View();
+        }
+
         [HttpPost]
         [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
         public async Task<IActionResult> Create(KPI kpi, KPIDetail detail)
@@ -97,8 +108,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = "Đã tạo KPI mới thành công!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+            
+            var periods = await _context.EvaluationPeriods
+                .Where(p => p.IsActive == true)
+                .ToDictionaryAsync(p => p.Id, p => p.PeriodName);
+            ViewBag.Periods = periods;
+            
+            return View(kpi); // Or a ViewModel containing both, but we'll bind them in View.
         }
 
         [HttpPost]

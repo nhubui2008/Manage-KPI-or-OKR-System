@@ -11,8 +11,11 @@
 <div class="container-fluid px-0">
     
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div><h1 class="h3 font-weight-bold mb-1">Quy định Thưởng & Phạt KPI</h1><div class="page-breadcrumb"><a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span>Chính sách thưởng/phạt</span></div></div>
-    <div class="d-flex justify-content-end gap-2"><button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg me-1"></i> Thêm quy định mới</button></div>
+    <div><h1 class="h3 font-weight-bold mb-1">Quy định Thưởng & Phạt KPI</h1><div class="page-breadcrumb"><a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span class="text-dark fw-bold">Chính sách thưởng/phạt</span></div></div>
+    @if (!User.IsInRole("Employee") && !User.IsInRole("employee"))
+    {
+        <div class="d-flex justify-content-end gap-2"><a asp-action="Create" class="btn-primary-custom d-flex align-items-center text-decoration-none"><i class="bi bi-plus-lg me-1"></i> Thêm quy định mới</a></div>
+    }
 </div>
 
 <div class="row justify-content-center w-100 m-0">
@@ -31,7 +34,7 @@
                             var rankDesc = r.RankId.HasValue && rankDescriptions.ContainsKey(r.RankId.Value) ? rankDescriptions[r.RankId.Value] : "";
                             <tr>
                                 <td><div class="fw-semibold text-dark">Xếp loại @rankCode</div><div class="text-muted" style="font-size:0.75rem;">@rankDesc</div></td>
-                                <td><span class="badge bg-success bg-opacity-10 text-success px-2 py-1">@(r.BonusPercentage?.ToString("N2") ?? "0")%</span></td>
+                                <td><span class="badge bg-dark bg-opacity-10 text-dark px-2 py-1">@(r.BonusPercentage?.ToString("N2") ?? "0")%</span></td>
                                 <td class="fw-medium">@(r.FixedAmount?.ToString("N0") ?? "0") VNĐ</td>
                                 @if (!User.IsInRole("Employee") && !User.IsInRole("employee"))
                                 {
@@ -51,18 +54,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="createModal" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content border-0 shadow">
-        <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-cash-coin me-2"></i>Thêm Quy tắc Thưởng</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <form asp-action="Create" method="post"><div class="modal-body">
-            <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng áp dụng</label><select name="RankId" class="form-select" required>
-                <option value="">-- Chọn xếp hạng --</option>@foreach (var rk in allRanks){<option value="@rk.Id">@rk.RankCode - @rk.Description</option>}</select></div>
-            <div class="mb-3"><label class="form-label fw-semibold">Phần trăm thưởng (%)</label><input type="number" name="BonusPercentage" class="form-control" step="0.01" /></div>
-            <div class="mb-3"><label class="form-label fw-semibold">Số tiền cố định (VNĐ)</label><input type="number" name="FixedAmount" class="form-control" step="1000" /></div>
-        </div>
-        <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Tạo mới</button></div></form>
-    </div></div>
-</div>
 
         </div>
     </div>

@@ -1,0 +1,87 @@
+@model Manage_KPI_or_OKR_System.Models.Invoice
+@{
+    ViewData["Title"] = "Tạo Hóa đơn";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var orders = ViewBag.AllOrders as List<Manage_KPI_or_OKR_System.Models.SalesOrder> ?? new List<Manage_KPI_or_OKR_System.Models.SalesOrder>();
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h3 class="text-dark fw-bold">
+                <i class="bi bi-receipt me-2"></i>Tạo Hóa đơn Mới
+            </h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0 m-0">
+                    <li class="breadcrumb-item"><a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-dark text-decoration-none opacity-75">Quản lý Hóa đơn</a></li>
+                    <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Tạo mới</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="content-card rounded-3">
+                <div class="card-header-custom bg-white border-bottom py-3">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-file-earmark-text me-2"></i>Thông tin Hóa đơn</h5>
+                </div>
+                <div class="card-body-custom p-4">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label asp-for="InvoiceNo" class="form-label fw-bold text-dark">Số hóa đơn <span class="text-danger">*</span></label>
+                                <input asp-for="InvoiceNo" class="form-control" placeholder="VD: INV2024001, VAT-999..." required />
+                                <span asp-validation-for="InvoiceNo" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="OrderId" class="form-label fw-bold text-dark">Đơn hàng gốc <span class="text-danger">*</span></label>
+                                <select asp-for="OrderId" class="form-select" required>
+                                    <option value="">-- Chọn đơn hàng --</option>
+                                    @foreach (var o in orders)
+                                    {
+                                        <option value="@o.Id">@o.OrderCode</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="OrderId" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="SubTotal" class="form-label fw-bold text-dark">Tạm tính (VNĐ)</label>
+                                <input asp-for="SubTotal" type="number" step="0.01" class="form-control" placeholder="0.00" />
+                                <span asp-validation-for="SubTotal" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="VATRate" class="form-label fw-bold text-dark">Thuế suất VAT (%)</label>
+                                <input asp-for="VATRate" type="number" step="0.01" class="form-control" placeholder="10.00" />
+                                <span asp-validation-for="VATRate" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="GrandTotal" class="form-label fw-bold text-dark">Tổng tiền thanh toán (VNĐ) <span class="text-danger">*</span></label>
+                                <input asp-for="GrandTotal" type="number" step="0.01" class="form-control" placeholder="0.00" required />
+                                <span asp-validation-for="GrandTotal" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <a asp-action="Index" class="btn-outline-custom px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn-primary-custom px-4">
+                                <i class="bi bi-save me-1"></i> Xuất Hóa đơn
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

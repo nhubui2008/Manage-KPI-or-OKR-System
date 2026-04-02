@@ -36,6 +36,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(currentYearGoals);
         }
 
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return View();
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create(MissionVision model)
         {
@@ -46,8 +52,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.MissionVisions.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã lưu chiến lược thành công!";
+                return RedirectToAction(nameof(Index), new { year = model.TargetYear });
             }
-            return RedirectToAction(nameof(Index), new { year = model.TargetYear });
+            return View(model);
         }
 
         [HttpPost]

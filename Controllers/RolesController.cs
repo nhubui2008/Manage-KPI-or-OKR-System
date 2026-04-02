@@ -24,6 +24,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(roles);
         }
 
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return View();
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create(string roleName, string description)
         {
@@ -39,8 +45,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.Roles.Add(role);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã tạo nhóm quyền mới thành công!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+            return View();
         }
 
         [HttpPost]

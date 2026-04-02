@@ -11,12 +11,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', function () {
-            if (window.innerWidth < 992) {
-                sidebar.classList.toggle('show');
-                overlay.classList.toggle('show');
-            } else {
-                document.body.classList.toggle('sidebar-collapsed');
-            }
+            const isExpanded = document.documentElement.classList.toggle('sidebar-expanded');
+            localStorage.setItem('sidebarState', isExpanded ? 'expanded' : 'collapsed');
         });
     }
 

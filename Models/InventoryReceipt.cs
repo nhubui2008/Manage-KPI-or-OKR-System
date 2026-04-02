@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Manage_KPI_or_OKR_System.Properties
+namespace Manage_KPI_or_OKR_System.Models
 {
     public class InventoryReceipt
     {

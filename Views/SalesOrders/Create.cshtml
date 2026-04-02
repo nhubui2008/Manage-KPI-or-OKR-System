@@ -1,0 +1,111 @@
+@model Manage_KPI_or_OKR_System.Models.SalesOrder
+@{
+    ViewData["Title"] = "Tạo Đơn bán hàng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var customers = ViewBag.Customers as List<Manage_KPI_or_OKR_System.Models.Customer> ?? new List<Manage_KPI_or_OKR_System.Models.Customer>();
+    var employees = ViewBag.Employees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h3 class="text-dark fw-bold">
+                <i class="bi bi-cart-plus-fill me-2"></i>Tạo Đơn bán hàng Mới
+            </h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0 m-0">
+                    <li class="breadcrumb-item"><a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-dark text-decoration-none opacity-75">Quản lý Đơn hàng</a></li>
+                    <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Tạo mới</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="content-card rounded-3">
+                <div class="card-header-custom bg-white border-bottom py-3">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-file-earmark-text me-2"></i>Thông tin Đơn hàng</h5>
+                </div>
+                <div class="card-body-custom p-4">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="OrderCode" class="form-label fw-bold text-dark">Mã đơn hàng <span class="text-danger">*</span></label>
+                                <input asp-for="OrderCode" class="form-control" placeholder="VD: DH2024001, SO-APPLE..." required />
+                                <span asp-validation-for="OrderCode" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="CustomerId" class="form-label fw-bold text-dark">Khách hàng <span class="text-danger">*</span></label>
+                                <select asp-for="CustomerId" class="form-select" required>
+                                    <option value="">-- Chọn khách hàng --</option>
+                                    @foreach (var c in customers)
+                                    {
+                                        <option value="@c.Id">@c.CustomerName (@c.CustomerCode)</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="CustomerId" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="SalesStaffId" class="form-label fw-bold text-dark">Nhân viên bán hàng</label>
+                                <select asp-for="SalesStaffId" class="form-select">
+                                    <option value="">-- Chọn nhân viên --</option>
+                                    @foreach (var e in employees)
+                                    {
+                                        <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="SalesStaffId" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="TotalAmount" class="form-label fw-bold text-dark">Tổng giá trị đơn (VNĐ) <span class="text-danger">*</span></label>
+                                <input asp-for="TotalAmount" type="number" step="0.01" class="form-control" placeholder="0.00" required />
+                                <span asp-validation-for="TotalAmount" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label asp-for="ShippingAddress" class="form-label fw-bold text-dark">Địa chỉ giao hàng</label>
+                                <input asp-for="ShippingAddress" class="form-control" placeholder="Nhập địa chỉ giao hàng cụ thể" />
+                                <span asp-validation-for="ShippingAddress" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="ExpectedDeliveryDate" class="form-label fw-bold text-dark">Ngày giao hàng dự kiến</label>
+                                <input asp-for="ExpectedDeliveryDate" type="date" class="form-control" />
+                                <span asp-validation-for="ExpectedDeliveryDate" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Status" class="form-label fw-bold text-dark">Trạng thái</label>
+                                <select asp-for="Status" class="form-select">
+                                    <option value="Draft">Bản nháp</option>
+                                    <option value="Confirmed">Đã xác nhận</option>
+                                    <option value="Shipping">Đang giao</option>
+                                    <option value="Completed">Hoàn thành</option>
+                                </select>
+                                <span asp-validation-for="Status" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 mt-4 border-top">
+                            <a asp-action="Index" class="btn-outline-custom px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn-primary-custom px-4">
+                                <i class="bi bi-save me-1"></i> Tạo Đơn hàng
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

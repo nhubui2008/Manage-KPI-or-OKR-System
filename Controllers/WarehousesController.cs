@@ -21,11 +21,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(warehouses);
         }
 
+        // GET: Warehouses/Create
+        public IActionResult Create()
+        {
+            return View();
+        }
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Warehouse model)
         {
             if (ModelState.IsValid)
             {
+<<<<<<< HEAD
                 // Kiểm tra xem mã kho đã tồn tại chưa (bao gồm cả mã đã bị xóa mềm)
                 var existing = await _context.Warehouses
                     .FirstOrDefaultAsync(w => w.WarehouseCode == model.WarehouseCode);
@@ -44,6 +52,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     {
                         TempData["ErrorMessage"] = "Mã kho này đã tồn tại!";
                         return RedirectToAction(nameof(Index));
+=======
+                // Kiểm tra trùng mã kho
+                if (!string.IsNullOrEmpty(model.WarehouseCode))
+                {
+                    bool exists = await _context.Warehouses.AnyAsync(w => w.WarehouseCode == model.WarehouseCode && w.IsActive == true);
+                    if (exists)
+                    {
+                        ModelState.AddModelError("WarehouseCode", "Mã kho này đã tồn tại.");
+                        return View(model);
+>>>>>>> 425a0c1 (Optimize OKR progress logic, add OKR allocations badges, fix dual arrows in select dropdowns and fix build issues)
                     }
                 }
 
@@ -51,8 +69,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.Warehouses.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã thêm kho mới thành công!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+            return View(model);
         }
 
         [HttpPost]

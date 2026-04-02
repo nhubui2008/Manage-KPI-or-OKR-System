@@ -18,7 +18,7 @@
     <div class="d-flex justify-content-end gap-2">
         @if (User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))
         {
-            <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg me-1"></i> Thêm kết quả</button>
+            <a asp-action="Create" class="btn-primary-custom d-flex align-items-center"><i class="bi bi-plus-lg me-1"></i> Thêm kết quả</a>
         }
     </div>
 </div>
@@ -63,23 +63,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="createModal" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content border-0 shadow">
-        <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-award me-2"></i>Thêm Kết quả Đánh giá</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <form asp-action="Create" method="post"><div class="modal-body">
-            <div class="mb-3"><label class="form-label fw-semibold">Nhân viên</label><select name="EmployeeId" class="form-select" required>
-                <option value="">-- Chọn nhân viên --</option>@foreach (var e in allEmployees){<option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>}</select></div>
-            <div class="mb-3"><label class="form-label fw-semibold">Kỳ đánh giá</label><select name="PeriodId" class="form-select" required>
-                <option value="">-- Chọn kỳ --</option>@foreach (var p in allPeriods){<option value="@p.Id">@p.PeriodName</option>}</select></div>
-            <div class="mb-3"><label class="form-label fw-semibold">Tổng điểm</label><input type="number" name="TotalScore" class="form-control" step="0.01" min="0" max="100" required /></div>
-            <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng</label><select name="RankId" class="form-select">
-                <option value="">-- Chọn hạng --</option>@foreach (var rk in allRanks){<option value="@rk.Id">@rk.RankCode - @rk.Description</option>}</select></div>
-            <div class="mb-3"><label class="form-label fw-semibold">Phân loại</label><select name="Classification" class="form-select">
-                <option value="Xuất sắc">Xuất sắc</option><option value="Giỏi">Giỏi</option><option value="Khá">Khá</option><option value="Trung bình">Trung bình</option><option value="Yếu">Yếu</option></select></div>
-        </div>
-        <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Lưu kết quả</button></div></form>
-    </div></div>
-</div>
 
         </div>
     </div>

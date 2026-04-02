@@ -35,7 +35,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(invoices);
         }
 
+        // GET: Invoices/Create
+        public async Task<IActionResult> Create()
+        {
+            ViewBag.AllOrders = await _context.SalesOrders.Where(s => s.IsActive == true).ToListAsync();
+            return View();
+        }
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Invoice model)
         {
             if (ModelState.IsValid)
@@ -45,8 +53,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.Invoices.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã tạo hóa đơn mới thành công!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+
+            ViewBag.AllOrders = await _context.SalesOrders.Where(s => s.IsActive == true).ToListAsync();
+            return View(model);
         }
 
         [HttpPost]

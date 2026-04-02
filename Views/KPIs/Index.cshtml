@@ -20,9 +20,9 @@
         </div>
     </div>
     <div class="d-flex justify-content-end gap-2">
-        <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createKpiModal">
+        <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
             <i class="bi bi-plus-lg me-1"></i> Thêm KPI mới
-        </button>
+        </a>
     </div>
 </div>
 
@@ -35,25 +35,25 @@
 
 <div class="row g-4 mb-4">
     <div class="col-md-3">
-        <div class="stat-card p-3 border-start border-4 border-primary shadow-sm bg-white rounded-3">
+        <div class="stat-card">
             <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="text-muted fw-semibold" style="font-size: 0.85rem;">Tổng số KPI</div>
-                <div class="icon-box bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                <div class="stat-label">Tổng số KPI</div>
+                <div class="stat-icon blue">
                     <i class="bi bi-target"></i>
                 </div>
             </div>
-            <div class="fw-bold text-dark fs-3">@(Model?.Count() ?? 0)</div>
+            <div class="stat-value">@(Model?.Count() ?? 0)</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="stat-card p-3 border-start border-4 border-success shadow-sm bg-white rounded-3">
+        <div class="stat-card">
             <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="text-muted fw-semibold" style="font-size: 0.85rem;">Đã phân bổ</div>
-                <div class="icon-box bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                <div class="stat-label">Đã phân bổ</div>
+                <div class="stat-icon green">
                     <i class="bi bi-people-fill"></i>
                 </div>
             </div>
-            <div class="fw-bold text-dark fs-3">@assignments.Count</div>
+            <div class="stat-value">@assignments.Count</div>
         </div>
     </div>
 </div>
@@ -98,7 +98,7 @@
                             <tr class="bg-white">
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="bg-primary bg-opacity-10 text-primary p-2 rounded">
+                                        <div class="bg-dark text-white p-2 rounded" style="background: #000 !important;">
                                             <i class="bi bi-graph-up-arrow fs-5"></i>
                                         </div>
                                         <div>
@@ -135,13 +135,13 @@
                                                 var initials = string.Join("", name.Split(' ').Select(n => n[0])).ToUpper();
                                                 if (initials.Length > 2) initials = initials.Substring(0, 2);
                                                 
-                                                <div class="user-avatar bg-primary text-white border border-2 border-white position-relative rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 3;" title="@name">
+                                                <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 3;" title="@name">
                                                     @initials
                                                 </div>
                                             }
                                             @if (assignedEmployees.Count > 3)
                                             {
-                                                <div class="user-avatar bg-secondary text-white border border-2 border-white position-relative rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 1;">
+                                                <div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 1; background: #666 !important;">
                                                     +@(assignedEmployees.Count - 3)
                                                 </div>
                                             }
@@ -195,69 +195,6 @@
     </div>
 </div>
 
-<!-- Modal Create KPI -->
-<div class="modal fade" id="createKpiModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0 bg-light rounded-top p-4">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-plus-circle text-primary me-2"></i>Thêm KPI Mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form asp-controller="KPIs" asp-action="Create" method="post">
-                    <h6 class="fw-bold text-primary mb-3">Thông tin chung</h6>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-12">
-                            <label class="form-label fw-semibold">Tên KPI <span class="text-danger">*</span></label>
-                            <input type="text" name="kpi.KPIName" class="form-control" placeholder="VD: Doanh thu bán hàng tháng" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Phân loại KPI <span class="text-danger">*</span></label>
-                            <select name="kpi.KPITypeId" class="form-select" required>
-                                <option value="1">Kết quả</option>
-                                <option value="2">Hành vi</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Kỳ đánh giá <span class="text-danger">*</span></label>
-                            <select name="kpi.PeriodId" class="form-select" required>
-                                @foreach(var kvp in periodsDict)
-                                {
-                                    <option value="@kvp.Key">@kvp.Value</option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-sliders me-2"></i>Chi tiết Chỉ tiêu</h6>
-                    <div class="row g-3 mb-4 bg-light p-3 rounded-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" name="detail.TargetValue" class="form-control" placeholder="1000000" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Đơn vị đo lường</label>
-                            <input type="text" name="detail.MeasurementUnit" class="form-control" placeholder="VD: VNĐ, Sản phẩm, Khách hàng, Lần...">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Ngưỡng đạt (Pass Threshold)</label>
-                            <input type="number" step="0.01" name="detail.PassThreshold" class="form-control" placeholder="Mức tối thiểu để Đạt">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold text-danger">Ngưỡng trượt (Fail Threshold)</label>
-                            <input type="number" step="0.01" name="detail.FailThreshold" class="form-control" placeholder="Mức xác định là Không đạt">
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn-outline-custom rounded-pill px-4" data-bs-dismiss="modal">Hủy thao tác</button>
-                        <button type="submit" class="btn-primary-custom rounded-pill px-4"><i class="bi bi-save me-2"></i>Lưu KPI mới</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
 <style>
     .stat-card:hover { transform: translateY(-3px); transition: all 0.3s ease; }

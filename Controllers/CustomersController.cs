@@ -33,11 +33,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(customers);
         }
 
+        // GET: Customers/Create
+        public IActionResult Create()
+        {
+            return View();
+        }
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Customer model)
         {
             if (ModelState.IsValid)
             {
+<<<<<<< HEAD
                 // Kiểm tra xem mã khách hàng đã tồn tại chưa (bao gồm cả mã đã bị xóa mềm)
                 if (!string.IsNullOrEmpty(model.CustomerCode))
                 {
@@ -59,6 +67,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             TempData["ErrorMessage"] = "Mã khách hàng này đã tồn tại!";
                             return RedirectToAction(nameof(Index));
                         }
+=======
+                // Kiểm tra trùng mã khách hàng
+                if (!string.IsNullOrEmpty(model.CustomerCode))
+                {
+                    bool exists = await _context.Customers.AnyAsync(c => c.CustomerCode == model.CustomerCode && c.IsActive == true);
+                    if (exists)
+                    {
+                        ModelState.AddModelError("CustomerCode", "Mã khách hàng này đã tồn tại.");
+                        return View(model);
+>>>>>>> 425a0c1 (Optimize OKR progress logic, add OKR allocations badges, fix dual arrows in select dropdowns and fix build issues)
                     }
                 }
 
@@ -67,8 +85,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.Customers.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã thêm khách hàng mới thành công!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+            return View(model);
         }
 
         [HttpPost]

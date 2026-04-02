@@ -25,9 +25,9 @@
         </div>
     </div>
     <div class="d-flex justify-content-end gap-2">
-        <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createModal">
+        <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
             <i class="bi bi-plus-lg me-1"></i> Thêm kỳ đánh giá
-        </button>
+        </a>
     </div>
 </div>
 
@@ -92,29 +92,6 @@
     </div>
 </div>
 
-<!-- Create Modal -->
-<div class="modal fade" id="createModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-calendar-plus me-2"></i>Thêm Kỳ Đánh giá</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <form asp-action="Create" method="post">
-                <div class="modal-body">
-                    <div class="mb-3"><label class="form-label fw-semibold">Tên kỳ đánh giá</label><input type="text" name="PeriodName" class="form-control" required placeholder="VD: Quý 1 - 2026" /></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Loại kỳ</label>
-                        <select name="PeriodType" class="form-select"><option value="MONTH">Hàng tháng</option><option value="QUARTER">Hàng quý</option><option value="YEAR">Hàng năm</option></select></div>
-                    <div class="row"><div class="col-6 mb-3"><label class="form-label fw-semibold">Ngày bắt đầu</label><input type="date" name="StartDate" class="form-control" required /></div>
-                    <div class="col-6 mb-3"><label class="form-label fw-semibold">Ngày kết thúc</label><input type="date" name="EndDate" class="form-control" required /></div></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Trạng thái</label>
-                        <select name="StatusId" class="form-select">
-                            @foreach (var s in statuses)
-                            {<option value="@s.Key">@s.Value</option>}
-                        </select></div>
-                </div>
-                <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Tạo mới</button></div>
-            </form>
-        </div>
-    </div>
-</div>
 
         </div>
     </div>

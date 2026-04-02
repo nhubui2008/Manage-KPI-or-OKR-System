@@ -13,14 +13,5 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Button loading effect
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', function (e) {
-            const button = loginForm.querySelector('.comfort-button');
-            if (button) {
-                button.classList.add('loading');
-            }
-        });
-    }
+
 });

@@ -25,28 +25,29 @@
         </div>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="content-card mb-4 shadow-sm border-0">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Phòng ban</label>
-                    <select name="departmentId" class="form-select">
+    <div class="content-card mb-4 border-0">
+        <div class="card-body p-4">
+            <form method="get" class="row g-4 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label fw-bold text-uppercase small text-muted mb-2">Phòng ban</label>
+                    <select name="departmentId" class="form-select border-2" style="height: 48px;">
                         @foreach(var d in departments){
                             <option value="@d.Id" selected="@(ViewBag.CurrentDeptId == d.Id ? "selected" : null)">@d.DepartmentName</option>
                         }
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Chu kỳ (Quý/Năm)</label>
-                    <select name="cycle" class="form-select">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-uppercase small text-muted mb-2">Chu kỳ (Quý/Năm)</label>
+                    <select name="cycle" class="form-select border-2" style="height: 48px;">
                         <option value="Q1-2026" selected="@(ViewBag.CurrentCycle == "Q1-2026" ? "selected" : null)">Quý 1 - 2026</option>
                         <option value="Q2-2026" selected="@(ViewBag.CurrentCycle == "Q2-2026" ? "selected" : null)">Quý 2 - 2026</option>
                         <option value="Năm 2026" selected="@(ViewBag.CurrentCycle == "Năm 2026" ? "selected" : null)">Cả năm 2026</option>
                     </select>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary-custom w-100">Lọc dữ liệu</button>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary-custom px-4" style="height: 48px; border-radius: 8px;">
+                        <i class="bi bi-search me-2"></i> Lọc dữ liệu
+                    </button>
                 </div>
             </form>
         </div>
@@ -118,8 +119,10 @@
             <div class="content-card">
                 <div class="card-header-custom"><i class="bi bi-chat-left-text me-2"></i>Tổng hợp của Giám đốc</div>
                 <div class="card-body-custom">
-                    <textarea class="form-control" rows="4" placeholder="Nhập nhận định chung về tình hình thực hiện OKR/KPI của Sale Q1..."></textarea>
-                    <button class="btn-primary-custom mt-3 float-end">Lưu nhận xét</button>
+                    <textarea class="form-control mb-2" rows="4" style="border-radius: 12px; border: 1.5px solid #eee;" placeholder="Nhập nhận định chung về tình hình thực hiện OKR/KPI của Sale Q1..."></textarea>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button class="btn-primary-custom px-4" style="height: 40px;">Lưu nhận xét</button>
+                    </div>
                 </div>
             </div>
         </div>

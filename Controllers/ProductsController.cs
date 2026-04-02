@@ -40,11 +40,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(products);
         }
 
+        // GET: Products/Create
+        public async Task<IActionResult> Create()
+        {
+            ViewBag.Categories = await _context.ProductCategories.Where(c => c.IsActive == true).ToListAsync();
+            return View();
+        }
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Product model)
         {
             if (ModelState.IsValid)
             {
+<<<<<<< HEAD
                 // 1. Kiểm tra mã sản phẩm (Bắt buộc duy nhất, kể cả bản ghi đã xóa)
                 var cleanCode = model.ProductCode?.Trim() ?? "";
                 var existingByCode = await _context.Products
@@ -92,13 +101,30 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 model.ProductCode = cleanCode;
                 model.ProductName = cleanName;
 
+=======
+                // Kiểm tra trùng mã sản phẩm
+                if (!string.IsNullOrEmpty(model.ProductCode))
+                {
+                    bool exists = await _context.Products.AnyAsync(p => p.ProductCode == model.ProductCode && p.IsActive == true);
+                    if (exists)
+                    {
+                        ModelState.AddModelError("ProductCode", "Mã sản phẩm này đã tồn tại.");
+                        ViewBag.Categories = await _context.ProductCategories.Where(c => c.IsActive == true).ToListAsync();
+                        return View(model);
+                    }
+                }
+
+>>>>>>> 425a0c1 (Optimize OKR progress logic, add OKR allocations badges, fix dual arrows in select dropdowns and fix build issues)
                 model.IsActive = true;
                 model.CreatedAt = DateTime.Now;
                 _context.Products.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã thêm sản phẩm mới thành công!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+
+            ViewBag.Categories = await _context.ProductCategories.Where(c => c.IsActive == true).ToListAsync();
+            return View(model);
         }
 
         [HttpPost]

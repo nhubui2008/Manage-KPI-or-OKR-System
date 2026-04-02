@@ -20,7 +20,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(partners);
         }
 
+        // GET: ShippingPartners/Create
+        public IActionResult Create()
+        {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse")) return Forbid();
+            return View();
+        }
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ShippingPartner model)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse")) return Forbid();
@@ -31,8 +39,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.ShippingPartners.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã thêm đối tác vận chuyển mới!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+            return View(model);
         }
 
         [HttpPost]

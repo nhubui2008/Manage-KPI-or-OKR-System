@@ -35,6 +35,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(periods);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Create()
+        {
+            var statuses = await _context.Statuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
+            ViewBag.Statuses = statuses;
+            return View();
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create(EvaluationPeriod model)
         {
@@ -45,8 +53,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.EvaluationPeriods.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã tạo kỳ đánh giá mới thành công!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+            
+            var statuses = await _context.Statuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
+            ViewBag.Statuses = statuses;
+            return View(model);
         }
 
         [HttpPost]

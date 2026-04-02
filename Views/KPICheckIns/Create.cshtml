@@ -1,0 +1,111 @@
+@model Manage_KPI_or_OKR_System.Models.KPICheckIn
+
+@{
+    ViewData["Title"] = "Thực hiện Check-in KPI";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    
+    var employees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
+    var kpis = ViewBag.AllKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new List<Manage_KPI_or_OKR_System.Models.KPI>();
+    var statuses = ViewBag.AllStatuses as List<Manage_KPI_or_OKR_System.Models.CheckInStatus> ?? new List<Manage_KPI_or_OKR_System.Models.CheckInStatus>();
+    var failReasons = ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>();
+}
+
+<div class="container-fluid px-4 mt-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h3 class="text-dark fw-bold">
+                <i class="bi bi-calendar-check me-2"></i>Thực hiện Check-in KPI
+            </h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0 m-0">
+                    <li class="breadcrumb-item"><a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-dark text-decoration-none opacity-75">Lịch sử Check-in</a></li>
+                    <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Thực hiện mới</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="content-card rounded-3">
+        <div class="card-body-custom p-4">
+            <form asp-action="Create" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">Nhân viên thực hiện <span class="text-danger">*</span></label>
+                        <select asp-for="EmployeeId" class="form-select" required>
+                            <option value="">-- Chọn nhân viên --</option>
+                            @foreach(var e in employees)
+                            {
+                                <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                            }
+                        </select>
+                        <span asp-validation-for="EmployeeId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">KPI Mục tiêu <span class="text-danger">*</span></label>
+                        <select asp-for="KPIId" class="form-select" required>
+                            <option value="">-- Chọn KPI --</option>
+                            @foreach(var k in kpis)
+                            {
+                                <option value="@k.Id">@k.KPIName</option>
+                            }
+                        </select>
+                        <span asp-validation-for="KPIId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">Trạng thái tiến độ (Tự đánh giá)</label>
+                        <select asp-for="StatusId" class="form-select">
+                            @foreach(var s in statuses)
+                            {
+                                <option value="@s.Id">@s.StatusName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">Kết quả thực tế đạt được <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" name="AchievedValue" class="form-control" placeholder="0.00" required>
+                    </div>
+                </div>
+
+                <hr class="my-4" style="opacity: 0.1;">
+                <h5 class="fw-bold text-dark mb-4">Khó khăn & Phân tích</h5>
+
+                <div class="row g-4">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold text-dark">Ghi chú / Trở ngại gặp phải</label>
+                        <textarea name="Note" class="form-control" placeholder="Nhập ghi chú hoặc các khó khăn gặp phải..." rows="3"></textarea>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold text-dark">Lý do cốt lõi (Nếu chưa đạt)</label>
+                        <select asp-for="FailReasonId" class="form-select">
+                            <option value="">-- Không có / Đã đạt --</option>
+                            @foreach(var r in failReasons)
+                            {
+                                <option value="@r.Id">@r.ReasonName</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-5 border-top pt-4">
+                    <a asp-action="Index" class="btn-outline-custom px-4">
+                        <i class="bi bi-x-circle me-1"></i> Hủy bỏ
+                    </a>
+                    <button type="submit" class="btn-primary-custom px-4">
+                        <i class="bi bi-check2-circle me-2"></i> Xác nhận Check-in
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

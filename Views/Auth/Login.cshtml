@@ -106,7 +106,7 @@
                 @if (ViewBag.IsRelogin != null && ViewBag.IsRelogin)
                 {
                     <span style="font-size: 0.95rem; color: #666; font-weight: 500;">
-                        Không phải bạn? <a asp-controller="Auth" asp-action="Logout" class="comfort-link" style="color: #dc3545; font-weight: bold; margin-left: 4px; text-decoration: underline;">Đổi tài khoản</a>
+                        Không phải bạn? <a asp-controller="Auth" asp-action="Logout" class="comfort-link" style="color: #dc3545; font-weight: bold; margin-left: 4px;">Đổi tài khoản</a>
                     </span>
                 }
                 else
@@ -128,11 +128,7 @@
             <button type="submit" class="comfort-button">
                 <div class="button-background"></div>
                 <span class="button-text">Sign in</span>
-                <div class="button-loader">
-                    <div class="gentle-spinner">
-                        <div class="spinner-circle"></div>
-                    </div>
-                </div>
+
                 <div class="button-glow"></div>
             </button>
         </form>

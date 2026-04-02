@@ -5,10 +5,9 @@
     string GetRoleColor(string roleName) 
     {
         roleName = roleName?.ToLower() ?? "";
-        if (roleName.Contains("admin")) return "danger";
-        if (roleName.Contains("manager")) return "primary";
-        if (roleName.Contains("user")) return "secondary";
-        return "info";
+        if (roleName.Contains("admin")) return "dark";
+        if (roleName.Contains("manager")) return "secondary";
+        return "dark";
     }
     
     string GetRoleIcon(string roleName) 
@@ -34,9 +33,9 @@
         </div>
     </div>
     <div class="d-flex justify-content-end gap-2">
-        <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createRoleModal">
+        <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
             <i class="bi bi-shield-plus me-1"></i> Tạo Role mới
-        </button>
+        </a>
     </div>
 </div>
 
@@ -100,44 +99,16 @@
     else
     {
         <div class="col-12">
-            <div class="alert alert-info border-0 shadow-sm text-center p-5">
-                <i class="bi bi-shield-x display-4 text-info mb-3 d-block"></i>
-                <h5>Chưa có nhóm quyền nào</h5>
+            <div class="alert alert-secondary border-0 shadow-sm text-center p-5 bg-light">
+                <i class="bi bi-shield-x display-4 text-muted mb-3 d-block"></i>
+                <h5 class="text-dark fw-bold">Chưa có nhóm quyền nào</h5>
                 <p class="text-muted mb-4">Bạn cần tạo mới các nhóm quyền để có thể phân loại người dùng trong hệ thống.</p>
-                <button class="btn-primary-custom px-4 rounded-pill" data-bs-toggle="modal" data-bs-target="#createRoleModal">Tạo Role đầu tiên</button>
+                <a asp-action="Create" class="btn-primary-custom px-4 rounded-pill">Tạo Role đầu tiên</a>
             </div>
         </div>
     }
 </div>
 
-<!-- Modal Tạo Role Mới -->
-<div class="modal fade" id="createRoleModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-shield-plus text-primary me-2"></i>Tạo Nhóm Quyền Mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form asp-controller="Roles" asp-action="Create" method="post">
-                    <div class="mb-3">
-                        <label class="form-label" for="roleName">Tên nhóm quyền <span class="text-danger">*</span></label>
-                        <input type="text" id="roleName" name="roleName" class="form-control" placeholder="Vd: Manager, Accountant..." required>
-                        <div class="form-text">Tên nhóm quyền tiếng Anh, viết liền (VD: HRManager)</div>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label" for="description">Mô tả quyền hạn</label>
-                        <textarea id="description" name="description" class="form-control" rows="3" placeholder="Nhập mô tả các chức năng mà nhóm quyền này có thể thao tác..."></textarea>
-                    </div>
-                    <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn-outline-custom rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn-primary-custom rounded-pill px-4">Tạo mới</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
         </div>
     </div>

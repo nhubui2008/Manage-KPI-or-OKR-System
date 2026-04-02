@@ -26,7 +26,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(rules);
         }
 
+        // GET: BonusRules/Create
+        public async Task<IActionResult> Create()
+        {
+            if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
+
+            ViewBag.AllRanks = await _context.GradingRanks.ToListAsync();
+            return View();
+        }
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(BonusRule model)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
@@ -36,8 +46,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.BonusRules.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã thêm quy tắc thưởng mới!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+
+            ViewBag.AllRanks = await _context.GradingRanks.ToListAsync();
+            return View(model);
         }
 
         [HttpPost]

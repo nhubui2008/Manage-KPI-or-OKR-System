@@ -48,25 +48,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             .Where(a => a.EmployeeId == employee.Id)
                             .Select(a => a.OKRId)
                             .ToListAsync();
-
-                        // Thêm: Lấy các OKR phân bổ cho Phòng ban mà nhân viên thuộc về
-                        var deptIds = await _context.EmployeeAssignments
-                            .Where(ea => ea.EmployeeId == employee.Id && ea.IsActive == true)
-                            .Select(ea => ea.DepartmentId ?? 0)
-                            .ToListAsync();
-
-                        var departmentOkrIds = await _context.OKR_Department_Allocations
-                            .Where(da => deptIds.Contains(da.DepartmentId))
-                            .Select(da => da.OKRId)
-                            .ToListAsync();
-
-                        ViewBag.CurrentEmployeeId = employee.Id;
-                        ViewBag.AllocatedOkrIds = allocatedOkrIds;
-                        ViewBag.DepartmentOkrIds = departmentOkrIds;
-                        query = query.Where(o => allocatedOkrIds.Contains(o.Id) || 
-                                               departmentOkrIds.Contains(o.Id) || 
-                                               o.CreatedById == employee.Id || 
-                                               o.OKRTypeId == 1);
+                        query = query.Where(o => allocatedOkrIds.Contains(o.Id) || o.CreatedById == employee.Id);
                     }
                     else
                     {
@@ -104,6 +86,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
 
             return View(okrs);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Create()
+        {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee"))
+                return Forbid();
+
+            ViewBag.Missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
+            ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
+            ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
+
+            return View();
         }
 
         [HttpPost]
@@ -151,17 +148,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 await _context.SaveChangesAsync();
 
                 TempData["SuccessMessage"] = "Đã tạo OKR mới và phân bổ thành công!";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+            
+            ViewBag.Missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
+            ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
+            ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
+            
+            return View(model);
         }
 
         [HttpPost]
         public async Task<IActionResult> AddKeyResult(OKRKeyResult kr)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee")) 
-                return Forbid();
-
             if (ModelState.IsValid)
             {
                 kr.CurrentValue = 0; // Khởi tạo tiến độ ban đầu là 0
@@ -197,10 +197,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> EditKeyResult(OKRKeyResult model)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee")) 
-                return Forbid();
-
             if (ModelState.IsValid)
             {
                 var kr = await _context.OKRKeyResults.FindAsync(model.Id);
@@ -223,10 +219,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> AllocateTarget(int okrId, int employeeId, decimal allocatedValue)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee")) 
-                return Forbid();
-
             var okr = await _context.OKRs.FindAsync(okrId);
             if (okr == null) return NotFound();
 
@@ -246,10 +238,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteKeyResult(int id)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee")) 
-                return Forbid();
-
             var kr = await _context.OKRKeyResults.FindAsync(id);
             if (kr != null)
             {

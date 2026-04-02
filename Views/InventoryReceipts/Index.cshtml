@@ -1,4 +1,4 @@
-@model List<Manage_KPI_or_OKR_System.Properties.InventoryReceipt>
+@model List<Manage_KPI_or_OKR_System.Models.InventoryReceipt>
 @{
     ViewData["Title"] = "Phiếu Nhập kho";
     var warehouses = ViewBag.Warehouses as Dictionary<int, string> ?? new Dictionary<int, string>();
@@ -14,8 +14,8 @@
 <div class="container-fluid px-0">
     
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div><h1 class="h3 font-weight-bold mb-1">Phiếu Nhập kho</h1><div class="page-breadcrumb"><a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span>Kho</span><i class="bi bi-chevron-right separator"></i><span>Nhập kho</span></div></div>
-    <div class="d-flex justify-content-end gap-2"><button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg me-1"></i> Tạo phiếu nhập</button></div>
+    <div><h1 class="h3 font-weight-bold mb-1">Phiếu Nhập kho</h1><div class="page-breadcrumb"><a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span class="text-dark opacity-75">Kho</span><i class="bi bi-chevron-right separator"></i><span class="text-dark fw-bold">Nhập kho</span></div></div>
+    <div class="d-flex justify-content-end gap-2"><a asp-action="Create" class="btn-primary-custom d-flex align-items-center text-decoration-none"><i class="bi bi-plus-lg me-1"></i> Tạo phiếu nhập</a></div>
 </div>
 
 <div class="row justify-content-center w-100 m-0">
@@ -31,7 +31,7 @@
                     var whName = r.WarehouseId.HasValue && warehouses.ContainsKey(r.WarehouseId.Value) ? warehouses[r.WarehouseId.Value] : "N/A";
                     var empName = r.WarehouseStaffId.HasValue && employees.ContainsKey(r.WarehouseStaffId.Value) ? employees[r.WarehouseStaffId.Value] : "N/A";
                     <tr>
-                        <td class="fw-bold text-primary">PN-@r.Id.ToString("D5")</td>
+                        <td class="fw-bold text-dark">PN-@r.Id.ToString("D5")</td>
                         <td class="fw-semibold text-dark">@whName</td>
                         <td class="text-muted">@empName</td>
                         <td class="text-muted">@(r.ReceiptDate?.ToString("dd/MM/yyyy") ?? "")</td>
@@ -51,17 +51,6 @@
     </table></div>
 </div></div>
 
-<div class="modal fade" id="createModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content border-0 shadow">
-    <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-box-arrow-in-down me-2"></i>Tạo Phiếu Nhập kho</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-    <form asp-action="Create" method="post"><div class="modal-body">
-        <div class="mb-3"><label class="form-label fw-semibold">Kho nhập</label><select name="WarehouseId" class="form-select" required>
-            <option value="">-- Chọn kho --</option>@foreach(var w in allWarehouses){<option value="@w.Id">@w.WarehouseName (@w.WarehouseCode)</option>}</select></div>
-        <div class="mb-3"><label class="form-label fw-semibold">Nhân viên kho</label><select name="WarehouseStaffId" class="form-select">
-            <option value="">-- Chọn NV --</option>@foreach(var e in allEmployees){<option value="@e.Id">@e.FullName</option>}</select></div>
-        <div class="mb-3"><label class="form-label fw-semibold">Tổng tiền (VNĐ)</label><input type="number" name="TotalAmount" class="form-control" step="1000" /></div>
-    </div>
-    <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Tạo phiếu</button></div></form>
-</div></div></div>
 
         </div>
     </div>
