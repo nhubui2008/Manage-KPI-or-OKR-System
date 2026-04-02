@@ -41,7 +41,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             .Where(a => a.EmployeeId == employee.Id)
                             .Select(a => a.KPIId)
                             .ToListAsync();
-                        query = query.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
+                        query = query.Where(k => allocatedKpiIds.Contains(k.Id));
                     }
                     else
                     {
@@ -116,6 +116,42 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã xóa (vô hiệu hóa) KPI!";
             }
+            return RedirectToAction(nameof(Index));
+        }
+        [HttpPost]
+        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
+        public async Task<IActionResult> Allocate(int kpiId, int employeeId, decimal allocatedValue)
+        {
+            var kpi = await _context.KPIs.FindAsync(kpiId);
+            if (kpi == null) return NotFound();
+
+            var detail = await _context.KPIDetails.FirstOrDefaultAsync(d => d.KPIId == kpiId);
+            if (detail == null) return NotFound("Chưa thiết lập chi tiết KPI.");
+
+            // Kiểm tra tổng phân bổ (Cộng dồn các nhân viên khác)
+            var currentAllocations = await _context.KPI_Employee_Assignments
+                .Where(a => a.KPIId == kpiId)
+                .SumAsync(a => a.AllocatedValue);
+
+            if (currentAllocations + allocatedValue > detail.TargetValue)
+            {
+                // Thông báo cảnh báo nhưng vẫn cho phép (theo một số quy trình) 
+                // Hoặc chặn lại nếu quy tắc nghiêm ngặt:
+                TempData["ErrorMessage"] = "Tổng chỉ tiêu phân bổ vượt quá chỉ tiêu chung của KPI!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var assignment = new KPI_Employee_Assignment
+            {
+                KPIId = kpiId,
+                EmployeeId = employeeId,
+                AllocatedValue = allocatedValue
+            };
+
+            _context.KPI_Employee_Assignments.Add(assignment);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Đã phân bổ {allocatedValue} cho nhân viên thành công!";
             return RedirectToAction(nameof(Index));
         }
     }

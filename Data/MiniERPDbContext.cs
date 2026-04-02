@@ -84,6 +84,7 @@ namespace Manage_KPI_or_OKR_System.Data
         public DbSet<ShippingTracking> ShippingTrackings { get; set; }
         public DbSet<ShippingComplaint> ShippingComplaints { get; set; }
         public DbSet<ShippingPriceList> ShippingPriceLists { get; set; }
+        public DbSet<PowerOutageReport> PowerOutageReports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

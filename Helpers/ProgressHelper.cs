@@ -39,7 +39,8 @@ namespace Manage_KPI_or_OKR_System.Helpers
         /// </summary>
         public static string GetResultStatus(decimal progress)
         {
-            if (progress >= 100) return "Đạt";
+            if (progress > 100) return "Vượt chỉ tiêu";
+            if (progress == 100) return "Đạt";
             if (progress >= 70) return "Gần đạt";
             if (progress >= 40) return "Đang thực hiện";
             return "Chậm tiến độ";

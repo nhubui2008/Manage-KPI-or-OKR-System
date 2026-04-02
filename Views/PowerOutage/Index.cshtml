@@ -1,0 +1,127 @@
+@model IEnumerable<Manage_KPI_or_OKR_System.Models.PowerOutageReport>
+@{
+    ViewData["Title"] = "Quản lý thông báo cắt điện";
+}
+
+<div class="container-fluid px-0">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Cắt điện & Kế hoạch thâm hụt</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Cắt điện</span>
+            </div>
+        </div>
+        <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createOutageModal">
+            <i class="bi bi-plus-lg me-1"></i> Tạo thông báo mới
+        </button>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <div class="row justify-content-center w-100 m-0">
+        <div class="col-12 px-0">
+            <div class="content-card w-100">
+                <div class="card-body-custom">
+                    <div class="alert alert-info border-0 bg-light-primary text-primary mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i> 
+                        <strong>Quy định:</strong> Thông báo cắt điện phải được gửi trước ít nhất <strong>01 tháng (30 ngày)</strong> và chỉ được phép thực hiện vào ngày <strong>Chủ nhật</strong>.
+                    </div>
+
+                    <div class="table-responsive w-100">
+                        <table class="data-table w-100">
+                            <thead>
+                                <tr>
+                                    <th>Ngày cắt điện</th>
+                                    <th>Thứ</th>
+                                    <th>Thời lượng</th>
+                                    <th>Lý do</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày yêu cầu</th>
+                                    <th class="text-end">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    foreach (var item in Model)
+                                    {
+                                        var statusClass = item.Status == "Đã duyệt" ? "active" : (item.Status == "Từ chối" ? "inactive" : "warning");
+                                        var statusText = item.Status;
+                                        var outageDate = item.OutageDate;
+                                        var isFail = item.Duration > 3;
+
+                                        <tr>
+                                            <td class="fw-bold">@outageDate.ToString("dd/MM/yyyy")</td>
+                                            <td><span class="badge @(outageDate.DayOfWeek == DayOfWeek.Sunday ? "bg-success" : "bg-danger")">@outageDate.ToString("dddd")</span></td>
+                                            <td>@item.Duration giờ @if(isFail){<i class="bi bi-exclamation-triangle-fill text-danger ms-1" title="Vượt quá 3 giờ - Rớt KPI"></i>}</td>
+                                            <td>@item.Reason</td>
+                                            <td><span class="status-badge @statusClass">@statusText</span></td>
+                                            <td class="text-muted" style="font-size: 0.8rem;">@item.RequestedAt.ToString("g")</td>
+                                            <td>
+                                                <div class="action-btns justify-content-end">
+                                                    @if (item.Status == "Chờ duyệt")
+                                                    {
+                                                        <form asp-action="Approve" asp-route-id="@item.Id" method="post" class="m-0">
+                                                            <button type="submit" class="action-btn text-success" title="Phê duyệt"><i class="bi bi-check-lg"></i></button>
+                                                        </form>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5 text-muted">Chưa có thông báo nào.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Create -->
+<div class="modal fade" id="createOutageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Tạo thông báo cắt điện</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form asp-action="Create" method="post">
+                    <div class="mb-3">
+                        <label class="form-label">Chọn ngày cắt điện <span class="text-danger">*</span></label>
+                        <input type="date" name="OutageDate" class="form-control" required min="@DateTime.Now.ToString("yyyy-MM-dd")">
+                        <small class="text-muted">Phải là Chủ nhật và trước ít nhất 30 ngày.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Thời lượng (giờ) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.1" name="Duration" class="form-control" placeholder="VD: 2.5" required>
+                        <small class="text-muted">Nếu quá 3 tiếng sẽ ảnh hưởng nặng đến KPI thâm hụt.</small>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Lý do <span class="text-danger">*</span></label>
+                        <textarea name="Reason" class="form-control" rows="3" placeholder="Nhập lý do cắt điện..." required></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">Gửi thông báo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

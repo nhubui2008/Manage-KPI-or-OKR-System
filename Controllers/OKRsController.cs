@@ -49,7 +49,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             .Select(a => a.OKRId)
                             .ToListAsync();
 
-                        // Thêm: Lấy các OKR phân bổ cho Phòng ban mà nhân viên thuộc về
+                        // Lấy các OKR phân bổ cho Phòng ban mà nhân viên thuộc về
                         var deptIds = await _context.EmployeeAssignments
                             .Where(ea => ea.EmployeeId == employee.Id && ea.IsActive == true)
                             .Select(ea => ea.DepartmentId ?? 0)
@@ -63,10 +63,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         ViewBag.CurrentEmployeeId = employee.Id;
                         ViewBag.AllocatedOkrIds = allocatedOkrIds;
                         ViewBag.DepartmentOkrIds = departmentOkrIds;
+                        
+                        // CHỈ KIỂM TRA TIẾN ĐỘ BẢN THÂN: Lọc ra OKR mà nhân viên trực tiếp phụ trách hoặc do họ tạo ra
                         query = query.Where(o => allocatedOkrIds.Contains(o.Id) || 
                                                departmentOkrIds.Contains(o.Id) || 
-                                               o.CreatedById == employee.Id || 
-                                               o.OKRTypeId == 1);
+                                               o.CreatedById == employee.Id);
+                        
+                        // Ghi chú: Strategic OKRs (Type 1) sẽ bị loại bỏ nếu không được phân bổ trực tiếp cho NV này
                     }
                     else
                     {

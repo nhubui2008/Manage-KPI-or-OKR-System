@@ -105,10 +105,10 @@
                                                     <div class="flex-grow-1" style="max-width: 400px;">
                                                         <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
                                                             <span class="text-muted">Tiến độ chung:</span>
-                                                            <span class="fw-bold">@okrProgressInt%</span>
+                                                            <span class="fw-bold @(okrProgressInt > 100 ? "text-success" : "")">@okrProgressInt%</span>
                                                         </div>
                                                         <div class="progress" style="height: 6px; border-radius: 10px;">
-                                                            <div class="progress-bar @okrProgressColor" role="progressbar" style="width: @okrProgressInt%" aria-valuenow="@okrProgressInt" aria-valuemin="0" aria-valuemax="100"></div>
+                                                            <div class="progress-bar @okrProgressColor" role="progressbar" style="width: @(Math.Min(okrProgressInt, 100))%" aria-valuenow="@okrProgressInt" aria-valuemin="0" aria-valuemax="100"></div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -168,13 +168,15 @@
                                                             <div class="flex-grow-1">
                                                                  <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
                                                                     <span class="text-muted">Tiến độ: <strong>@String.Format("{0:N1}", currentVal)</strong>/@String.Format("{0:N0}", targetVal) @kr.Unit</span>
-                                                                    <span class="fw-bold">@krPercent%</span>
+                                                                    <span class="fw-bold @(krPercent > 100 ? "text-success" : "")">@krPercent%</span>
                                                                 </div>
                                                                 <div class="progress mb-1" style="height: 6px; border-radius: 10px;">
-                                                                    <div class="progress-bar @krColor" role="progressbar" style="width: @krPercent%" aria-valuenow="@krPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                                                    <div class="progress-bar @krColor" role="progressbar" style="width: @(Math.Min(krPercent, 100))%" aria-valuenow="@krPercent" aria-valuemin="0" aria-valuemax="100"></div>
                                                                 </div>
                                                                 <div class="d-flex justify-content-between" style="font-size: 0.7rem;">
-                                                                    <span class="badge @krColor bg-opacity-10 @krTextClass px-2 py-1">@ProgressHelper.GetResultStatus(krPercent)</span>
+                                                                    <span class="badge @krColor bg-opacity-10 @krTextClass px-2 py-1">
+                                                                        @(krPercent > 100 ? "Vượt chỉ tiêu" : ProgressHelper.GetResultStatus(krPercent))
+                                                                    </span>
                                                                     @if(kr.IsInverse){<span class="text-info"><i class="bi bi-info-circle me-1"></i>Chỉ tiêu giảm thiểu</span>}
                                                                 </div>
                                                             </div>
