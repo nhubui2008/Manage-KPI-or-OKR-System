@@ -18,9 +18,12 @@
             </div>
         </div>
         <div class="d-flex justify-content-end gap-2">
-            <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createOkrModal">
-                <i class="bi bi-plus-lg me-1"></i> Tạo OKR mới
-            </button>
+            @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Warehouse") || User.IsInRole("warehouse") || User.IsInRole("Sales") || User.IsInRole("sales")))
+            {
+                <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createOkrModal">
+                    <i class="bi bi-plus-lg me-1"></i> Tạo OKR mới
+                </button>
+            }
         </div>
     </div>
 
@@ -49,12 +52,26 @@
                         @if (Model != null && Model.Any())
                         {
                             int index = 0;
+                            var currentEmployeeId = ViewBag.CurrentEmployeeId as int?;
+                            var allocatedIds = ViewBag.AllocatedOkrIds as List<int> ?? new List<int>();
+                            var deptOkrIds = ViewBag.DepartmentOkrIds as List<int> ?? new List<int>();
+                            bool isRestrictedRole = User.IsInRole("Employee") || User.IsInRole("employee") || 
+                                                   User.IsInRole("Warehouse") || User.IsInRole("warehouse") || 
+                                                   User.IsInRole("Sales") || User.IsInRole("sales");
+
                             foreach (var okr in Model)
                             {
                                 index++;
                                 string collapseId = $"collapseOkr{index}";
                                 var krs = keyResultsDict.ContainsKey(okr.Id) ? keyResultsDict[okr.Id] : new List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>();
                                 
+                                bool isOwner = okr.CreatedById == currentEmployeeId;
+                                bool isAllocated = allocatedIds.Contains(okr.Id) || deptOkrIds.Contains(okr.Id);
+                                
+                                bool canManageStructure = !isRestrictedRole;
+                                bool canUpdateProgress = !isRestrictedRole || isOwner || isAllocated;
+                                bool canDelete = !isRestrictedRole;
+
                                 // Tính toán tiến độ trung bình của Objective dựa trên các Key Results
                                 double totalKrProgress = 0;
                                 foreach (var kr in krs)
@@ -62,7 +79,7 @@
                                     var curr = kr.CurrentValue ?? 0;
                                     var target = kr.TargetValue ?? 1;
                                     if(target == 0) target = 1; // Tránh chia cho 0
-                                    totalKrProgress += Math.Min(100, (double)(curr / target * 100));
+                                    totalKrProgress += (double)(curr / target * 100);
                                 }
                                 int okrProgressInt = krs.Count > 0 ? (int)Math.Round(totalKrProgress / krs.Count) : 0;
                                 
@@ -76,6 +93,7 @@
                                             <div class="d-flex flex-column flex-grow-1 pe-4">
                                                 <div class="d-flex align-items-center gap-2 mb-2">
                                                     <span class="badge @okrProgressColor bg-opacity-10 @okrTextClass rounded-pill px-2">Objective (O)</span>
+                                                    @if(okr.OKRTypeId == 1){<span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2"><i class="bi bi-star-fill me-1"></i>Chiến lược công ty</span>}
                                                     <h5 class="mb-0 fw-bold fs-6 text-dark">@okr.ObjectiveName</h5>
                                                 </div>
                                                 
@@ -96,19 +114,28 @@
                                                 </div>
                                             </div>
 
-                                            <div class="action-btns dropdown" onclick="event.stopPropagation();">
-                                                <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                                                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                                    <li><a class="dropdown-item" href="#" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
-                                                    <li><a class="dropdown-item" href="#" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên</a></li>
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <li>
-                                                        <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận xóa OKR này?');">
-                                                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa OKR</button>
-                                                        </form>
-                                                    </li>
-                                                </ul>
-                                            </div>
+                                            @if (canManageStructure || canDelete)
+                                            {
+                                                <div class="action-btns dropdown" onclick="event.stopPropagation();">
+                                                    <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                                        @if (canManageStructure)
+                                                        {
+                                                            <li><a class="dropdown-item" href="#" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
+                                                            <li><a class="dropdown-item" href="#" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên</a></li>
+                                                            <li><hr class="dropdown-divider"></li>
+                                                        }
+                                                        @if (canDelete)
+                                                        {
+                                                            <li>
+                                                                <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận xóa OKR này?');">
+                                                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa OKR</button>
+                                                                </form>
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                            }
                                             
                                         </div>
                                     </h2>
@@ -126,7 +153,7 @@
                                                     var targetVal = kr.TargetValue ?? 1;
                                                     if(targetVal == 0) targetVal = 1;
                                                     
-                                                    var krPercent = Math.Min(100, (int)(currentVal / targetVal * 100));
+                                                    var krPercent = (int)(currentVal / targetVal * 100);
                                                     
                                                     string krColor = ProgressHelper.GetProgressColorClass(krPercent);
                                                     string krTextClass = ProgressHelper.GetProgressTextColorClass(krPercent);
@@ -139,7 +166,7 @@
 
                                                         <div class="d-flex align-items-center gap-4" style="width: 45%;">
                                                             <div class="flex-grow-1">
-                                                                <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
+                                                                 <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
                                                                     <span class="text-muted">Tiến độ: <strong>@String.Format("{0:N1}", currentVal)</strong>/@String.Format("{0:N0}", targetVal) @kr.Unit</span>
                                                                     <span class="fw-bold">@krPercent%</span>
                                                                 </div>
@@ -152,20 +179,29 @@
                                                                 </div>
                                                             </div>
 
-                                                            <div class="d-flex gap-1">
-                                                                <button class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle" 
-                                                                        onclick="openEditKrModal(@kr.Id, '@kr.KeyResultName', @kr.TargetValue, @(kr.CurrentValue ?? 0), '@kr.Unit')" title="Sửa KR">
-                                                                    <i class="bi bi-pencil-square"></i>
-                                                                </button>
-                                                                <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
-                                                                    <button type="submit" class="btn btn-sm btn-light-danger text-danger border-0 rounded-circle" title="Xóa KR">
-                                                                        <i class="bi bi-trash"></i>
+                                                            @if (canManageStructure || canUpdateProgress)
+                                                            {
+                                                                <div class="d-flex gap-1">
+                                                                    @if (canManageStructure)
+                                                                    {
+                                                                        <button class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle" 
+                                                                                onclick="openEditKrModal(@kr.Id, '@kr.KeyResultName', @kr.TargetValue, @(kr.CurrentValue ?? 0), '@kr.Unit')" title="Sửa KR">
+                                                                            <i class="bi bi-pencil-square"></i>
+                                                                        </button>
+                                                                        <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
+                                                                            <button type="submit" class="btn btn-sm btn-light-danger text-danger border-0 rounded-circle" title="Xóa KR">
+                                                                                <i class="bi bi-trash"></i>
+                                                                            </button>
+                                                                        </form>
+                                                                    }
+                                                                </div>
+                                                                @if (canUpdateProgress)
+                                                                {
+                                                                    <button class="btn btn-sm btn-outline-primary rounded-circle" title="Cập nhật tiến độ" onclick="openUpdateProgressModal(@kr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kr.KeyResultName ?? ""))', @currentVal, '@kr.Unit')">
+                                                                        <i class="bi bi-pencil"></i>
                                                                     </button>
-                                                                </form>
-                                                            </div>
-                                                            <button class="btn btn-sm btn-outline-primary rounded-circle" title="Cập nhật tiến độ" onclick="openUpdateProgressModal(@kr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kr.KeyResultName ?? ""))', @currentVal, '@kr.Unit')">
-                                                                <i class="bi bi-pencil"></i>
-                                                            </button>
+                                                                }
+                                                            }
                                                         </div>
                                                     </div>
                                                     krIndex++;

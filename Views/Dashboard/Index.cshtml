@@ -281,7 +281,7 @@
                 },
                 scales: {
                     x: { grid: { display: false } },
-                    y: { beginAtZero: true, max: 100, ticks: { callback: value => value + '%' } }
+                    y: { beginAtZero: true, ticks: { callback: value => value + '%' } }
                 }
             }
         });
@@ -329,7 +329,7 @@
                 plugins: { legend: { display: false } },
                 scales: {
                     y: { grid: { display: false }, ticks: { padding: 10 } },
-                    x: { beginAtZero: true, max: 100, ticks: { callback: value => value + '%' } }
+                    x: { beginAtZero: true, ticks: { callback: value => value + '%' } }
                 }
             }
         });
