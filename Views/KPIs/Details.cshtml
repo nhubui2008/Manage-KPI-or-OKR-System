@@ -1,0 +1,199 @@
+@model Manage_KPI_or_OKR_System.Models.KPI
+@{
+    ViewData["Title"] = "Chi tiết KPI";
+    var detail = ViewBag.KPIDetail as Manage_KPI_or_OKR_System.Models.KPIDetail;
+    var assignments = ViewBag.Assignments as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var recentCheckIns = ViewBag.RecentCheckIns as IEnumerable<dynamic>;
+    var statuses = ViewBag.CheckInStatuses as Dictionary<int, string> ?? new Dictionary<int, string>();
+}
+
+<div class="container-fluid px-0">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Chi tiết KPI: @Model.KPIName</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <a asp-action="Index">Danh sách KPI</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Chi tiết</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </a>
+            @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Warehouse") || User.IsInRole("warehouse") || User.IsInRole("Sales") || User.IsInRole("sales")))
+            {
+                <button class="btn btn-primary rounded-pill px-4">
+                    <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa
+                </button>
+            }
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Thông tin cơ bản -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle text-primary me-2"></i>Thông tin chỉ tiêu</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase fw-bold mb-1">Tên chỉ tiêu</label>
+                            <p class="fs-5 fw-medium text-dark">@Model.KPIName</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted small text-uppercase fw-bold mb-1">Chu kỳ</label>
+                            <p class="fs-5 fw-medium text-dark">@ViewBag.PeriodName</p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="text-muted small text-uppercase fw-bold mb-1">Loại KPI</label>
+                            <p class="fs-5 fw-medium text-dark">@ViewBag.TypeName</p>
+                        </div>
+
+                        <div class="col-12"><hr class="text-muted opacity-25"></div>
+
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded-3 text-center">
+                                <label class="text-muted small text-uppercase fw-bold d-block mb-1">Chỉ tiêu (Target)</label>
+                                <span class="fs-4 fw-bold text-primary">@String.Format("{0:N0}", detail?.TargetValue ?? 0)</span>
+                                <span class="text-muted small"> @ViewBag.PropertyName</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-soft-success rounded-3 text-center">
+                                <label class="text-success small text-uppercase fw-bold d-block mb-1">Ngưỡng đạt</label>
+                                <span class="fs-4 fw-bold text-success">@String.Format("{0:N0}", detail?.PassThreshold ?? 0)</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-soft-danger rounded-3 text-center">
+                                <label class="text-danger small text-uppercase fw-bold d-block mb-1">Ngưỡng không đạt</label>
+                                <span class="fs-4 fw-bold text-danger">@String.Format("{0:N0}", detail?.FailThreshold ?? 0)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lịch sử Check-in -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history text-warning me-2"></i>Lịch sử cập nhật tiến độ</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4 border-0">Ngày</th>
+                                    <th class="border-0">Giá trị</th>
+                                    <th class="border-0">Tiến độ</th>
+                                    <th class="border-0">Đánh giá</th>
+                                    <th class="border-0 pe-4 text-end">Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (recentCheckIns != null && recentCheckIns.Any())
+                                {
+                                    foreach (var ci in recentCheckIns)
+                                    {
+                                        <tr>
+                                            <td class="ps-4">@ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td class="fw-bold text-dark">@String.Format("{0:N0}", ci.AchievedValue ?? 0)</td>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2" style="min-width: 120px;">
+                                                    <div class="progress flex-grow-1" style="height: 6px;">
+                                                        <div class="progress-bar bg-primary" style="width: @(detail?.TargetValue > 0 ? (ci.AchievedValue / detail.TargetValue * 100) : 0)%"></div>
+                                                    </div>
+                                                    <span class="small fw-bold">@(detail?.TargetValue > 0 ? Math.Round((ci.AchievedValue ?? 0) / (detail.TargetValue ?? 1) * 100, 1) : 0)%</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if (ci.StatusId != null && statuses.ContainsKey(ci.StatusId))
+                                                {
+                                                    string statusName = statuses[ci.StatusId];
+                                                    string badgeClass = statusName == "Đạt" ? "bg-soft-success text-success" : 
+                                                                       statusName == "Gần đạt" ? "bg-soft-warning text-warning" : "bg-soft-danger text-danger";
+                                                    <span class="badge @badgeClass rounded-pill px-3">@statusName</span>
+                                                }
+                                            </td>
+                                            <td class="pe-4 text-end text-muted small">@ci.Note</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4 text-muted italic">Chưa có dữ liệu cập nhật nào.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Nhân viên phụ trách -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-people text-info me-2"></i>Nhân sự phụ trách</h5>
+                </div>
+                <div class="card-body p-4">
+                    @if (assignments.Any())
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var emp in assignments)
+                            {
+                                <div class="d-flex align-items-center gap-3 p-2 bg-light rounded-3 transition-hover">
+                                    <div class="avatar-sm bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-person-fill"></i>
+                                    </div>
+                                    <div>
+                                        <p class="mb-0 fw-bold text-dark">@emp.Value</p>
+                                        <span class="text-muted smaller">ID: @emp.Key</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0 italic small text-center py-2">Chưa phân bổ nhân sự.</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Ghi chú / Mô tả -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-card-text text-secondary me-2"></i>Mô tả & Ghi chú</h5>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-dark mb-0">@(detail?.MeasurementUnit != null ? $"Theo dõi chỉ tiêu tính bằng {detail.MeasurementUnit}." : "Không có mô tả chi tiết cho chỉ tiêu này.")</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-soft-success { background-color: rgba(25, 135, 84, 0.1); }
+    .bg-soft-danger { background-color: rgba(220, 53, 69, 0.1); }
+    .bg-soft-warning { background-color: rgba(255, 193, 7, 0.1); }
+    .bg-soft-primary { background-color: rgba(13, 110, 253, 0.1); }
+    
+    .transition-hover:hover {
+        background-color: rgba(0,0,0,0.03) !important;
+        transform: translateX(5px);
+        transition: all 0.2s ease;
+    }
+    
+    .smaller { font-size: 0.75rem; }
+</style>

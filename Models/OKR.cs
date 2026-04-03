@@ -29,17 +29,11 @@ namespace Manage_KPI_or_OKR_System.Models
                 if (KeyResults == null || !KeyResults.Any()) return 0;
                 
                 decimal total = 0;
-                int count = 0;
                 foreach (var kr in KeyResults)
                 {
-                    if (kr.TargetValue.HasValue && kr.TargetValue.Value > 0)
-                    {
-                        var krProgress = (kr.CurrentValue ?? 0) / kr.TargetValue.Value * 100;
-                        total += krProgress;
-                        count++;
-                    }
+                    total += kr.Progress;
                 }
-                return count == 0 ? 0 : Math.Round(total / count, 2);
+                return Math.Round(total / KeyResults.Count, 2);
             }
         }
     }

@@ -16,7 +16,9 @@
             <div class="page-breadcrumb">
                 <a href="/">Trang chủ</a>
                 <i class="bi bi-chevron-right separator"></i>
-                <span>Giám đốc đánh giá</span>
+                <span class="text-primary fw-medium">@ViewBag.CurrentDeptName</span>
+                <i class="bi bi-chevron-right separator"></i>
+                <span class="text-muted small">Chu kỳ: @ViewBag.CurrentCycle</span>
             </div>
         </div>
         <div class="d-flex gap-2">
@@ -119,10 +121,15 @@
             <div class="content-card">
                 <div class="card-header-custom"><i class="bi bi-chat-left-text me-2"></i>Tổng hợp của Giám đốc</div>
                 <div class="card-body-custom">
+<<<<<<< HEAD
                     <textarea class="form-control mb-2" rows="4" style="border-radius: 12px; border: 1.5px solid #eee;" placeholder="Nhập nhận định chung về tình hình thực hiện OKR/KPI của Sale Q1..."></textarea>
                     <div class="d-flex justify-content-end mt-3">
                         <button class="btn-primary-custom px-4" style="height: 40px;">Lưu nhận xét</button>
                     </div>
+=======
+                    <textarea id="directorSummaryText" class="form-control" rows="4" placeholder="Nhập nhận định chung về tình hình thực hiện OKR/KPI của Sale Q1...">@ViewBag.DirectorSummary</textarea>
+                    <button id="btnSaveSummary" class="btn-primary-custom mt-3 float-end"><i class="bi bi-save me-1"></i> Lưu nhận xét</button>
+>>>>>>> 55257b5 (kpi fixloi)
                 </div>
             </div>
         </div>
@@ -140,3 +147,68 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.getElementById('btnSaveSummary')?.addEventListener('click', async function() {
+            const btn = this;
+            const textarea = document.getElementById('directorSummaryText');
+            const content = textarea.value;
+            const departmentId = '@ViewBag.CurrentDeptId';
+            const cycle = '@ViewBag.CurrentCycle';
+
+            if (!content.trim()) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thông báo',
+                    text: 'Vui lòng nhập nội dung nhận xét trước khi lưu.'
+                });
+                return;
+            }
+
+            // Show loading state
+            btn.disabled = true;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang lưu...';
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append('departmentId', departmentId);
+                formData.append('cycle', cycle);
+                formData.append('content', content);
+
+                const response = await fetch('/EvaluationReports/SaveDirectorSummary', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công',
+                        text: result.message || 'Lưu nhận xét của Giám đốc thành công!',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    throw new Error(result.message || 'Có lỗi xảy ra từ máy chủ.');
+                }
+            } catch (error) {
+                console.error('Error saving summary:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Không thể kết nối đến máy chủ hoặc có lỗi xảy ra. Vui lòng thử lại.'
+                });
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        });
+    </script>
+}

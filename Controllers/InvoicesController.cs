@@ -9,6 +9,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
     [HasPermission("SALES_CREATE_INVOICES")]
+    [Authorize(Roles = "None")]
     public class InvoicesController : Controller
     {
         private readonly MiniERPDbContext _context;

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using System.Security.Claims;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -24,7 +25,41 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var checkIns = await _context.KPICheckIns
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
+            var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
+
+            var checkInQuery = _context.KPICheckIns.AsQueryable();
+            var kpiQuery = _context.KPIs.Where(k => k.IsActive == true);
+            var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
+
+            // Phân quyền: Employee, Warehouse, Sales chỉ thấy dữ liệu của chính mình
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Sales") || User.IsInRole("sales"))
+            {
+                if (employee != null)
+                {
+                    checkInQuery = checkInQuery.Where(c => c.EmployeeId == employee.Id);
+                    
+                    var allocatedKpiIds = await _context.KPI_Employee_Assignments
+                        .Where(a => a.EmployeeId == employee.Id)
+                        .Select(a => a.KPIId)
+                        .ToListAsync();
+                    
+                    kpiQuery = kpiQuery.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
+                    employeeQuery = employeeQuery.Where(e => e.Id == employee.Id);
+                }
+                else
+                {
+                    // Nếu không tìm thấy thông tin Employee tương ứng, không cho thấy gì
+                    checkInQuery = checkInQuery.Where(c => false);
+                    kpiQuery = kpiQuery.Where(k => false);
+                    employeeQuery = employeeQuery.Where(e => false);
+                }
+            }
+
+            var checkIns = await checkInQuery
                 .OrderByDescending(c => c.CheckInDate)
                 .Take(50)
                 .ToListAsync();
@@ -43,8 +78,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Employees = employees;
             ViewBag.KPIs = kpis;
             ViewBag.CheckInStatuses = statuses;
-            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
-            ViewBag.AllKPIs = await _context.KPIs.Where(k => k.IsActive == true).ToListAsync();
+            ViewBag.AllEmployees = await employeeQuery.ToListAsync();
+            ViewBag.AllKPIs = await kpiQuery.ToListAsync();
             ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
             ViewBag.FailReasons = await _context.FailReasons.ToListAsync();
 
@@ -64,6 +99,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(KPICheckIn model, decimal AchievedValue, string Note)
         {
+            // Security: Employee chỉ được check-in cho chính mình
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Sales") || User.IsInRole("sales"))
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int userId))
+                {
+                    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
+                    if (employee == null || model.EmployeeId != employee.Id)
+                    {
+                        return Forbid();
+                    }
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 // 1. Lưu thông tin Check-in chính
@@ -71,21 +122,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.KPICheckIns.Add(model);
                 await _context.SaveChangesAsync();
 
-                // 2. Lấy thông tin Target từ KPIDetails để tính % tiến độ
+                // 2. Lấy thông tin KPI và Target để tính % tiến độ
+                var kpi = await _context.KPIs.FindAsync(model.KPIId);
                 var kpiDetail = await _context.KPIDetails.FirstOrDefaultAsync(d => d.KPIId == model.KPIId);
+                
                 decimal progress = 0;
                 if (kpiDetail != null)
                 {
                     progress = ProgressHelper.CalculateProgress(AchievedValue, kpiDetail.TargetValue ?? 0, kpiDetail.IsInverse);
                 }
 
-                // 3. Tự động gán lý do nếu không đạt (Nếu chưa có lý do từ form)
-                if (progress < 100 && (model.FailReasonId == null || model.FailReasonId == 0))
-                {
-                    // Giả sử lý do mặc định hoặc để trống để người dùng chọn sau
-                }
-
-                // 4. Lưu thông tin chi tiết (Achieved Value, Note, Progress %)
+                // 3. Lưu thông tin chi tiết (Achieved Value, Note, Progress %)
                 var detail = new CheckInDetail
                 {
                     CheckInId = model.Id,
@@ -94,10 +141,76 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     ProgressPercentage = Math.Round(progress, 2)
                 };
                 _context.CheckInDetails.Add(detail);
+                
+                // 4. MAP TIẾN ĐỘ VÀO BẢNG XẾP LOẠI (GradingRank)
+                // Tìm Rank cao nhất mà Progress >= MinScore
+                var rank = await _context.GradingRanks
+                    .Where(r => r.MinScore <= progress)
+                    .OrderByDescending(r => r.MinScore)
+                    .FirstOrDefaultAsync();
+
+                if (rank != null && kpi != null)
+                {
+                    // 5. CẬP NHẬT/TẠO KẾT QUẢ ĐÁNH GIÁ (EvaluationResult)
+                    var evalResult = await _context.EvaluationResults
+                        .FirstOrDefaultAsync(er => er.EmployeeId == model.EmployeeId && er.PeriodId == kpi.PeriodId);
+
+                    if (evalResult == null)
+                    {
+                        evalResult = new EvaluationResult
+                        {
+                            EmployeeId = model.EmployeeId,
+                            PeriodId = kpi.PeriodId,
+                            TotalScore = progress, // Giả định Score = % Tiến độ
+                            RankId = rank.Id,
+                            Classification = rank.Description
+                        };
+                        _context.EvaluationResults.Add(evalResult);
+                    }
+                    else
+                    {
+                        evalResult.TotalScore = progress;
+                        evalResult.RankId = rank.Id;
+                        evalResult.Classification = rank.Description;
+                    }
+
+                    // 6. QUY ĐỔI THƯỞNG (BonusRule & RealtimeExpectedBonus)
+                    var bonusRule = await _context.BonusRules.FirstOrDefaultAsync(br => br.RankId == rank.Id);
+                    if (bonusRule != null)
+                    {
+                        var expectedBonus = await _context.RealtimeExpectedBonuses
+                            .FirstOrDefaultAsync(rb => rb.EmployeeId == model.EmployeeId && rb.PeriodId == kpi.PeriodId);
+
+                        decimal bonusAmount = bonusRule.FixedAmount ?? 0;
+                        // Nếu có BonusPercentage, giả định tính trên 1 con số cơ bản nào đó hoặc chỉ lưu Fixed cho đơn giản
+                        
+                        if (expectedBonus == null)
+                        {
+                            expectedBonus = new RealtimeExpectedBonus
+                            {
+                                EmployeeId = model.EmployeeId,
+                                PeriodId = kpi.PeriodId,
+                                ExpectedBonus = bonusAmount,
+                                LastUpdated = DateTime.Now
+                            };
+                            _context.RealtimeExpectedBonuses.Add(expectedBonus);
+                        }
+                        else
+                        {
+                            expectedBonus.ExpectedBonus = bonusAmount;
+                            expectedBonus.LastUpdated = DateTime.Now;
+                        }
+                    }
+                }
+
                 await _context.SaveChangesAsync();
 
+<<<<<<< HEAD
                 TempData["SuccessMessage"] = "Đã thực hiện check-in KPI và cập nhật đánh giá tự động thành công!";
                 return RedirectToAction(nameof(Index));
+=======
+                TempData["SuccessMessage"] = "Đã thực hiện check-in KPI, cập nhật xếp hạng và quy đổi thưởng tự động thành công!";
+>>>>>>> 55257b5 (kpi fixloi)
             }
 
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();

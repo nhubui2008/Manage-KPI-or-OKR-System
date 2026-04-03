@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Manage_KPI_or_OKR_System.Models
 {
@@ -12,6 +12,7 @@ namespace Manage_KPI_or_OKR_System.Models
         public int? PropertyId { get; set; }
         public int? KPITypeId { get; set; }
         public int? AssignerId { get; set; }
+        public int? StatusId { get; set; }
         public bool? IsActive { get; set; } = true;
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
         public int? CreatedById { get; set; }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Manage_KPI_or_OKR_System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -21,24 +22,46 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Index()
         {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
+            var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
+
+            var kpiQuery = _context.KPIs.Where(k => k.IsActive == true);
+            var checkInQuery = _context.KPICheckIns.AsQueryable();
+
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Sales") || User.IsInRole("sales"))
+            {
+                if (employee != null)
+                {
+                    var allocatedKpiIds = await _context.KPI_Employee_Assignments
+                        .Where(a => a.EmployeeId == employee.Id)
+                        .Select(a => a.KPIId)
+                        .ToListAsync();
+                    
+                    kpiQuery = kpiQuery.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
+                    checkInQuery = checkInQuery.Where(c => c.EmployeeId == employee.Id);
+                }
+                else
+                {
+                    kpiQuery = kpiQuery.Where(k => false);
+                    checkInQuery = checkInQuery.Where(c => false);
+                }
+            }
+
             ViewBag.TotalEmployees = await _context.Employees.CountAsync(e => e.IsActive == true);
             ViewBag.TotalOKRs = await _context.OKRs.CountAsync(o => o.IsActive == true);
-            var totalKpis = await _context.KPIs.CountAsync(k => k.IsActive == true);
+            var totalKpis = await kpiQuery.CountAsync();
             ViewBag.TotalKPIs = totalKpis;
-            ViewBag.TotalCheckIns = await _context.KPICheckIns.CountAsync();
-            ViewBag.TotalOrders = await _context.SalesOrders.CountAsync(s => s.IsActive == true);
-            ViewBag.TotalCustomers = await _context.Customers.CountAsync(c => c.IsActive == true);
-
-            var totalRevenue = await _context.SalesOrders
-                .Where(s => s.IsActive == true && s.Status == "Hoàn thành")
-                .SumAsync(s => s.TotalAmount ?? 0);
-            ViewBag.TotalRevenue = totalRevenue;
+            ViewBag.TotalCheckIns = await checkInQuery.CountAsync();
 
             // Recent check-ins
-            var recentCheckIns = await _context.KPICheckIns
+            var recentCheckIns = await checkInQuery
                 .OrderByDescending(c => c.CheckInDate)
                 .Take(5)
                 .ToListAsync();
+            
             var empDict = await _context.Employees.ToDictionaryAsync(e => e.Id, e => e.FullName);
             var kpiDict = await _context.KPIs.ToDictionaryAsync(k => k.Id, k => k.KPIName);
             ViewBag.RecentCheckIns = recentCheckIns;

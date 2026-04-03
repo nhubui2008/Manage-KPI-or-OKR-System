@@ -9,6 +9,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
     [HasPermission("WAREHOUSE_VIEW_INVENTORY")]
+    [Authorize(Roles = "None")]
     public class WarehousesController : Controller
     {
         private readonly MiniERPDbContext _context;

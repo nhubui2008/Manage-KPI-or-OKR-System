@@ -58,6 +58,7 @@ namespace Manage_KPI_or_OKR_System.Data
         public DbSet<BonusRule> BonusRules { get; set; }
         public DbSet<RealtimeExpectedBonus> RealtimeExpectedBonuses { get; set; }
         public DbSet<HRExportReport> HRExportReports { get; set; }
+        public DbSet<EvaluationReportSummary> EvaluationReportSummaries { get; set; }
 
         // MODULE 7
         public DbSet<Warehouse> Warehouses { get; set; }
@@ -173,6 +174,7 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<KPI>().HasOne<KPIProperty>().WithMany().HasForeignKey(k => k.PropertyId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<KPI>().HasOne<KPIType>().WithMany().HasForeignKey(k => k.KPITypeId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<KPI>().HasOne<Employee>().WithMany().HasForeignKey(k => k.AssignerId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<KPI>().HasOne<Status>().WithMany().HasForeignKey(k => k.StatusId).OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<KPIDetail>().HasOne<KPI>().WithMany().HasForeignKey(kd => kd.KPIId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<KPI_Department_Assignment>().HasOne<KPI>().WithMany().HasForeignKey(kda => kda.KPIId).OnDelete(DeleteBehavior.Cascade);

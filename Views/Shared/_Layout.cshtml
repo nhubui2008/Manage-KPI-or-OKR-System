@@ -50,10 +50,6 @@
                         bool isManager = User.IsInRole("Manager");
                         bool isHR = User.IsInRole("HR");
                         bool isEmployee = User.IsInRole("Employee");
-                        bool isSales = User.IsInRole("Sales");
-                        bool isWarehouse = User.IsInRole("Warehouse");
-                        bool isDelivery = User.IsInRole("Delivery") || User.IsInRole("Shipping");
-                        bool isCustomer = User.IsInRole("Customer");
                         
                         // Nhóm quyền quản trị chung
                         bool isManagementOrHR = isAdmin || isManager || isHR;
@@ -95,6 +91,7 @@
                                 <a href="/OKRs" class="sidebar-link">
                                     <i class="bi bi-bullseye"></i> <span>Quản lý OKR / Mục tiêu</span>
                                 </a>
+<<<<<<< HEAD
                             </div>
                         }
     
@@ -180,10 +177,22 @@
                                     <li><a href="/DeliveryNotes" class="sidebar-link"><span>Tạo phiếu giao hàng</span></a></li>
                                     <li><a href="/ShippingPartners" class="sidebar-link"><span>Đối tác vận chuyển</span></a></li>
                                 </ul>
+=======
+                            }
+                            @if (isAdmin || isManager || isEmployee)
+                            {
+                                <a href="/KPIs" class="sidebar-link">
+                                    <i class="bi bi-speedometer2"></i> Giao & Xem KPI cá nhân
+                                </a>
+                                <a href="/KPICheckIns" class="sidebar-link">
+                                    <i class="bi bi-check2-square"></i> Cập nhật tiến độ KPI
+                                </a>
+>>>>>>> 55257b5 (kpi fixloi)
                             }
                         </div>
                     }
 
+<<<<<<< HEAD
                     @if (isAdmin || isCustomer)
                     {
                         <div class="sidebar-group">
@@ -196,6 +205,27 @@
                             </a>
                         </div>
                     }
+=======
+                    @if (isAdmin || isManager || isHR || isEmployee)
+                    {
+                        <div class="sidebar-group">
+                            <div class="sidebar-group-label">Đánh giá & Thưởng</div>
+                            <a href="/EvaluationResults" class="sidebar-link">
+                                <i class="bi bi-award-fill"></i> Đánh giá 1-1 / Kết quả
+                            </a>
+                            @if (isManagementOrHR)
+                            {
+                                <a href="/EvaluationReports" class="sidebar-link">
+                                    <i class="bi bi-file-earmark-bar-graph-fill text-info"></i> Báo cáo Đánh giá (V.Director)
+                                </a>
+                                <a href="/BonusRules" class="sidebar-link">
+                                    <i class="bi bi-cash-coin"></i> Quy tắc thưởng
+                                </a>
+                            }
+                        </div>
+                    }
+
+>>>>>>> 55257b5 (kpi fixloi)
 
                     @* HỆ THỐNG: Chỉ Admin *@
                     @if (isAdmin)

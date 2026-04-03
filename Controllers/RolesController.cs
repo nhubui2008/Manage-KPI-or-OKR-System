@@ -56,9 +56,24 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var role = await _context.Roles.FindAsync(id);
             if (role != null)
             {
-                _context.Roles.Remove(role);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Khóa nhóm quyền thành công!";
+                // Kiểm tra xem có người dùng nào đang gán role này không
+                var hasUsers = await _context.SystemUsers.AnyAsync(u => u.RoleId == id);
+                if (hasUsers)
+                {
+                    TempData["ErrorMessage"] = "Không thể xóa quyền này vì đang có nhân viên thuộc quyền này. Vui lòng chuyển nhân viên sang quyền khác trước khi thực hiện xóa.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                try 
+                {
+                    _context.Roles.Remove(role);
+                    await _context.SaveChangesAsync();
+                    TempData["SuccessMessage"] = "Xóa nhóm quyền thành công!";
+                }
+                catch (DbUpdateException)
+                {
+                    TempData["ErrorMessage"] = "Đã xảy ra lỗi khi xóa nhóm quyền. Có thể có dữ liệu liên quan khác đang tham chiếu đến quyền này.";
+                }
             }
             return RedirectToAction(nameof(Index));
         }
