@@ -9,6 +9,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
     [HasPermission("SALES_MANAGE_CUSTOMERS")]
+    [Authorize(Roles = "None")] // Temporarily disabled to focus on Core (OKR/KPI)
     public class CustomersController : Controller
     {
         private readonly MiniERPDbContext _context;

@@ -42,10 +42,6 @@
                         bool isManager = User.IsInRole("Manager");
                         bool isHR = User.IsInRole("HR");
                         bool isEmployee = User.IsInRole("Employee");
-                        bool isSales = User.IsInRole("Sales");
-                        bool isWarehouse = User.IsInRole("Warehouse");
-                        bool isDelivery = User.IsInRole("Delivery") || User.IsInRole("Shipping");
-                        bool isCustomer = User.IsInRole("Customer");
                         
                         // Nhóm quyền quản trị chung
                         bool isManagementOrHR = isAdmin || isManager || isHR;
@@ -131,63 +127,6 @@
                         </div>
                     }
 
-                    @if (isAdmin || isSales || isWarehouse || isDelivery)
-                    {
-                        <div class="sidebar-group">
-                            <div class="sidebar-group-label">Phân hệ nghiệp vụ</div>
-                            
-                            @if (isAdmin || isSales)
-                            {
-                                <a href="#salesSubMenu" class="sidebar-link" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="salesSubMenu">
-                                    <i class="bi bi-cart-fill"></i> Bán hàng
-                                    <i class="bi bi-chevron-right menu-arrow"></i>
-                                </a>
-                                <ul class="collapse sidebar-submenu" id="salesSubMenu">
-                                    <li><a href="/Customers" class="sidebar-link">Quản lý khách hàng</a></li>
-                                    <li><a href="/SalesOrders" class="sidebar-link">Tạo đơn hàng bán</a></li>
-                                    <li><a href="/Invoices" class="sidebar-link">Lập hóa đơn</a></li>
-                                </ul>
-                            }
-
-                            @if (isAdmin || isWarehouse)
-                            {
-                                <a href="#inventorySubMenu" class="sidebar-link" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="inventorySubMenu">
-                                    <i class="bi bi-box-seam-fill"></i> Kho hàng
-                                    <i class="bi bi-chevron-right menu-arrow"></i>
-                                </a>
-                                <ul class="collapse sidebar-submenu" id="inventorySubMenu">
-                                    <li><a href="/Products" class="sidebar-link">Quản lý sản phẩm</a></li>
-                                    <li><a href="/InventoryReceipts" class="sidebar-link">Nhập kho hàng hóa</a></li>
-                                    <li><a href="/Warehouses" class="sidebar-link">Đóng gói đơn hàng</a></li>
-                                </ul>
-                            }
-
-                            @if (isAdmin || isDelivery)
-                            {
-                                <a href="#shippingSubMenu" class="sidebar-link" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="shippingSubMenu">
-                                    <i class="bi bi-truck"></i> Vận chuyển
-                                    <i class="bi bi-chevron-right menu-arrow"></i>
-                                </a>
-                                <ul class="collapse sidebar-submenu" id="shippingSubMenu">
-                                    <li><a href="/DeliveryNotes" class="sidebar-link">Tạo phiếu giao hàng</a></li>
-                                    <li><a href="/ShippingPartners" class="sidebar-link">Đối tác vận chuyển</a></li>
-                                </ul>
-                            }
-                        </div>
-                    }
-
-                    @if (isAdmin || isCustomer)
-                    {
-                        <div class="sidebar-group">
-                            <div class="sidebar-group-label">Khách hàng</div>
-                            <a href="/Shop" class="sidebar-link">
-                                <i class="bi bi-shop"></i> Đặt hàng
-                            </a>
-                            <a href="/MyOrders" class="sidebar-link">
-                                <i class="bi bi-box-seam"></i> Quản lý nhận sản phẩm
-                            </a>
-                        </div>
-                    }
 
                     @* HỆ THỐNG: Chỉ Admin *@
                     @if (isAdmin)

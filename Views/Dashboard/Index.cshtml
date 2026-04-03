@@ -3,7 +3,7 @@
     var totalEmployees = (int)(ViewBag.TotalEmployees ?? 0);
     var totalOKRs = (int)(ViewBag.TotalOKRs ?? 0);
     var totalKPIs = (int)(ViewBag.TotalKPIs ?? 0);
-    var totalRevenue = (decimal)(ViewBag.TotalRevenue ?? 0m);
+    // Removed totalRevenue as Sales is now out of scope.
     var totalCheckIns = (int)(ViewBag.TotalCheckIns ?? 0);
     var recentCheckIns = ViewBag.RecentCheckIns as List<Manage_KPI_or_OKR_System.Models.KPICheckIn> ?? new List<Manage_KPI_or_OKR_System.Models.KPICheckIn>();
     var employeeNames = ViewBag.EmployeeNames as Dictionary<int, string> ?? new Dictionary<int, string>();
@@ -15,21 +15,24 @@
 }
 
 <div class="page-header mb-4">
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3">
         <div>
             <h1 class="h3 font-weight-bold mb-1">Tổng quan hệ thống</h1>
             <div class="page-breadcrumb text-muted" style="font-size: 0.85rem;">
-                <a href="/" class="text-decoration-none">Trang chủ</a>
+                <a href="/" class="text-decoration-none text-primary fw-medium">Trang chủ</a>
                 <i class="bi bi-chevron-right separator mx-1"></i>
                 <span>Dashboard</span>
             </div>
         </div>
-        <div class="d-flex gap-2">
-            <select class="form-select form-select-sm" style="width: 150px;">
-                <option>Quý 1 - 2026</option>
-                <option>Quý 2 - 2026</option>
-                <option>Năm 2026</option>
-            </select>
+        <div class="ms-md-auto">
+            <div class="d-flex align-items-center gap-2 bg-white p-1 rounded shadow-sm border">
+                <span class="ps-2 text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Kỳ báo cáo:</span>
+                <select class="form-select form-select-sm border-0 fw-bold text-primary" style="width: 160px; outline: none; box-shadow: none;">
+                    <option>Quý 1 - 2026</option>
+                    <option>Quý 2 - 2026</option>
+                    <option>Năm 2026</option>
+                </select>
+            </div>
         </div>
     </div>
 </div>
@@ -88,24 +91,6 @@
         </div>
     </div>
 
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-warning border-4">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Doanh Thu</div>
-                    <div class="stat-value h4 mb-0 fw-bold text-dark mt-1">
-                        @(totalRevenue > 1000000000 ? $"{totalRevenue/1000000000:N1} Tỷ" : totalRevenue > 1000000 ? $"{totalRevenue/1000000:N0} Tr" : totalRevenue.ToString("N0"))
-                    </div>
-                </div>
-                <div class="stat-icon text-warning bg-warning bg-opacity-10 p-2 rounded">
-                    <i class="bi bi-currency-dollar fs-4"></i>
-                </div>
-            </div>
-            <div class="mt-2">
-                <span class="text-muted" style="font-size: 0.75rem;">Đơn hàng hoàn thành</span>
-            </div>
-        </div>
-    </div>
 </div>
 
 <div class="row g-4 mb-4">
@@ -176,7 +161,6 @@
                     <div class="col-6"><a href="/Employees" class="btn btn-outline-primary w-100 py-2"><i class="bi bi-people me-2"></i>Nhân sự</a></div>
                     <div class="col-6"><a href="/KPIs" class="btn btn-outline-success w-100 py-2"><i class="bi bi-speedometer2 me-2"></i>Quản lý KPI</a></div>
                     <div class="col-6"><a href="/OKRs" class="btn btn-outline-info w-100 py-2"><i class="bi bi-bullseye me-2"></i>Quản lý OKR</a></div>
-                    <div class="col-6"><a href="/SalesOrders" class="btn btn-outline-warning w-100 py-2"><i class="bi bi-cart me-2"></i>Đơn hàng</a></div>
                     <div class="col-6"><a href="/EvaluationResults" class="btn btn-outline-danger w-100 py-2"><i class="bi bi-award me-2"></i>Đánh giá</a></div>
                     <div class="col-6"><a href="/KPICheckIns" class="btn btn-outline-secondary w-100 py-2"><i class="bi bi-check2-square me-2"></i>Check-in</a></div>
                 </div>
@@ -205,14 +189,6 @@
                 <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                     <span class="text-muted"><i class="bi bi-speedometer2 me-2"></i>KPI đang hoạt động</span>
                     <span class="fw-bold">@totalKPIs</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <span class="text-muted"><i class="bi bi-person-hearts me-2"></i>Khách hàng</span>
-                    <span class="fw-bold">@(ViewBag.TotalCustomers ?? 0)</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center py-2">
-                    <span class="text-muted"><i class="bi bi-cart me-2"></i>Đơn hàng</span>
-                    <span class="fw-bold">@(ViewBag.TotalOrders ?? 0)</span>
                 </div>
             </div>
         </div>

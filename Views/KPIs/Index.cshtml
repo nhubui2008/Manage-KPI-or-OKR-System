@@ -19,11 +19,14 @@
             <span>Danh mục KPI</span>
         </div>
     </div>
-    <div class="d-flex justify-content-end gap-2">
-        <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createKpiModal">
-            <i class="bi bi-plus-lg me-1"></i> Thêm KPI mới
-        </button>
-    </div>
+        @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Sales") || User.IsInRole("sales")))
+        {
+            <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createKpiModal">
+                <i class="bi bi-plus-lg me-1"></i> Thêm KPI mới
+            </button>
+        }
 </div>
 
 @if (TempData["SuccessMessage"] != null)
@@ -84,7 +87,8 @@
                         <th class="fw-medium">Chỉ tiêu (Target)</th>
                         <th class="fw-medium">Kỳ đánh giá</th>
                         <th class="fw-medium">Phân bổ cho</th>
-                        <th class="text-end fw-medium">Thao tác</th>
+                        <th class="border-0 text-muted small text-uppercase fw-bold" style="width: 100px;">Trạng thái</th>
+                        <th class="border-0 text-muted small text-uppercase fw-bold" style="width: 100px;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -94,6 +98,12 @@
                         {
                             var detail = kpiDetails.ContainsKey(kpi.Id) ? kpiDetails[kpi.Id] : null;
                             var assignedEmployees = assignments.ContainsKey(kpi.Id) ? assignments[kpi.Id] : new List<int>();
+                            
+                            // Define status badge logic
+                            string statusName = "Chờ duyệt";
+                            string statusClass = "bg-warning-subtle text-warning-emphasis";
+                            if (kpi.StatusId == 1) { statusName = "Đã duyệt"; statusClass = "bg-success-subtle text-success-emphasis"; }
+                            else if (kpi.StatusId == 2) { statusName = "Từ chối"; statusClass = "bg-danger-subtle text-danger-emphasis"; }
 
                             <tr class="bg-white">
                                 <td>
@@ -154,24 +164,58 @@
                                         </span>
                                     }
                                 </td>
-                                <td>
+                                <td class="align-middle">
+                                    <span class="badge rounded-pill @statusClass py-2 px-3 fw-medium" style="font-size: 0.75rem;">
+                                        <i class="bi @(kpi.StatusId == 1 ? "bi-check-circle-fill" : kpi.StatusId == 2 ? "bi-x-circle-fill" : "bi-clock-fill") me-1"></i>
+                                        @statusName
+                                    </span>
+                                </td>
+                                <td class="align-middle text-end">
                                     <div class="d-flex justify-content-end gap-2">
                                         <div class="dropdown">
                                             <button class="btn btn-sm btn-light rounded-circle shadow-sm" style="width: 32px; height: 32px;" data-bs-toggle="dropdown">
                                                 <i class="bi bi-three-dots-vertical"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                                <li><a class="dropdown-item py-2" href="#"><i class="bi bi-people text-primary me-2"></i> Phân bổ nhân sự</a></li>
-                                                @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager"))
-                                                {
-                                                    <li><a class="dropdown-item py-2" href="#"><i class="bi bi-check-circle text-success me-2"></i> Duyệt KPI</a></li>
+                                                 <li><a class="dropdown-item py-2" asp-action="Details" asp-route-id="@kpi.Id"><i class="bi bi-info-circle text-primary me-2"></i> Chi tiết</a></li>
+                                                 
+                                                 @if (kpi.StatusId == 1) // Only allow personnel assignment for approved KPIs
+                                                 {
+                                                     <li><a class="dropdown-item py-2" href="javascript:void(0)" onclick="openAssignPersonnelModal(@kpi.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kpi.KPIName ?? ""))', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assignedEmployees)))"><i class="bi bi-people text-info-emphasis me-2"></i> Phân bổ nhân sự</a></li>
+                                                 }
+
+                                                 @if ((User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager")) && (kpi.StatusId == 0 || kpi.StatusId == null))
+                                                 {
+                                                     <li><hr class="dropdown-divider"></li>
+                                                     <li>
+                                                         <form asp-action="Approve" method="post" class="d-inline">
+                                                             <input type="hidden" name="id" value="@kpi.Id" />
+                                                             <button type="submit" class="dropdown-item py-2 text-success"><i class="bi bi-check-circle me-2"></i> Duyệt KPI</button>
+                                                         </form>
+                                                     </li>
+                                                     <li>
+                                                         <form asp-action="Reject" method="post" class="d-inline">
+                                                             <input type="hidden" name="id" value="@kpi.Id" />
+                                                             <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-x-circle me-2"></i> Từ chối</button>
+                                                         </form>
+                                                     </li>
+                                                 }
+                                                 
+                                                 @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
+                                                      User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                                                      User.IsInRole("Sales") || User.IsInRole("sales")))
+                                                 {
+                                                     <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <form asp-action="Delete" asp-route-id="@kpi.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận vô hiệu hóa KPI này?');">
+                                                            <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Xóa KPI</button>
+                                                        </form>
+                                                    </li>
                                                 }
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <form asp-action="Delete" asp-route-id="@kpi.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận vô hiệu hóa KPI này?');">
-                                                        <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Xóa KPI</button>
-                                                    </form>
-                                                </li>
+                                                 else
+                                                 {
+                                                     <li><a class="dropdown-item py-2" asp-action="Details" asp-route-id="@kpi.Id"><i class="bi bi-info-circle text-primary me-2"></i> Chi tiết</a></li>
+                                                 }
                                             </ul>
                                         </div>
                                     </div>
@@ -259,8 +303,94 @@
     </div>
 </div>
 
+<!-- Modal Phân bổ Nhân sự -->
+<div class="modal fade" id="assignPersonnelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0 bg-light rounded-top p-4">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-people-fill text-info me-2"></i>Phân bổ Nhân sự KPI</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-muted small text-uppercase mb-1">Đang thiết lập cho KPI:</label>
+                    <p id="assignKpiName" class="fs-5 fw-bold text-primary mb-0"></p>
+                </div>
+
+                <form asp-controller="KPIs" asp-action="AssignPersonnel" method="post">
+                    <input type="hidden" name="kpiId" id="assignKpiId" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chọn nhân viên <span class="text-danger">*</span></label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+                            <input type="text" id="employeeSearch" class="form-control border-start-0 bg-light" placeholder="Tìm tên hoặc mã nhân viên...">
+                        </div>
+                        
+                        <div class="employee-list-container border rounded-3 p-2 bg-white" style="max-height: 300px; overflow-y: auto;">
+                            @if (ViewBag.AllEmployees != null)
+                            {
+                                foreach (var emp in ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee>)
+                                {
+                                    <div class="form-check p-2 rounded transition-hover employee-item" data-search="@emp.FullName?.ToLower() @emp.EmployeeCode?.ToLower()">
+                                        <input class="form-check-input ms-0 me-2" type="checkbox" name="employeeIds" value="@emp.Id" id="empCheck-@emp.Id">
+                                        <label class="form-check-label d-flex justify-content-between w-100 cursor-pointer" for="empCheck-@emp.Id">
+                                            <span class="fw-medium text-dark">@emp.FullName</span>
+                                            <span class="text-muted small">@emp.EmployeeCode</span>
+                                        </label>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4 font-weight-bold" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-info text-white rounded-pill px-4 font-weight-bold shadow-sm">
+                            <i class="bi bi-check-lg me-2"></i>Cập nhật phân bổ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .stat-card:hover { transform: translateY(-3px); transition: all 0.3s ease; }
+    .employee-item:hover { background-color: rgba(13, 202, 240, 0.05); }
+    .cursor-pointer { cursor: pointer; }
 </style>
+
+<script>
+    function openAssignPersonnelModal(kpiId, kpiName, assignedIds) {
+        document.getElementById('assignKpiId').value = kpiId;
+        document.getElementById('assignKpiName').innerText = kpiName;
+        
+        // Reset all checkboxes
+        const checkboxes = document.querySelectorAll('input[name="employeeIds"]');
+        checkboxes.forEach(cb => {
+            cb.checked = assignedIds.includes(parseInt(cb.value));
+        });
+        
+        const modal = new bootstrap.Modal(document.getElementById('assignPersonnelModal'));
+        modal.show();
+    }
+
+    // Search functionality for employee list
+    document.getElementById('employeeSearch')?.addEventListener('input', function(e) {
+        const searchText = e.target.value.toLowerCase();
+        const items = document.querySelectorAll('.employee-item');
+        
+        items.forEach(item => {
+            const data = item.getAttribute('data-search');
+            if (data.includes(searchText)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+</script>
 
 </div>

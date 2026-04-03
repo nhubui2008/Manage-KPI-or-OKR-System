@@ -9,6 +9,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
     [HasPermission("DELIVERY_CREATE_NOTES")]
+    [Authorize(Roles = "None")]
     public class DeliveryNotesController : Controller
     {
         private readonly MiniERPDbContext _context;

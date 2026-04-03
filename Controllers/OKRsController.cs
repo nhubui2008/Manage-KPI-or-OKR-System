@@ -36,7 +36,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             // Filter OKRs if Warehouse or Employee
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee"))
+                User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales"))
             {
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(userIdStr, out int userId))
@@ -110,7 +111,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Create(OKR model, int? missionId, int? departmentId, int? employeeId)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
             if (ModelState.IsValid)
@@ -159,7 +161,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> AddKeyResult(OKRKeyResult kr)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
             if (ModelState.IsValid)
@@ -198,7 +201,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> EditKeyResult(OKRKeyResult model)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
             if (ModelState.IsValid)
@@ -210,6 +214,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     kr.TargetValue = model.TargetValue;
                     kr.CurrentValue = model.CurrentValue;
                     kr.Unit = model.Unit;
+                    kr.IsInverse = model.IsInverse;
+                    
+                    // Recalculate status
+                    decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, kr.TargetValue ?? 0, kr.IsInverse);
+                    kr.ResultStatus = ProgressHelper.GetResultStatus(progress);
                     
                     await _context.SaveChangesAsync();
                     
@@ -224,7 +233,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> AllocateTarget(int okrId, int employeeId, decimal allocatedValue)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
             var okr = await _context.OKRs.FindAsync(okrId);
@@ -247,7 +257,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> DeleteKeyResult(int id)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
             var kr = await _context.OKRKeyResults.FindAsync(id);
@@ -332,9 +343,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     id = $"kr_{kr.Id}",
                     name = kr.KeyResultName,
                     type = "KeyResult",
-                    progress = kr.TargetValue.HasValue && kr.TargetValue.Value > 0 
-                        ? Math.Round((kr.CurrentValue ?? 0) / kr.TargetValue.Value * 100, 2) 
-                        : 0,
+                    progress = kr.Progress,
                     target = kr.TargetValue,
                     current = kr.CurrentValue,
                     unit = kr.Unit
@@ -346,7 +355,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
             var okr = await _context.OKRs.FindAsync(id);

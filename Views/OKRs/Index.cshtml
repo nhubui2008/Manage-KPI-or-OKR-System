@@ -69,19 +69,11 @@
                                 bool isAllocated = allocatedIds.Contains(okr.Id) || deptOkrIds.Contains(okr.Id);
                                 
                                 bool canManageStructure = !isRestrictedRole;
-                                bool canUpdateProgress = !isRestrictedRole || isOwner || isAllocated;
+                                bool canUpdateProgress = true; // All visible OKRs for restricted roles are relevant (Personal, Dept, or Strategic)
                                 bool canDelete = !isRestrictedRole;
 
-                                // Tính toán tiến độ trung bình của Objective dựa trên các Key Results
-                                double totalKrProgress = 0;
-                                foreach (var kr in krs)
-                                {
-                                    var curr = kr.CurrentValue ?? 0;
-                                    var target = kr.TargetValue ?? 1;
-                                    if(target == 0) target = 1; // Tránh chia cho 0
-                                    totalKrProgress += (double)(curr / target * 100);
-                                }
-                                int okrProgressInt = krs.Count > 0 ? (int)Math.Round(totalKrProgress / krs.Count) : 0;
+                                // Sử dụng TotalProgress từ model đã được chuẩn hóa
+                                int okrProgressInt = (int)okr.TotalProgress;
                                 
                                 string okrProgressColor = ProgressHelper.GetProgressColorClass(okrProgressInt);
                                 string okrTextClass = ProgressHelper.GetProgressTextColorClass(okrProgressInt);
@@ -149,11 +141,7 @@
                                                 int krIndex = 1;
                                                 foreach (var kr in krs)
                                                 {
-                                                    var currentVal = kr.CurrentValue ?? 0;
-                                                    var targetVal = kr.TargetValue ?? 1;
-                                                    if(targetVal == 0) targetVal = 1;
-                                                    
-                                                    var krPercent = (int)(currentVal / targetVal * 100);
+                                                    var krPercent = (int)kr.Progress;
                                                     
                                                     string krColor = ProgressHelper.GetProgressColorClass(krPercent);
                                                     string krTextClass = ProgressHelper.GetProgressTextColorClass(krPercent);
@@ -167,14 +155,14 @@
                                                         <div class="d-flex align-items-center gap-4" style="width: 45%;">
                                                             <div class="flex-grow-1">
                                                                  <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                                                    <span class="text-muted">Tiến độ: <strong>@String.Format("{0:N1}", currentVal)</strong>/@String.Format("{0:N0}", targetVal) @kr.Unit</span>
+                                                                    <span class="text-muted">Tiến độ: <strong>@String.Format("{0:N1}", kr.CurrentValue ?? 0)</strong>/@String.Format("{0:N0}", kr.TargetValue ?? 0) @kr.Unit</span>
                                                                     <span class="fw-bold">@krPercent%</span>
                                                                 </div>
                                                                 <div class="progress mb-1" style="height: 6px; border-radius: 10px;">
                                                                     <div class="progress-bar @krColor" role="progressbar" style="width: @krPercent%" aria-valuenow="@krPercent" aria-valuemin="0" aria-valuemax="100"></div>
                                                                 </div>
                                                                 <div class="d-flex justify-content-between" style="font-size: 0.7rem;">
-                                                                    <span class="badge badge-pastel-pink px-2 py-1">@ProgressHelper.GetResultStatus(krPercent)</span>
+                                                                    <span class="badge badge-pastel-pink px-2 py-1">@ProgressHelper.GetResultStatus(kr.Progress)</span>
                                                                     @if(kr.IsInverse){<span class="text-info"><i class="bi bi-info-circle me-1"></i>Chỉ tiêu giảm thiểu</span>}
                                                                 </div>
                                                             </div>
@@ -185,7 +173,7 @@
                                                                     @if (canManageStructure)
                                                                     {
                                                                         <button class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle" 
-                                                                                onclick="openEditKrModal(@kr.Id, '@kr.KeyResultName', @kr.TargetValue, @(kr.CurrentValue ?? 0), '@kr.Unit')" title="Sửa KR">
+                                                                                onclick="openEditKrModal(@kr.Id, '@kr.KeyResultName', @(kr.TargetValue ?? 0), @(kr.CurrentValue ?? 0), '@kr.Unit', @(kr.IsInverse.ToString().ToLower()))" title="Sửa KR">
                                                                             <i class="bi bi-pencil-square"></i>
                                                                         </button>
                                                                         <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
@@ -197,7 +185,7 @@
                                                                 </div>
                                                                 @if (canUpdateProgress)
                                                                 {
-                                                                    <button class="btn btn-sm btn-outline-primary rounded-circle" title="Cập nhật tiến độ" onclick="openUpdateProgressModal(@kr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kr.KeyResultName ?? ""))', @currentVal, '@kr.Unit')">
+                                                                    <button class="btn btn-sm btn-outline-primary rounded-circle" title="Cập nhật tiến độ" onclick="openUpdateProgressModal(@kr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kr.KeyResultName ?? ""))', @(kr.CurrentValue ?? 0), '@kr.Unit')">
                                                                         <i class="bi bi-pencil"></i>
                                                                     </button>
                                                                 }
@@ -499,9 +487,15 @@
                             <input type="number" step="0.01" name="TargetValue" id="editKrTarget" class="form-control" required>
                         </div>
                     </div>
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <label class="form-label">Đơn vị đo lường</label>
                         <input type="text" name="Unit" id="editKrUnit" class="form-control">
+                    </div>
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="IsInverse" value="true" id="editKrIsInverse">
+                            <label class="form-check-label" for="editKrIsInverse">Chỉ tiêu thu nhỏ (Càng thấp càng tốt)</label>
+                        </div>
                     </div>
                     <div class="d-flex justify-content-end gap-2">
                         <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
@@ -528,12 +522,13 @@
             modal.show();
         }
 
-        function openEditKrModal(id, name, target, current, unit) {
+        function openEditKrModal(id, name, target, current, unit, isInverse) {
             document.getElementById('editKrId').value = id;
             document.getElementById('editKrName').value = name;
             document.getElementById('editKrTarget').value = target;
             document.getElementById('editKrCurrent').value = current;
             document.getElementById('editKrUnit').value = unit || '';
+            document.getElementById('editKrIsInverse').checked = isInverse;
             new bootstrap.Modal(document.getElementById('editKrModal')).show();
         }
 

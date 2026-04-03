@@ -9,6 +9,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
     [HasPermission("WAREHOUSE_MANAGE_PRODUCTS")]
+    [Authorize(Roles = "None")]
     public class ProductsController : Controller
     {
         private readonly MiniERPDbContext _context;

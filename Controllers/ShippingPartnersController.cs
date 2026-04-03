@@ -9,6 +9,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
     [HasPermission("DELIVERY_UPDATE_STATUS")]
+    [Authorize(Roles = "None")]
     public class ShippingPartnersController : Controller
     {
         private readonly MiniERPDbContext _context;

@@ -193,13 +193,22 @@
                             <div class="form-icon-group">
                                 <label>Nhân viên</label>
                                 <div class="input-wrapper">
-                                    <i class="bi bi-person-circle"></i>
-                                    <select name="EmployeeId" class="form-select" required>
-                                        <option value="">-- Chọn nhân viên --</option>
-                                        @foreach(var e in (ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>())){
-                                            <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
-                                        }
-                                    </select>
+                                    @if (allEmployeesList.Count == 1)
+                                    {
+                                        var e = allEmployeesList[0];
+                                        <input type="hidden" name="EmployeeId" value="@e.Id" />
+                                        <input type="text" class="form-control bg-light" value="@e.FullName (@e.EmployeeCode)" readonly />
+                                    }
+                                    else
+                                    {
+                                        <select name="EmployeeId" class="form-select" required>
+                                            <option value="">-- Chọn nhân viên --</option>
+                                            @foreach(var e in allEmployeesList)
+                                            {
+                                                <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                            }
+                                        </select>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -209,9 +218,13 @@
                                 <div class="input-wrapper">
                                     <i class="bi bi-speedometer2"></i>
                                     <select name="KPIId" class="form-select" required>
-                                        <option value="">-- Chọn KPI --</option>
-                                        @foreach(var k in (ViewBag.AllKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new List<Manage_KPI_or_OKR_System.Models.KPI>())){
-                                            <option value="@k.Id">@k.KPIName</option>
+                                        @if (allKPIsList.Count != 1)
+                                        {
+                                            <option value="">-- Chọn KPI --</option>
+                                        }
+                                        @foreach(var k in allKPIsList)
+                                        {
+                                            <option value="@k.Id" selected="@(allKPIsList.Count == 1 ? "selected" : null)">@k.KPIName</option>
                                         }
                                     </select>
                                 </div>
@@ -226,7 +239,8 @@
                                 <div class="input-wrapper">
                                     <i class="bi bi-flag-fill"></i>
                                     <select name="StatusId" class="form-select">
-                                        @foreach(var s in (ViewBag.AllStatuses as List<Manage_KPI_or_OKR_System.Models.CheckInStatus> ?? new List<Manage_KPI_or_OKR_System.Models.CheckInStatus>())){
+                                        @foreach(var s in allStatusesList)
+                                        {
                                             <option value="@s.Id">@s.StatusName</option>
                                         }
                                     </select>

@@ -16,6 +16,9 @@ builder.Services.AddControllersWithViews();
 // Đăng ký EmailService
 builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.EmailService>();
 
+// Register OKRProgressService
+builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IOKRProgressService, Manage_KPI_or_OKR_System.Services.OKRProgressService>();
+
 // Đăng ký Data Protection & EncryptionHelper
 builder.Services.AddDataProtection();
 builder.Services.AddSingleton<EncryptionHelper>();
