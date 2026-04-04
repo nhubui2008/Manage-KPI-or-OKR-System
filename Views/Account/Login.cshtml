@@ -1,0 +1,195 @@
+@{
+    Layout = null; // Tắt layout mặc định để form đăng nhập full màn hình
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập - Hệ thống Quản lý OKR & KPI</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <style>
+        body {
+            background-color: #f4f7f6; /* Màu xám xanh nhạt chuyên nghiệp */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 420px;
+            padding: 15px;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            border-top: 5px solid #0d6efd; /* Vạch xanh dương nhận diện */
+            padding: 40px 30px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .login-header .icon-logo {
+            font-size: 42px;
+            color: #0d6efd;
+            margin-bottom: 15px;
+        }
+
+        .login-header h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2b3445;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .login-header p {
+            font-size: 14px;
+            color: #7d879c;
+            margin: 0;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #373f50;
+            margin-bottom: 6px;
+        }
+
+        .input-group-text {
+            background-color: #f3f5f9;
+            border-right: none;
+            color: #8c98a4;
+        }
+
+        .form-control {
+            background-color: #f3f5f9;
+            border-left: none;
+            padding: 12px 15px;
+            font-size: 15px;
+        }
+
+        .form-control:focus {
+            background-color: #ffffff;
+            border-color: #ced4da;
+            box-shadow: none;
+        }
+
+        .input-group:focus-within .input-group-text,
+        .input-group:focus-within .form-control {
+            background-color: #ffffff;
+            border-color: #0d6efd;
+            color: #0d6efd;
+        }
+
+        .btn-primary {
+            background-color: #0d6efd;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .login-options {
+            font-size: 14px;
+        }
+
+        .login-options a {
+            color: #0d6efd;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .login-options a:hover {
+            text-decoration: underline;
+        }
+        
+        .system-footer {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 13px;
+            color: #a0a5b1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="icon-logo">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h2>HR System</h2>
+                <p>Hệ thống Quản lý OKR & KPI</p>
+            </div>
+
+            <form action="@Url.Action("Login", "Account")" method="post">
+                @if (ViewBag.Error != null)
+                {
+                    <div class="alert alert-danger d-flex align-items-center mb-4" style="font-size: 14px; padding: 10px;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <div>@ViewBag.Error</div>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Tài khoản / Mã nhân viên</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                        <input type="text" name="username" class="form-control" placeholder="Nhập mã nhân viên hoặc email" required autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Mật khẩu</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                        <input type="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required autocomplete="current-password">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-4 login-options">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe">
+                        <label class="form-check-label text-muted" for="rememberMe">
+                            Ghi nhớ phiên
+                        </label>
+                    </div>
+                    <a href="@Url.Action("ForgotPassword", "Account")">Quên mật khẩu?</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-sign-in-alt me-2"></i> Đăng nhập hệ thống
+                </button>
+            </form>
+        </div>
+        
+        <div class="system-footer">
+            &copy; 2026 Nội bộ Doanh Nghiệp. Cấp quyền bởi Phòng HR.
+        </div>
+    </div>
+
+</body>
+</html>
