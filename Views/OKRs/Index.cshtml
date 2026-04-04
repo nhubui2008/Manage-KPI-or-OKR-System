@@ -18,9 +18,12 @@
             </div>
         </div>
         <div class="d-flex justify-content-end gap-2">
-            <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
-                <i class="bi bi-plus-lg me-1"></i> Khởi tạo OKR mới
-            </a>
+            @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Warehouse") || User.IsInRole("warehouse") || User.IsInRole("Sales") || User.IsInRole("sales")))
+            {
+                <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createOkrModal">
+                    <i class="bi bi-plus-lg me-1"></i> Tạo OKR mới
+                </button>
+            }
         </div>
     </div>
 
@@ -41,7 +44,7 @@
                             <input type="text" placeholder="Tìm kiếm OKR..." class="form-control" style="padding-left: 2.5rem;">
                         </div>
                         <div class="toolbar-right">
-                            <button id="toggleAllOKRs" class="btn btn-sm btn-outline-secondary border-0"><i class="bi bi-list-task"></i> Mở rộng tất cả</button>
+                            <button class="btn btn-sm btn-outline-secondary border-0"><i class="bi bi-list-task"></i> Mở rộng tất cả</button>
                         </div>
                     </div>
 
@@ -49,24 +52,19 @@
                         @if (Model != null && Model.Any())
                         {
                             int index = 0;
+                            var currentEmployeeId = ViewBag.CurrentEmployeeId as int?;
+                            var allocatedIds = ViewBag.AllocatedOkrIds as List<int> ?? new List<int>();
+                            var deptOkrIds = ViewBag.DepartmentOkrIds as List<int> ?? new List<int>();
+                            bool isRestrictedRole = User.IsInRole("Employee") || User.IsInRole("employee") || 
+                                                   User.IsInRole("Warehouse") || User.IsInRole("warehouse") || 
+                                                   User.IsInRole("Sales") || User.IsInRole("sales");
+
                             foreach (var okr in Model)
                             {
                                 index++;
                                 string collapseId = $"collapseOkr{index}";
                                 var krs = keyResultsDict.ContainsKey(okr.Id) ? keyResultsDict[okr.Id] : new List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>();
                                 
-<<<<<<< HEAD
-                                // Tính toán tiến độ trung bình của Objective dựa trên các Key Results
-                                double totalKrProgress = 0;
-                                foreach (var kr in krs)
-                                {
-                                    var curr = kr.CurrentValue ?? 0;
-                                    var target = kr.TargetValue ?? 1;
-                                    if(target == 0) target = 1; // Tránh chia cho 0
-                                    totalKrProgress += Math.Min(100, (double)(curr / target * 100));
-                                }
-                                int okrProgressInt = krs.Count > 0 ? (int)Math.Round(totalKrProgress / krs.Count) : 0;
-=======
                                 bool isOwner = okr.CreatedById == currentEmployeeId;
                                 bool isAllocated = allocatedIds.Contains(okr.Id) || deptOkrIds.Contains(okr.Id);
                                 
@@ -76,18 +74,18 @@
 
                                 // Sử dụng TotalProgress từ model đã được chuẩn hóa
                                 int okrProgressInt = (int)okr.TotalProgress;
->>>>>>> 55257b5 (kpi fixloi)
                                 
                                 string okrProgressColor = ProgressHelper.GetProgressColorClass(okrProgressInt);
                                 string okrTextClass = ProgressHelper.GetProgressTextColorClass(okrProgressInt);
 
-                                <div class="accordion-item mb-3 border-0 shadow-sm rounded">
-                                    <h2 class="accordion-header position-relative" id="heading-@index">
+                                <div class="accordion-item mb-3 border-0 shadow-sm rounded overflow-hidden">
+                                    <h2 class="accordion-header" id="heading-@index">
                                         <div class="accordion-button collapsed bg-white p-3 d-flex justify-content-between align-items-center w-100" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId" style="cursor: pointer; box-shadow: none;">
                                             
-                                            <div class="d-flex flex-column flex-grow-1 pe-5">
+                                            <div class="d-flex flex-column flex-grow-1 pe-4">
                                                 <div class="d-flex align-items-center gap-2 mb-2">
-                                                    <span class="badge badge-pastel-pink rounded-pill px-2">Objective (O)</span>
+                                                    <span class="badge @okrProgressColor bg-opacity-10 @okrTextClass rounded-pill px-2">Objective (O)</span>
+                                                    @if(okr.OKRTypeId == 1){<span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2"><i class="bi bi-star-fill me-1"></i>Chiến lược công ty</span>}
                                                     <h5 class="mb-0 fw-bold fs-6 text-dark">@okr.ObjectiveName</h5>
                                                 </div>
                                                 
@@ -99,7 +97,7 @@
                                                     <div class="flex-grow-1" style="max-width: 400px;">
                                                         <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
                                                             <span class="text-muted">Tiến độ chung:</span>
-                                                            <span class="fw-bold @okrTextClass">@okrProgressInt%</span>
+                                                            <span class="fw-bold">@okrProgressInt%</span>
                                                         </div>
                                                         <div class="progress" style="height: 6px; border-radius: 10px;">
                                                             <div class="progress-bar @okrProgressColor" role="progressbar" style="width: @okrProgressInt%" aria-valuenow="@okrProgressInt" aria-valuemin="0" aria-valuemax="100"></div>
@@ -107,25 +105,34 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            
-                                        </div>
 
-                                        <div class="position-absolute action-btns dropdown z-3" style="top: 50%; transform: translateY(-50%); right: 60px;">
-                                            <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
-                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên</a></li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận xóa OKR này?');">
-                                                        <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa OKR</button>
-                                                    </form>
-                                                </li>
-                                            </ul>
+                                            @if (canManageStructure || canDelete)
+                                            {
+                                                <div class="action-btns dropdown" onclick="event.stopPropagation();">
+                                                    <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                                        @if (canManageStructure)
+                                                        {
+                                                            <li><a class="dropdown-item" href="#" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
+                                                            <li><a class="dropdown-item" href="#" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên</a></li>
+                                                            <li><hr class="dropdown-divider"></li>
+                                                        }
+                                                        @if (canDelete)
+                                                        {
+                                                            <li>
+                                                                <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận xóa OKR này?');">
+                                                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa OKR</button>
+                                                                </form>
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                            }
+                                            
                                         </div>
                                     </h2>
 
-                                    <div id="@collapseId" class="accordion-collapse collapse border-top" aria-labelledby="heading-@index">
+                                    <div id="@collapseId" class="accordion-collapse collapse border-top" aria-labelledby="heading-@index" data-bs-parent="#accordionOKRs">
                                         <div class="accordion-body bg-light bg-opacity-25 p-3">
                                             <h6 class="fs-6 fw-semibold text-muted mb-3"><i class="bi bi-key-fill text-warning me-1"></i> Key Results (Kết quả then chốt)</h6>
                                             
@@ -134,15 +141,7 @@
                                                 int krIndex = 1;
                                                 foreach (var kr in krs)
                                                 {
-<<<<<<< HEAD
-                                                    var currentVal = kr.CurrentValue ?? 0;
-                                                    var targetVal = kr.TargetValue ?? 1;
-                                                    if(targetVal == 0) targetVal = 1;
-                                                    
-                                                    var krPercent = Math.Min(100, (int)(currentVal / targetVal * 100));
-=======
                                                     var krPercent = (int)kr.Progress;
->>>>>>> 55257b5 (kpi fixloi)
                                                     
                                                     string krColor = ProgressHelper.GetProgressColorClass(krPercent);
                                                     string krTextClass = ProgressHelper.GetProgressTextColorClass(krPercent);
@@ -155,39 +154,19 @@
 
                                                         <div class="d-flex align-items-center gap-4" style="width: 45%;">
                                                             <div class="flex-grow-1">
-<<<<<<< HEAD
-                                                                <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                                                    <span class="text-muted">Tiến độ: <strong>@String.Format("{0:N1}", currentVal)</strong>/@String.Format("{0:N0}", targetVal) @kr.Unit</span>
-                                                                    <span class="fw-bold @krTextClass">@krPercent%</span>
-=======
                                                                  <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
                                                                     <span class="text-muted">Tiến độ: <strong>@String.Format("{0:N1}", kr.CurrentValue ?? 0)</strong>/@String.Format("{0:N0}", kr.TargetValue ?? 0) @kr.Unit</span>
                                                                     <span class="fw-bold">@krPercent%</span>
->>>>>>> 55257b5 (kpi fixloi)
                                                                 </div>
                                                                 <div class="progress mb-1" style="height: 6px; border-radius: 10px;">
                                                                     <div class="progress-bar @krColor" role="progressbar" style="width: @krPercent%" aria-valuenow="@krPercent" aria-valuemin="0" aria-valuemax="100"></div>
                                                                 </div>
                                                                 <div class="d-flex justify-content-between" style="font-size: 0.7rem;">
-<<<<<<< HEAD
-                                                                    <span class="badge @krColor px-2 py-1">@ProgressHelper.GetResultStatus(krPercent)</span>
-=======
                                                                     <span class="badge badge-pastel-pink px-2 py-1">@ProgressHelper.GetResultStatus(kr.Progress)</span>
->>>>>>> 55257b5 (kpi fixloi)
                                                                     @if(kr.IsInverse){<span class="text-info"><i class="bi bi-info-circle me-1"></i>Chỉ tiêu giảm thiểu</span>}
                                                                 </div>
                                                             </div>
 
-<<<<<<< HEAD
-                                                            <div class="d-flex gap-1">
-                                                                <button class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle" 
-                                                                        onclick="openEditKrModal(@kr.Id, '@kr.KeyResultName', @kr.TargetValue, @(kr.CurrentValue ?? 0), '@kr.Unit')" title="Sửa KR">
-                                                                    <i class="bi bi-pencil-square"></i>
-                                                                </button>
-                                                                <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
-                                                                    <button type="submit" class="btn btn-sm btn-light-danger text-danger border-0 rounded-circle" title="Xóa KR">
-                                                                        <i class="bi bi-trash"></i>
-=======
                                                             @if (canManageStructure || canUpdateProgress)
                                                             {
                                                                 <div class="d-flex gap-1">
@@ -208,13 +187,9 @@
                                                                 {
                                                                     <button class="btn btn-sm btn-outline-primary rounded-circle" title="Cập nhật tiến độ" onclick="openUpdateProgressModal(@kr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kr.KeyResultName ?? ""))', @(kr.CurrentValue ?? 0), '@kr.Unit')">
                                                                         <i class="bi bi-pencil"></i>
->>>>>>> 55257b5 (kpi fixloi)
                                                                     </button>
-                                                                </form>
-                                                            </div>
-                                                            <button class="btn btn-sm btn-outline-primary rounded-circle" title="Cập nhật tiến độ" onclick="openUpdateProgressModal(@kr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kr.KeyResultName ?? ""))', @currentVal, '@kr.Unit')">
-                                                                <i class="bi bi-pencil"></i>
-                                                            </button>
+                                                                }
+                                                            }
                                                         </div>
                                                     </div>
                                                     krIndex++;
@@ -239,6 +214,94 @@
                     </div>
 
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Create OKR -->
+<div class="modal fade" id="createOkrModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-target text-primary me-2"></i>Tạo Objective mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form asp-controller="OKRs" asp-action="Create" method="post">
+                    <div class="mb-3">
+                        <label class="form-label">Tên Objective (Mục tiêu) <span class="text-danger">*</span></label>
+                        <input type="text" name="ObjectiveName" class="form-control" placeholder="VD: Tăng cường mức độ hài lòng của khách hàng" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Loại OKR <span class="text-danger">*</span></label>
+                        <select name="OKRTypeId" class="form-select" required>
+                            <option value="">-- Chọn loại --</option>
+                            @if (ViewBag.OKRTypes != null)
+                            {
+                                foreach (var type in ViewBag.OKRTypes as IEnumerable<Manage_KPI_or_OKR_System.Models.OKRType>)
+                                {
+                                    <option value="@type.Id">@type.TypeName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Chu kỳ <span class="text-danger">*</span></label>
+                        <select name="Cycle" class="form-select" required>
+                            <option value="Q1-@DateTime.Now.Year">Quý 1 - @DateTime.Now.Year</option>
+                            <option value="Q2-@DateTime.Now.Year">Quý 2 - @DateTime.Now.Year</option>
+                            <option value="Q3-@DateTime.Now.Year">Quý 3 - @DateTime.Now.Year</option>
+                            <option value="Q4-@DateTime.Now.Year">Quý 4 - @DateTime.Now.Year</option>
+                            <option value="Năm @DateTime.Now.Year">Cả năm @DateTime.Now.Year</option>
+                        </select>
+                    </div>
+                    <hr class="my-4 text-muted">
+                    <h6 class="text-muted fw-bold mb-3" style="font-size: 0.8rem; letter-spacing: 0.5px; text-transform: uppercase;">Phân bổ mục tiêu (Tùy chọn)</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Sứ mệnh / Tầm nhìn</label>
+                        <select name="missionId" class="form-select">
+                            <option value="">-- Không phân bổ --</option>
+                            @if (ViewBag.Missions != null)
+                            {
+                                foreach (var m in ViewBag.Missions as IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>)
+                                {
+                                    <option value="@m.Id">Năm @m.TargetYear: @(m.Content?.Length > 50 ? m.Content.Substring(0, 50) + "..." : m.Content)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phòng ban</label>
+                        <select name="departmentId" class="form-select">
+                            <option value="">-- Không phân bổ --</option>
+                            @if (ViewBag.Departments != null)
+                            {
+                                foreach (var d in ViewBag.Departments as IEnumerable<Manage_KPI_or_OKR_System.Models.Department>)
+                                {
+                                    <option value="@d.Id">@d.DepartmentName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Nhân viên</label>
+                        <select name="employeeId" class="form-select">
+                            <option value="">-- Không phân bổ --</option>
+                            @if (ViewBag.Employees != null)
+                            {
+                                foreach (var e in ViewBag.Employees as IEnumerable<Manage_KPI_or_OKR_System.Models.Employee>)
+                                {
+                                    <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn-outline-custom rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn-primary-custom rounded-pill px-4">Tạo OKR</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -477,26 +540,5 @@
             var modal = new bootstrap.Modal(document.getElementById('updateKrProgressModal'));
             modal.show();
         }
-
-        document.getElementById('toggleAllOKRs').addEventListener('click', function() {
-            const accordionItems = document.querySelectorAll('#accordionOKRs .accordion-collapse');
-            const buttons = document.querySelectorAll('#accordionOKRs .accordion-button');
-            const isExpanding = this.innerText.includes('Mở rộng');
-            
-            accordionItems.forEach(item => {
-                const bsCollapse = bootstrap.Collapse.getOrCreateInstance(item, { toggle: false });
-                if (isExpanding) {
-                    bsCollapse.show();
-                } else {
-                    bsCollapse.hide();
-                }
-            });
-            
-            if (isExpanding) {
-                this.innerHTML = '<i class="bi bi-list-task"></i> Thu gọn tất cả';
-            } else {
-                this.innerHTML = '<i class="bi bi-list-task"></i> Mở rộng tất cả';
-            }
-        });
     </script>
 }

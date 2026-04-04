@@ -86,16 +86,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(checkIns);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Create()
-        {
-            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
-            ViewBag.AllKPIs = await _context.KPIs.Where(k => k.IsActive == true).ToListAsync();
-            ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
-            ViewBag.FailReasons = await _context.FailReasons.ToListAsync();
-            return View();
-        }
-
         [HttpPost]
         public async Task<IActionResult> Create(KPICheckIn model, decimal AchievedValue, string Note)
         {
@@ -205,20 +195,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 await _context.SaveChangesAsync();
 
-<<<<<<< HEAD
-                TempData["SuccessMessage"] = "Đã thực hiện check-in KPI và cập nhật đánh giá tự động thành công!";
-                return RedirectToAction(nameof(Index));
-=======
                 TempData["SuccessMessage"] = "Đã thực hiện check-in KPI, cập nhật xếp hạng và quy đổi thưởng tự động thành công!";
->>>>>>> 55257b5 (kpi fixloi)
             }
-
-            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
-            ViewBag.AllKPIs = await _context.KPIs.Where(k => k.IsActive == true).ToListAsync();
-            ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
-            ViewBag.FailReasons = await _context.FailReasons.ToListAsync();
-
-            return View(model);
+            return RedirectToAction(nameof(Index));
         }
     }
 }

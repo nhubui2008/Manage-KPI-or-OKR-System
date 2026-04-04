@@ -90,17 +90,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(kpis);
         }
 
-<<<<<<< HEAD
-        [HttpGet]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
-        public async Task<IActionResult> Create()
-        {
-            var periods = await _context.EvaluationPeriods
-                .Where(p => p.IsActive == true)
-                .ToDictionaryAsync(p => p.Id, p => p.PeriodName);
-            ViewBag.Periods = periods;
-            return View();
-=======
         public async Task<IActionResult> Details(int id)
         {
             var kpi = await _context.KPIs
@@ -174,7 +163,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.CheckInStatuses = checkInStatuses;
 
             return View(kpi);
->>>>>>> 55257b5 (kpi fixloi)
         }
 
         [HttpPost]
@@ -199,10 +187,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.KPIDetails.Add(detail);
                 await _context.SaveChangesAsync();
 
-<<<<<<< HEAD
-                TempData["SuccessMessage"] = "Đã tạo KPI mới thành công!";
-                return RedirectToAction(nameof(Index));
-=======
                 TempData["SuccessMessage"] = "Đã tạo KPI mới thành công và đang chờ duyệt!";
             }
             return RedirectToAction(nameof(Index));
@@ -269,15 +253,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 kpi.StatusId = 2; // Từ chối
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = $"Đã từ chối KPI: {kpi.KPIName}!";
->>>>>>> 55257b5 (kpi fixloi)
             }
-            
-            var periods = await _context.EvaluationPeriods
-                .Where(p => p.IsActive == true)
-                .ToDictionaryAsync(p => p.Id, p => p.PeriodName);
-            ViewBag.Periods = periods;
-            
-            return View(kpi); // Or a ViewModel containing both, but we'll bind them in View.
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
