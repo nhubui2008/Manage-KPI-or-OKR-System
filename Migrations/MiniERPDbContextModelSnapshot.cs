@@ -504,6 +504,35 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.ToTable("EvaluationPeriods");
                 });
 
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.EvaluationReportSummary", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Cycle")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("DepartmentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedById")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EvaluationReportSummaries");
+                });
+
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.EvaluationResult", b =>
                 {
                     b.Property<int>("Id")
@@ -1934,10 +1963,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AuditLog", b =>
                 {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.SystemUser", null)
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.SystemUser", "SystemUser")
                         .WithMany()
                         .HasForeignKey("SystemUserId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("SystemUser");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.BonusRule", b =>

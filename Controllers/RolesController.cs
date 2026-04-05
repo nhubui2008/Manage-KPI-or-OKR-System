@@ -77,5 +77,82 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ManagePermissions(int id)
+        {
+            var role = await _context.Roles.FindAsync(id);
+            if (role == null) return NotFound();
+
+            var allPermissions = await _context.Permissions.ToListAsync();
+            var rolePermissionIds = await _context.Role_Permissions
+                .Where(rp => rp.RoleId == id)
+                .Select(rp => rp.PermissionId)
+                .ToListAsync();
+
+            ViewBag.Role = role;
+            ViewBag.RolePermissionIds = rolePermissionIds;
+
+            return View(allPermissions);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdatePermissions(int roleId, List<int> permissionIds)
+        {
+            // Xóa các quyền cũ
+            var oldPermissions = _context.Role_Permissions.Where(rp => rp.RoleId == roleId);
+            _context.Role_Permissions.RemoveRange(oldPermissions);
+
+            // Thêm các quyền mới
+            if (permissionIds != null && permissionIds.Any())
+            {
+                foreach (var pId in permissionIds)
+                {
+                    _context.Role_Permissions.Add(new Role_Permission { RoleId = roleId, PermissionId = pId });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Cập nhật cấu hình quyền chi tiết thành công!";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SyncPermissions()
+        {
+            var codes = new[] {
+                "MANAGER_CREATE_OKR", "MANAGER_ASSIGN_KPI", "EMPLOYEE_UPDATE_KPI_PROGRESS",
+                "HR_EVALUATE_KPI", "HR_MANAGE_EMPLOYEES", "SALES_CREATE_ORDERS",
+                "SALES_MANAGE_CUSTOMERS", "SALES_CREATE_INVOICES", "WAREHOUSE_MANAGE_PRODUCTS",
+                "WAREHOUSE_IMPORT_INVENTORY", "WAREHOUSE_VIEW_INVENTORY", "HR_APPROVE_KPI",
+                "DELIVERY_UPDATE_STATUS", "DELIVERY_CREATE_NOTES", "ADMIN_VIEW_AUDIT_LOGS",
+                "ADMIN_MANAGE_ROLES", "ADMIN_MANAGE_USERS"
+            };
+
+            int addedCount = 0;
+            foreach (var code in codes)
+            {
+                if (!await _context.Permissions.AnyAsync(p => p.PermissionCode == code.Trim()))
+                {
+                    _context.Permissions.Add(new Permission { 
+                        PermissionCode = code.Trim(), 
+                        PermissionName = code.Replace("_", " ").ToLower() 
+                    });
+                    addedCount++;
+                }
+            }
+
+            if (addedCount > 0)
+            {
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Đã đồng bộ {addedCount} mã quyền vào hệ thống!";
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Tất cả mã quyền đã tồn tại trong hệ thống.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

@@ -1,0 +1,16 @@
+﻿On branch Anan-timkiem
+Your branch is ahead of 'origin/Anan-kpi' by 1 commit.
+  (use "git push" to publish your local commits)
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	new file:   git_branches.txt
+	new file:   git_diff.txt
+	new file:   git_diff_names.txt
+	new file:   git_files.txt
+	new file:   git_status.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	git_status_added.txt
+

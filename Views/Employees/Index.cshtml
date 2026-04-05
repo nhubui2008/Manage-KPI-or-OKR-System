@@ -21,7 +21,7 @@
         <div class="d-flex justify-content-end gap-2">
             @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
             {
-                <a asp-action="ExportReport" class="btn-outline-custom text-success border-success d-flex align-items-center" title="Xuất báo cáo nhân sự">
+                <a asp-action="ExportReport" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-isActive="@ViewBag.CurrentStatus" asp-route-departmentId="@ViewBag.CurrentDepartment" class="btn-outline-custom text-success border-success d-flex align-items-center" title="Xuất báo cáo nhân sự">
                     <i class="bi bi-file-earmark-arrow-down me-1"></i> Xuất báo cáo NS
                 </a>
                 <a asp-action="ImportExcel" class="btn-outline-custom d-flex align-items-center">

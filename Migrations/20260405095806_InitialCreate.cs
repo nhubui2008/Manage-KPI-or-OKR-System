@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Manage_KPI_or_OKR_System.Migrations
 {
     /// <inheritdoc />
-    public partial class database : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -22,6 +22,23 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CheckInStatuses", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "EvaluationReportSummaries",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    DepartmentId = table.Column<int>(type: "int", nullable: true),
+                    Cycle = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Content = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedById = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EvaluationReportSummaries", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -517,10 +534,10 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     EmployeeCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    FullName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    FullName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     DateOfBirth = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Phone = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Phone = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     TaxCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     JoinDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     SystemUserId = table.Column<int>(type: "int", nullable: true),
@@ -614,6 +631,7 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     PropertyId = table.Column<int>(type: "int", nullable: true),
                     KPITypeId = table.Column<int>(type: "int", nullable: true),
                     AssignerId = table.Column<int>(type: "int", nullable: true),
+                    StatusId = table.Column<int>(type: "int", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedById = table.Column<int>(type: "int", nullable: true)
@@ -645,6 +663,11 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         name: "FK_KPIs_KPITypes_KPITypeId",
                         column: x => x.KPITypeId,
                         principalTable: "KPITypes",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_KPIs_Statuses_StatusId",
+                        column: x => x.StatusId,
+                        principalTable: "Statuses",
                         principalColumn: "Id");
                 });
 
@@ -738,8 +761,8 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    ProductCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    ProductName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    ProductCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    ProductName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     CategoryId = table.Column<int>(type: "int", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -1683,6 +1706,11 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 column: "PropertyId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_KPIs_StatusId",
+                table: "KPIs",
+                column: "StatusId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_KPITypes_TypeName",
                 table: "KPITypes",
                 column: "TypeName",
@@ -1782,6 +1810,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 name: "IX_Products_CreatedById",
                 table: "Products",
                 column: "CreatedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Products_ProductCode",
+                table: "Products",
+                column: "ProductCode",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_RealtimeExpectedBonuses_EmployeeId",
@@ -2020,6 +2054,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
             migrationBuilder.DropTable(
                 name: "EmployeeAssignments");
+
+            migrationBuilder.DropTable(
+                name: "EvaluationReportSummaries");
 
             migrationBuilder.DropTable(
                 name: "EvaluationResults");

@@ -568,5 +568,88 @@ public IActionResult DownloadTemplate()
     }
 }
         
+        [Authorize(Roles = "HR,Admin,Administrator")]
+        [HttpGet]
+        public async Task<IActionResult> ExportReport(string searchString, string isActive, int? departmentId)
+        {
+            var employeesQuery = _context.Employees.AsQueryable();
+
+            // Áp dụng cùng logic lọc như hàm Index
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                employeesQuery = employeesQuery.Where(e =>
+                    (e.FullName ?? string.Empty).Contains(searchString) ||
+                    (e.EmployeeCode ?? string.Empty).Contains(searchString));
+            }
+
+            if (!string.IsNullOrEmpty(isActive))
+            {
+                if (isActive == "true") employeesQuery = employeesQuery.Where(e => e.IsActive == true);
+                else if (isActive == "false") employeesQuery = employeesQuery.Where(e => e.IsActive == false);
+            }
+
+            if (departmentId.HasValue)
+            {
+                employeesQuery = employeesQuery.Where(e =>
+                    _context.EmployeeAssignments.Any(a =>
+                        a.EmployeeId == e.Id &&
+                        a.DepartmentId == departmentId &&
+                        a.IsActive == true));
+            }
+
+            var employees = await employeesQuery.OrderByDescending(e => e.CreatedAt).ToListAsync();
+            var departments = await _context.Departments.ToDictionaryAsync(d => d.Id, d => d.DepartmentName);
+            var positions = await _context.Positions.ToDictionaryAsync(p => p.Id, p => p.PositionName);
+            
+            var assignmentsList = await _context.EmployeeAssignments.Where(a => a.IsActive == true).ToListAsync();
+            var assignments = new Dictionary<int, EmployeeAssignment>();
+            foreach (var a in assignmentsList)
+            {
+                if (a.EmployeeId.HasValue) assignments[a.EmployeeId.Value] = a;
+            }
+
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("DanhSachNhanVien");
+                
+                // Tiêu đề cột
+                string[] headers = { "Mã NV", "Họ và tên", "Email", "Số điện thoại", "Ngày vào làm", "Phòng ban", "Chức vụ", "Trạng thái" };
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    worksheet.Cells[1, i + 1].Value = headers[i];
+                    worksheet.Cells[1, i + 1].Style.Font.Bold = true;
+                    worksheet.Cells[1, i + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    worksheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                    worksheet.Cells[1, i + 1].Style.Border.BorderAround(OfficeOpenXml.Style.ExcelBorderStyle.Thin);
+                }
+
+                // Dữ liệu
+                for (int i = 0; i < employees.Count; i++)
+                {
+                    var e = employees[i];
+                    assignments.TryGetValue(e.Id, out var assign);
+                    var deptName = assign?.DepartmentId.HasValue == true && departments.ContainsKey(assign.DepartmentId.Value) ? departments[assign.DepartmentId.Value] : "-";
+                    var posName = assign?.PositionId.HasValue == true && positions.ContainsKey(assign.PositionId.Value) ? positions[assign.PositionId.Value] : "-";
+
+                    worksheet.Cells[i + 2, 1].Value = e.EmployeeCode;
+                    worksheet.Cells[i + 2, 2].Value = e.FullName;
+                    worksheet.Cells[i + 2, 3].Value = e.Email;
+                    worksheet.Cells[i + 2, 4].Value = e.Phone;
+                    worksheet.Cells[i + 2, 5].Value = e.JoinDate?.ToString("dd/MM/yyyy");
+                    worksheet.Cells[i + 2, 6].Value = deptName;
+                    worksheet.Cells[i + 2, 7].Value = posName;
+                    worksheet.Cells[i + 2, 8].Value = e.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc";
+                }
+
+                worksheet.Cells.AutoFitColumns();
+                var stream = new MemoryStream();
+                package.SaveAs(stream);
+                stream.Position = 0;
+
+                string excelName = $"BaoCao_NhanSu_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
+                return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);
+            }
+        }
     }
 }

@@ -1,9 +1,10 @@
-@model IEnumerable<Manage_KPI_or_OKR_System.Models.OKR>
+@model Manage_KPI_or_OKR_System.Helpers.PaginatedList<Manage_KPI_or_OKR_System.Models.OKR>
 @using Manage_KPI_or_OKR_System.Helpers
 @{
     ViewData["Title"] = "Quản lý OKR";
     var keyResultsDict = ViewBag.KeyResults as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>> ??
                          new Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>>();
+    var currentFilter = ViewData["CurrentFilter"] as string;
 }
 
 <div class="container-fluid px-0">
@@ -38,15 +39,24 @@
         <div class="col-12 px-0">
             <div class="content-card w-100">
                 <div class="card-body-custom">
-                    <div class="toolbar mb-3 d-flex justify-content-between">
-                        <div class="toolbar-search">
-                            <i class="bi bi-search"></i>
-                            <input type="text" placeholder="Tìm kiếm OKR..." class="form-control" style="padding-left: 2.5rem;">
+                    <!-- SEARCH FORM -->
+                    <form asp-action="Index" method="get" class="toolbar mb-3">
+                        <div class="toolbar-left" style="width: 400px;">
+                            <div class="toolbar-search position-relative">
+                                <i class="bi bi-search position-absolute" style="left: 15px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
+                                <input type="text" name="searchString" value="@currentFilter" class="form-control" style="padding-left: 2.5rem;" placeholder="Tìm kiếm tên mục tiêu OKR..." />
+                            </div>
                         </div>
-                        <div class="toolbar-right">
-                            <button class="btn btn-sm btn-outline-secondary border-0"><i class="bi bi-list-task"></i> Mở rộng tất cả</button>
+                        <div class="toolbar-right d-flex gap-2">
+                            <button type="submit" class="btn btn-primary d-flex align-items-center rounded-pill px-3 shadow-none">
+                                <i class="bi bi-search me-1"></i> Tìm kiếm
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary border-0 btn-sm d-flex align-items-center" title="Làm mới">
+                                <i class="bi bi-arrow-clockwise fs-5"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-secondary border-0" id="toggleAllBtn"><i class="bi bi-list-task"></i> Mở rộng tất cả</button>
                         </div>
-                    </div>
+                    </form>
 
                     <div class="accordion" id="accordionOKRs">
                         @if (Model != null && Model.Any())
@@ -78,7 +88,7 @@
                                 string okrProgressColor = ProgressHelper.GetProgressColorClass(okrProgressInt);
                                 string okrTextClass = ProgressHelper.GetProgressTextColorClass(okrProgressInt);
 
-                                <div class="accordion-item mb-3 border-0 shadow-sm rounded overflow-hidden">
+                                <div class="accordion-item mb-3 border-0 shadow-sm rounded">
                                     <h2 class="accordion-header" id="heading-@index">
                                         <div class="accordion-button collapsed bg-white p-3 d-flex justify-content-between align-items-center w-100" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId" style="cursor: pointer; box-shadow: none;">
                                             
@@ -213,6 +223,51 @@
                         }
                     </div>
 
+                    <!-- PAGINATION -->
+                    @if (Model != null && Model.TotalPages > 1)
+                    {
+                        <div class="d-flex justify-content-between align-items-center mt-4 px-2">
+                            <div class="text-muted small">
+                                Hiển thị trang @Model.PageIndex trên tổng số @Model.TotalPages
+                            </div>
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination pagination-sm mb-0 gap-1">
+                                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                                        <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index" 
+                                           asp-route-pageNumber="@(Model.PageIndex - 1)" 
+                                           asp-route-searchString="@currentFilter">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                    
+                                    @for (int i = 1; i <= Model.TotalPages; i++)
+                                    {
+                                        if (i == 1 || i == Model.TotalPages || (i >= Model.PageIndex - 1 && i <= Model.PageIndex + 1))
+                                        {
+                                            <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                                                <a class="page-link border-0 rounded-circle shadow-none @(i == Model.PageIndex ? "" : "text-dark")" asp-action="Index" 
+                                                   asp-route-pageNumber="@i" 
+                                                   asp-route-searchString="@currentFilter">@i</a>
+                                            </li>
+                                        }
+                                        else if (i == Model.PageIndex - 2 || i == Model.PageIndex + 2)
+                                        {
+                                            <li class="page-item disabled"><span class="page-link border-0">...</span></li>
+                                        }
+                                    }
+
+                                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                                        <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index" 
+                                           asp-route-pageNumber="@(Model.PageIndex + 1)" 
+                                           asp-route-searchString="@currentFilter">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    }
+
                 </div>
             </div>
         </div>
@@ -239,7 +294,7 @@
                             <option value="">-- Chọn loại --</option>
                             @if (ViewBag.OKRTypes != null)
                             {
-                                foreach (var type in ViewBag.OKRTypes as IEnumerable<Manage_KPI_or_OKR_System.Models.OKRType>)
+                                foreach (var type in (ViewBag.OKRTypes as IEnumerable<Manage_KPI_or_OKR_System.Models.OKRType>)!)
                                 {
                                     <option value="@type.Id">@type.TypeName</option>
                                 }
@@ -264,7 +319,7 @@
                             <option value="">-- Không phân bổ --</option>
                             @if (ViewBag.Missions != null)
                             {
-                                foreach (var m in ViewBag.Missions as IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>)
+                                foreach (var m in (ViewBag.Missions as IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>)!)
                                 {
                                     <option value="@m.Id">Năm @m.TargetYear: @(m.Content?.Length > 50 ? m.Content.Substring(0, 50) + "..." : m.Content)</option>
                                 }
@@ -277,7 +332,7 @@
                             <option value="">-- Không phân bổ --</option>
                             @if (ViewBag.Departments != null)
                             {
-                                foreach (var d in ViewBag.Departments as IEnumerable<Manage_KPI_or_OKR_System.Models.Department>)
+                                foreach (var d in (ViewBag.Departments as IEnumerable<Manage_KPI_or_OKR_System.Models.Department>)!)
                                 {
                                     <option value="@d.Id">@d.DepartmentName</option>
                                 }
@@ -290,7 +345,7 @@
                             <option value="">-- Không phân bổ --</option>
                             @if (ViewBag.Employees != null)
                             {
-                                foreach (var e in ViewBag.Employees as IEnumerable<Manage_KPI_or_OKR_System.Models.Employee>)
+                                foreach (var e in (ViewBag.Employees as IEnumerable<Manage_KPI_or_OKR_System.Models.Employee>)!)
                                 {
                                     <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
                                 }

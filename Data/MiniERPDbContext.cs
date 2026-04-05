@@ -231,7 +231,7 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<Invoice>().HasOne<SalesOrder>().WithMany().HasForeignKey(i => i.OrderId).OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<SystemAlert>().HasOne<Employee>().WithMany().HasForeignKey(sa => sa.ReceiverId).OnDelete(DeleteBehavior.NoAction);
-            modelBuilder.Entity<AuditLog>().HasOne<SystemUser>().WithMany().HasForeignKey(al => al.SystemUserId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<AuditLog>().HasOne(al => al.SystemUser).WithMany().HasForeignKey(al => al.SystemUserId).OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<PackingSlip>().HasOne<SalesOrder>().WithMany().HasForeignKey(ps => ps.OrderId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<PackingSlip>().HasOne<Employee>().WithMany().HasForeignKey(ps => ps.PackerId).OnDelete(DeleteBehavior.NoAction);

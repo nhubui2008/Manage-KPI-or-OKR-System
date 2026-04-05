@@ -1,0 +1,14 @@
+﻿Auto-merging Controllers/BonusRulesController.cs
+Auto-merging Controllers/EvaluationResultsController.cs
+CONFLICT (content): Merge conflict in Controllers/EvaluationResultsController.cs
+Auto-merging Controllers/OKRsController.cs
+Auto-merging Controllers/RolesController.cs
+Auto-merging Data/MiniERPDbContext.cs
+Auto-merging Views/BonusRules/Index.cshtml
+CONFLICT (content): Merge conflict in Views/BonusRules/Index.cshtml
+Auto-merging Views/Employees/Index.cshtml
+Auto-merging Views/EvaluationResults/Index.cshtml
+CONFLICT (content): Merge conflict in Views/EvaluationResults/Index.cshtml
+Auto-merging Views/Roles/Index.cshtml
+CONFLICT (content): Merge conflict in Views/Roles/Index.cshtml
+Automatic merge failed; fix conflicts and then commit the result.

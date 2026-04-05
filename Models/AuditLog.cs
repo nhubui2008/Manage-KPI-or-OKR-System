@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Manage_KPI_or_OKR_System.Models
 {
@@ -14,5 +14,6 @@ namespace Manage_KPI_or_OKR_System.Models
         public string? OldData { get; set; }
         public string? NewData { get; set; }
         public DateTime? LogTime { get; set; } = DateTime.Now;
+        public virtual SystemUser? SystemUser { get; set; }
     }
 }

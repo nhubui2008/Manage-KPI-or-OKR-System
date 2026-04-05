@@ -33,9 +33,14 @@
         </div>
     </div>
     <div class="d-flex justify-content-end gap-2">
-        <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
+        <form asp-action="SyncPermissions" method="post" class="m-0">
+            <button type="submit" class="btn btn-outline-primary rounded-pill d-flex align-items-center shadow-none btn-sm px-3">
+                <i class="bi bi-arrow-repeat me-1"></i> Đồng bộ Quyền
+            </button>
+        </form>
+        <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createRoleModal">
             <i class="bi bi-shield-plus me-1"></i> Tạo Role mới
-        </a>
+        </button>
     </div>
 </div>
 
@@ -91,7 +96,7 @@
                         </div>
                         
                         <div class="d-flex justify-content-end gap-2">
-                            <button class="btn btn-sm btn-outline-@color flex-grow-1" onclick="showComingSoonToast('Cấu hình chi tiết quyền')">Cấu hình chi tiết</button>
+                            <a asp-action="ManagePermissions" asp-route-id="@role.Id" class="btn btn-sm btn-outline-@color flex-grow-1 @(color == "danger" ? "disabled" : "")">Cấu hình chi tiết</a>
                             <form asp-action="Delete" asp-route-id="@role.Id" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa quyền này?');">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa role" @(color == "danger" ? "disabled" : "")>
                                     <i class="bi bi-trash"></i>
