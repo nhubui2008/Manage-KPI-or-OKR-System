@@ -175,14 +175,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> AddKeyResult(OKRKeyResult kr)
         {
-<<<<<<< HEAD
-=======
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
                 User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
-
->>>>>>> 55257b5 (kpi fixloi)
             if (ModelState.IsValid)
             {
                 kr.CurrentValue = 0; // Khởi tạo tiến độ ban đầu là 0
@@ -218,14 +214,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> EditKeyResult(OKRKeyResult model)
         {
-<<<<<<< HEAD
-=======
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
                 User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
->>>>>>> 55257b5 (kpi fixloi)
             if (ModelState.IsValid)
             {
                 var kr = await _context.OKRKeyResults.FindAsync(model.Id);
@@ -253,14 +246,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> AllocateTarget(int okrId, int employeeId, decimal allocatedValue)
         {
-<<<<<<< HEAD
-=======
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
                 User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
->>>>>>> 55257b5 (kpi fixloi)
             var okr = await _context.OKRs.FindAsync(okrId);
             if (okr == null) return NotFound();
 
@@ -280,14 +270,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteKeyResult(int id)
         {
-<<<<<<< HEAD
-=======
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
                 User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
->>>>>>> 55257b5 (kpi fixloi)
             var kr = await _context.OKRKeyResults.FindAsync(id);
             if (kr != null)
             {
