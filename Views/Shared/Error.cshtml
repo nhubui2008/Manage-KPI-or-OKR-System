@@ -1,25 +1,61 @@
-﻿@model ErrorViewModel
+@model ErrorViewModel
 @{
-    ViewData["Title"] = "Error";
+    ViewData["Title"] = "Lỗi Hệ thống";
 }
 
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
+<div class="container py-5 mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-7 text-center">
+            <div class="error-container p-5 rounded-4 shadow-lg border-0 bg-white">
+                <div class="mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle p-4 mb-3 border border-danger border-opacity-25 shadow-sm" style="width: 100px; height: 100px;">
+                        <i class="bi bi-exclamation-triangle-fill display-4"></i>
+                    </div>
+                </div>
+                
+                <h1 class="fw-bold text-dark mb-3">Rất tiếc, đã có lỗi xảy ra!</h1>
+                <p class="text-muted fs-5 mb-4 px-md-5">Hệ thống đã gặp phải một vấn đề không mong muốn trong quá trình xử lý yêu cầu của bạn.</p>
+                
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="alert alert-light border-start border-danger border-4 text-start mb-4 p-3 shadow-sm">
+                        <div class="fw-bold small text-muted text-uppercase mb-1">Chi tiết lỗi:</div>
+                        <div class="text-danger fw-medium">@Model.ErrorMessage</div>
+                    </div>
+                }
 
-@if (Model.ShowRequestId)
-{
-    <p>
-        <strong>Request ID:</strong> <code>@Model.RequestId</code>
-    </p>
-}
+                @if (Model.ShowRequestId)
+                {
+                    <div class="text-muted small mb-4 font-monospace py-2 px-3 bg-light rounded d-inline-block">
+                        <i class="bi bi-hash me-1"></i>Request ID: <code>@Model.RequestId</code>
+                    </div>
+                }
 
-<h3>Development Mode</h3>
-<p>
-    Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.
-</p>
-<p>
-    <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
-    It can result in displaying sensitive information from exceptions to end users.
-    For local debugging, enable the <strong>Development</strong> environment by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>
-    and restarting the app.
-</p>
+                <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center mt-2">
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-pill px-4 py-2">
+                        <i class="bi bi-arrow-left me-2"></i>Quay lại trang trước
+                    </a>
+                    <a href="/" class="btn btn-primary rounded-pill px-5 py-2 shadow-sm">
+                        <i class="bi bi-house-door me-2"></i>Về trang chủ
+                    </a>
+                </div>
+            </div>
+            
+            <p class="mt-4 text-muted small">Nếu vấn đề này vẫn tiếp diễn, vui lòng liên hệ với bộ phận IT và cung cấp mã Request ID ở trên.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .error-container {
+        background: linear-gradient(145deg, #ffffff, #f8f9fa);
+        transition: transform 0.3s ease;
+    }
+    .error-container:hover {
+        transform: translateY(-5px);
+    }
+    .btn-primary {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+</style>

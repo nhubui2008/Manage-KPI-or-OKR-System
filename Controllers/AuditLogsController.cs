@@ -14,17 +14,46 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly MiniERPDbContext _context;
         public AuditLogsController(MiniERPDbContext context) { _context = context; }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString, DateTime? startDate, DateTime? endDate, int? pageNumber)
         {
-            var logs = await _context.AuditLogs
-                .OrderByDescending(l => l.LogTime)
-                .Take(100)
-                .ToListAsync();
+            ViewData["CurrentFilter"] = searchString;
+            ViewData["StartDate"] = startDate?.ToString("yyyy-MM-dd");
+            ViewData["EndDate"] = endDate?.ToString("yyyy-MM-dd");
+
+            var query = _context.AuditLogs
+                .Include(l => l.SystemUser)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                searchString = searchString.Trim();
+                query = query.Where(l => 
+                    (l.ActionType != null && l.ActionType.Contains(searchString)) ||
+                    (l.ImpactedTable != null && l.ImpactedTable.Contains(searchString)) ||
+                    (l.SystemUser != null && l.SystemUser.Username != null && l.SystemUser.Username.Contains(searchString))
+                );
+            }
+
+            if (startDate.HasValue)
+            {
+                query = query.Where(l => l.LogTime >= startDate.Value.Date);
+            }
+
+            if (endDate.HasValue)
+            {
+                var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(l => l.LogTime <= endOfDay);
+            }
+
+            query = query.OrderByDescending(l => l.LogTime);
+
+            int pageSize = 20;
+            var paginatedLogs = await PaginatedList<AuditLog>.CreateAsync(query.AsNoTracking(), pageNumber ?? 1, pageSize);
 
             var users = await _context.SystemUsers.ToDictionaryAsync(u => u.Id, u => u.Username);
             ViewBag.Users = users;
 
-            return View(logs);
+            return View(paginatedLogs);
         }
     }
 }

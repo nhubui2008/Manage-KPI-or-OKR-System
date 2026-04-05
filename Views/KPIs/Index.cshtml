@@ -330,7 +330,7 @@
                         <div class="employee-list-container border rounded-3 p-2 bg-white" style="max-height: 300px; overflow-y: auto;">
                             @if (ViewBag.AllEmployees != null)
                             {
-                                foreach (var emp in ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee>)
+                                foreach (var emp in (ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee>)!)
                                 {
                                     <div class="form-check p-2 rounded transition-hover employee-item" data-search="@emp.FullName?.ToLower() @emp.EmployeeCode?.ToLower()">
                                         <input class="form-check-input ms-0 me-2" type="checkbox" name="employeeIds" value="@emp.Id" id="empCheck-@emp.Id">

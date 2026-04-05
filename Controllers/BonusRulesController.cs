@@ -41,6 +41,28 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> Edit(BonusRule model)
+        {
+            if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
+
+            if (ModelState.IsValid)
+            {
+                var rule = await _context.BonusRules.FindAsync(model.Id);
+                if (rule != null)
+                {
+                    rule.RankId = model.RankId;
+                    rule.BonusPercentage = model.BonusPercentage;
+                    rule.FixedAmount = model.FixedAmount;
+                    
+                    _context.Update(rule);
+                    await _context.SaveChangesAsync();
+                    TempData["SuccessMessage"] = "Cập nhật quy tắc thưởng thành công!";
+                }
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();

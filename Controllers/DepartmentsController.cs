@@ -121,7 +121,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!string.IsNullOrEmpty(dept.DepartmentCode))
             {
                 var existing = await _context.Departments
-                    .FirstOrDefaultAsync(d => d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower());
+                    .FirstOrDefaultAsync(d => d.DepartmentCode != null && d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower());
 
                 if (existing != null)
                 {
@@ -181,7 +181,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!string.IsNullOrEmpty(dept.DepartmentCode))
             {
                 var existingCode = await _context.Departments
-                    .AnyAsync(d => d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower() 
+                    .AnyAsync(d => d.DepartmentCode != null && d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower() 
                                 && d.Id != id && d.IsActive == true);
                 if (existingCode)
                 {

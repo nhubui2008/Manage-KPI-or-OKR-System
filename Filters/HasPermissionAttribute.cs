@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Linq;
+using Manage_KPI_or_OKR_System.Data;
+using Microsoft.Extensions.DependencyInjection;
+using System.Security.Claims;
+using System.Collections.Generic;
 
 public class HasPermissionAttribute : TypeFilterAttribute
 {
@@ -23,118 +27,43 @@ public class HasPermissionFilter : IAuthorizationFilter
     {
         var user = context.HttpContext.User;
 
-        // Đặc quyền cho Admin: Truy cập được tất cả các tính năng
+        // 1. Đặc quyền cho Admin: Truy cập được tất cả các tính năng
         if (user.IsInRole("Admin") || user.IsInRole("Administrator"))
         {
             return;
         }
 
-        // Quyền cho Manager: Truy cập OKR, KPI, Đánh giá, Nhân sự, Bán hàng, Kho hàng
-        if (user.IsInRole("Manager") || user.IsInRole("manager"))
+        // 2. Lấy Service dbContext
+        var dbContext = context.HttpContext.RequestServices.GetService<MiniERPDbContext>();
+        if (dbContext == null)
         {
-            var managerAllowedPermissions = new[] 
-            {
-                "MANAGER_CREATE_OKR", 
-                "MANAGER_ASSIGN_KPI", 
-                "EMPLOYEE_UPDATE_KPI_PROGRESS", 
-                "HR_EVALUATE_KPI", 
-                "HR_MANAGE_EMPLOYEES", 
-                "SALES_CREATE_ORDERS", 
-                "SALES_MANAGE_CUSTOMERS", 
-                "SALES_CREATE_INVOICES", 
-                "WAREHOUSE_MANAGE_PRODUCTS", 
-                "WAREHOUSE_IMPORT_INVENTORY", 
-                "WAREHOUSE_VIEW_INVENTORY"
-            };
-
-            if (managerAllowedPermissions.Contains(_permission))
-            {
-                return;
-            }
+            context.Result = new ForbidResult();
+            return;
         }
 
-        // Quyền cho HR: Truy cập Nhân sự, Đánh giá, OKR, KPI
-        if (user.IsInRole("HR") || user.IsInRole("hr"))
+        // 3. Lấy tên Role của User hiện tại từ Claims
+        // ClaimsIdentity.Role thông thường chứa RoleName
+        var userRoles = user.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
+        
+        if (!userRoles.Any())
         {
-            var hrAllowedPermissions = new[] 
-            {
-                "HR_MANAGE_EMPLOYEES",
-                "HR_APPROVE_KPI", 
-                "HR_EVALUATE_KPI", 
-                "MANAGER_CREATE_OKR", 
-                "MANAGER_ASSIGN_KPI", 
-                "EMPLOYEE_UPDATE_KPI_PROGRESS"
-            };
-
-            if (hrAllowedPermissions.Contains(_permission))
-            {
-                return;
-            }
+            context.Result = new ForbidResult(); 
+            return;
         }
 
-        // Quyền cho Sales: Truy cập OKR, KPI, Kết quả đánh giá (chỉ xem), Bán hàng
-        if (user.IsInRole("Sales") || user.IsInRole("sales"))
-        {
-            var salesAllowedPermissions = new[] 
-            {
-                "MANAGER_CREATE_OKR", 
-                "MANAGER_ASSIGN_KPI", 
-                "EMPLOYEE_UPDATE_KPI_PROGRESS", 
-                "HR_EVALUATE_KPI", 
-                "SALES_CREATE_ORDERS",
-                "SALES_MANAGE_CUSTOMERS",
-                "SALES_CREATE_INVOICES"
-            };
+        // 4. Kiểm tra quyền trong Database từ bảng Role_Permissions liên kết Role và Permission
+        var hasPermission = dbContext.Role_Permissions
+            .Join(dbContext.Permissions, 
+                  rp => rp.PermissionId, 
+                  p => p.Id, 
+                  (rp, p) => new { rp, p })
+            .Join(dbContext.Roles,
+                  combined => combined.rp.RoleId,
+                  r => r.Id,
+                  (combined, r) => new { combined.p, r })
+            .Any(x => x.r.RoleName != null && userRoles.Contains(x.r.RoleName) && x.p.PermissionCode == _permission);
 
-            if (salesAllowedPermissions.Contains(_permission))
-            {
-                return;
-            }
-        }
-
-        // Quyền cho Warehouse: Truy cập Kho, Checkin KPI, KPI, OKR, Đánh giá, Vận chuyển
-        if (user.IsInRole("Warehouse") || user.IsInRole("warehouse"))
-        {
-            var warehouseAllowedPermissions = new[] 
-            {
-                "WAREHOUSE_VIEW_INVENTORY",
-                "WAREHOUSE_IMPORT_INVENTORY",
-                "WAREHOUSE_MANAGE_PRODUCTS",
-                "MANAGER_CREATE_OKR", 
-                "MANAGER_ASSIGN_KPI", 
-                "EMPLOYEE_UPDATE_KPI_PROGRESS", 
-                "HR_EVALUATE_KPI", 
-                "DELIVERY_UPDATE_STATUS",
-                "DELIVERY_CREATE_NOTES"
-            };
-
-            if (warehouseAllowedPermissions.Contains(_permission))
-            {
-                return;
-            }
-        }
-
-        // Quyền cho Employee: Nhìn thấy Checkin KPI, KPI, OKR, Đánh giá, Quy tắc thưởng
-        if (user.IsInRole("Employee") || user.IsInRole("employee"))
-        {
-            var employeeAllowedPermissions = new[] 
-            {
-                "EMPLOYEE_UPDATE_KPI_PROGRESS", 
-                "MANAGER_CREATE_OKR", 
-                "MANAGER_ASSIGN_KPI", 
-                "HR_EVALUATE_KPI"
-            };
-
-            if (employeeAllowedPermissions.Contains(_permission))
-            {
-                return;
-            }
-        }
-
-        // Kiểm tra xem User có Claim nào mang Type "Permission" và Value khớp với _permission không
-        bool hasClaim = user.Claims.Any(c => c.Type == "Permission" && c.Value == _permission);
-
-        if (!hasClaim)
+        if (!hasPermission)
         {
             context.Result = new ForbidResult(); 
         }

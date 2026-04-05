@@ -1,0 +1,133 @@
+@model IEnumerable<Manage_KPI_or_OKR_System.Models.Permission>
+@{
+    var role = ViewBag.Role as Manage_KPI_or_OKR_System.Models.Role;
+    var rolePermissionIds = ViewBag.RolePermissionIds as List<int> ?? new List<int>();
+    ViewData["Title"] = $"Cấu hình quyền cho {role?.RoleName}";
+
+    string GetGroup(string code)
+    {
+        if (code.StartsWith("ADMIN_")) return "Cấu hình Hệ thống";
+        if (code.StartsWith("HR_")) return "Quản trị Nhân sự & Đánh giá";
+        if (code.StartsWith("MANAGER_")) return "Quản lý OKR & KPI";
+        if (code.StartsWith("EMPLOYEE_")) return "Tác vụ Nhân viên";
+        if (code.StartsWith("SALES_")) return "Kinh doanh & Khách hàng";
+        if (code.StartsWith("WAREHOUSE_")) return "Quản lý Kho & Sản phẩm";
+        if (code.StartsWith("DELIVERY_")) return "Vận chuyển & Giao nhận";
+        return "Khác";
+    }
+
+    var groupedPermissions = Model.GroupBy(p => GetGroup(p.PermissionCode ?? ""));
+}
+
+<div class="container-fluid px-0">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Cấu hình chi tiết quyền: <span class="text-primary">@role?.RoleName</span></h1>
+            <div class="page-breadcrumb">
+                <a asp-action="Index">Quản lý roles</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Cấu hình quyền</span>
+            </div>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center w-100 m-0">
+        <div class="col-12 px-0">
+            <form asp-action="UpdatePermissions" method="post" id="permissionForm">
+                <input type="hidden" name="roleId" value="@role?.Id" />
+                
+                <div class="row g-4 w-100">
+                    @foreach (var group in groupedPermissions)
+                    {
+                        <div class="col-12 col-xl-6">
+                            <div class="content-card h-100">
+                                <div class="card-header-custom border-bottom bg-light p-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="fw-bold mb-0 text-dark">
+                                        <i class="bi bi-collection-fill me-2 text-primary"></i>@group.Key
+                                    </h6>
+                                    <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 select-all-group" data-group="@group.Key.Replace(" ", "")">Chọn tất cả</button>
+                                </div>
+                                <div class="card-body-custom p-3">
+                                    <div class="row g-2">
+                                        @foreach (var permission in group)
+                                        {
+                                            <div class="col-12">
+                                                <div class="form-check form-switch permission-item p-2 rounded border border-transparent hover-shadow-sm transition-all d-flex align-items-center">
+                                                    <input class="form-check-input ms-0 me-3 @group.Key.Replace(" ", "")-check" type="checkbox" 
+                                                           name="permissionIds" value="@permission.Id" 
+                                                           id="perm_@permission.Id" 
+                                                           @(rolePermissionIds.Contains(permission.Id) ? "checked" : "")>
+                                                    <label class="form-check-label w-100 cursor-pointer" for="perm_@permission.Id">
+                                                        <span class="d-block fw-medium">@permission.PermissionName</span>
+                                                        <span class="small text-muted font-monospace">@permission.PermissionCode</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-3 mb-5">
+                    <button type="reset" class="btn btn-outline-secondary rounded-pill px-5">Hoàn tác</button>
+                    <button type="submit" class="btn-primary-custom rounded-pill px-5 shadow-sm">
+                        <i class="bi bi-save me-2"></i> Lưu cấu hình quyền
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-shadow-sm:hover {
+        background-color: #f8f9fa;
+        border-color: #dee2e6 !important;
+        box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important;
+    }
+    .cursor-pointer {
+        cursor: pointer;
+    }
+    .transition-all {
+        transition: all 0.2s ease-in-out;
+    }
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('.select-all-group').click(function() {
+                var groupClass = '.' + $(this).data('group') + '-check';
+                var allChecked = true;
+                $(groupClass).each(function() {
+                    if (!$(this).prop('checked')) allChecked = false;
+                });
+                
+                $(groupClass).prop('checked', !allChecked);
+                $(this).text(!allChecked ? 'Bỏ chọn tất cả' : 'Chọn tất cả');
+            });
+
+            // Update text based on initial state
+            $('.select-all-group').each(function() {
+                var groupClass = '.' + $(this).data('group') + '-check';
+                var allChecked = true;
+                $(groupClass).each(function() {
+                    if (!$(this).prop('checked')) allChecked = false;
+                });
+                if (allChecked) $(this).text('Bỏ chọn tất cả');
+            });
+        });
+    </script>
+}

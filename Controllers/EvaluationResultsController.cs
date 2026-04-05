@@ -67,7 +67,33 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 _context.EvaluationResults.Add(model);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã lưu kết quả đánh giá thành công!";
+                TempData["SuccessMessage"] = $"Đã lưu kết quả đánh giá thành công! Tổng điểm: {(model.TotalScore % 1 == 0 ? model.TotalScore?.ToString("0") : model.TotalScore?.ToString("0.#"))}đ";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(EvaluationResult model)
+        {
+            if (User.IsInRole("Sales") || User.IsInRole("sales") || 
+                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee")) 
+                return Forbid();
+
+            if (ModelState.IsValid)
+            {
+                var existing = await _context.EvaluationResults.FindAsync(model.Id);
+                if (existing == null) return NotFound();
+
+                existing.EmployeeId = model.EmployeeId;
+                existing.PeriodId = model.PeriodId;
+                existing.TotalScore = model.TotalScore;
+                existing.RankId = model.RankId;
+                existing.Classification = model.Classification;
+
+                _context.Update(existing);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Đã cập nhật kết quả đánh giá thành công! Tổng điểm: {(model.TotalScore % 1 == 0 ? model.TotalScore?.ToString("0") : model.TotalScore?.ToString("0.#"))}đ";
             }
             return RedirectToAction(nameof(Index));
         }

@@ -24,63 +24,99 @@
 </div>
 
 <div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <div class="content-card w-100">
-    <div class="card-body-custom">
-        <div class="table-responsive w-100">
-            <table class="data-table w-100">
-                <thead><tr><th>Nhân viên</th><th>Kỳ đánh giá</th><th>Tổng điểm</th><th>Xếp hạng</th><th>Phân loại</th><th class="text-end">Thao tác</th></tr></thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        @foreach (var r in Model)
-                        {
-                            var empName = r.EmployeeId.HasValue && employees.ContainsKey(r.EmployeeId.Value) ? employees[r.EmployeeId.Value] : "N/A";
-                            var periodName = r.PeriodId.HasValue && periods.ContainsKey(r.PeriodId.Value) ? periods[r.PeriodId.Value] : "N/A";
-                            var rankCode = r.RankId.HasValue && ranks.ContainsKey(r.RankId.Value) ? ranks[r.RankId.Value] : "N/A";
-                            var scoreColor = r.TotalScore >= 90 ? "success" : r.TotalScore >= 70 ? "primary" : r.TotalScore >= 50 ? "warning" : "danger";
-                            <tr>
-                                <td><div class="d-flex align-items-center gap-2"><div class="user-avatar" style="width:28px;height:28px;font-size:0.7rem;">@(empName.Length > 0 ? empName[0].ToString() : "?")</div><span class="fw-medium text-dark">@empName</span></div></td>
-                                <td class="text-muted">@periodName</td>
-                                <td><span class="badge bg-@scoreColor bg-opacity-10 text-@scoreColor rounded-pill px-2">@(r.TotalScore?.ToString("N1") ?? "0")đ</span></td>
-                                <td><span class="badge bg-dark text-white px-2">@rankCode</span></td>
-                                <td>@(r.Classification ?? "Chưa phân loại")</td>
-                                <td><div class="action-btns justify-content-end">
-                                    <button type="button" class="action-btn" title="Sửa" onclick="showComingSoonToast('Chỉnh sửa Kết quả Đánh giá')"><i class="bi bi-pencil-square"></i></button>
-                                    @if (User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))
-                                    {
-                                        <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa kết quả này?')"><i class="bi bi-trash"></i></button></form>
-                                    }
-                                </div></td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {<tr><td colspan="@(User.IsInRole("Sales") || User.IsInRole("sales") ? "5" : "6")" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có kết quả đánh giá</p></td></tr>}
-                </tbody>
-            </table>
+    <div class="col-12 px-0">
+        <div class="content-card w-100">
+            <div class="card-body-custom">
+                <div class="table-responsive w-100">
+                    <table class="data-table w-100">
+                        <thead><tr><th>Nhân viên</th><th>Kỳ đánh giá</th><th>Tổng điểm</th><th>Xếp hạng</th><th>Phân loại</th><th class="text-end">Thao tác</th></tr></thead>
+                        <tbody>
+                            @if (Model != null && Model.Any())
+                            {
+                                @foreach (var r in Model)
+                                {
+                                    var empName = r.EmployeeId.HasValue && employees.ContainsKey(r.EmployeeId.Value) ? employees[r.EmployeeId.Value] : "N/A";
+                                    var periodName = r.PeriodId.HasValue && periods.ContainsKey(r.PeriodId.Value) ? periods[r.PeriodId.Value] : "N/A";
+                                    var rankCode = r.RankId.HasValue && ranks.ContainsKey(r.RankId.Value) ? ranks[r.RankId.Value] : "N/A";
+                                    var scoreColor = r.TotalScore >= 90 ? "success" : r.TotalScore >= 70 ? "primary" : r.TotalScore >= 50 ? "warning" : "danger";
+                                    <tr>
+                                        <td><div class="d-flex align-items-center gap-2"><div class="user-avatar" style="width:28px;height:28px;font-size:0.7rem;">@(empName.Length > 0 ? empName[0].ToString() : "?")</div><span class="fw-medium text-dark">@empName</span></div></td>
+                                        <td class="text-muted">@periodName</td>
+                                        <td><span class="badge bg-@scoreColor bg-opacity-10 text-@scoreColor rounded-pill px-2">@(r.TotalScore % 1 == 0 ? r.TotalScore?.ToString("0") : r.TotalScore?.ToString("0.#"))đ</span></td>
+                                        <td><span class="badge bg-dark text-white px-2">@rankCode</span></td>
+                                        <td>@(r.Classification ?? "Chưa phân loại")</td>
+                                        <td><div class="action-btns justify-content-end">
+                                            <button type="button" class="action-btn" title="Sửa" onclick="editResult('@r.Id', '@r.EmployeeId', '@r.PeriodId', '@(r.TotalScore?.ToString() ?? "0")', '@r.RankId', '@r.Classification')"><i class="bi bi-pencil-square"></i></button>
+                                            @if (User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))
+                                            {
+                                                <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa kết quả này?')"><i class="bi bi-trash"></i></button></form>
+                                            }
+                                        </div></td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {<tr><td colspan="@(User.IsInRole("Sales") || User.IsInRole("sales") ? "5" : "6")" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có kết quả đánh giá</p></td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+
+        <!-- Create Modal -->
+        <div class="modal fade" id="createModal" tabindex="-1">
+            <div class="modal-dialog"><div class="modal-content border-0 shadow">
+                <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-award me-2"></i>Thêm Kết quả Đánh giá</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <form asp-action="Create" method="post"><div class="modal-body">
+                    <div class="mb-3"><label class="form-label fw-semibold">Nhân viên</label><select name="EmployeeId" class="form-select" required>
+                        <option value="">-- Chọn nhân viên --</option>@foreach (var e in allEmployees){<option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>}</select></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Kỳ đánh giá</label><select name="PeriodId" class="form-select" required>
+                        <option value="">-- Chọn kỳ --</option>@foreach (var p in allPeriods){<option value="@p.Id">@p.PeriodName</option>}</select></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Tổng điểm</label><input type="number" name="TotalScore" class="form-control" step="0.01" min="0" max="100" required /></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng</label><select name="RankId" class="form-select">
+                        <option value="">-- Chọn hạng --</option>@foreach (var rk in allRanks){<option value="@rk.Id">@rk.RankCode - @rk.Description</option>}</select></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Phân loại</label><select name="Classification" class="form-select">
+                        <option value="Xuất sắc">Xuất sắc</option><option value="Giỏi">Giỏi</option><option value="Khá">Khá</option><option value="Trung bình">Trung bình</option><option value="Yếu">Yếu</option></select></div>
+                </div>
+                <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Lưu kết quả</button></div></form>
+            </div></div>
+        </div>
+
+        <!-- Edit Modal -->
+        <div class="modal fade" id="editModal" tabindex="-1">
+            <div class="modal-dialog"><div class="modal-content border-0 shadow">
+                <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Sửa Kết quả Đánh giá (<span id="editModalScoreHeader">0</span>đ)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <form asp-action="Edit" method="post"><div class="modal-body">
+                    <input type="hidden" name="Id" id="editId" />
+                    <div class="mb-3"><label class="form-label fw-semibold">Nhân viên</label><select name="EmployeeId" id="editEmployeeId" class="form-select" required>
+                        <option value="">-- Chọn nhân viên --</option>@foreach (var e in allEmployees){<option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>}</select></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Kỳ đánh giá</label><select name="PeriodId" id="editPeriodId" class="form-select" required>
+                        <option value="">-- Chọn kỳ --</option>@foreach (var p in allPeriods){<option value="@p.Id">@p.PeriodName</option>}</select></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Tổng điểm</label><input type="number" name="TotalScore" id="editTotalScore" class="form-control" step="0.01" min="0" max="100" required /></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng</label><select name="RankId" id="editRankId" class="form-select">
+                        <option value="">-- Chọn hạng --</option>@foreach (var rk in allRanks){<option value="@rk.Id">@rk.RankCode - @rk.Description</option>}</select></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Phân loại</label><select name="Classification" id="editClassification" class="form-select">
+                        <option value="Xuất sắc">Xuất sắc</option><option value="Giỏi">Giỏi</option><option value="Khá">Khá</option><option value="Trung bình">Trung bình</option><option value="Yếu">Yếu</option></select></div>
+                </div>
+                <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Cập nhật kết quả</button></div></form>
+            </div></div>
+        </div>
+
     </div>
 </div>
-
-<div class="modal fade" id="createModal" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content border-0 shadow">
-        <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-award me-2"></i>Thêm Kết quả Đánh giá</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <form asp-action="Create" method="post"><div class="modal-body">
-            <div class="mb-3"><label class="form-label fw-semibold">Nhân viên</label><select name="EmployeeId" class="form-select" required>
-                <option value="">-- Chọn nhân viên --</option>@foreach (var e in allEmployees){<option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>}</select></div>
-            <div class="mb-3"><label class="form-label fw-semibold">Kỳ đánh giá</label><select name="PeriodId" class="form-select" required>
-                <option value="">-- Chọn kỳ --</option>@foreach (var p in allPeriods){<option value="@p.Id">@p.PeriodName</option>}</select></div>
-            <div class="mb-3"><label class="form-label fw-semibold">Tổng điểm</label><input type="number" name="TotalScore" class="form-control" step="0.01" min="0" max="100" required /></div>
-            <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng</label><select name="RankId" class="form-select">
-                <option value="">-- Chọn hạng --</option>@foreach (var rk in allRanks){<option value="@rk.Id">@rk.RankCode - @rk.Description</option>}</select></div>
-            <div class="mb-3"><label class="form-label fw-semibold">Phân loại</label><select name="Classification" class="form-select">
-                <option value="Xuất sắc">Xuất sắc</option><option value="Giỏi">Giỏi</option><option value="Khá">Khá</option><option value="Trung bình">Trung bình</option><option value="Yếu">Yếu</option></select></div>
-        </div>
-        <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Lưu kết quả</button></div></form>
-    </div></div>
 </div>
 
-        </div>
-    </div>
-</div>
+<script>
+    function editResult(id, empId, periodId, score, rankId, classification) {
+        document.getElementById('editId').value = id;
+        document.getElementById('editEmployeeId').value = empId;
+        document.getElementById('editPeriodId').value = periodId;
+        document.getElementById('editTotalScore').value = score;
+        document.getElementById('editRankId').value = rankId;
+        document.getElementById('editClassification').value = classification || "Trung bình";
+        document.getElementById('editModalScoreHeader').innerText = parseFloat(score);
+        
+        var editModal = new bootstrap.Modal(document.getElementById('editModal'));
+        editModal.show();
+    }
+</script>

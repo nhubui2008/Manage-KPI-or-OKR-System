@@ -23,7 +23,9 @@
         </div>
         <div class="d-flex gap-2">
             <button class="btn btn-outline-custom" onclick="window.print()"><i class="bi bi-printer me-1"></i> In báo cáo</button>
-            <button class="btn-primary-custom"><i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel</button>
+            <a asp-action="ExportExcel" asp-route-departmentId="@ViewBag.CurrentDeptId" asp-route-cycle="@ViewBag.CurrentCycle" class="btn-primary-custom text-decoration-none">
+                <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel
+            </a>
         </div>
     </div>
 

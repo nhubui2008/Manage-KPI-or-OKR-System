@@ -23,8 +23,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString, int? pageNumber)
         {
+            ViewData["CurrentFilter"] = searchString;
+
             try
             {
                 // Đảm bảo cột CurrentValue tồn tại trong database (fix lỗi schema mismatch)
@@ -33,6 +35,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             catch { }
 
             var query = _context.OKRs.Where(o => o.IsActive == true).Include(o => o.KeyResults).AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                searchString = searchString.Trim();
+                query = query.Where(o => o.ObjectiveName != null && o.ObjectiveName.Contains(searchString));
+            }
 
             // Filter OKRs if Warehouse or Employee
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -76,9 +84,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
             }
 
-            var okrs = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+            query = query.OrderByDescending(o => o.CreatedAt);
 
-            var okrIds = okrs.Select(o => o.Id).ToList();
+            int pageSize = 10;
+            var paginatedOkrs = await PaginatedList<OKR>.CreateAsync(query.AsNoTracking(), pageNumber ?? 1, pageSize);
+
+            var okrIds = paginatedOkrs.Select(o => o.Id).ToList();
             
             var keyResults = await _context.OKRKeyResults
                 .Where(k => okrIds.Contains(k.OKRId ?? 0))
@@ -104,7 +115,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
 
-            return View(okrs);
+            return View(paginatedOkrs);
         }
 
         [HttpPost]
