@@ -13,7 +13,6 @@ using System.Security.Claims;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("MANAGER_CREATE_OKR")]
     public class OKRsController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -119,6 +118,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("MANAGER_CREATE_OKR")]
         public async Task<IActionResult> Create(OKR model, int? missionId, int? departmentId, int? employeeId)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -169,6 +169,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("MANAGER_CREATE_OKR")]
         public async Task<IActionResult> AddKeyResult(OKRKeyResult kr)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -209,6 +210,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("MANAGER_CREATE_OKR")]
         public async Task<IActionResult> EditKeyResult(OKRKeyResult model)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -241,6 +243,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("MANAGER_CREATE_OKR")]
         public async Task<IActionResult> AllocateTarget(int okrId, int employeeId, decimal allocatedValue)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -265,6 +268,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("MANAGER_CREATE_OKR")]
         public async Task<IActionResult> DeleteKeyResult(int id)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -363,6 +367,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("MANAGER_CREATE_OKR")]
         public async Task<IActionResult> Delete(int id)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||

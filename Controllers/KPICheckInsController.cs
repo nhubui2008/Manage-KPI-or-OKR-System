@@ -13,7 +13,6 @@ using System.Security.Claims;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("EMPLOYEE_UPDATE_KPI_PROGRESS")]
     public class KPICheckInsController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -87,6 +86,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("EMPLOYEE_UPDATE_KPI_PROGRESS")]
         public async Task<IActionResult> Create(KPICheckIn model, decimal AchievedValue, string Note)
         {
             // Security: Employee chỉ được check-in cho chính mình

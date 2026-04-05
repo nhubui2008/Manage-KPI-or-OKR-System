@@ -9,7 +9,6 @@ using System.Security.Claims;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("HR_EVALUATE_KPI")]
     public class EvaluationResultsController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -56,6 +55,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("HR_EVALUATE_KPI")]
         public async Task<IActionResult> Create(EvaluationResult model)
         {
             if (User.IsInRole("Sales") || User.IsInRole("sales") || 
@@ -73,6 +73,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("HR_EVALUATE_KPI")]
         public async Task<IActionResult> Edit(EvaluationResult model)
         {
             if (User.IsInRole("Sales") || User.IsInRole("sales") || 
@@ -99,6 +100,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("HR_EVALUATE_KPI")]
         public async Task<IActionResult> Delete(int id)
         {
             if (User.IsInRole("Sales") || User.IsInRole("sales") || 

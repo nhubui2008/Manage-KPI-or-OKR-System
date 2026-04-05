@@ -411,6 +411,116 @@ body {
     font-size: 1rem;
 }
 
+/* --- Quick Search Results Dropdown --- */
+.search-results-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 420px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+    z-index: 1100;
+    overflow: hidden;
+    display: none;
+    max-height: 480px;
+}
+
+.search-results-dropdown.show {
+    display: block;
+    animation: slideUpFade 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUpFade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.search-results-inner {
+    max-height: 480px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.search-results-inner::-webkit-scrollbar {
+    width: 4px;
+}
+
+.search-results-inner::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.1);
+    border-radius: 4px;
+}
+
+.search-section-header {
+    padding: 12px 18px 6px;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.search-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 18px;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.15s ease;
+    border-bottom: 1px solid rgba(0,0,0,0.03);
+}
+
+.search-item:last-child {
+    border-bottom: none;
+}
+
+.search-item:hover {
+    background: rgba(0, 0, 0, 0.03);
+    padding-left: 22px;
+}
+
+.search-item-icon {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    color: var(--text-secondary);
+    border-radius: 10px;
+    margin-right: 14px;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.search-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-item-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-item-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.search-no-results {
+    padding: 32px 18px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
 .header-right {
     margin-left: auto;
     display: flex;

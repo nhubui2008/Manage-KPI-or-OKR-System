@@ -142,11 +142,91 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 1. Header Search (Tìm kiếm nhanh)
     const headerSearchInput = document.querySelector('.header-search input');
-    if (headerSearchInput) {
-        headerSearchInput.addEventListener('focus', function () {
-            showComingSoonToast('Tìm kiếm nhanh toàn hệ thống');
-            this.blur();
+    const headerSearch = document.querySelector('.header-search');
+    
+    if (headerSearchInput && headerSearch) {
+        // Create results dropdown if not exists
+        let resultsDropdown = document.createElement('div');
+        resultsDropdown.className = 'search-results-dropdown';
+        resultsDropdown.innerHTML = '<div class="search-results-inner"></div>';
+        headerSearch.appendChild(resultsDropdown);
+        
+        const resultsInner = resultsDropdown.querySelector('.search-results-inner');
+        let searchTimeout;
+
+        headerSearchInput.addEventListener('input', function () {
+            const term = this.value.trim();
+            clearTimeout(searchTimeout);
+
+            if (term.length < 2) {
+                resultsDropdown.classList.remove('show');
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/Search/QuickSearch?term=${encodeURIComponent(term)}`);
+                    const results = await response.json();
+                    
+                    renderSearchResults(results, term);
+                    resultsDropdown.classList.add('show');
+                } catch (error) {
+                    console.error('Search error:', error);
+                }
+            }, 300);
         });
+
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!headerSearch.contains(e.target)) {
+                resultsDropdown.classList.remove('show');
+            }
+        });
+
+        // Show dropdown again on focus if term is valid
+        headerSearchInput.addEventListener('focus', function () {
+            if (this.value.trim().length >= 2) {
+                resultsDropdown.classList.add('show');
+            }
+        });
+
+        function renderSearchResults(results, term) {
+            if (!results || results.length === 0) {
+                resultsInner.innerHTML = `<div class="search-no-results">Không tìm thấy kết quả nào cho "<strong>${term}</strong>"</div>`;
+                return;
+            }
+
+            // Group by type
+            const groups = results.reduce((acc, item) => {
+                if (!acc[item.type]) acc[item.type] = [];
+                acc[item.type].push(item);
+                return acc;
+            }, {});
+
+            let html = '';
+            for (const type in groups) {
+                html += `<div class="search-section-header">${type}</div>`;
+                groups[type].forEach(item => {
+                    html += `
+                        <a href="${item.url}" class="search-item">
+                            <div class="search-item-icon">
+                                <i class="bi ${item.icon}"></i>
+                            </div>
+                            <div class="search-item-info">
+                                <div class="search-item-title">${highlightMatch(item.title, term)}</div>
+                                <div class="search-item-subtitle">${item.subtitle}</div>
+                            </div>
+                        </a>
+                    `;
+                });
+            }
+            resultsInner.innerHTML = html;
+        }
+
+        function highlightMatch(text, term) {
+            const regex = new RegExp(`(${term})`, 'gi');
+            return text.replace(regex, '<span style="color: var(--primary); font-weight: 800;">$1</span>');
+        }
     }
 
     // 2. Header Notification Bell (Thông báo)
