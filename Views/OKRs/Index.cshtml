@@ -41,20 +41,22 @@
                 <div class="card-body-custom">
                     <!-- SEARCH FORM -->
                     <form asp-action="Index" method="get" class="toolbar mb-3">
-                        <div class="toolbar-left" style="width: 400px;">
-                            <div class="toolbar-search position-relative">
-                                <i class="bi bi-search position-absolute" style="left: 15px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
-                                <input type="text" name="searchString" value="@currentFilter" class="form-control" style="padding-left: 2.5rem;" placeholder="Tìm kiếm tên mục tiêu OKR..." />
+                        <div class="toolbar-left flex-grow-1" style="max-width: 400px;">
+                            <div class="toolbar-search w-100">
+                                <i class="bi bi-search"></i>
+                                <input type="text" name="searchString" value="@currentFilter" placeholder="Tìm kiếm tên mục tiêu OKR..." />
                             </div>
                         </div>
-                        <div class="toolbar-right d-flex gap-2">
-                            <button type="submit" class="btn btn-primary d-flex align-items-center rounded-pill px-3 shadow-none">
-                                <i class="bi bi-search me-1"></i> Tìm kiếm
+                        <div class="toolbar-right d-flex align-items-center gap-2">
+                            <button type="submit" class="btn-primary-custom border-0 d-flex align-items-center gap-2 shadow-sm" title="Tìm kiếm" style="padding: 0.5rem 1.25rem; border-radius: 8px; height: 38px; font-weight: 500;">
+                                <i class="bi bi-search"></i> Tìm kiếm
                             </button>
-                            <a asp-action="Index" class="btn btn-outline-secondary border-0 btn-sm d-flex align-items-center" title="Làm mới">
+                            <a asp-action="Index" class="btn btn-sm btn-light border-0 d-flex align-items-center justify-content-center text-muted" title="Làm mới" style="width: 38px; height: 38px; border-radius: 8px;">
                                 <i class="bi bi-arrow-clockwise fs-5"></i>
                             </a>
-                            <button type="button" class="btn btn-sm btn-outline-secondary border-0" id="toggleAllBtn"><i class="bi bi-list-task"></i> Mở rộng tất cả</button>
+                            <button type="button" class="btn btn-sm btn-light border-0 d-flex align-items-center gap-2 text-muted" id="toggleAllBtn" title="Mở rộng/Thu gọn" style="padding: 0.5rem 1rem; border-radius: 8px; height: 38px; font-weight: 500;">
+                                <i class="bi bi-list-task"></i> Mở rộng tất cả
+                            </button>
                         </div>
                     </form>
 
