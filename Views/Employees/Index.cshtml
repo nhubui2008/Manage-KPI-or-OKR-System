@@ -21,7 +21,7 @@
         <div class="d-flex justify-content-end gap-2">
             @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
             {
-                <a asp-action="ExportReport" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-isActive="@ViewBag.CurrentStatus" asp-route-departmentId="@ViewBag.CurrentDepartment" class="btn-outline-custom text-success border-success d-flex align-items-center" title="Xuất báo cáo nhân sự">
+                <a asp-action="ExportReport" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-isActive="@ViewBag.CurrentStatus" asp-route-departmentId="@ViewBag.CurrentDepartment" class="btn-outline-success-custom d-flex align-items-center" title="Xuất báo cáo nhân sự">
                     <i class="bi bi-file-earmark-arrow-down me-1"></i> Xuất báo cáo NS
                 </a>
                 <a asp-action="ImportExcel" class="btn-outline-custom d-flex align-items-center">
@@ -53,64 +53,46 @@
             <div class="content-card w-100">
                 <div class="card-body-custom">
                     
-                    <form asp-action="Index" method="get" class="toolbar">
-                        <div class="toolbar-left">
-                            <div class="toolbar-search">
+                    <!-- SEARCH & FILTER FORM -->
+                    <form asp-action="Index" method="get" class="toolbar mb-4">
+                        <div class="toolbar-left d-flex gap-3 flex-wrap flex-grow-1">
+                            <div class="search-wrapper-premium">
                                 <i class="bi bi-search"></i>
-                                <input type="text" name="searchString" value="@ViewBag.CurrentSearch" placeholder="Tìm kiếm theo mã, tên, SĐT...">
+                                <input type="text" name="searchString" value="@ViewBag.CurrentSearch" class="search-input-premium" placeholder="Mã, tên, SĐT...">
                             </div>
                             
-                            <select name="departmentId" class="filter-select">
-                                <option value="">Tất cả phòng ban</option>
-                                @foreach (var dept in departments)
-                                {
-                                    if (ViewBag.CurrentDepartment?.ToString() == dept.Key.ToString())
-                                    {
-                                        <option value="@dept.Key" selected>@dept.Value</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="@dept.Key">@dept.Value</option>
-                                    }
-                                }
-                            </select>
-                            
-                            <select name="isActive" class="filter-select">
-                                @if (string.IsNullOrEmpty(ViewBag.CurrentStatus))
-                                {
-                                    <option value="" selected>Trạng thái</option>
-                                }
-                                else
-                                {
-                                    <option value="">Trạng thái</option>
-                                }
+                            <div class="d-flex gap-2">
+                                <div class="premium-select-wrapper" style="min-width: 220px;">
+                                    <span class="select-label">Phòng ban</span>
+                                    <i class="bi bi-diagram-3 lead-icon"></i>
+                                    <select name="departmentId">
+                                        <option value="">Tất cả phòng ban</option>
+                                        @foreach (var dept in departments)
+                                        {
+                                            <option value="@dept.Key" selected="@(ViewBag.CurrentDepartment?.ToString() == dept.Key.ToString())">@dept.Value</option>
+                                        }
+                                    </select>
+                                </div>
                                 
-                                @if (ViewBag.CurrentStatus == "true")
-                                {
-                                    <option value="true" selected>Đang làm việc</option>
-                                }
-                                else
-                                {
-                                    <option value="true">Đang làm việc</option>
-                                }
-                                
-                                @if (ViewBag.CurrentStatus == "false")
-                                {
-                                    <option value="false" selected>Đã nghỉ việc</option>
-                                }
-                                else
-                                {
-                                    <option value="false">Đã nghỉ việc</option>
-                                }
-                            </select>
+                                <div class="premium-select-wrapper" style="min-width: 170px;">
+                                    <span class="select-label">Trạng thái</span>
+                                    <i class="bi bi-person-check lead-icon"></i>
+                                    <select name="isActive">
+                                        <option value="" selected="@(string.IsNullOrEmpty(ViewBag.CurrentStatus))">Trạng thái</option>
+                                        <option value="true" selected="@(ViewBag.CurrentStatus == "true")">Đang làm việc</option>
+                                        <option value="false" selected="@(ViewBag.CurrentStatus == "false")">Đã nghỉ việc</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                        <div class="toolbar-right">
-                            <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0" title="Làm mới">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </a>
-                            <button type="submit" class="btn btn-sm btn-outline-secondary border-0" title="Lọc kết quả">
-                                <i class="bi bi-funnel"></i>
+                        
+                        <div class="toolbar-right d-flex gap-2 align-items-center">
+                            <button type="submit" class="btn-filter-premium">
+                                <i class="bi bi-funnel-fill"></i> Lọc dữ liệu
                             </button>
+                            <a asp-action="Index" class="btn-refresh-premium" title="Làm mới">
+                                <i class="bi bi-arrow-clockwise fs-4"></i>
+                            </a>
                         </div>
                     </form>
                     

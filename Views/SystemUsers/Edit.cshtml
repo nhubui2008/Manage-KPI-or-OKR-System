@@ -42,7 +42,7 @@
                     <!-- Phân quyền & Trạng thái -->
                     <div class="col-md-6">
                         <label asp-for="RoleId" class="form-label fw-semibold">Nhóm Quyền (Role) <span class="text-danger">*</span></label>
-                        <select asp-for="RoleId" class="form-select" required>
+                        <select asp-for="RoleId" class="form-select-premium" required>
                             <option value="">-- Chọn nhóm quyền --</option>
                             @foreach (var role in roles)
                             {
@@ -54,7 +54,7 @@
 
                     <div class="col-md-6">
                         <label asp-for="IsActive" class="form-label fw-semibold">Trạng thái tài khoản</label>
-                        <select asp-for="IsActive" class="form-select">
+                        <select asp-for="IsActive" class="form-select-premium">
                             <option value="true">Đang hoạt động</option>
                             <option value="false">Ngưng HĐ (Bị khóa)</option>
                         </select>

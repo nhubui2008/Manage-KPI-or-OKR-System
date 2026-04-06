@@ -4,20 +4,20 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="page-content">
+<div class="page-content py-4 container-fluid px-4">
     <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
         <div>
-            <h1 class="mb-2 fw-800">Thêm Chức vụ Mới</h1>
+            <h1 class="mb-2 fw-800 text-dark text-gradient">Thêm Chức vụ Mới</h1>
             <div class="page-breadcrumb">
-                <a href="/">Trang chủ</a>
-                <span class="separator">/</span>
-                <a asp-action="Index">Danh mục Chức vụ</a>
-                <span class="separator">/</span>
-                <span class="text-muted">Thêm mới</span>
+                <a href="/" class="text-decoration-none opacity-75">Trang chủ</a>
+                <span class="separator mx-2 text-muted">/</span>
+                <a asp-action="Index" class="text-decoration-none opacity-75">Danh mục Chức vụ</a>
+                <span class="separator mx-2 text-muted">/</span>
+                <span class="text-primary fw-bold">Thêm mới</span>
             </div>
         </div>
         <div>
-            <a asp-action="Index" class="btn-outline-custom shadow-sm">
+            <a asp-action="Index" class="btn btn-light shadow-sm border-0 bg-white px-4 py-2" style="border-radius: 12px; font-weight: 600; color: #475569; transition: all 0.3s;">
                 <i class="bi bi-arrow-left me-2"></i> Quay lại
             </a>
         </div>
@@ -25,9 +25,17 @@
 
     <div class="row g-4">
         <div class="col-xl-8 animate__animated animate__fadeInLeft">
-            <div class="content-card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
-                <div class="card-header-custom border-bottom bg-transparent py-4">
-                    <h5 class="fw-bold fs-5 mb-0"><i class="bi bi-person-badge text-primary me-2"></i> Thông tin Chức vụ</h5>
+            <div class="content-card border-0 shadow-lg overflow-visible" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 24px;">
+                <div class="card-header-custom border-bottom bg-white bg-opacity-50 py-4 px-4" style="border-radius: 24px 24px 0 0;">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-4 me-3">
+                            <i class="bi bi-person-badge text-primary fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold fs-5 mb-0 text-dark">Thông tin Chức vụ</h5>
+                            <p class="text-muted small mb-0">Định nghĩa chức danh và cấp bậc trong cơ cấu nhân sự</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card-body-custom p-4">
@@ -100,14 +108,16 @@
 
         <div class="col-xl-4 animate__animated animate__fadeInRight">
             <div class="sticky-top" style="top: 100px;">
-                <div class="content-card border-0 shadow-lg text-white mb-4" style="background: linear-gradient(135deg, #0078d4, #005a9e); border-radius: 24px;">
-                    <div class="card-body-custom p-4">
+                <div class="content-card border-0 shadow-lg text-white mb-4 position-relative overflow-hidden" style="background: linear-gradient(135deg, #0078d4, #005a9e); border-radius: 24px;">
+                    <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(255,255,255,0.07);border-radius:50%;"></div>
+                    <div style="position:absolute;bottom:-20px;left:-20px;width:80px;height:80px;background:rgba(255,255,255,0.05);border-radius:50%;"></div>
+                    <div class="card-body-custom p-4 position-relative">
                         <div class="d-flex align-items-center mb-4">
-                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
+                            <div class="me-3 flex-shrink-0" style="width:56px;height:56px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);border-radius:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(139,92,246,0.4);">
                                 <i class="bi bi-person-badge fs-3 text-white"></i>
                             </div>
                             <div>
-                                <div class="small opacity-75 fw-bold text-uppercase">Mã chức vụ</div>
+                                <div class="small fw-bold text-uppercase" style="opacity:0.8;letter-spacing:0.08em;">Mã chức vụ</div>
                                 <h4 class="mb-0 fw-800" id="previewCode">--</h4>
                             </div>
                         </div>
@@ -137,9 +147,14 @@
 
 <style>
     .fw-800 { font-weight: 800; }
+    .text-gradient { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .letter-spacing-1 { letter-spacing: 0.1em; }
-    .form-select, .form-control { border: 1.5px solid #edf2f7; padding-top: 12px; padding-bottom: 12px; }
-    .form-select:focus, .form-control:focus { border-color: #a3c9f9; box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.1); }
+    .form-icon-group { position: relative; }
+    .form-icon-group .input-wrapper { position: relative; transition: all 0.3s ease; background: #fff; }
+    .form-icon-group .input-wrapper:focus-within { border-color: #0078d4 !important; box-shadow: 0 8px 15px -5px rgba(0,120,212,0.15) !important; transform: translateY(-1px); }
+    .form-icon-group .input-wrapper i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.1rem; z-index: 10; transition: color 0.3s; pointer-events: none; }
+    .form-icon-group .input-wrapper:focus-within i { color: #0078d4; }
+    .form-control:focus, .form-select:focus { box-shadow: none !important; color: #1e293b; background-color: transparent; }
     .animate__animated { animation-duration: 0.8s; }
 </style>
 

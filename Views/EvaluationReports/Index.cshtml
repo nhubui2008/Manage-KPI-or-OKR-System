@@ -23,7 +23,7 @@
         </div>
         <div class="d-flex gap-2">
             <button class="btn btn-outline-custom" onclick="window.print()"><i class="bi bi-printer me-1"></i> In báo cáo</button>
-            <a asp-action="ExportExcel" asp-route-departmentId="@ViewBag.CurrentDeptId" asp-route-cycle="@ViewBag.CurrentCycle" class="btn-primary-custom text-decoration-none">
+            <a asp-action="ExportExcel" asp-route-departmentId="@ViewBag.CurrentDeptId" asp-route-cycle="@ViewBag.CurrentCycle" class="btn-outline-success-custom text-decoration-none">
                 <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel
             </a>
         </div>
@@ -33,24 +33,32 @@
     <div class="content-card mb-4 shadow-sm border-0">
         <div class="card-body-custom">
             <form method="get" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Phòng ban</label>
-                    <select name="departmentId" class="form-select">
-                        @foreach(var d in departments){
-                            <option value="@d.Id" selected="@(ViewBag.CurrentDeptId == d.Id ? "selected" : null)">@d.DepartmentName</option>
-                        }
-                    </select>
+                <div class="col-md-4">
+                    <div class="premium-select-wrapper">
+                        <span class="select-label">Phòng ban</span>
+                        <i class="bi bi-diagram-3 lead-icon"></i>
+                        <select name="departmentId">
+                            @foreach(var d in departments){
+                                <option value="@d.Id" selected="@(ViewBag.CurrentDeptId == d.Id ? "selected" : null)">@d.DepartmentName</option>
+                            }
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Chu kỳ (Quý/Năm)</label>
-                    <select name="cycle" class="form-select">
-                        <option value="Q1-2026" selected="@(ViewBag.CurrentCycle == "Q1-2026" ? "selected" : null)">Quý 1 - 2026</option>
-                        <option value="Q2-2026" selected="@(ViewBag.CurrentCycle == "Q2-2026" ? "selected" : null)">Quý 2 - 2026</option>
-                        <option value="Năm 2026" selected="@(ViewBag.CurrentCycle == "Năm 2026" ? "selected" : null)">Cả năm 2026</option>
-                    </select>
+                <div class="col-md-4">
+                    <div class="premium-select-wrapper">
+                        <span class="select-label">Chu kỳ báo cáo</span>
+                        <i class="bi bi-calendar-check lead-icon"></i>
+                        <select name="cycle">
+                            <option value="Q1-2026" selected="@(ViewBag.CurrentCycle == "Q1-2026" ? "selected" : null)">Quý 1 - 2026</option>
+                            <option value="Q2-2026" selected="@(ViewBag.CurrentCycle == "Q2-2026" ? "selected" : null)">Quý 2 - 2026</option>
+                            <option value="Năm 2026" selected="@(ViewBag.CurrentCycle == "Năm 2026" ? "selected" : null)">Cả năm 2026</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary-custom w-100">Lọc dữ liệu</button>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn-filter-premium w-100" style="height: 38px;">
+                        <i class="bi bi-funnel-fill"></i> Lọc dữ liệu báo cáo
+                    </button>
                 </div>
             </form>
         </div>

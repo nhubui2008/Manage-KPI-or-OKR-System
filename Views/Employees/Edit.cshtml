@@ -145,7 +145,7 @@
                                         <label for="DepartmentId" class="form-label small fw-bold text-secondary">Phòng ban</label>
                                         <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
                                             <i class="bi bi-building"></i>
-                                            <select name="departmentId" class="form-select border-0" asp-items="ViewBag.DepartmentId" style="padding-left: 45px; height: 50px;">
+                                            <select name="departmentId" class="form-select-premium" asp-items="ViewBag.DepartmentId">
                                                 <option value="">-- Chọn phòng ban --</option>
                                             </select>
                                         </div>
@@ -157,7 +157,7 @@
                                         <label for="PositionId" class="form-label small fw-bold text-secondary">Vị trí công việc</label>
                                         <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
                                             <i class="bi bi-briefcase"></i>
-                                            <select name="positionId" class="form-select border-0" asp-items="ViewBag.PositionId" style="padding-left: 45px; height: 50px;">
+                                            <select name="positionId" class="form-select-premium" asp-items="ViewBag.PositionId">
                                                 <option value="">-- Chọn vị trí --</option>
                                             </select>
                                         </div>
@@ -179,7 +179,7 @@
                                         <label asp-for="SystemUserId" class="form-label small fw-bold text-secondary">Tài khoản liên kết</label>
                                         <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
                                             <i class="bi bi-person-badge"></i>
-                                            <select asp-for="SystemUserId" class="form-select border-0" asp-items="ViewBag.SystemUserId" style="padding-left: 45px; height: 50px;">
+                                            <select asp-for="SystemUserId" class="form-select-premium" asp-items="ViewBag.SystemUserId">
                                                 <option value="">-- Liên kết tài khoản (Không bắt buộc) --</option>
                                             </select>
                                         </div>
@@ -199,7 +199,7 @@
                                 <label asp-for="StrategicGoalId" class="form-label small fw-bold text-secondary">Gắn với Sứ mệnh / Mục tiêu chiến lược</label>
                                 <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
                                     <i class="bi bi-flag-fill text-warning"></i>
-                                    <select asp-for="StrategicGoalId" class="form-select border-0" asp-items="ViewBag.StrategicGoalId" style="padding-left: 45px; height: 50px;">
+                                    <select asp-for="StrategicGoalId" class="form-select-premium" asp-items="ViewBag.StrategicGoalId">
                                         <option value="">-- Không gắn mục tiêu cụ thể --</option>
                                     </select>
                                 </div>

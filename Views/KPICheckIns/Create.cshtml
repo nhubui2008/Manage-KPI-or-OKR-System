@@ -64,7 +64,7 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Nhân viên <span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-person-badge"></i>
-                                        <select asp-for="EmployeeId" class="form-select shadow-sm" required>
+                                        <select asp-for="EmployeeId" class="form-select-premium" required>
                                             @if(employees.Count != 1) { <option value="">-- Chọn nhân viên --</option> }
                                             @foreach(var e in employees)
                                             {
@@ -81,7 +81,7 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">KPI Mục tiêu <span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-bullseye"></i>
-                                        <select asp-for="KPIId" id="kpiSelect" class="form-select shadow-sm" required>
+                                        <select asp-for="KPIId" id="kpiSelect" class="form-select-premium" required>
                                             <option value="">-- Chọn KPI cần báo cáo --</option>
                                             @foreach(var k in kpis)
                                             {
@@ -118,7 +118,7 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Trạng thái tự đánh giá</label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-speedometer2"></i>
-                                        <select asp-for="StatusId" class="form-select shadow-sm">
+                                        <select asp-for="StatusId" class="form-select-premium">
                                             @foreach(var s in statuses) { <option value="@s.Id">@s.StatusName</option> }
                                         </select>
                                     </div>
@@ -140,7 +140,7 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Lý do chính (Nếu chưa đạt mục tiêu)</label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-question-diamond"></i>
-                                        <select asp-for="FailReasonId" class="form-select shadow-sm">
+                                        <select asp-for="FailReasonId" class="form-select-premium">
                                             <option value="">-- Không có / Đã hoàn thành tốt --</option>
                                             @foreach(var r in failReasons) { <option value="@r.Id">@r.ReasonName</option> }
                                         </select>

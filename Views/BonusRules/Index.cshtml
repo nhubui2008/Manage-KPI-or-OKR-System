@@ -63,8 +63,20 @@
     <div class="modal-dialog"><div class="modal-content border-0 shadow">
         <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-cash-coin me-2"></i>Thêm Quy tắc Thưởng</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <form asp-action="Create" method="post"><div class="modal-body">
-            <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng áp dụng</label><select name="RankId" class="form-select" required>
-                <option value="">-- Chọn xếp hạng --</option>@foreach (var rk in allRanks){<option value="@rk.Id">@rk.RankCode - @rk.Description</option>}</select></div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Xếp hạng áp dụng</label>
+                <div class="premium-select-wrapper">
+                    <span class="select-label">Xếp hạng</span>
+                    <i class="bi bi-award lead-icon"></i>
+                    <select name="RankId" required>
+                        <option value="">-- Chọn xếp hạng --</option>
+                        @foreach (var rk in allRanks)
+                        {
+                            <option value="@rk.Id">@rk.RankCode - @rk.Description</option>
+                        }
+                    </select>
+                </div>
+            </div>
             <div class="mb-3"><label class="form-label fw-semibold">Phần trăm thưởng (%)</label><input type="number" name="BonusPercentage" class="form-control" step="0.01" /></div>
             <div class="mb-3"><label class="form-label fw-semibold">Số tiền cố định (VNĐ)</label><input type="number" name="FixedAmount" class="form-control" step="1000" /></div>
         </div>
@@ -85,13 +97,17 @@
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label fw-bold small text-muted text-uppercase">Xếp hạng áp dụng</label>
-                        <select name="RankId" id="editRankId" class="form-select shadow-none" required>
-                            <option value="">-- Chọn xếp hạng --</option>
-                            @foreach (var rk in allRanks)
-                            {
-                                <option value="@rk.Id">@rk.RankCode - @rk.Description</option>
-                            }
-                        </select>
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Xếp hạng</span>
+                            <i class="bi bi-award lead-icon"></i>
+                            <select name="RankId" id="editRankId" required>
+                                <option value="">-- Chọn xếp hạng --</option>
+                                @foreach (var rk in allRanks)
+                                {
+                                    <option value="@rk.Id">@rk.RankCode - @rk.Description</option>
+                                }
+                            </select>
+                        </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">

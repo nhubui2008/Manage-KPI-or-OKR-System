@@ -99,6 +99,25 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.EmployeeCount = await _context.EmployeeAssignments
                 .CountAsync(a => a.DepartmentId == id && a.IsActive == true);
 
+            // Lấy danh sách các phòng ban trực thuộc
+            var subDepartments = await _context.Departments
+                .Where(d => d.ParentDepartmentId == id && d.IsActive == true)
+                .OrderBy(d => d.DepartmentName)
+                .ToListAsync();
+            ViewBag.SubDepartments = subDepartments;
+
+            // Đếm số nhân viên của tất cả cá phòng ban (dùng cho sub departments)
+            ViewBag.SubDeptEmployeeCounts = await _context.EmployeeAssignments
+                .Where(a => a.IsActive == true && a.DepartmentId != null)
+                .GroupBy(a => a.DepartmentId)
+                .Select(g => new { DeptId = g.Key.Value, Count = g.Count() })
+                .ToDictionaryAsync(x => x.DeptId, x => x.Count);
+
+            // Fetch list of employee names for manager references
+            ViewBag.AllManagers = await _context.Employees
+                .Where(e => e.IsActive == true)
+                .ToDictionaryAsync(e => e.Id, e => e.FullName);
+
             return View(dept);
         }
 

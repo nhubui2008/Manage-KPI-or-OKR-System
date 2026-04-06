@@ -66,7 +66,7 @@ body, html {
 .comfort-title {
     font-size: 1.8rem;
     font-weight: 800;
-    color: #000000;
+    color: #0078d4;
     margin: 0 0 4px 0;
     letter-spacing: -0.02em;
 }
@@ -150,7 +150,7 @@ body, html {
     width: 20px; height: 20px;
     border-radius: 4px;
     background: #ffffff;
-    border: 1.5px solid #000000;
+    border: 1.5px solid #0078d4;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -186,13 +186,13 @@ body, html {
     font-size: 0.95rem;
 }
 .comfort-link {
-    color: #000000;
+    color: #0078d4;
     text-decoration: underline;
     font-size: 0.95rem;
     transition: color 0.2s;
 }
 .comfort-link:hover {
-    color: #333333;
+    color: #005a9e;
 }
 
 .comfort-button {
@@ -286,7 +286,7 @@ body, html {
 }
 .social-soft:hover {
     background: #f9f9f9;
-    border-color: #000000;
+    border-color: #0078d4;
 }
 .social-background {
     display: none;
@@ -305,12 +305,12 @@ body, html {
 }
 .signup-link {
     margin-left: 6px;
-    color: #000000;
+    color: #0078d4;
     font-weight: 700;
     text-decoration: underline;
 }
 .signup-link:hover {
-    color: #4a3747;
+    color: #005a9e;
 }
 
 .gentle-success {

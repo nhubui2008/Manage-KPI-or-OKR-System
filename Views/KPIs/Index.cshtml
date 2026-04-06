@@ -37,26 +37,36 @@
 }
 
 <div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="stat-card p-3 border-start border-4 border-primary shadow-sm bg-white rounded-3">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="text-muted fw-semibold" style="font-size: 0.85rem;">Tổng số KPI</div>
-                <div class="icon-box bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                    <i class="bi bi-target"></i>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-primary border-4">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Tổng số KPI</div>
+                    <div class="stat-value h4 mb-0 fw-bold text-dark mt-1">@(Model?.Count() ?? 0)</div>
+                </div>
+                <div class="stat-icon bg-primary text-white rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px; flex-shrink: 0;">
+                    <i class="bi bi-list-check fs-4"></i>
                 </div>
             </div>
-            <div class="fw-bold text-dark fs-3">@(Model?.Count() ?? 0)</div>
+            <div class="mt-2">
+                <span class="text-muted" style="font-size: 0.75rem;">Tổng danh mục KPI trong hệ thống</span>
+            </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="stat-card p-3 border-start border-4 border-success shadow-sm bg-white rounded-3">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="text-muted fw-semibold" style="font-size: 0.85rem;">Đã phân bổ</div>
-                <div class="icon-box bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                    <i class="bi bi-people-fill"></i>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-success border-4">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Đã phân bổ</div>
+                    <div class="stat-value h4 mb-0 fw-bold text-dark mt-1">@assignments.Count</div>
+                </div>
+                <div class="stat-icon bg-success text-white rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px; flex-shrink: 0;">
+                    <i class="bi bi-person-check-fill fs-4"></i>
                 </div>
             </div>
-            <div class="fw-bold text-dark fs-3">@assignments.Count</div>
+            <div class="mt-2">
+                <span class="text-muted" style="font-size: 0.75rem;">KPI đã được giao cho nhân viên</span>
+            </div>
         </div>
     </div>
 </div>
@@ -65,26 +75,27 @@
     <div class="card-body-custom p-4">
         <form asp-action="Index" method="get" class="toolbar mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div class="toolbar-left d-flex gap-2 flex-wrap">
-                <div class="toolbar-search position-relative">
-                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <input type="text" name="searchString" class="form-control rounded-pill ps-5 border-light bg-light" placeholder="Tìm kiếm KPI..." style="width: 250px;">
+                <div class="search-wrapper-premium">
+                    <i class="bi bi-search"></i>
+                    <input type="text" name="searchString" class="search-input-premium" placeholder="Tìm kiếm KPI...">
                 </div>
             </div>
             <div class="toolbar-right d-flex align-items-center gap-2">
-                <div class="d-flex align-items-center gap-2 bg-white p-1 rounded shadow-sm border">
-                    <span class="ps-2 text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Kỳ báo cáo:</span>
-                    <select name="period" class="form-select form-select-sm border-0 fw-bold text-primary" style="width: 160px; outline: none; box-shadow: none;">
-                        <option value="">Tất cả</option>
+                <div class="premium-select-wrapper" style="min-width: 200px;">
+                    <span class="select-label">Kỳ báo cáo</span>
+                    <i class="bi bi-calendar-event lead-icon"></i>
+                    <select name="period">
+                        <option value="">Tất cả kỳ báo cáo</option>
                         @foreach(var p in periodsDict.Values.Distinct())
                         {
                             <option value="@p">@p</option>
                         }
                     </select>
                 </div>
-                <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0 bg-white shadow-sm" title="Làm mới" style="padding: 0.35rem 0.6rem;">
-                    <i class="bi bi-arrow-clockwise"></i>
+                <a asp-action="Index" class="btn-refresh-premium" title="Làm mới">
+                    <i class="bi bi-arrow-clockwise fs-5"></i>
                 </a>
-                <button type="submit" class="btn btn-sm btn-primary shadow-sm" title="Lọc kết quả" style="padding: 0.35rem 0.8rem;">
+                <button type="submit" class="btn-filter-premium">
                     <i class="bi bi-funnel"></i> Lọc
                 </button>
             </div>
@@ -98,8 +109,8 @@
                         <th class="fw-medium">Chỉ tiêu (Target)</th>
                         <th class="fw-medium">Kỳ đánh giá</th>
                         <th class="fw-medium">Phân bổ cho</th>
-                        <th class="border-0 text-muted small text-uppercase fw-bold" style="width: 100px;">Trạng thái</th>
-                        <th class="border-0 text-muted small text-uppercase fw-bold" style="width: 100px;">Thao tác</th>
+                        <th class="fw-medium">Trạng thái</th>
+                        <th class="fw-medium">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -119,7 +130,7 @@
                             <tr class="bg-white">
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="bg-primary bg-opacity-10 text-primary p-2 rounded">
+                                        <div class="bg-primary text-white p-2 rounded shadow-sm d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
                                             <i class="bi bi-graph-up-arrow fs-5"></i>
                                         </div>
                                         <div>
@@ -162,7 +173,7 @@
                                             }
                                             @if (assignedEmployees.Count > 3)
                                             {
-                                                <div class="user-avatar bg-secondary text-white border border-2 border-white position-relative rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 1;">
+                                                <div class="user-avatar bg-primary text-white border border-2 border-white position-relative rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 1;">
                                                     +@(assignedEmployees.Count - 3)
                                                 </div>
                                             }
@@ -269,19 +280,27 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Phân loại KPI <span class="text-danger">*</span></label>
-                            <select name="kpi.KPITypeId" class="form-select" required>
-                                <option value="1">Kết quả</option>
-                                <option value="2">Hành vi</option>
-                            </select>
+                            <div class="premium-select-wrapper">
+                                <span class="select-label">Phân loại</span>
+                                <i class="bi bi-tag lead-icon"></i>
+                                <select name="kpi.KPITypeId" required>
+                                    <option value="1">Kết quả</option>
+                                    <option value="2">Hành vi</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Kỳ đánh giá <span class="text-danger">*</span></label>
-                            <select name="kpi.PeriodId" class="form-select" required>
-                                @foreach(var kvp in periodsDict)
-                                {
-                                    <option value="@kvp.Key">@kvp.Value</option>
-                                }
-                            </select>
+                            <div class="premium-select-wrapper">
+                                <span class="select-label">Kỳ đánh giá</span>
+                                <i class="bi bi-calendar3 lead-icon"></i>
+                                <select name="kpi.PeriodId" required>
+                                    @foreach(var kvp in periodsDict)
+                                    {
+                                        <option value="@kvp.Key">@kvp.Value</option>
+                                    }
+                                </select>
+                            </div>
                         </div>
                     </div>
                     

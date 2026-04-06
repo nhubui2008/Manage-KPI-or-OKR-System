@@ -144,7 +144,7 @@
                                         <label for="DepartmentId" class="form-label small fw-bold text-secondary">Phòng ban</label>
                                         <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
                                             <i class="bi bi-building"></i>
-                                            <select name="departmentId" class="form-select border-0" asp-items="ViewBag.DepartmentId" style="padding-left: 45px; height: 50px;">
+                                            <select name="departmentId" class="form-select-premium" asp-items="ViewBag.DepartmentId">
                                                 <option value="">-- Chọn phòng ban --</option>
                                             </select>
                                         </div>
@@ -156,7 +156,7 @@
                                         <label for="PositionId" class="form-label small fw-bold text-secondary">Vị trí công việc</label>
                                         <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
                                             <i class="bi bi-briefcase"></i>
-                                            <select name="positionId" class="form-select border-0" asp-items="ViewBag.PositionId" style="padding-left: 45px; height: 50px;">
+                                            <select name="positionId" class="form-select-premium" asp-items="ViewBag.PositionId">
                                                 <option value="">-- Chọn vị trí --</option>
                                             </select>
                                         </div>
@@ -178,7 +178,7 @@
                                         <label asp-for="SystemUserId" class="form-label small fw-bold text-secondary">Tài khoản liên kết</label>
                                         <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
                                             <i class="bi bi-person-badge"></i>
-                                            <select asp-for="SystemUserId" class="form-select border-0" asp-items="ViewBag.SystemUserId" style="padding-left: 45px; height: 50px;">
+                                            <select asp-for="SystemUserId" class="form-select-premium" asp-items="ViewBag.SystemUserId">
                                                 <option value="">-- Liên kết tài khoản (Không bắt buộc) --</option>
                                             </select>
                                         </div>
@@ -198,7 +198,7 @@
                                 <label asp-for="StrategicGoalId" class="form-label small fw-bold text-secondary">Gắn với Sứ mệnh / Mục tiêu chiến lược</label>
                                 <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
                                     <i class="bi bi-flag-fill text-warning"></i>
-                                    <select asp-for="StrategicGoalId" class="form-select border-0" asp-items="ViewBag.StrategicGoalId" style="padding-left: 45px; height: 50px;">
+                                    <select asp-for="StrategicGoalId" class="form-select-premium" asp-items="ViewBag.StrategicGoalId">
                                         <option value="">-- Không gắn mục tiêu cụ thể --</option>
                                     </select>
                                 </div>
@@ -237,11 +237,11 @@
                      style="background: linear-gradient(135deg, #0078d4, #005a9e); border-radius: 24px;">
                     <div class="card-body-custom p-4 position-relative z-index-1">
                         <div class="d-flex align-items-center mb-4">
-                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
-                                <i class="bi bi-lightbulb fs-3 text-white"></i>
+                            <div class="me-3 flex-shrink-0" style="width: 56px; height: 56px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(245,158,11,0.4);">
+                                <i class="bi bi-lightbulb-fill fs-3 text-white"></i>
                             </div>
                             <div>
-                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small">Cẩm nang HR</h6>
+                                <h6 class="mb-0 fw-bold text-uppercase small" style="opacity: 0.8; letter-spacing: 0.08em;">Cẩm nang HR</h6>
                                 <h4 class="mb-0 fw-800">Tạo Hồ Sơ</h4>
                             </div>
                         </div>

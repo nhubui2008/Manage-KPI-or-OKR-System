@@ -100,7 +100,7 @@
                                             </td>
                                             <td>
                                                 <div class="d-flex align-items-center gap-2">
-                                                    <div class="user-avatar bg-dark text-white rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;font-size:0.75rem;">
+                                                    <div class="user-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;font-size:0.75rem;">
                                                         @(userName.Length > 0 ? userName[0].ToString().ToUpper() : "?")
                                                     </div>
                                                     <span class="fw-medium text-dark">@userName</span>
@@ -255,8 +255,10 @@
     .page-link:hover {
         background-color: #f8f9fa;
     }
+    /* Badge màu cho AuditLog actions - đã đồng bộ với Office Blue design system */
     .bg-warning.text-dark {
-        background-color: #ffc107 !important;
+        background-color: var(--primary) !important;
+        color: #ffffff !important;
     }
 </style>
 

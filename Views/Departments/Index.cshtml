@@ -16,9 +16,9 @@
             {
                 var icon = depth == 0 ? "bi-folder-fill text-warning" : "bi-files text-secondary";
                 var count = counts.ContainsKey(child.Id) ? counts[child.Id] : 0;
-                <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded hover-bg-light" style="margin-left: -5px; cursor: pointer;">
-                    <span class="d-flex align-items-center gap-2"><i class="bi @icon"></i> @child.DepartmentName</span>
-                    <span class="badge bg-secondary rounded-pill">@count</span>
+                <div class="d-flex justify-content-between align-items-center mb-1 py-1 px-2 rounded hover-bg-light" style="margin-left: -5px; cursor: pointer; font-size: 1rem;" onclick="window.location.href='@Url.Action("Details", "Departments", new { id = child.Id })'">
+                    <span class="d-flex align-items-center gap-1"><i class="bi @icon"></i> @child.DepartmentName</span>
+                    <span class="badge bg-secondary rounded-pill" style="font-size: 0.875rem;">@count</span>
                 </div>
                 
                 // Gọi đệ quy trực tiếp, không dùng await
@@ -68,21 +68,19 @@
     </div>
 }
 
-<div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <div class="row g-4 w-100">
-    <div class="col-lg-4">
+<div class="row g-3">
+    <div class="col-xl-3 col-12">
         <div class="content-card h-100">
-            <div class="card-header-custom border-bottom">
+            <div class="card-header-custom border-bottom py-2 px-3">
                 <h5 class="mb-0 fw-bold"><i class="bi bi-diagram-3 me-2"></i> Cây tổ chức</h5>
             </div>
-            <div class="card-body-custom pt-3">
-                <div class="d-flex align-items-center gap-2 mb-3 px-2 py-2 rounded bg-primary bg-opacity-10 border border-primary border-opacity-25">
-                    <i class="bi bi-building text-primary fs-5"></i>
-                    <span class="fw-bold text-dark">Tổ Chức / Công Ty</span>
+            <div class="card-body-custom pt-2 px-3 pb-2">
+                <div class="d-flex align-items-center gap-2 mb-2 px-2 py-1 rounded bg-primary bg-opacity-10 border border-primary border-opacity-25">
+                    <i class="bi bi-building text-primary"></i>
+                    <span class="fw-semibold text-dark">Tổ Chức / Công Ty</span>
                 </div>
                 
-                <div class="ps-3 ms-2 border-start">
+                <div class="ps-2 ms-1 border-start">
                     @{
                         if (Model != null && Model.Any())
                         {
@@ -91,7 +89,7 @@
                         }
                         else
                         {
-                            <div class="text-muted fst-italic py-2">Chưa có phòng ban nào trong hệ thống</div>
+                            <div class="text-muted fst-italic py-1 small">Chưa có phòng ban nào trong hệ thống</div>
                         }
                     }
                 </div>
@@ -99,64 +97,45 @@
         </div>
     </div>
 
-    <div class="col-lg-8">
+    <div class="col-xl-9 col-12">
         <div class="content-card h-100">
-            <div class="card-body-custom">
-                <form asp-action="Index" method="get" class="toolbar">
+            <div class="card-body-custom px-3 py-2">
+                <form asp-action="Index" method="get" class="toolbar mb-2" style="padding: 6px 0;">
                     <div class="toolbar-left">
-                        <div class="toolbar-search">
+                        <div class="search-wrapper-premium" style="max-width: 350px;">
                             <i class="bi bi-search"></i>
-                            <input type="text" name="searchString" value="@(ViewData["CurrentFilter"] ?? "")" class="form-control" placeholder="Tìm kiếm mã hoặc tên phòng ban..." />
+                            <input type="text" name="searchString" value="@(ViewData["CurrentFilter"] ?? "")" class="search-input-premium" placeholder="Tìm kiếm mã hoặc tên phòng ban..." />
                         </div>
                     </div>
                     <div class="toolbar-right">
-                        <select name="isActive" class="filter-select">
-                            @if (string.IsNullOrEmpty(ViewBag.CurrentStatus))
-                            {
-                                <option value="" selected>Tất cả trạng thái</option>
-                            }
-                            else
-                            {
-                                <option value="">Tất cả trạng thái</option>
-                            }
-
-                            @if (ViewBag.CurrentStatus == "true")
-                            {
-                                <option value="true" selected>Hoạt động</option>
-                            }
-                            else
-                            {
-                                <option value="true">Hoạt động</option>
-                            }
-
-                            @if (ViewBag.CurrentStatus == "false")
-                            {
-                                <option value="false" selected>Ngừng HĐ</option>
-                            }
-                            else
-                            {
-                                <option value="false">Ngừng HĐ</option>
-                            }
-                        </select>
-                        <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0" title="Làm mới">
-                            <i class="bi bi-arrow-clockwise"></i>
+                        <div class="premium-select-wrapper" style="min-width: 170px;">
+                            <span class="select-label">Trạng thái</span>
+                            <i class="bi bi-toggle-on lead-icon"></i>
+                            <select name="isActive" onchange="this.form.submit()">
+                                <option value="" selected="@(string.IsNullOrEmpty(ViewBag.CurrentStatus))">Mọi trạng thái</option>
+                                <option value="true" selected="@(ViewBag.CurrentStatus == "true")">Hoạt động</option>
+                                <option value="false" selected="@(ViewBag.CurrentStatus == "false")">Ngừng HĐ</option>
+                            </select>
+                        </div>
+                        <a asp-action="Index" class="btn-refresh-premium" title="Làm mới (Xóa bộ lọc)">
+                            <i class="bi bi-arrow-clockwise fs-5"></i>
                         </a>
-                        <button type="submit" class="btn btn-sm btn-outline-secondary border-0" title="Lọc kết quả">
-                            <i class="bi bi-funnel"></i>
+                        <button type="submit" class="btn-filter-premium" title="Lọc kết quả">
+                            <i class="bi bi-funnel-fill"></i> Lọc
                         </button>
                     </div>
                 </form>
 
-                <div class="table-responsive w-100">
-                    <table class="data-table w-100">
+                <div class="table-responsive">
+                    <table class="data-table" style="font-size: 1rem;">
                         <thead>
                             <tr>
-                                <th>Mã PB</th>
-                                <th>Tên phòng ban</th>
-                                <th>Trưởng phòng</th>
-                                <th>Số lượng NV</th>
-                                <th>Trạng thái</th>
-                                <th class="text-end">Thao tác</th>
+                                <th class="text-nowrap py-2" style="width: 80px;">Mã PB</th>
+                                <th class="py-2" style="min-width: 150px;">Tên phòng ban</th>
+                                <th class="text-nowrap py-2" style="min-width: 130px;">Trưởng phòng</th>
+                                <th class="text-nowrap text-center py-2">Số NV</th>
+                                <th class="text-nowrap py-2">Trạng thái</th>
+                                <th class="text-end text-nowrap py-2">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -172,27 +151,27 @@
                                     var statusText = dept.IsActive == true ? "Hoạt động" : "Ngừng HĐ";
                                     var avatarLetter = managerName != "Chưa cập nhật" ? managerName[0].ToString().ToUpper() : "?";
 
-                                    <tr>
-                                        <td class="fw-semibold text-muted">@dept.DepartmentCode</td>
-                                        <td class="fw-bold text-dark">@dept.DepartmentName</td>
-                                        <td>
-                                            @if (managerName != "Chưa cập nhật")
-                                            {
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <div class="user-avatar bg-secondary text-white fw-bold d-flex justify-content-center align-items-center" style="width: 24px; height: 24px; font-size: 0.7rem;">
+                                    <tr class="hover-bg-light">
+                                        <td class="fw-semibold text-muted py-1">@dept.DepartmentCode</td>
+                                        <td class="fw-semibold text-dark py-1">@dept.DepartmentName</td>
+                                        @if (managerName != "Chưa cập nhật")
+                                        {
+                                            <td class="py-1">
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <div class="user-avatar bg-primary text-white fw-bold d-flex justify-content-center align-items-center" style="width: 20px; height: 20px; font-size: 0.65rem; flex-shrink:0;">
                                                         @avatarLetter
                                                     </div>
-                                                    <span>@managerName</span>
+                                                    <span class="text-nowrap">@managerName</span>
                                                 </div>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted fst-italic">@managerName</span>
-                                            }
-                                        </td>
-                                        <td><span class="badge bg-light text-dark border">@count</span></td>
-                                        <td><span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span></td>
-                                        <td>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="py-1"><span class="text-muted fst-italic">@managerName</span></td>
+                                        }
+                                        <td class="text-center py-1"><span class="badge bg-light text-dark border" style="font-size: 0.9rem;">@count</span></td>
+                                        <td class="text-nowrap py-1"><span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span></td>
+                                        <td onclick="event.stopPropagation();" class="py-1">
                                             <div class="action-btns justify-content-end">
                                             <a asp-action="Details" asp-route-id="@dept.Id" class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
                                             <a asp-action="Edit" asp-route-id="@dept.Id" class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
@@ -250,6 +229,5 @@
         </div>
     </div>
 
-        </div>
     </div>
 </div>

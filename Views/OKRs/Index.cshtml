@@ -40,21 +40,27 @@
             <div class="content-card w-100">
                 <div class="card-body-custom">
                     <!-- SEARCH FORM -->
-                    <form asp-action="Index" method="get" class="toolbar mb-3">
-                        <div class="toolbar-left" style="width: 400px;">
-                            <div class="toolbar-search position-relative">
-                                <i class="bi bi-search position-absolute" style="left: 15px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
-                                <input type="text" name="searchString" value="@currentFilter" class="form-control" style="padding-left: 2.5rem;" placeholder="Tìm kiếm tên mục tiêu OKR..." />
+                    <form asp-action="Index" method="get" class="toolbar mb-4">
+                        <div class="toolbar-left" style="flex: 1; max-width: 500px;">
+                            <div class="search-wrapper-premium">
+                                <i class="bi bi-search"></i>
+                                <input type="text" name="searchString" value="@currentFilter" class="search-input-premium" placeholder="Tìm kiếm tên mục tiêu OKR..." />
                             </div>
                         </div>
-                        <div class="toolbar-right d-flex gap-2">
-                            <button type="submit" class="btn btn-primary d-flex align-items-center rounded-pill px-3 shadow-none">
-                                <i class="bi bi-search me-1"></i> Tìm kiếm
+                        <div class="toolbar-right d-flex gap-3 align-items-center">
+                            <button type="submit" class="btn-search-premium">
+                                <i class="bi bi-search"></i>
+                                <span>Tìm kiếm</span>
                             </button>
-                            <a asp-action="Index" class="btn btn-outline-secondary border-0 btn-sm d-flex align-items-center" title="Làm mới">
-                                <i class="bi bi-arrow-clockwise fs-5"></i>
-                            </a>
-                            <button type="button" class="btn btn-sm btn-outline-secondary border-0" id="toggleAllBtn"><i class="bi bi-list-task"></i> Mở rộng tất cả</button>
+                            <div class="d-flex align-items-center gap-2">
+                                <a asp-action="Index" class="btn-refresh-premium" title="Làm mới">
+                                    <i class="bi bi-arrow-clockwise fs-4"></i>
+                                </a>
+                                <button type="button" class="btn btn-light rounded-pill shadow-sm px-4 d-flex align-items-center gap-2 border-0" id="toggleAllBtn" style="height: 48px; background: #ffffff; color: var(--primary); font-weight: 700; transition: all 0.3s ease; border-radius: var(--radius-lg) !important;">
+                                    <i class="bi bi-list-task"></i>
+                                    <span>Mở rộng tất cả</span>
+                                </button>
+                            </div>
                         </div>
                     </form>
 
@@ -95,9 +101,12 @@
                                             
                                             <div class="d-flex flex-column flex-grow-1 pe-4">
                                                 <div class="d-flex align-items-center gap-2 mb-2">
-                                                    <span class="badge @okrProgressColor bg-opacity-10 @okrTextClass rounded-pill px-2">Objective (O)</span>
-                                                    @if(okr.OKRTypeId == 1){<span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2"><i class="bi bi-star-fill me-1"></i>Chiến lược công ty</span>}
-                                                    <h5 class="mb-0 fw-bold fs-6 text-dark">@okr.ObjectiveName</h5>
+                                                    <span class="badge rounded-pill px-2 @okrTextClass" style="background-color: @(okrProgressInt >= 100 ? "var(--success-bg)" : okrProgressInt >= 70 ? "var(--primary-bg)" : okrProgressInt >= 40 ? "var(--warning-bg)" : "var(--danger-bg)"); font-size: 0.7rem;">Objective (O)</span>
+                                                    @if(okr.OKRTypeId == 1){<span class="badge bg-primary text-white rounded-pill px-2 shadow-sm"><i class="bi bi-star-fill me-1"></i>Chiến lược công ty</span>}
+                                                    <h5 class="mb-0 fw-bold fs-6 text-primary-custom d-flex align-items-center gap-2">
+                                                        <i class="bi bi-bullseye"></i>
+                                                        @okr.ObjectiveName
+                                                    </h5>
                                                 </div>
                                                 
                                                 <div class="d-flex align-items-center gap-4">
@@ -365,9 +374,10 @@
                     
                     <div class="form-icon-group">
                         <label>Chọn nhân viên phụ trách</label>
-                        <div class="input-wrapper">
-                            <i class="bi bi-person-badge"></i>
-                            <select name="employeeId" class="form-select" required>
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Nhân viên</span>
+                            <i class="bi bi-person-badge lead-icon"></i>
+                            <select name="employeeId" required>
                                 <option value="">-- Chọn nhân viên --</option>
                                 @foreach(var e in (ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>())){
                                     <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>

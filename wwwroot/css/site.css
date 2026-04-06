@@ -172,7 +172,7 @@ html.sidebar-expanded .sidebar {
 .sidebar-brand .brand-icon {
     width: 38px;
     height: 38px;
-    background: #000000;
+    background: var(--primary);
     border-radius: var(--radius-md);
     display: flex;
     align-items: center;
@@ -312,18 +312,18 @@ html.sidebar-expanded .sidebar-link i {
 }
 
 .sidebar-link.active {
-    color: #000000;
-    background: var(--sidebar-hover);
+    color: var(--primary);
+    background: var(--primary-light);
     font-weight: 800;
     /* --- MINIMAL ACTIVE INDICATOR --- */
-    border-right: 3px solid #000000;
+    border-right: 3px solid var(--primary);
     border-radius: var(--radius-sm) 0 0 var(--radius-sm);
     z-index: 1;
 }
 
 .sidebar-link.active i {
     opacity: 1;
-    color: #000000;
+    color: var(--primary);
 }
 
 /* Submenu toggle */
@@ -533,7 +533,7 @@ html.sidebar-expanded .main-content {
     width: 36px;
     height: 36px;
     border-radius: var(--radius-md);
-    background: #000000;
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -628,7 +628,7 @@ html.sidebar-expanded .main-content {
     margin-bottom: 20px;
 }
 
-.stat-card .stat-icon.blue { background: var(--primary-bg); color: var(--primary); }
+.stat-card .stat-icon.blue { background: var(--primary); color: #ffffff; }
 .stat-card .stat-icon.teal { background: rgba(0, 120, 212, 0.1); color: var(--primary); }
 .stat-card .stat-icon.green { background: var(--success-bg); color: var(--success); }
 .stat-card .stat-icon.orange { background: var(--warning-bg); color: var(--warning); }
@@ -704,10 +704,14 @@ html.sidebar-expanded .main-content {
 
 .card-header-custom h5 i {
     color: #ffffff;
+    background: var(--primary);
+    padding: 8px;
+    border-radius: 8px;
     font-size: 1.1rem;
-    background: #000000;
-    padding: 6px;
-    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 120, 212, 0.05);
 }
 
 .card-body-custom {
@@ -779,17 +783,111 @@ html.sidebar-expanded .main-content {
     width: auto;
     border: 1.5px solid var(--border-color);
     border-radius: var(--radius-md);
-    padding: 0 36px 0 16px;
+    padding: 0 40px 0 16px;
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
     font-weight: 500;
     outline: none;
-    background: #fff;
+    background-color: #fff;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px 10px;
     cursor: pointer;
     transition: all var(--transition-fast);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* --- PREMIUM SELECT (Dashboard-style) --- */
+.premium-select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 38px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 180px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.premium-select-wrapper:hover {
+    border-color: #0078d4;
+    background-color: #fcfcfc;
+    box-shadow: 0 4px 12px rgba(0, 120, 212, 0.1);
+    transform: translateY(-1px);
+}
+
+.premium-select-wrapper select {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 28px 0 32px !important;
+    height: 100% !important;
+    width: 100% !important;
+    color: #0078d4 !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    cursor: pointer !important;
+    outline: none !important;
+    appearance: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+}
+
+.premium-select-wrapper i.lead-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #0078d4;
+    font-size: 1.1rem;
+    pointer-events: none;
+    transition: all 0.2s ease;
+}
+
+.premium-select-wrapper::after {
+    content: '\F282'; /* Bootstrap Icon Chevron Down hex code */
+    font-family: 'bootstrap-icons' !important;
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #0078d4;
+    font-size: 0.8rem;
+    pointer-events: none;
+    font-weight: bold;
+}
+
+.premium-select-wrapper:focus-within {
+    border-color: #0078d4;
+    box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.15), 0 4px 12px rgba(0, 120, 212, 0.1);
+}
+
+.premium-select-wrapper:focus-within i.lead-icon {
+    transform: translateY(-50%) scale(1.1);
+}
+
+.premium-select-wrapper .select-label {
+    position: absolute;
+    top: -9px;
+    left: 12px;
+    background: white;
+    padding: 0 6px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    pointer-events: none;
+    border-radius: 4px;
+    line-height: 1;
 }
 
 .filter-select:focus {
@@ -845,6 +943,31 @@ html.sidebar-expanded .main-content {
     border-color: var(--primary);
     transform: translateY(-3px);
     box-shadow: 0 8px 20px rgba(0, 120, 212, 0.3);
+}
+
+.btn-outline-success-custom {
+    background: #ffffff;
+    color: var(--success);
+    border: 1.5px solid var(--success);
+    padding: 8.5px 20px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    box-shadow: 0 2px 6px rgba(46, 204, 113, 0.1);
+}
+
+.btn-outline-success-custom:hover {
+    background: var(--success) !important;
+    color: #ffffff !important;
+    border-color: var(--success) !important;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
 }
 
 /* --- DATA TABLE --- */
@@ -1149,8 +1272,8 @@ html.sidebar-expanded .main-content {
 .sidebar-user .user-avatar {
     width: 38px;
     height: 38px;
-    border-radius: var(--radius-md);
-    background: #000000;
+    border-radius: 50%;
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1158,6 +1281,8 @@ html.sidebar-expanded .main-content {
     font-weight: 700;
     font-size: var(--font-size-md);
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 120, 212, 0.2);
+    border: 2px solid #ffffff;
 }
 
 .sidebar-user .user-info {
@@ -1490,6 +1615,477 @@ select.form-select.w-auto {
         min-width: unset;
         max-width: 100%;
     }
+}/* --- PREMIUM UI: STANDARDIZED SELECTS & BUTTONS --- */
+
+/* 1. Select Premium (Office Style) */
+.form-select-premium {
+    height: 48px;
+    border-radius: var(--radius-lg);
+    border: 2px solid #f0f0f0 !important;
+    background-color: #ffffff;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding-left: 16px;
+    padding-right: 40px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 16 16\'%3e%3cpath fill=\'none\' stroke=\'%230078d4\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M2 5l6 6 6-6\'/%3e%3c/svg%3e');
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
+.form-select-premium:focus {
+    border-color: var(--primary-light) !important;
+    box-shadow: 0 0 0 4px rgba(0, 120, 212, 0.1);
+    outline: none;
+    background-color: #ffffff;
+}
+
+.form-select-premium:hover {
+    border-color: var(--primary) !important;
+    background-color: #fcfdfe;
+}
+
+/* 2. Premium Buttons (Filter, Search, Refresh) */
+.btn-filter-premium {
+    height: 48px;
+    background: #e7f5ff;
+    color: var(--primary);
+    border: 2px solid #a3c9f9;
+    border-radius: var(--radius-lg);
+    padding: 0 24px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(0, 120, 212, 0.05);
+}
+
+.btn-filter-premium:hover {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 120, 212, 0.2);
+}
+
+.btn-search-premium {
+    height: 48px;
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius-lg);
+    padding: 0 28px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 120, 212, 0.2);
+}
+
+.btn-search-premium:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 120, 212, 0.35);
+}
+
+.btn-refresh-premium {
+    width: 48px;
+    height: 48px;
+    background: #ffffff;
+    color: var(--primary);
+    border: 2px solid #f0f0f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    cursor: pointer;
+    text-decoration: none !important;
+}
+
+.btn-refresh-premium:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-color: var(--primary-light);
+    transform: rotate(180deg) scale(1.1);
+    box-shadow: 0 6px 15px rgba(0, 120, 212, 0.15);
+}
+
+/* 3. Global Search Field Premium */
+.search-wrapper-premium {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+}
+
+.search-wrapper-premium i {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--primary);
+    font-size: 1.1rem;
+    z-index: 10;
+    opacity: 0.8;
+}
+
+.search-input-premium {
+    width: 100%;
+    height: 48px;
+    padding-left: 3.2rem;
+    padding-right: 1.2rem;
+    border-radius: var(--radius-lg);
+    border: 2px solid #f0f0f0;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.search-input-premium:focus {
+    border-color: var(--primary-light);
+    box-shadow: 0 6px 15px rgba(0, 120, 212, 0.08);
+    background: #ffffff;
+    outline: none;
+}
+
+/* 4. Form/Modal Select Fixes */
+.form-icon-group select.form-select-premium {
+    padding-left: 48px !important;
+    height: 52px !important;
+    width: 100% !important;
+}
+
+/* ====================================================
+   GLOBAL OFFICE BLUE SYNC - Đồng bộ hóa toàn hệ thống
+   Nền xanh văn phòng (#0078d4) + Icon/chữ trắng
+   ==================================================== */
+
+/* ── 1. BOOTSTRAP BUTTONS → Office Blue ── */
+.btn-primary,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active,
+.show > .btn-primary.dropdown-toggle {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(0, 120, 212, 0.25) !important;
+}
+.btn-primary:hover {
+    background-color: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 120, 212, 0.4) !important;
+}
+
+.btn-success,
+.btn-success:focus,
+.btn-success:active {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(0, 120, 212, 0.25) !important;
+}
+.btn-success:hover {
+    background-color: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px);
+}
+
+.btn-info,
+.btn-info:focus,
+.btn-info:active {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+.btn-info:hover {
+    background-color: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+    color: #ffffff !important;
+}
+
+.btn-warning,
+.btn-warning:focus,
+.btn-warning:active {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+.btn-warning:hover {
+    background-color: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+    color: #ffffff !important;
+}
+
+/* Btn Secondary → Office Outline */
+.btn-secondary,
+.btn-secondary:focus,
+.btn-secondary:active {
+    background-color: #ffffff !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    font-weight: 700 !important;
+}
+.btn-secondary:hover {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px);
+}
+
+/* ── 2. BOOTSTRAP OUTLINE BUTTONS → Office Blue ── */
+.btn-outline-primary,
+.btn-outline-success,
+.btn-outline-info,
+.btn-outline-warning,
+.btn-outline-secondary,
+.btn-outline-danger {
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+.btn-outline-primary:hover,
+.btn-outline-success:hover,
+.btn-outline-info:hover,
+.btn-outline-warning:hover,
+.btn-outline-secondary:hover {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 120, 212, 0.25) !important;
+}
+/* Danger outline keeps its own red color */
+.btn-outline-danger:hover {
+    background-color: var(--danger) !important;
+    border-color: var(--danger) !important;
+    color: #ffffff !important;
+}
+
+/* ── 3. BTN-LIGHT (nút phụ / Quay lại) → Office Outline style ── */
+.btn-light,
+.btn-light:focus {
+    background-color: #ffffff !important;
+    border: 1.5px solid var(--primary) !important;
+    color: var(--primary) !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+}
+.btn-light:hover {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 120, 212, 0.2) !important;
+}
+
+/* ── 4. STAT CARD ICONS → tất cả nền xanh + icon trắng ── */
+.stat-card .stat-icon { background: var(--primary) !important; color: #ffffff !important; }
+.stat-card .stat-icon.teal  { background: var(--primary) !important; color: #ffffff !important; }
+.stat-card .stat-icon.green { background: var(--primary) !important; color: #ffffff !important; }
+.stat-card .stat-icon.orange{ background: var(--primary) !important; color: #ffffff !important; }
+.stat-card .stat-icon.red   { background: var(--primary) !important; color: #ffffff !important; }
+.stat-card .stat-icon.purple{ background: var(--primary) !important; color: #ffffff !important; }
+.stat-card .stat-icon.blue  { background: var(--primary) !important; color: #ffffff !important; }
+
+/* Dashboard stat-icon (Bootstrap style) với bg-success / bg-info → xanh văn phòng */
+.stat-icon.bg-success,
+.stat-icon.bg-info,
+.stat-icon.bg-warning,
+.stat-icon.bg-danger,
+.bg-success.rounded-3.d-flex.align-items-center,
+.stat-icon[class*="bg-"] {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+/* ── 5. USER AVATAR → xanh nền + chữ trắng ── */
+.user-avatar {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+/* Avatar vòng tròn trong table (KPICheckIns) */
+.bg-primary.text-white.rounded-circle,
+.bg-primary.rounded-circle {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+/* ── 6. BADGE SECTION NUMBERS (Form sections: badge bg-*) ── */
+.badge.bg-primary { background-color: var(--primary) !important; color: #ffffff !important; }
+.badge.bg-success { background-color: var(--primary) !important; color: #ffffff !important; }
+.badge.bg-info    { background-color: var(--primary) !important; color: #ffffff !important; }
+.badge.bg-warning { background-color: var(--primary) !important; color: #ffffff !important; }
+.badge.bg-secondary { background-color: var(--primary) !important; color: #ffffff !important; }
+
+/* text-* color trong badge (vd: text-dark trên badge warning) */
+.badge.bg-warning.text-dark { color: #ffffff !important; }
+
+/* ── 7. CARD HEADER ICON (h5 i với bg-primary, bg-info, bg-opacity-*) ── */
+.bg-primary.bg-opacity-10, 
+.bg-info.bg-opacity-10,
+.bg-warning.bg-opacity-10,
+.bg-success.bg-opacity-10 {
+    background-color: var(--primary-light) !important;
+}
+.bg-primary.bg-opacity-10 i,
+.bg-info.bg-opacity-10 i,
+.bg-warning.bg-opacity-10 i,
+.bg-success.bg-opacity-10 i {
+    color: var(--primary) !important;
+}
+
+/* ── 8. PAGINATION → Office Blue thay cho đen/grey ── */
+.pagination-pages .page-btn:hover,
+.pagination-pages .page-btn.active {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+    border-color: var(--primary) !important;
+}
+
+/* Bootstrap pagination active */
+.page-link.active,
+.page-item.active .page-link,
+li.page-item.active .page-link {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+.page-link:hover {
+    color: var(--primary) !important;
+}
+
+/* ── 9. PROGRESS BAR → Office Blue ── */
+.progress-bar,
+.progress-bar-custom {
+    background-color: var(--primary) !important;
+}
+/* Giữ lại màu riêng cho các progress bar trạng thái OKR */
+.progress-bar.bg-success,
+.progress-bar.bg-soft-success { background-color: var(--success) !important; }
+.progress-bar.bg-warning,
+.progress-bar.bg-soft-warning { background-color: var(--warning) !important; }
+.progress-bar.bg-danger,
+.progress-bar.bg-soft-danger  { background-color: var(--danger) !important; }
+
+/* ── 10. HEADER BUTTONS → Office Blue ── */
+.header-icon-btn:hover {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+}
+.sidebar-toggle:hover {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+/* ── 11. CARD HEADER ICON (kiểu bg xanh đã dùng trong card-header-custom h5 i) ── */
+.card-header-custom h5 i {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+/* ── 12. INFO TILES trong sidebar card (icon bg-info, bg-warning nhỏ) ── */
+.bg-info.text-info.p-2,
+.bg-warning.text-warning.p-2,
+.bg-success.text-success.p-2,
+.bg-danger.text-danger.p-2 {
+    background-color: var(--primary-light) !important;
+    color: var(--primary) !important;
+}
+.bg-info.text-info.p-2 i,
+.bg-warning.text-warning.p-2 i,
+.bg-success.text-success.p-2 i,
+.bg-danger.text-danger.p-2 i {
+    color: var(--primary) !important;
+}
+
+/* ── 13. DROPDOWN ITEM ICONS (text-primary, text-warning, text-success) ── */
+.dropdown-item i.text-warning { color: var(--primary) !important; }
+.dropdown-item i.text-primary  { color: var(--primary) !important; }
+.dropdown-item i.text-success  { color: var(--primary) !important; }
+.dropdown-item i.text-info     { color: var(--primary) !important; }
+/* Giữ nguyên danger */
+.dropdown-item i.text-danger   { color: var(--danger) !important; }
+
+/* ── 14. FORM SWITCH → Office Blue khi checked ── */
+.form-check-input:checked {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+/* ── 15. Quick-access card icons trong Dashboard ── */
+.bi.text-success { color: var(--primary) !important; }
+.bi.text-info    { color: var(--primary) !important; }
+.bi.text-warning { color: var(--primary) !important; }
+.bi.text-primary { color: var(--primary) !important; }
+/* Danger icon giữ nguyên */
+.bi.text-danger  { color: var(--danger) !important; }
+
+/* ── 16. BTN-SM icon tròn trong OKR/KPI action buttons ── */
+.btn-sm.btn-light-primary,
+.btn-sm.rounded-circle.btn-light {
+    background-color: var(--primary-light) !important;
+    color: var(--primary) !important;
+    border: none !important;
+}
+.btn-sm.btn-light-primary:hover,
+.btn-sm.rounded-circle.btn-light:hover {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+.btn-sm.btn-outline-primary.rounded-circle {
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+}
+.btn-sm.btn-outline-primary.rounded-circle:hover {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+/* ── 17. BRAND ICON trong Sidebar ── */
+.sidebar-brand .brand-icon {
+    background: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+/* ── 18. Modal icon trong modal-title-custom ── */
+.modal-title-custom > i {
+    background: var(--primary-light) !important;
+    color: var(--primary) !important;
+}
+
+/* ── 19. Sidebar link ACTIVE → Office Blue accent ── */
+.sidebar-link.active {
+    color: var(--primary) !important;
+    background: var(--primary-light) !important;
+}
+.sidebar-link.active i {
+    color: var(--primary) !important;
+}
+
+/* ── 20. Alert success/info → Office Blue icon ── */
+.alert-success .bi,
+.alert-info .bi {
+    color: var(--primary) !important;
+}
 

@@ -39,13 +39,13 @@
 
 <div class="row g-4 mb-4">
     <!-- Phân tích Check-in -->
-    <div class="col-lg-4">
+    <div class="col-lg-3">
         <div class="content-card h-100 shadow-sm border-0">
             <div class="card-header-custom border-bottom p-3">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-pie-chart-fill text-primary me-2"></i> Trạng thái (Tuần này)</h5>
+                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-pie-chart-fill me-2"></i> Trạng thái (Tuần này)</h5>
             </div>
-            <div class="card-body-custom p-4 text-center">
-                <div class="position-relative d-inline-block mx-auto mb-4" style="width: 140px; height: 140px;">
+            <div class="card-body-custom p-3 text-center">
+                <div class="position-relative d-inline-block mx-auto mb-2" style="width: 110px; height: 110px;">
                     <!-- Placeholder for Doughnut Chart -->
                     <svg viewBox="0 0 36 36" class="circular-chart w-100 h-100">
                         <path class="circle-bg" stroke="#f1f5f9" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
@@ -55,20 +55,20 @@
                         <path class="circle" stroke="#f59e0b" stroke-dasharray="@riskPct, 100" stroke-dashoffset="-@inTimePct" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                         <!-- Red section -->
                         <path class="circle" stroke="#ef4444" stroke-dasharray="@latePct, 100" stroke-dashoffset="-@(inTimePct + riskPct)" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <text x="18" y="20.35" class="percentage" font-size="7.5" text-anchor="middle" fill="#1e293b" font-weight="700">@((inTimePct + riskPct).ToString())%</text>
+                        <text x="18" y="20.35" class="percentage" font-size="8" text-anchor="middle" fill="#1e293b" font-weight="700">@((inTimePct + riskPct).ToString())%</text>
                     </svg>
                 </div>
                 <div class="d-flex flex-column gap-2 mt-2 px-3">
                     <div class="status-badge-soft badge-on-track w-100 justify-content-between">
-                        <span><i class="bi bi-check-circle-fill me-2"></i>Tốt (On Track)</span>
+                        <span><i class="bi bi-check-circle-fill me-1"></i>Tốt (On Track)</span>
                         <span>@inTimePct%</span>
                     </div>
                     <div class="status-badge-soft badge-at-risk w-100 justify-content-between">
-                        <span><i class="bi bi-exclamation-triangle-fill me-2"></i>Nguy cơ (At Risk)</span>
+                        <span><i class="bi bi-exclamation-triangle-fill me-1"></i>Nguy cơ (At Risk)</span>
                         <span>@riskPct%</span>
                     </div>
                     <div class="status-badge-soft badge-late w-100 justify-content-between">
-                        <span><i class="bi bi-x-circle-fill me-2"></i>Trễ (Late)</span>
+                        <span><i class="bi bi-x-circle-fill me-1"></i>Trễ (Late)</span>
                         <span>@latePct%</span>
                     </div>
                 </div>
@@ -77,10 +77,10 @@
     </div>
     
     <!-- Checklist -->
-    <div class="col-lg-8">
+    <div class="col-lg-9">
         <div class="content-card h-100 shadow-sm border-0">
             <div class="card-header-custom border-bottom p-3 d-flex justify-content-between align-items-center bg-light bg-opacity-50">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-card-checklist text-primary me-2"></i> Lịch sử Check-in</h5>
+                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-card-checklist me-2"></i> Lịch sử Check-in</h5>
             </div>
             <div class="card-body-custom p-0">
                 <div class="table-responsive w-100">
@@ -112,37 +112,37 @@
                                     string barColor = ProgressHelper.GetProgressColorClass(progressVal);
 
                                     <tr class="bg-white">
-                                        <td class="ps-4 py-3 border-bottom-0">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <div class="user-avatar bg-primary text-white flex-shrink-0 d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 36px; height: 36px; font-size: 0.85rem; border-radius: 10px;">@initials</div>
-                                                <div class="fw-bold text-dark">@empName</div>
+                                        <td class="ps-3 py-2 border-bottom-0" style="max-width: 250px;">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="user-avatar bg-primary text-white flex-shrink-0 d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 28px; height: 28px; font-size: 0.7rem; border-radius: 50%; border: 1px solid var(--primary);">@initials</div>
+                                                <div class="fw-bold text-dark text-truncate" style="max-width: 200px;">@empName</div>
                                             </div>
                                         </td>
-                                        <td class="py-3 border-bottom-0">
-                                            <div class="fw-bold text-dark mb-1">@kpiName</div>
-                                            <div class="text-muted d-flex align-items-center gap-1" style="font-size: 0.8rem;">
+                                        <td class="py-2 border-bottom-0" style="max-width: 350px;">
+                                            <div class="fw-bold text-dark mb-1 text-truncate" style="max-width: 340px;" title="@kpiName">@kpiName</div>
+                                            <div class="text-muted d-flex align-items-center gap-1" style="font-size: 0.78rem;">
                                                 <i class="bi bi-arrow-right-short"></i> @String.Format("{0:N0}", detail.AchievedValue)
                                                 @if (!string.IsNullOrEmpty(detail.Note))
                                                 {
-                                                    <span class="ms-2" title="@detail.Note"><i class="bi bi-info-circle text-info"></i></span>
+                                                    <span class="ms-1" title="@detail.Note"><i class="bi bi-info-circle text-info"></i></span>
                                                 }
                                             </div>
                                         </td>
-                                        <td class="py-3 border-bottom-0">
-                                            <div class="text-muted" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i> @(ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</div>
+                                        <td class="py-2 border-bottom-0" style="white-space: nowrap;">
+                                            <div class="text-muted" style="font-size: 0.8rem;"><i class="bi bi-clock me-1"></i>@(ci.CheckInDate?.ToString("dd/MM HH:mm") ?? "N/A")</div>
                                         </td>
-                                        <td class="py-3 border-bottom-0" style="min-width: 140px;">
-                                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                                <span class="@colorClass fw-bold" style="font-size: 0.85rem;">@progressVal%</span>
+                                        <td class="py-2 border-bottom-0" style="min-width: 120px;">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <span class="@colorClass fw-bold" style="font-size: 0.82rem;">@progressVal%</span>
                                                 @{
                                                     string badgeClass = ci.StatusId == 2 ? "badge-at-risk" : (ci.StatusId == 3 ? "badge-late" : "badge-on-track");
                                                     string badgeText = ci.StatusId == 2 ? "At Risk" : (ci.StatusId == 3 ? "Late" : "On Track");
                                                 }
-                                                <span class="status-badge-soft @badgeClass" style="font-size: 0.65rem; padding: 2px 8px;">
+                                                <span class="status-badge-soft @badgeClass" style="font-size: 0.62rem; padding: 1px 6px;">
                                                     <span class="status-dot"></span> @badgeText
                                                 </span>
                                             </div>
-                                            <div class="progress shadow-sm" style="height: 6px;">
+                                            <div class="progress shadow-sm" style="height: 5px;">
                                                 <div class="progress-bar @barColor" style="width: @progressVal%;"></div>
                                             </div>
                                         </td>
@@ -201,7 +201,7 @@
                                     }
                                     else
                                     {
-                                        <select name="EmployeeId" class="form-select" required>
+                                        <select name="EmployeeId" class="form-select-premium" required>
                                             <option value="">-- Chọn nhân viên --</option>
                                             @foreach(var e in allEmployeesList)
                                             {
@@ -217,7 +217,7 @@
                                 <label>KPI Mục tiêu</label>
                                 <div class="input-wrapper">
                                     <i class="bi bi-speedometer2"></i>
-                                    <select name="KPIId" class="form-select" required>
+                                    <select name="KPIId" class="form-select-premium" required>
                                         @if (allKPIsList.Count != 1)
                                         {
                                             <option value="">-- Chọn KPI --</option>
@@ -238,7 +238,7 @@
                                 <label>Trạng thái tiến độ</label>
                                 <div class="input-wrapper">
                                     <i class="bi bi-flag-fill"></i>
-                                    <select name="StatusId" class="form-select">
+                                    <select name="StatusId" class="form-select-premium">
                                         @foreach(var s in allStatusesList)
                                         {
                                             <option value="@s.Id">@s.StatusName</option>
@@ -270,7 +270,7 @@
                         <label>Lý do (Nếu chưa đạt)</label>
                         <div class="input-wrapper">
                             <i class="bi bi-exclamation-triangle"></i>
-                            <select name="FailReasonId" class="form-select">
+                            <select name="FailReasonId" class="form-select-premium">
                                 <option value="">-- Không có / Đã đạt --</option>
                                 @foreach(var r in (ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>())){
                                     <option value="@r.Id">@r.ReasonName</option>

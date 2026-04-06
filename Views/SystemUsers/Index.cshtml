@@ -38,35 +38,36 @@
     <div class="card-body-custom">
         <form asp-action="Index" method="get" class="toolbar">
             <div class="toolbar-left">
-                <div class="toolbar-search" style="max-width: 300px;">
+                <div class="search-wrapper-premium" style="max-width: 300px;">
                     <i class="bi bi-search"></i>
-                    <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control" placeholder="Tìm tên đăng nhập, email..." />
+                    <input type="text" name="searchString" value="@ViewBag.SearchString" class="search-input-premium" placeholder="Tìm tên đăng nhập, email..." />
                 </div>
             </div>
             <div class="toolbar-right d-flex align-items-center gap-2">
-                <select name="roleId" class="filter-select">
-                    <option value="">Phân quyền (Role)</option>
-                    @foreach (var role in roles)
-                    {
-                        if (ViewBag.RoleId != null && ViewBag.RoleId == role.Key)
+                <div class="premium-select-wrapper" style="min-width: 180px;">
+                    <span class="select-label">Phân quyền</span>
+                    <i class="bi bi-shield-check lead-icon"></i>
+                    <select name="roleId">
+                        <option value="">Phân quyền (Role)</option>
+                        @foreach (var role in roles)
                         {
-                            <option value="@role.Key" selected>@role.Value</option>
+                            <option value="@role.Key" selected="@(ViewBag.RoleId != null && ViewBag.RoleId == role.Key)">@role.Value</option>
                         }
-                        else
-                        {
-                            <option value="@role.Key">@role.Value</option>
-                        }
-                    }
-                </select>
-                <select name="status" class="filter-select">
-                    <option value="">Trạng thái tài khoản</option>
-                    @if(ViewBag.Status == "active") { <option value="active" selected>Đang hoạt động</option> } else { <option value="active">Đang hoạt động</option> }
-                    @if(ViewBag.Status == "locked") { <option value="locked" selected>Bị khóa</option> } else { <option value="locked">Bị khóa</option> }
-                </select>
-                <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0 text-muted" title="Làm mới">
+                    </select>
+                </div>
+                <div class="premium-select-wrapper" style="min-width: 180px;">
+                    <span class="select-label">Trạng thái</span>
+                    <i class="bi bi-toggle-on lead-icon"></i>
+                    <select name="status">
+                        <option value="">Trạng thái tài khoản</option>
+                        <option value="active" selected="@(ViewBag.Status == "active")">Đang hoạt động</option>
+                        <option value="locked" selected="@(ViewBag.Status == "locked")">Bị khóa</option>
+                    </select>
+                </div>
+                <a asp-action="Index" class="btn-refresh-premium" title="Làm mới">
                     <i class="bi bi-arrow-clockwise fs-5"></i>
                 </a>
-                <button type="submit" class="btn-primary-custom d-flex align-items-center gap-2" style="padding: 8px;">
+                <button type="submit" class="btn-filter-premium">
                     <i class="bi bi-funnel"></i> <span>Lọc</span>
                 </button>
             </div>
