@@ -24,6 +24,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Index()
         {
+            try
+            {
+                // Đảm bảo cột IsInverse tồn tại trong database (fix lỗi schema mismatch cho KPI)
+                await _context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KPIDetails') AND name = 'IsInverse') ALTER TABLE KPIDetails ADD IsInverse bit NOT NULL DEFAULT 0;");
+            }
+            catch { }
+
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
             var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
@@ -148,6 +155,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("EMPLOYEE_UPDATE_KPI_PROGRESS")]
         public async Task<IActionResult> Create(KPICheckIn model, decimal AchievedValue, string Note)
         {
+            if (AchievedValue < 0)
+            {
+                TempData["ErrorMessage"] = "Kết quả đạt được không thể là số âm.";
+                return RedirectToAction(nameof(Index));
+            }
+
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -194,6 +207,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 {
                     progress = ProgressHelper.CalculateProgress(AchievedValue, kpiDetail.TargetValue ?? 0, kpiDetail.IsInverse);
                 }
+
+                // Tự động gán trạng thái dựa trên tiến độ thực tế (1: On Track, 2: At Risk, 3: Late)
+                if (progress >= 95) model.StatusId = 1;
+                else if (progress >= 50) model.StatusId = 2;
+                else model.StatusId = 3;
 
                 // 3. Lưu thông tin chi tiết (Achieved Value, Note, Progress %)
                 var detail = new CheckInDetail

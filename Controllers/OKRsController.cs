@@ -28,8 +28,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             try
             {
-                // Đảm bảo cột CurrentValue tồn tại trong database (fix lỗi schema mismatch)
+                // Đảm bảo các cột cần thiết tồn tại trong database (fix lỗi schema mismatch cho OKR)
                 await _context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('OKRKeyResults') AND name = 'CurrentValue') ALTER TABLE OKRKeyResults ADD CurrentValue decimal(18,2) NULL;");
+                await _context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('OKRKeyResults') AND name = 'IsInverse') ALTER TABLE OKRKeyResults ADD IsInverse bit NOT NULL DEFAULT 0;");
             }
             catch { }
 
@@ -254,19 +255,43 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
+            // Validation: Value must be positive
+            if (allocatedValue <= 0)
+            {
+                TempData["ErrorMessage"] = "Giá trị phân bổ phải lớn hơn 0.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var okr = await _context.OKRs.FindAsync(okrId);
             if (okr == null) return NotFound();
 
-            var allocation = new OKR_Employee_Allocation {
-                OKRId = okrId,
-                EmployeeId = employeeId,
-                AllocatedValue = allocatedValue
-            };
+            // Check if this allocation already exists
+            var existingAllocation = await _context.OKR_Employee_Allocations
+                .FirstOrDefaultAsync(a => a.OKRId == okrId && a.EmployeeId == employeeId);
 
-            _context.OKR_Employee_Allocations.Add(allocation);
-            await _context.SaveChangesAsync();
+            if (existingAllocation != null)
+            {
+                // Update the existing allocation
+                existingAllocation.AllocatedValue = allocatedValue;
+                _context.OKR_Employee_Allocations.Update(existingAllocation);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Nhân viên này đã được phân bổ cho mục tiêu này. Hệ thống đã cập nhật lại giá trị thành công!";
+            }
+            else
+            {
+                // Create new allocation
+                var allocation = new OKR_Employee_Allocation {
+                    OKRId = okrId,
+                    EmployeeId = employeeId,
+                    AllocatedValue = allocatedValue
+                };
 
-            TempData["SuccessMessage"] = "Đã phân bổ chỉ tiêu cho nhân viên thành công!";
+                _context.OKR_Employee_Allocations.Add(allocation);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Đã phân bổ chỉ tiêu cho nhân viên thành công!";
+            }
+
             return RedirectToAction(nameof(Index));
         }
 

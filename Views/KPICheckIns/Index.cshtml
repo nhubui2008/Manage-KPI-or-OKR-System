@@ -137,6 +137,18 @@
                                                 @{
                                                     string badgeClass = ci.StatusId == 2 ? "badge-at-risk" : (ci.StatusId == 3 ? "badge-late" : "badge-on-track");
                                                     string badgeText = ci.StatusId == 2 ? "At Risk" : (ci.StatusId == 3 ? "Late" : "On Track");
+                                                    
+                                                    // Bổ sung logic hiển thị thông minh: nếu tiến độ quá thấp mà trạng thái vẫn là On Track thì hiển thị cảnh báo
+                                                    if (progressVal < 40 && (ci.StatusId == 1 || ci.StatusId == null)) 
+                                                    { 
+                                                        badgeText = "Late"; 
+                                                        badgeClass = "badge-late"; 
+                                                    }
+                                                    else if (progressVal >= 95 && ci.StatusId != 1)
+                                                    {
+                                                        badgeText = "On Track";
+                                                        badgeClass = "badge-on-track";
+                                                    }
                                                 }
                                                 <span class="status-badge-soft @badgeClass" style="font-size: 0.65rem; padding: 2px 8px;">
                                                     <span class="status-dot"></span> @badgeText
@@ -255,7 +267,7 @@
                                 <label>Kết quả thực tế</label>
                                 <div class="input-wrapper">
                                     <i class="bi bi-graph-up-arrow"></i>
-                                    <input type="number" step="0.01" name="AchievedValue" class="form-control" placeholder="0.00" required>
+                                    <input type="number" step="0.01" min="0" name="AchievedValue" class="form-control" placeholder="0.00" required>
                                 </div>
                             </div>
                         </div>

@@ -13,24 +13,29 @@ namespace Manage_KPI_or_OKR_System.Helpers
         /// <returns>Percentage from 0 to 100+</returns>
         public static decimal CalculateProgress(decimal actual, decimal target, bool isInverse)
         {
-            if (target == 0) return actual == 0 ? 100 : 0;
+            if (target == 0) 
+            {
+                if (isInverse) return actual == 0 ? 100 : 0;
+                return actual > 0 ? 100 : 0;
+            }
 
             if (!isInverse)
             {
                 // Standard: Higher is better
-                return (actual / target) * 100;
+                return Math.Round((actual / target) * 100, 2);
             }
             else
             {
-                // Inverse: Lower is better (e.g. max 2 hours)
-                if (actual <= target) return 100;
+                // Inverse: Lower is better (e.g. downtime, bug rate, expenses)
+                if (actual <= target) return 100; // Under the limit is 100% success
                 
                 // If it exceeds the target, calculate penalty
-                // Example: Target 2h, Actual 3h. Over by 1h (50% of target). Progress = 50%.
-                decimal penalty = ((actual - target) / target) * 100;
+                // Example: Target 10, Actual 12. Over by 2 (20% of target). Progress = 80%.
+                decimal excess = actual - target;
+                decimal penalty = (excess / target) * 100;
                 decimal progress = 100 - penalty;
                 
-                return Math.Max(0, progress);
+                return Math.Max(0, Math.Round(progress, 2));
             }
         }
 
