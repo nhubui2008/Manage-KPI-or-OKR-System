@@ -86,6 +86,65 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(checkIns);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Create(int? kpiId)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
+            var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
+
+            var kpiQuery = _context.KPIs.Where(k => k.IsActive == true);
+            var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
+
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Sales") || User.IsInRole("sales"))
+            {
+                if (employee != null)
+                {
+                    var allocatedKpiIds = await _context.KPI_Employee_Assignments
+                        .Where(a => a.EmployeeId == employee.Id)
+                        .Select(a => a.KPIId)
+                        .ToListAsync();
+                    
+                    kpiQuery = kpiQuery.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
+                    employeeQuery = employeeQuery.Where(e => e.Id == employee.Id);
+                }
+                else
+                {
+                    kpiQuery = kpiQuery.Where(k => false);
+                    employeeQuery = employeeQuery.Where(e => false);
+                }
+            }
+
+            ViewBag.AllEmployees = await employeeQuery.ToListAsync();
+            ViewBag.AllKPIs = await kpiQuery.ToListAsync();
+            ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
+            ViewBag.FailReasons = await _context.FailReasons.ToListAsync();
+
+            // Fetch KPI details for real-time progress calculation in JS
+            var kpiIds = ((List<Manage_KPI_or_OKR_System.Models.KPI>)ViewBag.AllKPIs).Select(k => k.Id).ToList();
+            var kpiDetails = await _context.KPIDetails
+                .Where(d => kpiIds.Contains(d.KPIId ?? 0))
+                .ToDictionaryAsync(d => d.KPIId ?? 0);
+            ViewBag.KPIData = kpiDetails;
+
+            var model = new KPICheckIn();
+            if (kpiId.HasValue)
+            {
+                model.KPIId = kpiId.Value;
+                // Nếu là Employee, tự động gán EmployeeId
+                if (employee != null && (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                                       User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                                       User.IsInRole("Sales") || User.IsInRole("sales")))
+                {
+                    model.EmployeeId = employee.Id;
+                }
+            }
+
+            return View(model);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create(KPICheckIn model, decimal AchievedValue, string Note)
         {

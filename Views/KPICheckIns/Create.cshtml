@@ -1,4 +1,5 @@
 @model Manage_KPI_or_OKR_System.Models.KPICheckIn
+@using System.Text.Json
 
 @{
     ViewData["Title"] = "Thực hiện Check-in KPI";
@@ -8,104 +9,299 @@
     var kpis = ViewBag.AllKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new List<Manage_KPI_or_OKR_System.Models.KPI>();
     var statuses = ViewBag.AllStatuses as List<Manage_KPI_or_OKR_System.Models.CheckInStatus> ?? new List<Manage_KPI_or_OKR_System.Models.CheckInStatus>();
     var failReasons = ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>();
+    var kpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
+    
+    // Serialize data for JS use
+    var kpiDataJson = JsonSerializer.Serialize(kpiData.ToDictionary(k => k.Key, v => new {
+        target = v.Value.TargetValue,
+        unit = v.Value.MeasurementUnit,
+        isInverse = v.Value.IsInverse
+    }));
 }
 
-<div class="container-fluid px-4 mt-4">
-    <div class="row mb-3">
-        <div class="col-12">
-            <h3 class="text-dark fw-bold">
-                <i class="bi bi-calendar-check me-2"></i>Thực hiện Check-in KPI
-            </h3>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb bg-transparent p-0 m-0">
-                    <li class="breadcrumb-item"><a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a></li>
-                    <li class="breadcrumb-item"><a asp-action="Index" class="text-dark text-decoration-none opacity-75">Lịch sử Check-in</a></li>
-                    <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Thực hiện mới</li>
-                </ol>
-            </nav>
+<div class="page-content">
+    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
+        <div>
+            <h1 class="mb-2 fw-800">Thực hiện Check-in KPI</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <span class="separator">/</span>
+                <a asp-action="Index">Lịch sử Check-in</a>
+                <span class="separator">/</span>
+                <span class="text-muted">Thực hiện mới</span>
+            </div>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn-outline-custom shadow-sm">
+                <i class="bi bi-arrow-left me-2"></i> Quay lại
+            </a>
         </div>
     </div>
 
-    <div class="content-card rounded-3">
-        <div class="card-body-custom p-4">
-            <form asp-action="Create" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div class="row g-4">
+        <!-- FORM COLUMN -->
+        <div class="col-xl-8 animate__animated animate__fadeInLeft">
+            <div class="content-card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+                <div class="card-header-custom border-bottom bg-transparent py-4">
+                    <h5 class="fw-bold fs-5 mb-0"><i class="bi bi- calendar-check text-primary me-2"></i> Chi tiết báo cáo tiến độ</h5>
+                </div>
+                
+                <div class="card-body-custom p-4">
+                    <form id="checkinForm" asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
 
-                <div class="row g-4 mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-dark">Nhân viên thực hiện <span class="text-danger">*</span></label>
-                        <select asp-for="EmployeeId" class="form-select" required>
-                            <option value="">-- Chọn nhân viên --</option>
-                            @foreach(var e in employees)
-                            {
-                                <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
-                            }
-                        </select>
-                        <span asp-validation-for="EmployeeId" class="text-danger"></span>
-                    </div>
+                        <!-- SECTION 1: THÔNG TIN CHUNG -->
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="icon-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
+                                <span class="fw-bold">1</span>
+                            </div>
+                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Cấu hình Báo cáo</h6>
+                        </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-dark">KPI Mục tiêu <span class="text-danger">*</span></label>
-                        <select asp-for="KPIId" class="form-select" required>
-                            <option value="">-- Chọn KPI --</option>
-                            @foreach(var k in kpis)
-                            {
-                                <option value="@k.Id">@k.KPIName</option>
-                            }
-                        </select>
-                        <span asp-validation-for="KPIId" class="text-danger"></span>
-                    </div>
+                        <div class="row g-4 mb-5 p-3 rounded-4 bg-light bg-opacity-50 border border-white">
+                            <div class="col-md-6">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Nhân viên <span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-person-badge"></i>
+                                        <select asp-for="EmployeeId" class="form-select shadow-sm" required>
+                                            @if(employees.Count != 1) { <option value="">-- Chọn nhân viên --</option> }
+                                            @foreach(var e in employees)
+                                            {
+                                                <option value="@e.Id" selected="@(employees.Count == 1 ? "selected" : null)">@e.FullName (@e.EmployeeCode)</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <span asp-validation-for="EmployeeId" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-dark">Trạng thái tiến độ (Tự đánh giá)</label>
-                        <select asp-for="StatusId" class="form-select">
-                            @foreach(var s in statuses)
-                            {
-                                <option value="@s.Id">@s.StatusName</option>
-                            }
-                        </select>
-                    </div>
+                            <div class="col-md-6">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">KPI Mục tiêu <span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-bullseye"></i>
+                                        <select asp-for="KPIId" id="kpiSelect" class="form-select shadow-sm" required>
+                                            <option value="">-- Chọn KPI cần báo cáo --</option>
+                                            @foreach(var k in kpis)
+                                            {
+                                                <option value="@k.Id">@k.KPIName</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <span asp-validation-for="KPIId" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-dark">Kết quả thực tế đạt được <span class="text-danger">*</span></label>
-                        <input type="number" step="0.01" name="AchievedValue" class="form-control" placeholder="0.00" required>
+                        <!-- SECTION 2: KẾT QUẢ THỰC TẾ -->
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="icon-circle bg-success text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
+                                <span class="fw-bold">2</span>
+                            </div>
+                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Kết quả thực hiện</h6>
+                        </div>
+
+                        <div class="row g-4 p-3 rounded-4 bg-light bg-opacity-50 border border-white mb-4">
+                            <div class="col-md-6">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Kết quả đạt được <span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-pencil-square"></i>
+                                        <input type="number" step="0.01" name="AchievedValue" id="achievedInput" class="form-control shadow-sm" placeholder="Nhập số liệu..." required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Trạng thái tự đánh giá</label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-speedometer2"></i>
+                                        <select asp-for="StatusId" class="form-select shadow-sm">
+                                            @foreach(var s in statuses) { <option value="@s.Id">@s.StatusName</option> }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Chi tiết phân tích / Ghi chú</label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-textarea-t" style="top: 25px;"></i>
+                                        <textarea name="Note" class="form-control shadow-sm" placeholder="Mô tả các khó khăn hoặc thuận lợi trong quá trình thực hiện..." rows="4" style="padding-left: 48px; border-radius: 12px;"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Lý do chính (Nếu chưa đạt mục tiêu)</label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-question-diamond"></i>
+                                        <select asp-for="FailReasonId" class="form-select shadow-sm">
+                                            <option value="">-- Không có / Đã hoàn thành tốt --</option>
+                                            @foreach(var r in failReasons) { <option value="@r.Id">@r.ReasonName</option> }
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
+                            <a asp-action="Index" class="btn-outline-custom">
+                                <i class="bi bi-x-lg me-2"></i> Hủy thao tác
+                            </a>
+                            <button type="submit" class="btn-primary-custom" style="padding: 12px 40px; border-radius: 12px;">
+                                <i class="bi bi-check-lg fs-5 me-2"></i> Hoàn tất Check-in
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATS COLUMN -->
+        <div class="col-xl-4 animate__animated animate__fadeInRight">
+            <div class="sticky-top" style="top: 100px;">
+                <div class="content-card border-0 shadow-lg text-white mb-4" style="background: linear-gradient(135deg, #0078d4, #005a9e); border-radius: 24px;">
+                    <div class="card-body-custom p-4">
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
+                                <i class="bi bi-graph-up-arrow fs-3 text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small">Mục tiêu hiện tại</h6>
+                                <h4 class="mb-0 fw-800" id="targetDisplay">--</h4>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-end mb-2">
+                                <span class="small fw-bold opacity-75 text-uppercase">Tiến độ ước tính</span>
+                                <h2 class="mb-0 fw-800" id="progressPercentage">0%</h2>
+                            </div>
+                            <div class="progress" style="height: 12px; background: rgba(255,255,255,0.15); border-radius: 20px;">
+                                <div id="liveProgressBar" class="progress-bar bg-white transition-all shadow-sm" style="width: 0%; border-radius: 20px;"></div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                                    <div class="small opacity-75 mb-1">Đơn vị</div>
+                                    <div class="fw-bold" id="unitDisplay">--</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                                    <div class="small opacity-75 mb-1">Loại đo lường</div>
+                                    <div class="fw-bold" id="modeDisplay">--</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <hr class="my-4" style="opacity: 0.1;">
-                <h5 class="fw-bold text-dark mb-4">Khó khăn & Phân tích</h5>
-
-                <div class="row g-4">
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold text-dark">Ghi chú / Trở ngại gặp phải</label>
-                        <textarea name="Note" class="form-control" placeholder="Nhập ghi chú hoặc các khó khăn gặp phải..." rows="3"></textarea>
-                    </div>
-
-                    <div class="col-md-12">
-                        <label class="form-label fw-bold text-dark">Lý do cốt lõi (Nếu chưa đạt)</label>
-                        <select asp-for="FailReasonId" class="form-select">
-                            <option value="">-- Không có / Đã đạt --</option>
-                            @foreach(var r in failReasons)
-                            {
-                                <option value="@r.Id">@r.ReasonName</option>
-                            }
-                        </select>
-                    </div>
+                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle text-primary me-2"></i> Lưu ý báo cáo</h6>
+                    <ul class="list-unstyled mb-0 small text-muted" style="line-height: 1.8;">
+                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Nhập số liệu chính xác từ báo cáo thực tế.</li>
+                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Giải trình chi tiết nếu tiến độ dưới 80%.</li>
+                        <li><i class="bi bi-patch-check-fill text-success me-2"></i> Hệ thống tự động tính điểm xếp loại dựa trên kết quả.</li>
+                    </ul>
                 </div>
-
-                <div class="d-flex justify-content-end gap-2 mt-5 border-top pt-4">
-                    <a asp-action="Index" class="btn-outline-custom px-4">
-                        <i class="bi bi-x-circle me-1"></i> Hủy bỏ
-                    </a>
-                    <button type="submit" class="btn-primary-custom px-4">
-                        <i class="bi bi-check2-circle me-2"></i> Xác nhận Check-in
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
+<style>
+    .fw-800 { font-weight: 800; }
+    .letter-spacing-1 { letter-spacing: 0.1em; }
+    .transition-all { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    
+    .form-select, .form-control {
+        border: 1.5px solid #edf2f7;
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+    
+    .form-select:focus, .form-control:focus {
+        border-color: #a3c9f9;
+        box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.1);
+    }
+
+    /* Animation effects */
+    .animate__animated { animation-duration: 0.8s; }
+</style>
+
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+    <script>
+        const kpiMap = @Html.Raw(kpiDataJson);
+        const kpiSelect = document.getElementById('kpiSelect');
+        const achievedInput = document.getElementById('achievedInput');
+        const targetDisplay = document.getElementById('targetDisplay');
+        const unitDisplay = document.getElementById('unitDisplay');
+        const modeDisplay = document.getElementById('modeDisplay');
+        const progressPercentage = document.getElementById('progressPercentage');
+        const liveProgressBar = document.getElementById('liveProgressBar');
+
+        function updateStats() {
+            const kpiId = kpiSelect.value;
+            const value = parseFloat(achievedInput.value) || 0;
+            
+            if (kpiId && kpiMap[kpiId]) {
+                const data = kpiMap[kpiId];
+                const target = data.target || 0;
+                const unit = data.unit || 'đơn vị';
+                const isInverse = data.isInverse;
+
+                targetDisplay.textContent = new Intl.NumberFormat().format(target);
+                unitDisplay.textContent = unit;
+                modeDisplay.textContent = isInverse ? "Càng thấp càng tốt" : "Càng cao càng tốt";
+
+                let progress = 0;
+                if (target > 0) {
+                    if (isInverse) {
+                        progress = Math.max(0, (target / value) * 100);
+                        if (value === 0) progress = 100;
+                    } else {
+                        progress = (value / target) * 100;
+                    }
+                }
+
+                const displayProgress = Math.min(100, Math.round(progress));
+                progressPercentage.textContent = displayProgress + '%';
+                liveProgressBar.style.width = displayProgress + '%';
+
+                // Update bar color based on progress
+                if (displayProgress < 50) {
+                    liveProgressBar.className = "progress-bar bg-danger transition-all shadow-sm";
+                } else if (displayProgress < 90) {
+                    liveProgressBar.className = "progress-bar bg-warning transition-all shadow-sm";
+                } else {
+                    liveProgressBar.className = "progress-bar bg-white transition-all shadow-sm";
+                }
+            } else {
+                targetDisplay.textContent = "--";
+                unitDisplay.textContent = "--";
+                modeDisplay.textContent = "--";
+                progressPercentage.textContent = "0%";
+                liveProgressBar.style.width = "0%";
+                liveProgressBar.className = "progress-bar bg-white transition-all shadow-sm";
+            }
+        }
+
+        kpiSelect.addEventListener('change', updateStats);
+        achievedInput.addEventListener('input', updateStats);
+
+        // Initial check if pre-filled
+        window.addEventListener('DOMContentLoaded', updateStats);
+    </script>
 }

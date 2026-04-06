@@ -31,7 +31,7 @@
 
     <!-- Filter Bar -->
     <div class="content-card mb-4 shadow-sm border-0">
-        <div class="card-body">
+        <div class="card-body-custom">
             <form method="get" class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Phòng ban</label>
@@ -57,7 +57,7 @@
     </div>
 
     <!-- Report Table -->
-    <div class="content-card shadow-sm border-0 overflow-hidden">
+    <div class="content-card shadow-sm border-0">
         <div class="table-responsive">
             <table class="data-table w-100">
                 <thead class="bg-light">
@@ -123,7 +123,9 @@
                 <div class="card-header-custom"><i class="bi bi-chat-left-text me-2"></i>Tổng hợp của Giám đốc</div>
                 <div class="card-body-custom">
                     <textarea id="directorSummaryText" class="form-control" rows="4" placeholder="Nhập nhận định chung về tình hình thực hiện OKR/KPI của Sale Q1...">@ViewBag.DirectorSummary</textarea>
-                    <button id="btnSaveSummary" class="btn-primary-custom mt-3 float-end"><i class="bi bi-save me-1"></i> Lưu nhận xét</button>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button id="btnSaveSummary" class="btn-primary-custom"><i class="bi bi-save me-1"></i> Lưu nhận xét</button>
+                    </div>
                 </div>
             </div>
         </div>

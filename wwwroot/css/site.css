@@ -144,7 +144,8 @@ body {
     display: flex;
     flex-direction: column;
     transition: width var(--transition-slow);
-    overflow: hidden;
+    /* Bỏ overflow: hidden để bootstrap dropdown không bị clip */
+    overflow: visible;
 }
 
 html.sidebar-expanded .sidebar {
@@ -192,6 +193,7 @@ html.sidebar-expanded .sidebar {
 html.sidebar-expanded .sidebar-brand .brand-info {
     display: block;
     opacity: 1;
+    visibility: visible;
 }
 
 .sidebar-brand .brand-text {
@@ -254,10 +256,10 @@ html.sidebar-expanded .sidebar-group-label {
     position: relative;
     
     /* --- GIỮ CHỮ 1 DÒNG & NỀN BAO BỌC HẾT CHỮ --- */
-    white-space: nowrap; /* Không cho chữ rớt xuống dòng */
-    width: max-content; /* Ép nền (background) giãn dài ra theo nội dung chữ */
-    min-width: calc(100% - 24px); /* Đảm bảo các mục có chữ ngắn vẫn phủ kín chiều rộng sidebar */
-    padding-right: 24px; /* Tạo khoảng trống phía sau để nền không bị sát rịt vào đuôi chữ */
+    white-space: nowrap; 
+    width: auto;
+    min-width: 0;
+    overflow: hidden;
     
     margin: 2px 12px;
     border-radius: var(--radius-md);
@@ -266,6 +268,8 @@ html.sidebar-expanded .sidebar-group-label {
 
 html.sidebar-expanded .sidebar-link {
     justify-content: flex-start;
+    width: max-content;
+    min-width: calc(100% - 24px);
 }
 
 .sidebar-link span {
@@ -277,6 +281,7 @@ html.sidebar-expanded .sidebar-link {
 html.sidebar-expanded .sidebar-link span {
     display: inline-block;
     opacity: 1;
+    visibility: visible;
 }
 
 .sidebar-link i {
@@ -371,6 +376,8 @@ html.sidebar-expanded .sidebar-link[data-bs-toggle="collapse"] .menu-arrow {
 html.sidebar-expanded .sidebar-user .user-info, 
 html.sidebar-expanded .sidebar-user .user-dots {
     display: block;
+    opacity: 1;
+    visibility: visible;
 }
 
 html.sidebar-expanded .sidebar-user .user-info {
@@ -659,6 +666,7 @@ html.sidebar-expanded .main-content {
 
 /* --- CONTENT CARDS --- */
 .content-card {
+    position: relative;
     background: var(--card-bg);
     border-radius: var(--radius-lg);
     border: 1px solid var(--card-border);
@@ -721,6 +729,7 @@ html.sidebar-expanded .main-content {
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+    flex: 1;
 }
 
 .toolbar-right {
@@ -731,10 +740,12 @@ html.sidebar-expanded .main-content {
 
 .toolbar-search {
     position: relative;
+    flex: 1;
+    min-width: 0;
 }
 
 .toolbar-search input {
-    width: 260px;
+    width: 100%;
     height: 40px;
     border: 1.5px solid var(--border-color);
     border-radius: var(--radius-md);
@@ -1021,81 +1032,81 @@ html.sidebar-expanded .main-content {
 }
 
 /* =========================================
-   SIDEBAR THU GỌN (CHỈ HIỆN ICON) TÙY CHỈNH
+   SIDEBAR COLLAPSED STATE (ICON ONLY)
    ========================================= */
 
 /* Dành cho màn hình máy tính (Desktop) */
 @media (min-width: 992px) {
-    /* 1. Co thanh sidebar còn 80px */
-    body.sidebar-collapsed .sidebar {
+    /* Khi CHƯA có class .sidebar-expanded, thực hiện các hiệu ứng thu gọn */
+    html:not(.sidebar-expanded) .sidebar {
         width: 80px;
-        transform: none; /* Bỏ hiệu ứng trượt mất của bản cũ */
     }
-    body.sidebar-collapsed .main-content {
+    html:not(.sidebar-expanded) .main-content {
         margin-left: 80px;
     }
 
-    /* 2. Ẩn chữ Logo, căn giữa Icon Logo */
-    body.sidebar-collapsed .sidebar-brand {
+    /* Ẩn chữ Logo, căn giữa Icon Logo */
+    html:not(.sidebar-expanded) .sidebar-brand {
         padding: 0;
         justify-content: center;
     }
-    body.sidebar-collapsed .brand-icon {
+    html:not(.sidebar-expanded) .brand-icon {
         margin-right: 0;
     }
-    body.sidebar-collapsed .brand-info {
+    html:not(.sidebar-expanded) .brand-info {
         display: none;
     }
 
-    /* 3. Ẩn chữ tiêu đề phân nhóm (Overview, Nhân sự...) */
-    body.sidebar-collapsed .sidebar-group-label {
-        display: none;
+    /* Ẩn chữ tiêu đề phân nhóm (Overview, Nhân sự...) */
+    html:not(.sidebar-expanded) .sidebar-group-label {
+        display: none !important; /* Force hide in collapsed state */
     }
 
-    /* 4. Menu Items: Ẩn chữ, Căn giữa Icon */
-    body.sidebar-collapsed .sidebar-link {
-        font-size: 0; /* Thủ thuật ẩn chữ cực mượt */
+    /* Menu Items: Ẩn chữ, Căn giữa Icon */
+    html:not(.sidebar-expanded) .sidebar-link {
+        font-size: 0; 
         padding: 12px 0;
         justify-content: center;
         width: auto;
         min-width: 0;
         margin: 4px 10px;
     }
-    body.sidebar-collapsed .sidebar-link i {
-        font-size: 1.3rem; /* Phóng to icon lên một chút */
+    html:not(.sidebar-expanded) .sidebar-link i {
+        font-size: 1.3rem;
         margin-right: 0;
         margin-top: 0;
     }
     
-    /* 5. Ẩn mũi tên của menu thả xuống (Submenu) */
-    body.sidebar-collapsed .menu-arrow {
+    /* Ẩn mũi tên của menu thả xuống (Submenu) */
+    html:not(.sidebar-expanded) .menu-arrow {
         display: none;
     }
     
-    /* 6. Xử lý chấm tròn của menu con (Submenu) */
-    body.sidebar-collapsed .sidebar-submenu .sidebar-link {
+    /* Xử lý chấm tròn của menu con (Submenu) */
+    html:not(.sidebar-expanded) .sidebar-submenu .sidebar-link {
         padding-left: 0;
     }
-    body.sidebar-collapsed .sidebar-submenu .sidebar-link::before {
+    html:not(.sidebar-expanded) .sidebar-submenu .sidebar-link::before {
         left: 50%;
         transform: translateX(-50%);
     }
 
-    /* 7. Phần User Footer dưới cùng: Ẩn tên, căn giữa Avatar */
-    body.sidebar-collapsed .sidebar-user {
+    /* Phần User Footer dưới cùng: Ẩn tên, căn giữa Avatar */
+    html:not(.sidebar-expanded) .sidebar-user {
         justify-content: center;
         padding: 15px 0;
     }
-    body.sidebar-collapsed .sidebar-user .user-info,
-    body.sidebar-collapsed .sidebar-user .bi-three-dots-vertical {
+    html:not(.sidebar-expanded) .sidebar-user .user-info,
+    html:not(.sidebar-expanded) .sidebar-user .bi-three-dots-vertical {
         display: none;
     }
 }
 
-/* Dành cho Mobile/Tablet: Giữ nguyên tính năng trượt ẩn hoàn toàn */
+/* Dành cho Mobile/Tablet */
 @media (max-width: 991.98px) {
-    body.sidebar-collapsed .sidebar { transform: translateX(-100%); }
-    body.sidebar-collapsed .main-content { margin-left: 0; }
+    /* Trong mobile view, nếu không có sidebar-expanded thì sidebar ẩn đi (trượt trái) */
+    html:not(.sidebar-expanded) .sidebar { transform: translateX(-100%); }
+    html:not(.sidebar-expanded) .main-content { margin-left: 0; }
 }
 
 /* --- UTILITY --- */
@@ -1119,6 +1130,7 @@ html.sidebar-expanded .main-content {
     border-top: 1px solid var(--border-color);
     margin-top: auto;
     flex-shrink: 0;
+    position: relative; /* Đảm bảo dropdown/dropup neo đúng vị trí */
 }
 
 .sidebar-user {
@@ -1278,7 +1290,6 @@ html.sidebar-expanded .main-content {
     transition: all var(--transition-fast);
     background-color: #fcfdfe;
     width: 100%; /* Luôn chiếm full width của container */
-    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -1438,7 +1449,6 @@ a, a:hover, a:focus, a:active {
 .form-select {
     display: block;
     box-sizing: border-box;
-    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }

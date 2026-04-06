@@ -1,87 +1,206 @@
 @model Manage_KPI_or_OKR_System.Models.EvaluationPeriod
-
 @{
     ViewData["Title"] = "Thêm Kỳ Đánh giá";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var statuses = ViewBag.Statuses as Dictionary<int, string> ?? new Dictionary<int, string>();
 }
 
-<div class="container-fluid px-4 mt-4">
-    <div class="row mb-3">
-        <div class="col-12">
-            <h3 class="text-dark fw-bold">
-                <i class="bi bi-calendar-plus me-2"></i>Thêm Kỳ Đánh giá Mới
-            </h3>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb bg-transparent p-0 m-0">
-                    <li class="breadcrumb-item"><a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a></li>
-                    <li class="breadcrumb-item"><a asp-action="Index" class="text-dark text-decoration-none opacity-75">Kỳ Đánh giá</a></li>
-                    <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Thêm mới</li>
-                </ol>
-            </nav>
+<div class="page-content">
+    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
+        <div>
+            <h1 class="mb-2 fw-800">Thêm Kỳ Đánh giá Mới</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <span class="separator">/</span>
+                <a asp-action="Index">Kỳ Đánh giá</a>
+                <span class="separator">/</span>
+                <span class="text-muted">Thêm mới</span>
+            </div>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn-outline-custom shadow-sm">
+                <i class="bi bi-arrow-left me-2"></i> Quay lại
+            </a>
         </div>
     </div>
 
-    <div class="content-card rounded-3">
-        <div class="card-body-custom p-4">
-            
-            <form asp-action="Create" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div class="row g-4">
+        <div class="col-xl-8 animate__animated animate__fadeInLeft">
+            <div class="content-card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+                <div class="card-header-custom border-bottom bg-transparent py-4">
+                    <h5 class="fw-bold fs-5 mb-0"><i class="bi bi-calendar-plus text-primary me-2"></i> Thông tin Kỳ đánh giá</h5>
+                </div>
 
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label asp-for="PeriodName" class="form-label fw-semibold">Tên kỳ đánh giá <span class="text-danger">*</span></label>
-                        <input asp-for="PeriodName" class="form-control" placeholder="VD: Quý 1 - 2026" required />
-                        <span asp-validation-for="PeriodName" class="text-danger"></span>
-                    </div>
+                <div class="card-body-custom p-4">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
 
-                    <div class="col-md-6">
-                        <label asp-for="PeriodType" class="form-label fw-semibold">Loại kỳ <span class="text-danger">*</span></label>
-                        <select asp-for="PeriodType" class="form-select">
-                            <option value="MONTH">Hàng tháng</option>
-                            <option value="QUARTER">Hàng quý</option>
-                            <option value="YEAR">Hàng năm</option>
-                        </select>
-                        <span asp-validation-for="PeriodType" class="text-danger"></span>
-                    </div>
+                        <!-- SECTION 1 -->
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="icon-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
+                                <span class="fw-bold">1</span>
+                            </div>
+                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Thông tin kỳ</h6>
+                        </div>
 
-                    <div class="col-md-6">
-                        <label asp-for="StartDate" class="form-label fw-semibold">Ngày bắt đầu <span class="text-danger">*</span></label>
-                        <input asp-for="StartDate" type="date" class="form-control" required />
-                        <span asp-validation-for="StartDate" class="text-danger"></span>
-                    </div>
+                        <div class="row g-4 mb-5 p-3 rounded-4 bg-light bg-opacity-50 border border-white">
+                            <div class="col-md-7">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Tên kỳ đánh giá <span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-calendar3"></i>
+                                        <input asp-for="PeriodName" class="form-control shadow-sm" placeholder="VD: Quý 1 - 2026" required />
+                                    </div>
+                                    <span asp-validation-for="PeriodName" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
 
-                    <div class="col-md-6">
-                        <label asp-for="EndDate" class="form-label fw-semibold">Ngày kết thúc <span class="text-danger">*</span></label>
-                        <input asp-for="EndDate" type="date" class="form-control" required />
-                        <span asp-validation-for="EndDate" class="text-danger"></span>
-                    </div>
+                            <div class="col-md-5">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Loại kỳ <span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-clock-history"></i>
+                                        <select asp-for="PeriodType" class="form-select shadow-sm">
+                                            <option value="MONTH">Hàng tháng</option>
+                                            <option value="QUARTER">Hàng quý</option>
+                                            <option value="YEAR">Hàng năm</option>
+                                        </select>
+                                    </div>
+                                    <span asp-validation-for="PeriodType" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div class="col-md-12">
-                        <label asp-for="StatusId" class="form-label fw-semibold">Trạng thái <span class="text-danger">*</span></label>
-                        <select asp-for="StatusId" class="form-select">
-                            @foreach (var s in statuses)
-                            {
-                                <option value="@s.Key">@s.Value</option>
-                            }
-                        </select>
-                        <span asp-validation-for="StatusId" class="text-danger"></span>
+                        <!-- SECTION 2 -->
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="icon-circle bg-success text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
+                                <span class="fw-bold">2</span>
+                            </div>
+                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Thời gian & trạng thái</h6>
+                        </div>
+
+                        <div class="row g-4 p-3 rounded-4 bg-light bg-opacity-50 border border-white mb-4">
+                            <div class="col-md-5">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Ngày bắt đầu <span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-calendar-check"></i>
+                                        <input asp-for="StartDate" type="date" class="form-control shadow-sm" required />
+                                    </div>
+                                    <span asp-validation-for="StartDate" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-5">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Ngày kết thúc <span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-calendar-x"></i>
+                                        <input asp-for="EndDate" type="date" class="form-control shadow-sm" required />
+                                    </div>
+                                    <span asp-validation-for="EndDate" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-2">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Trạng thái <span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-toggle-on"></i>
+                                        <select asp-for="StatusId" class="form-select shadow-sm">
+                                            @foreach (var s in statuses)
+                                            {
+                                                <option value="@s.Key">@s.Value</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <span asp-validation-for="StatusId" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
+                            <a asp-action="Index" class="btn-outline-custom">
+                                <i class="bi bi-x-lg me-2"></i> Hủy thao tác
+                            </a>
+                            <button type="submit" class="btn-primary-custom" style="padding: 12px 40px; border-radius: 12px;">
+                                <i class="bi bi-check-lg fs-5 me-2"></i> Tạo Kỳ đánh giá
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 animate__animated animate__fadeInRight">
+            <div class="sticky-top" style="top: 100px;">
+                <div class="content-card border-0 shadow-lg text-white mb-4" style="background: linear-gradient(135deg, #0078d4, #005a9e); border-radius: 24px;">
+                    <div class="card-body-custom p-4">
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
+                                <i class="bi bi-calendar-range fs-3 text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small">Kỳ đánh giá</h6>
+                                <h4 class="mb-0 fw-800" id="previewName">--</h4>
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                                    <div class="small opacity-75 mb-1">Bắt đầu</div>
+                                    <div class="fw-bold small" id="previewStart">--</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                                    <div class="small opacity-75 mb-1">Kết thúc</div>
+                                    <div class="fw-bold small" id="previewEnd">--</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                    <a asp-action="Index" class="btn-outline-custom px-4">
-                        <i class="bi bi-x-circle me-1"></i> Hủy bỏ
-                    </a>
-                    <button type="submit" class="btn-primary-custom px-4">
-                        <i class="bi bi-save me-1"></i> Tạo mới
-                    </button>
+                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle text-primary me-2"></i> Lưu ý</h6>
+                    <ul class="list-unstyled mb-0 small text-muted" style="line-height: 1.8;">
+                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Ngày kết thúc phải sau ngày bắt đầu.</li>
+                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Kỳ đánh giá được dùng để liên kết KPI và kết quả.</li>
+                        <li><i class="bi bi-patch-check-fill text-success me-2"></i> Chỉ kỳ "Đang hoạt động" mới được dùng để check-in.</li>
+                    </ul>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
+<style>
+    .fw-800 { font-weight: 800; }
+    .letter-spacing-1 { letter-spacing: 0.1em; }
+    .form-select, .form-control { border: 1.5px solid #edf2f7; padding-top: 12px; padding-bottom: 12px; }
+    .form-select:focus, .form-control:focus { border-color: #a3c9f9; box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.1); }
+    .animate__animated { animation-duration: 0.8s; }
+</style>
+
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script>
+        const nameInput = document.getElementById('PeriodName');
+        const startInput = document.getElementById('StartDate');
+        const endInput = document.getElementById('EndDate');
+        function fmt(val) {
+            if (!val) return '--';
+            const d = new Date(val);
+            return d.toLocaleDateString('vi-VN');
+        }
+        function updatePreview() {
+            document.getElementById('previewName').textContent = nameInput.value.trim() || '--';
+            document.getElementById('previewStart').textContent = fmt(startInput.value);
+            document.getElementById('previewEnd').textContent = fmt(endInput.value);
+        }
+        [nameInput, startInput, endInput].forEach(el => el.addEventListener('input', updatePreview));
+        window.addEventListener('DOMContentLoaded', updatePreview);
+    </script>
 }

@@ -25,6 +25,7 @@ namespace Manage_KPI_or_OKR_System.Models
         public DateTime? JoinDate { get; set; }
         public int? SystemUserId { get; set; }
         public bool? IsActive { get; set; } = true;
+        public int? StrategicGoalId { get; set; }
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
         public int? CreatedById { get; set; }
     }

@@ -63,21 +63,32 @@
 
 <div class="content-card shadow-sm border-0">
     <div class="card-body-custom p-4">
-        <div class="toolbar mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <form asp-action="Index" method="get" class="toolbar mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div class="toolbar-left d-flex gap-2 flex-wrap">
                 <div class="toolbar-search position-relative">
                     <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <input type="text" class="form-control rounded-pill ps-5 border-light bg-light" placeholder="Tìm kiếm KPI...">
+                    <input type="text" name="searchString" class="form-control rounded-pill ps-5 border-light bg-light" placeholder="Tìm kiếm KPI..." style="width: 250px;">
                 </div>
-                <select class="form-select border-light bg-light rounded-pill w-auto">
-                    <option value="">Lọc theo kỳ: Tất cả</option>
-                    @foreach(var p in periodsDict.Values.Distinct())
-                    {
-                        <option value="@p">@p</option>
-                    }
-                </select>
             </div>
-        </div>
+            <div class="toolbar-right d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 bg-white p-1 rounded shadow-sm border">
+                    <span class="ps-2 text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Kỳ báo cáo:</span>
+                    <select name="period" class="form-select form-select-sm border-0 fw-bold text-primary" style="width: 160px; outline: none; box-shadow: none;">
+                        <option value="">Tất cả</option>
+                        @foreach(var p in periodsDict.Values.Distinct())
+                        {
+                            <option value="@p">@p</option>
+                        }
+                    </select>
+                </div>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0 bg-white shadow-sm" title="Làm mới" style="padding: 0.35rem 0.6rem;">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
+                <button type="submit" class="btn btn-sm btn-primary shadow-sm" title="Lọc kết quả" style="padding: 0.35rem 0.8rem;">
+                    <i class="bi bi-funnel"></i> Lọc
+                </button>
+            </div>
+        </form>
 
         <div class="table-responsive w-100">
             <table class="data-table w-100">
@@ -179,8 +190,9 @@
                                             <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                                                  <li><a class="dropdown-item py-2" asp-action="Details" asp-route-id="@kpi.Id"><i class="bi bi-info-circle text-primary me-2"></i> Chi tiết</a></li>
                                                  
-                                                 @if (kpi.StatusId == 1) // Only allow personnel assignment for approved KPIs
+                                                 @if (kpi.StatusId == 1) // Only allow actions for approved KPIs
                                                  {
+                                                     <li><a class="dropdown-item py-2 text-success fw-bold" asp-controller="KPICheckIns" asp-action="Create" asp-route-kpiId="@kpi.Id"><i class="bi bi-calendar-check me-2"></i> Thực hiện Check-in</a></li>
                                                      <li><a class="dropdown-item py-2" href="javascript:void(0)" onclick="openAssignPersonnelModal(@kpi.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kpi.KPIName ?? ""))', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assignedEmployees)))"><i class="bi bi-people text-info-emphasis me-2"></i> Phân bổ nhân sự</a></li>
                                                  }
 

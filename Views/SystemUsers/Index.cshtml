@@ -38,10 +38,12 @@
     <div class="card-body-custom">
         <form asp-action="Index" method="get" class="toolbar">
             <div class="toolbar-left">
-                <div class="toolbar-search">
+                <div class="toolbar-search" style="max-width: 300px;">
                     <i class="bi bi-search"></i>
                     <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control" placeholder="Tìm tên đăng nhập, email..." />
                 </div>
+            </div>
+            <div class="toolbar-right d-flex align-items-center gap-2">
                 <select name="roleId" class="filter-select">
                     <option value="">Phân quyền (Role)</option>
                     @foreach (var role in roles)
@@ -61,10 +63,13 @@
                     @if(ViewBag.Status == "active") { <option value="active" selected>Đang hoạt động</option> } else { <option value="active">Đang hoạt động</option> }
                     @if(ViewBag.Status == "locked") { <option value="locked" selected>Bị khóa</option> } else { <option value="locked">Bị khóa</option> }
                 </select>
-            </div>
-                <button type="submit" class="btn-primary-custom" style="padding: 0 16px;">
-                    <i class="bi bi-funnel"></i>
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0 text-muted" title="Làm mới">
+                    <i class="bi bi-arrow-clockwise fs-5"></i>
+                </a>
+                <button type="submit" class="btn-primary-custom d-flex align-items-center gap-2" style="padding: 8px;">
+                    <i class="bi bi-funnel"></i> <span>Lọc</span>
                 </button>
+            </div>
         </form>
 
         <div class="table-responsive w-100">

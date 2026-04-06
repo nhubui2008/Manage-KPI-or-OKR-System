@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', function () {
             const isExpanded = document.documentElement.classList.toggle('sidebar-expanded');
+            // Ghi nhớ trạng thái người dùng chọn
             localStorage.setItem('sidebarState', isExpanded ? 'expanded' : 'collapsed');
         });
     }
@@ -61,6 +62,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Handle window resize ---
     window.addEventListener('resize', function () {
+        // Chỉ đóng 'show' (phiên bản mobile overlay) khi quay lại màn hình lớn
         if (window.innerWidth >= 992) {
             sidebar.classList.remove('show');
             overlay.classList.remove('show');

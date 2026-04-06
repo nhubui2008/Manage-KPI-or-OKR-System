@@ -5,131 +5,361 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container-fluid px-4 mt-4">
-    <div class="row mb-3">
-        <div class="col-12">
-            <h3 class="text-dark fw-bold">
-                <i class="bi bi-person-plus-fill me-2"></i>Thêm Nhân Viên Mới
-            </h3>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb bg-transparent p-0 m-0">
-                    <li class="breadcrumb-item"><a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a></li>
-                    <li class="breadcrumb-item"><a asp-action="Index" class="text-dark text-decoration-none opacity-75">Danh sách nhân viên</a></li>
-                    <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Thêm mới</li>
-                </ol>
-            </nav>
+<div class="page-content py-4 container-fluid px-4">
+    <!-- HEADER -->
+    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
+        <div>
+            <h1 class="mb-2 fw-800 text-dark text-gradient">Thêm Nhân Viên Mới</h1>
+            <div class="page-breadcrumb">
+                <a href="/" class="text-decoration-none opacity-75">Trang chủ</a>
+                <span class="separator mx-2 text-muted">/</span>
+                <a asp-action="Index" class="text-decoration-none opacity-75">Danh sách nhân viên</a>
+                <span class="separator mx-2 text-muted">/</span>
+                <span class="text-primary fw-bold">Thêm mới</span>
+            </div>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-light shadow-sm border-0 bg-white px-4 py-2" style="border-radius: 12px; font-weight: 600; color: #475569; transition: all 0.3s;">
+                <i class="bi bi-arrow-left me-2"></i> Quay lại
+            </a>
         </div>
     </div>
 
-    <div class="content-card rounded-3">
-        <div class="card-body-custom p-4">
-            
-            @if (ViewBag.ErrorMessage != null)
-            {
-                <div class="alert alert-dark alert-dismissible fade show shadow-sm" role="alert">
-                    <strong><i class="bi bi-exclamation-triangle-fill me-2"></i> Lỗi!</strong> @ViewBag.ErrorMessage
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
-
-            <form asp-action="Create" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label asp-for="EmployeeCode" class="form-label fw-bold text-dark">Mã nhân viên <span class="badge bg-dark bg-opacity-10 text-dark">Tự động</span></label>
-                        <div class="input-group">
-                            <input asp-for="EmployeeCode" class="form-control" value="@(ViewData["NextEmployeeCode"] ?? "")" readonly />
-                            <span class="input-group-text" title="Mã này được tự động sinh">
-                                <i class="bi bi-info-circle"></i>
-                            </span>
+    <div class="row g-4">
+        <!-- FORM COLUMN -->
+        <div class="col-xl-8 animate__animated animate__fadeInLeft">
+            <div class="content-card border-0 shadow-lg overflow-visible" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 24px; position: relative;">
+                <div class="card-header-custom border-bottom bg-white bg-opacity-50 py-4 px-4" style="border-radius: 24px 24px 0 0;">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-4 me-3">
+                            <i class="bi bi-person-plus-fill text-primary fs-4"></i>
                         </div>
-                        <small class="text-muted d-block mt-1">Hệ thống sẽ tự động gán mã: @ViewData["NextEmployeeCode"]</small>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label asp-for="FullName" class="form-label fw-bold text-dark">Họ và tên <span class="text-danger">*</span></label>
-                        <input asp-for="FullName" class="form-control" placeholder="Nhập đầy đủ họ tên" required />
-                        <span asp-validation-for="FullName" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label asp-for="DateOfBirth" class="form-label fw-bold text-dark">Ngày sinh</label>
-                        <input asp-for="DateOfBirth" type="date" class="form-control" />
-                        <span asp-validation-for="DateOfBirth" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label asp-for="JoinDate" class="form-label fw-bold text-dark">Ngày vào làm</label>
-                        <input asp-for="JoinDate" type="date" class="form-control" />
-                        <span asp-validation-for="JoinDate" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label asp-for="Phone" class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
-
-                        <input asp-for="Phone" class="form-control" placeholder="Nhập số điện thoại liên hệ" />
-                        <span asp-validation-for="Phone" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label asp-for="Email" class="form-label fw-semibold">Email công việc <span class="text-danger">*</span></label>
-
-                        <input asp-for="Email" type="email" class="form-control" placeholder="Nhập địa chỉ email" />
-                        <span asp-validation-for="Email" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label asp-for="TaxCode" class="form-label fw-bold text-dark">Mã số thuế</label>
-                        <input asp-for="TaxCode" class="form-control" placeholder="Nhập MST (nếu có)" />
-                        <span asp-validation-for="TaxCode" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label for="SystemUserId" class="form-label fw-bold text-dark">Tài khoản đăng nhập (Liên kết)</label>
-                        <select asp-for="SystemUserId" class="form-select" asp-items="ViewBag.SystemUserId">
-                            <option value="">-- Chọn tài khoản (Không bắt buộc) --</option>
-                        </select>
-                        <span asp-validation-for="SystemUserId" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label for="DepartmentId" class="form-label fw-bold text-dark">Phòng ban</label>
-                        <select name="departmentId" class="form-select" asp-items="ViewBag.DepartmentId">
-                            <option value="">-- Chọn phòng ban (Không bắt buộc) --</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label for="PositionId" class="form-label fw-bold text-dark">Vị trí công việc</label>
-                        <select name="positionId" class="form-select" asp-items="ViewBag.PositionId">
-                            <option value="">-- Chọn vị trí (Không bắt buộc) --</option>
-                        </select>
-                    </div>
-
-                    <div class="col-12 mt-4 text-dark fw-bold">
-                        <div class="form-check form-switch fs-5">
-                            <input type="checkbox" class="form-check-input" id="isActiveSwitch" name="IsActive" value="true" checked />
-                            <input type="hidden" name="IsActive" value="false" />
-                            <label class="form-check-label fw-semibold ms-2" style="font-size: 1rem; margin-top: 2px;" for="isActiveSwitch">Đang làm việc (Kích hoạt)</label>
-
+                        <div>
+                            <h5 class="fw-bold fs-5 mb-0 text-dark">Hồ sơ nhân sự chi tiết</h5>
+                            <p class="text-muted small mb-0">Thiết lập thông tin cơ bản và vị trí công tác cho nhân viên mới</p>
                         </div>
                     </div>
                 </div>
+                
+                <div class="card-body-custom p-4 p-md-5">
+                    @if (ViewBag.ErrorMessage != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 rounded-4 mb-4" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-octagon-fill fs-4 me-3"></i>
+                                <div>
+                                    <strong>Lỗi hệ thống!</strong> @ViewBag.ErrorMessage
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
 
-                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                    <a asp-action="Index" class="btn-outline-custom px-4 text-decoration-none">
-                        <i class="bi bi-x-circle me-1"></i> Hủy bỏ
-                    </a>
-                    <button type="submit" class="btn-primary-custom px-4">
-                        <i class="bi bi-save me-1"></i> Lưu Nhân Viên
-                    </button>
+                    <form asp-action="Create" method="post" id="createEmployeeForm">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+
+                        <!-- SECTION 1: PERSONAL INFO -->
+                        <div class="form-section mb-5">
+                            <div class="d-flex align-items-center mb-4">
+                                <span class="badge bg-primary me-2" style="width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">1</span>
+                                <h6 class="text-uppercase fw-800 text-muted small mb-0 tracking-wider">Thông tin cá nhân & Liên hệ</h6>
+                            </div>
+
+                            <div class="row g-4">
+                                <div class="col-md-6 text-dark font-weight-bold">
+                                    <div class="form-icon-group">
+                                        <label asp-for="EmployeeCode" class="form-label small fw-bold text-secondary">Mã nhân viên (Hệ thống tự sinh)</label>
+                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
+                                            <i class="bi bi-hash"></i>
+                                            <input asp-for="EmployeeCode" class="form-control border-0 bg-light" value="@(ViewData["NextEmployeeCode"] ?? "")" readonly style="padding-left: 45px; height: 50px;" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-icon-group text-dark font-weight-bold">
+                                        <label asp-for="FullName" class="form-label small fw-bold text-secondary">Họ và tên <span class="text-danger">*</span></label>
+                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
+                                            <i class="bi bi-person"></i>
+                                            <input asp-for="FullName" class="form-control border-0" placeholder="Nguyễn Văn A" required style="padding-left: 45px; height: 50px;" />
+                                        </div>
+                                        <span asp-validation-for="FullName" class="text-danger small mt-1"></span>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-icon-group text-dark font-weight-bold">
+                                        <label asp-for="Phone" class="form-label small fw-bold text-secondary">Số điện thoại <span class="text-danger">*</span></label>
+                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
+                                            <i class="bi bi-telephone"></i>
+                                            <input asp-for="Phone" class="form-control border-0" placeholder="090 123 4567" required style="padding-left: 45px; height: 50px;" />
+                                        </div>
+                                        <span asp-validation-for="Phone" class="text-danger small mt-1"></span>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-icon-group text-dark font-weight-bold">
+                                        <label asp-for="Email" class="form-label small fw-bold text-secondary">Email công việc <span class="text-danger">*</span></label>
+                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
+                                            <i class="bi bi-envelope"></i>
+                                            <input asp-for="Email" type="email" class="form-control border-0" placeholder="email@company.com" required style="padding-left: 45px; height: 50px;" />
+                                        </div>
+                                        <span asp-validation-for="Email" class="text-danger small mt-1"></span>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-icon-group text-dark font-weight-bold">
+                                        <label asp-for="DateOfBirth" class="form-label small fw-bold text-secondary">Ngày sinh</label>
+                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
+                                            <i class="bi bi-calendar-event"></i>
+                                            <input asp-for="DateOfBirth" type="date" class="form-control border-0" style="padding-left: 45px; height: 50px;" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-icon-group text-dark font-weight-bold">
+                                        <label asp-for="TaxCode" class="form-label small fw-bold text-secondary">Mã số thuế</label>
+                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
+                                            <i class="bi bi-card-text"></i>
+                                            <input asp-for="TaxCode" class="form-control border-0" placeholder="MST (nếu có)" style="padding-left: 45px; height: 50px;" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 2: JOB & ASSIGNMENT -->
+                        <div class="form-section mb-5">
+                            <div class="d-flex align-items-center mb-4">
+                                <span class="badge bg-success me-2" style="width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">2</span>
+                                <h6 class="text-uppercase fw-800 text-muted small mb-0 tracking-wider">Công việc & Tổ chức</h6>
+                            </div>
+
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="form-icon-group text-dark font-weight-bold">
+                                        <label for="DepartmentId" class="form-label small fw-bold text-secondary">Phòng ban</label>
+                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
+                                            <i class="bi bi-building"></i>
+                                            <select name="departmentId" class="form-select border-0" asp-items="ViewBag.DepartmentId" style="padding-left: 45px; height: 50px;">
+                                                <option value="">-- Chọn phòng ban --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-icon-group text-dark font-weight-bold">
+                                        <label for="PositionId" class="form-label small fw-bold text-secondary">Vị trí công việc</label>
+                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
+                                            <i class="bi bi-briefcase"></i>
+                                            <select name="positionId" class="form-select border-0" asp-items="ViewBag.PositionId" style="padding-left: 45px; height: 50px;">
+                                                <option value="">-- Chọn vị trí --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-icon-group text-dark font-weight-bold">
+                                        <label asp-for="JoinDate" class="form-label small fw-bold text-secondary">Ngày vào làm</label>
+                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
+                                            <i class="bi bi-calendar-check text-success"></i>
+                                            <input asp-for="JoinDate" type="date" class="form-control border-0" style="padding-left: 45px; height: 50px;" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-icon-group text-dark font-weight-bold">
+                                        <label asp-for="SystemUserId" class="form-label small fw-bold text-secondary">Tài khoản liên kết</label>
+                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
+                                            <i class="bi bi-person-badge"></i>
+                                            <select asp-for="SystemUserId" class="form-select border-0" asp-items="ViewBag.SystemUserId" style="padding-left: 45px; height: 50px;">
+                                                <option value="">-- Liên kết tài khoản (Không bắt buộc) --</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 3: STRATEGIC ALIGNMENT -->
+                        <div class="form-section mb-5">
+                            <div class="d-flex align-items-center mb-4">
+                                <span class="badge bg-warning text-dark me-2" style="width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">3</span>
+                                <h6 class="text-uppercase fw-800 text-muted small mb-0 tracking-wider">Định hướng & Mục tiêu chiến lược</h6>
+                            </div>
+
+                            <div class="form-icon-group text-dark font-weight-bold">
+                                <label asp-for="StrategicGoalId" class="form-label small fw-bold text-secondary">Gắn với Sứ mệnh / Mục tiêu chiến lược</label>
+                                <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
+                                    <i class="bi bi-flag-fill text-warning"></i>
+                                    <select asp-for="StrategicGoalId" class="form-select border-0" asp-items="ViewBag.StrategicGoalId" style="padding-left: 45px; height: 50px;">
+                                        <option value="">-- Không gắn mục tiêu cụ thể --</option>
+                                    </select>
+                                </div>
+                                <div class="form-text mt-2 small text-muted">
+                                    <i class="bi bi-info-circle me-1"></i> Nhân viên sẽ được xem các OKRs và KPIs liên quan đến mục tiêu chiến lược này.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="form-check form-switch fs-5">
+                                <input type="checkbox" class="form-check-input" id="isActiveSwitch" name="IsActive" value="true" checked />
+                                <input type="hidden" name="IsActive" value="false" />
+                                <label class="form-check-label fw-bold text-dark ms-2" style="font-size: 1rem;" for="isActiveSwitch">Trạng thái: Đang làm việc</label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
+                            <a asp-action="Index" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 12px; font-weight: 600; border: 1.5px solid #e2e8f0;">
+                                Hủy bỏ
+                            </a>
+                            <button type="submit" class="btn btn-primary px-5 py-2 shadow-lg" style="border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%); border: none;">
+                                <i class="bi bi-save-fill me-2"></i> Lưu Nhân Viên
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
+        </div>
+
+        <!-- SIDEBAR COLUMN -->
+        <div class="col-xl-4 animate__animated animate__fadeInRight">
+            <div class="sticky-top" style="top: 100px;">
+                <!-- TIPS CARD -->
+                <div class="content-card border-0 shadow-lg text-white mb-4 position-relative overflow-hidden" 
+                     style="background: linear-gradient(135deg, #0078d4, #005a9e); border-radius: 24px;">
+                    <div class="card-body-custom p-4 position-relative z-index-1">
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
+                                <i class="bi bi-lightbulb fs-3 text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small">Cẩm nang HR</h6>
+                                <h4 class="mb-0 fw-800">Tạo Hồ Sơ</h4>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <ul class="list-unstyled mb-0 small" style="opacity: 0.9; line-height: 1.8;">
+                                <li class="mb-3 d-flex align-items-start">
+                                    <i class="bi bi-check2-circle me-2 mt-1 fs-5 text-warning"></i> 
+                                    <span><strong>Định dạng Email:</strong> Hãy sử dụng email tên miền công ty để đồng bộ hệ thống.</span>
+                                </li>
+                                <li class="mb-3 d-flex align-items-start">
+                                    <i class="bi bi-check2-circle me-2 mt-1 fs-5 text-warning"></i> 
+                                    <span><strong>Mã nhân viên:</strong> Mã EMPxxx được sinh tự động để đảm bảo tính duy nhất.</span>
+                                </li>
+                                <li class="d-flex align-items-start">
+                                    <i class="bi bi-check2-circle me-2 mt-1 fs-5 text-warning"></i> 
+                                    <span><strong>Chiến lược (Alignment):</strong> Việc gắn mục tiêu chiến lược giúp nhân viên thấy rõ giá trị đóng góp của mình.</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-white bg-opacity-10 p-3 rounded-4 border border-white border-opacity-10 backdrop-blur">
+                            <p class="small mb-0 fst-italic">"Con người là tài sản quý giá nhất của doanh nghiệp. Hãy bắt đầu hành trình của họ thật chuyên nghiệp."</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INFO CARD -->
+                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <h6 class="fw-bold text-dark mb-4">
+                        <i class="bi bi-info-circle text-primary me-2"></i> Lưu ý quan trọng
+                    </h6>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item px-0 py-3 border-0">
+                            <div class="d-flex align-items-start">
+                                <div class="bg-info bg-opacity-10 text-info p-2 rounded-3 me-3">
+                                    <i class="bi bi-shield-lock"></i>
+                                </div>
+                                <p class="small text-muted mb-0"><strong>Tài khoản liên kết:</strong> Dùng để nhân viên đăng nhập vào hệ thống CRM/OKR.</p>
+                            </div>
+                        </div>
+                        <div class="list-group-item px-0 py-3 border-0">
+                            <div class="d-flex align-items-start">
+                                <div class="bg-warning bg-opacity-10 text-warning p-2 rounded-3 me-3">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </div>
+                                <p class="small text-muted mb-0"><strong>Trùng lặp:</strong> Hệ thống sẽ kiểm tra trùng lặp Email và SĐT ngay khi lưu.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+<style>
+    .fw-800 { font-weight: 800; }
+    .text-gradient { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .backdrop-blur { backdrop-filter: blur(10px); }
+    .tracking-wider { letter-spacing: 0.05em; }
+    
+    /* Premium Form Styling */
+    .form-icon-group {
+        position: relative;
+    }
+
+    .form-icon-group .input-wrapper {
+        position: relative;
+        transition: all 0.3s ease;
+        background: #fff;
+    }
+    
+    .form-icon-group .input-wrapper:focus-within {
+        border-color: #0078d4 !important;
+        box-shadow: 0 8px 15px -5px rgba(0, 120, 212, 0.15) !important;
+        transform: translateY(-1px);
+    }
+    
+    .form-icon-group .input-wrapper i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 1.1rem;
+        z-index: 10;
+        transition: color 0.3s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        box-shadow: none !important;
+        color: #1e293b;
+        background-color: transparent;
+    }
+    
+    .form-icon-group .input-wrapper:focus-within i {
+        color: #0078d4;
+    }
+
+    /* Page effects */
+    .animate__animated { animation-duration: 0.8s; }
+    
+    .form-section {
+        background: rgba(248, 250, 252, 0.5);
+        padding: 20px;
+        border-radius: 16px;
+        border: 1px solid #f1f5f9;
+        transition: all 0.3s ease;
+    }
+
+    .form-section:hover {
+        background: rgba(248, 250, 252, 0.8);
+        border-color: #e2e8f0;
+    }
+</style>
+
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 }

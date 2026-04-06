@@ -100,12 +100,13 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
             ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username");
             ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", null);
             ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", null);
+            ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", null);
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,EmployeeCode,FullName,DateOfBirth,Phone,Email,TaxCode,JoinDate,SystemUserId,IsActive")] Employee employee, int? departmentId, int? positionId)
+        public async Task<IActionResult> Create([Bind("Id,EmployeeCode,FullName,DateOfBirth,Phone,Email,TaxCode,JoinDate,SystemUserId,IsActive,StrategicGoalId")] Employee employee, int? departmentId, int? positionId)
         {
             if (ModelState.IsValid)
             {
@@ -126,6 +127,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
                     ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username");
                     ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
                     ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
+                    ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", employee.StrategicGoalId);
                     
                     return View(employee);
                 }
@@ -143,6 +145,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
                         ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", employee.SystemUserId);
                         ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
                         ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
+                        ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", employee.StrategicGoalId);
 
                         return View(employee);
                     }
@@ -176,6 +179,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
             ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username");
             ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
             ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
+            ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", employee.StrategicGoalId);
             
             return View(employee);
         }
@@ -198,6 +202,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
             ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", emp.SystemUserId);
             ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", assignment?.DepartmentId);
             ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", assignment?.PositionId);
+            ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", emp.StrategicGoalId);
             ViewBag.Assignment = assignment;
 
             return View(emp);
@@ -206,7 +211,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
         [HttpPost]
 [ValidateAntiForgeryToken]
 // SỬA ĐIỂM 1: Thêm IsActive vào Bind và xóa tham số rời bool isActive = false
-public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,DateOfBirth,Phone,Email,TaxCode,JoinDate,SystemUserId,IsActive")] Employee employee, int? departmentId, int? positionId)
+public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,DateOfBirth,Phone,Email,TaxCode,JoinDate,SystemUserId,IsActive,StrategicGoalId")] Employee employee, int? departmentId, int? positionId)
 {
     if (id != employee.Id)
     {
@@ -227,6 +232,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
                 ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", employee.SystemUserId);
                 ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
                 ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
+                ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", employee.StrategicGoalId);
 
                 return View(employee);
             }
@@ -249,6 +255,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             existingEmp.TaxCode = employee.TaxCode;
             existingEmp.JoinDate = employee.JoinDate;
             existingEmp.SystemUserId = employee.SystemUserId;
+            existingEmp.StrategicGoalId = employee.StrategicGoalId;
             
             // SỬA ĐIỂM 2: Lấy IsActive từ model gửi lên thay vì tham số phụ
             existingEmp.IsActive = employee.IsActive;
@@ -303,6 +310,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
     ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", employee.SystemUserId);
     ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
     ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
+    ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", employee.StrategicGoalId);
 
     return View(employee);
 }

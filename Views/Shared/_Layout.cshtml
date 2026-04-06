@@ -12,6 +12,18 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Manage_KPI_or_OKR_System.styles.css" asp-append-version="true" />
+    
+    <!-- Restore sidebar state immediately to prevent layout shift -->
+    <script>
+        (function() {
+            const sidebarState = localStorage.getItem('sidebarState');
+            if (sidebarState === 'expanded' || sidebarState === null) {
+                document.documentElement.classList.add('sidebar-expanded');
+            } else {
+                document.documentElement.classList.remove('sidebar-expanded');
+            }
+        })();
+    </script>
 </head>
 <body>
     <div class="app-blob-container">
@@ -50,7 +62,7 @@
                     <div class="sidebar-group">
                         <div class="sidebar-group-label">Overview</div>
                         <a href="/" class="sidebar-link">
-                            <i class="bi bi-grid-1x2-fill"></i> Dashboard
+                            <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
                         </a>
                     </div>
 
@@ -59,13 +71,13 @@
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Nhân sự</div>
                             <a href="/Employees" class="sidebar-link">
-                                <i class="bi bi-people-fill"></i> Nhân sự
+                                <i class="bi bi-people-fill"></i> <span>Nhân sự</span>
                             </a>
                             <a href="/Departments" class="sidebar-link">
-                                <i class="bi bi-diagram-3-fill"></i> Phòng ban
+                                <i class="bi bi-diagram-3-fill"></i> <span>Phòng ban</span>
                             </a>
                             <a href="/Positions" class="sidebar-link">
-                                <i class="bi bi-person-badge-fill"></i> Chức vụ
+                                <i class="bi bi-person-badge-fill"></i> <span>Chức vụ</span>
                             </a>
                         </div>
                     }
@@ -77,11 +89,11 @@
                             @if (isAdmin || isManager)
                             {
                                 <a href="/MissionVisions" class="sidebar-link">
-                                    <i class="bi bi-compass-fill"></i> Thiết lập tầm nhìn & sứ mệnh
+                                    <i class="bi bi-compass-fill"></i> <span>Thiết lập tầm nhìn & sứ mệnh</span>
                                 </a>
                             }
                             <a href="/OKRs" class="sidebar-link">
-                                <i class="bi bi-bullseye"></i> Quản lý OKR / Mục tiêu
+                                <i class="bi bi-bullseye"></i> <span>Quản lý OKR / Mục tiêu</span>
                             </a>
                         </div>
                     }
@@ -93,16 +105,16 @@
                             @if (isManagementOrHR)
                             {
                                 <a href="/EvaluationPeriods" class="sidebar-link">
-                                    <i class="bi bi-calendar3"></i> Kỳ đánh giá
+                                    <i class="bi bi-calendar3"></i> <span>Kỳ đánh giá</span>
                                 </a>
                             }
                             @if (isAdmin || isManager || isEmployee)
                             {
                                 <a href="/KPIs" class="sidebar-link">
-                                    <i class="bi bi-speedometer2"></i> Giao & Xem KPI cá nhân
+                                    <i class="bi bi-speedometer2"></i> <span>Giao & Xem KPI cá nhân</span>
                                 </a>
                                 <a href="/KPICheckIns" class="sidebar-link">
-                                    <i class="bi bi-check2-square"></i> Cập nhật tiến độ KPI
+                                    <i class="bi bi-check2-square"></i> <span>Cập nhật tiến độ KPI</span>
                                 </a>
                             }
                         </div>
@@ -113,15 +125,15 @@
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Đánh giá & Thưởng</div>
                             <a href="/EvaluationResults" class="sidebar-link">
-                                <i class="bi bi-award-fill"></i> Đánh giá 1-1 / Kết quả
+                                <i class="bi bi-award-fill"></i> <span>Đánh giá 1-1 / Kết quả</span>
                             </a>
                             @if (isManagementOrHR)
                             {
                                 <a href="/EvaluationReports" class="sidebar-link">
-                                    <i class="bi bi-file-earmark-bar-graph-fill text-info"></i> Báo cáo Đánh giá (V.Director)
+                                    <i class="bi bi-file-earmark-bar-graph-fill text-info"></i> <span>Báo cáo Đánh giá (V.Director)</span>
                                 </a>
                                 <a href="/BonusRules" class="sidebar-link">
-                                    <i class="bi bi-cash-coin"></i> Quy tắc thưởng
+                                    <i class="bi bi-cash-coin"></i> <span>Quy tắc thưởng</span>
                                 </a>
                             }
                         </div>
@@ -134,13 +146,13 @@
                         <div class="sidebar-group mt-2">
                             <div class="sidebar-group-label">Hệ thống</div>
                             <a href="/SystemUsers" class="sidebar-link">
-                                <i class="bi bi-shield-lock-fill"></i> Người dùng
+                                <i class="bi bi-shield-lock-fill"></i> <span>Người dùng</span>
                             </a>
                             <a href="/Roles" class="sidebar-link">
-                                <i class="bi bi-person-lines-fill"></i> Phân quyền
+                                <i class="bi bi-person-lines-fill"></i> <span>Phân quyền</span>
                             </a>
                             <a href="/AuditLogs" class="sidebar-link">
-                                <i class="bi bi-journal-text"></i> Lịch sử hệ thống
+                                <i class="bi bi-journal-text"></i> <span>Lịch sử hệ thống</span>
                             </a>
                         </div>
                     }
@@ -159,7 +171,7 @@
                                 <div class="user-name">@userName</div>
                                 <div class="user-role">@userRole</div>
                             </div>
-                            <i class="bi bi-three-dots-vertical ms-auto text-muted"></i>
+                            <i class="bi bi-three-dots-vertical ms-auto text-muted user-dots"></i>
                         </div>
                         
                         <ul class="dropdown-menu shadow-sm border-0 mb-2" style="min-width: 220px; border-radius: 12px; background: #fff;">

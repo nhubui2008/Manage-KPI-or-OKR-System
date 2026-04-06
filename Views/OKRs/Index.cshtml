@@ -21,9 +21,9 @@
         <div class="d-flex justify-content-end gap-2">
             @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Warehouse") || User.IsInRole("warehouse") || User.IsInRole("Sales") || User.IsInRole("sales")))
             {
-                <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createOkrModal">
+                <a asp-action="Create" class="text-decoration-none btn-primary-custom d-flex align-items-center">
                     <i class="bi bi-plus-lg me-1"></i> Tạo OKR mới
-                </button>
+                </a>
             }
         </div>
     </div>
@@ -88,8 +88,9 @@
                                 string okrProgressColor = ProgressHelper.GetProgressColorClass(okrProgressInt);
                                 string okrTextClass = ProgressHelper.GetProgressTextColorClass(okrProgressInt);
 
-                                <div class="accordion-item mb-3 border-0 shadow-sm rounded">
-                                    <h2 class="accordion-header" id="heading-@index">
+                                <div class="accordion-item mb-3 border-0 shadow-sm rounded" style="overflow: visible;">
+                                    <h2 class="accordion-header position-relative" id="heading-@index">
+        
                                         <div class="accordion-button collapsed bg-white p-3 d-flex justify-content-between align-items-center w-100" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId" style="cursor: pointer; box-shadow: none;">
                                             
                                             <div class="d-flex flex-column flex-grow-1 pe-4">
@@ -118,31 +119,36 @@
 
                                             @if (canManageStructure || canDelete)
                                             {
-                                                <div class="action-btns dropdown" onclick="event.stopPropagation();">
-                                                    <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                                        @if (canManageStructure)
-                                                        {
-                                                            <li><a class="dropdown-item" href="#" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
-                                                            <li><a class="dropdown-item" href="#" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên</a></li>
-                                                            <li><hr class="dropdown-divider"></li>
-                                                        }
-                                                        @if (canDelete)
-                                                        {
-                                                            <li>
-                                                                <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận xóa OKR này?');">
-                                                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa OKR</button>
-                                                                </form>
-                                                            </li>
-                                                        }
-                                                    </ul>
-                                                </div>
+                                                <div style="width: 45px;"></div>
                                             }
-                                            
                                         </div>
+
+                                        @if (canManageStructure || canDelete)
+                                        {
+                                            <div class="action-btns dropdown position-absolute" style="right: 50px; top: 50%; transform: translateY(-50%); z-index: 10;" onclick="event.stopPropagation();">
+                                                <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                                    @if (canManageStructure)
+                                                    {
+                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
+                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên</a></li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                    }
+                                                    @if (canDelete)
+                                                    {
+                                                        <li>
+                                                            <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận xóa OKR này?');">
+                                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa OKR</button>
+                                                            </form>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        }
+                                        
                                     </h2>
 
-                                    <div id="@collapseId" class="accordion-collapse collapse border-top" aria-labelledby="heading-@index" data-bs-parent="#accordionOKRs">
+                                    <div id="@collapseId" class="accordion-collapse collapse border-top" aria-labelledby="heading-@index">
                                         <div class="accordion-body bg-light bg-opacity-25 p-3">
                                             <h6 class="fs-6 fw-semibold text-muted mb-3"><i class="bi bi-key-fill text-warning me-1"></i> Key Results (Kết quả then chốt)</h6>
                                             
@@ -274,93 +280,6 @@
     </div>
 </div>
 
-<!-- Modal Create OKR -->
-<div class="modal fade" id="createOkrModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-target text-primary me-2"></i>Tạo Objective mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form asp-controller="OKRs" asp-action="Create" method="post">
-                    <div class="mb-3">
-                        <label class="form-label">Tên Objective (Mục tiêu) <span class="text-danger">*</span></label>
-                        <input type="text" name="ObjectiveName" class="form-control" placeholder="VD: Tăng cường mức độ hài lòng của khách hàng" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Loại OKR <span class="text-danger">*</span></label>
-                        <select name="OKRTypeId" class="form-select" required>
-                            <option value="">-- Chọn loại --</option>
-                            @if (ViewBag.OKRTypes != null)
-                            {
-                                foreach (var type in (ViewBag.OKRTypes as IEnumerable<Manage_KPI_or_OKR_System.Models.OKRType>)!)
-                                {
-                                    <option value="@type.Id">@type.TypeName</option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Chu kỳ <span class="text-danger">*</span></label>
-                        <select name="Cycle" class="form-select" required>
-                            <option value="Q1-@DateTime.Now.Year">Quý 1 - @DateTime.Now.Year</option>
-                            <option value="Q2-@DateTime.Now.Year">Quý 2 - @DateTime.Now.Year</option>
-                            <option value="Q3-@DateTime.Now.Year">Quý 3 - @DateTime.Now.Year</option>
-                            <option value="Q4-@DateTime.Now.Year">Quý 4 - @DateTime.Now.Year</option>
-                            <option value="Năm @DateTime.Now.Year">Cả năm @DateTime.Now.Year</option>
-                        </select>
-                    </div>
-                    <hr class="my-4 text-muted">
-                    <h6 class="text-muted fw-bold mb-3" style="font-size: 0.8rem; letter-spacing: 0.5px; text-transform: uppercase;">Phân bổ mục tiêu (Tùy chọn)</h6>
-                    <div class="mb-3">
-                        <label class="form-label">Sứ mệnh / Tầm nhìn</label>
-                        <select name="missionId" class="form-select">
-                            <option value="">-- Không phân bổ --</option>
-                            @if (ViewBag.Missions != null)
-                            {
-                                foreach (var m in (ViewBag.Missions as IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>)!)
-                                {
-                                    <option value="@m.Id">Năm @m.TargetYear: @(m.Content?.Length > 50 ? m.Content.Substring(0, 50) + "..." : m.Content)</option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Phòng ban</label>
-                        <select name="departmentId" class="form-select">
-                            <option value="">-- Không phân bổ --</option>
-                            @if (ViewBag.Departments != null)
-                            {
-                                foreach (var d in (ViewBag.Departments as IEnumerable<Manage_KPI_or_OKR_System.Models.Department>)!)
-                                {
-                                    <option value="@d.Id">@d.DepartmentName</option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label">Nhân viên</label>
-                        <select name="employeeId" class="form-select">
-                            <option value="">-- Không phân bổ --</option>
-                            @if (ViewBag.Employees != null)
-                            {
-                                foreach (var e in (ViewBag.Employees as IEnumerable<Manage_KPI_or_OKR_System.Models.Employee>)!)
-                                {
-                                    <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn-outline-custom rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn-primary-custom rounded-pill px-4">Tạo OKR</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Modal Add Key Result -->
 <div class="modal fade" id="addKrModal" tabindex="-1" aria-hidden="true">
@@ -595,5 +514,28 @@
             var modal = new bootstrap.Modal(document.getElementById('updateKrProgressModal'));
             modal.show();
         }
+
+        // Toggle all accordions functionality
+        document.getElementById('toggleAllBtn')?.addEventListener('click', function() {
+            const accordions = document.querySelectorAll('#accordionOKRs .accordion-collapse');
+            const anyCollapsed = Array.from(accordions).some(a => !a.classList.contains('show'));
+            
+            accordions.forEach(acc => {
+                const bsCollapse = bootstrap.Collapse.getOrCreateInstance(acc);
+                if (anyCollapsed) {
+                    bsCollapse.show();
+                } else {
+                    bsCollapse.hide();
+                }
+            });
+            
+            // Cập nhật text & icon: Nếu trước đó có ít nhất 1 cái đóng, giờ đã mở hết -> nút thành "Thu gọn". 
+            // Nếu trước đó mở hết -> giờ đã đóng hết -> nút thành "Mở rộng".
+            if (anyCollapsed) {
+                this.innerHTML = '<i class="bi bi-dash-square"></i> Thu gọn tất cả';
+            } else {
+                this.innerHTML = '<i class="bi bi-list-task"></i> Mở rộng tất cả';
+            }
+        });
     </script>
 }

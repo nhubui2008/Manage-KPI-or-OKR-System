@@ -4,83 +4,207 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container-fluid px-4 mt-4">
-    <div class="row mb-3">
-        <div class="col-12">
-            <h3 class="text-dark fw-bold">
-                <i class="bi bi-people-fill me-2"></i>Thêm Khách hàng Mới
-            </h3>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb bg-transparent p-0 m-0">
-                    <li class="breadcrumb-item"><a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a></li>
-                    <li class="breadcrumb-item"><a asp-action="Index" class="text-dark text-decoration-none opacity-75">Quản lý Khách hàng</a></li>
-                    <li class="breadcrumb-item active text-dark fw-bold" aria-current="page">Thêm mới</li>
-                </ol>
-            </nav>
+<div class="page-content">
+    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
+        <div>
+            <h1 class="mb-2 fw-800">Thêm Khách hàng Mới</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <span class="separator">/</span>
+                <a asp-action="Index">Quản lý Khách hàng</a>
+                <span class="separator">/</span>
+                <span class="text-muted">Thêm mới</span>
+            </div>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn-outline-custom shadow-sm">
+                <i class="bi bi-arrow-left me-2"></i> Quay lại
+            </a>
         </div>
     </div>
 
-    <div class="row justify-content-center">
-        <div class="col-md-10 col-lg-8">
-            <div class="content-card rounded-3">
-                <div class="card-header-custom bg-white border-bottom py-3">
-                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-person-plus me-2"></i>Thông tin Khách hàng</h5>
+    <div class="row g-4">
+        <!-- FORM COLUMN -->
+        <div class="col-xl-8 animate__animated animate__fadeInLeft">
+            <div class="content-card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+                <div class="card-header-custom border-bottom bg-transparent py-4">
+                    <h5 class="fw-bold fs-5 mb-0"><i class="bi bi-person-plus text-primary me-2"></i> Thông tin Khách hàng</h5>
                 </div>
+
                 <div class="card-body-custom p-4">
                     <form asp-action="Create" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
 
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label asp-for="CustomerCode" class="form-label fw-bold text-dark">Mã khách hàng <span class="text-danger">*</span></label>
-                                <input asp-for="CustomerCode" class="form-control" placeholder="VD: KH001, APPLE..." required />
-                                <span asp-validation-for="CustomerCode" class="text-danger small"></span>
+                        <!-- SECTION 1 -->
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="icon-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
+                                <span class="fw-bold">1</span>
+                            </div>
+                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Thông tin định danh</h6>
+                        </div>
+
+                        <div class="row g-4 mb-5 p-3 rounded-4 bg-light bg-opacity-50 border border-white">
+                            <div class="col-md-5">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Mã khách hàng <span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-hash"></i>
+                                        <input asp-for="CustomerCode" class="form-control shadow-sm" placeholder="VD: KH001, APPLE..." required />
+                                    </div>
+                                    <span asp-validation-for="CustomerCode" class="text-danger small mt-1 d-block"></span>
+                                </div>
                             </div>
 
-                            <div class="col-md-6">
-                                <label asp-for="CustomerName" class="form-label fw-bold text-dark">Tên khách hàng <span class="text-danger">*</span></label>
-                                <input asp-for="CustomerName" class="form-control" placeholder="Nhập tên khách hàng hoặc công ty" required />
-                                <span asp-validation-for="CustomerName" class="text-danger small"></span>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label asp-for="Phone" class="form-label fw-bold text-dark">Số điện thoại</label>
-                                <input asp-for="Phone" class="form-control" placeholder="Nhập số điện thoại liên hệ" />
-                                <span asp-validation-for="Phone" class="text-danger small"></span>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label asp-for="Email" class="form-label fw-bold text-dark">Email</label>
-                                <input asp-for="Email" type="email" class="form-control" placeholder="Nhập địa chỉ email" />
-                                <span asp-validation-for="Email" class="text-danger small"></span>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label asp-for="TaxCode" class="form-label fw-bold text-dark">Mã số thuế</label>
-                                <input asp-for="TaxCode" class="form-control" placeholder="Nhập MST khách hàng" />
-                                <span asp-validation-for="TaxCode" class="text-danger small"></span>
-                            </div>
-
-                            <div class="col-md-12">
-                                <label asp-for="Address" class="form-label fw-bold text-dark">Địa chỉ</label>
-                                <textarea asp-for="Address" class="form-control" rows="2" placeholder="Nhập địa chỉ văn phòng/nhà riêng"></textarea>
-                                <span asp-validation-for="Address" class="text-danger small"></span>
+                            <div class="col-md-7">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Tên khách hàng <span class="text-danger">*</span></label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-building"></i>
+                                        <input asp-for="CustomerName" class="form-control shadow-sm" placeholder="Nhập tên khách hàng hoặc công ty" required />
+                                    </div>
+                                    <span asp-validation-for="CustomerName" class="text-danger small mt-1 d-block"></span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-end gap-2 pt-3 mt-4 border-top">
-                            <a asp-action="Index" class="btn-outline-custom px-4">Hủy bỏ</a>
-                            <button type="submit" class="btn-primary-custom px-4">
-                                <i class="bi bi-save me-1"></i> Lưu Khách hàng
+                        <!-- SECTION 2 -->
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="icon-circle bg-success text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
+                                <span class="fw-bold">2</span>
+                            </div>
+                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Thông tin liên hệ</h6>
+                        </div>
+
+                        <div class="row g-4 p-3 rounded-4 bg-light bg-opacity-50 border border-white mb-4">
+                            <div class="col-md-6">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Số điện thoại</label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-telephone"></i>
+                                        <input asp-for="Phone" class="form-control shadow-sm" placeholder="Nhập số điện thoại liên hệ" />
+                                    </div>
+                                    <span asp-validation-for="Phone" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Email</label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-envelope"></i>
+                                        <input asp-for="Email" type="email" class="form-control shadow-sm" placeholder="Nhập địa chỉ email" />
+                                    </div>
+                                    <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Mã số thuế</label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-file-text"></i>
+                                        <input asp-for="TaxCode" class="form-control shadow-sm" placeholder="Nhập MST khách hàng" />
+                                    </div>
+                                    <span asp-validation-for="TaxCode" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Địa chỉ</label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-geo-alt" style="top: 25px;"></i>
+                                        <textarea asp-for="Address" class="form-control shadow-sm" rows="2" placeholder="Nhập địa chỉ văn phòng/nhà riêng" style="padding-left: 48px; border-radius: 12px;"></textarea>
+                                    </div>
+                                    <span asp-validation-for="Address" class="text-danger small mt-1 d-block"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
+                            <a asp-action="Index" class="btn-outline-custom">
+                                <i class="bi bi-x-lg me-2"></i> Hủy thao tác
+                            </a>
+                            <button type="submit" class="btn-primary-custom" style="padding: 12px 40px; border-radius: 12px;">
+                                <i class="bi bi-check-lg fs-5 me-2"></i> Lưu Khách hàng
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
+
+        <!-- SIDEBAR COLUMN -->
+        <div class="col-xl-4 animate__animated animate__fadeInRight">
+            <div class="sticky-top" style="top: 100px;">
+                <div class="content-card border-0 shadow-lg text-white mb-4" style="background: linear-gradient(135deg, #0078d4, #005a9e); border-radius: 24px;">
+                    <div class="card-body-custom p-4">
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
+                                <i class="bi bi-people fs-3 text-white"></i>
+                            </div>
+                            <div>
+                                <div class="small opacity-75 fw-bold text-uppercase">Mã khách hàng</div>
+                                <h4 class="mb-0 fw-800" id="previewCode">--</h4>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="small opacity-75 fw-bold text-uppercase mb-1">Tên khách hàng</div>
+                            <div class="fw-bold fs-6" id="previewName" style="min-height: 28px;">--</div>
+                        </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col-6">
+                                <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                                    <div class="small opacity-75 mb-1">Điện thoại</div>
+                                    <div class="fw-bold small" id="previewPhone">--</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-white bg-opacity-10 p-3 rounded-4">
+                                    <div class="small opacity-75 mb-1">MST</div>
+                                    <div class="fw-bold small" id="previewTax">--</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle text-primary me-2"></i> Lưu ý</h6>
+                    <ul class="list-unstyled mb-0 small text-muted" style="line-height: 1.8;">
+                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Mã khách hàng phải là duy nhất trong hệ thống.</li>
+                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Điền đầy đủ thông tin liên hệ để tiện giao dịch.</li>
+                        <li><i class="bi bi-patch-check-fill text-success me-2"></i> MST cần thiết khi xuất hóa đơn VAT.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
+<style>
+    .fw-800 { font-weight: 800; }
+    .letter-spacing-1 { letter-spacing: 0.1em; }
+    .form-select, .form-control { border: 1.5px solid #edf2f7; padding-top: 12px; padding-bottom: 12px; }
+    .form-select:focus, .form-control:focus { border-color: #a3c9f9; box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.1); }
+    .animate__animated { animation-duration: 0.8s; }
+</style>
+
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script>
+        const codeInput = document.getElementById('CustomerCode');
+        const nameInput = document.getElementById('CustomerName');
+        const phoneInput = document.getElementById('Phone');
+        const taxInput = document.getElementById('TaxCode');
+        function updatePreview() {
+            document.getElementById('previewCode').textContent = codeInput.value.trim().toUpperCase() || '--';
+            document.getElementById('previewName').textContent = nameInput.value.trim() || '--';
+            document.getElementById('previewPhone').textContent = phoneInput.value.trim() || '--';
+            document.getElementById('previewTax').textContent = taxInput.value.trim() || '--';
+        }
+        [codeInput, nameInput, phoneInput, taxInput].forEach(el => el.addEventListener('input', updatePreview));
+        window.addEventListener('DOMContentLoaded', updatePreview);
+    </script>
 }
