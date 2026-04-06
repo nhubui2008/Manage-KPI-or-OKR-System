@@ -64,31 +64,27 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Phân loại KPI <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-tags"></i>
-                                        <select name="kpi.KPITypeId" id="kpiTypeSelect" class="form-select-premium" required>
-                                            <option value="1">Kết quả</option>
-                                            <option value="2">Hành vi</option>
-                                        </select>
-                                    </div>
+                                <div class="premium-select-wrapper">
+                                    <span class="select-label">Phân loại KPI</span>
+                                    <i class="bi bi-tags lead-icon"></i>
+                                    <select name="kpi.KPITypeId" id="kpiTypeSelect" required>
+                                        <option value="1">Kết quả</option>
+                                        <option value="2">Hành vi</option>
+                                    </select>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Kỳ đánh giá <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-calendar3"></i>
-                                        <select name="kpi.PeriodId" id="periodSelect" class="form-select-premium" required>
-                                            <option value="">-- Chọn kỳ đánh giá --</option>
-                                            @foreach (var kvp in periodsDict)
-                                            {
-                                                <option value="@kvp.Key">@kvp.Value</option>
-                                            }
-                                        </select>
-                                    </div>
+                                <div class="premium-select-wrapper">
+                                    <span class="select-label">Kỳ đánh giá</span>
+                                    <i class="bi bi-calendar3 lead-icon"></i>
+                                    <select name="kpi.PeriodId" id="periodSelect" required>
+                                        <option value="">-- Chọn kỳ đánh giá --</option>
+                                        @foreach (var kvp in periodsDict)
+                                        {
+                                            <option value="@kvp.Key">@kvp.Value</option>
+                                        }
+                                    </select>
                                 </div>
                             </div>
                         </div>

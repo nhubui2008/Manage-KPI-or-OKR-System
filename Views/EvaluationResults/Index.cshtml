@@ -26,7 +26,59 @@
 <div class="row justify-content-center w-100 m-0">
     <div class="col-12 px-0">
         <div class="content-card w-100">
-            <div class="card-body-custom">
+            <div class="card-body-custom p-4">
+                <!-- SEARCH & FILTER FORM -->
+                <form asp-action="Index" method="get" class="toolbar mb-4">
+                    <div class="toolbar-left d-flex gap-3 flex-wrap flex-grow-1">
+                        @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Warehouse") || User.IsInRole("warehouse") || User.IsInRole("Sales") || User.IsInRole("sales")))
+                        {
+                            <div class="premium-select-wrapper" style="min-width: 220px;">
+                                <span class="select-label">Nhân viên</span>
+                                <i class="bi bi-person lead-icon"></i>
+                                <select name="employeeId">
+                                    <option value="">Tất cả nhân viên</option>
+                                    @foreach (var emp in allEmployees)
+                                    {
+                                        <option value="@emp.Id" selected="@(ViewBag.CurrentEmployee?.ToString() == emp.Id.ToString())">@emp.FullName</option>
+                                    }
+                                </select>
+                            </div>
+                        }
+                        
+                        <div class="premium-select-wrapper" style="min-width: 170px;">
+                            <span class="select-label">Kỳ đánh giá</span>
+                            <i class="bi bi-calendar-event lead-icon"></i>
+                            <select name="periodId">
+                                <option value="">Tất cả kỳ</option>
+                                @foreach (var p in allPeriods)
+                                {
+                                    <option value="@p.Id" selected="@(ViewBag.CurrentPeriod?.ToString() == p.Id.ToString())">@p.PeriodName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="premium-select-wrapper" style="min-width: 150px;">
+                            <span class="select-label">Xếp hạng</span>
+                            <i class="bi bi-award lead-icon"></i>
+                            <select name="rankId">
+                                <option value="">Tất cả hạng</option>
+                                @foreach (var rk in allRanks)
+                                {
+                                    <option value="@rk.Id" selected="@(ViewBag.CurrentRank?.ToString() == rk.Id.ToString())">@rk.RankCode</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="toolbar-right d-flex gap-2 align-items-center">
+                        <button type="submit" class="btn-filter-premium">
+                            <i class="bi bi-funnel-fill"></i> Lọc dữ liệu
+                        </button>
+                        <a asp-action="Index" class="btn-refresh-premium" title="Làm mới">
+                            <i class="bi bi-arrow-clockwise fs-4"></i>
+                        </a>
+                    </div>
+                </form>
+                
                 <div class="table-responsive w-100">
                     <table class="data-table w-100">
                         <thead><tr><th>Nhân viên</th><th>Kỳ đánh giá</th><th>Tổng điểm</th><th>Xếp hạng</th><th>Phân loại</th><th class="text-end">Thao tác</th></tr></thead>
@@ -41,8 +93,8 @@
                                     var scoreColor = r.TotalScore >= 90 ? "success" : r.TotalScore >= 70 ? "primary" : r.TotalScore >= 50 ? "warning" : "danger";
                                     <tr>
                                         <td><div class="d-flex align-items-center gap-2"><div class="user-avatar" style="width:28px;height:28px;font-size:0.7rem;">@(empName.Length > 0 ? empName[0].ToString() : "?")</div><span class="fw-medium text-dark">@empName</span></div></td>
-                                        <td class="text-muted">@periodName</td>
-                                        <td><span class="badge bg-@scoreColor bg-opacity-10 text-@scoreColor rounded-pill px-2">@(r.TotalScore % 1 == 0 ? r.TotalScore?.ToString("0") : r.TotalScore?.ToString("0.#"))đ</span></td>
+                                        <td><span class="badge rounded-pill px-2 fw-bold shadow-sm" style="background-color: #fce7f3; color: #be185d; font-size: 0.75rem;"><i class="bi bi-calendar-event me-1"></i>@periodName</span></td>
+                                        <td><span class="badge bg-@scoreColor text-white rounded-pill px-2 fw-bold" style="min-width: 45px;">@(r.TotalScore % 1 == 0 ? r.TotalScore?.ToString("0") : r.TotalScore?.ToString("0.#"))đ</span></td>
                                         <td><span class="badge bg-dark text-white px-2">@rankCode</span></td>
                                         <td>@(r.Classification ?? "Chưa phân loại")</td>
                                         <td><div class="action-btns justify-content-end">
@@ -65,40 +117,150 @@
 
         <!-- Create Modal -->
         <div class="modal fade" id="createModal" tabindex="-1">
-            <div class="modal-dialog"><div class="modal-content border-0 shadow">
-                <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-award me-2"></i>Thêm Kết quả Đánh giá</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <form asp-action="Create" method="post"><div class="modal-body">
-                    <div class="mb-3"><label class="form-label fw-semibold">Nhân viên</label><select name="EmployeeId" class="form-select-premium" required>
-                        <option value="">-- Chọn nhân viên --</option>@foreach (var e in allEmployees){<option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>}</select></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Kỳ đánh giá</label><select name="PeriodId" class="form-select-premium" required>
-                        <option value="">-- Chọn kỳ --</option>@foreach (var p in allPeriods){<option value="@p.Id">@p.PeriodName</option>}</select></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Tổng điểm</label><input type="number" name="TotalScore" class="form-control" step="0.01" min="0" max="100" required /></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng</label><select name="RankId" class="form-select-premium">
-                        <option value="">-- Chọn hạng --</option>@foreach (var rk in allRanks){<option value="@rk.Id">@rk.RankCode - @rk.Description</option>}</select></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Phân loại</label><select name="Classification" class="form-select-premium">
-                        <option value="Xuất sắc">Xuất sắc</option><option value="Giỏi">Giỏi</option><option value="Khá">Khá</option><option value="Trung bình">Trung bình</option><option value="Yếu">Yếu</option></select></div>
+            <div class="modal-dialog"><div class="modal-content border-0 shadow" style="border-radius: 20px; overflow: hidden;">
+                <div class="modal-header border-bottom bg-light px-4 py-3">
+                    <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
+                        <span class="d-inline-flex align-items-center justify-content-center bg-primary text-white shadow-sm" style="width:32px;height:32px;border-radius:8px;">
+                            <i class="bi bi-award" style="font-size:0.9rem;"></i>
+                        </span>
+                        Thêm Kết quả Đánh giá
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Lưu kết quả</button></div></form>
+                <form asp-action="Create" method="post"><div class="modal-body p-4">
+                    <div class="mb-4">
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Nhân viên</span>
+                            <i class="bi bi-person-badge lead-icon"></i>
+                            <select name="EmployeeId" required>
+                                <option value="">-- Chọn nhân viên --</option>
+                                @foreach (var e in allEmployees)
+                                {
+                                    <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Kỳ đánh giá</span>
+                            <i class="bi bi-calendar3 lead-icon"></i>
+                            <select name="PeriodId" required>
+                                <option value="">-- Chọn kỳ --</option>
+                                @foreach (var p in allPeriods)
+                                {
+                                    <option value="@p.Id">@p.PeriodName</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-muted small text-uppercase">Tổng điểm</label>
+                        <input type="number" name="TotalScore" class="form-control shadow-sm" style="border-radius:10px; padding: 10px;" step="0.01" min="0" max="100" required />
+                    </div>
+                    <div class="mb-4">
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Xếp hạng</span>
+                            <i class="bi bi-trophy lead-icon"></i>
+                            <select name="RankId">
+                                <option value="">-- Chọn hạng --</option>
+                                @foreach (var rk in allRanks)
+                                {
+                                    <option value="@rk.Id">@rk.RankCode - @rk.Description</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Phân loại</span>
+                            <i class="bi bi-bar-chart-steps lead-icon"></i>
+                            <select name="Classification">
+                                <option value="Xuất sắc">Xuất sắc</option>
+                                <option value="Giỏi">Giỏi</option>
+                                <option value="Khá">Khá</option>
+                                <option value="Trung bình">Trung bình</option>
+                                <option value="Yếu">Yếu</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0 gap-2"><button type="button" class="btn btn-light px-4" style="border-radius:10px;" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom px-4" style="border-radius:10px;">Lưu kết quả</button></div></form>
             </div></div>
         </div>
 
         <!-- Edit Modal -->
         <div class="modal fade" id="editModal" tabindex="-1">
-            <div class="modal-dialog"><div class="modal-content border-0 shadow">
-                <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Sửa Kết quả Đánh giá (<span id="editModalScoreHeader">0</span>đ)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <form asp-action="Edit" method="post"><div class="modal-body">
-                    <input type="hidden" name="Id" id="editId" />
-                    <div class="mb-3"><label class="form-label fw-semibold">Nhân viên</label><select name="EmployeeId" id="editEmployeeId" class="form-select-premium" required>
-                        <option value="">-- Chọn nhân viên --</option>@foreach (var e in allEmployees){<option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>}</select></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Kỳ đánh giá</label><select name="PeriodId" id="editPeriodId" class="form-select-premium" required>
-                        <option value="">-- Chọn kỳ --</option>@foreach (var p in allPeriods){<option value="@p.Id">@p.PeriodName</option>}</select></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Tổng điểm</label><input type="number" name="TotalScore" id="editTotalScore" class="form-control" step="0.01" min="0" max="100" required /></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng</label><select name="RankId" id="editRankId" class="form-select-premium">
-                        <option value="">-- Chọn hạng --</option>@foreach (var rk in allRanks){<option value="@rk.Id">@rk.RankCode - @rk.Description</option>}</select></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Phân loại</label><select name="Classification" id="editClassification" class="form-select-premium">
-                        <option value="Xuất sắc">Xuất sắc</option><option value="Giỏi">Giỏi</option><option value="Khá">Khá</option><option value="Trung bình">Trung bình</option><option value="Yếu">Yếu</option></select></div>
+            <div class="modal-dialog"><div class="modal-content border-0 shadow" style="border-radius: 20px; overflow: hidden;">
+                <div class="modal-header border-bottom bg-light px-4 py-3">
+                    <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
+                        <span class="d-inline-flex align-items-center justify-content-center bg-primary text-white shadow-sm" style="width:32px;height:32px;border-radius:8px;">
+                            <i class="bi bi-pencil-square" style="font-size:0.9rem;"></i>
+                        </span>
+                        Sửa Kết quả Đánh giá (<span id="editModalScoreHeader">0</span>đ)
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Cập nhật kết quả</button></div></form>
+                <form asp-action="Edit" method="post"><div class="modal-body p-4">
+                    <input type="hidden" name="Id" id="editId" />
+                    <div class="mb-4">
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Nhân viên</span>
+                            <i class="bi bi-person-badge lead-icon"></i>
+                            <select name="EmployeeId" id="editEmployeeId" required>
+                                <option value="">-- Chọn nhân viên --</option>
+                                @foreach (var e in allEmployees)
+                                {
+                                    <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Kỳ đánh giá</span>
+                            <i class="bi bi-calendar3 lead-icon"></i>
+                            <select name="PeriodId" id="editPeriodId" required>
+                                <option value="">-- Chọn kỳ --</option>
+                                @foreach (var p in allPeriods)
+                                {
+                                    <option value="@p.Id">@p.PeriodName</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-muted small text-uppercase">Tổng điểm</label>
+                        <input type="number" name="TotalScore" id="editTotalScore" class="form-control shadow-sm" style="border-radius:10px; padding: 10px;" step="0.01" min="0" max="100" required />
+                    </div>
+                    <div class="mb-4">
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Xếp hạng</span>
+                            <i class="bi bi-trophy lead-icon"></i>
+                            <select name="RankId" id="editRankId">
+                                <option value="">-- Chọn hạng --</option>
+                                @foreach (var rk in allRanks)
+                                {
+                                    <option value="@rk.Id">@rk.RankCode - @rk.Description</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Phân loại</span>
+                            <i class="bi bi-bar-chart-steps lead-icon"></i>
+                            <select name="Classification" id="editClassification">
+                                <option value="Xuất sắc">Xuất sắc</option>
+                                <option value="Giỏi">Giỏi</option>
+                                <option value="Khá">Khá</option>
+                                <option value="Trung bình">Trung bình</option>
+                                <option value="Yếu">Yếu</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0 gap-2"><button type="button" class="btn btn-light px-4" style="border-radius:10px;" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom px-4" style="border-radius:10px;">Cập nhật kết quả</button></div></form>
             </div></div>
         </div>
 

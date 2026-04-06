@@ -26,34 +26,45 @@
                         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                         <input type="hidden" asp-for="Id" />
 
-                        <div class="mb-3">
-                            <label asp-for="WarehouseId" class="form-label fw-semibold text-muted">Kho nhập</label>
-                            <select asp-for="WarehouseId" class="form-select form-control-lg" required>
-                                <option value="">-- Chọn kho --</option>
-                                @foreach (var w in allWarehouses)
-                                {
-                                    <option value="@w.Id">@w.WarehouseName (@w.WarehouseCode)</option>
-                                }
-                            </select>
+                        <div class="mb-4">
+                            <div class="premium-select-wrapper">
+                                <span class="select-label">Kho nhập</span>
+                                <i class="bi bi-building lead-icon"></i>
+                                <select asp-for="WarehouseId" required>
+                                    <option value="">-- Chọn kho --</option>
+                                    @foreach (var w in allWarehouses)
+                                    {
+                                        <option value="@w.Id">@w.WarehouseName (@w.WarehouseCode)</option>
+                                    }
+                                </select>
+                            </div>
                             <span asp-validation-for="WarehouseId" class="text-danger small"></span>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="WarehouseStaffId" class="form-label fw-semibold text-muted">Nhân viên kho</label>
-                            <select asp-for="WarehouseStaffId" class="form-select form-control-lg">
-                                <option value="">-- Chọn nhân viên --</option>
-                                @foreach (var e in allEmployees)
-                                {
-                                    <option value="@e.Id">@e.FullName</option>
-                                }
-                            </select>
+                        <div class="mb-4">
+                            <div class="premium-select-wrapper">
+                                <span class="select-label">Nhân viên kho</span>
+                                <i class="bi bi-person-badge lead-icon"></i>
+                                <select asp-for="WarehouseStaffId">
+                                    <option value="">-- Chọn nhân viên --</option>
+                                    @foreach (var e in allEmployees)
+                                    {
+                                        <option value="@e.Id">@e.FullName</option>
+                                    }
+                                </select>
+                            </div>
                             <span asp-validation-for="WarehouseStaffId" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-4">
-                            <label asp-for="TotalAmount" class="form-label fw-semibold text-muted">Tổng tiền (VNĐ)</label>
-                            <input asp-for="TotalAmount" type="number" class="form-control form-control-lg" step="1000" placeholder="Nhập tổng số tiền..." />
-                            <span asp-validation-for="TotalAmount" class="text-danger small"></span>
+                            <div class="form-icon-group">
+                                <label asp-for="TotalAmount" class="form-label small text-muted text-uppercase fw-800">Tổng tiền (VNĐ)</label>
+                                <div class="input-wrapper">
+                                    <i class="bi bi-cash-stack"></i>
+                                    <input asp-for="TotalAmount" type="number" class="form-control" step="1000" placeholder="Nhập tổng số tiền..." />
+                                </div>
+                                <span asp-validation-for="TotalAmount" class="text-danger small"></span>
+                            </div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 pt-3 border-top">

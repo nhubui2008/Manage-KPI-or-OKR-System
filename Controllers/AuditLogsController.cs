@@ -14,9 +14,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly MiniERPDbContext _context;
         public AuditLogsController(MiniERPDbContext context) { _context = context; }
 
-        public async Task<IActionResult> Index(string searchString, DateTime? startDate, DateTime? endDate, int? pageNumber)
+        public async Task<IActionResult> Index(string searchString, string actionFilter, DateTime? startDate, DateTime? endDate, int? pageNumber)
         {
             ViewData["CurrentFilter"] = searchString;
+            ViewData["ActionFilter"] = actionFilter;
             ViewData["StartDate"] = startDate?.ToString("yyyy-MM-dd");
             ViewData["EndDate"] = endDate?.ToString("yyyy-MM-dd");
 
@@ -32,6 +33,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     (l.ImpactedTable != null && l.ImpactedTable.Contains(searchString)) ||
                     (l.SystemUser != null && l.SystemUser.Username != null && l.SystemUser.Username.Contains(searchString))
                 );
+            }
+
+            if (!string.IsNullOrEmpty(actionFilter))
+            {
+                query = query.Where(l => l.ActionType == actionFilter);
             }
 
             if (startDate.HasValue)

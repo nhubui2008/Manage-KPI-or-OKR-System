@@ -96,7 +96,7 @@
                     <i class="bi bi-arrow-clockwise fs-5"></i>
                 </a>
                 <button type="submit" class="btn-filter-premium">
-                    <i class="bi bi-funnel"></i> Lọc
+                    <i class="bi bi-funnel-fill"></i> Lọc
                 </button>
             </div>
         </form>
@@ -152,8 +152,8 @@
                                         <span class="text-muted fst-italic">Chưa thiết lập chỉ tiêu</span>
                                     }
                                 </td>
-                                <td>
-                                    <div class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">
+                                 <td>
+                                    <div class="badge rounded-pill px-2 py-1 fw-bold shadow-sm" style="background-color: #fce7f3; color: #be185d; font-size: 0.75rem;">
                                         <i class="bi bi-calendar-event me-1"></i> @(kpi.PeriodId.HasValue && periodsDict.ContainsKey(kpi.PeriodId.Value) ? periodsDict[kpi.PeriodId.Value] : "N/A")
                                     </div>
                                 </td>
@@ -181,7 +181,7 @@
                                     }
                                     else
                                     {
-                                        <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill border border-warning border-opacity-25">
+                                        <span class="badge bg-warning text-dark px-2 py-1 rounded-pill fw-bold" style="font-size: 0.75rem;">
                                             <i class="bi bi-exclamation-circle me-1"></i> Chưa phân bổ
                                         </span>
                                     }

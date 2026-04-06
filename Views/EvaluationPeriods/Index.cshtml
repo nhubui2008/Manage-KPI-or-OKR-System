@@ -54,12 +54,18 @@
                         {
                             var statusName = p.StatusId.HasValue && statuses.ContainsKey(p.StatusId.Value) ? statuses[p.StatusId.Value] : "N/A";
                             var kpiCount = kpiCounts.ContainsKey(p.Id) ? kpiCounts[p.Id] : 0;
-                            var badgeClass = p.PeriodType == "QUARTER" ? "bg-info bg-opacity-10 text-info border border-info border-opacity-25" : p.PeriodType == "YEAR" ? "bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" : "bg-light text-dark border";
+                            var badgeStyle = p.PeriodType switch
+                            {
+                                "MONTH" => "background-color: #e1f5fe; color: #0288d1; border: 1px solid #b3e5fc;",
+                                "QUARTER" => "background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9;",
+                                "YEAR" => "background-color: #fff3e0; color: #e65100; border: 1px solid #ffe0b2;",
+                                _ => "background-color: #f5f5f5; color: #757575; border: 1px solid #e0e0e0;"
+                            };
                             <tr>
                                 <td class="fw-bold">
                                     <span class="text-primary-custom"><i class="bi bi-calendar-check me-2"></i>@p.PeriodName</span>
                                 </td>
-                                <td><span class="badge @badgeClass">@(p.PeriodType ?? "N/A")</span></td>
+                                <td><span class="badge rounded-pill px-2" style="font-size: 0.7rem; font-weight: 600; @badgeStyle">@(p.PeriodType ?? "N/A")</span></td>
                                 <td class="text-muted">@(p.StartDate?.ToString("dd/MM/yyyy") ?? "") - @(p.EndDate?.ToString("dd/MM/yyyy") ?? "")</td>
                                 <td>@kpiCount KPI</td>
                                 <td>

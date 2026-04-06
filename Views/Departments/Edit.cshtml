@@ -97,35 +97,31 @@
                         <h5><i class="bi bi-diagram-3 me-2"></i> Cấu trúc tổ chức</h5>
                     </div>
                     <div class="card-body-custom pt-3 d-flex flex-column gap-4">
-                        <div class="modern-field">
-                            <label class="form-label fw-bold small text-uppercase text-muted letter-spacing-1">Phòng ban cấp trên</label>
-                            <div class="input-with-icon">
-                                <i class="bi bi-diagram-2"></i>
-                                <select asp-for="ParentDepartmentId" class="form-select-premium">
-                                    <option value="">-- Là cấp cao nhất --</option>
-                                    @foreach (var d in departments)
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Phòng ban cấp trên</span>
+                            <i class="bi bi-diagram-2 lead-icon"></i>
+                            <select asp-for="ParentDepartmentId">
+                                <option value="">-- Là cấp cao nhất --</option>
+                                @foreach (var d in departments)
+                                {
+                                    if (Model == null || d.Id != Model.Id)
                                     {
-                                        if (Model == null || d.Id != Model.Id)
-                                        {
-                                            <option value="@d.Id">@d.DepartmentName (@d.DepartmentCode)</option>
-                                        }
+                                        <option value="@d.Id">@d.DepartmentName (@d.DepartmentCode)</option>
                                     }
-                                </select>
-                            </div>
+                                }
+                            </select>
                         </div>
 
-                        <div class="modern-field">
-                            <label class="form-label fw-bold small text-uppercase text-muted letter-spacing-1">Người quản lý</label>
-                            <div class="input-with-icon">
-                                <i class="bi bi-person-workspace"></i>
-                                <select asp-for="ManagerId" class="form-select-premium">
-                                    <option value="">-- Chưa chỉ định --</option>
-                                    @foreach (var emp in employees)
-                                    {
-                                        <option value="@emp.Key">@emp.Value</option>
-                                    }
-                                </select>
-                            </div>
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Người quản lý</span>
+                            <i class="bi bi-person-workspace lead-icon"></i>
+                            <select asp-for="ManagerId">
+                                <option value="">-- Chưa chỉ định --</option>
+                                @foreach (var emp in employees)
+                                {
+                                    <option value="@emp.Key">@emp.Value</option>
+                                }
+                            </select>
                         </div>
 
                         <!-- Tip Box using Theme Colors -->

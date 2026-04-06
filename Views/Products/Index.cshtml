@@ -19,11 +19,34 @@
 <div class="row justify-content-center w-100 m-0">
         <div class="col-12 px-0">
             <div class="content-card w-100"><div class="card-body-custom">
-    <div class="toolbar"><div class="toolbar-left">
-        <form method="get" class="d-flex gap-2"><div class="toolbar-search"><i class="bi bi-search"></i><input type="text" name="searchString" value="@ViewBag.CurrentSearch" placeholder="Tìm kiếm theo mã, tên..."></div>
-        <select name="categoryId" class="filter-select"><option value="">Tất cả danh mục</option>@foreach(var cat in categories){<option value="@cat.Id" selected="@(ViewBag.CurrentCategory != null && (int)ViewBag.CurrentCategory == cat.Id)">@cat.CategoryName</option>}</select>
-        <button type="submit" class="btn-primary-custom" style="padding: 0 16px;"><i class="bi bi-funnel"></i></button></form>
-    </div></div>
+    <form method="get" class="toolbar">
+        <div class="toolbar-left d-flex gap-3 flex-wrap flex-grow-1">
+            <div class="search-wrapper-premium" style="max-width: 350px;">
+                <i class="bi bi-search"></i>
+                <input type="text" name="searchString" value="@ViewBag.CurrentSearch" class="search-input-premium" placeholder="Tìm kiếm theo mã, tên...">
+            </div>
+            
+            <div class="premium-select-wrapper" style="min-width: 200px;">
+                <span class="select-label">Danh mục</span>
+                <i class="bi bi-tag lead-icon"></i>
+                <select name="categoryId">
+                    <option value="">Tất cả danh mục</option>
+                    @foreach(var cat in categories)
+                    {
+                        <option value="@cat.Id" selected="@(ViewBag.CurrentCategory != null && (int)ViewBag.CurrentCategory == cat.Id)">@cat.CategoryName</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="toolbar-right d-flex gap-2 align-items-center">
+            <button type="submit" class="btn-filter-premium">
+                <i class="bi bi-funnel-fill"></i> Lọc
+            </button>
+            <a asp-action="Index" class="btn-refresh-premium" title="Làm mới">
+                <i class="bi bi-arrow-clockwise fs-5"></i>
+            </a>
+        </div>
+    </form>
 
     <div class="table-responsive w-100"><table class="data-table w-100">
         <thead><tr><th>Thông tin sản phẩm</th><th>Phân loại</th><th>Ngày tạo</th><th class="text-end">Thao tác</th></tr></thead>

@@ -100,36 +100,30 @@
 
                         <div class="row g-4 p-3 rounded-4 bg-light bg-opacity-50 border border-white mb-4">
                             <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Phòng ban cấp trên</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-diagram-3"></i>
-                                        <select asp-for="ParentDepartmentId" class="form-select-premium">
-                                            <option value="">-- Là phòng ban cấp cao nhất --</option>
-                                            @foreach (var d in departments)
-                                            {
-                                                <option value="@d.Id">@d.DepartmentName (@d.DepartmentCode)</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <span asp-validation-for="ParentDepartmentId" class="text-danger small mt-1 d-block"></span>
+                                <div class="premium-select-wrapper">
+                                    <span class="select-label">Phòng ban cấp trên</span>
+                                    <i class="bi bi-diagram-3 lead-icon"></i>
+                                    <select asp-for="ParentDepartmentId">
+                                        <option value="">-- Là phòng ban cấp cao nhất --</option>
+                                        @foreach (var d in departments)
+                                        {
+                                            <option value="@d.Id">@d.DepartmentName (@d.DepartmentCode)</option>
+                                        }
+                                    </select>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Người quản lý (Trưởng bộ phận)</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-person-badge"></i>
-                                        <select asp-for="ManagerId" class="form-select-premium">
-                                            <option value="">-- Chưa chỉ định --</option>
-                                            @foreach (var emp in employees)
-                                            {
-                                                <option value="@emp.Key">@emp.Value</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <span asp-validation-for="ManagerId" class="text-danger small mt-1 d-block"></span>
+                                <div class="premium-select-wrapper">
+                                    <span class="select-label">Người quản lý (Trưởng bộ phận)</span>
+                                    <i class="bi bi-person-badge lead-icon"></i>
+                                    <select asp-for="ManagerId">
+                                        <option value="">-- Chưa chỉ định --</option>
+                                        @foreach (var emp in employees)
+                                        {
+                                            <option value="@emp.Key">@emp.Value</option>
+                                        }
+                                    </select>
                                 </div>
                             </div>
                         </div>

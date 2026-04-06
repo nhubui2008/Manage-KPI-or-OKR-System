@@ -41,23 +41,28 @@
 
                     <!-- Phân quyền & Trạng thái -->
                     <div class="col-md-6">
-                        <label asp-for="RoleId" class="form-label fw-semibold">Nhóm Quyền (Role) <span class="text-danger">*</span></label>
-                        <select asp-for="RoleId" class="form-select-premium" required>
-                            <option value="">-- Chọn nhóm quyền --</option>
-                            @foreach (var role in roles)
-                            {
-                                <option value="@role.Key">@role.Value</option>
-                            }
-                        </select>
-                        <span asp-validation-for="RoleId" class="text-danger"></span>
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Nhóm Quyền (Role)</span>
+                            <i class="bi bi-shield-check lead-icon"></i>
+                            <select asp-for="RoleId" required>
+                                <option value="">-- Chọn nhóm quyền --</option>
+                                @foreach (var role in roles)
+                                {
+                                    <option value="@role.Key">@role.Value</option>
+                                }
+                            </select>
+                        </div>
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="IsActive" class="form-label fw-semibold">Trạng thái tài khoản</label>
-                        <select asp-for="IsActive" class="form-select-premium">
-                            <option value="true">Đang hoạt động</option>
-                            <option value="false">Ngưng HĐ (Bị khóa)</option>
-                        </select>
+                        <div class="premium-select-wrapper">
+                            <span class="select-label">Trạng thái tài khoản</span>
+                            <i class="bi bi-activity lead-icon"></i>
+                            <select asp-for="IsActive">
+                                <option value="true">Đang hoạt động</option>
+                                <option value="false">Ngưng HĐ (Bị khóa)</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="col-12 mt-4 pt-3 border-top">

@@ -13,10 +13,22 @@
 <div class="row justify-content-center w-100 m-0">
         <div class="col-12 px-0">
             <div class="content-card w-100"><div class="card-body-custom">
-    <div class="toolbar"><div class="toolbar-left">
-        <form method="get" class="d-flex gap-2"><div class="toolbar-search"><i class="bi bi-search"></i><input type="text" name="searchString" value="@ViewBag.CurrentSearch" placeholder="Tìm theo tên, SĐT, Email, MST..."></div>
-        <button type="submit" class="btn-primary-custom" style="padding: 0 16px;"><i class="bi bi-funnel"></i> Lọc</button></form>
-    </div></div>
+    <form method="get" class="toolbar">
+        <div class="toolbar-left">
+            <div class="search-wrapper-premium" style="max-width: 350px;">
+                <i class="bi bi-search"></i>
+                <input type="text" name="searchString" value="@ViewBag.CurrentSearch" class="search-input-premium" placeholder="Tìm theo tên, SĐT, Email, MST...">
+            </div>
+        </div>
+        <div class="toolbar-right d-flex gap-2 align-items-center">
+            <button type="submit" class="btn-filter-premium">
+                <i class="bi bi-funnel-fill"></i> Lọc dữ liệu
+            </button>
+            <a asp-action="Index" class="btn-refresh-premium" title="Làm mới">
+                <i class="bi bi-arrow-clockwise fs-5"></i>
+            </a>
+        </div>
+    </form>
 
     <div class="table-responsive w-100"><table class="data-table w-100">
         <thead><tr><th>Thông tin Khách hàng</th><th>Liên hệ</th><th>Mã số thuế</th><th>Địa chỉ</th><th class="text-end">Thao tác</th></tr></thead>

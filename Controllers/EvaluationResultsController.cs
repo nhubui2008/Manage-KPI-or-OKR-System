@@ -15,9 +15,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly MiniERPDbContext _context;
         public EvaluationResultsController(MiniERPDbContext context) { _context = context; }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? employeeId, int? periodId, int? rankId)
         {
             var resultsQuery = _context.EvaluationResults.OrderByDescending(r => r.Id).AsQueryable();
+
+            // Apply Filters
+            if (employeeId.HasValue) resultsQuery = resultsQuery.Where(r => r.EmployeeId == employeeId);
+            if (periodId.HasValue) resultsQuery = resultsQuery.Where(r => r.PeriodId == periodId);
+            if (rankId.HasValue) resultsQuery = resultsQuery.Where(r => r.RankId == rankId);
 
             // Filter Results if Sales or Warehouse or Employee
             if (User.IsInRole("Sales") || User.IsInRole("sales") || 
@@ -48,6 +53,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Employees = employees;
             ViewBag.Periods = periods;
             ViewBag.Ranks = ranks;
+            ViewBag.CurrentEmployee = employeeId;
+            ViewBag.CurrentPeriod = periodId;
+            ViewBag.CurrentRank = rankId;
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
             ViewBag.AllRanks = await _context.GradingRanks.ToListAsync();

@@ -13,10 +13,28 @@
     }
 </div>
 
-<div class="row justify-content-center w-100 m-0">
+    <div class="row justify-content-center w-100 m-0">
         <div class="col-12 px-0">
-            <div class="content-card w-100"><div class="card-body-custom">
-    <div class="table-responsive w-100"><table class="table table-hover align-middle">
+            <div class="content-card w-100">
+                <div class="card-body-custom p-4">
+                    <form asp-action="Index" method="get" class="toolbar mb-4">
+                        <div class="toolbar-left flex-grow-1">
+                            <div class="search-wrapper-premium" style="max-width: 400px;">
+                                <i class="bi bi-search"></i>
+                                <input type="text" name="searchString" value="@ViewBag.CurrentSearch" class="search-input-premium" placeholder="Tìm theo tên đối tác vận chuyển...">
+                            </div>
+                        </div>
+                        <div class="toolbar-right d-flex gap-2 align-items-center">
+                            <button type="submit" class="btn-filter-premium">
+                                <i class="bi bi-funnel-fill"></i> Lọc dữ liệu
+                            </button>
+                            <a asp-action="Index" class="btn-refresh-premium" title="Làm mới">
+                                <i class="bi bi-arrow-clockwise fs-5"></i>
+                            </a>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive w-100"><table class="table table-hover align-middle">
         <thead><tr><th>Tên đối tác</th><th>API Endpoint</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead>
         <tbody>
             @if (Model != null && Model.Any())

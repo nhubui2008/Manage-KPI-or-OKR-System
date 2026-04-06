@@ -141,26 +141,22 @@
 
                             <div class="row g-4">
                                 <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label for="DepartmentId" class="form-label small fw-bold text-secondary">Phòng ban</label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-building"></i>
-                                            <select name="departmentId" class="form-select-premium" asp-items="ViewBag.DepartmentId">
-                                                <option value="">-- Chọn phòng ban --</option>
-                                            </select>
-                                        </div>
+                                    <div class="premium-select-wrapper">
+                                        <span class="select-label">Phòng ban</span>
+                                        <i class="bi bi-building lead-icon"></i>
+                                        <select name="departmentId" asp-items="ViewBag.DepartmentId">
+                                            <option value="">-- Chọn phòng ban --</option>
+                                        </select>
                                     </div>
                                 </div>
 
                                 <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label for="PositionId" class="form-label small fw-bold text-secondary">Vị trí công việc</label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-briefcase"></i>
-                                            <select name="positionId" class="form-select-premium" asp-items="ViewBag.PositionId">
-                                                <option value="">-- Chọn vị trí --</option>
-                                            </select>
-                                        </div>
+                                    <div class="premium-select-wrapper">
+                                        <span class="select-label">Vị trí công việc</span>
+                                        <i class="bi bi-briefcase lead-icon"></i>
+                                        <select name="positionId" asp-items="ViewBag.PositionId">
+                                            <option value="">-- Chọn vị trí --</option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -175,14 +171,12 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label asp-for="SystemUserId" class="form-label small fw-bold text-secondary">Tài khoản liên kết</label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-person-badge"></i>
-                                            <select asp-for="SystemUserId" class="form-select-premium" asp-items="ViewBag.SystemUserId">
-                                                <option value="">-- Liên kết tài khoản (Không bắt buộc) --</option>
-                                            </select>
-                                        </div>
+                                    <div class="premium-select-wrapper">
+                                        <span class="select-label">Tài khoản liên kết</span>
+                                        <i class="bi bi-person-badge lead-icon"></i>
+                                        <select asp-for="SystemUserId" asp-items="ViewBag.SystemUserId">
+                                            <option value="">-- Liên kết tài khoản (Không bắt buộc) --</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -195,17 +189,12 @@
                                 <h6 class="text-uppercase fw-800 text-muted small mb-0 tracking-wider">Định hướng & Mục tiêu chiến lược</h6>
                             </div>
 
-                            <div class="form-icon-group text-dark font-weight-bold">
-                                <label asp-for="StrategicGoalId" class="form-label small fw-bold text-secondary">Gắn với Sứ mệnh / Mục tiêu chiến lược</label>
-                                <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                    <i class="bi bi-flag-fill text-warning"></i>
-                                    <select asp-for="StrategicGoalId" class="form-select-premium" asp-items="ViewBag.StrategicGoalId">
-                                        <option value="">-- Không gắn mục tiêu cụ thể --</option>
-                                    </select>
-                                </div>
-                                <div class="form-text mt-2 small text-muted">
-                                    <i class="bi bi-info-circle me-1"></i> Gắn mục tiêu để nhân viên thấy được giá trị đóng góp của họ cho công ty.
-                                </div>
+                            <div class="premium-select-wrapper">
+                                <span class="select-label">Gắn với Sứ mệnh / Mục tiêu chiến lược</span>
+                                <i class="bi bi-flag-fill lead-icon text-warning"></i>
+                                <select asp-for="StrategicGoalId" asp-items="ViewBag.StrategicGoalId">
+                                    <option value="">-- Không gắn mục tiêu cụ thể --</option>
+                                </select>
                             </div>
                         </div>
 

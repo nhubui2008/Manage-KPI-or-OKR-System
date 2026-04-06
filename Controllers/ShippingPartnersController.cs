@@ -15,9 +15,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly MiniERPDbContext _context;
         public ShippingPartnersController(MiniERPDbContext context) { _context = context; }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString)
         {
-            var partners = await _context.ShippingPartners.Where(p => p.IsActive == true).ToListAsync();
+            var query = _context.ShippingPartners.Where(p => p.IsActive == true).AsQueryable();
+            
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                query = query.Where(p => p.PartnerName.Contains(searchString));
+            }
+
+            ViewBag.CurrentSearch = searchString;
+            var partners = await query.ToListAsync();
             return View(partners);
         }
 

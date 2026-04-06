@@ -56,20 +56,18 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Đơn hàng gốc <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-cart3"></i>
-                                        <select asp-for="OrderId" class="form-select shadow-sm" required>
-                                            <option value="">-- Chọn đơn hàng --</option>
-                                            @foreach (var o in orders)
-                                            {
-                                                <option value="@o.Id">@o.OrderCode</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <span asp-validation-for="OrderId" class="text-danger small mt-1 d-block"></span>
+                                <div class="premium-select-wrapper">
+                                    <span class="select-label">Đơn hàng gốc</span>
+                                    <i class="bi bi-cart3 lead-icon"></i>
+                                    <select asp-for="OrderId" required>
+                                        <option value="">-- Chọn đơn hàng --</option>
+                                        @foreach (var o in orders)
+                                        {
+                                            <option value="@o.Id">@o.OrderCode</option>
+                                        }
+                                    </select>
                                 </div>
+                                <span asp-validation-for="OrderId" class="text-danger small mt-1 d-block"></span>
                             </div>
                         </div>
 

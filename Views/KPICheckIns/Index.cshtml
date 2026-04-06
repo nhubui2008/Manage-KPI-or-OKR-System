@@ -190,61 +190,56 @@
                 <div class="modal-body-soft">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <div class="form-icon-group">
-                                <label>Nhân viên</label>
-                                <div class="input-wrapper">
-                                    @if (allEmployeesList.Count == 1)
-                                    {
-                                        var e = allEmployeesList[0];
-                                        <input type="hidden" name="EmployeeId" value="@e.Id" />
-                                        <input type="text" class="form-control bg-light" value="@e.FullName (@e.EmployeeCode)" readonly />
-                                    }
-                                    else
-                                    {
-                                        <select name="EmployeeId" class="form-select-premium" required>
-                                            <option value="">-- Chọn nhân viên --</option>
-                                            @foreach(var e in allEmployeesList)
-                                            {
-                                                <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
-                                            }
-                                        </select>
-                                    }
-                                </div>
+                            <div class="premium-select-wrapper">
+                                <span class="select-label">Nhân viên</span>
+                                <i class="bi bi-person-badge lead-icon"></i>
+                                @if (allEmployeesList.Count == 1)
+                                {
+                                    var e = allEmployeesList[0];
+                                    <input type="hidden" name="EmployeeId" value="@e.Id" />
+                                    <input type="text" class="form-control border-0 bg-transparent fw-bold" value="@e.FullName (@e.EmployeeCode)" readonly style="padding-left: 35px;" />
+                                }
+                                else
+                                {
+                                    <select name="EmployeeId" required>
+                                        <option value="">-- Chọn nhân viên --</option>
+                                        @foreach(var e in allEmployeesList)
+                                        {
+                                            <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                        }
+                                    </select>
+                                }
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="form-icon-group">
-                                <label>KPI Mục tiêu</label>
-                                <div class="input-wrapper">
-                                    <i class="bi bi-speedometer2"></i>
-                                    <select name="KPIId" class="form-select-premium" required>
-                                        @if (allKPIsList.Count != 1)
-                                        {
-                                            <option value="">-- Chọn KPI --</option>
-                                        }
-                                        @foreach(var k in allKPIsList)
-                                        {
-                                            <option value="@k.Id" selected="@(allKPIsList.Count == 1 ? "selected" : null)">@k.KPIName</option>
-                                        }
-                                    </select>
-                                </div>
+                            <div class="premium-select-wrapper">
+                                <span class="select-label">KPI Mục tiêu</span>
+                                <i class="bi bi-bullseye lead-icon"></i>
+                                <select name="KPIId" required>
+                                    @if (allKPIsList.Count != 1)
+                                    {
+                                        <option value="">-- Chọn KPI --</option>
+                                    }
+                                    @foreach(var k in allKPIsList)
+                                    {
+                                        <option value="@k.Id" selected="@(allKPIsList.Count == 1 ? "selected" : null)">@k.KPIName</option>
+                                    }
+                                </select>
                             </div>
                         </div>
                     </div>
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <div class="form-icon-group">
-                                <label>Trạng thái tiến độ</label>
-                                <div class="input-wrapper">
-                                    <i class="bi bi-flag-fill"></i>
-                                    <select name="StatusId" class="form-select-premium">
-                                        @foreach(var s in allStatusesList)
-                                        {
-                                            <option value="@s.Id">@s.StatusName</option>
-                                        }
-                                    </select>
-                                </div>
+                            <div class="premium-select-wrapper">
+                                <span class="select-label">Trạng thái tiến độ</span>
+                                <i class="bi bi-speedometer2 lead-icon"></i>
+                                <select name="StatusId">
+                                    @foreach(var s in allStatusesList)
+                                    {
+                                        <option value="@s.Id">@s.StatusName</option>
+                                    }
+                                </select>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -266,17 +261,15 @@
                         </div>
                     </div>
 
-                    <div class="form-icon-group mb-0">
-                        <label>Lý do (Nếu chưa đạt)</label>
-                        <div class="input-wrapper">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <select name="FailReasonId" class="form-select-premium">
-                                <option value="">-- Không có / Đã đạt --</option>
-                                @foreach(var r in (ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>())){
-                                    <option value="@r.Id">@r.ReasonName</option>
-                                }
-                            </select>
-                        </div>
+                    <div class="premium-select-wrapper mb-0">
+                        <span class="select-label">Lý do (Nếu chưa đạt)</span>
+                        <i class="bi bi-exclamation-triangle lead-icon"></i>
+                        <select name="FailReasonId">
+                            <option value="">-- Không có / Đã đạt --</option>
+                            @foreach(var r in (ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>())){
+                                <option value="@r.Id">@r.ReasonName</option>
+                            }
+                        </select>
                     </div>
 
                     <div class="d-flex justify-content-end gap-3 mt-4">
