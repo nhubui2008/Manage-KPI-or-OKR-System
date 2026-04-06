@@ -10,13 +10,16 @@
         if (code.StartsWith("HR_")) return "Quản trị Nhân sự & Đánh giá";
         if (code.StartsWith("MANAGER_")) return "Quản lý OKR & KPI";
         if (code.StartsWith("EMPLOYEE_")) return "Tác vụ Nhân viên";
-        if (code.StartsWith("SALES_")) return "Kinh doanh & Khách hàng";
-        if (code.StartsWith("WAREHOUSE_")) return "Quản lý Kho & Sản phẩm";
-        if (code.StartsWith("DELIVERY_")) return "Vận chuyển & Giao nhận";
         return "Khác";
     }
 
-    var groupedPermissions = Model.GroupBy(p => GetGroup(p.PermissionCode ?? ""));
+    var filteredPermissions = Model.Where(p => 
+        p.PermissionCode != null &&
+        !p.PermissionCode.StartsWith("SALES_") && 
+        !p.PermissionCode.StartsWith("WAREHOUSE_") && 
+        !p.PermissionCode.StartsWith("DELIVERY_"));
+
+    var groupedPermissions = filteredPermissions.GroupBy(p => GetGroup(p.PermissionCode));
 }
 
 <div class="container-fluid px-0">
