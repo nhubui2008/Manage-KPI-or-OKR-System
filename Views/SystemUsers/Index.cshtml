@@ -63,7 +63,7 @@
                     @if(ViewBag.Status == "active") { <option value="active" selected>Đang hoạt động</option> } else { <option value="active">Đang hoạt động</option> }
                     @if(ViewBag.Status == "locked") { <option value="locked" selected>Bị khóa</option> } else { <option value="locked">Bị khóa</option> }
                 </select>
-                <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0 text-muted" title="Làm mới">
+                <a asp-action="Index" class="btn btn-sm btn-light border-0 d-flex align-items-center justify-content-center text-muted" title="Làm mới" style="width: 38px; height: 38px; border-radius: 8px;">
                     <i class="bi bi-arrow-clockwise fs-5"></i>
                 </a>
                 <button type="submit" class="btn-primary-custom d-flex align-items-center gap-2" style="padding: 8px;">
