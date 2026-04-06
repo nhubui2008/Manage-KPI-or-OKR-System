@@ -27,10 +27,34 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(BonusRule model)
+        public async Task<IActionResult> Create(BonusRule model, string rankCode, string rankDescription)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
 
+            if (string.IsNullOrEmpty(rankCode))
+            {
+                TempData["ErrorMessage"] = "Mã xếp hạng không được để trống.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Find or create the GradingRank
+            var rank = await _context.GradingRanks
+                .FirstOrDefaultAsync(r => r.RankCode != null && r.RankCode.ToUpper() == rankCode.ToUpper());
+
+            if (rank == null)
+            {
+                rank = new GradingRank
+                {
+                    RankCode = rankCode.ToUpper(),
+                    Description = rankDescription,
+                    MinScore = 0 // Default
+                };
+                _context.GradingRanks.Add(rank);
+                await _context.SaveChangesAsync();
+            }
+
+            model.RankId = rank.Id;
+            
             if (ModelState.IsValid)
             {
                 _context.BonusRules.Add(model);

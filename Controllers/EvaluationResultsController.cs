@@ -67,6 +67,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 _context.EvaluationResults.Add(model);
                 await _context.SaveChangesAsync();
+
+                // Ghi nhật ký hệ thống (Audit Log)
+                var employee = await _context.Employees.FindAsync(model.EmployeeId);
+                var period = await _context.EvaluationPeriods.FindAsync(model.PeriodId);
+                string scoreStr = model.TotalScore?.ToString("0.#") ?? "0";
+                string auditInfo = $"Tạo mới kết quả đánh giá: {employee?.FullName} - {period?.PeriodName} - Điểm: {scoreStr} ({model.Classification})";
+                await LogAuditAsync("CREATE", null, auditInfo);
+
                 TempData["SuccessMessage"] = $"Đã lưu kết quả đánh giá thành công! Tổng điểm: {(model.TotalScore % 1 == 0 ? model.TotalScore?.ToString("0") : model.TotalScore?.ToString("0.#"))}đ";
             }
             return RedirectToAction(nameof(Index));
@@ -86,6 +94,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var existing = await _context.EvaluationResults.FindAsync(model.Id);
                 if (existing == null) return NotFound();
 
+                // Lưu dữ liệu cũ để ghi Log
+                var oldEmployee = await _context.Employees.FindAsync(existing.EmployeeId);
+                var oldPeriod = await _context.EvaluationPeriods.FindAsync(existing.PeriodId);
+                string oldInfo = $"Cũ: {oldEmployee?.FullName} - {oldPeriod?.PeriodName} - Điểm: {existing.TotalScore?.ToString("0.#")} ({existing.Classification})";
+
                 existing.EmployeeId = model.EmployeeId;
                 existing.PeriodId = model.PeriodId;
                 existing.TotalScore = model.TotalScore;
@@ -94,6 +107,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 _context.Update(existing);
                 await _context.SaveChangesAsync();
+
+                // Ghi nhật ký hệ thống (Audit Log)
+                var newEmployee = await _context.Employees.FindAsync(model.EmployeeId);
+                var newPeriod = await _context.EvaluationPeriods.FindAsync(model.PeriodId);
+                string newInfo = $"Mới: {newEmployee?.FullName} - {newPeriod?.PeriodName} - Điểm: {model.TotalScore?.ToString("0.#")} ({model.Classification})";
+                await LogAuditAsync("UPDATE", oldInfo, newInfo);
+
                 TempData["SuccessMessage"] = $"Đã cập nhật kết quả đánh giá thành công! Tổng điểm: {(model.TotalScore % 1 == 0 ? model.TotalScore?.ToString("0") : model.TotalScore?.ToString("0.#"))}đ";
             }
             return RedirectToAction(nameof(Index));
@@ -111,11 +131,38 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var result = await _context.EvaluationResults.FindAsync(id);
             if (result != null)
             {
+                var employee = await _context.Employees.FindAsync(result.EmployeeId);
+                var period = await _context.EvaluationPeriods.FindAsync(result.PeriodId);
+                string auditInfo = $"Xóa kết quả đánh giá: {employee?.FullName} - {period?.PeriodName} - Điểm: {result.TotalScore?.ToString("0.#")} ({result.Classification})";
+
                 _context.EvaluationResults.Remove(result);
                 await _context.SaveChangesAsync();
+
+                // Ghi nhật ký hệ thống (Audit Log)
+                await LogAuditAsync("DELETE", auditInfo, "Đã xóa bản ghi");
+
                 TempData["SuccessMessage"] = "Đã xóa kết quả đánh giá!";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task LogAuditAsync(string actionType, string? oldData, string newData)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdStr, out int userId))
+            {
+                var log = new AuditLog
+                {
+                    SystemUserId = userId,
+                    ActionType = actionType,
+                    ImpactedTable = "EvaluationResults",
+                    OldData = oldData,
+                    NewData = newData,
+                    LogTime = DateTime.Now
+                };
+                _context.AuditLogs.Add(log);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

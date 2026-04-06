@@ -22,7 +22,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString, int? periodId)
         {
             try
             {
@@ -31,7 +31,23 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
             catch { }
 
+            ViewData["CurrentFilter"] = searchString;
+            ViewData["PeriodId"] = periodId;
+
             var query = _context.KPIs.Where(k => k.IsActive == true);
+
+            // Filter by Search String
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                searchString = searchString.Trim();
+                query = query.Where(k => k.KPIName != null && k.KPIName.Contains(searchString));
+            }
+
+            // Filter by Period
+            if (periodId.HasValue)
+            {
+                query = query.Where(k => k.PeriodId == periodId.Value);
+            }
 
             // Cấp quyền cho các role hạn chế (Warehouse, Employee, Sales) chỉ xem KPI của chính mình
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -85,6 +101,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Employees = employees;
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.Periods = periods;
+            ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
 
             return View(kpis);
         }

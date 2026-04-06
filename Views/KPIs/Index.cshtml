@@ -64,19 +64,38 @@
 <div class="content-card shadow-sm border-0">
     <div class="card-body-custom p-4">
         <div class="toolbar mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <div class="toolbar-left d-flex gap-2 flex-wrap">
+            <form asp-action="Index" method="get" class="toolbar-left d-flex gap-2 flex-wrap">
                 <div class="toolbar-search position-relative">
                     <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <input type="text" class="form-control rounded-pill ps-5 border-light bg-light" placeholder="Tìm kiếm KPI...">
+                    <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control rounded-pill ps-5 border-light bg-light" placeholder="Tìm kiếm KPI...">
                 </div>
-                <select class="form-select border-light bg-light rounded-pill w-auto">
+                <select name="periodId" class="form-select border-light bg-light rounded-pill w-auto">
                     <option value="">Lọc theo kỳ: Tất cả</option>
-                    @foreach(var p in periodsDict.Values.Distinct())
+                    @if (ViewBag.AllPeriods != null)
                     {
-                        <option value="@p">@p</option>
+                        foreach(var p in (List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod>)ViewBag.AllPeriods)
+                        {
+                            if (ViewData["PeriodId"] != null && (int)ViewData["PeriodId"] == p.Id)
+                            {
+                                <option value="@p.Id" selected>@p.PeriodName</option>
+                            }
+                            else
+                            {
+                                <option value="@p.Id">@p.PeriodName</option>
+                            }
+                        }
                     }
                 </select>
-            </div>
+                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                    <i class="bi bi-funnel me-1"></i> Lọc
+                </button>
+                @if (ViewData["CurrentFilter"] != null || ViewData["PeriodId"] != null)
+                {
+                    <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+                        <i class="bi bi-x-lg"></i> Xóa lọc
+                    </a>
+                }
+            </form>
         </div>
 
         <div class="table-responsive w-100">

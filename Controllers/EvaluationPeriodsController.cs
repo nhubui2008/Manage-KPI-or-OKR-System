@@ -40,6 +40,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (ModelState.IsValid)
             {
+                var error = await ValidatePeriodAsync(model);
+                if (error != null)
+                {
+                    TempData["ErrorMessage"] = error;
+                    return RedirectToAction(nameof(Index));
+                }
+
                 model.IsActive = true;
                 model.IsSystemProcessed = false;
                 _context.EvaluationPeriods.Add(model);
@@ -47,6 +54,75 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 TempData["SuccessMessage"] = "Đã tạo kỳ đánh giá mới thành công!";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(EvaluationPeriod model)
+        {
+            if (ModelState.IsValid)
+            {
+                var existing = await _context.EvaluationPeriods.FindAsync(model.Id);
+                if (existing == null) return NotFound();
+
+                var error = await ValidatePeriodAsync(model, model.Id);
+                if (error != null)
+                {
+                    TempData["ErrorMessage"] = error;
+                    return RedirectToAction(nameof(Index));
+                }
+
+                existing.PeriodName = model.PeriodName;
+                existing.PeriodType = model.PeriodType;
+                existing.StartDate = model.StartDate;
+                existing.EndDate = model.EndDate;
+                existing.StatusId = model.StatusId;
+
+                _context.Update(existing);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Đã cập nhật kỳ đánh giá thành công!";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<string?> ValidatePeriodAsync(EvaluationPeriod model, int? excludeId = null)
+        {
+            // 1. Kiểm tra trùng tên (giữa các bản ghi đang hoạt động)
+            if (await _context.EvaluationPeriods.AnyAsync(p => p.PeriodName == model.PeriodName && p.IsActive == true && p.Id != excludeId))
+            {
+                return "Tên kỳ đánh giá đã tồn tại. Vui lòng chọn tên khác.";
+            }
+
+            // 2. Kiểm tra khoảng thời gian hợp lệ
+            if (model.EndDate < model.StartDate)
+            {
+                return "Ngày kết thúc không thể trước ngày bắt đầu.";
+            }
+
+            // 3. Kiểm tra độ dài kỳ đánh giá
+            var durationDays = (model.EndDate.Value - model.StartDate.Value).Days + 1;
+            if (model.PeriodType == "MONTH" && durationDays > 32)
+            {
+                return "Kỳ đánh giá Hàng tháng không nên dài quá 31 ngày.";
+            }
+            else if (model.PeriodType == "QUARTER" && durationDays < 80)
+            {
+                return "Kỳ đánh giá Hàng quý phải có độ dài khoảng 3 tháng (ít nhất 80 ngày).";
+            }
+
+            // 4. Kiểm tra trùng lặp khoảng thời gian (Overlap check cho cùng loại kỳ)
+            bool isOverlapping = await _context.EvaluationPeriods.AnyAsync(p => 
+                p.IsActive == true && 
+                p.Id != excludeId &&
+                p.PeriodType == model.PeriodType &&
+                ((model.StartDate >= p.StartDate && model.StartDate <= p.EndDate) || 
+                 (model.EndDate >= p.StartDate && model.EndDate <= p.EndDate)));
+
+            if (isOverlapping)
+            {
+                return "Khoảng thời gian này đã bị trùng lặp với một kỳ đánh giá khác cùng loại.";
+            }
+
+            return null;
         }
 
         [HttpPost]
