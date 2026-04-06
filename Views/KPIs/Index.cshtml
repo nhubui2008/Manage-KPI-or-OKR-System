@@ -67,7 +67,7 @@
             <div class="toolbar-left d-flex gap-2 flex-wrap">
                 <div class="toolbar-search position-relative">
                     <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <input type="text" name="searchString" class="form-control rounded-pill ps-5 border-light bg-light" placeholder="Tìm kiếm KPI..." style="width: 250px;">
+                    <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control rounded-pill ps-5 border-light bg-light" placeholder="Tìm kiếm KPI..." style="width: 250px;">
                 </div>
             </div>
             <div class="toolbar-right d-flex align-items-center gap-2">
@@ -77,7 +77,14 @@
                         <option value="">Tất cả</option>
                         @foreach(var p in periodsDict.Values.Distinct())
                         {
-                            <option value="@p">@p</option>
+                            if (Context.Request.Query["period"] == p)
+                            {
+                                <option value="@p" selected>@p</option>
+                            }
+                            else
+                            {
+                                <option value="@p">@p</option>
+                            }
                         }
                     </select>
                 </div>

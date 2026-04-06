@@ -13,6 +13,14 @@
     </div>
 }
 
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
 <div class="container-fluid px-0">
     
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
@@ -72,7 +80,10 @@
                                 </td>
                                 <td>
                                     <div class="action-btns justify-content-end">
-                                        <button type="button" class="action-btn" title="Sửa" onclick="showComingSoonToast('Chỉnh sửa Kỳ Đánh giá')"><i class="bi bi-pencil-square"></i></button>
+                                        <button type="button" class="action-btn" title="Sửa" 
+                                                onclick="openEditModal(@p.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(p.PeriodName ?? ""))', '@p.PeriodType', '@p.StartDate?.ToString("yyyy-MM-dd")', '@p.EndDate?.ToString("yyyy-MM-dd")', @(p.StatusId ?? 0))">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
                                         <form asp-action="Delete" method="post" style="display:inline;">
                                             <input type="hidden" name="id" value="@p.Id" />
                                             <button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Bạn có chắc muốn vô hiệu hóa kỳ đánh giá này?')"><i class="bi bi-trash"></i></button>
@@ -92,6 +103,187 @@
     </div>
 </div>
 
+<!-- Create Modal -->
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold"><i class="bi bi-calendar-plus me-2"></i>Thêm Kỳ Đánh giá</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="createPeriodForm" asp-action="Create" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên kỳ đánh giá <span class="nameWarning text-danger small ms-2" style="display:none;">(Không khớp với Loại kỳ)</span></label>
+                        <input type="text" class="periodName form-control" name="PeriodName" required placeholder="VD: Quý 1 - 2026" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Loại kỳ</label>
+                        <select class="periodType form-select" name="PeriodType">
+                            <option value="MONTH">Hàng tháng</option>
+                            <option value="QUARTER">Hàng quý</option>
+                            <option value="YEAR">Hàng năm</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-semibold">Ngày bắt đầu</label>
+                            <input type="date" class="startDate form-control" name="StartDate" required />
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-semibold">Ngày kết thúc</label>
+                            <input type="date" class="endDate form-control" name="EndDate" required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Trạng thái</label>
+                        <select name="StatusId" class="form-select">
+                            @foreach (var s in statuses)
+                            {<option value="@s.Key">@s.Value</option>}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn-primary-custom d-flex align-items-center">Tạo mới</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Chỉnh sửa Kỳ Đánh giá</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form id="editPeriodForm" asp-action="Edit" method="post">
+                <input type="hidden" id="editId" name="Id" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên kỳ đánh giá <span class="nameWarning text-danger small ms-2" style="display:none;">(Không khớp với Loại kỳ)</span></label>
+                        <input type="text" id="editPeriodName" name="PeriodName" class="periodName form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Loại kỳ</label>
+                        <select id="editPeriodType" name="PeriodType" class="periodType form-select">
+                            <option value="MONTH">Hàng tháng</option>
+                            <option value="QUARTER">Hàng quý</option>
+                            <option value="YEAR">Hàng năm</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-semibold">Ngày bắt đầu</label>
+                            <input type="date" id="editStartDate" name="StartDate" class="startDate form-control" required />
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-semibold">Ngày kết thúc</label>
+                            <input type="date" id="editEndDate" name="EndDate" class="endDate form-control" required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Trạng thái</label>
+                        <select id="editStatusId" name="StatusId" class="form-select">
+                            @foreach (var s in statuses)
+                            {<option value="@s.Key">@s.Value</option>}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn-primary-custom d-flex align-items-center">Cập nhật</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openEditModal(id, name, type, start, end, statusId) {
+        document.getElementById('editId').value = id;
+        document.getElementById('editPeriodName').value = name;
+        document.getElementById('editPeriodType').value = type;
+        document.getElementById('editStartDate').value = start;
+        document.getElementById('editEndDate').value = end;
+        document.getElementById('editStatusId').value = statusId;
+        
+        const modal = new bootstrap.Modal(document.getElementById('editModal'));
+        modal.show();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Shared logic for both modals
+        const forms = ['createPeriodForm', 'editPeriodForm'];
+        
+        forms.forEach(formId => {
+            const form = document.getElementById(formId);
+            if (!form) return;
+
+            const pName = form.querySelector('.periodName');
+            const pType = form.querySelector('.periodType');
+            const sDate = form.querySelector('.startDate');
+            const eDate = form.querySelector('.endDate');
+            const warning = form.querySelector('.nameWarning');
+
+            function suggestName() {
+                if (!sDate.value) return;
+                const date = new Date(sDate.value);
+                const month = date.getMonth() + 1;
+                const year = date.getFullYear();
+
+                if (pType.value === 'MONTH') {
+                    pName.value = `Tháng ${month < 10 ? '0' + month : month}/${year}`;
+                } else if (pType.value === 'QUARTER') {
+                    const quarter = Math.floor((month - 1) / 3) + 1;
+                    pName.value = `Quý ${quarter} - ${year}`;
+                } else if (pType.value === 'YEAR') {
+                    pName.value = `Năm ${year}`;
+                }
+                checkConsistency();
+            }
+
+            function checkConsistency() {
+                const name = pName.value.toLowerCase();
+                const type = pType.value;
+                let inconsistent = false;
+
+                if (type === 'QUARTER' && name.includes('tháng')) inconsistent = true;
+                if (type === 'MONTH' && name.includes('quý')) inconsistent = true;
+
+                warning.style.display = inconsistent ? 'inline' : 'none';
+            }
+
+            pType.addEventListener('change', suggestName);
+            sDate.addEventListener('change', suggestName);
+            pName.addEventListener('input', checkConsistency);
+
+            form.onsubmit = function (e) {
+                const start = new Date(sDate.value);
+                const end = new Date(eDate.value);
+                
+                if (end < start) {
+                    alert('Ngày kết thúc không thể trước ngày bắt đầu.');
+                    return false;
+                }
+
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                if (pType.value === 'QUARTER' && diffDays < 80) {
+                    if (!confirm(`Kỳ đánh giá Hàng quý thông thường phải dài 3 tháng, nhưng bạn chỉ chọn ${diffDays} ngày. Tiếp tục?`)) {
+                        return false;
+                    }
+                }
+                
+                if (pType.value === 'MONTH' && diffDays > 32) {
+                    if (!confirm(`Kỳ đánh giá Hàng tháng thông thường dài 1 tháng, nhưng bạn chọn ${diffDays} ngày. Tiếp tục?`)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            };
+        });
+    });
+</script>
 
         </div>
     </div>
