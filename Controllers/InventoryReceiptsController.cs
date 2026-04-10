@@ -4,12 +4,12 @@ using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Manage_KPI_or_OKR_System.Models;
+using Manage_KPI_or_OKR_System.Filters;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("WAREHOUSE_IMPORT_INVENTORY")]
-    [Authorize(Roles = "None")]
+    [DisabledFeature]
     public class InventoryReceiptsController : Controller
     {
         private readonly MiniERPDbContext _context;

@@ -13,6 +13,7 @@ using System.Security.Claims;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
+    [HasPermission(PermissionCodes.EmployeeUpdateKpiProgress)]
     public class KPICheckInsController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -24,13 +25,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Index()
         {
-            try
-            {
-                // Đảm bảo cột IsInverse tồn tại trong database (fix lỗi schema mismatch cho KPI)
-                await _context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KPIDetails') AND name = 'IsInverse') ALTER TABLE KPIDetails ADD IsInverse bit NOT NULL DEFAULT 0;");
-            }
-            catch { }
-
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
             var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
@@ -40,9 +34,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
 
             // Phân quyền: Employee, Warehouse, Sales chỉ thấy dữ liệu của chính mình
-            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+            if (HttpContext.HasPermission(PermissionCodes.EmployeeUpdateKpiProgress) &&
+                !HttpContext.HasPermission(PermissionCodes.ManagerAssignKpi))
             {
                 if (employee != null)
                 {
@@ -102,9 +95,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var kpiQuery = _context.KPIs.Where(k => k.IsActive == true);
             var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
 
-            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+            if (HttpContext.HasPermission(PermissionCodes.EmployeeUpdateKpiProgress) &&
+                !HttpContext.HasPermission(PermissionCodes.ManagerAssignKpi))
             {
                 if (employee != null)
                 {
@@ -140,9 +132,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 model.KPIId = kpiId.Value;
                 // Nếu là Employee, tự động gán EmployeeId
-                if (employee != null && (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                                       User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                                       User.IsInRole("Sales") || User.IsInRole("sales")))
+                if (employee != null &&
+                    HttpContext.HasPermission(PermissionCodes.EmployeeUpdateKpiProgress) &&
+                    !HttpContext.HasPermission(PermissionCodes.ManagerAssignKpi))
                 {
                     model.EmployeeId = employee.Id;
                 }
@@ -152,7 +144,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("EMPLOYEE_UPDATE_KPI_PROGRESS")]
+        [HasPermission(PermissionCodes.EmployeeUpdateKpiProgress)]
         public async Task<IActionResult> Create(KPICheckIn model, decimal AchievedValue, string Note)
         {
             if (AchievedValue < 0)
@@ -165,9 +157,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             try
             {
                 // Security: Employee chỉ được check-in cho chính mình
-                if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                    User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                    User.IsInRole("Sales") || User.IsInRole("sales"))
+                if (HttpContext.HasPermission(PermissionCodes.EmployeeUpdateKpiProgress) &&
+                    !HttpContext.HasPermission(PermissionCodes.ManagerAssignKpi))
                 {
                     var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                     if (int.TryParse(userIdStr, out int userId))

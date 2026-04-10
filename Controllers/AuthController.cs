@@ -142,7 +142,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
-            var defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "User");
+            var defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Employee");
             int? roleId = defaultRole?.Id;
 
             var newUser = new SystemUser
@@ -470,7 +470,7 @@ public async Task<IActionResult> GoogleResponse()
             defaultUsername += new Random().Next(100, 999).ToString();
         }
 
-        var defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "User");
+        var defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Employee");
         int? roleId = defaultRole?.Id;
 
         user = new SystemUser

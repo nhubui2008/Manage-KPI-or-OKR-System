@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("HR_APPROVE_KPI")]
+    [HasPermission(PermissionCodes.HrApproveKpi)]
     public class EvaluationPeriodsController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -21,7 +21,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .OrderByDescending(p => p.StartDate)
                 .ToListAsync();
 
-            var statuses = await _context.Statuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
+            var statuses = await GetPeriodStatusesAsync();
             ViewBag.Statuses = statuses;
 
             // Count KPIs per period
@@ -38,7 +38,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var statuses = await _context.Statuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
+            var statuses = await GetPeriodStatusesAsync();
             ViewBag.Statuses = statuses;
             return View();
         }
@@ -63,9 +63,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return RedirectToAction(nameof(Index));
             }
             
-            var statuses = await _context.Statuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
+            var statuses = await GetPeriodStatusesAsync();
             ViewBag.Statuses = statuses;
             return View(model);
+        }
+
+        private Task<Dictionary<int, string?>> GetPeriodStatusesAsync()
+        {
+            return _context.Statuses
+                .AsNoTracking()
+                .Where(s => s.StatusType == "EVALUATION_PERIOD")
+                .OrderBy(s => s.Id)
+                .ToDictionaryAsync(s => s.Id, s => s.StatusName);
         }
 
         [HttpPost]
@@ -105,6 +114,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             // 2. Kiểm tra khoảng thời gian hợp lệ
+            if (!model.StartDate.HasValue || !model.EndDate.HasValue)
+            {
+                return "Ngày bắt đầu và ngày kết thúc là bắt buộc.";
+            }
+
             if (model.EndDate < model.StartDate)
             {
                 return "Ngày kết thúc không thể trước ngày bắt đầu.";

@@ -5,6 +5,7 @@
     var keyResultsDict = ViewBag.KeyResults as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>> ??
                          new Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>>();
     var currentFilter = ViewData["CurrentFilter"] as string;
+    bool canManageOkrs = Context.HasPermission(PermissionCodes.ManagerCreateOkr);
 }
 
 <div class="container-fluid px-0">
@@ -19,7 +20,7 @@
             </div>
         </div>
         <div class="d-flex justify-content-end gap-2">
-            @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Warehouse") || User.IsInRole("warehouse") || User.IsInRole("Sales") || User.IsInRole("sales")))
+            @if (canManageOkrs)
             {
                 <a asp-action="Create" class="text-decoration-none btn-primary-custom d-flex align-items-center">
                     <i class="bi bi-plus-lg me-1"></i> Tạo OKR mới
@@ -65,9 +66,6 @@
                             var currentEmployeeId = ViewBag.CurrentEmployeeId as int?;
                             var allocatedIds = ViewBag.AllocatedOkrIds as List<int> ?? new List<int>();
                             var deptOkrIds = ViewBag.DepartmentOkrIds as List<int> ?? new List<int>();
-                            bool isRestrictedRole = User.IsInRole("Employee") || User.IsInRole("employee") || 
-                                                   User.IsInRole("Warehouse") || User.IsInRole("warehouse") || 
-                                                   User.IsInRole("Sales") || User.IsInRole("sales");
 
                             foreach (var okr in Model)
                             {
@@ -78,9 +76,9 @@
                                 bool isOwner = okr.CreatedById == currentEmployeeId;
                                 bool isAllocated = allocatedIds.Contains(okr.Id) || deptOkrIds.Contains(okr.Id);
                                 
-                                bool canManageStructure = !isRestrictedRole;
-                                bool canUpdateProgress = true; // All visible OKRs for restricted roles are relevant (Personal, Dept, or Strategic)
-                                bool canDelete = !isRestrictedRole;
+                                bool canManageStructure = canManageOkrs;
+                                bool canUpdateProgress = canManageOkrs;
+                                bool canDelete = canManageOkrs;
 
                                 // Sử dụng TotalProgress từ model đã được chuẩn hóa
                                 int okrProgressInt = (int)okr.TotalProgress;

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
@@ -59,9 +60,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 checkInQuery = checkInQuery.Where(c => c.CheckInDate >= startDate.Value && c.CheckInDate <= endDate.Value);
             }
 
-            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+            if (HttpContext.HasPermission(PermissionCodes.EmployeeUpdateKpiProgress) &&
+                !HttpContext.HasAnyPermission(
+                    PermissionCodes.AdminManageUsers,
+                    PermissionCodes.AdminManageRoles,
+                    PermissionCodes.AdminViewAuditLogs,
+                    PermissionCodes.HrManageEmployees,
+                    PermissionCodes.HrManageOrganization,
+                    PermissionCodes.HrApproveKpi,
+                    PermissionCodes.HrEvaluateKpi,
+                    PermissionCodes.HrViewEvaluationReports,
+                    PermissionCodes.HrManageBonusRules,
+                    PermissionCodes.ManagerManageMissionVision,
+                    PermissionCodes.ManagerCreateOkr,
+                    PermissionCodes.ManagerAssignKpi))
             {
                 if (employee != null)
                 {

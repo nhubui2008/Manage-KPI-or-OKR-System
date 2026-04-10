@@ -49,14 +49,20 @@
 
                 <div class="sidebar-nav">
                     @{
-                        // TÁCH RÕ RÀNG CÁC QUYỀN ĐỂ FRONTEND DỄ KIỂM SOÁT
-                        bool isAdmin = User.IsInRole("Admin") || User.IsInRole("Administrator");
-                        bool isManager = User.IsInRole("Manager");
-                        bool isHR = User.IsInRole("HR");
-                        bool isEmployee = User.IsInRole("Employee");
-                        
-                        // Nhóm quyền quản trị chung
-                        bool isManagementOrHR = isAdmin || isManager || isHR;
+                        var currentAccess = Context.GetCurrentUserAccess();
+                        bool canManageUsers = Context.HasPermission(PermissionCodes.AdminManageUsers);
+                        bool canManageRoles = Context.HasPermission(PermissionCodes.AdminManageRoles);
+                        bool canViewAuditLogs = Context.HasPermission(PermissionCodes.AdminViewAuditLogs);
+                        bool canManageEmployees = Context.HasPermission(PermissionCodes.HrManageEmployees);
+                        bool canManageOrganization = Context.HasPermission(PermissionCodes.HrManageOrganization);
+                        bool canManageMissionVision = Context.HasPermission(PermissionCodes.ManagerManageMissionVision);
+                        bool canManageOkr = Context.HasPermission(PermissionCodes.ManagerCreateOkr);
+                        bool canManageKpi = Context.HasPermission(PermissionCodes.ManagerAssignKpi);
+                        bool canUpdateProgress = Context.HasPermission(PermissionCodes.EmployeeUpdateKpiProgress);
+                        bool canManagePeriods = Context.HasPermission(PermissionCodes.HrApproveKpi);
+                        bool canEvaluate = Context.HasPermission(PermissionCodes.HrEvaluateKpi);
+                        bool canViewEvaluationReports = Context.HasPermission(PermissionCodes.HrViewEvaluationReports);
+                        bool canManageBonusRules = Context.HasPermission(PermissionCodes.HrManageBonusRules);
                     }
 
                     <div class="sidebar-group">
@@ -66,49 +72,58 @@
                         </a>
                     </div>
 
-                    @if (isManagementOrHR)
+                    @if (canManageEmployees || canManageOrganization)
                     {
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Nhân sự</div>
-                            <a href="/Employees" class="sidebar-link">
-                                <i class="bi bi-people-fill"></i> <span>Nhân sự</span>
-                            </a>
-                            <a href="/Departments" class="sidebar-link">
-                                <i class="bi bi-diagram-3-fill"></i> <span>Phòng ban</span>
-                            </a>
-                            <a href="/Positions" class="sidebar-link">
-                                <i class="bi bi-person-badge-fill"></i> <span>Chức vụ</span>
-                            </a>
+                            @if (canManageEmployees)
+                            {
+                                <a href="/Employees" class="sidebar-link">
+                                    <i class="bi bi-people-fill"></i> <span>Nhân sự</span>
+                                </a>
+                            }
+                            @if (canManageOrganization)
+                            {
+                                <a href="/Departments" class="sidebar-link">
+                                    <i class="bi bi-diagram-3-fill"></i> <span>Phòng ban</span>
+                                </a>
+                                <a href="/Positions" class="sidebar-link">
+                                    <i class="bi bi-person-badge-fill"></i> <span>Chức vụ</span>
+                                </a>
+                            }
                         </div>
                     }
 
-                    @if (isAdmin || isManager || isEmployee)
+                    @if (canManageMissionVision || canManageOkr || canUpdateProgress)
                     {
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Mục tiêu chiến lược</div>
-                            @if (isAdmin || isManager)
+                            @if (canManageMissionVision)
                             {
                                 <a href="/MissionVisions" class="sidebar-link">
                                     <i class="bi bi-compass-fill"></i> <span>Thiết lập tầm nhìn & sứ mệnh</span>
                                 </a>
                             }
-                            <a href="/OKRs" class="sidebar-link">
-                                <i class="bi bi-bullseye"></i> <span>Quản lý OKR / Mục tiêu</span>
-                            </a>
+                            @if (canManageOkr || canUpdateProgress)
+                            {
+                                <a href="/OKRs" class="sidebar-link">
+                                    <i class="bi bi-bullseye"></i> <span>Quản lý OKR / Mục tiêu</span>
+                                </a>
+                            }
                         </div>
                     }
 
-                    @if (isAdmin || isManager || isHR || isEmployee)
+                    @if (canManagePeriods || canManageKpi || canUpdateProgress)
                     {
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Đo lường hiệu suất</div>
-                            @if (isManagementOrHR)
+                            @if (canManagePeriods)
                             {
                                 <a href="/EvaluationPeriods" class="sidebar-link">
                                     <i class="bi bi-calendar3"></i> <span>Kỳ đánh giá</span>
                                 </a>
                             }
-                            @if (isAdmin || isManager || isEmployee)
+                            @if (canManageKpi || canUpdateProgress)
                             {
                                 <a href="/KPIs" class="sidebar-link">
                                     <i class="bi bi-speedometer2"></i> <span>Giao & Xem KPI cá nhân</span>
@@ -120,18 +135,24 @@
                         </div>
                     }
 
-                    @if (isAdmin || isManager || isHR || isEmployee)
+                    @if (canEvaluate || canUpdateProgress || canViewEvaluationReports || canManageBonusRules)
                     {
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Đánh giá & Thưởng</div>
-                            <a href="/EvaluationResults" class="sidebar-link">
-                                <i class="bi bi-award-fill"></i> <span>Đánh giá 1-1 / Kết quả</span>
-                            </a>
-                            @if (isManagementOrHR)
+                            @if (canEvaluate || canUpdateProgress)
+                            {
+                                <a href="/EvaluationResults" class="sidebar-link">
+                                    <i class="bi bi-award-fill"></i> <span>Đánh giá 1-1 / Kết quả</span>
+                                </a>
+                            }
+                            @if (canViewEvaluationReports)
                             {
                                 <a href="/EvaluationReports" class="sidebar-link">
                                     <i class="bi bi-file-earmark-bar-graph-fill text-info"></i> <span>Báo cáo Đánh giá (V.Director)</span>
                                 </a>
+                            }
+                            @if (canManageBonusRules)
+                            {
                                 <a href="/BonusRules" class="sidebar-link">
                                     <i class="bi bi-cash-coin"></i> <span>Quy tắc thưởng</span>
                                 </a>
@@ -139,21 +160,28 @@
                         </div>
                     }
 
-
-                    @* HỆ THỐNG: Chỉ Admin *@
-                    @if (isAdmin)
+                    @if (canManageUsers || canManageRoles || canViewAuditLogs)
                     {
                         <div class="sidebar-group mt-2">
                             <div class="sidebar-group-label">Hệ thống</div>
-                            <a href="/SystemUsers" class="sidebar-link">
-                                <i class="bi bi-shield-lock-fill"></i> <span>Người dùng</span>
-                            </a>
-                            <a href="/Roles" class="sidebar-link">
-                                <i class="bi bi-person-lines-fill"></i> <span>Phân quyền</span>
-                            </a>
-                            <a href="/AuditLogs" class="sidebar-link">
-                                <i class="bi bi-journal-text"></i> <span>Lịch sử hệ thống</span>
-                            </a>
+                            @if (canManageUsers)
+                            {
+                                <a href="/SystemUsers" class="sidebar-link">
+                                    <i class="bi bi-shield-lock-fill"></i> <span>Người dùng</span>
+                                </a>
+                            }
+                            @if (canManageRoles)
+                            {
+                                <a href="/Roles" class="sidebar-link">
+                                    <i class="bi bi-person-lines-fill"></i> <span>Phân quyền</span>
+                                </a>
+                            }
+                            @if (canViewAuditLogs)
+                            {
+                                <a href="/AuditLogs" class="sidebar-link">
+                                    <i class="bi bi-journal-text"></i> <span>Lịch sử hệ thống</span>
+                                </a>
+                            }
                         </div>
                     }
                 </div>
@@ -161,7 +189,7 @@
                 @if (User.Identity != null && User.Identity.IsAuthenticated)
                 {
                     var userName = User.Identity.Name;
-                    var userRole = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
+                    var userRole = string.IsNullOrWhiteSpace(currentAccess.RoleName) ? "User" : currentAccess.RoleName;
                     <div class="sidebar-footer dropup">
                         <div class="sidebar-user" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
                             <div class="user-avatar">
@@ -195,7 +223,7 @@
                         </button>
                         <div class="header-search">
                             <i class="bi bi-search"></i>
-                            <input type="text" placeholder="Tìm kiếm nhanh nhân viên, KPI, thiết bị...">
+                            <input type="text" placeholder="Tìm kiếm nhanh nhân viên, KPI, OKR...">
                         </div>
                     </div>
 

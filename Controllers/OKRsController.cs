@@ -13,6 +13,7 @@ using System.Security.Claims;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
+    [HasPermission(PermissionCodes.ManagerCreateOkr, PermissionCodes.EmployeeUpdateKpiProgress)]
     public class OKRsController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -26,14 +27,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             ViewData["CurrentFilter"] = searchString;
 
-            try
-            {
-                // Đảm bảo các cột cần thiết tồn tại trong database (fix lỗi schema mismatch cho OKR)
-                await _context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('OKRKeyResults') AND name = 'CurrentValue') ALTER TABLE OKRKeyResults ADD CurrentValue decimal(18,2) NULL;");
-                await _context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('OKRKeyResults') AND name = 'IsInverse') ALTER TABLE OKRKeyResults ADD IsInverse bit NOT NULL DEFAULT 0;");
-            }
-            catch { }
-
             var query = _context.OKRs.Where(o => o.IsActive == true).Include(o => o.KeyResults).AsQueryable();
 
             if (!string.IsNullOrEmpty(searchString))
@@ -43,9 +36,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             // Filter OKRs if Warehouse or Employee
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+            if (HttpContext.HasPermission(PermissionCodes.EmployeeUpdateKpiProgress) &&
+                !HttpContext.HasPermission(PermissionCodes.ManagerCreateOkr))
             {
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(userIdStr, out int userId))
@@ -101,12 +93,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpGet]
+        [HasPermission(PermissionCodes.ManagerCreateOkr)]
         public async Task<IActionResult> Create()
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee"))
-                return Forbid();
-
             ViewBag.Missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
             ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
             ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
@@ -116,14 +105,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("MANAGER_CREATE_OKR")]
+        [HasPermission(PermissionCodes.ManagerCreateOkr)]
         public async Task<IActionResult> Create(OKR model, int? missionId, int? departmentId, int? employeeId)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
-                return Forbid();
-
             if (ModelState.IsValid)
             {
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -174,13 +158,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("MANAGER_CREATE_OKR")]
+        [HasPermission(PermissionCodes.ManagerCreateOkr)]
         public async Task<IActionResult> AddKeyResult(OKRKeyResult kr)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
-                return Forbid();
             if (ModelState.IsValid)
             {
                 kr.CurrentValue = 0; // Khởi tạo tiến độ ban đầu là 0
@@ -195,6 +175,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission(PermissionCodes.ManagerCreateOkr)]
         public async Task<IActionResult> UpdateKeyResultProgress(int krId, decimal currentValue)
         {
             var kr = await _context.OKRKeyResults.FindAsync(krId);
@@ -214,14 +195,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("MANAGER_CREATE_OKR")]
+        [HasPermission(PermissionCodes.ManagerCreateOkr)]
         public async Task<IActionResult> EditKeyResult(OKRKeyResult model)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
-                return Forbid();
-
             if (ModelState.IsValid)
             {
                 var kr = await _context.OKRKeyResults.FindAsync(model.Id);
@@ -247,14 +223,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("MANAGER_CREATE_OKR")]
+        [HasPermission(PermissionCodes.ManagerCreateOkr)]
         public async Task<IActionResult> AllocateTarget(int okrId, int employeeId, decimal allocatedValue)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
-                return Forbid();
-
             // Validation: Value must be positive
             if (allocatedValue <= 0)
             {
@@ -296,14 +267,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("MANAGER_CREATE_OKR")]
+        [HasPermission(PermissionCodes.ManagerCreateOkr)]
         public async Task<IActionResult> DeleteKeyResult(int id)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
-                return Forbid();
-
             var kr = await _context.OKRKeyResults.FindAsync(id);
             if (kr != null)
             {
@@ -318,6 +284,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpGet("Tree")]
+        [HasPermission(PermissionCodes.ManagerCreateOkr)]
         public async Task<IActionResult> GetTree()
         {
             var missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
@@ -395,14 +362,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("MANAGER_CREATE_OKR")]
+        [HasPermission(PermissionCodes.ManagerCreateOkr)]
         public async Task<IActionResult> Delete(int id)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
-                return Forbid();
-
             var okr = await _context.OKRs.FindAsync(id);
             if (okr != null)
             {

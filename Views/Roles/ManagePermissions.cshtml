@@ -7,12 +7,9 @@
     string GetGroup(string code)
     {
         if (code.StartsWith("ADMIN_")) return "Cấu hình Hệ thống";
-        if (code.StartsWith("HR_")) return "Quản trị Nhân sự & Đánh giá";
-        if (code.StartsWith("MANAGER_")) return "Quản lý OKR & KPI";
+        if (code.StartsWith("HR_")) return "Nhân sự, Đánh giá & Thưởng";
+        if (code.StartsWith("MANAGER_")) return "Chiến lược, OKR & KPI";
         if (code.StartsWith("EMPLOYEE_")) return "Tác vụ Nhân viên";
-        if (code.StartsWith("SALES_")) return "Kinh doanh & Khách hàng";
-        if (code.StartsWith("WAREHOUSE_")) return "Quản lý Kho & Sản phẩm";
-        if (code.StartsWith("DELIVERY_")) return "Vận chuyển & Giao nhận";
         return "Khác";
     }
 

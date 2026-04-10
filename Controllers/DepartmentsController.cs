@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +11,8 @@ using System.Threading.Tasks;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
-    [Authorize] // Chỉ yêu cầu đăng nhập, ai cũng vào được
+    [Authorize]
+    [HasPermission(PermissionCodes.HrManageOrganization)]
     public class DepartmentsController : Controller
     {
         private readonly MiniERPDbContext _context;

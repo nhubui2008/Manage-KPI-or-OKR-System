@@ -13,6 +13,7 @@ using System.Security.Claims;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
+    [HasPermission(PermissionCodes.ManagerAssignKpi, PermissionCodes.EmployeeUpdateKpiProgress)]
     public class KPIsController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -24,13 +25,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Index(string searchString, int? periodId)
         {
-            try
-            {
-                // Đảm bảo cột StatusId tồn tại trong database (fix lỗi schema mismatch)
-                await _context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KPIs') AND name = 'StatusId') ALTER TABLE KPIs ADD StatusId int NULL;");
-            }
-            catch { }
-
             ViewData["CurrentFilter"] = searchString;
             ViewData["PeriodId"] = periodId;
 
@@ -50,9 +44,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             // Cấp quyền cho các role hạn chế (Warehouse, Employee, Sales) chỉ xem KPI của chính mình
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+            if (HttpContext.HasPermission(PermissionCodes.EmployeeUpdateKpiProgress) &&
+                !HttpContext.HasPermission(PermissionCodes.ManagerAssignKpi))
             {
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(userIdStr, out int userId))
@@ -123,9 +116,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.PropertyName = property?.PropertyName ?? "N/A";
 
             // Security check for restricted roles
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+            if (HttpContext.HasPermission(PermissionCodes.EmployeeUpdateKpiProgress) &&
+                !HttpContext.HasPermission(PermissionCodes.ManagerAssignKpi))
             {
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(userIdStr, out int userId))
@@ -182,15 +174,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
-        [HasPermission("MANAGER_ASSIGN_KPI")]
+        [HasPermission(PermissionCodes.ManagerAssignKpi)]
         public async Task<IActionResult> Create(KPI kpi, KPIDetail detail)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
-                return Forbid();
-
             if (ModelState.IsValid)
             {
                 kpi.CreatedAt = DateTime.Now;
@@ -210,15 +196,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
-        [HasPermission("MANAGER_ASSIGN_KPI")]
+        [HasPermission(PermissionCodes.ManagerAssignKpi)]
         public async Task<IActionResult> AssignPersonnel(int kpiId, List<int> employeeIds)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
-                return Forbid();
-
             var kpi = await _context.KPIs.FindAsync(kpiId);
             if (kpi == null) return NotFound();
 
@@ -248,8 +228,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
-        [HasPermission("MANAGER_ASSIGN_KPI")]
+        [HasPermission(PermissionCodes.ManagerAssignKpi)]
         public async Task<IActionResult> Approve(int id)
         {
             var kpi = await _context.KPIs.FindAsync(id);
@@ -263,8 +242,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
-        [HasPermission("MANAGER_ASSIGN_KPI")]
+        [HasPermission(PermissionCodes.ManagerAssignKpi)]
         public async Task<IActionResult> Reject(int id)
         {
             var kpi = await _context.KPIs.FindAsync(id);
@@ -278,15 +256,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
-        [HasPermission("MANAGER_ASSIGN_KPI")]
+        [HasPermission(PermissionCodes.ManagerAssignKpi)]
         public async Task<IActionResult> Delete(int id)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
-                return Forbid();
-
             var kpi = await _context.KPIs.FindAsync(id);
             if (kpi != null)
             {

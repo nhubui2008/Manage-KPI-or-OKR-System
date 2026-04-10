@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("ADMIN_VIEW_AUDIT_LOGS")]
+    [HasPermission(PermissionCodes.AdminViewAuditLogs)]
     public class AuditLogsController : Controller
     {
         private readonly MiniERPDbContext _context;

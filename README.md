@@ -1,313 +1,114 @@
-# Hệ thống Quản lý OKR / KPI Nhân sự & Phòng ban
+# Hệ thống Quản lý KPI / OKR
 
-> **Mini-ERP** tích hợp quản lý Mục tiêu (OKR), Chỉ số Hiệu suất (KPI), Nhân sự, Bán hàng, Kho vận và Giao hàng.
+Ứng dụng ASP.NET Core MVC cho các luồng core: hệ thống, nhân sự, cơ cấu tổ chức, mission/vision, OKR, KPI, check-in, kỳ đánh giá, kết quả đánh giá, báo cáo đánh giá và quy tắc thưởng.
 
----
+## Phạm vi hiện tại
 
-## 📋 Mục lục
+Các module đang nằm trong scope demo:
 
-- [Tổng quan](#-tổng-quan)
-- [Kiến trúc & Công nghệ](#-kiến-trúc--công-nghệ)
-- [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
-- [Cài đặt & Chạy](#-cài-đặt--chạy)
-- [Cấu trúc dự án](#-cấu-trúc-dự-án)
-- [Các phân hệ chức năng](#-các-phân-hệ-chức-năng)
-- [Phân quyền](#-phân-quyền)
-- [Dữ liệu mẫu](#-dữ-liệu-mẫu)
-- [Quy trình Test & Demo](#-quy-trình-test--demo)
+- Quản trị hệ thống: `SystemUsers`, `Roles`, `AuditLogs`
+- Nhân sự và cơ cấu tổ chức: `Employees`, `Departments`, `Positions`
+- Chiến lược và mục tiêu: `MissionVisions`, `OKRs`
+- Hiệu suất và đánh giá: `EvaluationPeriods`, `KPIs`, `KPICheckIns`, `EvaluationResults`, `EvaluationReports`, `BonusRules`
 
----
+Các module commerce/logistics đã bị loại khỏi luồng demo và không còn được seed hay hiển thị trong menu/search:
 
-## 🎯 Tổng quan
+- `Customers`, `SalesOrders`, `Invoices`
+- `Products`, `Warehouses`, `InventoryReceipts`
+- `DeliveryNotes`, `ShippingPartners`
 
-Hệ thống cung cấp **9 phân hệ nghiệp vụ** hoàn chỉnh:
+## Công nghệ
 
-| # | Phân hệ | Mô tả |
-|---|---------|-------|
-| 1 | **Quản trị Hệ thống** | Tài khoản, Vai trò, Phân quyền, Audit Logs |
-| 2 | **Nhân sự (HR)** | Nhân viên, Phòng ban, Chức vụ, Phân bổ |
-| 3 | **Sứ mệnh & Tầm nhìn** | Mission/Vision theo năm |
-| 4 | **OKR** | Objectives, Key Results, Tiến độ |
-| 5 | **KPI** | Kỳ đánh giá, KPI, Check-in, Kết quả, Thưởng/Phạt |
-| 6 | **Bán hàng** | Khách hàng, Đơn hàng, Hóa đơn |
-| 7 | **Kho** | Sản phẩm, Kho hàng, Phiếu nhập kho |
-| 8 | **Giao vận** | Phiếu giao hàng, Đối tác vận chuyển |
-| 9 | **Dashboard** | Tổng quan thống kê real-time |
+- ASP.NET Core MVC
+- Entity Framework Core
+- SQL Server / LocalDB
+- Razor Views + Bootstrap 5
+- Cookie Authentication + Google OAuth
+- EPPlus cho import/export Excel
 
----
+## Chạy local
 
-## 🏗 Kiến trúc & Công nghệ
+### 1. Cấu hình môi trường
 
-```
-┌─────────────────────────────────────────┐
-│              Presentation               │
-│     ASP.NET Core MVC + Razor Views      │
-│     Bootstrap 5 + Bootstrap Icons       │
-├─────────────────────────────────────────┤
-│             Business Logic              │
-│          Controllers + Helpers          │
-│   HasPermission · EncryptionHelper      │
-├─────────────────────────────────────────┤
-│              Data Access                │
-│     Entity Framework Core (EF Core)     │
-│           MiniERPDbContext              │
-├─────────────────────────────────────────┤
-│              Database                   │
-│           SQL Server / LocalDB          │
-└─────────────────────────────────────────┘
-```
-
-| Thành phần | Công nghệ |
-|---|---|
-| Framework | ASP.NET Core 8.0 MVC |
-| ORM | Entity Framework Core |
-| Database | SQL Server / LocalDB |
-| Frontend | Razor Pages, Bootstrap 5, Inter Font |
-| Auth | Cookie Authentication + Google OAuth |
-| Excel | EPPlus (import/export) |
-| Env Config | DotNetEnv |
-
----
-
-## 💻 Yêu cầu hệ thống
-
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) trở lên
-- SQL Server 2019+ hoặc SQL Server LocalDB
-- Visual Studio 2022 / VS Code / Rider
-- Git
-
----
-
-## 🚀 Cài đặt & Chạy
-
-### 1. Clone dự án
-
-```bash
-git clone https://github.com/nhubui2008/Manage-KPI-or-OKR-System.git
-cd Manage-KPI-or-OKR-System
-```
-
-### 2. Cấu hình môi trường
-
-Tạo file `.env` tại thư mục gốc:
+Tạo file `.env` nếu cần đăng nhập Google:
 
 ```env
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
 
-> **Lưu ý:** Google OAuth là tùy chọn. Hệ thống vẫn hoạt động bình thường với đăng nhập Username/Password.
+Google OAuth là tùy chọn. Đăng nhập username/password vẫn hoạt động bình thường.
 
-### 3. Cập nhật Database
+### 2. Tạo schema
 
 ```bash
 dotnet ef database update
 ```
 
-### 4. Nạp dữ liệu mẫu
+Migration `20260410010801_quanback` là migration schema-sync để thay các đoạn DDL chạy trong request.
 
-Mở SQL Server Management Studio (SSMS) hoặc Azure Data Studio, kết nối database `MiniERPDb`, chạy:
+### 3. Seed dữ liệu demo core-only
 
-```bash
-# Hoặc chạy trực tiếp file SeedData.sql trên SSMS
-```
+Chạy file `SeedData.sql` trên database sau khi migrate.
 
-### 5. Chạy ứng dụng
+Script này chỉ nạp dữ liệu cho các bảng core và giả định database đã được tạo sạch từ migration hiện tại.
+
+### 4. Chạy ứng dụng
 
 ```bash
 dotnet run
 ```
 
-Truy cập: **http://localhost:5208**
+Truy cập mặc định: `http://localhost:5208`
 
----
+## Ma trận phân quyền
 
-## 📁 Cấu trúc dự án
+Phân quyền được resolve từ DB theo `SystemUser -> Role -> Permission` ở mỗi request. Menu, search và backend guard đều dùng cùng nguồn quyền này.
 
-```
-Manage-KPI-or-OKR-System/
-├── Controllers/          # 24 Controllers (MVC)
-│   ├── AuthController.cs
-│   ├── DashboardController.cs
-│   ├── EmployeesController.cs
-│   ├── OKRsController.cs
-│   ├── KPIsController.cs
-│   ├── KPICheckInsController.cs
-│   ├── EvaluationPeriodsController.cs
-│   ├── EvaluationResultsController.cs
-│   ├── BonusRulesController.cs
-│   ├── CustomersController.cs
-│   ├── SalesOrdersController.cs
-│   ├── InvoicesController.cs
-│   ├── ProductsController.cs
-│   ├── WarehousesController.cs
-│   ├── InventoryReceiptsController.cs
-│   ├── DeliveryNotesController.cs
-│   ├── ShippingPartnersController.cs
-│   ├── AuditLogsController.cs
-│   └── ...
-├── Models/               # Entity classes (EF Core)
-├── Data/                 # DbContext + Migrations
-├── Views/                # Razor Views (25 folders)
-├── Helpers/              # HasPermission, Encryption, Password
-├── wwwroot/              # Static files (CSS, JS)
-├── SeedData.sql          # Dữ liệu mẫu
-├── Program.cs            # Entry point + DI config
-└── .env                  # Environment variables
+### Permissions core
+
+```text
+ADMIN_MANAGE_USERS
+ADMIN_MANAGE_ROLES
+ADMIN_VIEW_AUDIT_LOGS
+HR_MANAGE_EMPLOYEES
+HR_MANAGE_ORGANIZATION
+HR_APPROVE_KPI
+HR_EVALUATE_KPI
+HR_VIEW_EVALUATION_REPORTS
+HR_MANAGE_BONUS_RULES
+MANAGER_MANAGE_MISSION_VISION
+MANAGER_CREATE_OKR
+MANAGER_ASSIGN_KPI
+EMPLOYEE_UPDATE_KPI_PROGRESS
 ```
 
----
+### Roles mặc định
 
-## 🔧 Các phân hệ chức năng
+- `Admin`: full core permissions
+- `Manager`: nhân sự, tổ chức, mission/vision, OKR, KPI, kỳ đánh giá, kết quả, báo cáo, thưởng
+- `HR`: nhân sự, tổ chức, kỳ đánh giá, kết quả, báo cáo, thưởng, progress own KPI/OKR
+- `Employee`: chỉ luồng KPI/OKR/check-in/kết quả đánh giá của chính mình
 
-### 1. Quản trị Hệ thống (`/SystemUsers`, `/Roles`, `/AuditLogs`)
+## Tài khoản demo
 
-- Quản lý tài khoản đăng nhập hệ thống
-- Quản lý vai trò và phân quyền (Policy-based Authorization)
-- Xem nhật ký hoạt động hệ thống (Audit Logs)
+Mật khẩu mặc định cho toàn bộ tài khoản: `123`
 
-### 2. Nhân sự (`/Employees`, `/Departments`, `/Positions`)
+| Username | Role |
+|---|---|
+| `admin` | Admin |
+| `manager_tech` | Manager |
+| `hr_staff` | HR |
+| `dev01` | Employee |
 
-- CRUD nhân viên + Import Excel hàng loạt
-- Quản lý cơ cấu phòng ban dạng cây (Parent-Child)
-- Quản lý chức vụ + Phân bổ nhân viên vào phòng ban/chức vụ
+## Reset demo chuẩn
 
-### 3. OKR (`/OKRs`, `/MissionVisions`)
+1. Xóa database dev hiện tại.
+2. Chạy `dotnet ef database update`.
+3. Chạy `SeedData.sql`.
+4. Đăng nhập lần lượt `admin`, `manager_tech`, `hr_staff`, `dev01` để kiểm tra matrix quyền.
 
-- Thiết lập Sứ mệnh/Tầm nhìn theo năm
-- Tạo Objectives với loại OKR (Chiến lược/Chiến thuật/Vận hành)
-- Định nghĩa Key Results có thể đo lường
+## Ghi chú
 
-### 4. KPI (`/KPIs`, `/KPICheckIns`, `/EvaluationPeriods`, `/EvaluationResults`, `/BonusRules`)
-
-- Tạo Kỳ đánh giá (Tháng/Quý/Năm)
-- Thiết lập KPI với loại (Định lượng/Định tính/Binary)
-- Phân bổ KPI cho Nhân viên hoặc Phòng ban
-- Check-in cập nhật tiến độ định kỳ
-- Kết quả đánh giá + Xếp hạng (A+, A, B+, B, C, D)
-- Quy tắc thưởng/phạt tự động theo xếp hạng
-
-### 5. Bán hàng (`/Customers`, `/SalesOrders`, `/Invoices`)
-
-- Quản lý khách hàng (B2B/B2C) với tìm kiếm
-- Tạo và quản lý đơn hàng (5 trạng thái)
-- Xuất hóa đơn VAT liên kết đơn hàng
-
-### 6. Kho (`/Products`, `/Warehouses`, `/InventoryReceipts`)
-
-- Danh mục sản phẩm theo Category
-- Quản lý nhiều kho (multi-warehouse)
-- Phiếu nhập kho với nhân viên phụ trách
-
-### 7. Giao vận (`/DeliveryNotes`, `/ShippingPartners`)
-
-- Phiếu giao hàng với mã tracking
-- Đối tác vận chuyển (GHN, GHTK, Viettel Post...)
-
----
-
-## 🔐 Phân quyền
-
-Hệ thống sử dụng **Policy-based Authorization** qua attribute `[HasPermission("...")]`.
-
-| Role | Quyền truy cập |
-|------|----------------|
-| **Admin** | Toàn bộ hệ thống (17 permissions) |
-| **Manager** | Nhân sự + OKR + KPI + Đánh giá |
-| **HR** | Nhân sự + Kỳ đánh giá + Kết quả + Check-in |
-| **Sales** | Khách hàng + Đơn hàng + Hóa đơn + Check-in KPI |
-| **Warehouse** | Sản phẩm + Kho + Nhập kho |
-| **Delivery** | Phiếu giao hàng + Đối tác vận chuyển |
-| **Employee** | Check-in KPI cá nhân |
-
-### Danh sách Permissions
-
-```
-ADMIN_MANAGE_USERS        Quản lý tài khoản
-ADMIN_MANAGE_ROLES        Quản lý vai trò
-ADMIN_VIEW_AUDIT_LOGS     Xem nhật ký
-
-HR_MANAGE_EMPLOYEES       Quản lý nhân viên
-HR_APPROVE_KPI            Quản lý kỳ đánh giá
-HR_EVALUATE_KPI           Kết quả đánh giá
-
-MANAGER_CREATE_OKR        Tạo/quản lý OKR
-MANAGER_ASSIGN_KPI        Tạo/phân bổ KPI
-EMPLOYEE_UPDATE_KPI_PROGRESS  Check-in KPI
-
-SALES_MANAGE_CUSTOMERS    Quản lý khách hàng
-SALES_CREATE_ORDERS       Tạo đơn hàng
-SALES_CREATE_INVOICES     Tạo hóa đơn
-
-WAREHOUSE_MANAGE_PRODUCTS Quản lý sản phẩm
-WAREHOUSE_VIEW_INVENTORY  Xem kho
-WAREHOUSE_IMPORT_INVENTORY Nhập kho
-
-DELIVERY_CREATE_NOTES     Phiếu giao hàng
-DELIVERY_UPDATE_STATUS    Đối tác vận chuyển
-```
-
----
-
-## 🗃 Dữ liệu mẫu
-
-File `SeedData.sql` bao gồm:
-
-| Bảng | Số lượng | Nội dung |
-|------|----------|----------|
-| Roles | 7 | Admin, Manager, Employee, HR, Sales, Warehouse, Delivery |
-| Permissions | 17 | Phủ đầy đủ tất cả chức năng |
-| Role_Permissions | 38 | Mapping quyền chi tiết |
-| SystemUsers | 10 | Tài khoản test (password: `123`) |
-| Employees | 10 | Nhân viên mẫu với phân bổ phòng ban |
-| Departments | 9 | Cơ cấu tổ chức 2 cấp |
-| OKRs | 4 | Mục tiêu chiến lược/chiến thuật |
-| KPIs | 6 | Chỉ tiêu hiệu suất đa loại |
-| Customers | 5 | Khách hàng B2B/B2C |
-| SalesOrders | 5 | Đơn hàng các trạng thái |
-| Products | 6 | Sản phẩm 5 danh mục |
-| Warehouses | 3 | Kho TP.HCM, Hà Nội, Đà Nẵng |
-
-### Tài khoản test
-
-| Username | Password | Role | Mô tả |
-|----------|----------|------|-------|
-| `admin` | `123` | Admin | Toàn quyền |
-| `manager_tech` | `123` | Manager | Quản lý kỹ thuật |
-| `hr_staff` | `123` | HR | Nhân viên nhân sự |
-| `sales01` | `123` | Sales | Nhân viên kinh doanh |
-| `warehouse01` | `123` | Warehouse | Nhân viên kho |
-| `delivery01` | `123` | Delivery | Nhân viên giao vận |
-| `dev01` | `123` | Employee | Developer |
-
----
-
-## 🧪 Quy trình Test & Demo
-
-Xem chi tiết tại file **[TEST_DEMO.md](TEST_DEMO.md)**
-
-### Tóm tắt quy trình
-
-```
-Bước 1: Cài đặt → Build → Seed Data → Chạy ứng dụng
-Bước 2: Đăng nhập Admin → Kiểm tra Dashboard
-Bước 3: Test từng phân hệ (HR → OKR → KPI → Sales → Kho → Giao vận)
-Bước 4: Test phân quyền (đăng nhập lần lượt các role)
-Bước 5: Kiểm tra Audit Logs
-```
-
----
-
-## 📄 License
-
-Dự án được phát triển cho mục đích học tập và demo.
-
----
-
-## 👥 Đóng góp
-
-1. Fork dự án
-2. Tạo feature branch (`git checkout -b feature/TenTinhNang`)
-3. Commit thay đổi (`git commit -m 'Thêm tính năng XYZ'`)
-4. Push lên branch (`git push origin feature/TenTinhNang`)
-5. Tạo Pull Request
+- Các controller commerce/logistics vẫn còn trong codebase để giữ nguyên lịch sử schema nhưng đã bị đánh dấu out-of-scope.
+- `SeedData.sql` mới không khôi phục seed cũ và không phụ thuộc vào dữ liệu sales/kho/giao vận.

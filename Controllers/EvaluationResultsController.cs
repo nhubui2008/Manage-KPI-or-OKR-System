@@ -9,6 +9,7 @@ using System.Security.Claims;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
+    [HasPermission(PermissionCodes.HrEvaluateKpi, PermissionCodes.EmployeeUpdateKpiProgress)]
     public class EvaluationResultsController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -19,9 +20,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var resultsQuery = _context.EvaluationResults.OrderByDescending(r => r.Id).AsQueryable();
 
             // Filter Results if Sales or Warehouse or Employee
-            if (User.IsInRole("Sales") || User.IsInRole("sales") || 
-                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee"))
+            if (HttpContext.HasPermission(PermissionCodes.EmployeeUpdateKpiProgress) &&
+                !HttpContext.HasPermission(PermissionCodes.HrEvaluateKpi))
             {
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(userIdStr, out int userId))
@@ -55,11 +55,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpGet]
+        [HasPermission(PermissionCodes.HrEvaluateKpi)]
         public async Task<IActionResult> Create()
         {
-            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
-                return Forbid();
-
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
             ViewBag.AllRanks = await _context.GradingRanks.ToListAsync();
@@ -67,12 +65,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("HR_EVALUATE_KPI")]
+        [HasPermission(PermissionCodes.HrEvaluateKpi)]
         public async Task<IActionResult> Create(EvaluationResult model)
         {
-            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
-                return Forbid();
-
             if (ModelState.IsValid)
             {
                 _context.EvaluationResults.Add(model);
@@ -91,12 +86,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("HR_EVALUATE_KPI")]
+        [HasPermission(PermissionCodes.HrEvaluateKpi)]
         public async Task<IActionResult> Edit(EvaluationResult model)
         {
-            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
-                return Forbid();
-
             if (ModelState.IsValid)
             {
                 var existing = await _context.EvaluationResults.FindAsync(model.Id);
@@ -133,12 +125,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("HR_EVALUATE_KPI")]
+        [HasPermission(PermissionCodes.HrEvaluateKpi)]
         public async Task<IActionResult> Delete(int id)
         {
-            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
-                return Forbid();
-
             var result = await _context.EvaluationResults.FindAsync(id);
             if (result != null)
             {

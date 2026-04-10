@@ -1,5 +1,6 @@
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
+using Manage_KPI_or_OKR_System.Services;
 using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
 using OfficeOpenXml;
@@ -18,6 +19,7 @@ builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.EmailService>();
 
 // Register OKRProgressService
 builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IOKRProgressService, Manage_KPI_or_OKR_System.Services.OKRProgressService>();
+builder.Services.AddScoped<ICurrentUserAccessService, CurrentUserAccessService>();
 
 // Đăng ký Data Protection & EncryptionHelper
 builder.Services.AddDataProtection();
@@ -55,6 +57,13 @@ app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseAuthentication();
+app.Use(async (context, next) =>
+{
+    var accessService = context.RequestServices.GetRequiredService<ICurrentUserAccessService>();
+    var currentAccess = await accessService.ResolveAsync(context.User, context.RequestAborted);
+    context.Items[HttpContextPermissionExtensions.CurrentUserAccessItemKey] = currentAccess;
+    await next();
+});
 app.UseAuthorization();
 
 app.MapStaticAssets();

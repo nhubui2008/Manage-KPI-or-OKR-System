@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
+    [HasPermission(PermissionCodes.ManagerManageMissionVision)]
     public class MissionVisionsController : Controller
     {
         private readonly MiniERPDbContext _context;

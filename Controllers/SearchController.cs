@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -29,68 +30,102 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             term = term.ToLower().Trim();
             var results = new List<SearchResult>();
+            var currentUserId = HttpContext.GetCurrentUserAccess().SystemUserId;
+            var currentEmployeeId = currentUserId.HasValue
+                ? await _context.Employees.Where(e => e.SystemUserId == currentUserId.Value).Select(e => (int?)e.Id).FirstOrDefaultAsync()
+                : null;
 
-            // 1. Search Employees
-            var employees = await _context.Employees
-                .Where(e => (e.FullName != null && e.FullName.ToLower().Contains(term)) || 
-                            (e.EmployeeCode != null && e.EmployeeCode.ToLower().Contains(term)))
-                .Take(5)
-                .Select(e => new SearchResult {
-                    Id = e.Id,
-                    Title = e.FullName ?? "N/A",
-                    Subtitle = $"Mã NV: {e.EmployeeCode}",
-                    Type = "Nhân sự",
-                    Url = $"/Employees/Details/{e.Id}",
-                    Icon = "bi-people-fill"
-                })
-                .ToListAsync();
-            results.AddRange(employees);
+            if (HttpContext.HasAnyPermission(PermissionCodes.HrManageEmployees, PermissionCodes.HrManageOrganization))
+            {
+                var employees = await _context.Employees
+                    .Where(e => (e.FullName != null && e.FullName.ToLower().Contains(term)) ||
+                                (e.EmployeeCode != null && e.EmployeeCode.ToLower().Contains(term)))
+                    .Take(5)
+                    .Select(e => new SearchResult {
+                        Id = e.Id,
+                        Title = e.FullName ?? "N/A",
+                        Subtitle = $"Mã NV: {e.EmployeeCode}",
+                        Type = "Nhân sự",
+                        Url = $"/Employees/Details/{e.Id}",
+                        Icon = "bi-people-fill"
+                    })
+                    .ToListAsync();
+                results.AddRange(employees);
+            }
 
-            // 2. Search KPIs
-            var kpis = await _context.KPIs
-                .Where(k => k.KPIName != null && k.KPIName.ToLower().Contains(term) && k.IsActive == true)
-                .Take(5)
-                .Select(k => new SearchResult {
-                    Id = k.Id,
-                    Title = k.KPIName ?? "N/A",
-                    Subtitle = "Chỉ số hiệu suất",
-                    Type = "KPI",
-                    Url = "/KPIs", // Link to Index as there's no unique detail page for some or it's filtered
-                    Icon = "bi-speedometer2"
-                })
-                .ToListAsync();
-            results.AddRange(kpis);
+            if (HttpContext.HasAnyPermission(PermissionCodes.ManagerAssignKpi, PermissionCodes.EmployeeUpdateKpiProgress))
+            {
+                var kpiQuery = _context.KPIs
+                    .Where(k => k.KPIName != null && k.KPIName.ToLower().Contains(term) && k.IsActive == true)
+                    .AsQueryable();
 
-            // 3. Search OKRs
-            var okrs = await _context.OKRs
-                .Where(o => o.ObjectiveName != null && o.ObjectiveName.ToLower().Contains(term) && o.IsActive == true)
-                .Take(5)
-                .Select(o => new SearchResult {
-                    Id = o.Id,
-                    Title = o.ObjectiveName ?? "N/A",
-                    Subtitle = "Mục tiêu then chốt",
-                    Type = "OKR",
-                    Url = "/OKRs",
-                    Icon = "bi-bullseye"
-                })
-                .ToListAsync();
-            results.AddRange(okrs);
+                if (!HttpContext.HasPermission(PermissionCodes.ManagerAssignKpi))
+                {
+                    if (currentEmployeeId.HasValue)
+                    {
+                        var assignedKpiIds = await _context.KPI_Employee_Assignments
+                            .Where(a => a.EmployeeId == currentEmployeeId.Value)
+                            .Select(a => a.KPIId)
+                            .ToListAsync();
 
-            // 4. Search Products (Thiết bị/Sản phẩm)
-            var products = await _context.Products
-                .Where(p => (p.ProductName != null && p.ProductName.ToLower().Contains(term)) || 
-                            (p.ProductCode != null && p.ProductCode.ToLower().Contains(term)))
-                .Take(5)
-                .Select(p => new SearchResult {
-                    Id = p.Id,
-                    Title = p.ProductName ?? "N/A",
-                    Subtitle = $"Mã hiệu: {p.ProductCode}",
-                    Type = "Sản phẩm",
-                    Url = $"/Products", // Assuming Products/Index or similar
-                    Icon = "bi-box-seam"
-                })
-                .ToListAsync();
-            results.AddRange(products);
+                        kpiQuery = kpiQuery.Where(k => assignedKpiIds.Contains(k.Id) || k.AssignerId == currentEmployeeId.Value);
+                    }
+                    else
+                    {
+                        kpiQuery = kpiQuery.Where(_ => false);
+                    }
+                }
+
+                var kpis = await kpiQuery
+                    .Take(5)
+                    .Select(k => new SearchResult {
+                        Id = k.Id,
+                        Title = k.KPIName ?? "N/A",
+                        Subtitle = "Chỉ số hiệu suất",
+                        Type = "KPI",
+                        Url = $"/KPIs/Details/{k.Id}",
+                        Icon = "bi-speedometer2"
+                    })
+                    .ToListAsync();
+                results.AddRange(kpis);
+            }
+
+            if (HttpContext.HasAnyPermission(PermissionCodes.ManagerCreateOkr, PermissionCodes.EmployeeUpdateKpiProgress))
+            {
+                var okrQuery = _context.OKRs
+                    .Where(o => o.ObjectiveName != null && o.ObjectiveName.ToLower().Contains(term) && o.IsActive == true)
+                    .AsQueryable();
+
+                if (!HttpContext.HasPermission(PermissionCodes.ManagerCreateOkr))
+                {
+                    if (currentEmployeeId.HasValue)
+                    {
+                        var allocatedOkrIds = await _context.OKR_Employee_Allocations
+                            .Where(a => a.EmployeeId == currentEmployeeId.Value)
+                            .Select(a => a.OKRId)
+                            .ToListAsync();
+
+                        okrQuery = okrQuery.Where(o => allocatedOkrIds.Contains(o.Id) || o.CreatedById == currentEmployeeId.Value);
+                    }
+                    else
+                    {
+                        okrQuery = okrQuery.Where(_ => false);
+                    }
+                }
+
+                var okrs = await okrQuery
+                    .Take(5)
+                    .Select(o => new SearchResult {
+                        Id = o.Id,
+                        Title = o.ObjectiveName ?? "N/A",
+                        Subtitle = "Mục tiêu then chốt",
+                        Type = "OKR",
+                        Url = "/OKRs",
+                        Icon = "bi-bullseye"
+                    })
+                    .ToListAsync();
+                results.AddRange(okrs);
+            }
 
             return Json(results);
         }

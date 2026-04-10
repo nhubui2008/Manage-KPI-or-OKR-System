@@ -13,6 +13,7 @@ using System.IO;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
+    [HasPermission(PermissionCodes.HrViewEvaluationReports)]
     public class EvaluationReportsController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -24,18 +25,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Index(int? departmentId, string cycle)
         {
-            try
-            {
-                // Đảm bảo bảng EvaluationReportSummaries tồn tại (fix lỗi schema mismatch)
-                await _context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'EvaluationReportSummaries') CREATE TABLE EvaluationReportSummaries (Id int IDENTITY(1,1) PRIMARY KEY, DepartmentId int, Cycle nvarchar(50), Content nvarchar(max), UpdatedAt datetime, UpdatedById int);");
-            }
-            catch { }
-
-            // Default to Sales if not specified (per user request example)
             if (!departmentId.HasValue)
             {
-                var salesDept = await _context.Departments.FirstOrDefaultAsync(d => d.DepartmentName != null && d.DepartmentName.Contains("Sale"));
-                departmentId = salesDept?.Id ?? 0;
+                departmentId = await _context.Departments
+                    .Where(d => d.IsActive == true && _context.OKR_Department_Allocations.Any(a => a.DepartmentId == d.Id))
+                    .OrderBy(d => d.DepartmentName)
+                    .Select(d => (int?)d.Id)
+                    .FirstOrDefaultAsync() ?? 0;
             }
 
             if (string.IsNullOrEmpty(cycle))
@@ -96,7 +92,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
+        [HasPermission(PermissionCodes.HrViewEvaluationReports)]
         public async Task<IActionResult> SaveDirectorSummary(int departmentId, string cycle, string content)
         {
             var summary = await _context.EvaluationReportSummaries
@@ -124,13 +120,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return Ok(new { success = true, message = "Lưu nhận xét thành công!" });
         }
         [HttpGet]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
+        [HasPermission(PermissionCodes.HrViewEvaluationReports)]
         public async Task<IActionResult> ExportExcel(int? departmentId, string cycle)
         {
             if (!departmentId.HasValue)
             {
-                var salesDept = await _context.Departments.FirstOrDefaultAsync(d => d.DepartmentName != null && d.DepartmentName.Contains("Sale"));
-                departmentId = salesDept?.Id ?? 0;
+                departmentId = await _context.Departments
+                    .Where(d => d.IsActive == true && _context.OKR_Department_Allocations.Any(a => a.DepartmentId == d.Id))
+                    .OrderBy(d => d.DepartmentName)
+                    .Select(d => (int?)d.Id)
+                    .FirstOrDefaultAsync() ?? 0;
             }
 
             if (string.IsNullOrEmpty(cycle))

@@ -7,7 +7,8 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
-    [Authorize(Roles = "Administrator,Admin,Manager,HR,hr,Employee,employee")]
+    [Authorize]
+    [HasPermission(PermissionCodes.HrManageBonusRules)]
     public class BonusRulesController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -29,8 +30,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // GET: BonusRules/Create
         public async Task<IActionResult> Create()
         {
-            if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
-
             ViewBag.AllRanks = await _context.GradingRanks.ToListAsync();
             return View();
         }
@@ -39,8 +38,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(BonusRule model, string rankCode, string rankDescription)
         {
-            if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
-
             // Handle rank derivation if not provided via RankId
             if (model.RankId == null || model.RankId <= 0)
             {
@@ -92,8 +89,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(BonusRule model)
         {
-            if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
-
             if (ModelState.IsValid)
             {
                 // Check if another rule already exists for this RankId
@@ -122,8 +117,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
-            if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
-
             var rule = await _context.BonusRules.FindAsync(id);
             if (rule != null)
             {

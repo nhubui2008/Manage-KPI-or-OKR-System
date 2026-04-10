@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("ADMIN_MANAGE_ROLES")]
+    [HasPermission(PermissionCodes.AdminManageRoles)]
     public class RolesController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -84,7 +84,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var role = await _context.Roles.FindAsync(id);
             if (role == null) return NotFound();
 
-            var allPermissions = await _context.Permissions.ToListAsync();
+            var corePermissionCodes = GetCorePermissions().Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var allPermissions = await _context.Permissions
+                .Where(p => p.PermissionCode != null && corePermissionCodes.Contains(p.PermissionCode))
+                .OrderBy(p => p.PermissionCode)
+                .ToListAsync();
             var rolePermissionIds = await _context.Role_Permissions
                 .Where(rp => rp.RoleId == id)
                 .Select(rp => rp.PermissionId)
@@ -120,32 +124,34 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         public async Task<IActionResult> SyncPermissions()
         {
-            var codes = new[] {
-                "MANAGER_CREATE_OKR", "MANAGER_ASSIGN_KPI", "EMPLOYEE_UPDATE_KPI_PROGRESS",
-                "HR_EVALUATE_KPI", "HR_MANAGE_EMPLOYEES", "SALES_CREATE_ORDERS",
-                "SALES_MANAGE_CUSTOMERS", "SALES_CREATE_INVOICES", "WAREHOUSE_MANAGE_PRODUCTS",
-                "WAREHOUSE_IMPORT_INVENTORY", "WAREHOUSE_VIEW_INVENTORY", "HR_APPROVE_KPI",
-                "DELIVERY_UPDATE_STATUS", "DELIVERY_CREATE_NOTES", "ADMIN_VIEW_AUDIT_LOGS",
-                "ADMIN_MANAGE_ROLES", "ADMIN_MANAGE_USERS"
-            };
+            var permissions = GetCorePermissions();
 
             int addedCount = 0;
-            foreach (var code in codes)
+            int updatedCount = 0;
+            foreach (var permission in permissions)
             {
-                if (!await _context.Permissions.AnyAsync(p => p.PermissionCode == code.Trim()))
+                var existingPermission = await _context.Permissions
+                    .FirstOrDefaultAsync(p => p.PermissionCode == permission.Key);
+
+                if (existingPermission == null)
                 {
                     _context.Permissions.Add(new Permission { 
-                        PermissionCode = code.Trim(), 
-                        PermissionName = code.Replace("_", " ").ToLower() 
+                        PermissionCode = permission.Key,
+                        PermissionName = permission.Value
                     });
                     addedCount++;
                 }
+                else if (!string.Equals(existingPermission.PermissionName, permission.Value, StringComparison.Ordinal))
+                {
+                    existingPermission.PermissionName = permission.Value;
+                    updatedCount++;
+                }
             }
 
-            if (addedCount > 0)
+            if (addedCount > 0 || updatedCount > 0)
             {
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Đã đồng bộ {addedCount} mã quyền vào hệ thống!";
+                TempData["SuccessMessage"] = $"Đã đồng bộ quyền thành công. Thêm mới: {addedCount}, cập nhật tên hiển thị: {updatedCount}.";
             }
             else
             {
@@ -153,6 +159,26 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        private static Dictionary<string, string> GetCorePermissions()
+        {
+            return new Dictionary<string, string>
+            {
+                [PermissionCodes.AdminManageUsers] = "Quản lý tài khoản hệ thống",
+                [PermissionCodes.AdminManageRoles] = "Quản lý nhóm quyền",
+                [PermissionCodes.AdminViewAuditLogs] = "Xem nhật ký hệ thống",
+                [PermissionCodes.HrManageEmployees] = "Quản lý nhân viên",
+                [PermissionCodes.HrManageOrganization] = "Quản lý phòng ban và chức vụ",
+                [PermissionCodes.HrApproveKpi] = "Quản lý kỳ đánh giá",
+                [PermissionCodes.HrEvaluateKpi] = "Tạo và cập nhật kết quả đánh giá",
+                [PermissionCodes.HrViewEvaluationReports] = "Xem báo cáo đánh giá",
+                [PermissionCodes.HrManageBonusRules] = "Quản lý quy tắc thưởng",
+                [PermissionCodes.ManagerManageMissionVision] = "Quản lý sứ mệnh và tầm nhìn",
+                [PermissionCodes.ManagerCreateOkr] = "Tạo và quản lý OKR",
+                [PermissionCodes.ManagerAssignKpi] = "Tạo, phân bổ và duyệt KPI",
+                [PermissionCodes.EmployeeUpdateKpiProgress] = "Xem KPI/OKR được giao và thực hiện check-in"
+            };
         }
     }
 }

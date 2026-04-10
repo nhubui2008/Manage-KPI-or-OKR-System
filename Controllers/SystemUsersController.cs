@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("ADMIN_MANAGE_USERS")]
+    [HasPermission(PermissionCodes.AdminManageUsers)]
     public class SystemUsersController : Controller
     {
         private readonly MiniERPDbContext _context;

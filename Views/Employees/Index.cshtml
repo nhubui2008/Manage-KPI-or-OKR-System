@@ -4,6 +4,7 @@
     var assignments = ViewBag.Assignments as Dictionary<int, Manage_KPI_or_OKR_System.Models.EmployeeAssignment> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.EmployeeAssignment>();
     var departments = ViewBag.Departments as Dictionary<int, string> ?? new Dictionary<int, string>();
     var positions = ViewBag.Positions as Dictionary<int, string> ?? new Dictionary<int, string>();
+    bool canManageEmployees = Context.HasPermission(PermissionCodes.HrManageEmployees);
 }
 
 <div class="container-fluid px-0">
@@ -19,7 +20,7 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2">
-            @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
+            @if (canManageEmployees)
             {
                 <a asp-action="ExportReport" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-isActive="@ViewBag.CurrentStatus" asp-route-departmentId="@ViewBag.CurrentDepartment" class="btn-outline-custom text-success border-success d-flex align-items-center" title="Xuất báo cáo nhân sự">
                     <i class="bi bi-file-earmark-arrow-down me-1"></i> Xuất báo cáo NS
@@ -167,7 +168,7 @@
                                             <td>
                                                 <div class="action-btns justify-content-end">
                                                     <a asp-action="Details" asp-route-id="@emp.Id" class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
-                                                    @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
+                                                    @if (canManageEmployees)
                                                     {
                                                         <a asp-action="Edit" asp-route-id="@emp.Id" class="action-btn" title="Chỉnh sửa thông tin"><i class="bi bi-pencil"></i></a>
                                                         @if (emp.IsActive == true)
