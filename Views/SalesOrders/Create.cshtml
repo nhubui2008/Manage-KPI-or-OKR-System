@@ -4,6 +4,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
     var customers = ViewBag.Customers as List<Manage_KPI_or_OKR_System.Models.Customer> ?? new List<Manage_KPI_or_OKR_System.Models.Customer>();
     var employees = ViewBag.Employees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
+    var orderStatuses = ViewBag.OrderStatuses as List<string> ?? new List<string> { " Draft", "Confirmed", "Shipping", "Completed" };
 }
 
 <div class="page-content">
@@ -140,10 +141,10 @@
                                     <div class="input-wrapper">
                                         <i class="bi bi-toggle-on"></i>
                                         <select asp-for="Status" class="form-select shadow-sm">
-                                            <option value="Draft">Bản nháp</option>
-                                            <option value="Confirmed">Đã xác nhận</option>
-                                            <option value="Shipping">Đang giao</option>
-                                            <option value="Completed">Hoàn thành</option>
+                                            @foreach (var stText in orderStatuses)
+                                            {
+                                                <option value="@stText">@stText</option>
+                                            }
                                         </select>
                                     </div>
                                     <span asp-validation-for="Status" class="text-danger small mt-1 d-block"></span>

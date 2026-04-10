@@ -102,6 +102,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.Periods = periods;
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
+            ViewBag.KPITypes = await _context.KPITypes.OrderBy(t => t.Id).ToListAsync();
 
             return View(kpis);
         }

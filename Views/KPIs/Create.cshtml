@@ -3,6 +3,7 @@
     ViewData["Title"] = "Thêm KPI Mới";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var periodsDict = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var kpiTypesList = ViewBag.KPITypes as List<Manage_KPI_or_OKR_System.Models.KPIType> ?? new List<Manage_KPI_or_OKR_System.Models.KPIType>();
 }
 
 <div class="page-content">
@@ -61,8 +62,11 @@
                                     <div class="input-wrapper">
                                         <i class="bi bi-tags"></i>
                                         <select name="kpi.KPITypeId" id="kpiTypeSelect" class="form-select shadow-sm" required>
-                                            <option value="1">Kết quả</option>
-                                            <option value="2">Hành vi</option>
+                                            <option value="">-- Chọn loại KPI --</option>
+                                            @foreach (var t in kpiTypesList)
+                                            {
+                                                <option value="@t.Id">@t.TypeName</option>
+                                            }
                                         </select>
                                     </div>
                                 </div>

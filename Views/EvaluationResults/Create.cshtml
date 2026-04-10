@@ -5,6 +5,7 @@
     var allEmployees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
     var allPeriods = ViewBag.AllPeriods as List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod> ?? new List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod>();
     var allRanks = ViewBag.AllRanks as List<Manage_KPI_or_OKR_System.Models.GradingRank> ?? new List<Manage_KPI_or_OKR_System.Models.GradingRank>();
+    var classificationsList = ViewBag.Classifications as List<string> ?? new List<string> { "Xuất sắc", "Giỏi", "Khá", "Trung bình", "Yếu" };
 }
 
 <div class="page-content">
@@ -123,11 +124,11 @@
                                     <div class="input-wrapper">
                                         <i class="bi bi-bar-chart-steps"></i>
                                         <select asp-for="Classification" class="form-select shadow-sm">
-                                            <option value="Xuất sắc">Xuất sắc</option>
-                                            <option value="Giỏi">Giỏi</option>
-                                            <option value="Khá">Khá</option>
-                                            <option value="Trung bình">Trung bình</option>
-                                            <option value="Yếu">Yếu</option>
+                                            <option value="">-- Chọn phân loại --</option>
+                                            @foreach (var cls in classificationsList)
+                                            {
+                                                <option value="@cls">@cls</option>
+                                            }
                                         </select>
                                     </div>
                                 </div>

@@ -49,7 +49,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Ranks = ranks;
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
-            ViewBag.AllRanks = await _context.GradingRanks.ToListAsync();
+            var allRanks = await _context.GradingRanks.ToListAsync();
+            ViewBag.AllRanks = allRanks;
+            ViewBag.Classifications = allRanks.Where(r => !string.IsNullOrEmpty(r.Description))
+                                              .Select(r => r.Description)
+                                              .Distinct()
+                                              .ToList();
 
             return View(results);
         }
@@ -62,7 +67,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
-            ViewBag.AllRanks = await _context.GradingRanks.ToListAsync();
+            var allRanks = await _context.GradingRanks.ToListAsync();
+            ViewBag.AllRanks = allRanks;
+            ViewBag.Classifications = allRanks.Where(r => !string.IsNullOrEmpty(r.Description))
+                                              .Select(r => r.Description)
+                                              .Distinct()
+                                              .ToList();
             return View();
         }
 
@@ -127,7 +137,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
-            ViewBag.AllRanks = await _context.GradingRanks.ToListAsync();
+            var allRanks = await _context.GradingRanks.ToListAsync();
+            ViewBag.AllRanks = allRanks;
+            ViewBag.Classifications = allRanks.Where(r => !string.IsNullOrEmpty(r.Description))
+                                              .Select(r => r.Description)
+                                              .Distinct()
+                                              .ToList();
 
             return View(model);
         }

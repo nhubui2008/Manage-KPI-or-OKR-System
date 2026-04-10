@@ -6,6 +6,8 @@
     var assignments = ViewBag.Assignments as Dictionary<int, List<int>> ?? new Dictionary<int, List<int>>();
     var employeesDict = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
     var periodsDict = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var kpiTypesList = ViewBag.KPITypes as List<Manage_KPI_or_OKR_System.Models.KPIType> ?? new List<Manage_KPI_or_OKR_System.Models.KPIType>();
+    var kpiTypesDict = kpiTypesList.ToDictionary(t => t.Id, t => t.TypeName ?? "N/A");
 }
 
 <div class="container-fluid px-0">
@@ -132,7 +134,7 @@
                                         <div>
                                             <div class="fw-bold text-dark mb-1">@kpi.KPIName</div>
                                             <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem;">
-                                                <span class="badge bg-light text-secondary border">@(kpi.KPITypeId == 1 ? "Kết quả" : "Hành vi")</span>
+                                                <span class="badge bg-light text-secondary border">@(kpi.KPITypeId.HasValue && kpiTypesDict.ContainsKey(kpi.KPITypeId.Value) ? kpiTypesDict[kpi.KPITypeId.Value] : "N/A")</span>
                                             </div>
                                         </div>
                                     </div>
@@ -277,8 +279,11 @@
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Phân loại KPI <span class="text-danger">*</span></label>
                             <select name="kpi.KPITypeId" class="form-select" required>
-                                <option value="1">Kết quả</option>
-                                <option value="2">Hành vi</option>
+                                <option value="">-- Chọn loại KPI --</option>
+                                @foreach (var t in kpiTypesList)
+                                {
+                                    <option value="@t.Id">@t.TypeName</option>
+                                }
                             </select>
                         </div>
                         <div class="col-md-6">

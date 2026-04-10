@@ -7,6 +7,7 @@
     var allEmployees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
     var allPeriods = ViewBag.AllPeriods as List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod> ?? new List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod>();
     var allRanks = ViewBag.AllRanks as List<Manage_KPI_or_OKR_System.Models.GradingRank> ?? new List<Manage_KPI_or_OKR_System.Models.GradingRank>();
+    var classificationsList = ViewBag.Classifications as List<string> ?? new List<string> { "Xuất sắc", "Giỏi", "Khá", "Trung bình", "Yếu" };
     
     bool canManage = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR");
 }
@@ -77,7 +78,12 @@
                     <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng</label><select name="RankId" class="form-select">
                         <option value="">-- Chọn hạng --</option>@foreach (var rk in allRanks){<option value="@rk.Id">@rk.RankCode - @rk.Description</option>}</select></div>
                     <div class="mb-3"><label class="form-label fw-semibold">Phân loại</label><select name="Classification" class="form-select">
-                        <option value="Xuất sắc">Xuất sắc</option><option value="Giỏi">Giỏi</option><option value="Khá">Khá</option><option value="Trung bình">Trung bình</option><option value="Yếu">Yếu</option></select></div>
+                        <option value="">-- Chọn phân loại --</option>
+                        @foreach (var cls in classificationsList)
+                        {
+                            <option value="@cls">@cls</option>
+                        }
+                        </select></div>
                 </div>
                 <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Lưu kết quả</button></div></form>
             </div></div>
@@ -97,7 +103,12 @@
                     <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng</label><select name="RankId" id="editRankId" class="form-select">
                         <option value="">-- Chọn hạng --</option>@foreach (var rk in allRanks){<option value="@rk.Id">@rk.RankCode - @rk.Description</option>}</select></div>
                     <div class="mb-3"><label class="form-label fw-semibold">Phân loại</label><select name="Classification" id="editClassification" class="form-select">
-                        <option value="Xuất sắc">Xuất sắc</option><option value="Giỏi">Giỏi</option><option value="Khá">Khá</option><option value="Trung bình">Trung bình</option><option value="Yếu">Yếu</option></select></div>
+                        <option value="">-- Chọn phân loại --</option>
+                        @foreach (var cls in classificationsList)
+                        {
+                            <option value="@cls">@cls</option>
+                        }
+                        </select></div>
                 </div>
                 <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Cập nhật kết quả</button></div></form>
             </div></div>

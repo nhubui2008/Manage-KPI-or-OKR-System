@@ -5,6 +5,7 @@
     var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
     var allCustomers = ViewBag.AllCustomers as List<Manage_KPI_or_OKR_System.Models.Customer> ?? new List<Manage_KPI_or_OKR_System.Models.Customer>();
     var allEmployees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
+    var orderStatuses = ViewBag.OrderStatuses as List<string> ?? new List<string> { "Chờ xác nhận", "Đang xử lý", "Đang giao", "Hoàn thành", "Đã hủy" };
 }
 @if (TempData["SuccessMessage"] != null)
 {<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
@@ -28,7 +29,20 @@
             <div class="content-card w-100"><div class="card-body-custom">
     <div class="toolbar"><div class="toolbar-left">
         <form method="get" class="d-flex gap-2"><div class="toolbar-search"><i class="bi bi-search"></i><input type="text" name="searchString" value="@ViewBag.CurrentSearch" placeholder="Tìm theo mã đơn..."></div>
-        <select name="status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="Chờ xác nhận">Chờ xác nhận</option><option value="Đang xử lý">Đang xử lý</option><option value="Đang giao">Đang giao</option><option value="Hoàn thành">Hoàn thành</option><option value="Đã hủy">Đã hủy</option></select>
+        <select name="status" class="filter-select">
+            <option value="">Tất cả trạng thái</option>
+            @foreach (var stText in orderStatuses)
+            {
+                if (ViewBag.CurrentStatus == stText)
+                {
+                    <option value="@stText" selected>@stText</option>
+                }
+                else
+                {
+                    <option value="@stText">@stText</option>
+                }
+            }
+        </select>
         <button type="submit" class="btn-primary-custom" style="padding: 0 16px;"><i class="bi bi-funnel"></i></button></form>
     </div></div>
 

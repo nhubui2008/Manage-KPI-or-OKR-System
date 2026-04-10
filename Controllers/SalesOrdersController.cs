@@ -40,6 +40,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Employees = employees;
             ViewBag.AllCustomers = await _context.Customers.Where(c => c.IsActive == true).ToListAsync();
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.OrderStatuses = await _context.Statuses.Where(s => s.StatusType == "SalesOrder" && s.StatusName != null).Select(s => s.StatusName).ToListAsync();
 
             // Stats
             ViewBag.TotalOrders = await _context.SalesOrders.CountAsync(s => s.IsActive == true);
@@ -55,6 +56,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             ViewBag.Customers = await _context.Customers.Where(c => c.IsActive == true).ToListAsync();
             ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.OrderStatuses = await _context.Statuses.Where(s => s.StatusType == "SalesOrder" && s.StatusName != null).Select(s => s.StatusName).ToListAsync();
             return View();
         }
 
@@ -75,6 +77,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             ViewBag.Customers = await _context.Customers.Where(c => c.IsActive == true).ToListAsync();
             ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.OrderStatuses = await _context.Statuses.Where(s => s.StatusType == "SalesOrder" && s.StatusName != null).Select(s => s.StatusName).ToListAsync();
             return View(model);
         }
 
