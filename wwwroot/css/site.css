@@ -1562,6 +1562,63 @@ html.sidebar-expanded .main-content {
     box-shadow: 0 4px 12px rgba(26, 115, 232, 0.25);
 }
 
+.okr-index-page .okr-status-badge,
+.okr-index-page .okr-strategic-badge,
+.okr-index-page .okr-kr-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 800;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.okr-index-page .okr-status-success {
+    background-color: #e6f4ea !important;
+    color: #0b6f3a !important;
+    border-color: rgba(15, 157, 88, 0.28) !important;
+}
+
+.okr-index-page .okr-status-primary {
+    background-color: #e8f0fe !important;
+    color: #1557b0 !important;
+    border-color: rgba(26, 115, 232, 0.28) !important;
+}
+
+.okr-index-page .okr-status-warning {
+    background-color: #fff4d6 !important;
+    color: #7a4f00 !important;
+    border-color: rgba(242, 153, 0, 0.34) !important;
+}
+
+.okr-index-page .okr-status-danger {
+    background-color: #fce8e6 !important;
+    color: #a50e0e !important;
+    border-color: rgba(217, 48, 37, 0.28) !important;
+}
+
+.okr-index-page .okr-strategic-badge {
+    background-color: #e8f0fe !important;
+    color: #1557b0 !important;
+    border-color: rgba(26, 115, 232, 0.28) !important;
+}
+
+.okr-index-page .okr-strategic-badge i {
+    color: #1a73e8 !important;
+}
+
+.okr-index-page .okr-meta-text,
+.okr-index-page .okr-progress-label {
+    color: #4b5a6a !important;
+    font-weight: 600;
+}
+
+.okr-index-page .okr-kr-status-badge {
+    background-color: #e8f0fe !important;
+    color: #1557b0 !important;
+    border-color: rgba(26, 115, 232, 0.28) !important;
+}
+
 /* --- GLOBAL: REMOVE ALL TEXT UNDERLINES --- */
 * {
     text-decoration: none !important;

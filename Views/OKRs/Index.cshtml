@@ -7,7 +7,7 @@
     var currentFilter = ViewData["CurrentFilter"] as string;
 }
 
-<div class="container-fluid px-0">
+<div class="container-fluid px-0 okr-index-page">
     
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -86,7 +86,10 @@
                                 int okrProgressInt = (int)okr.TotalProgress;
                                 
                                 string okrProgressColor = ProgressHelper.GetProgressColorClass(okrProgressInt);
-                                string okrTextClass = ProgressHelper.GetProgressTextColorClass(okrProgressInt);
+                                string okrBadgeTone = okrProgressInt >= 100 ? "okr-status-success" :
+                                                      okrProgressInt >= 70 ? "okr-status-primary" :
+                                                      okrProgressInt >= 40 ? "okr-status-warning" :
+                                                      "okr-status-danger";
 
                                 <div class="accordion-item mb-3 border-0 shadow-sm rounded" style="overflow: visible;">
                                     <h2 class="accordion-header position-relative" id="heading-@index">
@@ -95,19 +98,19 @@
                                             
                                             <div class="d-flex flex-column flex-grow-1 pe-4">
                                                 <div class="d-flex align-items-center gap-2 mb-2">
-                                                    <span class="badge @okrProgressColor bg-opacity-10 @okrTextClass rounded-pill px-2">Objective (O)</span>
-                                                    @if(okr.OKRTypeId == 1){<span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2"><i class="bi bi-star-fill me-1"></i>Chiến lược công ty</span>}
+                                                    <span class="badge okr-status-badge @okrBadgeTone rounded-pill px-2">Objective (O)</span>
+                                                    @if(okr.OKRTypeId == 1){<span class="badge okr-strategic-badge rounded-pill px-2"><i class="bi bi-star-fill me-1"></i>Chiến lược công ty</span>}
                                                     <h5 class="mb-0 fw-bold fs-6 text-dark">@okr.ObjectiveName</h5>
                                                 </div>
                                                 
                                                 <div class="d-flex align-items-center gap-4">
-                                                    <div class="text-muted" style="font-size: 0.8rem;">
+                                                    <div class="text-muted okr-meta-text" style="font-size: 0.8rem;">
                                                         <i class="bi bi-calendar3"></i> @Html.Raw(okr.Cycle ?? "Chưa rõ chu kỳ")
                                                     </div>
                                                     
                                                     <div class="flex-grow-1" style="max-width: 400px;">
                                                         <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                                            <span class="text-muted">Tiến độ chung:</span>
+                                                            <span class="text-muted okr-progress-label">Tiến độ chung:</span>
                                                             <span class="fw-bold">@okrProgressInt%</span>
                                                         </div>
                                                         <div class="progress" style="height: 6px; border-radius: 10px;">
@@ -165,7 +168,7 @@
                                                     <div class="d-flex align-items-center justify-content-between py-3 border-bottom border-light">
                                                         <div class="ps-4" style="flex: 1;">
                                                             <div class="fw-medium text-dark mb-1">@krIndex. @kr.KeyResultName</div>
-                                                            <div class="text-muted" style="font-size: 0.75rem;">Mục tiêu: @String.Format("{0:N0}", kr.TargetValue) @kr.Unit</div>
+                                                            <div class="text-muted okr-meta-text" style="font-size: 0.75rem;">Mục tiêu: @String.Format("{0:N0}", kr.TargetValue) @kr.Unit</div>
                                                         </div>
 
                                                         <div class="d-flex align-items-center gap-4" style="width: 45%;">
@@ -178,7 +181,7 @@
                                                                     <div class="progress-bar @krColor" role="progressbar" style="width: @krPercent%" aria-valuenow="@krPercent" aria-valuemin="0" aria-valuemax="100"></div>
                                                                 </div>
                                                                 <div class="d-flex justify-content-between" style="font-size: 0.7rem;">
-                                                                    <span class="badge badge-pastel-pink px-2 py-1">@ProgressHelper.GetResultStatus(kr.Progress)</span>
+                                                                    <span class="badge badge-pastel-pink okr-kr-status-badge px-2 py-1">@ProgressHelper.GetResultStatus(kr.Progress)</span>
                                                                     @if(kr.IsInverse){<span class="text-info"><i class="bi bi-info-circle me-1"></i>Chỉ tiêu giảm thiểu</span>}
                                                                 </div>
                                                             </div>
