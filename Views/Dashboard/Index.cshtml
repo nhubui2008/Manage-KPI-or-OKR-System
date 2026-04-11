@@ -1,17 +1,50 @@
+@using Manage_KPI_or_OKR_System.Models
 @{
     ViewData["Title"] = "Dashboard";
     var totalEmployees = (int)(ViewBag.TotalEmployees ?? 0);
     var totalOKRs = (int)(ViewBag.TotalOKRs ?? 0);
     var totalKPIs = (int)(ViewBag.TotalKPIs ?? 0);
-    // Removed totalRevenue as Sales is now out of scope.
     var totalCheckIns = (int)(ViewBag.TotalCheckIns ?? 0);
-    var recentCheckIns = ViewBag.RecentCheckIns as List<Manage_KPI_or_OKR_System.Models.KPICheckIn> ?? new List<Manage_KPI_or_OKR_System.Models.KPICheckIn>();
+    var totalDepartments = (int)(ViewBag.TotalDepartments ?? 0);
+    var totalPositions = (int)(ViewBag.TotalPositions ?? 0);
+    var recentCheckIns = ViewBag.RecentCheckIns as List<KPICheckIn> ?? new List<KPICheckIn>();
     var employeeNames = ViewBag.EmployeeNames as Dictionary<int, string> ?? new Dictionary<int, string>();
     var kpiNames = ViewBag.KPINames as Dictionary<int, string> ?? new Dictionary<int, string>();
     
-    // Giả lập dữ liệu % tiến độ (Bạn có thể truyền từ Controller sang bằng ViewBag)
-    var kpiAchievementRate = ViewBag.KPIAchievementRate ?? 85.5; 
-    var okrProgressRate = ViewBag.OKRProgressRate ?? 68.0;
+    // DỮ LIỆU THỰC từ Controller
+    var kpiAchievementRate = ViewBag.KPIAchievementRate ?? 0.0;
+    var okrProgressRate = ViewBag.OKRProgressRate ?? 0.0;
+    
+    // Selected period
+    var selectedPeriod = ViewBag.SelectedPeriod as EvaluationPeriod;
+    var allPeriods = ViewBag.AllPeriods as List<EvaluationPeriod> ?? new List<EvaluationPeriod>();
+
+    // Top employees
+    var topEmployees = ViewBag.TopEmployees as IEnumerable<dynamic>;
+
+    // Helpers
+    string GetKpiStatusColor(double rate) {
+        if (rate >= 80) return "success";
+        if (rate >= 50) return "warning";
+        return "danger";
+    }
+    string GetKpiStatusText(double rate) {
+        if (rate >= 80) return "Tốt";
+        if (rate >= 50) return "Trung bình";
+        if (rate > 0) return "Cần cải thiện";
+        return "Chưa có dữ liệu";
+    }
+    string GetOkrStatusColor(double rate) {
+        if (rate >= 70) return "success";
+        if (rate >= 40) return "warning";
+        return "danger";
+    }
+    string GetOkrStatusText(double rate) {
+        if (rate >= 70) return "Đúng tiến độ";
+        if (rate >= 40) return "Đang bám sát";
+        if (rate > 0) return "Chậm tiến độ";
+        return "Chưa có dữ liệu";
+    }
 }
 
 <div class="page-header mb-4 align-items-end">
@@ -26,24 +59,34 @@
     <div class="ms-auto">
         <form method="get" asp-action="Index" class="d-flex align-items-center gap-2 bg-white p-1 rounded shadow-sm border">
             <span class="ps-2 text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Kỳ báo cáo:</span>
-            <select name="reportingPeriod" class="form-select form-select-sm border-0 fw-bold text-primary" style="width: 160px; outline: none; box-shadow: none;" onchange="this.form.submit()">
-                <option value="Quý 1 - 2026" selected="@(ViewBag.SelectedPeriod == "Quý 1 - 2026" ? "selected" : null)">Quý 1 - 2026</option>
-                <option value="Quý 2 - 2026" selected="@(ViewBag.SelectedPeriod == "Quý 2 - 2026" ? "selected" : null)">Quý 2 - 2026</option>
-                <option value="Năm 2026" selected="@(ViewBag.SelectedPeriod == "Năm 2026" ? "selected" : null)">Năm 2026</option>
+            <select name="periodId" class="form-select form-select-sm border-0 fw-bold text-primary" style="width: 220px; outline: none; box-shadow: none;" onchange="this.form.submit()">
+                <option value="">-- Tất cả --</option>
+                @foreach (var period in allPeriods)
+                {
+                    var isSelected = selectedPeriod?.Id == period.Id;
+                    <option value="@period.Id" selected="@(isSelected ? "selected" : null)">
+                        @period.PeriodName
+                        @if (period.StartDate.HasValue && period.EndDate.HasValue)
+                        {
+                            <text> (@period.StartDate.Value.ToString("dd/MM/yy") - @period.EndDate.Value.ToString("dd/MM/yy"))</text>
+                        }
+                    </option>
+                }
             </select>
             <button type="submit" class="btn btn-sm btn-primary-custom rounded px-2" style="padding: 0.25rem 0.6rem;">
-                <i class="bi bi-search"></i>
+                <i class="bi bi-funnel"></i>
             </button>
         </form>
     </div>
 </div>
 
+@* ============ STAT CARDS ============ *@
 <div class="row g-4 mb-4">
     <div class="col-12 col-sm-6 col-xl-3">
         <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-primary border-4">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Tổng KPI Đã Đạt</div>
+                    <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Tỉ lệ KPI đạt</div>
                     <div class="stat-value h4 mb-0 fw-bold text-dark mt-1">@kpiAchievementRate%</div>
                 </div>
                 <div class="stat-icon text-primary bg-primary bg-opacity-10 p-2 rounded">
@@ -51,8 +94,10 @@
                 </div>
             </div>
             <div class="mt-2">
-                <span class="text-success fw-bold" style="font-size: 0.75rem;"><i class="bi bi-arrow-up"></i> Tốt</span>
-                <span class="text-muted ms-1" style="font-size: 0.75rem;">(Tổng: @totalKPIs mục tiêu)</span>
+                <span class="text-@GetKpiStatusColor((double)kpiAchievementRate) fw-bold" style="font-size: 0.75rem;">
+                    <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> @GetKpiStatusText((double)kpiAchievementRate)
+                </span>
+                <span class="text-muted ms-1" style="font-size: 0.75rem;">(Tổng: @totalKPIs KPI)</span>
             </div>
         </div>
     </div>
@@ -69,7 +114,9 @@
                 </div>
             </div>
             <div class="mt-2">
-                <span class="text-warning fw-bold" style="font-size: 0.75rem;">Đang bám sát</span>
+                <span class="text-@GetOkrStatusColor((double)okrProgressRate) fw-bold" style="font-size: 0.75rem;">
+                    <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> @GetOkrStatusText((double)okrProgressRate)
+                </span>
                 <span class="text-muted ms-1" style="font-size: 0.75rem;">(Tổng: @totalOKRs mục tiêu)</span>
             </div>
         </div>
@@ -92,13 +139,32 @@
         </div>
     </div>
 
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-warning border-4">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Lượt Check-in</div>
+                    <div class="stat-value h4 mb-0 fw-bold text-dark mt-1">@totalCheckIns</div>
+                </div>
+                <div class="stat-icon text-warning bg-warning bg-opacity-10 p-2 rounded">
+                    <i class="bi bi-check2-square fs-4"></i>
+                </div>
+            </div>
+            <div class="mt-2">
+                <span class="text-muted" style="font-size: 0.75rem;">
+                    @if (selectedPeriod != null) { <text>Trong kỳ @selectedPeriod.PeriodName</text> } else { <text>Toàn hệ thống</text> }
+                </span>
+            </div>
+        </div>
+    </div>
 </div>
 
+@* ============ MAIN CHART + RECENT CHECKINS ============ *@
 <div class="row g-4 mb-4">
     <div class="col-lg-8">
         <div class="card shadow-sm h-100 border-0">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-bar-chart-fill text-primary"></i> Tiến độ OKR & KPI Khối Doanh Nghiệp</h5>
+                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-bar-chart-fill text-primary"></i> Xu hướng tiến độ KPI (6 tháng gần nhất)</h5>
             </div>
             <div class="card-body d-flex align-items-center justify-content-center p-4">
                 <div class="w-100" style="position: relative; height: 350px;">
@@ -151,7 +217,8 @@
     </div>
 </div>
 
-<div class="row g-4">
+@* ============ QUICK ACCESS + SYSTEM DETAILS ============ *@
+<div class="row g-4 mb-4">
     <div class="col-lg-6">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white py-3">
@@ -164,6 +231,7 @@
                     <div class="col-6"><a href="/OKRs" class="btn btn-outline-info w-100 py-2"><i class="bi bi-bullseye me-2"></i>Quản lý OKR</a></div>
                     <div class="col-6"><a href="/EvaluationResults" class="btn btn-outline-danger w-100 py-2"><i class="bi bi-award me-2"></i>Đánh giá</a></div>
                     <div class="col-6"><a href="/KPICheckIns" class="btn btn-outline-secondary w-100 py-2"><i class="bi bi-check2-square me-2"></i>Check-in</a></div>
+                    <div class="col-6"><a href="/Departments" class="btn btn-outline-dark w-100 py-2"><i class="bi bi-diagram-3 me-2"></i>Phòng ban</a></div>
                 </div>
             </div>
         </div>
@@ -177,7 +245,11 @@
             <div class="card-body pt-3">
                 <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                     <span class="text-muted"><i class="bi bi-diagram-3 me-2"></i>Phòng ban</span>
-                    <span class="fw-bold">@(ViewBag.TotalDepartments ?? 0)</span>
+                    <span class="fw-bold">@totalDepartments</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="text-muted"><i class="bi bi-person-badge me-2"></i>Chức vụ</span>
+                    <span class="fw-bold">@totalPositions</span>
                 </div>
                 <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                     <span class="text-muted"><i class="bi bi-people me-2"></i>Nhân viên</span>
@@ -191,12 +263,17 @@
                     <span class="text-muted"><i class="bi bi-speedometer2 me-2"></i>KPI đang hoạt động</span>
                     <span class="fw-bold">@totalKPIs</span>
                 </div>
+                <div class="d-flex justify-content-between align-items-center py-2">
+                    <span class="text-muted"><i class="bi bi-check2-square me-2"></i>Lượt Check-in</span>
+                    <span class="fw-bold">@totalCheckIns</span>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-4 mt-2 mb-4">
+@* ============ CHARTS ROW ============ *@
+<div class="row g-4 mb-4">
     <div class="col-lg-6">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white py-3">
@@ -223,9 +300,74 @@
     </div>
 </div>
 
+@* ============ TOP EMPLOYEES ============ *@
+@if (topEmployees != null && topEmployees.Any())
+{
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-trophy-fill text-warning"></i> Top 5 nhân viên hiệu suất cao</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="px-4 py-3" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Xếp hạng</th>
+                                <th class="px-4 py-3" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Nhân viên</th>
+                                <th class="px-4 py-3" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Tiến độ TB (%)</th>
+                                <th class="px-4 py-3" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Lượt Check-in</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int rank = 1; }
+                            @foreach (var emp in topEmployees)
+                            {
+                                var medalIcon = rank switch {
+                                    1 => "🥇",
+                                    2 => "🥈",
+                                    3 => "🥉",
+                                    _ => $"#{rank}"
+                                };
+                                double progress = (double)emp.AvgProgress;
+                                var progressColor = progress >= 100 ? "success" : progress >= 70 ? "primary" : progress >= 40 ? "warning" : "danger";
+                                <tr>
+                                    <td class="px-4 py-3 fw-bold">@medalIcon</td>
+                                    <td class="px-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 0.75rem; font-weight: 700;">
+                                                @(((string)emp.Name)?[0])
+                                            </div>
+                                            <span class="fw-medium">@emp.Name</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 8px; border-radius: 4px;">
+                                                <div class="progress-bar bg-@progressColor" role="progressbar" style="width: @(Math.Min(progress, 100))%"></div>
+                                            </div>
+                                            <span class="fw-bold text-@progressColor" style="min-width: 50px; font-size: 0.85rem;">@emp.AvgProgress%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="badge bg-light text-dark border">@emp.CheckInCount lần</span>
+                                    </td>
+                                </tr>
+                                rank++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+}
+
 @section Scripts {
     <script>
-        // Lấy dữ liệu từ ViewBag (đã được serialize thành JSON)
+        // Lấy dữ liệu THỰC từ Controller (đã được serialize thành JSON)
         const okrLabels = @Html.Raw(ViewBag.OKRStatusLabels ?? "[]");
         const okrData = @Html.Raw(ViewBag.OKRStatusData ?? "[]");
         const deptLabels = @Html.Raw(ViewBag.DeptLabels ?? "[]");
@@ -233,45 +375,52 @@
         const mainLabels = @Html.Raw(ViewBag.MainChartLabels ?? "[]");
         const mainData = @Html.Raw(ViewBag.MainChartData ?? "[]");
 
-        // --- 1. BIỂU ĐỒ CHÍNH (TIẾN ĐỘ TỔNG THỂ) ---
+        // --- 1. BIỂU ĐỒ XU HƯỚNG 6 THÁNG GẦN NHẤT ---
         const ctxMain = document.getElementById('mainDashboardChart').getContext('2d');
         new Chart(ctxMain, {
             type: 'line',
             data: {
                 labels: mainLabels,
                 datasets: [{
-                    label: 'Tiến độ hoàn thành (%)',
+                    label: 'Tiến độ trung bình (%)',
                     data: mainData,
-                    borderColor: '#4e73df',
-                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                    borderColor: '#1a73e8',
+                    backgroundColor: 'rgba(26, 115, 232, 0.08)',
                     fill: true,
                     tension: 0.4,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#4e73df'
+                    pointRadius: 5,
+                    pointBackgroundColor: '#1a73e8',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 7
                 }]
             },
             options: {
                 maintainAspectRatio: false,
                 plugins: { 
-                    legend: { display: false },
-                    tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12 }
+                    legend: { display: true, position: 'top', labels: { usePointStyle: true, font: { size: 12 } } },
+                    tooltip: { 
+                        backgroundColor: 'rgba(0,0,0,0.8)', padding: 12,
+                        callbacks: { label: ctx => `Tiến độ: ${ctx.parsed.y}%` }
+                    }
                 },
                 scales: {
                     x: { grid: { display: false } },
-                    y: { beginAtZero: true, ticks: { callback: value => value + '%' } }
+                    y: { beginAtZero: true, max: 100, ticks: { callback: value => value + '%' } }
                 }
             }
         });
 
         // --- 2. BIỂU ĐỒ TRẠNG THÁI OKR ---
         const ctxStatus = document.getElementById('okrStatusChart').getContext('2d');
+        const hasOkrData = okrData.some(v => v > 0);
         new Chart(ctxStatus, {
             type: 'doughnut',
             data: {
-                labels: okrLabels,
+                labels: hasOkrData ? okrLabels : ['Chưa có dữ liệu'],
                 datasets: [{
-                    data: okrData,
-                    backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#6366f1'],
+                    data: hasOkrData ? okrData : [1],
+                    backgroundColor: hasOkrData ? ['#0f9d58', '#f29900', '#1a73e8', '#d93025', '#5e35b1', '#7c4dff'] : ['#e3e8ef'],
                     borderWidth: 0,
                     hoverOffset: 15
                 }]
@@ -280,35 +429,40 @@
                 maintainAspectRatio: false,
                 cutout: '72%',
                 plugins: {
-                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 25, font: { size: 11 } } }
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { size: 11 } } }
                 }
             }
         });
 
         // --- 3. BIỂU ĐỒ HIỆU SUẤT PHÒNG BAN ---
         const ctxDept = document.getElementById('deptPerformanceChart').getContext('2d');
-        new Chart(ctxDept, {
-            type: 'bar',
-            data: {
-                labels: deptLabels,
-                datasets: [{
-                    label: 'Hiệu suất TB (%)',
-                    data: deptProgress,
-                    backgroundColor: '#4e73df',
-                    hoverBackgroundColor: '#2e59d9',
-                    borderRadius: 10,
-                    barThickness: 24
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { grid: { display: false }, ticks: { padding: 10 } },
-                    x: { beginAtZero: true, ticks: { callback: value => value + '%' } }
+        const hasDeptData = deptProgress.length > 0 && deptProgress.some(v => v > 0);
+        if (hasDeptData) {
+            new Chart(ctxDept, {
+                type: 'bar',
+                data: {
+                    labels: deptLabels,
+                    datasets: [{
+                        label: 'Hiệu suất TB (%)',
+                        data: deptProgress,
+                        backgroundColor: deptProgress.map(v => v >= 70 ? '#0f9d58' : v >= 40 ? '#f29900' : '#d93025'),
+                        hoverBackgroundColor: '#1557b0',
+                        borderRadius: 8,
+                        barThickness: 24
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { display: false }, ticks: { padding: 10 } },
+                        x: { beginAtZero: true, max: 100, ticks: { callback: value => value + '%' } }
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            ctxDept.canvas.parentElement.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-bar-chart opacity-25" style="font-size: 3rem;"></i><p class="mt-2 mb-0">Chưa có dữ liệu hiệu suất phòng ban</p></div>';
+        }
     </script>
 }

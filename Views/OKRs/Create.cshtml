@@ -7,7 +7,7 @@
 
 <div class="page-content py-4 container-fluid px-4">
     <!-- HEADER -->
-    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
+    <div class="page-header d-flex align-items-center justify-content-between mb-4 okr-animate-in">
         <div>
             <h1 class="mb-2 fw-800 text-dark">Thiết lập OKR Mới</h1>
             <div class="page-breadcrumb">
@@ -27,14 +27,17 @@
 
     <div class="row g-4">
         <!-- FORM COLUMN -->
-        <div class="col-xl-8 animate__animated animate__fadeInLeft">
-            <div class="content-card border-0 shadow-lg overflow-hidden" style="background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px); border-radius: 20px;">
-                <div class="card-header-custom border-bottom bg-white bg-opacity-50 py-4 px-4">
+        <div class="col-xl-8 okr-animate-in" style="animation-delay: 0.1s;">
+            <div class="okr-form-card">
+                <div class="okr-form-card-header">
                     <div class="d-flex align-items-center">
-                        <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
-                            <i class="bi bi-bullseye text-primary fs-4"></i>
+                        <div class="okr-header-icon">
+                            <i class="bi bi-bullseye"></i>
                         </div>
-                        <h5 class="fw-bold fs-5 mb-0 text-dark">Chi tiết Mục tiêu (Objective)</h5>
+                        <div>
+                            <h5 class="fw-bold fs-5 mb-0 text-dark">Chi tiết Mục tiêu (Objective)</h5>
+                            <span class="text-muted" style="font-size: 0.78rem;">Định nghĩa mục tiêu chiến lược cho tổ chức</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -44,55 +47,55 @@
 
                         <!-- SECTION 1: CẤU HÌNH MỤC TIÊU -->
                         <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; border-radius: 10px; font-weight: 700;">
-                                1
-                            </div>
+                            <div class="okr-step-badge okr-step-1">1</div>
                             <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1 small">Thông tin cơ bản</h6>
                         </div>
 
-                        <div class="row g-4 mb-5 p-4 rounded-4 bg-light bg-opacity-40 border border-white position-relative overflow-hidden">
-                            <div class="col-12">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Tên Mục tiêu (Objective) <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-pencil-square"></i>
-                                        <input asp-for="ObjectiveName" class="form-control shadow-sm border-0" placeholder="VD: Tăng cường mức độ hài lòng của khách hàng trong Q2" required />
+                        <div class="okr-section-box okr-section-blue mb-5">
+                            <div class="row g-4">
+                                <div class="col-12">
+                                    <div class="form-icon-group mb-0">
+                                        <label class="form-label small text-muted text-uppercase fw-800">Tên Mục tiêu (Objective) <span class="text-danger">*</span></label>
+                                        <div class="input-wrapper">
+                                            <i class="bi bi-pencil-square"></i>
+                                            <input asp-for="ObjectiveName" class="form-control shadow-sm border-0" placeholder="VD: Tăng cường mức độ hài lòng của khách hàng trong Q2" required />
+                                        </div>
+                                        <span asp-validation-for="ObjectiveName" class="text-danger small mt-1 d-block"></span>
                                     </div>
-                                    <span asp-validation-for="ObjectiveName" class="text-danger small mt-1 d-block"></span>
                                 </div>
-                            </div>
 
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Loại OKR <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-tag"></i>
-                                        <select name="OKRTypeId" class="form-select shadow-sm border-0" required>
-                                            <option value="">-- Chọn loại mục tiêu --</option>
-                                            @if (ViewBag.OKRTypes != null)
-                                            {
-                                                foreach (var type in ViewBag.OKRTypes as IEnumerable<Manage_KPI_or_OKR_System.Models.OKRType>)
+                                <div class="col-md-6">
+                                    <div class="form-icon-group mb-0">
+                                        <label class="form-label small text-muted text-uppercase fw-800">Loại OKR <span class="text-danger">*</span></label>
+                                        <div class="input-wrapper">
+                                            <i class="bi bi-tag"></i>
+                                            <select name="OKRTypeId" class="form-select shadow-sm border-0" required>
+                                                <option value="">-- Chọn loại mục tiêu --</option>
+                                                @if (ViewBag.OKRTypes != null)
                                                 {
-                                                    <option value="@type.Id">@type.TypeName</option>
+                                                    foreach (var type in ViewBag.OKRTypes as IEnumerable<Manage_KPI_or_OKR_System.Models.OKRType>)
+                                                    {
+                                                        <option value="@type.Id">@type.TypeName</option>
+                                                    }
                                                 }
-                                            }
-                                        </select>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Chu kỳ thực hiện <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-calendar3"></i>
-                                        <select name="Cycle" class="form-select shadow-sm border-0" required>
-                                            <option value="Q1-@DateTime.Now.Year">Quý 1 - @DateTime.Now.Year</option>
-                                            <option value="Q2-@DateTime.Now.Year">Quý 2 - @DateTime.Now.Year</option>
-                                            <option value="Q3-@DateTime.Now.Year">Quý 3 - @DateTime.Now.Year</option>
-                                            <option value="Q4-@DateTime.Now.Year">Quý 4 - @DateTime.Now.Year</option>
-                                            <option value="Năm @DateTime.Now.Year">Cả năm @DateTime.Now.Year</option>
-                                        </select>
+                                <div class="col-md-6">
+                                    <div class="form-icon-group mb-0">
+                                        <label class="form-label small text-muted text-uppercase fw-800">Chu kỳ thực hiện <span class="text-danger">*</span></label>
+                                        <div class="input-wrapper">
+                                            <i class="bi bi-calendar3"></i>
+                                            <select name="Cycle" class="form-select shadow-sm border-0" required>
+                                                <option value="Q1-@DateTime.Now.Year">Quý 1 - @DateTime.Now.Year</option>
+                                                <option value="Q2-@DateTime.Now.Year">Quý 2 - @DateTime.Now.Year</option>
+                                                <option value="Q3-@DateTime.Now.Year">Quý 3 - @DateTime.Now.Year</option>
+                                                <option value="Q4-@DateTime.Now.Year">Quý 4 - @DateTime.Now.Year</option>
+                                                <option value="Năm @DateTime.Now.Year">Cả năm @DateTime.Now.Year</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -100,66 +103,66 @@
 
                         <!-- SECTION 2: PHÂN BỔ CHIẾN LƯỢC -->
                         <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-success text-white me-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; border-radius: 10px; font-weight: 700;">
-                                2
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1 small">Gắn kết chiến lược & Phân bổ</h6>
+                            <div class="okr-step-badge okr-step-2">2</div>
+                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1 small">Gắn kết chiến lược &amp; Phân bổ</h6>
                         </div>
 
-                        <div class="row g-4 p-4 rounded-4 bg-light bg-opacity-40 border border-white mb-4">
-                            <div class="col-12">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Tầm nhìn Chiến lược liên kết</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-diagram-3"></i>
-                                        <select name="missionId" class="form-select shadow-sm border-0">
-                                            <option value="">-- Không phân bổ (Cấp độ phòng ban/cá nhân) --</option>
-                                            @if (ViewBag.Missions != null)
-                                            {
-                                                foreach (var m in ViewBag.Missions as IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>)
+                        <div class="okr-section-box okr-section-teal mb-4">
+                            <div class="row g-4">
+                                <div class="col-12">
+                                    <div class="form-icon-group mb-0">
+                                        <label class="form-label small text-muted text-uppercase fw-800">Tầm nhìn Chiến lược liên kết</label>
+                                        <div class="input-wrapper">
+                                            <i class="bi bi-diagram-3"></i>
+                                            <select name="missionId" class="form-select shadow-sm border-0">
+                                                <option value="">-- Không phân bổ (Cấp độ phòng ban/cá nhân) --</option>
+                                                @if (ViewBag.Missions != null)
                                                 {
-                                                    <option value="@m.Id">Năm @m.TargetYear: @(m.Content?.Length > 60 ? m.Content.Substring(0, 60) + "..." : m.Content)</option>
+                                                    foreach (var m in ViewBag.Missions as IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>)
+                                                    {
+                                                        <option value="@m.Id">Năm @m.TargetYear: @(m.Content?.Length > 60 ? m.Content.Substring(0, 60) + "..." : m.Content)</option>
+                                                    }
                                                 }
-                                            }
-                                        </select>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Phòng ban phụ trách</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-building"></i>
-                                        <select name="departmentId" class="form-select shadow-sm border-0">
-                                            <option value="">-- Áp dụng cho toàn tổ chức hoặc cá nhân --</option>
-                                            @if (ViewBag.Departments != null)
-                                            {
-                                                foreach (var d in ViewBag.Departments as IEnumerable<Manage_KPI_or_OKR_System.Models.Department>)
+                                <div class="col-md-6">
+                                    <div class="form-icon-group mb-0">
+                                        <label class="form-label small text-muted text-uppercase fw-800">Phòng ban phụ trách</label>
+                                        <div class="input-wrapper">
+                                            <i class="bi bi-building"></i>
+                                            <select name="departmentId" class="form-select shadow-sm border-0">
+                                                <option value="">-- Áp dụng cho toàn tổ chức hoặc cá nhân --</option>
+                                                @if (ViewBag.Departments != null)
                                                 {
-                                                    <option value="@d.Id">@d.DepartmentName</option>
+                                                    foreach (var d in ViewBag.Departments as IEnumerable<Manage_KPI_or_OKR_System.Models.Department>)
+                                                    {
+                                                        <option value="@d.Id">@d.DepartmentName</option>
+                                                    }
                                                 }
-                                            }
-                                        </select>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Nhân viên chịu trách nhiệm</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-person-check"></i>
-                                        <select name="employeeId" class="form-select shadow-sm border-0">
-                                            <option value="">-- Không phân bổ cá nhân --</option>
-                                            @if (ViewBag.Employees != null)
-                                            {
-                                                foreach (var e in ViewBag.Employees as IEnumerable<Manage_KPI_or_OKR_System.Models.Employee>)
+                                <div class="col-md-6">
+                                    <div class="form-icon-group mb-0">
+                                        <label class="form-label small text-muted text-uppercase fw-800">Nhân viên chịu trách nhiệm</label>
+                                        <div class="input-wrapper">
+                                            <i class="bi bi-person-check"></i>
+                                            <select name="employeeId" class="form-select shadow-sm border-0">
+                                                <option value="">-- Không phân bổ cá nhân --</option>
+                                                @if (ViewBag.Employees != null)
                                                 {
-                                                    <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                                    foreach (var e in ViewBag.Employees as IEnumerable<Manage_KPI_or_OKR_System.Models.Employee>)
+                                                    {
+                                                        <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                                    }
                                                 }
-                                            }
-                                        </select>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -169,7 +172,7 @@
                             <a asp-action="Index" class="btn-outline-custom" style="border-radius: 12px; padding: 12px 25px;">
                                 <i class="bi bi-x-lg me-2"></i> Hủy bỏ
                             </a>
-                            <button type="submit" class="btn-primary-custom px-5 py-3 shadow-primary" style="border-radius: 15px; font-weight: 700;">
+                            <button type="submit" class="okr-submit-btn">
                                 <i class="bi bi-rocket-takeoff me-2"></i> Khởi tạo OKR
                             </button>
                         </div>
@@ -179,56 +182,58 @@
         </div>
 
         <!-- SIDEBAR COLUMN -->
-        <div class="col-xl-4 animate__animated animate__fadeInRight">
+        <div class="col-xl-4 okr-animate-in" style="animation-delay: 0.2s;">
             <div class="sticky-top" style="top: 100px;">
                 <!-- TIPS CARD -->
-                <div class="content-card border-0 shadow-lg text-white mb-4 position-relative overflow-hidden" 
-                     style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 24px;">
-                    <div class="card-body-custom p-4 position-relative z-index-1">
+                <div class="okr-tips-card mb-4">
+                    <div class="okr-tips-card-inner">
                         <div class="d-flex align-items-center mb-4">
-                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
-                                <i class="bi bi-lightbulb fs-3 text-white"></i>
+                            <div class="okr-tips-icon-box">
+                                <i class="bi bi-lightbulb fs-3"></i>
                             </div>
                             <div>
-                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small">Gợi ý thiết lập</h6>
-                                <h4 class="mb-0 fw-800">Quy tắc OKR</h4>
+                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small text-white">Gợi ý thiết lập</h6>
+                                <h4 class="mb-0 fw-800 text-white">Quy tắc OKR</h4>
                             </div>
                         </div>
                         
                         <div class="mb-4">
-                            <h6 class="fw-bold mb-2">Thế nào là một Objective tốt?</h6>
-                            <ul class="list-unstyled mb-0 small" style="opacity: 0.9; line-height: 1.6;">
-                                <li class="mb-2 d-flex"><i class="bi bi-check2-circle me-2 fs-5"></i> <span><strong>Tham vọng:</strong> Phải đủ thách thức nhưng không bất khả thi.</span></li>
-                                <li class="mb-2 d-flex"><i class="bi bi-check2-circle me-2 fs-5"></i> <span><strong>Ngắn gọn:</strong> Dễ nhớ và truyền cảm hứng cho đội ngũ.</span></li>
-                                <li class="d-flex"><i class="bi bi-check2-circle me-2 fs-5"></i> <span><strong>Định hướng hành động:</strong> Chứa đựng mục đích rõ ràng.</span></li>
+                            <h6 class="fw-bold mb-2 text-white">Thế nào là một Objective tốt?</h6>
+                            <ul class="list-unstyled mb-0 small" style="opacity: 0.92; line-height: 1.7;">
+                                <li class="mb-2 d-flex text-white"><i class="bi bi-check2-circle me-2 fs-5"></i> <span><strong>Tham vọng:</strong> Phải đủ thách thức nhưng không bất khả thi.</span></li>
+                                <li class="mb-2 d-flex text-white"><i class="bi bi-check2-circle me-2 fs-5"></i> <span><strong>Ngắn gọn:</strong> Dễ nhớ và truyền cảm hứng cho đội ngũ.</span></li>
+                                <li class="d-flex text-white"><i class="bi bi-check2-circle me-2 fs-5"></i> <span><strong>Định hướng hành động:</strong> Chứa đựng mục đích rõ ràng.</span></li>
                             </ul>
                         </div>
 
-                        <div class="bg-white bg-opacity-10 p-3 rounded-4 border border-white border-opacity-10">
-                            <p class="small mb-0 italic">"Objective trả lời cho câu hỏi: Chúng ta muốn đạt được cái gì?"</p>
+                        <div class="okr-tips-quote">
+                            <p class="small mb-0 fst-italic text-white">"Objective trả lời cho câu hỏi: Chúng ta muốn đạt được cái gì?"</p>
                         </div>
                     </div>
-                    <!-- Decorative circles -->
-                    <div class="position-absolute" style="top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
-                    <div class="position-absolute" style="bottom: -10px; left: -10px; width: 60px; height: 60px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
+                    <!-- Decorative elements -->
+                    <div class="okr-tips-deco-1"></div>
+                    <div class="okr-tips-deco-2"></div>
+                    <div class="okr-tips-deco-3"></div>
                 </div>
 
                 <!-- INFO CARD -->
-                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
-                    <h6 class="fw-bold text-dark mb-3">
-                        <i class="bi bi-info-circle text-primary me-2"></i> Liên kết Chiến lược
-                    </h6>
-                    <div class="d-flex align-items-start mb-3">
-                        <div class="text-primary me-3 mt-1"><i class="bi bi-1-circle"></i></div>
-                        <p class="small text-muted mb-0">Hãy gắn OKR này với một <strong>Sứ mệnh/Tầm nhìn</strong> nếu nó đóng góp trực tiếp vào mục tiêu năm của công ty.</p>
+                <div class="okr-info-card">
+                    <div class="okr-info-card-header">
+                        <i class="bi bi-signpost-split me-2"></i> Liên kết Chiến lược
                     </div>
-                    <div class="d-flex align-items-start mb-3">
-                        <div class="text-success me-3 mt-1"><i class="bi bi-2-circle"></i></div>
-                        <p class="small text-muted mb-0">Việc phân bổ cho <strong>Phòng ban</strong> giúp các nhóm dễ dàng theo dõi chỉ tiêu chung.</p>
-                    </div>
-                    <div class="d-flex align-items-start">
-                        <div class="text-warning me-3 mt-1"><i class="bi bi-3-circle"></i></div>
-                        <p class="small text-muted mb-0">Sau khi khởi tạo Mục tiêu, bạn cần thêm các <strong>Key Results</strong> để đo lường tiến độ.</p>
+                    <div class="p-4">
+                        <div class="okr-info-step mb-3">
+                            <div class="okr-info-step-num okr-info-step-1">1</div>
+                            <p class="small text-muted mb-0">Hãy gắn OKR này với một <strong>Sứ mệnh/Tầm nhìn</strong> nếu nó đóng góp trực tiếp vào mục tiêu năm của công ty.</p>
+                        </div>
+                        <div class="okr-info-step mb-3">
+                            <div class="okr-info-step-num okr-info-step-2">2</div>
+                            <p class="small text-muted mb-0">Việc phân bổ cho <strong>Phòng ban</strong> giúp các nhóm dễ dàng theo dõi chỉ tiêu chung.</p>
+                        </div>
+                        <div class="okr-info-step">
+                            <div class="okr-info-step-num okr-info-step-3">3</div>
+                            <p class="small text-muted mb-0">Sau khi khởi tạo Mục tiêu, bạn cần thêm các <strong>Key Results</strong> để đo lường tiến độ.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -237,11 +242,243 @@
 </div>
 
 <style>
+    /* =========================================
+       OKR CREATE PAGE — Premium Color Refresh
+       ========================================= */
+    
     .fw-800 { font-weight: 800; }
     .letter-spacing-1 { letter-spacing: 0.1em; }
-    .shadow-primary { box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4); }
-    
-    /* Premium Form Styling */
+
+    /* --- Entrance Animation --- */
+    .okr-animate-in {
+        animation: okrFadeSlideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    @@keyframes okrFadeSlideUp {
+        from { opacity: 0; transform: translateY(24px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === FORM CARD === */
+    .okr-form-card {
+        background: #ffffff;
+        border: 1px solid #e8ecf1;
+        border-radius: 20px;
+        box-shadow: 0 4px 24px rgba(0, 60, 120, 0.06);
+        overflow: hidden;
+        transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+    .okr-form-card:hover {
+        box-shadow: 0 12px 40px rgba(0, 90, 160, 0.1);
+        transform: translateY(-4px);
+    }
+
+    .okr-form-card-header {
+        padding: 24px 28px;
+        border-bottom: 1px solid #eef2f7;
+        background: linear-gradient(135deg, #f0f7ff 0%, #f8fbff 100%);
+    }
+
+    .okr-header-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #1a73e8 0%, #00a4ef 100%);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.4rem;
+        margin-right: 16px;
+        box-shadow: 0 6px 16px rgba(0, 120, 212, 0.25);
+    }
+
+    /* --- Step Badges --- */
+    .okr-step-badge {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #fff;
+        margin-right: 12px;
+        flex-shrink: 0;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+    }
+    .okr-step-1 {
+        background: linear-gradient(135deg, #1a73e8, #00a4ef);
+    }
+    .okr-step-2 {
+        background: linear-gradient(135deg, #00897b, #26a69a);
+    }
+
+    /* --- Section Boxes --- */
+    .okr-section-box {
+        padding: 24px;
+        border-radius: 16px;
+        border: 1.5px solid transparent;
+        position: relative;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .okr-section-blue {
+        background: linear-gradient(135deg, #f0f7ff 0%, #f6faff 50%, #ffffff 100%);
+        border-color: #d4e8fc;
+    }
+    .okr-section-blue:hover {
+        border-color: #a8d4f7;
+        box-shadow: 0 4px 20px rgba(0, 120, 212, 0.08);
+    }
+    .okr-section-teal {
+        background: linear-gradient(135deg, #e8f8f5 0%, #f2fbf9 50%, #ffffff 100%);
+        border-color: #b2dfdb;
+    }
+    .okr-section-teal:hover {
+        border-color: #80cbc4;
+        box-shadow: 0 4px 20px rgba(0, 137, 123, 0.08);
+    }
+
+    /* --- Submit Button --- */
+    .okr-submit-btn {
+        background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+        color: #fff;
+        border: none;
+        border-radius: 14px;
+        padding: 13px 32px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        box-shadow: 0 8px 24px rgba(0, 120, 212, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    .okr-submit-btn::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+        transition: left 0.5s ease;
+    }
+    .okr-submit-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 32px rgba(0, 120, 212, 0.4);
+        background: linear-gradient(135deg, #0086ef 0%, #0066b8 100%);
+    }
+    .okr-submit-btn:hover::before {
+        left: 100%;
+    }
+    .okr-submit-btn:active {
+        transform: translateY(-1px);
+    }
+
+    /* === TIPS CARD (Sidebar) === */
+    .okr-tips-card {
+        position: relative;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 12px 40px rgba(0, 90, 158, 0.2);
+    }
+    .okr-tips-card-inner {
+        padding: 28px;
+        position: relative;
+        z-index: 2;
+        background: linear-gradient(135deg, #1557b0 0%, #1a73e8 40%, #00a4ef 100%);
+    }
+    .okr-tips-icon-box {
+        background: rgba(255, 255, 255, 0.18);
+        padding: 14px;
+        border-radius: 16px;
+        margin-right: 14px;
+        backdrop-filter: blur(10px);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .okr-tips-quote {
+        background: rgba(255, 255, 255, 0.12);
+        padding: 14px 18px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(8px);
+    }
+    /* Decorative circles */
+    .okr-tips-deco-1 {
+        position: absolute;
+        top: -30px; right: -30px;
+        width: 120px; height: 120px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+        z-index: 1;
+    }
+    .okr-tips-deco-2 {
+        position: absolute;
+        bottom: -15px; left: -15px;
+        width: 70px; height: 70px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        z-index: 1;
+    }
+    .okr-tips-deco-3 {
+        position: absolute;
+        top: 40%; right: 10%;
+        width: 50px; height: 50px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 50%;
+        z-index: 1;
+        animation: okrFloat 6s ease-in-out infinite alternate;
+    }
+    @@keyframes okrFloat {
+        from { transform: translateY(0); }
+        to   { transform: translateY(-12px); }
+    }
+
+    /* === INFO CARD (Sidebar) === */
+    .okr-info-card {
+        background: #fff;
+        border-radius: 20px;
+        border: 1px solid #e8ecf1;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        transition: box-shadow 0.3s ease, transform 0.3s ease;
+    }
+    .okr-info-card:hover {
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+        transform: translateY(-3px);
+    }
+    .okr-info-card-header {
+        padding: 16px 24px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #1a5276;
+        background: linear-gradient(135deg, #eaf4fb 0%, #f5f9fd 100%);
+        border-bottom: 1px solid #dbeaf7;
+    }
+
+    .okr-info-step {
+        display: flex;
+        align-items: flex-start;
+    }
+    .okr-info-step-num {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.78rem;
+        color: #fff;
+        margin-right: 14px;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+    .okr-info-step-1 { background: linear-gradient(135deg, #1a73e8, #00a4ef); }
+    .okr-info-step-2 { background: linear-gradient(135deg, #00897b, #26a69a); }
+    .okr-info-step-3 { background: linear-gradient(135deg, #e67e22, #f39c12); }
+
+    /* === PREMIUM FORM STYLING === */
     .form-icon-group .input-wrapper {
         position: relative;
     }
@@ -254,33 +491,30 @@
         color: #94a3b8;
         font-size: 1.1rem;
         z-index: 10;
-        transition: color 0.3s;
+        transition: color 0.3s ease;
     }
     
     .form-control, .form-select {
         padding: 12px 12px 12px 45px !important;
-        border: 1.5px solid #f1f5f9 !important;
-        background-color: #f8fafc !important;
+        border: 1.5px solid #eef2f7 !important;
+        background-color: #fafcff !important;
         border-radius: 12px !important;
         transition: all 0.3s ease;
+        font-size: 0.92rem;
     }
     
     .form-control:focus, .form-select:focus {
         background-color: #ffffff !important;
-        border-color: #4f46e5 !important;
-        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1) !important;
+        border-color: #1a73e8 !important;
+        box-shadow: 0 0 0 4px rgba(0, 120, 212, 0.1) !important;
         color: #1e293b;
     }
-    
-    .form-control:focus + i, .form-select:focus + i {
-        color: #4f46e5;
-    }
 
-    /* Page effects */
-    .animate__animated { animation-duration: 0.8s; }
+    .form-icon-group .input-wrapper:focus-within i {
+        color: #1a73e8;
+    }
 </style>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 }

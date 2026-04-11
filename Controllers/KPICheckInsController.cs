@@ -224,7 +224,48 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     ProgressPercentage = Math.Round(progress, 2)
                 };
                 _context.CheckInDetails.Add(detail);
-                
+
+                // ============================================
+                // 3.5 TỰ ĐỘNG CẬP NHẬT TRẠNG THÁI KPI
+                //     dựa trên tiến độ so với mục tiêu
+                // ============================================
+                if (kpiDetail != null)
+                {
+                    decimal passThreshold = kpiDetail.PassThreshold ?? kpiDetail.TargetValue ?? 100;
+                    decimal failThreshold = kpiDetail.FailThreshold ?? 0;
+
+                    // Tính progress dựa trên PassThreshold (% đạt so với ngưỡng qua)
+                    decimal passProgress = passThreshold > 0 
+                        ? ProgressHelper.CalculateProgress(AchievedValue, passThreshold, kpiDetail.IsInverse)
+                        : progress;
+
+                    if (progress >= 100) 
+                    {
+                        // Đạt hoặc vượt mục tiêu
+                        kpi.StatusId = 4; // "Hoàn thành"
+                    }
+                    else if (passProgress >= 100 || progress >= 70)
+                    {
+                        // Vượt ngưỡng Pass hoặc >= 70% Target
+                        kpi.StatusId = 5; // "Gần đạt" 
+                    }
+                    else if (progress >= 40)
+                    {
+                        // Đang triển khai nhưng chưa chắc đạt
+                        kpi.StatusId = 3; // "Đang thực hiện"
+                    }
+                    else
+                    {
+                        // Dưới 40% target → nguy cơ không đạt
+                        kpi.StatusId = 6; // "Không đạt"
+                    }
+                }
+                else
+                {
+                    // Không có KPIDetail → mặc định "Đang thực hiện"
+                    kpi.StatusId = 3;
+                }
+
                 // 4. MAP TIẾN ĐỘ VÀO BẢNG XẾP LOẠI (GradingRank)
                 var rank = await _context.GradingRanks
                     .Where(r => r.MinScore <= progress)

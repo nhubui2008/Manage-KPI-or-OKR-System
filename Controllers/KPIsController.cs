@@ -105,6 +105,27 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
             ViewBag.KPITypes = await _context.KPITypes.OrderBy(t => t.Id).ToListAsync();
 
+            // Lấy tiến độ mới nhất cho mỗi KPI (từ check-in gần nhất)
+            var latestProgress = new Dictionary<int, decimal>();
+            foreach (var kpiId in kpiIds)
+            {
+                var latestCheckIn = await _context.KPICheckIns
+                    .Where(c => c.KPIId == kpiId)
+                    .OrderByDescending(c => c.CheckInDate)
+                    .FirstOrDefaultAsync();
+
+                if (latestCheckIn != null)
+                {
+                    var checkInDetail = await _context.CheckInDetails
+                        .FirstOrDefaultAsync(d => d.CheckInId == latestCheckIn.Id);
+                    if (checkInDetail?.ProgressPercentage != null)
+                    {
+                        latestProgress[kpiId] = checkInDetail.ProgressPercentage.Value;
+                    }
+                }
+            }
+            ViewBag.LatestProgress = latestProgress;
+
             return View(kpis);
         }
 

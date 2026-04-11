@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
@@ -7,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.Json;
+using System;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -20,30 +22,32 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index(string reportingPeriod)
+        public async Task<IActionResult> Index(int? periodId)
         {
-            if (string.IsNullOrEmpty(reportingPeriod)) reportingPeriod = "Quý 1 - 2026";
-            ViewBag.SelectedPeriod = reportingPeriod;
+            // ========================================
+            // 1. XỬ LÝ KỲ BÁO CÁO ĐỘNG TỪ DATABASE
+            // ========================================
+            var allPeriods = await _context.EvaluationPeriods
+                .Where(p => p.IsActive == true)
+                .OrderByDescending(p => p.StartDate)
+                .ToListAsync();
 
-            DateTime? startDate = null;
-            DateTime? endDate = null;
+            ViewBag.AllPeriods = allPeriods;
 
-            if (reportingPeriod == "Quý 1 - 2026")
-            {
-                startDate = new DateTime(2026, 1, 1);
-                endDate = new DateTime(2026, 3, 31, 23, 59, 59);
-            }
-            else if (reportingPeriod == "Quý 2 - 2026")
-            {
-                startDate = new DateTime(2026, 4, 1);
-                endDate = new DateTime(2026, 6, 30, 23, 59, 59);
-            }
-            else if (reportingPeriod == "Năm 2026")
-            {
-                startDate = new DateTime(2026, 1, 1);
-                endDate = new DateTime(2026, 12, 31, 23, 59, 59);
-            }
+            // Nếu không chọn kỳ nào, lấy kỳ đánh giá gần nhất
+            var selectedPeriod = periodId.HasValue
+                ? allPeriods.FirstOrDefault(p => p.Id == periodId.Value)
+                : allPeriods.FirstOrDefault();
 
+            ViewBag.SelectedPeriod = selectedPeriod;
+
+            // Xác định khoảng thời gian lọc
+            DateTime? startDate = selectedPeriod?.StartDate;
+            DateTime? endDate = selectedPeriod?.EndDate;
+
+            // ========================================
+            // 2. DỮ LIỆU CƠ BẢN (User-aware)
+            // ========================================
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
             var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
@@ -59,9 +63,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 checkInQuery = checkInQuery.Where(c => c.CheckInDate >= startDate.Value && c.CheckInDate <= endDate.Value);
             }
 
-            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+            // Phân quyền dữ liệu theo Role
+            bool isEmployeeRole = User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+                User.IsInRole("Sales") || User.IsInRole("sales");
+
+            if (isEmployeeRole)
             {
                 if (employee != null)
                 {
@@ -86,7 +93,49 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.TotalKPIs = totalKpis;
             ViewBag.TotalCheckIns = await checkInQuery.CountAsync();
 
-            // Recent check-ins
+            // ========================================
+            // 3. TÍNH TỈ LỆ KPI ĐẠT THỰC TẾ TỪ DB
+            // ========================================
+            // Lấy tất cả check-in details có progress >= 100 => coi là "Đạt"
+            var kpiIds = await kpiQuery.Select(k => k.Id).ToListAsync();
+            var checkInIds = await checkInQuery.Select(c => c.Id).ToListAsync();
+            
+            var allCheckInDetails = await _context.CheckInDetails
+                .Where(d => checkInIds.Contains(d.CheckInId ?? 0))
+                .ToListAsync();
+
+            double kpiAchievementRate = 0;
+            if (allCheckInDetails.Any())
+            {
+                var achievedCount = allCheckInDetails.Count(d => d.ProgressPercentage >= 100);
+                kpiAchievementRate = Math.Round((double)achievedCount / allCheckInDetails.Count * 100, 1);
+            }
+            ViewBag.KPIAchievementRate = kpiAchievementRate;
+
+            // ========================================
+            // 4. TÍNH TIẾN ĐỘ OKR THỰC TẾ TỪ DB
+            // ========================================
+            var okrIds = await okrQuery.Select(o => o.Id).ToListAsync();
+            var keyResults = await _context.OKRKeyResults
+                .Where(kr => okrIds.Contains(kr.OKRId ?? 0))
+                .ToListAsync();
+
+            double okrProgressRate = 0;
+            if (keyResults.Any())
+            {
+                // Tính trung bình Progress của tất cả Key Results
+                double totalProgress = 0;
+                foreach (var kr in keyResults)
+                {
+                    totalProgress += (double)ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, kr.TargetValue ?? 0, kr.IsInverse);
+                }
+                okrProgressRate = Math.Round(totalProgress / keyResults.Count, 1);
+            }
+            ViewBag.OKRProgressRate = okrProgressRate;
+
+            // ========================================
+            // 5. RECENT CHECK-INS
+            // ========================================
             var recentCheckIns = await checkInQuery
                 .OrderByDescending(c => c.CheckInDate)
                 .Take(5)
@@ -98,13 +147,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.EmployeeNames = empDict;
             ViewBag.KPINames = kpiDict;
 
-            // Departments data
+            // ========================================
+            // 6. DEPARTMENTS DATA
+            // ========================================
             var departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
             ViewBag.TotalDepartments = departments.Count;
 
-            // --- DATA FOR CHARTS ---
+            // Tổng chức vụ
+            ViewBag.TotalPositions = await _context.Positions.CountAsync(p => p.IsActive == true);
 
-            // 1. OKR Status Distribution (Doughnut Chart)
+            // ========================================
+            // 7. BIỂU ĐỒ OKR STATUS DISTRIBUTION
+            // ========================================
             var okrStats = await okrQuery
                 .GroupBy(o => o.StatusId)
                 .Select(g => new { StatusId = g.Key, Count = g.Count() })
@@ -117,8 +171,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.OKRStatusLabels = JsonSerializer.Serialize(okrLabels);
             ViewBag.OKRStatusData = JsonSerializer.Serialize(okrData);
 
-            // 2. Departmental Performance (Bar Chart)
-            // Rewrite using Query Syntax to avoid translation errors
+            // ========================================
+            // 8. BIỂU ĐỒ HIỆU SUẤT PHÒNG BAN (TỪ DB)
+            // ========================================
             var performanceQuery = from d in _context.Departments
                                  join ea in _context.EmployeeAssignments on d.Id equals ea.DepartmentId
                                  join ci in _context.KPICheckIns on ea.EmployeeId equals ci.EmployeeId
@@ -136,13 +191,84 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .ToListAsync();
 
             ViewBag.DeptLabels = JsonSerializer.Serialize(deptPerformance.Select(p => p.DeptName));
-            ViewBag.DeptProgress = JsonSerializer.Serialize(deptPerformance.Select(p => p.AvgProgress));
+            ViewBag.DeptProgress = JsonSerializer.Serialize(deptPerformance.Select(p => Math.Round(p.AvgProgress, 1)));
 
-            // 3. Overall Trend (Mock for now or based on check-ins over last 6 months)
-            var months = new[] { "Tháng 10", "Tháng 11", "Tháng 12", "Tháng 01", "Tháng 02", "Tháng 03" };
-            var trendData = new[] { 45, 52, 60, 58, 65, 72 }; // Mocking trend
-            ViewBag.MainChartLabels = JsonSerializer.Serialize(months);
-            ViewBag.MainChartData = JsonSerializer.Serialize(trendData);
+            // ========================================
+            // 9. BIỂU ĐỒ XU HƯỚNG 6 THÁNG GẦN NHẤT (TỪ DB)
+            // ========================================
+            var now = DateTime.Now;
+            var monthLabels = new List<string>();
+            var monthData = new List<double>();
+
+            for (int i = 5; i >= 0; i--)
+            {
+                var monthDate = now.AddMonths(-i);
+                var monthStart = new DateTime(monthDate.Year, monthDate.Month, 1);
+                var monthEnd = monthStart.AddMonths(1).AddTicks(-1);
+
+                monthLabels.Add($"T{monthDate.Month:00}/{monthDate.Year % 100}");
+
+                // Lấy trung bình progress của tất cả check-in trong tháng đó
+                var monthCheckInIds = await _context.KPICheckIns
+                    .Where(c => c.CheckInDate >= monthStart && c.CheckInDate <= monthEnd)
+                    .Select(c => c.Id)
+                    .ToListAsync();
+
+                if (monthCheckInIds.Any())
+                {
+                    var avgProgress = await _context.CheckInDetails
+                        .Where(d => monthCheckInIds.Contains(d.CheckInId ?? 0) && d.ProgressPercentage != null)
+                        .AverageAsync(d => (double?)d.ProgressPercentage);
+
+                    monthData.Add(Math.Round(avgProgress ?? 0, 1));
+                }
+                else
+                {
+                    monthData.Add(0);
+                }
+            }
+
+            ViewBag.MainChartLabels = JsonSerializer.Serialize(monthLabels);
+            ViewBag.MainChartData = JsonSerializer.Serialize(monthData);
+
+            // ========================================
+            // 10. KPI STATUS DISTRIBUTION (MỚI)
+            // ========================================
+            var kpiStats = await kpiQuery
+                .GroupBy(k => k.StatusId)
+                .Select(g => new { StatusId = g.Key, Count = g.Count() })
+                .ToListAsync();
+            
+            var kpiStatuses = await _context.Statuses.Where(s => s.StatusType == "KPI").ToListAsync();
+            var kpiStatusLabels = kpiStatuses.Select(s => s.StatusName).ToList();
+            var kpiStatusData = kpiStatuses.Select(s => kpiStats.FirstOrDefault(st => st.StatusId == s.Id)?.Count ?? 0).ToList();
+            
+            ViewBag.KPIStatusLabels = JsonSerializer.Serialize(kpiStatusLabels);
+            ViewBag.KPIStatusData = JsonSerializer.Serialize(kpiStatusData);
+
+            // ========================================
+            // 11. TOP NHÂN VIÊN HIỆU SUẤT CAO
+            // ========================================
+            var topEmployees = await (
+                from ci in _context.KPICheckIns
+                join cd in _context.CheckInDetails on ci.Id equals cd.CheckInId
+                where cd.ProgressPercentage != null
+                group cd by ci.EmployeeId into g
+                select new {
+                    EmployeeId = g.Key,
+                    AvgProgress = g.Average(x => (double?)x.ProgressPercentage) ?? 0,
+                    CheckInCount = g.Count()
+                }
+            )
+            .OrderByDescending(x => x.AvgProgress)
+            .Take(5)
+            .ToListAsync();
+
+            ViewBag.TopEmployees = topEmployees.Select(t => new {
+                Name = t.EmployeeId.HasValue && empDict.ContainsKey(t.EmployeeId.Value) ? empDict[t.EmployeeId.Value] : "N/A",
+                AvgProgress = Math.Round(t.AvgProgress, 1),
+                t.CheckInCount
+            }).ToList();
 
             return View();
         }

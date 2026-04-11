@@ -1,4 +1,4 @@
-@model Manage_KPI_or_OKR_System.Models.Role
+﻿@model Manage_KPI_or_OKR_System.Models.Role
 @{
     ViewData["Title"] = "Tạo Nhóm Quyền Mới";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -152,7 +152,7 @@
                             <a asp-action="Index" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 12px; font-weight: 600; border: 1.5px solid #e2e8f0;">
                                 <i class="bi bi-x-lg me-2"></i> Hủy bỏ
                             </a>
-                            <button type="submit" class="btn btn-primary px-5 py-2 shadow-lg" style="border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%); border: none;">
+                            <button type="submit" class="btn btn-primary px-5 py-2 shadow-lg" style="border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%); border: none;">
                                 <i class="bi bi-shield-plus me-2"></i> Tạo Nhóm Quyền
                             </button>
                         </div>
@@ -167,7 +167,7 @@
 
                 <!-- LIVE PREVIEW CARD -->
                 <div class="content-card border-0 shadow-lg text-white mb-4 position-relative overflow-hidden"
-                     style="background: linear-gradient(135deg, #0078d4, #005a9e); border-radius: 24px;">
+                     style="background: linear-gradient(135deg, #1a73e8, #1557b0); border-radius: 24px;">
                     <!-- Decorative blobs -->
                     <div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(255,255,255,0.07);border-radius:50%;"></div>
                     <div style="position:absolute;bottom:-20px;left:-20px;width:80px;height:80px;background:rgba(255,255,255,0.05);border-radius:50%;"></div>
@@ -312,7 +312,7 @@
         background: #fff;
     }
     .form-icon-group .input-wrapper:focus-within {
-        border-color: #0078d4 !important;
+        border-color: #1a73e8 !important;
         box-shadow: 0 8px 15px -5px rgba(0,120,212,0.15) !important;
         transform: translateY(-1px);
     }
@@ -328,7 +328,7 @@
         pointer-events: none;
     }
     .form-icon-group .input-wrapper:focus-within i {
-        color: #0078d4;
+        color: #1a73e8;
     }
     .form-control:focus, .form-select:focus {
         box-shadow: none !important;
@@ -344,9 +344,9 @@
 
     /* ======== ROLE SUGGESTION BADGE HOVER ======== */
     .role-suggestion:hover {
-        background: #0078d4 !important;
+        background: #1a73e8 !important;
         color: #fff !important;
-        border-color: #0078d4 !important;
+        border-color: #1a73e8 !important;
         transform: translateY(-1px);
         box-shadow: 0 4px 10px rgba(0,120,212,0.2);
     }

@@ -236,7 +236,7 @@
                                 <div class="user-name">@userName</div>
                                 <div class="user-role">@userRole</div>
                             </div>
-                            <i class="bi bi-three-dots-vertical ms-auto text-muted user-dots"></i>
+                            <i class="bi bi-three-dots-vertical ms-auto user-dots" style="color: rgba(255,255,255,0.4);"></i>
                         </div>
                         
                         <ul class="dropdown-menu shadow-sm border-0 mb-2" style="min-width: 220px; border-radius: 12px; background: #fff;">
@@ -273,7 +273,7 @@
                         @if (User.Identity == null || !User.Identity.IsAuthenticated)
                         {
                             <div class="ms-2">
-                                <a href="/Auth/Login" class="btn shadow-sm text-decoration-none" style="background: linear-gradient(90deg, #a3c9f9, #fbe7a2); color: #2d3559; border: none; border-radius: 12px; padding: 6px 18px; font-size: 0.875rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Đăng Nhập</a>
+                                <a href="/Auth/Login" class="btn shadow-sm text-decoration-none" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff; border: none; border-radius: 12px; padding: 8px 22px; font-size: 0.875rem; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);" onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-1px)'" onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'">Đăng Nhập</a>
                             </div>
                         }
                     </div>

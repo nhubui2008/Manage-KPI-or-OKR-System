@@ -8,6 +8,54 @@
     var periodsDict = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
     var kpiTypesList = ViewBag.KPITypes as List<Manage_KPI_or_OKR_System.Models.KPIType> ?? new List<Manage_KPI_or_OKR_System.Models.KPIType>();
     var kpiTypesDict = kpiTypesList.ToDictionary(t => t.Id, t => t.TypeName ?? "N/A");
+    var latestProgress = ViewBag.LatestProgress as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+
+    // Helper: Map StatusId to display info
+    string GetStatusName(int? statusId, decimal? progress) {
+        return statusId switch {
+            0 or null => "Chờ duyệt",
+            1 => progress.HasValue ? $"Đã duyệt ({progress:F0}%)" : "Đã duyệt",
+            2 => "Từ chối",
+            3 => $"Đang thực hiện ({progress ?? 0:F0}%)",
+            4 => $"Hoàn thành ({progress ?? 100:F0}%)",
+            5 => $"Gần đạt ({progress ?? 0:F0}%)",
+            6 => $"Không đạt ({progress ?? 0:F0}%)",
+            _ => "Không xác định"
+        };
+    }
+
+    string GetStatusClass(int? statusId) {
+        return statusId switch {
+            0 or null => "bg-warning-subtle text-warning-emphasis",
+            1 => "bg-info-subtle text-info-emphasis",
+            2 => "bg-danger-subtle text-danger-emphasis",
+            3 => "bg-primary-subtle text-primary-emphasis",
+            4 => "bg-success-subtle text-success-emphasis",
+            5 => "bg-success bg-opacity-10 text-success",
+            6 => "bg-danger bg-opacity-10 text-danger",
+            _ => "bg-secondary-subtle text-secondary-emphasis"
+        };
+    }
+
+    string GetStatusIcon(int? statusId) {
+        return statusId switch {
+            0 or null => "bi-clock-fill",
+            1 => "bi-check-circle-fill",
+            2 => "bi-x-circle-fill",
+            3 => "bi-arrow-repeat",
+            4 => "bi-trophy-fill",
+            5 => "bi-arrow-up-circle-fill",
+            6 => "bi-exclamation-triangle-fill",
+            _ => "bi-question-circle"
+        };
+    }
+
+    string GetProgressColor(decimal progress) {
+        if (progress >= 100) return "success";
+        if (progress >= 70) return "primary";
+        if (progress >= 40) return "warning";
+        return "danger";
+    }
 }
 
 <div class="container-fluid px-0">
@@ -119,11 +167,11 @@
                             var detail = kpiDetails.ContainsKey(kpi.Id) ? kpiDetails[kpi.Id] : null;
                             var assignedEmployees = assignments.ContainsKey(kpi.Id) ? assignments[kpi.Id] : new List<int>();
                             
-                            // Define status badge logic
-                            string statusName = "Chờ duyệt";
-                            string statusClass = "bg-warning-subtle text-warning-emphasis";
-                            if (kpi.StatusId == 1) { statusName = "Đã duyệt"; statusClass = "bg-success-subtle text-success-emphasis"; }
-                            else if (kpi.StatusId == 2) { statusName = "Từ chối"; statusClass = "bg-danger-subtle text-danger-emphasis"; }
+                            // Use new dynamic status helpers
+                            var kpiProgress = latestProgress.ContainsKey(kpi.Id) ? (decimal?)latestProgress[kpi.Id] : null;
+                            string statusName = GetStatusName(kpi.StatusId, kpiProgress);
+                            string statusClass = GetStatusClass(kpi.StatusId);
+                            string statusIcon = GetStatusIcon(kpi.StatusId);
 
                             <tr class="bg-white">
                                 <td>
@@ -185,10 +233,21 @@
                                     }
                                 </td>
                                 <td class="align-middle">
-                                    <span class="badge rounded-pill @statusClass py-2 px-3 fw-medium" style="font-size: 0.75rem;">
-                                        <i class="bi @(kpi.StatusId == 1 ? "bi-check-circle-fill" : kpi.StatusId == 2 ? "bi-x-circle-fill" : "bi-clock-fill") me-1"></i>
-                                        @statusName
-                                    </span>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="badge rounded-pill @statusClass py-2 px-3 fw-medium" style="font-size: 0.72rem;">
+                                            <i class="bi @statusIcon me-1"></i>
+                                            @statusName
+                                        </span>
+                                        @if (kpiProgress.HasValue && kpi.StatusId >= 3)
+                                        {
+                                            <div class="progress" style="height: 5px; border-radius: 3px; width: 100%;">
+                                                <div class="progress-bar bg-@GetProgressColor(kpiProgress.Value)" 
+                                                     role="progressbar" 
+                                                     style="width: @(Math.Min((double)kpiProgress.Value, 100))%">
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
                                 </td>
                                 <td class="align-middle text-end">
                                     <div class="d-flex justify-content-end gap-2">
@@ -199,7 +258,7 @@
                                             <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                                                  <li><a class="dropdown-item py-2" asp-action="Details" asp-route-id="@kpi.Id"><i class="bi bi-info-circle text-primary me-2"></i> Chi tiết</a></li>
                                                  
-                                                 @if (kpi.StatusId == 1) // Only allow actions for approved KPIs
+                                                 @if (kpi.StatusId == 1 || kpi.StatusId >= 3) // Allow actions for approved or in-progress KPIs
                                                  {
                                                      <li><a class="dropdown-item py-2 text-success fw-bold" asp-controller="KPICheckIns" asp-action="Create" asp-route-kpiId="@kpi.Id"><i class="bi bi-calendar-check me-2"></i> Thực hiện Check-in</a></li>
                                                      <li><a class="dropdown-item py-2" href="javascript:void(0)" onclick="openAssignPersonnelModal(@kpi.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kpi.KPIName ?? ""))', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assignedEmployees)))"><i class="bi bi-people text-info-emphasis me-2"></i> Phân bổ nhân sự</a></li>

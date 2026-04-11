@@ -1,4 +1,4 @@
-@model Manage_KPI_or_OKR_System.Models.Employee
+﻿@model Manage_KPI_or_OKR_System.Models.Employee
 
 @{
     ViewData["Title"] = "Chi tiết nhân viên";
@@ -130,7 +130,7 @@
             <!-- Thông tin thêm -->
             @if (Model.CreatedAt.HasValue)
             {
-                <div class="alert alert-info p-3 mb-4" style="background-color: #f0f8ff; border-left: 4px solid #0066cc;">
+                <div class="alert alert-info p-3 mb-4" style="background-color: #e8f0fe; border-left: 4px solid #1a73e8;">
                     <small class="text-dark">
                         <i class="bi bi-info-circle me-2"></i>
                         <strong>Tạo ngày:</strong> @Model.CreatedAt.Value.ToString("dd/MM/yyyy HH:mm")
