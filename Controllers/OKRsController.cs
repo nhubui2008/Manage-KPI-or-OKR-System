@@ -22,6 +22,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
         }
 
+        [HasPermission("OKRS_VIEW")]
         public async Task<IActionResult> Index(string searchString, int? pageNumber)
         {
             ViewData["CurrentFilter"] = searchString;
@@ -101,6 +102,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpGet]
+        [HasPermission("OKRS_CREATE")]
         public async Task<IActionResult> Create()
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -116,7 +118,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("MANAGER_CREATE_OKR")]
+        [HasPermission("OKRS_CREATE")]
         public async Task<IActionResult> Create(OKR model, int? missionId, int? departmentId, int? employeeId)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -174,7 +176,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("MANAGER_CREATE_OKR")]
+        [HasPermission("OKRS_CREATE")]
         public async Task<IActionResult> AddKeyResult(OKRKeyResult kr)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -195,6 +197,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("OKRS_EDIT")]
         public async Task<IActionResult> UpdateKeyResultProgress(int krId, decimal currentValue)
         {
             var kr = await _context.OKRKeyResults.FindAsync(krId);
@@ -214,7 +217,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("MANAGER_CREATE_OKR")]
+        [HasPermission("OKRS_EDIT")]
         public async Task<IActionResult> EditKeyResult(OKRKeyResult model)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -247,7 +250,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("MANAGER_CREATE_OKR")]
+        [HasPermission("OKRS_CREATE")]
         public async Task<IActionResult> AllocateTarget(int okrId, int employeeId, decimal allocatedValue)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -296,7 +299,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("MANAGER_CREATE_OKR")]
+        [HasPermission("OKRS_DELETE")]
         public async Task<IActionResult> DeleteKeyResult(int id)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -317,6 +320,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HasPermission("OKRS_VIEW")]
         [HttpGet("Tree")]
         public async Task<IActionResult> GetTree()
         {
@@ -395,7 +399,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("MANAGER_CREATE_OKR")]
+        [HasPermission("OKRS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||

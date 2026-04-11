@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
-    [Authorize] // Chỉ yêu cầu đăng nhập, ai cũng vào được
+    [Authorize]
     public class DepartmentsController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -23,6 +23,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // ==========================================
         // 1. DANH SÁCH, LỌC & LÀM MỚI (INDEX)
         // ==========================================
+        [HasPermission("DEPARTMENTS_VIEW")]
         public async Task<IActionResult> Index(string searchString, string isActive)
         {
             // Lưu lại từ khóa để hiển thị trên ô tìm kiếm
@@ -78,6 +79,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // ==========================================
         // 2. XEM CHI TIẾT (DETAILS)
         // ==========================================
+        [HasPermission("DEPARTMENTS_VIEW")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
@@ -106,6 +108,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // 3. THÊM MỚI (CREATE)
         // ==========================================
         // Dành cho việc hiển thị trang/modal thêm mới
+        [HasPermission("DEPARTMENTS_CREATE")]
         public async Task<IActionResult> Create()
         {
             ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToDictionaryAsync(e => e.Id, e => e.FullName);
@@ -115,6 +118,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [HasPermission("DEPARTMENTS_CREATE")]
         public async Task<IActionResult> Create(Department dept)
         {
             // Kiểm tra tính duy nhất của DepartmentCode (bao gồm cả mã đã bị xóa mềm)
@@ -159,6 +163,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // ==========================================
         // 4. CHỈNH SỬA (EDIT)
         // ==========================================
+        [HasPermission("DEPARTMENTS_EDIT")]
         public async Task<IActionResult> Edit(int id)
         {
             var dept = await _context.Departments
@@ -173,6 +178,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [HasPermission("DEPARTMENTS_EDIT")]
         public async Task<IActionResult> Edit(int id, Department dept)
         {
             if (id != dept.Id) return NotFound();
@@ -233,6 +239,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // 5. XÓA (DELETE) - NGƯNG HOẠT ĐỘNG
         // ==========================================
         [HttpPost]
+        [HasPermission("DEPARTMENTS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             var dept = await _context.Departments.FindAsync(id);
@@ -273,6 +280,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("DEPARTMENTS_DELETE")]
         public async Task<IActionResult> Restore(int id)
         {
             var dept = await _context.Departments.FindAsync(id);

@@ -6,15 +6,33 @@
 
     string GetGroup(string code)
     {
-        if (code.StartsWith("ADMIN_")) return "Cấu hình Hệ thống";
-        if (code.StartsWith("HR_")) return "Quản trị Nhân sự & Đánh giá";
-        if (code.StartsWith("MANAGER_")) return "Quản lý OKR & KPI";
-        if (code.StartsWith("EMPLOYEE_")) return "Tác vụ Nhân viên";
-        if (code.StartsWith("SALES_")) return "Kinh doanh & Khách hàng";
-        if (code.StartsWith("WAREHOUSE_")) return "Quản lý Kho & Sản phẩm";
-        if (code.StartsWith("DELIVERY_")) return "Vận chuyển & Giao nhận";
+        // ===== NHÓM PERMISSION MỚI (CHI TIẾT) =====
+        if (code.StartsWith("EMPLOYEES_")) return "👥 Quản lý Nhân viên";
+        if (code.StartsWith("DEPARTMENTS_")) return "🏢 Quản lý Phòng ban";
+        if (code.StartsWith("POSITIONS_")) return "🎖️ Quản lý Chức vụ";
+        if (code.StartsWith("KPIS_")) return "📊 Quản lý KPI";
+        if (code.StartsWith("KPICHECKINS_")) return "✅ Cập nhật tiến độ KPI";
+        if (code.StartsWith("OKRS_")) return "🎯 Quản lý OKR / Mục tiêu";
+        if (code.StartsWith("EVALPERIODS_")) return "📅 Kỳ đánh giá";
+        if (code.StartsWith("EVALRESULTS_")) return "🏆 Kết quả đánh giá";
+        if (code.StartsWith("EVALREPORTS_")) return "📈 Báo cáo đánh giá";
+        if (code.StartsWith("BONUSRULES_")) return "💰 Quy tắc thưởng";
+        if (code.StartsWith("MISSIONS_")) return "🧭 Sứ mệnh & Tầm nhìn";
+        if (code.StartsWith("SYSUSERS_")) return "🔐 Người dùng hệ thống";
+        if (code.StartsWith("ROLES_")) return "👑 Phân quyền (Roles)";
+        if (code.StartsWith("AUDITLOGS_")) return "📋 Nhật ký hệ thống";
+
+        // ===== NHÓM PERMISSION CŨ =====
+        if (code.StartsWith("ADMIN_")) return "⚙️ Cấu hình Hệ thống (cũ)";
+        if (code.StartsWith("HR_")) return "🧑‍💼 Quản trị Nhân sự (cũ)";
+        if (code.StartsWith("MANAGER_")) return "📋 Quản lý OKR & KPI (cũ)";
+        if (code.StartsWith("EMPLOYEE_")) return "👤 Tác vụ Nhân viên (cũ)";
+        if (code.StartsWith("SALES_")) return "💼 Kinh doanh & Khách hàng (cũ)";
+        if (code.StartsWith("WAREHOUSE_")) return "📦 Quản lý Kho (cũ)";
+        if (code.StartsWith("DELIVERY_")) return "🚚 Vận chuyển (cũ)";
         return "Khác";
     }
+
 
     var groupedPermissions = Model.GroupBy(p => GetGroup(p.PermissionCode ?? ""));
 }

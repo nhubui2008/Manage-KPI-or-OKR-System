@@ -22,6 +22,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
         }
 
+        [HasPermission("KPIS_VIEW")]
         public async Task<IActionResult> Index(string searchString, int? periodId)
         {
             try
@@ -107,6 +108,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(kpis);
         }
 
+        [HasPermission("KPIS_VIEW")]
         public async Task<IActionResult> Details(int id)
         {
             var kpi = await _context.KPIs
@@ -183,8 +185,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
-        [HasPermission("MANAGER_ASSIGN_KPI")]
+        [HasPermission("KPIS_CREATE")]
         public async Task<IActionResult> Create(KPI kpi, KPIDetail detail)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -211,8 +212,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
-        [HasPermission("MANAGER_ASSIGN_KPI")]
+        [HasPermission("KPIS_CREATE")]
         public async Task<IActionResult> AssignPersonnel(int kpiId, List<int> employeeIds)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
@@ -249,8 +249,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
-        [HasPermission("MANAGER_ASSIGN_KPI")]
+        [HasPermission("KPIS_CREATE")]
         public async Task<IActionResult> Approve(int id)
         {
             var kpi = await _context.KPIs.FindAsync(id);
@@ -264,8 +263,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
-        [HasPermission("MANAGER_ASSIGN_KPI")]
+        [HasPermission("KPIS_CREATE")]
         public async Task<IActionResult> Reject(int id)
         {
             var kpi = await _context.KPIs.FindAsync(id);
@@ -279,8 +277,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
-        [HasPermission("MANAGER_ASSIGN_KPI")]
+        [HasPermission("KPIS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||

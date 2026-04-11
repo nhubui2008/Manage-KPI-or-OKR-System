@@ -17,6 +17,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
         }
 
+        [HasPermission("MISSIONS_VIEW")]
         public async Task<IActionResult> Index(int? year)
         {
             var allMissions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
@@ -37,12 +38,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpGet]
+        [HasPermission("MISSIONS_CREATE")]
         public IActionResult Create()
         {
             return View();
         }
 
         [HttpPost]
+        [HasPermission("MISSIONS_CREATE")]
         public async Task<IActionResult> Create(MissionVision model)
         {
             if (ModelState.IsValid)
@@ -58,6 +61,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("MISSIONS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             var mv = await _context.MissionVisions.FindAsync(id);

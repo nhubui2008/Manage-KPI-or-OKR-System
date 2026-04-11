@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Authorization;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("ADMIN_MANAGE_ROLES")]
     public class RolesController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -18,6 +17,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
         }
 
+        [HasPermission("ROLES_VIEW")]
         public async Task<IActionResult> Index()
         {
             var roles = await _context.Roles.ToListAsync();
@@ -25,12 +25,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpGet]
+        [HasPermission("ROLES_CREATE")]
         public IActionResult Create()
         {
             return View();
         }
 
         [HttpPost]
+        [HasPermission("ROLES_CREATE")]
         public async Task<IActionResult> Create(string roleName, string description)
         {
             if (!string.IsNullOrEmpty(roleName))
@@ -51,6 +53,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("ROLES_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             var role = await _context.Roles.FindAsync(id);
@@ -79,6 +82,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpGet]
+        [HasPermission("ROLES_VIEW")]
         public async Task<IActionResult> ManagePermissions(int id)
         {
             var role = await _context.Roles.FindAsync(id);
@@ -97,6 +101,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("ROLES_EDIT")]
         public async Task<IActionResult> UpdatePermissions(int roleId, List<int> permissionIds)
         {
             // Xóa các quyền cũ
@@ -118,16 +123,49 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("ROLES_CREATE")]
         public async Task<IActionResult> SyncPermissions()
         {
             var codes = new[] {
+                // ===== PERMISSION CŨ (giữ nguyên để backward-compatible) =====
                 "MANAGER_CREATE_OKR", "MANAGER_ASSIGN_KPI", "EMPLOYEE_UPDATE_KPI_PROGRESS",
                 "HR_EVALUATE_KPI", "HR_MANAGE_EMPLOYEES", "SALES_CREATE_ORDERS",
                 "SALES_MANAGE_CUSTOMERS", "SALES_CREATE_INVOICES", "WAREHOUSE_MANAGE_PRODUCTS",
                 "WAREHOUSE_IMPORT_INVENTORY", "WAREHOUSE_VIEW_INVENTORY", "HR_APPROVE_KPI",
                 "DELIVERY_UPDATE_STATUS", "DELIVERY_CREATE_NOTES", "ADMIN_VIEW_AUDIT_LOGS",
-                "ADMIN_MANAGE_ROLES", "ADMIN_MANAGE_USERS"
+                "ADMIN_MANAGE_ROLES", "ADMIN_MANAGE_USERS",
+
+                // ===== PERMISSION MỚI – PHÂN QUYỀN CHI TIẾT TỪNG CHỨC NĂNG =====
+                // Nhân viên
+                "EMPLOYEES_VIEW", "EMPLOYEES_CREATE", "EMPLOYEES_EDIT", "EMPLOYEES_DELETE",
+                // Phòng ban
+                "DEPARTMENTS_VIEW", "DEPARTMENTS_CREATE", "DEPARTMENTS_EDIT", "DEPARTMENTS_DELETE",
+                // Chức vụ
+                "POSITIONS_VIEW", "POSITIONS_CREATE", "POSITIONS_EDIT", "POSITIONS_DELETE",
+                // KPI
+                "KPIS_VIEW", "KPIS_CREATE", "KPIS_EDIT", "KPIS_DELETE",
+                // KPI Check-in
+                "KPICHECKINS_VIEW", "KPICHECKINS_CREATE",
+                // OKR
+                "OKRS_VIEW", "OKRS_CREATE", "OKRS_EDIT", "OKRS_DELETE",
+                // Kỳ đánh giá
+                "EVALPERIODS_VIEW", "EVALPERIODS_CREATE", "EVALPERIODS_EDIT", "EVALPERIODS_DELETE",
+                // Kết quả đánh giá
+                "EVALRESULTS_VIEW", "EVALRESULTS_CREATE", "EVALRESULTS_EDIT", "EVALRESULTS_DELETE",
+                // Báo cáo đánh giá
+                "EVALREPORTS_VIEW", "EVALREPORTS_EDIT",
+                // Quy tắc thưởng
+                "BONUSRULES_VIEW", "BONUSRULES_CREATE", "BONUSRULES_EDIT", "BONUSRULES_DELETE",
+                // Sứ mệnh & Tầm nhìn
+                "MISSIONS_VIEW", "MISSIONS_CREATE", "MISSIONS_DELETE",
+                // Người dùng hệ thống
+                "SYSUSERS_VIEW", "SYSUSERS_CREATE", "SYSUSERS_EDIT", "SYSUSERS_DELETE",
+                // Vai trò (Roles)
+                "ROLES_VIEW", "ROLES_CREATE", "ROLES_EDIT", "ROLES_DELETE",
+                // Nhật ký hệ thống
+                "AUDITLOGS_VIEW"
             };
+
 
             int addedCount = 0;
             foreach (var code in codes)

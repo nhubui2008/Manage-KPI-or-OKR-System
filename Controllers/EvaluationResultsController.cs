@@ -14,6 +14,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly MiniERPDbContext _context;
         public EvaluationResultsController(MiniERPDbContext context) { _context = context; }
 
+        [HasPermission("EVALRESULTS_VIEW")]
         public async Task<IActionResult> Index()
         {
             var resultsQuery = _context.EvaluationResults.OrderByDescending(r => r.Id).AsQueryable();
@@ -60,6 +61,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpGet]
+        [HasPermission("EVALRESULTS_CREATE")]
         public async Task<IActionResult> Create()
         {
             if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
@@ -77,7 +79,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("HR_EVALUATE_KPI")]
+        [HasPermission("EVALRESULTS_CREATE")]
         public async Task<IActionResult> Create(EvaluationResult model)
         {
             if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
@@ -101,7 +103,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("HR_EVALUATE_KPI")]
+        [HasPermission("EVALRESULTS_EDIT")]
         public async Task<IActionResult> Edit(EvaluationResult model)
         {
             if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
@@ -148,7 +150,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("HR_EVALUATE_KPI")]
+        [HasPermission("EVALRESULTS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 

@@ -8,12 +8,12 @@ using Microsoft.AspNetCore.Authorization;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("ADMIN_VIEW_AUDIT_LOGS")]
     public class AuditLogsController : Controller
     {
         private readonly MiniERPDbContext _context;
         public AuditLogsController(MiniERPDbContext context) { _context = context; }
 
+        [HasPermission("AUDITLOGS_VIEW")]
         public async Task<IActionResult> Index(string searchString, DateTime? startDate, DateTime? endDate, int? pageNumber)
         {
             ViewData["CurrentFilter"] = searchString;

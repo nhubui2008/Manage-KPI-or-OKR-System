@@ -22,6 +22,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
         }
 
+        [HasPermission("EVALREPORTS_VIEW")]
         public async Task<IActionResult> Index(int? departmentId, string cycle)
         {
             try
@@ -96,7 +97,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
+        [HasPermission("EVALREPORTS_EDIT")]
         public async Task<IActionResult> SaveDirectorSummary(int departmentId, string cycle, string content)
         {
             var summary = await _context.EvaluationReportSummaries
@@ -124,7 +125,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return Ok(new { success = true, message = "Lưu nhận xét thành công!" });
         }
         [HttpGet]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
+        [HasPermission("EVALREPORTS_VIEW")]
         public async Task<IActionResult> ExportExcel(int? departmentId, string cycle)
         {
             if (!departmentId.HasValue)

@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Authorization;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("ADMIN_MANAGE_USERS")]
     public class SystemUsersController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -18,6 +17,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
         }
 
+        [HasPermission("SYSUSERS_VIEW")]
         public async Task<IActionResult> Index(string searchString, int? roleId, string status)
         {
             var query = _context.SystemUsers.AsQueryable();
@@ -52,6 +52,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("SYSUSERS_EDIT")]
         public async Task<IActionResult> AssignRole(int userId, int roleId)
         {
             var user = await _context.SystemUsers.FindAsync(userId);
@@ -65,6 +66,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("SYSUSERS_EDIT")]
         public async Task<IActionResult> ToggleLock(int userId)
         {
             var user = await _context.SystemUsers.FindAsync(userId);
@@ -78,6 +80,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("SYSUSERS_EDIT")]
         public async Task<IActionResult> ResetPassword(int userId, string newPassword)
         {
             var user = await _context.SystemUsers.FindAsync(userId);
@@ -92,6 +95,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         // ------------------------- THÊM MỚI -------------------------
+        [HasPermission("SYSUSERS_CREATE")]
         public async Task<IActionResult> Create()
         {
             ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
@@ -100,6 +104,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [HasPermission("SYSUSERS_CREATE")]
         public async Task<IActionResult> Create(SystemUser user)
         {
             if (ModelState.IsValid)
@@ -120,6 +125,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         // ------------------------- SỬA THÔNG TIN -------------------------
+        [HasPermission("SYSUSERS_EDIT")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -132,6 +138,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [HasPermission("SYSUSERS_EDIT")]
         public async Task<IActionResult> Edit(int id, SystemUser user, string? newPassword)
         {
             if (id != user.Id) return NotFound();
@@ -162,6 +169,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         // ------------------------- XEM CHI TIẾT -------------------------
+        [HasPermission("SYSUSERS_VIEW")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
@@ -173,6 +181,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         // ------------------------- XÓA -------------------------
+        [HasPermission("SYSUSERS_DELETE")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
@@ -185,6 +194,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [HasPermission("SYSUSERS_DELETE")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var user = await _context.SystemUsers.FindAsync(id);

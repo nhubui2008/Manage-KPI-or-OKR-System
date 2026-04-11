@@ -7,12 +7,13 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
-    [Authorize(Roles = "Administrator,Admin,Manager,HR,hr,Employee,employee")]
+    [Authorize]
     public class BonusRulesController : Controller
     {
         private readonly MiniERPDbContext _context;
         public BonusRulesController(MiniERPDbContext context) { _context = context; }
 
+        [HasPermission("BONUSRULES_VIEW")]
         public async Task<IActionResult> Index()
         {
             var rules = await _context.BonusRules.ToListAsync();
@@ -27,6 +28,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         // GET: BonusRules/Create
+        [HasPermission("BONUSRULES_CREATE")]
         public async Task<IActionResult> Create()
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
@@ -37,6 +39,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [HasPermission("BONUSRULES_CREATE")]
         public async Task<IActionResult> Create(BonusRule model, string rankCode, string rankDescription)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
@@ -90,6 +93,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("BONUSRULES_EDIT")]
         public async Task<IActionResult> Edit(BonusRule model)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
@@ -120,6 +124,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("BONUSRULES_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();

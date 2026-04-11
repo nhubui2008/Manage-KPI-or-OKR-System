@@ -8,19 +8,24 @@ using System.Collections.Generic;
 
 public class HasPermissionAttribute : TypeFilterAttribute
 {
-    public HasPermissionAttribute(string permission) : base(typeof(HasPermissionFilter))
+    /// <summary>
+    /// Cho phép truyền 1 hoặc nhiều permission code.
+    /// Chỉ cần user CÓ ÍT NHẤT 1 trong các permission là được phép truy cập (OR logic).
+    /// Ví dụ: [HasPermission("EMPLOYEES_VIEW", "EMPLOYEES_CREATE")]
+    /// </summary>
+    public HasPermissionAttribute(params string[] permissions) : base(typeof(HasPermissionFilter))
     {
-        Arguments = new object[] { permission };
+        Arguments = new object[] { permissions };
     }
 }
 
 public class HasPermissionFilter : IAuthorizationFilter
 {
-    private readonly string _permission;
+    private readonly string[] _permissions;
 
-    public HasPermissionFilter(string permission)
+    public HasPermissionFilter(string[] permissions)
     {
-        _permission = permission;
+        _permissions = permissions;
     }
 
     public void OnAuthorization(AuthorizationFilterContext context)
@@ -52,6 +57,7 @@ public class HasPermissionFilter : IAuthorizationFilter
         }
 
         // 4. Kiểm tra quyền trong Database từ bảng Role_Permissions liên kết Role và Permission
+        // Chỉ cần CÓ ÍT NHẤT 1 permission trong danh sách là đủ (OR logic)
         var hasPermission = dbContext.Role_Permissions
             .Join(dbContext.Permissions, 
                   rp => rp.PermissionId, 
@@ -61,7 +67,7 @@ public class HasPermissionFilter : IAuthorizationFilter
                   combined => combined.rp.RoleId,
                   r => r.Id,
                   (combined, r) => new { combined.p, r })
-            .Any(x => x.r.RoleName != null && userRoles.Contains(x.r.RoleName) && x.p.PermissionCode == _permission);
+            .Any(x => x.r.RoleName != null && userRoles.Contains(x.r.RoleName) && _permissions.Contains(x.p.PermissionCode));
 
         if (!hasPermission)
         {

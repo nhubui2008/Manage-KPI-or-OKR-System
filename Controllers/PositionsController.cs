@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
-    [Authorize] // Đã xóa [HasPermission], mở khóa hoàn toàn cho mọi người đã đăng nhập
+    [Authorize]
     public class PositionsController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -21,6 +21,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // ==========================================
         // 1. DANH SÁCH & LỌC (INDEX)
         // ==========================================
+        [HasPermission("POSITIONS_VIEW")]
         public async Task<IActionResult> Index(string searchString)
         {
             // Lưu lại từ khóa để giữ trên thanh tìm kiếm
@@ -51,6 +52,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // ==========================================
         // 2. CHI TIẾT (DETAILS)
         // ==========================================
+        [HasPermission("POSITIONS_VIEW")]
         [Route("Positions/Details/{code}")]
         public async Task<IActionResult> Details(string code)
         {
@@ -65,6 +67,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // ==========================================
         // 3. THÊM MỚI (CREATE)
         // ==========================================
+        [HasPermission("POSITIONS_CREATE")]
         public IActionResult Create()
         {
             return View();
@@ -72,6 +75,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [HasPermission("POSITIONS_CREATE")]
         public async Task<IActionResult> Create(Position position)
         {
             if (ModelState.IsValid)
@@ -107,6 +111,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("POSITIONS_CREATE")]
         public async Task<IActionResult> Restore(int id)
         {
             var position = await _context.Positions.FindAsync(id);
@@ -122,6 +127,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // ==========================================
         // 4. CHỈNH SỬA (EDIT)
         // ==========================================
+        [HasPermission("POSITIONS_EDIT")]
         [Route("Positions/Edit/{code}")]
         public async Task<IActionResult> Edit(string code)
         {
@@ -136,6 +142,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost("Positions/Edit/{code}")]
         [ValidateAntiForgeryToken]
+        [HasPermission("POSITIONS_EDIT")]
         public async Task<IActionResult> Edit(string code, int id, Position position)
         {
             if (id != position.Id) return NotFound();
@@ -178,6 +185,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // 5. XÓA MỀM (DELETE)
         // ==========================================
         [HttpPost]
+        [HasPermission("POSITIONS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             var position = await _context.Positions.FindAsync(id);

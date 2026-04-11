@@ -16,7 +16,6 @@ using System.IO;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("HR_MANAGE_EMPLOYEES")]
     public class EmployeesController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -29,6 +28,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         // Sửa hàm Index để nhận thêm 2 tham số: searchString và isActive
+[HasPermission("EMPLOYEES_VIEW")]
 public async Task<IActionResult> Index(string searchString, string isActive, int? departmentId)
 {
     // Bắt đầu bằng việc lấy toàn bộ danh sách (chưa thực hiện truy vấn xuống DB vội)
@@ -91,6 +91,8 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
     
     return View(result);
 }
+
+        [HasPermission("EMPLOYEES_CREATE")]
         public async Task<IActionResult> Create()
         {
             // Sinh mã nhân viên tự động
@@ -106,6 +108,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [HasPermission("EMPLOYEES_CREATE")]
         public async Task<IActionResult> Create([Bind("Id,EmployeeCode,FullName,DateOfBirth,Phone,Email,TaxCode,JoinDate,SystemUserId,IsActive,StrategicGoalId")] Employee employee, int? departmentId, int? positionId)
         {
             if (ModelState.IsValid)
@@ -184,6 +187,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
             return View(employee);
         }
 
+        [HasPermission("EMPLOYEES_EDIT")]
         public async Task<IActionResult> Edit(int id)
         {
             var emp = await _context.Employees.FindAsync(id);
@@ -210,6 +214,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
 
         [HttpPost]
 [ValidateAntiForgeryToken]
+[HasPermission("EMPLOYEES_EDIT")]
 // SỬA ĐIỂM 1: Thêm IsActive vào Bind và xóa tham số rời bool isActive = false
 public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,DateOfBirth,Phone,Email,TaxCode,JoinDate,SystemUserId,IsActive,StrategicGoalId")] Employee employee, int? departmentId, int? positionId)
 {
@@ -220,7 +225,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
 
     if (ModelState.IsValid)
     {
-        // KIỂM TRA TRÙNG LẶP TÀI KHOẢN LIÊN KẾT (Trừ chính nhân viên này)
+        // KIỂM TRA TRÙNG LẬP TÀI KHOẢN LIÊN KẾT (Trừ chính nhân viên này)
         if (employee.SystemUserId.HasValue)
         {
             bool isUserLinked = await _context.Employees.AnyAsync(e => e.SystemUserId == employee.SystemUserId && e.Id != id);
@@ -320,6 +325,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             return _context.Employees.Any(e => e.Id == id);
         }
 
+        [HasPermission("EMPLOYEES_VIEW")]
         public async Task<IActionResult> Details(int id)
         {
             var emp = await _context.Employees.FindAsync(id);
@@ -342,7 +348,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             return View(emp);
         }
 
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
+        [HasPermission("EMPLOYEES_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             var emp = await _context.Employees.FindAsync(id);
@@ -354,7 +360,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
+        [HasPermission("EMPLOYEES_DELETE")]
         public async Task<IActionResult> Delete(int id, bool confirm = false)
         {
             var emp = await _context.Employees.FindAsync(id);
@@ -367,14 +373,14 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             return RedirectToAction(nameof(Index));
         }
 
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
+        [HasPermission("EMPLOYEES_CREATE")]
         public IActionResult ImportExcel()
         {
             return View();
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
+        [HasPermission("EMPLOYEES_CREATE")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ImportExcel(IFormFile excelFile)
         {
@@ -543,7 +549,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             return errors;
         }
 
-        [Authorize(Roles = "Administrator,Admin,Manager,HR,hr")]
+        [HasPermission("EMPLOYEES_VIEW")]
         // Hàm tạo và tải file Excel mẫu
 [HttpGet]
 public IActionResult DownloadTemplate()
@@ -576,7 +582,7 @@ public IActionResult DownloadTemplate()
     }
 }
         
-        [Authorize(Roles = "HR,Admin,Administrator")]
+        [HasPermission("EMPLOYEES_VIEW")]
         [HttpGet]
         public async Task<IActionResult> ExportReport(string searchString, string isActive, int? departmentId)
         {

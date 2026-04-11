@@ -8,12 +8,12 @@ using Microsoft.AspNetCore.Authorization;
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
-    [HasPermission("HR_APPROVE_KPI")]
     public class EvaluationPeriodsController : Controller
     {
         private readonly MiniERPDbContext _context;
         public EvaluationPeriodsController(MiniERPDbContext context) { _context = context; }
 
+        [HasPermission("EVALPERIODS_VIEW")]
         public async Task<IActionResult> Index()
         {
             var periods = await _context.EvaluationPeriods
@@ -36,6 +36,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpGet]
+        [HasPermission("EVALPERIODS_CREATE")]
         public async Task<IActionResult> Create()
         {
             var statuses = await _context.Statuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
@@ -44,6 +45,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("EVALPERIODS_CREATE")]
         public async Task<IActionResult> Create(EvaluationPeriod model)
         {
             if (ModelState.IsValid)
@@ -69,6 +71,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("EVALPERIODS_EDIT")]
         public async Task<IActionResult> Edit(EvaluationPeriod model)
         {
             if (ModelState.IsValid)
@@ -138,6 +141,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("EVALPERIODS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
             var period = await _context.EvaluationPeriods.FindAsync(id);

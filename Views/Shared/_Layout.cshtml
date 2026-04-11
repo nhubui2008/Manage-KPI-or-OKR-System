@@ -51,12 +51,41 @@
                     @{
                         // TÁCH RÕ RÀNG CÁC QUYỀN ĐỂ FRONTEND DỄ KIỂM SOÁT
                         bool isAdmin = User.IsInRole("Admin") || User.IsInRole("Administrator");
-                        bool isManager = User.IsInRole("Manager");
-                        bool isHR = User.IsInRole("HR");
-                        bool isEmployee = User.IsInRole("Employee");
                         
-                        // Nhóm quyền quản trị chung
-                        bool isManagementOrHR = isAdmin || isManager || isHR;
+                        // === KIỂM TRA PERMISSION TỪ DATABASE ===
+                        var userRoles = User.Claims
+                            .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+                            .Select(c => c.Value).ToList();
+
+                        var userPermissions = new HashSet<string>();
+                        if (isAdmin)
+                        {
+                            // Admin có toàn quyền
+                            userPermissions = new HashSet<string> {
+                                "MISSIONS_VIEW", "OKRS_VIEW", "EVALPERIODS_VIEW", "KPIS_VIEW",
+                                "KPICHECKINS_VIEW", "EVALRESULTS_VIEW", "EVALREPORTS_VIEW",
+                                "BONUSRULES_VIEW", "EMPLOYEES_VIEW", "DEPARTMENTS_VIEW",
+                                "POSITIONS_VIEW", "SYSUSERS_VIEW", "ROLES_VIEW", "AUDITLOGS_VIEW"
+                            };
+                        }
+                        else if (userRoles.Any())
+                        {
+                            var dbContext = Context.RequestServices.GetService(typeof(Manage_KPI_or_OKR_System.Data.MiniERPDbContext)) as Manage_KPI_or_OKR_System.Data.MiniERPDbContext;
+                            if (dbContext != null)
+                            {
+                                userPermissions = new HashSet<string>(
+                                    dbContext.Role_Permissions
+                                        .Join(dbContext.Permissions, rp => rp.PermissionId, p => p.Id, (rp, p) => new { rp, p })
+                                        .Join(dbContext.Roles, x => x.rp.RoleId, r => r.Id, (x, r) => new { x.p.PermissionCode, r.RoleName })
+                                        .Where(x => x.RoleName != null && userRoles.Contains(x.RoleName) && x.PermissionCode != null)
+                                        .Select(x => x.PermissionCode!)
+                                        .ToList()
+                                );
+                            }
+                        }
+
+                        // Helper: kiểm tra user có permission không
+                        bool HasPerm(string code) => isAdmin || userPermissions.Contains(code);
                     }
 
                     <div class="sidebar-group">
@@ -66,53 +95,43 @@
                         </a>
                     </div>
 
-                    @if (isManagementOrHR)
-                    {
-                        <div class="sidebar-group">
-                            <div class="sidebar-group-label">Nhân sự</div>
-                            <a href="/Employees" class="sidebar-link">
-                                <i class="bi bi-people-fill"></i> <span>Nhân sự</span>
-                            </a>
-                            <a href="/Departments" class="sidebar-link">
-                                <i class="bi bi-diagram-3-fill"></i> <span>Phòng ban</span>
-                            </a>
-                            <a href="/Positions" class="sidebar-link">
-                                <i class="bi bi-person-badge-fill"></i> <span>Chức vụ</span>
-                            </a>
-                        </div>
-                    }
-
-                    @if (isAdmin || isManager || isEmployee)
+                    @if (HasPerm("MISSIONS_VIEW") || HasPerm("OKRS_VIEW"))
                     {
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Mục tiêu chiến lược</div>
-                            @if (isAdmin || isManager)
+                            @if (HasPerm("MISSIONS_VIEW"))
                             {
                                 <a href="/MissionVisions" class="sidebar-link">
                                     <i class="bi bi-compass-fill"></i> <span>Thiết lập tầm nhìn & sứ mệnh</span>
                                 </a>
                             }
-                            <a href="/OKRs" class="sidebar-link">
-                                <i class="bi bi-bullseye"></i> <span>Quản lý OKR / Mục tiêu</span>
-                            </a>
+                            @if (HasPerm("OKRS_VIEW"))
+                            {
+                                <a href="/OKRs" class="sidebar-link">
+                                    <i class="bi bi-bullseye"></i> <span>Quản lý OKR / Mục tiêu</span>
+                                </a>
+                            }
                         </div>
                     }
 
-                    @if (isAdmin || isManager || isHR || isEmployee)
+                    @if (HasPerm("EVALPERIODS_VIEW") || HasPerm("KPIS_VIEW") || HasPerm("KPICHECKINS_VIEW"))
                     {
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Đo lường hiệu suất</div>
-                            @if (isManagementOrHR)
+                            @if (HasPerm("EVALPERIODS_VIEW"))
                             {
                                 <a href="/EvaluationPeriods" class="sidebar-link">
                                     <i class="bi bi-calendar3"></i> <span>Kỳ đánh giá</span>
                                 </a>
                             }
-                            @if (isAdmin || isManager || isEmployee)
+                            @if (HasPerm("KPIS_VIEW"))
                             {
                                 <a href="/KPIs" class="sidebar-link">
                                     <i class="bi bi-speedometer2"></i> <span>Giao & Xem KPI cá nhân</span>
                                 </a>
+                            }
+                            @if (HasPerm("KPICHECKINS_VIEW"))
+                            {
                                 <a href="/KPICheckIns" class="sidebar-link">
                                     <i class="bi bi-check2-square"></i> <span>Cập nhật tiến độ KPI</span>
                                 </a>
@@ -120,18 +139,24 @@
                         </div>
                     }
 
-                    @if (isAdmin || isManager || isHR || isEmployee)
+                    @if (HasPerm("EVALRESULTS_VIEW") || HasPerm("EVALREPORTS_VIEW") || HasPerm("BONUSRULES_VIEW"))
                     {
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Đánh giá & Thưởng</div>
-                            <a href="/EvaluationResults" class="sidebar-link">
-                                <i class="bi bi-award-fill"></i> <span>Đánh giá 1-1 / Kết quả</span>
-                            </a>
-                            @if (isManagementOrHR)
+                            @if (HasPerm("EVALRESULTS_VIEW"))
+                            {
+                                <a href="/EvaluationResults" class="sidebar-link">
+                                    <i class="bi bi-award-fill"></i> <span>Đánh giá 1-1 / Kết quả</span>
+                                </a>
+                            }
+                            @if (HasPerm("EVALREPORTS_VIEW"))
                             {
                                 <a href="/EvaluationReports" class="sidebar-link">
                                     <i class="bi bi-file-earmark-bar-graph-fill text-info"></i> <span>Báo cáo Đánh giá (V.Director)</span>
                                 </a>
+                            }
+                            @if (HasPerm("BONUSRULES_VIEW"))
+                            {
                                 <a href="/BonusRules" class="sidebar-link">
                                     <i class="bi bi-cash-coin"></i> <span>Quy tắc thưởng</span>
                                 </a>
@@ -139,26 +164,63 @@
                         </div>
                     }
 
+                    @if (HasPerm("EMPLOYEES_VIEW") || HasPerm("DEPARTMENTS_VIEW") || HasPerm("POSITIONS_VIEW"))
+                    {
+                        <div class="sidebar-group">
+                            <div class="sidebar-group-label">Nhân sự</div>
+                            @if (HasPerm("EMPLOYEES_VIEW"))
+                            {
+                                <a href="/Employees" class="sidebar-link">
+                                    <i class="bi bi-people-fill"></i> <span>Nhân sự</span>
+                                </a>
+                            }
+                            @if (HasPerm("DEPARTMENTS_VIEW"))
+                            {
+                                <a href="/Departments" class="sidebar-link">
+                                    <i class="bi bi-diagram-3-fill"></i> <span>Phòng ban</span>
+                                </a>
+                            }
+                            @if (HasPerm("POSITIONS_VIEW"))
+                            {
+                                <a href="/Positions" class="sidebar-link">
+                                    <i class="bi bi-person-badge-fill"></i> <span>Chức vụ</span>
+                                </a>
+                            }
+                        </div>
+                    }
 
-                    @* HỆ THỐNG: Chỉ Admin *@
-                    @if (isAdmin)
+                    @* HỆ THỐNG: Dựa trên permission *@
+                    @if (HasPerm("SYSUSERS_VIEW") || HasPerm("ROLES_VIEW") || HasPerm("AUDITLOGS_VIEW"))
                     {
                         <div class="sidebar-group mt-2">
                             <div class="sidebar-group-label">Hệ thống</div>
-                            <a href="/SystemUsers" class="sidebar-link">
-                                <i class="bi bi-shield-lock-fill"></i> <span>Người dùng</span>
-                            </a>
-                            <a href="/Roles" class="sidebar-link">
-                                <i class="bi bi-person-lines-fill"></i> <span>Phân quyền</span>
-                            </a>
-                            <a href="/AuditLogs" class="sidebar-link">
-                                <i class="bi bi-journal-text"></i> <span>Lịch sử hệ thống</span>
-                            </a>
-                            <a href="/Catalog" class="sidebar-link">
-                                <i class="bi bi-collection-fill"></i> <span>Quản lý danh mục</span>
-                            </a>
+                            @if (HasPerm("SYSUSERS_VIEW"))
+                            {
+                                <a href="/SystemUsers" class="sidebar-link">
+                                    <i class="bi bi-shield-lock-fill"></i> <span>Người dùng</span>
+                                </a>
+                            }
+                            @if (HasPerm("ROLES_VIEW"))
+                            {
+                                <a href="/Roles" class="sidebar-link">
+                                    <i class="bi bi-person-lines-fill"></i> <span>Phân quyền</span>
+                                </a>
+                            }
+                            @if (HasPerm("AUDITLOGS_VIEW"))
+                            {
+                                <a href="/AuditLogs" class="sidebar-link">
+                                    <i class="bi bi-journal-text"></i> <span>Lịch sử hệ thống</span>
+                                </a>
+                            }
+                            @if (isAdmin)
+                            {
+                                <a href="/Catalog" class="sidebar-link">
+                                    <i class="bi bi-collection-fill"></i> <span>Quản lý danh mục</span>
+                                </a>
+                            }
                         </div>
                     }
+
                 </div>
 
                 @if (User.Identity != null && User.Identity.IsAuthenticated)
