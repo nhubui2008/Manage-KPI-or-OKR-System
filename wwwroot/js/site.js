@@ -278,4 +278,61 @@ document.addEventListener('DOMContentLoaded', function () {
             sessionStorage.setItem("sidebarScrollPosition", sidebarNav.scrollTop);
         });
     }
+
+    // =========================================================
+    // THÊM MỚI: Khởi tạo Select2 Toàn cục (Global Select2)
+    // =========================================================
+
+    function initGlobalSelect2() {
+        if (typeof jQuery === 'undefined' || typeof jQuery.fn.select2 === 'undefined') {
+            console.error('Select2: jQuery hoặc Select2 library chưa được tải.');
+            return;
+        }
+
+        // Tìm tất cả các thẻ <select> chưa được khởi tạo
+        $('select:not(.select2-hidden-accessible):not(.no-select2)').each(function () {
+            const $el = $(this);
+            
+            // Cấu hình dựa trên data attributes hoặc mặc định
+            const placeholder = $el.data('placeholder') || $el.find('option[value=""]').text() || 'Chọn một tùy chọn';
+            const allowClear = $el.prop('required') ? false : true;
+            
+            // Chỉ hiện ô tìm kiếm nếu số lượng option > 8
+            const minResultsForSearch = $el.data('minimum-results-for-search') || ($el.find('option').length > 8 ? 0 : -1);
+
+            $el.select2({
+                placeholder: placeholder,
+                allowClear: allowClear,
+                minimumResultsForSearch: minResultsForSearch,
+                width: '100%',
+                dropdownParent: $el.closest('.modal').length ? $el.closest('.modal') : $(document.body),
+                language: {
+                    noResults: function () { return "Không tìm thấy kết quả"; },
+                    searching: function () { return "Đang tìm kiếm..."; }
+                }
+            });
+
+            // Trigger change event to ensure native and jQuery listeners are notified
+            $el.on('change.select2', function () {
+                // Trigger natural change event for non-jQuery listeners
+                this.dispatchEvent(new Event('change', { bubbles: true }));
+                
+                // Trigger validation if available
+                if (typeof $(this).valid === 'function') {
+                    $(this).valid();
+                }
+            });
+        });
+    }
+
+    // Khởi tạo lần đầu
+    initGlobalSelect2();
+
+    // Hỗ trợ khởi tạo lại khi có dynamic content (AJAX/Modal)
+    $(document).on('shown.bs.modal', function() {
+        initGlobalSelect2();
+    });
+
+    // Xuất ra window để gọi thủ công nếu cần
+    window.refreshSelect2 = initGlobalSelect2;
 });

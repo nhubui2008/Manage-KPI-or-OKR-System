@@ -42,7 +42,7 @@
     <div class="col-lg-4">
         <div class="content-card h-100 shadow-sm border-0">
             <div class="card-header-custom border-bottom p-3">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-pie-chart-fill text-primary me-2"></i> Trạng thái (Tuần này)</h5>
+                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-pie-chart-fill me-2"></i> Trạng thái (Tuần này)</h5>
             </div>
             <div class="card-body-custom p-4 text-center">
                 <div class="position-relative d-inline-block mx-auto mb-4" style="width: 140px; height: 140px;">
@@ -80,7 +80,7 @@
     <div class="col-lg-8">
         <div class="content-card h-100 shadow-sm border-0">
             <div class="card-header-custom border-bottom p-3 d-flex justify-content-between align-items-center bg-light bg-opacity-50">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-card-checklist text-primary me-2"></i> Lịch sử Check-in</h5>
+                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-card-checklist me-2"></i> Lịch sử Check-in</h5>
             </div>
             <div class="card-body-custom p-0">
                 <div class="table-responsive w-100">
@@ -196,7 +196,7 @@
         <div class="modal-content">
             <div class="modal-header-soft primary">
                 <h5 class="modal-title-custom">
-                    <i class="bi bi-calendar-check-fill text-primary"></i>
+                    <i class="bi bi-calendar-check-fill text-white shadow-sm" style="background: linear-gradient(135deg, #1a73e8, #4285f4); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 12px;"></i>
                     Thực hiện Check-in KPI
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -208,15 +208,16 @@
                             <div class="form-icon-group">
                                 <label>Nhân viên</label>
                                 <div class="input-wrapper">
+                                    <i class="bi bi-person"></i>
                                     @if (allEmployeesList.Count == 1)
                                     {
                                         var e = allEmployeesList[0];
                                         <input type="hidden" name="EmployeeId" value="@e.Id" />
-                                        <input type="text" class="form-control bg-light" value="@e.FullName (@e.EmployeeCode)" readonly />
+                                        <input type="text" class="form-control bg-light" value="@e.FullName (@e.EmployeeCode)" readonly style="padding-left: 45px;" />
                                     }
                                     else
                                     {
-                                        <select name="EmployeeId" class="form-select" required>
+                                        <select name="EmployeeId" class="form-select" required style="padding-left: 45px;">
                                             <option value="">-- Chọn nhân viên --</option>
                                             @foreach(var e in allEmployeesList)
                                             {

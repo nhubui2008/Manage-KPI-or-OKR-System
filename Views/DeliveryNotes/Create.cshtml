@@ -1,4 +1,4 @@
-﻿@model Manage_KPI_or_OKR_System.Models.DeliveryNote
+@model Manage_KPI_or_OKR_System.Models.DeliveryNote
 @{
     ViewData["Title"] = "Tạo Phiếu giao hàng";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -151,15 +151,21 @@
                         </div>
                         <div class="row g-3">
                             <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4">
-                                    <div class="small opacity-75 mb-1">Đối tác</div>
-                                    <div class="fw-bold small" id="previewPartner">--</div>
+                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
+                                    <i class="bi bi-briefcase fs-4 me-3 opacity-75"></i>
+                                    <div>
+                                        <div class="small opacity-75 mb-1">Đối tác</div>
+                                        <div class="fw-bold small" id="previewPartner">--</div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4">
-                                    <div class="small opacity-75 mb-1">Phí ship</div>
-                                    <div class="fw-bold small" id="previewFee">--</div>
+                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
+                                    <i class="bi bi-cash-stack fs-4 me-3 opacity-75"></i>
+                                    <div>
+                                        <div class="small opacity-75 mb-1">Phí ship</div>
+                                        <div class="fw-bold small" id="previewFee">--</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

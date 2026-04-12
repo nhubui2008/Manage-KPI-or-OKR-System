@@ -1400,23 +1400,23 @@ html.sidebar-expanded .main-content {
 }
 
 .form-icon-group .form-control {
-    height: 52px;
+    height: 44px;
     border-radius: var(--radius-md);
     border: 1.5px solid var(--border-color);
     padding-left: 48px;
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-sm);
     transition: all var(--transition-fast);
     background-color: #fcfdfe;
 }
 
 /* Select trong form-icon-group: padding-right đủ chỗ cho mũi tên dropdown */
 .form-icon-group .form-select {
-    height: 52px;
+    height: 44px;
     border-radius: var(--radius-md);
     border: 1.5px solid var(--border-color);
     padding-left: 48px;
     padding-right: 40px; /* Chừa chỗ cho mũi tên dropdown native */
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-sm);
     transition: all var(--transition-fast);
     background-color: #fcfdfe;
     width: 100%; /* Luôn chiếm full width của container */
@@ -1664,7 +1664,7 @@ select.form-select.w-auto {
 .form-icon-group .form-select {
     padding-left: 48px !important;   /* Chừa chỗ cho icon trái */
     padding-right: 2.5rem !important; /* Chừa chỗ cho mũi tên dropdown native */
-    height: 52px !important;
+    height: 44px !important;
     width: 100% !important;
     box-sizing: border-box !important;
 }
@@ -1681,3 +1681,161 @@ select.form-select.w-auto {
 }
 
 
+/* ============================================================
+   SELECT2 OFFICE-STYLE THEME
+   Customized for Professional Blue Enterprise Theme
+   ============================================================ */
+
+/* 1. Base Container */
+.select2-container--default .select2-selection--single {
+    height: 44px !important;
+    border: 1.5px solid var(--border-color) !important;
+    border-radius: var(--radius-md) !important;
+    background-color: #fcfdfe !important;
+    display: flex;
+    align-items: center;
+    transition: all var(--transition-fast) !important;
+    outline: none !important;
+}
+
+/* 2. Selection Text & Icon Handling */
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--text-primary) !important;
+    font-size: var(--font-size-sm) !important; /* Slightly smaller font for sleek look */
+    padding-left: 16px !important;
+    padding-right: 40px !important;
+    line-height: normal !important;
+    display: flex;
+    align-items: center;
+}
+
+/* Fix for form-icon-group: If Select2 is inside an input-wrapper, we need to respect the left icon */
+.form-icon-group .input-wrapper .select2-container--default .select2-selection--single .select2-selection__rendered {
+    padding-left: 48px !important; /* Matches .form-control padding-left */
+}
+
+/* 3. Placeholder */
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.7;
+}
+
+/* 4. Arrow / Caret */
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 42px !important;
+    right: 12px !important;
+    width: 20px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border-color: var(--primary) transparent transparent transparent !important;
+    border-width: 6px 5px 0 5px !important;
+    margin-left: -5px !important;
+}
+
+.select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+    border-color: transparent transparent var(--primary) transparent !important;
+    border-width: 0 5px 6px 5px !important;
+}
+
+/* 5. Focus & Open State */
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--primary-light) !important;
+    box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.15) !important;
+    background-color: #fff !important;
+}
+
+/* 6. Dropdown Menu (Results) */
+.select2-container--open .select2-dropdown {
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
+    overflow: hidden;
+    z-index: 9999;
+    animation: select2FadeIn 0.2s ease-out;
+}
+
+@keyframes select2FadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.select2-container--default .select2-search--dropdown {
+    padding: 12px !important;
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    border: 1.5px solid var(--border-color) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 8px 12px !important;
+    font-size: var(--font-size-sm) !important;
+    outline: none !important;
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field:focus {
+    border-color: var(--primary) !important;
+}
+
+.select2-results__options {
+    max-height: 300px !important;
+    scrollbar-width: thin;
+}
+
+.select2-results__option {
+    padding: 10px 16px !important;
+    font-size: var(--font-size-sm) !important;
+    color: var(--text-secondary) !important;
+    transition: all 0.1s ease !important;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected],
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background-color: var(--primary-bg) !important;
+    color: var(--primary) !important;
+}
+
+.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: var(--primary-light) !important;
+    color: var(--primary-dark) !important;
+    font-weight: 700 !important;
+}
+
+/* 7. Multi-select styling (if needed) */
+.select2-container--default .select2-selection--multiple {
+    min-height: 44px !important;
+    border: 1.5px solid var(--border-color) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 2px 8px !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: var(--primary-bg) !important;
+    border: 1px solid var(--primary-light) !important;
+    color: var(--primary) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 2px 10px !important;
+    font-weight: 600 !important;
+    margin-top: 6px !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: var(--primary) !important;
+    margin-right: 6px !important;
+}
+
+/* 8. Fix for Select2 in Toolbar */
+.toolbar .select2-container, .toolbar-left .select2-container {
+    min-width: 220px !important; /* Longer horizontally */
+}
+
+.toolbar .select2-container--default .select2-selection--single {
+    height: 40px !important; /* Smaller in toolbar */
+}
+
+.toolbar .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 38px !important;
+}

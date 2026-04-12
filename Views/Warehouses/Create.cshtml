@@ -1,4 +1,4 @@
-﻿@model Manage_KPI_or_OKR_System.Models.Warehouse
+@model Manage_KPI_or_OKR_System.Models.Warehouse
 @{
     ViewData["Title"] = "Thêm Kho hàng";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -115,9 +115,12 @@
                             <div class="small opacity-75 fw-bold text-uppercase mb-1">Tên kho</div>
                             <div class="fw-bold fs-6" id="previewName" style="min-height: 28px;">--</div>
                         </div>
-                        <div class="bg-white bg-opacity-10 p-3 rounded-4">
-                            <div class="small opacity-75 mb-1">Địa chỉ</div>
-                            <div class="fw-bold small" id="previewAddr">--</div>
+                        <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
+                            <i class="bi bi-geo-alt fs-4 me-3 opacity-75"></i>
+                            <div>
+                                <div class="small opacity-75 mb-1">Địa chỉ</div>
+                                <div class="fw-bold small" id="previewAddr">--</div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-﻿@model Manage_KPI_or_OKR_System.Models.Invoice
+@model Manage_KPI_or_OKR_System.Models.Invoice
 @{
     ViewData["Title"] = "Tạo Hóa đơn";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -144,15 +144,21 @@
                         </div>
                         <div class="row g-3">
                             <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4">
-                                    <div class="small opacity-75 mb-1">Tạm tính</div>
-                                    <div class="fw-bold small" id="previewSub">--</div>
+                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
+                                    <i class="bi bi-calculator fs-4 me-3 opacity-75"></i>
+                                    <div>
+                                        <div class="small opacity-75 mb-1">Tạm tính</div>
+                                        <div class="fw-bold small" id="previewSub">--</div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4">
-                                    <div class="small opacity-75 mb-1">VAT</div>
-                                    <div class="fw-bold small" id="previewVAT">--</div>
+                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
+                                    <i class="bi bi-percent fs-4 me-3 opacity-75"></i>
+                                    <div>
+                                        <div class="small opacity-75 mb-1">VAT</div>
+                                        <div class="fw-bold small" id="previewVAT">--</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -1,4 +1,4 @@
-﻿@model Manage_KPI_or_OKR_System.Models.SystemUser
+@model Manage_KPI_or_OKR_System.Models.SystemUser
 @{
     ViewData["Title"] = "Tạo tài khoản mới";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -29,7 +29,7 @@
         <div class="col-xl-8 animate__animated animate__fadeInLeft">
             <div class="content-card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
                 <div class="card-header-custom border-bottom bg-transparent py-4">
-                    <h5 class="fw-bold fs-5 mb-0"><i class="bi bi-shield-lock text-primary me-2"></i> Thông tin Tài khoản</h5>
+                    <h5 class="fw-bold fs-5 mb-0"><i class="bi bi-shield-lock me-2"></i> Thông tin Tài khoản</h5>
                 </div>
 
                 <div class="card-body-custom p-4">
@@ -136,9 +136,12 @@
                             <div class="small opacity-75 fw-bold text-uppercase mb-1">Email</div>
                             <div class="fw-bold fs-6" id="previewEmail" style="min-height: 24px; word-break: break-all;">--</div>
                         </div>
-                        <div class="bg-white bg-opacity-10 p-3 rounded-4">
-                            <div class="small opacity-75 mb-1">Nhóm quyền</div>
-                            <div class="fw-bold small" id="previewRole">--</div>
+                        <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
+                            <i class="bi bi-shield-check fs-4 me-3 opacity-75"></i>
+                            <div>
+                                <div class="small opacity-75 mb-1">Nhóm quyền</div>
+                                <div class="fw-bold small" id="previewRole">--</div>
+                            </div>
                         </div>
                     </div>
                 </div>
