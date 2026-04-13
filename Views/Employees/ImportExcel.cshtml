@@ -28,7 +28,16 @@
                     {
                         <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
                             <strong><i class="bi bi-exclamation-triangle-fill me-2"></i> Lỗi!</strong>
-                            @Html.Raw(ViewBag.ErrorMessage)
+                            <span>@ViewBag.ErrorMessage</span>
+                            @if (ViewBag.ErrorLines != null)
+                            {
+                                <ul class="mb-0 mt-2">
+                                    @foreach (var error in (IEnumerable<string>)ViewBag.ErrorLines)
+                                    {
+                                        <li>@error</li>
+                                    }
+                                </ul>
+                            }
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     }

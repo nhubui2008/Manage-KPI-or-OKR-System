@@ -19,7 +19,7 @@
             </div>
         </div>
         <div class="d-flex justify-content-end gap-2">
-            @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Warehouse") || User.IsInRole("warehouse") || User.IsInRole("Sales") || User.IsInRole("sales")))
+            @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Sales") || User.IsInRole("sales")))
             {
                 <a asp-action="Create" class="text-decoration-none btn-primary-custom d-flex align-items-center">
                     <i class="bi bi-plus-lg me-1"></i> Tạo OKR mới
@@ -66,7 +66,6 @@
                             var allocatedIds = ViewBag.AllocatedOkrIds as List<int> ?? new List<int>();
                             var deptOkrIds = ViewBag.DepartmentOkrIds as List<int> ?? new List<int>();
                             bool isRestrictedRole = User.IsInRole("Employee") || User.IsInRole("employee") || 
-                                                   User.IsInRole("Warehouse") || User.IsInRole("warehouse") || 
                                                    User.IsInRole("Sales") || User.IsInRole("sales");
 
                             foreach (var okr in Model)
@@ -84,6 +83,7 @@
 
                                 // Sử dụng TotalProgress từ model đã được chuẩn hóa
                                 int okrProgressInt = (int)okr.TotalProgress;
+                                int okrProgressWidth = (int)Math.Min(100, okr.TotalProgress);
                                 
                                 string okrProgressColor = ProgressHelper.GetProgressColorClass(okrProgressInt);
                                 string okrBadgeTone = okrProgressInt >= 100 ? "okr-status-success" :
@@ -105,7 +105,7 @@
                                                 
                                                 <div class="d-flex align-items-center gap-4">
                                                     <div class="text-muted okr-meta-text" style="font-size: 0.8rem;">
-                                                        <i class="bi bi-calendar3"></i> @Html.Raw(okr.Cycle ?? "Chưa rõ chu kỳ")
+                                                        <i class="bi bi-calendar3"></i> @(okr.Cycle ?? "Chưa rõ chu kỳ")
                                                     </div>
                                                     
                                                     <div class="flex-grow-1" style="max-width: 400px;">
@@ -114,7 +114,7 @@
                                                             <span class="fw-bold">@okrProgressInt%</span>
                                                         </div>
                                                         <div class="progress" style="height: 6px; border-radius: 10px;">
-                                                            <div class="progress-bar @okrProgressColor" role="progressbar" style="width: @okrProgressInt%" aria-valuenow="@okrProgressInt" aria-valuemin="0" aria-valuemax="100"></div>
+                                                            <div class="progress-bar @okrProgressColor" role="progressbar" style="width: @okrProgressWidth%" aria-valuenow="@okrProgressWidth" aria-valuemin="0" aria-valuemax="100"></div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -161,6 +161,7 @@
                                                 foreach (var kr in krs)
                                                 {
                                                     var krPercent = (int)kr.Progress;
+                                                    var krWidth = (int)Math.Min(100, kr.Progress);
                                                     
                                                     string krColor = ProgressHelper.GetProgressColorClass(krPercent);
                                                     string krTextClass = ProgressHelper.GetProgressTextColorClass(krPercent);
@@ -178,7 +179,7 @@
                                                                     <span class="fw-bold">@krPercent%</span>
                                                                 </div>
                                                                 <div class="progress mb-1" style="height: 6px; border-radius: 10px;">
-                                                                    <div class="progress-bar @krColor" role="progressbar" style="width: @krPercent%" aria-valuenow="@krPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                                                    <div class="progress-bar @krColor" role="progressbar" style="width: @krWidth%" aria-valuenow="@krWidth" aria-valuemin="0" aria-valuemax="100"></div>
                                                                 </div>
                                                                 <div class="d-flex justify-content-between" style="font-size: 0.7rem;">
                                                                     <span class="badge badge-pastel-pink okr-kr-status-badge px-2 py-1">@ProgressHelper.GetResultStatus(kr.Progress)</span>
@@ -192,7 +193,7 @@
                                                                     @if (canManageStructure)
                                                                     {
                                                                         <button class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle" 
-                                                                                onclick="openEditKrModal(@kr.Id, '@kr.KeyResultName', @(kr.TargetValue ?? 0), @(kr.CurrentValue ?? 0), '@kr.Unit', @(kr.IsInverse.ToString().ToLower()))" title="Sửa KR">
+                                                                                onclick="openEditKrModal(@kr.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.KeyResultName ?? "")), @(kr.TargetValue ?? 0), @(kr.CurrentValue ?? 0), @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.Unit ?? "")), @(kr.IsInverse.ToString().ToLower()))" title="Sửa KR">
                                                                             <i class="bi bi-pencil-square"></i>
                                                                         </button>
                                                                         <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
@@ -204,7 +205,7 @@
                                                                 </div>
                                                                 @if (canUpdateProgress)
                                                                 {
-                                                                    <button class="btn btn-sm btn-outline-primary rounded-circle" title="Cập nhật tiến độ" onclick="openUpdateProgressModal(@kr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kr.KeyResultName ?? ""))', @(kr.CurrentValue ?? 0), '@kr.Unit')">
+                                                                    <button class="btn btn-sm btn-outline-primary rounded-circle" title="Cập nhật tiến độ" onclick="openUpdateProgressModal(@kr.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.KeyResultName ?? "")), @(kr.CurrentValue ?? 0), @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.Unit ?? "")))">
                                                                         <i class="bi bi-pencil"></i>
                                                                     </button>
                                                                 }

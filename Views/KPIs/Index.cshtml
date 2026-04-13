@@ -70,7 +70,6 @@
         </div>
     </div>
         @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
                 User.IsInRole("Sales") || User.IsInRole("sales")))
         {
             <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createKpiModal">
@@ -123,17 +122,17 @@
             <div class="toolbar-right d-flex align-items-center gap-2">
                 <div class="d-flex align-items-center gap-2 bg-white p-1 rounded shadow-sm border">
                     <span class="ps-2 text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; white-space: nowrap;">Kỳ báo cáo:</span>
-                    <select name="period" class="form-select form-select-sm border-0 fw-bold text-primary" style="width: 160px; outline: none; box-shadow: none;">
+                    <select name="periodId" class="form-select form-select-sm border-0 fw-bold text-primary" style="width: 160px; outline: none; box-shadow: none;">
                         <option value="">Tất cả</option>
-                        @foreach(var p in periodsDict.Values.Distinct())
+                        @foreach(var p in periodsDict)
                         {
-                            if (Context.Request.Query["period"] == p)
+                            if (ViewData["PeriodId"] is int selectedPeriodId && selectedPeriodId == p.Key)
                             {
-                                <option value="@p" selected>@p</option>
+                                <option value="@p.Key" selected>@p.Value</option>
                             }
                             else
                             {
-                                <option value="@p">@p</option>
+                                <option value="@p.Key">@p.Value</option>
                             }
                         }
                     </select>
@@ -266,7 +265,6 @@
                                                      <li><a class="dropdown-item py-2 text-success fw-bold" asp-controller="KPICheckIns" asp-action="Create" asp-route-kpiId="@kpi.Id"><i class="bi bi-calendar-check me-2"></i> Thực hiện Check-in</a></li>
                                                      
                                                      @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
-                                                          User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
                                                           User.IsInRole("Sales") || User.IsInRole("sales")))
                                                      {
                                                          <li><a class="dropdown-item py-2" href="javascript:void(0)" onclick="openAssignPersonnelModal(@kpi.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kpi.KPIName ?? ""))', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assignedEmployees)))"><i class="bi bi-people text-info-emphasis me-2"></i> Phân bổ nhân sự</a></li>
@@ -291,7 +289,6 @@
                                                  }
                                                  
                                                  @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
-                                                      User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
                                                       User.IsInRole("Sales") || User.IsInRole("sales")))
                                                  {
                                                      <li><hr class="dropdown-divider"></li>
@@ -416,6 +413,11 @@
 
                 <form asp-controller="KPIs" asp-action="AssignPersonnel" method="post">
                     <input type="hidden" name="kpiId" id="assignKpiId" />
+                    <div class="mb-3">
+                        <label for="assignWeight" class="form-label fw-semibold">Trọng số áp dụng</label>
+                        <input type="number" class="form-control" name="weight" id="assignWeight" value="1" min="0.01" step="0.01" />
+                        <div class="text-muted small mt-1">Trọng số này được dùng khi tính điểm tổng hợp KPI của các nhân viên được chọn.</div>
+                    </div>
                     
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Chọn nhân viên <span class="text-danger">*</span></label>

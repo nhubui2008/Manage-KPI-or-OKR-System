@@ -44,6 +44,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
 
+            var earlyValidationError = ValidateBonusRule(model);
+            if (earlyValidationError != null)
+            {
+                TempData["ErrorMessage"] = earlyValidationError;
+                return RedirectToAction(nameof(Index));
+            }
+
             // Handle rank derivation if not provided via RankId
             if (model.RankId == null || model.RankId <= 0)
             {
@@ -73,6 +80,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (ModelState.IsValid)
             {
+                var validationError = ValidateBonusRule(model);
+                if (validationError != null)
+                {
+                    TempData["ErrorMessage"] = validationError;
+                    return RedirectToAction(nameof(Index));
+                }
+
                 // Check if a rule already exists for this RankId
                 var exists = await _context.BonusRules.AnyAsync(r => r.RankId == model.RankId);
                 if (exists)
@@ -100,6 +114,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (ModelState.IsValid)
             {
+                var validationError = ValidateBonusRule(model);
+                if (validationError != null)
+                {
+                    TempData["ErrorMessage"] = validationError;
+                    return RedirectToAction(nameof(Index));
+                }
+
                 // Check if another rule already exists for this RankId
                 var exists = await _context.BonusRules.AnyAsync(r => r.RankId == model.RankId && r.Id != model.Id);
                 if (exists)
@@ -137,6 +158,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 TempData["SuccessMessage"] = "Đã xóa quy tắc thưởng!";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        private static string? ValidateBonusRule(BonusRule model)
+        {
+            if (model.BonusPercentage.HasValue && (model.BonusPercentage.Value < 0 || model.BonusPercentage.Value > 100))
+            {
+                return "Phần trăm thưởng phải nằm trong khoảng từ 0 đến 100.";
+            }
+
+            if (model.FixedAmount.HasValue && model.FixedAmount.Value < 0)
+            {
+                return "Số tiền cố định không được âm.";
+            }
+
+            return null;
         }
     }
 }

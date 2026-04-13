@@ -25,13 +25,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("KPIS_VIEW")]
         public async Task<IActionResult> Index(string searchString, int? periodId)
         {
-            try
-            {
-                // Đảm bảo cột StatusId tồn tại trong database (fix lỗi schema mismatch)
-                await _context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('KPIs') AND name = 'StatusId') ALTER TABLE KPIs ADD StatusId int NULL;");
-            }
-            catch { }
-
             ViewData["CurrentFilter"] = searchString;
             ViewData["PeriodId"] = periodId;
 
@@ -50,26 +43,29 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 query = query.Where(k => k.PeriodId == periodId.Value);
             }
 
-            // Cấp quyền cho các role hạn chế (Warehouse, Employee, Sales) chỉ xem KPI của chính mình
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+            bool isRestrictedRole =
                 User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+                User.IsInRole("Sales") || User.IsInRole("sales");
+            Employee? currentEmployee = null;
+
+            // Cấp quyền cho các role hạn chế (Employee, Sales) chỉ xem KPI của chính mình
+            if (isRestrictedRole)
             {
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(userIdStr, out int userId))
                 {
-                    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
-                    if (employee != null)
+                    currentEmployee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
+                    if (currentEmployee != null)
                     {
                         var allocatedKpiIds = await _context.KPI_Employee_Assignments
-                            .Where(a => a.EmployeeId == employee.Id)
+                            .Where(a => a.EmployeeId == currentEmployee.Id && (a.Status == null || a.Status == "Active"))
                             .Select(a => a.KPIId)
                             .ToListAsync();
 
                         // Hiển thị KPI nếu: (Được phân bổ VÀ đã duyệt/đang thực hiện) HOẶC (Là người tạo VÀ chưa bị từ chối)
                         query = query.Where(k => 
                             (allocatedKpiIds.Contains(k.Id) && k.StatusId != 0 && k.StatusId != 2) || 
-                            (k.AssignerId == employee.Id && k.StatusId != 2)
+                            (k.AssignerId == currentEmployee.Id && k.StatusId != 2)
                         );
                     }
                     else
@@ -88,7 +84,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .ToDictionaryAsync(d => d.KPIId ?? 0);
 
             var assignments = await _context.KPI_Employee_Assignments
-                .Where(a => kpiIds.Contains(a.KPIId))
+                .Where(a => kpiIds.Contains(a.KPIId) && (a.Status == null || a.Status == "Active"))
                 .ToListAsync();
             
             var assignmentDict = new Dictionary<int, List<int>>();
@@ -114,18 +110,34 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var latestProgress = new Dictionary<int, decimal>();
             foreach (var kpiId in kpiIds)
             {
-                var latestCheckIn = await _context.KPICheckIns
-                    .Where(c => c.KPIId == kpiId)
-                    .OrderByDescending(c => c.CheckInDate)
-                    .FirstOrDefaultAsync();
+                var latestCheckInQuery = _context.KPICheckIns
+                    .Where(c => c.KPIId == kpiId);
 
-                if (latestCheckIn != null)
+                if (isRestrictedRole && currentEmployee != null)
                 {
-                    var checkInDetail = await _context.CheckInDetails
-                        .FirstOrDefaultAsync(d => d.CheckInId == latestCheckIn.Id);
-                    if (checkInDetail?.ProgressPercentage != null)
+                    latestCheckInQuery = latestCheckInQuery.Where(c => c.EmployeeId == currentEmployee.Id);
+                }
+
+                var latestCheckInIds = await latestCheckInQuery
+                    .OrderByDescending(c => c.CheckInDate)
+                    .ToListAsync();
+
+                latestCheckInIds = latestCheckInIds
+                    .GroupBy(c => c.EmployeeId)
+                    .Select(g => g.First())
+                    .ToList();
+
+                var latestIds = latestCheckInIds.Select(c => c.Id).ToList();
+                if (latestIds.Any())
+                {
+                    var progressValues = await _context.CheckInDetails
+                        .Where(d => d.CheckInId.HasValue && latestIds.Contains(d.CheckInId.Value) && d.ProgressPercentage.HasValue)
+                        .Select(d => d.ProgressPercentage!.Value)
+                        .ToListAsync();
+
+                    if (progressValues.Any())
                     {
-                        latestProgress[kpiId] = checkInDetail.ProgressPercentage.Value;
+                        latestProgress[kpiId] = Math.Round(progressValues.Average(), 2);
                     }
                 }
             }
@@ -152,8 +164,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.PropertyName = property?.PropertyName ?? "N/A";
 
             // Security check for restricted roles
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales"))
             {
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -163,7 +174,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     if (employee != null)
                     {
                         var isAssigned = await _context.KPI_Employee_Assignments
-                            .AnyAsync(a => a.KPIId == id && a.EmployeeId == employee.Id);
+                            .AnyAsync(a => a.KPIId == id && a.EmployeeId == employee.Id && (a.Status == null || a.Status == "Active"));
                         
                         if (!isAssigned && kpi.AssignerId != employee.Id) return Forbid();
                     }
@@ -176,7 +187,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var detail = await _context.KPIDetails.FirstOrDefaultAsync(d => d.KPIId == id);
             var assignments = await _context.KPI_Employee_Assignments
-                .Where(a => a.KPIId == id)
+                .Where(a => a.KPIId == id && (a.Status == null || a.Status == "Active"))
                 .ToListAsync();
             
             var employeeIds = assignments.Select(a => a.EmployeeId).ToList();
@@ -225,8 +236,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("KPIS_EDIT")]
         public async Task<IActionResult> Edit(int id, KPI kpi, KPIDetail detail)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales"))
                 return Forbid();
 
@@ -274,8 +284,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("KPIS_CREATE")]
         public async Task<IActionResult> Create(KPI kpi, KPIDetail detail)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales"))
                 return Forbid();
 
@@ -319,15 +328,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [HasPermission("KPIS_CREATE")]
-        public async Task<IActionResult> AssignPersonnel(int kpiId, List<int> employeeIds)
+        public async Task<IActionResult> AssignPersonnel(int kpiId, List<int> employeeIds, decimal? weight)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
             var kpi = await _context.KPIs.FindAsync(kpiId);
             if (kpi == null) return NotFound();
+            var normalizedWeight = weight.HasValue && weight.Value > 0 ? weight.Value : 1m;
 
             // Xóa các phân bổ cũ
             var existingAssignments = await _context.KPI_Employee_Assignments
@@ -344,6 +353,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     {
                         KPIId = kpiId,
                         EmployeeId = empId,
+                        Weight = normalizedWeight,
                         Status = "Active"
                     });
                 }
@@ -386,8 +396,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("KPIS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
-            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 

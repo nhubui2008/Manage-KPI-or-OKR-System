@@ -38,6 +38,9 @@
     }
     else
     {
+        <form id="globalAntiForgeryForm" class="d-none">
+            @Html.AntiForgeryToken()
+        </form>
         <div class="app-wrapper">
             <nav id="sidebar" class="sidebar">
                 <div class="sidebar-brand">
@@ -380,6 +383,15 @@
                         inputId.name = 'id';
                         inputId.value = '@TempData["RestoreId"]';
                         form.appendChild(inputId);
+
+                        const antiForgeryToken = window.getAntiForgeryToken ? window.getAntiForgeryToken() : document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                        if (antiForgeryToken) {
+                            const tokenInput = document.createElement('input');
+                            tokenInput.type = 'hidden';
+                            tokenInput.name = '__RequestVerificationToken';
+                            tokenInput.value = antiForgeryToken;
+                            form.appendChild(tokenInput);
+                        }
                         
                         document.body.appendChild(form);
                         form.submit();

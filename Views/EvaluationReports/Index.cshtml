@@ -87,9 +87,8 @@
                             foreach (var alloc in krAllocations)
                             {
                                 var emp = employees.ContainsKey(alloc.EmployeeId) ? employees[alloc.EmployeeId] : null;
-                                // In a real system, the allocation might link to the KR specifically. 
-                                // Here we use the KR's CurrentValue for demonstration of the logic.
-                                decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, alloc.AllocatedValue ?? 1, kr.IsInverse);
+                                decimal progress = kr.Progress;
+                                decimal progressWidth = Math.Min(100, progress);
                                 string status = ProgressHelper.GetResultStatus(progress);
                                 string statusColor = ProgressHelper.GetProgressTextColorClass(progress);
                                 string statusBgColor = ProgressHelper.GetProgressColorClass(progress);
@@ -104,7 +103,7 @@
                                         <div class="d-flex align-items-center gap-2 justify-content-center">
                                             <span class="fw-bold @statusColor">@((int)progress)%</span>
                                             <div class="progress" style="width: 50px; height: 5px;">
-                                                <div class="progress-bar @statusBgColor" style="width: @((int)progress)%"></div>
+                                                <div class="progress-bar @statusBgColor" style="width: @((int)progressWidth)%"></div>
                                             </div>
                                         </div>
                                     </td>
@@ -191,6 +190,10 @@
                 formData.append('departmentId', departmentId);
                 formData.append('cycle', cycle);
                 formData.append('content', content);
+                const antiForgeryToken = window.getAntiForgeryToken?.();
+                if (antiForgeryToken) {
+                    formData.append('__RequestVerificationToken', antiForgeryToken);
+                }
 
                 const response = await fetch('/EvaluationReports/SaveDirectorSummary', {
                     method: 'POST',

@@ -9,6 +9,8 @@ namespace Manage_KPI_or_OKR_System.Models
         public int KPIId { get; set; }
         [Key, Column(Order = 1)]
         public int EmployeeId { get; set; }
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal? Weight { get; set; } = 1m;
         [StringLength(50)]
         public string? Status { get; set; }
     }

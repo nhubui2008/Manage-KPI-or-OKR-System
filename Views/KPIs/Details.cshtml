@@ -1,4 +1,5 @@
 @model Manage_KPI_or_OKR_System.Models.KPI
+@using Manage_KPI_or_OKR_System.Helpers
 @{
     ViewData["Title"] = "Chi tiết KPI";
     var detail = ViewBag.KPIDetail as Manage_KPI_or_OKR_System.Models.KPIDetail;
@@ -35,7 +36,7 @@
             <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
                 <i class="bi bi-arrow-left me-1"></i> Quay lại
             </a>
-            @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Warehouse") || User.IsInRole("warehouse") || User.IsInRole("Sales") || User.IsInRole("sales")))
+            @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Sales") || User.IsInRole("sales")))
             {
                 <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#editKpiModal">
                     <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa
@@ -117,6 +118,9 @@
                                 {
                                     foreach (var ci in recentCheckIns)
                                     {
+                                        decimal achievedValue = ci.AchievedValue != null ? (decimal)ci.AchievedValue : 0m;
+                                        decimal progress = detail != null ? ProgressHelper.CalculateProgress(achievedValue, detail.TargetValue ?? 0, detail.IsInverse) : 0m;
+                                        decimal progressWidth = Math.Min(100, progress);
                                         <tr>
                                             <td class="ps-4 text-muted small">@ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm")</td>
                                             <td class="fw-bold text-dark">@ci.employeeName</td>
@@ -124,9 +128,9 @@
                                             <td>
                                                 <div class="d-flex align-items-center gap-2" style="min-width: 120px;">
                                                     <div class="progress flex-grow-1" style="height: 6px;">
-                                                        <div class="progress-bar bg-primary" style="width: @(detail?.TargetValue > 0 ? (ci.AchievedValue / detail.TargetValue * 100) : 0)%"></div>
+                                                        <div class="progress-bar bg-primary" style="width: @progressWidth%"></div>
                                                     </div>
-                                                    <span class="small fw-bold">@(detail?.TargetValue > 0 ? Math.Round((ci.AchievedValue ?? 0) / (detail.TargetValue ?? 1) * 100, 1) : 0)%</span>
+                                                    <span class="small fw-bold">@Math.Round(progress, 1)%</span>
                                                 </div>
                                             </td>
                                             <td>

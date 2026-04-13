@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Security.Claims;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -29,10 +30,29 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             term = term.ToLower().Trim();
             var results = new List<SearchResult>();
+            bool isRestrictedRole = User.IsInRole("Employee") || User.IsInRole("employee") ||
+                                    User.IsInRole("Sales") || User.IsInRole("sales");
+            Employee? currentEmployee = null;
+            if (isRestrictedRole)
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int userId))
+                {
+                    currentEmployee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId && e.IsActive == true);
+                }
+            }
 
             // 1. Search Employees
-            var employees = await _context.Employees
-                .Where(e => (e.FullName != null && e.FullName.ToLower().Contains(term)) || 
+            var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
+            if (isRestrictedRole)
+            {
+                employeeQuery = currentEmployee != null
+                    ? employeeQuery.Where(e => e.Id == currentEmployee.Id)
+                    : employeeQuery.Where(e => false);
+            }
+
+            var employees = await employeeQuery
+                .Where(e => (e.FullName != null && e.FullName.ToLower().Contains(term)) ||
                             (e.EmployeeCode != null && e.EmployeeCode.ToLower().Contains(term)))
                 .Take(5)
                 .Select(e => new SearchResult {
@@ -47,8 +67,25 @@ namespace Manage_KPI_or_OKR_System.Controllers
             results.AddRange(employees);
 
             // 2. Search KPIs
-            var kpis = await _context.KPIs
-                .Where(k => k.KPIName != null && k.KPIName.ToLower().Contains(term) && k.IsActive == true)
+            var kpiQuery = _context.KPIs.Where(k => k.IsActive == true);
+            if (isRestrictedRole)
+            {
+                if (currentEmployee != null)
+                {
+                    var allocatedKpiIds = await _context.KPI_Employee_Assignments
+                        .Where(a => a.EmployeeId == currentEmployee.Id && (a.Status == null || a.Status == "Active"))
+                        .Select(a => a.KPIId)
+                        .ToListAsync();
+                    kpiQuery = kpiQuery.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == currentEmployee.Id);
+                }
+                else
+                {
+                    kpiQuery = kpiQuery.Where(k => false);
+                }
+            }
+
+            var kpis = await kpiQuery
+                .Where(k => k.KPIName != null && k.KPIName.ToLower().Contains(term))
                 .Take(5)
                 .Select(k => new SearchResult {
                     Id = k.Id,
@@ -62,8 +99,25 @@ namespace Manage_KPI_or_OKR_System.Controllers
             results.AddRange(kpis);
 
             // 3. Search OKRs
-            var okrs = await _context.OKRs
-                .Where(o => o.ObjectiveName != null && o.ObjectiveName.ToLower().Contains(term) && o.IsActive == true)
+            var okrQuery = _context.OKRs.Where(o => o.IsActive == true);
+            if (isRestrictedRole)
+            {
+                if (currentEmployee != null)
+                {
+                    var allocatedOkrIds = await _context.OKR_Employee_Allocations
+                        .Where(a => a.EmployeeId == currentEmployee.Id)
+                        .Select(a => a.OKRId)
+                        .ToListAsync();
+                    okrQuery = okrQuery.Where(o => allocatedOkrIds.Contains(o.Id) || o.CreatedById == currentEmployee.Id);
+                }
+                else
+                {
+                    okrQuery = okrQuery.Where(o => false);
+                }
+            }
+
+            var okrs = await okrQuery
+                .Where(o => o.ObjectiveName != null && o.ObjectiveName.ToLower().Contains(term))
                 .Take(5)
                 .Select(o => new SearchResult {
                     Id = o.Id,
@@ -77,10 +131,27 @@ namespace Manage_KPI_or_OKR_System.Controllers
             results.AddRange(okrs);
 
             // 4. Search Departments
-            var departments = await _context.Departments
+            var departmentQuery = _context.Departments.Where(d => d.IsActive == true);
+            if (isRestrictedRole)
+            {
+                if (currentEmployee != null)
+                {
+                    var departmentIds = await _context.EmployeeAssignments
+                        .Where(a => a.EmployeeId == currentEmployee.Id && a.IsActive == true && a.DepartmentId.HasValue)
+                        .Select(a => a.DepartmentId!.Value)
+                        .Distinct()
+                        .ToListAsync();
+                    departmentQuery = departmentQuery.Where(d => departmentIds.Contains(d.Id));
+                }
+                else
+                {
+                    departmentQuery = departmentQuery.Where(d => false);
+                }
+            }
+
+            var departments = await departmentQuery
                 .Where(d => (d.DepartmentName != null && d.DepartmentName.ToLower().Contains(term)) || 
                             (d.DepartmentCode != null && d.DepartmentCode.ToLower().Contains(term)))
-                .Where(d => d.IsActive == true)
                 .Take(5)
                 .Select(d => new SearchResult {
                     Id = d.Id,

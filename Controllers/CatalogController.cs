@@ -72,9 +72,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             var entity = await _context.KPITypes.FindAsync(id);
             if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            _context.KPITypes.Remove(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Xóa thành công." });
+            return await DeleteEntityAsync(_context.KPITypes, entity);
         }
 
         // =========================================
@@ -113,9 +111,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             var entity = await _context.OKRTypes.FindAsync(id);
             if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            _context.OKRTypes.Remove(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Xóa thành công." });
+            return await DeleteEntityAsync(_context.OKRTypes, entity);
         }
 
         // =========================================
@@ -148,9 +144,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             var entity = await _context.KPIProperties.FindAsync(id);
             if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            _context.KPIProperties.Remove(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Xóa thành công." });
+            return await DeleteEntityAsync(_context.KPIProperties, entity);
         }
 
         // =========================================
@@ -186,9 +180,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             var entity = await _context.CheckInStatuses.FindAsync(id);
             if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            _context.CheckInStatuses.Remove(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Xóa thành công." });
+            return await DeleteEntityAsync(_context.CheckInStatuses, entity);
         }
 
         // =========================================
@@ -221,9 +213,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             var entity = await _context.FailReasons.FindAsync(id);
             if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            _context.FailReasons.Remove(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Xóa thành công." });
+            return await DeleteEntityAsync(_context.FailReasons, entity);
         }
 
         // =========================================
@@ -261,9 +251,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             var entity = await _context.GradingRanks.FindAsync(id);
             if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            _context.GradingRanks.Remove(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Xóa thành công." });
+            return await DeleteEntityAsync(_context.GradingRanks, entity);
         }
 
         // =========================================
@@ -300,9 +288,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             var entity = await _context.Statuses.FindAsync(id);
             if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            _context.Statuses.Remove(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Xóa thành công." });
+            return await DeleteEntityAsync(_context.Statuses, entity);
         }
 
 
@@ -342,9 +328,25 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             var entity = await _context.SystemParameters.FindAsync(id);
             if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            _context.SystemParameters.Remove(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Xóa thành công." });
+            return await DeleteEntityAsync(_context.SystemParameters, entity);
+        }
+
+        private async Task<IActionResult> DeleteEntityAsync<TEntity>(DbSet<TEntity> dbSet, TEntity entity) where TEntity : class
+        {
+            try
+            {
+                dbSet.Remove(entity);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "Xóa thành công." });
+            }
+            catch (DbUpdateException)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Không thể xóa danh mục này vì đang được dữ liệu nghiệp vụ sử dụng."
+                });
+            }
         }
     }
 }

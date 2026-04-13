@@ -4,6 +4,7 @@ using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -69,6 +70,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("SYSUSERS_EDIT")]
         public async Task<IActionResult> ToggleLock(int userId)
         {
+            var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(currentUserIdStr, out int currentUserId) && currentUserId == userId)
+            {
+                TempData["ErrorMessage"] = "Bạn không thể tự khóa tài khoản đang đăng nhập.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var user = await _context.SystemUsers.FindAsync(userId);
             if (user != null)
             {
@@ -119,6 +127,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (ModelState.IsValid)
             {
+                bool duplicateUsername = !string.IsNullOrWhiteSpace(user.Username) &&
+                    await _context.SystemUsers.AnyAsync(u => u.Username == user.Username);
+                bool duplicateEmail = !string.IsNullOrWhiteSpace(user.Email) &&
+                    await _context.SystemUsers.AnyAsync(u => u.Email == user.Email);
+
+                if (duplicateUsername || duplicateEmail)
+                {
+                    if (duplicateUsername) ModelState.AddModelError(nameof(user.Username), "Tên đăng nhập đã tồn tại.");
+                    if (duplicateEmail) ModelState.AddModelError(nameof(user.Email), "Email đã tồn tại.");
+                    ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+                    return View(user);
+                }
+
                 user.CreatedAt = DateTime.Now;
                 user.IsActive = true;
                 if (!string.IsNullOrEmpty(user.PasswordHash))
@@ -158,6 +179,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var existingUser = await _context.SystemUsers.FindAsync(id);
                 if (existingUser != null)
                 {
+                    if (!string.IsNullOrWhiteSpace(user.Email) &&
+                        await _context.SystemUsers.AnyAsync(u => u.Id != id && u.Email == user.Email))
+                    {
+                        ModelState.AddModelError(nameof(user.Email), "Email đã tồn tại.");
+                        ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+                        return View(user);
+                    }
+
                     existingUser.Email = user.Email;
                     existingUser.RoleId = user.RoleId;
                     existingUser.IsActive = user.IsActive;

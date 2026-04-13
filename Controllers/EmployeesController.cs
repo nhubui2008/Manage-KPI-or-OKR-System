@@ -75,11 +75,14 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
     var result = await employeesQuery.OrderByDescending(e => e.CreatedAt).ToListAsync();
     
     // 5. LẤY DANH SÁCH ASSIGNMENTS VÀ CÁC TỪ ĐIỂN CHO VIEW
-    var assignmentsList = await _context.EmployeeAssignments.ToListAsync();
+    var assignmentsList = await _context.EmployeeAssignments
+        .Where(a => a.IsActive == true)
+        .OrderByDescending(a => a.EffectiveDate)
+        .ToListAsync();
     var assignments = new Dictionary<int, EmployeeAssignment>();
     foreach (var assignment in assignmentsList)
     {
-        if (assignment.EmployeeId.HasValue)
+        if (assignment.EmployeeId.HasValue && !assignments.ContainsKey(assignment.EmployeeId.Value))
         {
             assignments[assignment.EmployeeId.Value] = assignment;
         }
@@ -200,7 +203,8 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
             }
 
             var assignment = await _context.EmployeeAssignments
-                .Where(a => a.EmployeeId == id)
+                .Where(a => a.EmployeeId == id && a.IsActive == true)
+                .OrderByDescending(a => a.EffectiveDate)
                 .FirstOrDefaultAsync();
 
             ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", emp.SystemUserId);
@@ -270,7 +274,8 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
 
             // Cập nhật hoặc tạo EmployeeAssignment
             var assignment = await _context.EmployeeAssignments
-                .Where(a => a.EmployeeId == id)
+                .Where(a => a.EmployeeId == id && a.IsActive == true)
+                .OrderByDescending(a => a.EffectiveDate)
                 .FirstOrDefaultAsync();
 
             if (assignment != null)
@@ -338,7 +343,8 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             }
             
             var assignment = await _context.EmployeeAssignments
-                .Where(a => a.EmployeeId == id)
+                .Where(a => a.EmployeeId == id && a.IsActive == true)
+                .OrderByDescending(a => a.EffectiveDate)
                 .FirstOrDefaultAsync();
             
             // Lấy thông tin mục tiêu chiến lược
@@ -355,8 +361,9 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
 
             // Lấy danh sách KPI được giao
             var assignedKPIs = await _context.KPI_Employee_Assignments
-                .Where(a => a.EmployeeId == id)
+                .Where(a => a.EmployeeId == id && (a.Status == null || a.Status == "Active"))
                 .Join(_context.KPIs, a => a.KPIId, k => k.Id, (a, k) => k)
+                .Where(k => k.IsActive == true)
                 .ToListAsync();
             ViewBag.AssignedKPIs = assignedKPIs;
 
@@ -393,8 +400,25 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             if (emp != null)
             {
                 emp.IsActive = false;
+                var activeAssignments = await _context.EmployeeAssignments
+                    .Where(a => a.EmployeeId == id && a.IsActive == true)
+                    .ToListAsync();
+                foreach (var assignment in activeAssignments)
+                {
+                    assignment.IsActive = false;
+                }
+
+                if (emp.SystemUserId.HasValue)
+                {
+                    var systemUser = await _context.SystemUsers.FindAsync(emp.SystemUserId.Value);
+                    if (systemUser != null)
+                    {
+                        systemUser.IsActive = false;
+                    }
+                }
+
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã vô hiệu hóa nhân viên!";
+                TempData["SuccessMessage"] = "Đã vô hiệu hóa nhân viên, phân công hiện tại và tài khoản liên kết!";
             }
             return RedirectToAction(nameof(Index));
         }
@@ -501,7 +525,8 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
 
                 if (errors.Any())
                 {
-                    ViewBag.ErrorMessage = "Có lỗi trong quá trình import:<br>" + string.Join("<br>", errors);
+                    ViewBag.ErrorMessage = "Có lỗi trong quá trình import:";
+                    ViewBag.ErrorLines = errors;
                     return View();
                 }
 
@@ -587,14 +612,35 @@ public IActionResult DownloadTemplate()
         // Tạo 1 sheet mới tên là DanhSachNhanVien
         var worksheet = package.Workbook.Worksheets.Add("DanhSachNhanVien");
 
-        // Đặt tiêu đề cho các cột (Khớp với code đọc lúc nãy)
-        worksheet.Cells[1, 1].Value = "Mã nhân viên (Bỏ trống sẽ tự sinh)";
-        worksheet.Cells[1, 2].Value = "Họ và tên (*Bắt buộc)";
-        worksheet.Cells[1, 3].Value = "Email";
-        worksheet.Cells[1, 4].Value = "Số điện thoại";
+        // Đặt tiêu đề cho các cột, khớp chính xác với logic ImportExcel.
+        string[] headers =
+        {
+            "Mã nhân viên (Bỏ trống sẽ tự sinh)",
+            "Họ và tên (*Bắt buộc)",
+            "Ngày sinh",
+            "Số điện thoại",
+            "Email",
+            "Mã số thuế",
+            "Ngày vào làm"
+        };
+
+        for (int i = 0; i < headers.Length; i++)
+        {
+            worksheet.Cells[1, i + 1].Value = headers[i];
+        }
+
+        worksheet.Cells[2, 1].Value = "";
+        worksheet.Cells[2, 2].Value = "Nguyễn Văn A";
+        worksheet.Cells[2, 3].Value = "01/01/1995";
+        worksheet.Cells[2, 4].Value = "0901234567";
+        worksheet.Cells[2, 5].Value = "nguyenvana@example.com";
+        worksheet.Cells[2, 6].Value = "1234567890";
+        worksheet.Cells[2, 7].Value = "01/04/2026";
 
         // Format làm đẹp file Excel: In đậm dòng 1 và tự động giãn độ rộng cột
-        worksheet.Cells["A1:D1"].Style.Font.Bold = true;
+        worksheet.Cells["A1:G1"].Style.Font.Bold = true;
+        worksheet.Cells["A1:G1"].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+        worksheet.Cells["A1:G1"].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
         worksheet.Cells.AutoFitColumns();
 
         // Biến file excel thành dữ liệu để tải về
@@ -641,11 +687,14 @@ public IActionResult DownloadTemplate()
             var departments = await _context.Departments.ToDictionaryAsync(d => d.Id, d => d.DepartmentName);
             var positions = await _context.Positions.ToDictionaryAsync(p => p.Id, p => p.PositionName);
             
-            var assignmentsList = await _context.EmployeeAssignments.Where(a => a.IsActive == true).ToListAsync();
+            var assignmentsList = await _context.EmployeeAssignments
+                .Where(a => a.IsActive == true)
+                .OrderByDescending(a => a.EffectiveDate)
+                .ToListAsync();
             var assignments = new Dictionary<int, EmployeeAssignment>();
             foreach (var a in assignmentsList)
             {
-                if (a.EmployeeId.HasValue) assignments[a.EmployeeId.Value] = a;
+                if (a.EmployeeId.HasValue && !assignments.ContainsKey(a.EmployeeId.Value)) assignments[a.EmployeeId.Value] = a;
             }
 
             ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;

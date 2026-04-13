@@ -2,6 +2,47 @@
 // Site JavaScript - KPI/OKR Management System
 // ============================================
 
+(function () {
+    function getAntiForgeryToken() {
+        const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        return tokenInput ? tokenInput.value : '';
+    }
+
+    window.getAntiForgeryToken = getAntiForgeryToken;
+
+    window.appendAntiForgeryToken = function (body) {
+        const token = getAntiForgeryToken();
+        if (!token || !body || typeof body.append !== 'function') return body;
+        body.append('__RequestVerificationToken', token);
+        return body;
+    };
+
+    window.antiForgeryHeaders = function () {
+        const token = getAntiForgeryToken();
+        return token ? { 'RequestVerificationToken': token } : {};
+    };
+
+    window.escapeHtml = function (value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    };
+
+    window.escapeAttribute = window.escapeHtml;
+
+    window.escapeRegExp = function (value) {
+        return String(value ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    };
+
+    window.sanitizeSearchUrl = function (value) {
+        const url = String(value ?? '#');
+        return url.startsWith('/') ? url : '#';
+    };
+})();
+
 document.addEventListener('DOMContentLoaded', function () {
 
     // --- Sidebar Toggle ---
@@ -190,29 +231,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
         function renderSearchResults(results, term) {
             if (!results || results.length === 0) {
-                resultsInner.innerHTML = `<div class="search-no-results">Không tìm thấy kết quả nào cho "<strong>${term}</strong>"</div>`;
+                resultsInner.innerHTML = `<div class="search-no-results">Không tìm thấy kết quả nào cho "<strong>${escapeHtml(term)}</strong>"</div>`;
                 return;
             }
 
             // Group by type
             const groups = results.reduce((acc, item) => {
-                if (!acc[item.type]) acc[item.type] = [];
-                acc[item.type].push(item);
+                const type = item.type || 'Khác';
+                if (!acc[type]) acc[type] = [];
+                acc[type].push(item);
                 return acc;
-            }, {});
+            }, Object.create(null));
 
             let html = '';
             for (const type in groups) {
-                html += `<div class="search-section-header">${type}</div>`;
+                html += `<div class="search-section-header">${escapeHtml(type)}</div>`;
                 groups[type].forEach(item => {
+                    const safeUrl = escapeAttribute(sanitizeSearchUrl(item.url));
+                    const safeIcon = escapeAttribute(String(item.icon || '').replace(/[^\w-]/g, ''));
+                    const subtitle = escapeHtml(item.subtitle || '');
                     html += `
-                        <a href="${item.url}" class="search-item">
+                        <a href="${safeUrl}" class="search-item">
                             <div class="search-item-icon">
-                                <i class="bi ${item.icon}"></i>
+                                <i class="bi ${safeIcon}"></i>
                             </div>
                             <div class="search-item-info">
                                 <div class="search-item-title">${highlightMatch(item.title, term)}</div>
-                                <div class="search-item-subtitle">${item.subtitle}</div>
+                                <div class="search-item-subtitle">${subtitle}</div>
                             </div>
                         </a>
                     `;
@@ -222,8 +267,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         function highlightMatch(text, term) {
-            const regex = new RegExp(`(${term})`, 'gi');
-            return text.replace(regex, '<span style="color: var(--primary); font-weight: 800;">$1</span>');
+            const safeText = escapeHtml(text || '');
+            const safeTerm = escapeRegExp(term || '');
+            if (!safeTerm) return safeText;
+
+            const regex = new RegExp(`(${safeTerm})`, 'gi');
+            return safeText.replace(regex, '<span style="color: var(--primary); font-weight: 800;">$1</span>');
         }
     }
 

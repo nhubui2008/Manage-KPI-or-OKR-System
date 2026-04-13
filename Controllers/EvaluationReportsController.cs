@@ -25,13 +25,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("EVALREPORTS_VIEW")]
         public async Task<IActionResult> Index(int? departmentId, string cycle)
         {
-            try
-            {
-                // Đảm bảo bảng EvaluationReportSummaries tồn tại (fix lỗi schema mismatch)
-                await _context.Database.ExecuteSqlRawAsync("IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'EvaluationReportSummaries') CREATE TABLE EvaluationReportSummaries (Id int IDENTITY(1,1) PRIMARY KEY, DepartmentId int, Cycle nvarchar(50), Content nvarchar(max), UpdatedAt datetime, UpdatedById int);");
-            }
-            catch { }
-
             // Default to Sales if not specified (per user request example)
             if (!departmentId.HasValue)
             {
@@ -218,7 +211,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         foreach (var alloc in krAllocations)
                         {
                             var emp = employees.ContainsKey(alloc.EmployeeId) ? employees[alloc.EmployeeId] : null;
-                            decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, alloc.AllocatedValue ?? 1, kr.IsInverse);
+                            decimal progress = kr.Progress;
                             string status = ProgressHelper.GetResultStatus(progress);
 
                             worksheet.Cells[row, 1].Value = okr.ObjectiveName;

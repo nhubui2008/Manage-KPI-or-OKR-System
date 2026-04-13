@@ -30,7 +30,16 @@
                     {
                         <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
                             <strong><i class="bi bi-exclamation-triangle-fill me-2"></i> Lỗi!</strong>
-                            @Html.Raw(ViewBag.ErrorMessage)
+                            <span>@ViewBag.ErrorMessage</span>
+                            @if (ViewBag.ErrorLines != null)
+                            {
+                                <ul class="mb-0 mt-2">
+                                    @foreach (var error in (IEnumerable<string>)ViewBag.ErrorLines)
+                                    {
+                                        <li>@error</li>
+                                    }
+                                </ul>
+                            }
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     }
@@ -103,23 +112,13 @@
                                 </tr>
                                 <tr>
                                     <td>F</td>
-                                    <td>Địa chỉ</td>
+                                    <td>Mã số thuế</td>
                                     <td class="text-muted">Không</td>
                                 </tr>
                                 <tr>
                                     <td>G</td>
-                                    <td>Mã phòng ban</td>
+                                    <td>Ngày vào làm</td>
                                     <td class="text-muted">Không</td>
-                                </tr>
-                                <tr>
-                                    <td>H</td>
-                                    <td>Mã chức vụ</td>
-                                    <td class="text-muted">Không</td>
-                                </tr>
-                                <tr>
-                                    <td>I</td>
-                                    <td>Trạng thái</td>
-                                    <td class="text-muted">Không (1=Active, 0=Inactive)</td>
                                 </tr>
                             </tbody>
                         </table>

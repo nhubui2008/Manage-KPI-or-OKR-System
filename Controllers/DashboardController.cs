@@ -56,16 +56,34 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var okrQuery = _context.OKRs.Where(o => o.IsActive == true);
             var checkInQuery = _context.KPICheckIns.AsQueryable();
 
+            if (selectedPeriod != null)
+            {
+                kpiQuery = kpiQuery.Where(k => k.PeriodId == selectedPeriod.Id);
+
+                string? inferredCycle = null;
+                if (selectedPeriod.StartDate.HasValue)
+                {
+                    var quarter = ((selectedPeriod.StartDate.Value.Month - 1) / 3) + 1;
+                    inferredCycle = $"Q{quarter}-{selectedPeriod.StartDate.Value.Year}";
+                }
+
+                var periodName = selectedPeriod.PeriodName;
+                if (!string.IsNullOrWhiteSpace(periodName) || !string.IsNullOrWhiteSpace(inferredCycle) || (startDate.HasValue && endDate.HasValue))
+                {
+                    okrQuery = okrQuery.Where(o =>
+                        (!string.IsNullOrWhiteSpace(periodName) && o.Cycle == periodName) ||
+                        (!string.IsNullOrWhiteSpace(inferredCycle) && o.Cycle == inferredCycle) ||
+                        (startDate.HasValue && endDate.HasValue && o.CreatedAt >= startDate.Value && o.CreatedAt <= endDate.Value));
+                }
+            }
+
             if (startDate.HasValue && endDate.HasValue)
             {
-                kpiQuery = kpiQuery.Where(k => k.CreatedAt >= startDate.Value && k.CreatedAt <= endDate.Value);
-                okrQuery = okrQuery.Where(o => o.CreatedAt >= startDate.Value && o.CreatedAt <= endDate.Value);
                 checkInQuery = checkInQuery.Where(c => c.CheckInDate >= startDate.Value && c.CheckInDate <= endDate.Value);
             }
 
             // Phân quyền dữ liệu theo Role
             bool isEmployeeRole = User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
                 User.IsInRole("Sales") || User.IsInRole("sales");
 
             if (isEmployeeRole)
@@ -73,21 +91,28 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 if (employee != null)
                 {
                     var allocatedKpiIds = await _context.KPI_Employee_Assignments
-                        .Where(a => a.EmployeeId == employee.Id)
+                        .Where(a => a.EmployeeId == employee.Id && (a.Status == null || a.Status == "Active"))
                         .Select(a => a.KPIId)
+                        .ToListAsync();
+
+                    var allocatedOkrIds = await _context.OKR_Employee_Allocations
+                        .Where(a => a.EmployeeId == employee.Id)
+                        .Select(a => a.OKRId)
                         .ToListAsync();
                     
                     kpiQuery = kpiQuery.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
+                    okrQuery = okrQuery.Where(o => allocatedOkrIds.Contains(o.Id) || o.CreatedById == employee.Id);
                     checkInQuery = checkInQuery.Where(c => c.EmployeeId == employee.Id);
                 }
                 else
                 {
                     kpiQuery = kpiQuery.Where(k => false);
+                    okrQuery = okrQuery.Where(o => false);
                     checkInQuery = checkInQuery.Where(c => false);
                 }
             }
 
-            ViewBag.TotalEmployees = await _context.Employees.CountAsync(e => e.IsActive == true);
+            ViewBag.TotalEmployees = isEmployeeRole && employee != null ? 1 : await _context.Employees.CountAsync(e => e.IsActive == true);
             ViewBag.TotalOKRs = await okrQuery.CountAsync();
             var totalKpis = await kpiQuery.CountAsync();
             ViewBag.TotalKPIs = totalKpis;
@@ -151,10 +176,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // 6. DEPARTMENTS DATA
             // ========================================
             var departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
-            ViewBag.TotalDepartments = departments.Count;
+            ViewBag.TotalDepartments = isEmployeeRole && employee != null
+                ? await _context.EmployeeAssignments
+                    .Where(ea => ea.EmployeeId == employee.Id && ea.IsActive == true && ea.DepartmentId.HasValue)
+                    .Select(ea => ea.DepartmentId)
+                    .Distinct()
+                    .CountAsync()
+                : departments.Count;
 
             // Tổng chức vụ
-            ViewBag.TotalPositions = await _context.Positions.CountAsync(p => p.IsActive == true);
+            ViewBag.TotalPositions = isEmployeeRole && employee != null
+                ? await _context.EmployeeAssignments
+                    .Where(ea => ea.EmployeeId == employee.Id && ea.IsActive == true && ea.PositionId.HasValue)
+                    .Select(ea => ea.PositionId)
+                    .Distinct()
+                    .CountAsync()
+                : await _context.Positions.CountAsync(p => p.IsActive == true);
 
             // ========================================
             // 7. BIỂU ĐỒ OKR STATUS DISTRIBUTION
@@ -174,11 +211,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // ========================================
             // 8. BIỂU ĐỒ HIỆU SUẤT PHÒNG BAN (TỪ DB)
             // ========================================
+            int scopedEmployeeId = employee?.Id ?? 0;
             var performanceQuery = from d in _context.Departments
                                  join ea in _context.EmployeeAssignments on d.Id equals ea.DepartmentId
                                  join ci in _context.KPICheckIns on ea.EmployeeId equals ci.EmployeeId
                                  join cd in _context.CheckInDetails on ci.Id equals cd.CheckInId
-                                 where d.IsActive == true && ea.IsActive == true
+                                 where d.IsActive == true
+                                       && ea.IsActive == true
+                                       && (!startDate.HasValue || ci.CheckInDate >= startDate.Value)
+                                       && (!endDate.HasValue || ci.CheckInDate <= endDate.Value)
+                                       && (!isEmployeeRole || ci.EmployeeId == scopedEmployeeId)
                                  group cd by d.DepartmentName into g
                                  select new {
                                      DeptName = g.Key,
@@ -209,8 +251,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 monthLabels.Add($"T{monthDate.Month:00}/{monthDate.Year % 100}");
 
                 // Lấy trung bình progress của tất cả check-in trong tháng đó
-                var monthCheckInIds = await _context.KPICheckIns
-                    .Where(c => c.CheckInDate >= monthStart && c.CheckInDate <= monthEnd)
+                var monthCheckInQuery = _context.KPICheckIns
+                    .Where(c => c.CheckInDate >= monthStart && c.CheckInDate <= monthEnd);
+                if (isEmployeeRole)
+                {
+                    monthCheckInQuery = employee != null
+                        ? monthCheckInQuery.Where(c => c.EmployeeId == employee.Id)
+                        : monthCheckInQuery.Where(c => false);
+                }
+
+                var monthCheckInIds = await monthCheckInQuery
                     .Select(c => c.Id)
                     .ToListAsync();
 
@@ -249,8 +299,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // ========================================
             // 11. TOP NHÂN VIÊN HIỆU SUẤT CAO
             // ========================================
+            var topCheckInQuery = _context.KPICheckIns.AsQueryable();
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                topCheckInQuery = topCheckInQuery.Where(c => c.CheckInDate >= startDate.Value && c.CheckInDate <= endDate.Value);
+            }
+
+            if (isEmployeeRole)
+            {
+                topCheckInQuery = employee != null
+                    ? topCheckInQuery.Where(c => c.EmployeeId == employee.Id)
+                    : topCheckInQuery.Where(c => false);
+            }
+
             var topEmployees = await (
-                from ci in _context.KPICheckIns
+                from ci in topCheckInQuery
                 join cd in _context.CheckInDetails on ci.Id equals cd.CheckInId
                 where cd.ProgressPercentage != null
                 group cd by ci.EmployeeId into g

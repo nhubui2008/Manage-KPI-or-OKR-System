@@ -758,6 +758,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<decimal?>("Weight")
+                        .HasColumnType("decimal(5,2)");
+
                     b.HasKey("KPIId", "EmployeeId");
 
                     b.HasIndex("EmployeeId");

@@ -79,14 +79,14 @@
                                                    id="roleName"
                                                    name="roleName"
                                                    class="form-control border-0"
-                                                   placeholder="VD: HRManager, AccountingLead, SalesStaff..."
+                                                   placeholder="VD: HR, Sales, Manager..."
                                                    required
                                                    autocomplete="off"
                                                    style="padding-left: 45px; height: 50px;" />
                                         </div>
                                         <div class="form-text mt-2 small text-muted">
                                             <i class="bi bi-info-circle me-1"></i>
-                                            Dùng tên tiếng Anh, không dấu, viết liền (VD: <strong>HRManager</strong>, <strong>SalesLead</strong>). Tên phải là duy nhất trong hệ thống.
+                                            Dùng tên tiếng Anh, không dấu, viết liền (VD: <strong>HR</strong>, <strong>Sales</strong>, <strong>Manager</strong>). Tên phải là duy nhất trong hệ thống.
                                         </div>
                                     </div>
                                 </div>
@@ -233,7 +233,7 @@
                                     <i class="bi bi-translate"></i>
                                 </div>
                                 <p class="small text-muted mb-0">
-                                    <strong>Dùng tiếng Anh</strong>, viết liền, không dấu, không khoảng trắng (VD: <code>HRManager</code>).
+                                    <strong>Dùng tiếng Anh</strong>, viết liền, không dấu, không khoảng trắng (VD: <code>Manager</code>).
                                 </p>
                             </div>
                         </div>
@@ -266,7 +266,7 @@
                         <i class="bi bi-bookmark-star text-warning me-2"></i> Gợi ý tên phổ biến
                     </h6>
                     <div class="d-flex flex-wrap gap-2">
-                        @foreach (var role in new[] { "Admin", "HRManager", "SalesStaff", "Accountant", "Warehouse", "DeliveryStaff", "Manager", "Director" })
+                        @foreach (var role in new[] { "Admin", "Director", "Manager", "HR", "Sales", "Employee" })
                         {
                             <span class="badge rounded-pill px-3 py-2 role-suggestion"
                                   style="background: #f1f5f9; color: #475569; font-size: 0.78rem; cursor: pointer; border: 1px solid #e2e8f0; transition: all 0.2s;"

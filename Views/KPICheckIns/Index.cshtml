@@ -110,6 +110,7 @@
                                     string kpiName = kpi?.KPIName ?? "KPI Đã xóa";
 
                                     decimal progressVal = detail.ProgressPercentage ?? 0;
+                                    decimal progressWidth = Math.Min(100, progressVal);
                                     string colorClass = ProgressHelper.GetProgressTextColorClass(progressVal);
                                     string barColor = ProgressHelper.GetProgressColorClass(progressVal);
 
@@ -169,7 +170,7 @@
                                                 </span>
                                             </div>
                                             <div class="progress shadow-sm" style="height: 6px;">
-                                                <div class="progress-bar @barColor" style="width: @progressVal%;"></div>
+                                                <div class="progress-bar @barColor" style="width: @progressWidth%;"></div>
                                             </div>
                                         </td>
                                     </tr>

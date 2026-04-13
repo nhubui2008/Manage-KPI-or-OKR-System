@@ -362,7 +362,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div>
                             <h5 class="fw-bold mb-1"><i class="bi bi-toggle-on text-dark me-2"></i>Trạng thái Chung</h5>
-                            <p class="text-muted small mb-0">Quản lý trạng thái cho các module: KPI, OKR, SalesOrder, EvaluationPeriod...</p>
+                            <p class="text-muted small mb-0">Quản lý trạng thái cho các module: KPI, OKR, EvaluationPeriod...</p>
                         </div>
                         <button class="btn-primary-custom d-flex align-items-center" onclick="showAddStatusModal()">
                             <i class="bi bi-plus-lg me-1"></i> Thêm mới
@@ -516,7 +516,7 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Loại trạng thái <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control shadow-sm" id="statusType" placeholder="VD: KPI, OKR, SalesOrder..." required />
+                        <input type="text" class="form-control shadow-sm" id="statusType" placeholder="VD: KPI, OKR, EvaluationPeriod..." required />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Tên trạng thái <span class="text-danger">*</span></label>
@@ -636,6 +636,7 @@
         const formData = new FormData();
         if (isEdit) formData.append('id', id);
         formData.append(fieldName, fieldValue);
+        window.appendAntiForgeryToken?.(formData);
 
         fetch(url, { method: 'POST', body: formData })
             .then(r => r.json())
@@ -667,6 +668,7 @@
             if (result.isConfirmed) {
                 const formData = new FormData();
                 formData.append('id', id);
+                window.appendAntiForgeryToken?.(formData);
                 fetch(`/Catalog/Delete${entityType}`, { method: 'POST', body: formData })
                     .then(r => r.json())
                     .then(data => {
@@ -716,6 +718,7 @@
         formData.append('rankCode', rankCode);
         formData.append('minScore', document.getElementById('grankMinScore').value);
         formData.append('description', document.getElementById('grankDescription').value.trim());
+        window.appendAntiForgeryToken?.(formData);
 
         fetch(`/Catalog/${isEdit ? 'Edit' : 'Create'}GradingRank`, { method: 'POST', body: formData })
             .then(r => r.json())
@@ -760,6 +763,7 @@
         if (isEdit) formData.append('id', id);
         formData.append('statusType', statusType);
         formData.append('statusName', statusName);
+        window.appendAntiForgeryToken?.(formData);
 
         fetch(`/Catalog/${isEdit ? 'Edit' : 'Create'}Status`, { method: 'POST', body: formData })
             .then(r => r.json())
@@ -772,7 +776,7 @@
             .catch(() => Swal.fire('Lỗi', 'Đã xảy ra lỗi kết nối.', 'error'));
     }
 
-    // Removed: Product Category & Shipping Method JS functions
+    // Catalog now keeps KPI/OKR/HR shared data only.
 
     // =========================================
     // SYSTEM PARAMETER MODAL
@@ -808,6 +812,7 @@
         formData.append('parameterCode', parameterCode);
         formData.append('value', document.getElementById('sysParamValue').value.trim());
         formData.append('description', document.getElementById('sysParamDescription').value.trim());
+        window.appendAntiForgeryToken?.(formData);
 
         fetch(`/Catalog/${isEdit ? 'Edit' : 'Create'}SystemParameter`, { method: 'POST', body: formData })
             .then(r => r.json())

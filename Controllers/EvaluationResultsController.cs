@@ -19,9 +19,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             var resultsQuery = _context.EvaluationResults.OrderByDescending(r => r.Id).AsQueryable();
 
-            // Filter Results if Sales or Warehouse or Employee
+            // Filter Results if Sales or Employee
             if (User.IsInRole("Sales") || User.IsInRole("sales") || 
-                User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
                 User.IsInRole("Employee") || User.IsInRole("employee"))
             {
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);

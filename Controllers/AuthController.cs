@@ -30,6 +30,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public IActionResult Login()
         {
             ViewData["IsLoginPage"] = true;
+            if (TempData["ErrorMessage"] != null)
+            {
+                ViewBag.Error = TempData["ErrorMessage"];
+            }
+
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
                 ViewBag.Username = User.Identity.Name;
@@ -224,7 +229,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
             catch (Exception ex)
             {
-                ViewBag.Error = "Không thể gửi Email. Vui lòng liên hệ Admin. Lỗi: " + ex.Message;
+                Console.WriteLine(ex.Message);
+                ViewBag.Error = "Không thể gửi Email. Vui lòng liên hệ Admin hoặc thử lại sau.";
                 return View();
             }
         }
@@ -442,7 +448,7 @@ public async Task<IActionResult> GoogleResponse()
 
     if (!result.Succeeded || result.Principal == null)
     {
-        ViewBag.Error = "Đăng nhập bằng Google thất bại.";
+        TempData["ErrorMessage"] = "Đăng nhập bằng Google thất bại.";
         return RedirectToAction("Login");
     }
 
@@ -451,7 +457,7 @@ public async Task<IActionResult> GoogleResponse()
 
     if (string.IsNullOrEmpty(email))
     {
-        ViewBag.Error = "Không thể lấy thông tin Email từ tài khoản Google của bạn.";
+        TempData["ErrorMessage"] = "Không thể lấy thông tin Email từ tài khoản Google của bạn.";
         return RedirectToAction("Login");
     }
 
@@ -488,7 +494,7 @@ public async Task<IActionResult> GoogleResponse()
 
     if (user.IsActive == false)
     {
-        ViewBag.Error = "Tài khoản của bạn đã bị vô hiệu hóa.";
+        TempData["ErrorMessage"] = "Tài khoản của bạn đã bị vô hiệu hóa.";
         return RedirectToAction("Login");
     }
 

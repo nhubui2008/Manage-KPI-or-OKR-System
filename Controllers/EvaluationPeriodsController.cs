@@ -101,6 +101,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         private async Task<string?> ValidatePeriodAsync(EvaluationPeriod model, int? excludeId = null)
         {
+            if (string.IsNullOrWhiteSpace(model.PeriodName) ||
+                string.IsNullOrWhiteSpace(model.PeriodType) ||
+                !model.StartDate.HasValue ||
+                !model.EndDate.HasValue)
+            {
+                return "Vui lòng nhập đầy đủ tên kỳ, loại kỳ, ngày bắt đầu và ngày kết thúc.";
+            }
+
             // 1. Kiểm tra trùng tên (giữa các bản ghi đang hoạt động)
             if (await _context.EvaluationPeriods.AnyAsync(p => p.PeriodName == model.PeriodName && p.IsActive == true && p.Id != excludeId))
             {
@@ -108,23 +116,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             // 2. Kiểm tra khoảng thời gian hợp lệ
-            if (model.EndDate < model.StartDate)
+            if (model.EndDate.Value < model.StartDate.Value)
             {
                 return "Ngày kết thúc không thể trước ngày bắt đầu.";
             }
 
             // 3. Kiểm tra độ dài kỳ đánh giá
-            if (model.StartDate.HasValue && model.EndDate.HasValue)
+            var durationDays = (model.EndDate.Value - model.StartDate.Value).Days + 1;
+            if (model.PeriodType == "MONTH" && durationDays > 32)
             {
-                var durationDays = (model.EndDate.Value - model.StartDate.Value).Days + 1;
-                if (model.PeriodType == "MONTH" && durationDays > 32)
-                {
-                    return "Kỳ đánh giá Hàng tháng không nên dài quá 31 ngày.";
-                }
-                else if (model.PeriodType == "QUARTER" && durationDays < 80)
-                {
-                    return "Kỳ đánh giá Hàng quý phải có độ dài khoảng 3 tháng (ít nhất 80 ngày).";
-                }
+                return "Kỳ đánh giá Hàng tháng không nên dài quá 31 ngày.";
+            }
+            else if (model.PeriodType == "QUARTER" && durationDays < 80)
+            {
+                return "Kỳ đánh giá Hàng quý phải có độ dài khoảng 3 tháng (ít nhất 80 ngày).";
             }
 
             // 4. Kiểm tra trùng lặp khoảng thời gian (Overlap check cho cùng loại kỳ)
@@ -132,8 +137,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 p.IsActive == true && 
                 p.Id != excludeId &&
                 p.PeriodType == model.PeriodType &&
-                ((model.StartDate >= p.StartDate && model.StartDate <= p.EndDate) || 
-                 (model.EndDate >= p.StartDate && model.EndDate <= p.EndDate)));
+                p.StartDate.HasValue &&
+                p.EndDate.HasValue &&
+                model.StartDate.Value <= p.EndDate.Value &&
+                model.EndDate.Value >= p.StartDate.Value);
 
             if (isOverlapping)
             {

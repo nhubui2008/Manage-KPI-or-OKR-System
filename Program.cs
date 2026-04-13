@@ -1,6 +1,7 @@
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using DotNetEnv;
 using OfficeOpenXml;
 
@@ -11,7 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 Env.Load();
 builder.Configuration.AddEnvironmentVariables();
 // 1. Đăng ký các dịch vụ (Services)
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+});
 
 // Đăng ký EmailService
 builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.EmailService>();
