@@ -266,15 +266,48 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     kpi.StatusId = 3;
                 }
 
-                // 4. MAP TIẾN ĐỘ VÀO BẢNG XẾP LOẠI (GradingRank)
+                // 4. TÍNH TỔNG ĐIỂM (TotalScore) DỰA TRÊN TRUNG BÌNH CÁC KPI TRONG CÙNG KỲ
+                var assignedKpiIds = await _context.KPI_Employee_Assignments
+                    .Where(a => a.EmployeeId == model.EmployeeId)
+                    .Select(a => a.KPIId)
+                    .ToListAsync();
+
+                var periodKpis = await _context.KPIs
+                    .Where(k => k.PeriodId == kpi.PeriodId && k.IsActive == true && assignedKpiIds.Contains(k.Id))
+                    .ToListAsync();
+
+                decimal totalScore = 0;
+                if (periodKpis.Any())
+                {
+                    decimal sumProgress = 0;
+                    foreach (var pk in periodKpis)
+                    {
+                        var latestCheckIn = await _context.KPICheckIns
+                            .Where(c => c.KPIId == pk.Id && c.EmployeeId == model.EmployeeId)
+                            .OrderByDescending(c => c.CheckInDate)
+                            .FirstOrDefaultAsync();
+
+                        if (latestCheckIn != null)
+                        {
+                            var pkDetail = await _context.CheckInDetails.FirstOrDefaultAsync(d => d.CheckInId == latestCheckIn.Id);
+                            if (pkDetail != null)
+                            {
+                                sumProgress += pkDetail.ProgressPercentage ?? 0;
+                            }
+                        }
+                    }
+                    totalScore = Math.Round(sumProgress / periodKpis.Count, 2);
+                }
+
+                // 5. MAP TIẾN ĐỘ VÀO BẢNG XẾP LOẠI (GradingRank)
                 var rank = await _context.GradingRanks
-                    .Where(r => r.MinScore <= progress)
+                    .Where(r => r.MinScore <= totalScore)
                     .OrderByDescending(r => r.MinScore)
                     .FirstOrDefaultAsync();
 
                 if (rank != null)
                 {
-                    // 5. CẬP NHẬT/TẠO KẾT QUẢ ĐÁNH GIÁ (EvaluationResult)
+                    // 6. CẬP NHẬT/TẠO KẾT QUẢ ĐÁNH GIÁ (EvaluationResult)
                     var evalResult = await _context.EvaluationResults
                         .FirstOrDefaultAsync(er => er.EmployeeId == model.EmployeeId && er.PeriodId == kpi.PeriodId);
 
@@ -284,7 +317,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         {
                             EmployeeId = model.EmployeeId,
                             PeriodId = kpi.PeriodId,
-                            TotalScore = progress, 
+                            TotalScore = totalScore, 
                             RankId = rank.Id,
                             Classification = rank.Description
                         };
@@ -292,12 +325,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     }
                     else
                     {
-                        evalResult.TotalScore = progress;
+                        evalResult.TotalScore = totalScore;
                         evalResult.RankId = rank.Id;
                         evalResult.Classification = rank.Description;
                     }
 
-                    // 6. QUY ĐỔI THƯỞNG (BonusRule & RealtimeExpectedBonus)
+                    // 7. QUY ĐỔI THƯỞNG (BonusRule & RealtimeExpectedBonus)
                     var bonusRule = await _context.BonusRules.FirstOrDefaultAsync(br => br.RankId == rank.Id);
                     if (bonusRule != null)
                     {

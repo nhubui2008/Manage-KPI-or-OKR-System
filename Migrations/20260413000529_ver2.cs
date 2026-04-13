@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Manage_KPI_or_OKR_System.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class ver2 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -139,49 +139,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProductCategories",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    CategoryName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductCategories", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ShippingMethods",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    MethodName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ShippingMethods", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ShippingPartners",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PartnerName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    APIEndpoint = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ShippingPartners", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Statuses",
                 columns: table => new
                 {
@@ -193,22 +150,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Statuses", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Warehouses",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WarehouseCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    WarehouseName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Address = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Warehouses", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -229,28 +170,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         column: x => x.RankId,
                         principalTable: "GradingRanks",
                         principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ShippingPriceLists",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PartnerId = table.Column<int>(type: "int", nullable: true),
-                    Province = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    MaxWeight = table.Column<decimal>(type: "decimal(10,2)", nullable: true),
-                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ShippingPriceLists", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ShippingPriceLists_ShippingPartners_PartnerId",
-                        column: x => x.PartnerId,
-                        principalTable: "ShippingPartners",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -341,7 +260,7 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     CheckInId = table.Column<int>(type: "int", nullable: true),
                     AchievedValue = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    ProgressPercentage = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
+                    ProgressPercentage = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     Note = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
@@ -362,118 +281,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CheckInHistoryLogs", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Customers",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    CustomerCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    CustomerName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    TaxCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    Address = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedById = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Customers", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "DeliveryNotes",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OrderId = table.Column<int>(type: "int", nullable: true),
-                    ShippingMethodId = table.Column<int>(type: "int", nullable: true),
-                    PartnerId = table.Column<int>(type: "int", nullable: true),
-                    ShipperId = table.Column<int>(type: "int", nullable: true),
-                    TrackingCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    ShippingFee = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    DispatchDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Deadline = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedById = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DeliveryNotes", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_DeliveryNotes_ShippingMethods_ShippingMethodId",
-                        column: x => x.ShippingMethodId,
-                        principalTable: "ShippingMethods",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_DeliveryNotes_ShippingPartners_PartnerId",
-                        column: x => x.PartnerId,
-                        principalTable: "ShippingPartners",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ShippingComplaints",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    DeliveryNoteId = table.Column<int>(type: "int", nullable: true),
-                    Reason = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PenaltyAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    ProcessingStatus = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ShippingComplaints", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ShippingComplaints_DeliveryNotes_DeliveryNoteId",
-                        column: x => x.DeliveryNoteId,
-                        principalTable: "DeliveryNotes",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ShippingTrackings",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    DeliveryNoteId = table.Column<int>(type: "int", nullable: true),
-                    Status = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Location = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    UpdateTime = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ShippingTrackings", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ShippingTrackings_DeliveryNotes_DeliveryNoteId",
-                        column: x => x.DeliveryNoteId,
-                        principalTable: "DeliveryNotes",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "DeliveryStaffs",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    EmployeeId = table.Column<int>(type: "int", nullable: true),
-                    AssignedArea = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    LicensePlate = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DeliveryStaffs", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -542,6 +349,7 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     JoinDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     SystemUserId = table.Column<int>(type: "int", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: true),
+                    StrategicGoalId = table.Column<int>(type: "int", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedById = table.Column<int>(type: "int", nullable: true)
                 },
@@ -584,39 +392,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         name: "FK_EvaluationResults_GradingRanks_RankId",
                         column: x => x.RankId,
                         principalTable: "GradingRanks",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "InventoryReceipts",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WarehouseId = table.Column<int>(type: "int", nullable: true),
-                    WarehouseStaffId = table.Column<int>(type: "int", nullable: true),
-                    ReceiptDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedById = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_InventoryReceipts", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_InventoryReceipts_Employees_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "Employees",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_InventoryReceipts_Employees_WarehouseStaffId",
-                        column: x => x.WarehouseStaffId,
-                        principalTable: "Employees",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_InventoryReceipts_Warehouses_WarehouseId",
-                        column: x => x.WarehouseId,
-                        principalTable: "Warehouses",
                         principalColumn: "Id");
                 });
 
@@ -756,34 +531,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Products",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ProductCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    ProductName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    CategoryId = table.Column<int>(type: "int", nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedById = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Products", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Products_Employees_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "Employees",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Products_ProductCategories_CategoryId",
-                        column: x => x.CategoryId,
-                        principalTable: "ProductCategories",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "RealtimeExpectedBonuses",
                 columns: table => new
                 {
@@ -827,43 +574,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     table.ForeignKey(
                         name: "FK_Roles_Employees_CreatedById",
                         column: x => x.CreatedById,
-                        principalTable: "Employees",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SalesOrders",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OrderCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    CustomerId = table.Column<int>(type: "int", nullable: true),
-                    SalesStaffId = table.Column<int>(type: "int", nullable: true),
-                    ShippingAddress = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ExpectedDeliveryDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedById = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SalesOrders", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_SalesOrders_Customers_CustomerId",
-                        column: x => x.CustomerId,
-                        principalTable: "Customers",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_SalesOrders_Employees_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "Employees",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_SalesOrders_Employees_SalesStaffId",
-                        column: x => x.SalesStaffId,
                         principalTable: "Employees",
                         principalColumn: "Id");
                 });
@@ -1206,55 +916,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "InventoryReceiptDetails",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ReceiptId = table.Column<int>(type: "int", nullable: true),
-                    ProductId = table.Column<int>(type: "int", nullable: true),
-                    Quantity = table.Column<int>(type: "int", nullable: true),
-                    UnitPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_InventoryReceiptDetails", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_InventoryReceiptDetails_InventoryReceipts_ReceiptId",
-                        column: x => x.ReceiptId,
-                        principalTable: "InventoryReceipts",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_InventoryReceiptDetails_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ProductDetails",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ProductId = table.Column<int>(type: "int", nullable: true),
-                    SKU = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    UnitOfMeasure = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    SellingPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductDetails", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ProductDetails_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Role_Permissions",
                 columns: table => new
                 {
@@ -1308,104 +969,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         principalColumn: "Id");
                 });
 
-            migrationBuilder.CreateTable(
-                name: "Invoices",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OrderId = table.Column<int>(type: "int", nullable: true),
-                    InvoiceNo = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    CustomerTaxCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    BillingAddress = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    SubTotal = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    VATRate = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
-                    TaxAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    DiscountAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    GrandTotal = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
-                    PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    PaymentMethod = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedById = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Invoices", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Invoices_Employees_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "Employees",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Invoices_SalesOrders_OrderId",
-                        column: x => x.OrderId,
-                        principalTable: "SalesOrders",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "PackingSlips",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OrderId = table.Column<int>(type: "int", nullable: true),
-                    PackerId = table.Column<int>(type: "int", nullable: true),
-                    PackingStartTime = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    PackingEndTime = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedById = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PackingSlips", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_PackingSlips_Employees_CreatedById",
-                        column: x => x.CreatedById,
-                        principalTable: "Employees",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_PackingSlips_Employees_PackerId",
-                        column: x => x.PackerId,
-                        principalTable: "Employees",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_PackingSlips_SalesOrders_OrderId",
-                        column: x => x.OrderId,
-                        principalTable: "SalesOrders",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SalesOrderDetails",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OrderId = table.Column<int>(type: "int", nullable: true),
-                    ProductId = table.Column<int>(type: "int", nullable: true),
-                    Quantity = table.Column<int>(type: "int", nullable: true),
-                    UnitPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SalesOrderDetails", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_SalesOrderDetails_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_SalesOrderDetails_SalesOrders_OrderId",
-                        column: x => x.OrderId,
-                        principalTable: "SalesOrders",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
             migrationBuilder.CreateIndex(
                 name: "IX_AdhocTasks_EmployeeId",
                 table: "AdhocTasks",
@@ -1437,55 +1000,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 column: "StatusName",
                 unique: true,
                 filter: "[StatusName] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Customers_CreatedById",
-                table: "Customers",
-                column: "CreatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Customers_CustomerCode",
-                table: "Customers",
-                column: "CustomerCode",
-                unique: true,
-                filter: "[CustomerCode] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DeliveryNotes_CreatedById",
-                table: "DeliveryNotes",
-                column: "CreatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DeliveryNotes_OrderId",
-                table: "DeliveryNotes",
-                column: "OrderId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DeliveryNotes_PartnerId",
-                table: "DeliveryNotes",
-                column: "PartnerId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DeliveryNotes_ShipperId",
-                table: "DeliveryNotes",
-                column: "ShipperId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DeliveryNotes_ShippingMethodId",
-                table: "DeliveryNotes",
-                column: "ShippingMethodId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DeliveryNotes_TrackingCode",
-                table: "DeliveryNotes",
-                column: "TrackingCode",
-                unique: true,
-                filter: "[TrackingCode] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DeliveryStaffs_EmployeeId",
-                table: "DeliveryStaffs",
-                column: "EmployeeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Departments_CreatedById",
@@ -1577,48 +1091,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 name: "IX_HRExportReports_PeriodId",
                 table: "HRExportReports",
                 column: "PeriodId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_InventoryReceiptDetails_ProductId",
-                table: "InventoryReceiptDetails",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_InventoryReceiptDetails_ReceiptId",
-                table: "InventoryReceiptDetails",
-                column: "ReceiptId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_InventoryReceipts_CreatedById",
-                table: "InventoryReceipts",
-                column: "CreatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_InventoryReceipts_WarehouseId",
-                table: "InventoryReceipts",
-                column: "WarehouseId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_InventoryReceipts_WarehouseStaffId",
-                table: "InventoryReceipts",
-                column: "WarehouseStaffId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Invoices_CreatedById",
-                table: "Invoices",
-                column: "CreatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Invoices_InvoiceNo",
-                table: "Invoices",
-                column: "InvoiceNo",
-                unique: true,
-                filter: "[InvoiceNo] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Invoices_OrderId",
-                table: "Invoices",
-                column: "OrderId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPI_Department_Assignments_DepartmentId",
@@ -1775,47 +1247,11 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 column: "ManagerId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PackingSlips_CreatedById",
-                table: "PackingSlips",
-                column: "CreatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PackingSlips_OrderId",
-                table: "PackingSlips",
-                column: "OrderId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PackingSlips_PackerId",
-                table: "PackingSlips",
-                column: "PackerId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Positions_PositionCode",
                 table: "Positions",
                 column: "PositionCode",
                 unique: true,
                 filter: "[PositionCode] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ProductDetails_ProductId",
-                table: "ProductDetails",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Products_CategoryId",
-                table: "Products",
-                column: "CategoryId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Products_CreatedById",
-                table: "Products",
-                column: "CreatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Products_ProductCode",
-                table: "Products",
-                column: "ProductCode",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_RealtimeExpectedBonuses_EmployeeId",
@@ -1836,53 +1272,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 name: "IX_Roles_CreatedById",
                 table: "Roles",
                 column: "CreatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SalesOrderDetails_OrderId",
-                table: "SalesOrderDetails",
-                column: "OrderId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SalesOrderDetails_ProductId",
-                table: "SalesOrderDetails",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SalesOrders_CreatedById",
-                table: "SalesOrders",
-                column: "CreatedById");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SalesOrders_CustomerId",
-                table: "SalesOrders",
-                column: "CustomerId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SalesOrders_OrderCode",
-                table: "SalesOrders",
-                column: "OrderCode",
-                unique: true,
-                filter: "[OrderCode] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SalesOrders_SalesStaffId",
-                table: "SalesOrders",
-                column: "SalesStaffId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ShippingComplaints_DeliveryNoteId",
-                table: "ShippingComplaints",
-                column: "DeliveryNoteId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ShippingPriceLists_PartnerId",
-                table: "ShippingPriceLists",
-                column: "PartnerId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ShippingTrackings_DeliveryNoteId",
-                table: "ShippingTrackings",
-                column: "DeliveryNoteId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Statuses_StatusType_StatusName",
@@ -1925,13 +1314,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 unique: true,
                 filter: "[Username] IS NOT NULL");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Warehouses_WarehouseCode",
-                table: "Warehouses",
-                column: "WarehouseCode",
-                unique: true,
-                filter: "[WarehouseCode] IS NOT NULL");
-
             migrationBuilder.AddForeignKey(
                 name: "FK_AdhocTasks_Employees_EmployeeId",
                 table: "AdhocTasks",
@@ -1961,41 +1343,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 principalTable: "KPICheckIns",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Customers_Employees_CreatedById",
-                table: "Customers",
-                column: "CreatedById",
-                principalTable: "Employees",
-                principalColumn: "Id");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_DeliveryNotes_DeliveryStaffs_ShipperId",
-                table: "DeliveryNotes",
-                column: "ShipperId",
-                principalTable: "DeliveryStaffs",
-                principalColumn: "Id");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_DeliveryNotes_Employees_CreatedById",
-                table: "DeliveryNotes",
-                column: "CreatedById",
-                principalTable: "Employees",
-                principalColumn: "Id");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_DeliveryNotes_SalesOrders_OrderId",
-                table: "DeliveryNotes",
-                column: "OrderId",
-                principalTable: "SalesOrders",
-                principalColumn: "Id");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_DeliveryStaffs_Employees_EmployeeId",
-                table: "DeliveryStaffs",
-                column: "EmployeeId",
-                principalTable: "Employees",
-                principalColumn: "Id");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Departments_Employees_CreatedById",
@@ -2068,12 +1415,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 name: "HRExportReports");
 
             migrationBuilder.DropTable(
-                name: "InventoryReceiptDetails");
-
-            migrationBuilder.DropTable(
-                name: "Invoices");
-
-            migrationBuilder.DropTable(
                 name: "KPI_Department_Assignments");
 
             migrationBuilder.DropTable(
@@ -2104,28 +1445,10 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 name: "OneOnOneMeetings");
 
             migrationBuilder.DropTable(
-                name: "PackingSlips");
-
-            migrationBuilder.DropTable(
-                name: "ProductDetails");
-
-            migrationBuilder.DropTable(
                 name: "RealtimeExpectedBonuses");
 
             migrationBuilder.DropTable(
                 name: "Role_Permissions");
-
-            migrationBuilder.DropTable(
-                name: "SalesOrderDetails");
-
-            migrationBuilder.DropTable(
-                name: "ShippingComplaints");
-
-            migrationBuilder.DropTable(
-                name: "ShippingPriceLists");
-
-            migrationBuilder.DropTable(
-                name: "ShippingTrackings");
 
             migrationBuilder.DropTable(
                 name: "SystemAlerts");
@@ -2143,9 +1466,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 name: "GradingRanks");
 
             migrationBuilder.DropTable(
-                name: "InventoryReceipts");
-
-            migrationBuilder.DropTable(
                 name: "Departments");
 
             migrationBuilder.DropTable(
@@ -2158,12 +1478,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 name: "Permissions");
 
             migrationBuilder.DropTable(
-                name: "Products");
-
-            migrationBuilder.DropTable(
-                name: "DeliveryNotes");
-
-            migrationBuilder.DropTable(
                 name: "CheckInStatuses");
 
             migrationBuilder.DropTable(
@@ -2173,25 +1487,7 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 name: "KPIs");
 
             migrationBuilder.DropTable(
-                name: "Warehouses");
-
-            migrationBuilder.DropTable(
                 name: "OKRTypes");
-
-            migrationBuilder.DropTable(
-                name: "ProductCategories");
-
-            migrationBuilder.DropTable(
-                name: "DeliveryStaffs");
-
-            migrationBuilder.DropTable(
-                name: "SalesOrders");
-
-            migrationBuilder.DropTable(
-                name: "ShippingMethods");
-
-            migrationBuilder.DropTable(
-                name: "ShippingPartners");
 
             migrationBuilder.DropTable(
                 name: "EvaluationPeriods");
@@ -2201,9 +1497,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
             migrationBuilder.DropTable(
                 name: "KPITypes");
-
-            migrationBuilder.DropTable(
-                name: "Customers");
 
             migrationBuilder.DropTable(
                 name: "Statuses");

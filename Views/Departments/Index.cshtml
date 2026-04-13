@@ -16,10 +16,12 @@
             {
                 var icon = depth == 0 ? "bi-folder-fill text-warning" : "bi-files text-secondary";
                 var count = counts.ContainsKey(child.Id) ? counts[child.Id] : 0;
-                <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded hover-bg-light" style="margin-left: -5px; cursor: pointer;">
-                    <span class="d-flex align-items-center gap-2"><i class="bi @icon"></i> @child.DepartmentName</span>
-                    <span class="badge bg-secondary rounded-pill">@count</span>
-                </div>
+                <a href="/Departments/Details/@child.Id" class="text-decoration-none text-dark d-block">
+                    <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded hover-bg-light" style="margin-left: -5px; cursor: pointer;">
+                        <span class="d-flex align-items-center gap-2"><i class="bi @icon"></i> @child.DepartmentName</span>
+                        <span class="badge bg-secondary rounded-pill">@count</span>
+                    </div>
+                </a>
                 
                 // Gọi đệ quy trực tiếp, không dùng await
                 RenderDeptTree(allDepts, child.Id, depth + 1, counts);
@@ -197,44 +199,21 @@
                                             <a asp-action="Details" asp-route-id="@dept.Id" class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
                                             <a asp-action="Edit" asp-route-id="@dept.Id" class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
 
-                                            @if (dept.IsActive == true)
-                                            {
-                                                <button class="action-btn danger" title="Ngưng hoạt động" data-bs-toggle="modal" data-bs-target="#deleteModal-@dept.Id">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            }
-                                            else
-                                            {
-                                                <form asp-action="Activate" asp-route-id="@dept.Id" method="post" class="m-0">
-                                                    <button type="submit" class="action-btn success" title="Kích hoạt lại"><i class="bi bi-arrow-clockwise"></i></button>
-                                                </form>
-                                            }
-                                        </div>
-                                        </td>
-                                    </tr>
-
-                                    @if (dept.IsActive == true)
-                                    {
-                                        <div class="modal fade" id="deleteModal-@dept.Id" tabindex="-1" aria-labelledby="deleteModalLabel-@dept.Id" aria-hidden="true">
-                                            <div class="modal-dialog modal-dialog-centered">
-                                                <div class="modal-content">
-                                                    <div class="modal-header bg-danger text-white">
-                                                        <h5 class="modal-title" id="deleteModalLabel-@dept.Id">Xác nhận ngưng hoạt động</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        Bạn có chắc muốn ngưng hoạt động phòng ban <strong>@dept.DepartmentName</strong>?
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                                                        <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0">
-                                                            <button type="submit" class="btn btn-danger">Xác nhận</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0" style="display:inline;">
+                                            <button type="submit" class="action-btn danger" title="Ngưng hoạt động" onclick="return confirm('Bạn có chắc muốn ngưng hoạt động phòng ban @dept.DepartmentName?');">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
                                     }
+                                    else
+                                    {
+                                        <form asp-action="Activate" asp-route-id="@dept.Id" method="post" class="m-0" style="display:inline;">
+                                            <button type="submit" class="action-btn success" title="Kích hoạt lại"><i class="bi bi-arrow-clockwise"></i></button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
                                 }
                             }
                             else

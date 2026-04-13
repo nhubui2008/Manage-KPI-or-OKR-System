@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Quản lý Danh mục";
     Layout = "~/Views/Shared/_Layout.cshtml";
     
@@ -11,8 +11,6 @@
     var failReasons = ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>();
     var gradingRanks = ViewBag.GradingRanks as List<Manage_KPI_or_OKR_System.Models.GradingRank> ?? new List<Manage_KPI_or_OKR_System.Models.GradingRank>();
     var statuses = ViewBag.Statuses as List<Manage_KPI_or_OKR_System.Models.Status> ?? new List<Manage_KPI_or_OKR_System.Models.Status>();
-    var productCategories = ViewBag.ProductCategories as List<Manage_KPI_or_OKR_System.Models.ProductCategory> ?? new List<Manage_KPI_or_OKR_System.Models.ProductCategory>();
-    var shippingMethods = ViewBag.ShippingMethods as List<Manage_KPI_or_OKR_System.Models.ShippingMethod> ?? new List<Manage_KPI_or_OKR_System.Models.ShippingMethod>();
     var systemParameters = ViewBag.SystemParameters as List<Manage_KPI_or_OKR_System.Models.SystemParameter> ?? new List<Manage_KPI_or_OKR_System.Models.SystemParameter>();
 }
 
@@ -62,8 +60,8 @@
         </div>
         <div class="col-md-2 col-sm-4 col-6">
             <div class="stat-card p-3 border-start border-3 border-danger bg-white rounded-3 shadow-sm h-100">
-                <div class="text-muted" style="font-size:0.75rem;">Danh mục SP</div>
-                <div class="fw-bold text-dark fs-5 mt-1">@productCategories.Count</div>
+                <div class="text-muted" style="font-size:0.75rem;">Lý do TB</div>
+                <div class="fw-bold text-dark fs-5 mt-1">@failReasons.Count</div>
             </div>
         </div>
         <div class="col-md-2 col-sm-4 col-6">
@@ -122,18 +120,7 @@
                             <span class="badge bg-dark bg-opacity-10 text-dark ms-1 rounded-pill" style="font-size:0.7rem;">@statuses.Count</span>
                         </button>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link catalog-tab @(activeTab=="productcategory"?"active":"")" id="tab-productcategory" data-bs-toggle="tab" data-bs-target="#pane-productcategory" type="button" role="tab">
-                            <i class="bi bi-box-seam me-1"></i> Danh mục SP
-                            <span class="badge bg-primary bg-opacity-10 text-primary ms-1 rounded-pill" style="font-size:0.7rem;">@productCategories.Count</span>
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link catalog-tab @(activeTab=="shippingmethod"?"active":"")" id="tab-shippingmethod" data-bs-toggle="tab" data-bs-target="#pane-shippingmethod" type="button" role="tab">
-                            <i class="bi bi-truck me-1"></i> PT Vận chuyển
-                            <span class="badge bg-info bg-opacity-10 text-info ms-1 rounded-pill" style="font-size:0.7rem;">@shippingMethods.Count</span>
-                        </button>
-                    </li>
+
                     <li class="nav-item" role="presentation">
                         <button class="nav-link catalog-tab @(activeTab=="systemparameter"?"active":"")" id="tab-systemparameter" data-bs-toggle="tab" data-bs-target="#pane-systemparameter" type="button" role="tab">
                             <i class="bi bi-gear me-1"></i> Tham số HT
@@ -408,91 +395,7 @@
                     </div>
                 </div>
 
-                <!-- TAB: Product Category -->
-                <div class="tab-pane fade @(activeTab=="productcategory"?"show active":"")" id="pane-productcategory" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h5 class="fw-bold mb-1"><i class="bi bi-box-seam text-primary me-2"></i>Danh mục Sản phẩm</h5>
-                            <p class="text-muted small mb-0">Phân loại sản phẩm trong hệ thống</p>
-                        </div>
-                        <button class="btn-primary-custom d-flex align-items-center" onclick="showAddSimpleModal('ProductCategory', 'Danh mục Sản phẩm', 'categoryName', 'Tên danh mục', 'VD: Điện tử, Thực phẩm...')">
-                            <i class="bi bi-plus-lg me-1"></i> Thêm mới
-                        </button>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="data-table w-100">
-                            <thead><tr><th style="width:60px;">ID</th><th>Tên danh mục</th><th>Trạng thái</th><th style="width:120px;" class="text-end">Thao tác</th></tr></thead>
-                            <tbody>
-                                @foreach (var item in productCategories)
-                                {
-                                    <tr>
-                                        <td><span class="badge bg-light text-dark border">@item.Id</span></td>
-                                        <td class="fw-medium text-dark">@item.CategoryName</td>
-                                        <td>
-                                            @if (item.IsActive == true)
-                                            {<span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">Hoạt động</span>}
-                                            else
-                                            {<span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1 rounded-pill">Ngưng HĐ</span>}
-                                        </td>
-                                        <td>
-                                            <div class="action-btns justify-content-end">
-                                                <button class="action-btn" title="Sửa" onclick="showEditProductCategoryModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.CategoryName ?? ""))', @(item.IsActive == true ? "true" : "false"))"><i class="bi bi-pencil-square"></i></button>
-                                                <button class="action-btn danger" title="Xóa" onclick="deleteItem('ProductCategory', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.CategoryName ?? ""))')"><i class="bi bi-trash"></i></button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                                @if (!productCategories.Any())
-                                {
-                                    <tr><td colspan="4" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p class="mt-2 mb-0">Chưa có dữ liệu</p></td></tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
 
-                <!-- TAB: Shipping Method -->
-                <div class="tab-pane fade @(activeTab=="shippingmethod"?"show active":"")" id="pane-shippingmethod" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h5 class="fw-bold mb-1"><i class="bi bi-truck text-info me-2"></i>Phương thức Vận chuyển</h5>
-                            <p class="text-muted small mb-0">Quản lý các phương thức giao hàng</p>
-                        </div>
-                        <button class="btn-primary-custom d-flex align-items-center" onclick="showAddSimpleModal('ShippingMethod', 'Phương thức Vận chuyển', 'methodName', 'Tên phương thức', 'VD: Giao hàng nhanh, Giao tiêu chuẩn...')">
-                            <i class="bi bi-plus-lg me-1"></i> Thêm mới
-                        </button>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="data-table w-100">
-                            <thead><tr><th style="width:60px;">ID</th><th>Tên phương thức</th><th>Trạng thái</th><th style="width:120px;" class="text-end">Thao tác</th></tr></thead>
-                            <tbody>
-                                @foreach (var item in shippingMethods)
-                                {
-                                    <tr>
-                                        <td><span class="badge bg-light text-dark border">@item.Id</span></td>
-                                        <td class="fw-medium text-dark">@item.MethodName</td>
-                                        <td>
-                                            @if (item.IsActive == true)
-                                            {<span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-pill">Hoạt động</span>}
-                                            else
-                                            {<span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1 rounded-pill">Ngưng HĐ</span>}
-                                        </td>
-                                        <td>
-                                            <div class="action-btns justify-content-end">
-                                                <button class="action-btn" title="Sửa" onclick="showEditShippingMethodModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.MethodName ?? ""))', @(item.IsActive == true ? "true" : "false"))"><i class="bi bi-pencil-square"></i></button>
-                                                <button class="action-btn danger" title="Xóa" onclick="deleteItem('ShippingMethod', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.MethodName ?? ""))')"><i class="bi bi-trash"></i></button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                                @if (!shippingMethods.Any())
-                                {
-                                    <tr><td colspan="4" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p class="mt-2 mb-0">Chưa có dữ liệu</p></td></tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
 
                 <!-- TAB: System Parameter -->
                 <div class="tab-pane fade @(activeTab=="systemparameter"?"show active":"")" id="pane-systemparameter" role="tabpanel">
@@ -631,36 +534,8 @@
     </div>
 </div>
 
-<!-- MODAL: Product Category / Shipping Method (with isActive) -->
-<div class="modal fade" id="activeEntityModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 pb-0 p-4">
-                <h5 class="modal-title fw-bold" id="activeEntityModalTitle">Chỉnh sửa</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <input type="hidden" id="activeEntityType" />
-                <input type="hidden" id="activeEntityId" />
-                <input type="hidden" id="activeEntityFieldName" />
-                <div class="mb-3">
-                    <label class="form-label fw-semibold" id="activeEntityFieldLabel">Tên</label>
-                    <input type="text" class="form-control shadow-sm" id="activeEntityFieldValue" required />
-                </div>
-                <div class="form-check form-switch p-3 bg-light rounded-3">
-                    <input class="form-check-input ms-0 me-2" type="checkbox" id="activeEntityIsActive" checked>
-                    <label class="form-check-label fw-semibold" for="activeEntityIsActive">Đang hoạt động</label>
-                </div>
-            </div>
-            <div class="modal-footer border-0 p-4 pt-0">
-                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn-primary-custom rounded-pill px-4" onclick="submitActiveEntity()">
-                    <i class="bi bi-check-lg me-1"></i> Cập nhật
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+
+
 
 <!-- MODAL: System Parameter -->
 <div class="modal fade" id="sysParamModal" tabindex="-1">
@@ -897,54 +772,7 @@
             .catch(() => Swal.fire('Lỗi', 'Đã xảy ra lỗi kết nối.', 'error'));
     }
 
-    // =========================================
-    // PRODUCT CATEGORY & SHIPPING METHOD (with isActive)
-    // =========================================
-    function showEditProductCategoryModal(id, name, isActive) {
-        document.getElementById('activeEntityType').value = 'ProductCategory';
-        document.getElementById('activeEntityId').value = id;
-        document.getElementById('activeEntityFieldName').value = 'categoryName';
-        document.getElementById('activeEntityModalTitle').innerHTML = '<i class="bi bi-pencil-square text-warning me-2"></i>Sửa Danh mục Sản phẩm';
-        document.getElementById('activeEntityFieldLabel').textContent = 'Tên danh mục';
-        document.getElementById('activeEntityFieldValue').value = name;
-        document.getElementById('activeEntityIsActive').checked = isActive;
-        new bootstrap.Modal(document.getElementById('activeEntityModal')).show();
-    }
-
-    function showEditShippingMethodModal(id, name, isActive) {
-        document.getElementById('activeEntityType').value = 'ShippingMethod';
-        document.getElementById('activeEntityId').value = id;
-        document.getElementById('activeEntityFieldName').value = 'methodName';
-        document.getElementById('activeEntityModalTitle').innerHTML = '<i class="bi bi-pencil-square text-warning me-2"></i>Sửa Phương thức Vận chuyển';
-        document.getElementById('activeEntityFieldLabel').textContent = 'Tên phương thức';
-        document.getElementById('activeEntityFieldValue').value = name;
-        document.getElementById('activeEntityIsActive').checked = isActive;
-        new bootstrap.Modal(document.getElementById('activeEntityModal')).show();
-    }
-
-    function submitActiveEntity() {
-        const entityType = document.getElementById('activeEntityType').value;
-        const id = document.getElementById('activeEntityId').value;
-        const fieldName = document.getElementById('activeEntityFieldName').value;
-        const fieldValue = document.getElementById('activeEntityFieldValue').value.trim();
-        const isActive = document.getElementById('activeEntityIsActive').checked;
-        if (!fieldValue) { Swal.fire('Lỗi', 'Vui lòng nhập giá trị.', 'warning'); return; }
-
-        const formData = new FormData();
-        formData.append('id', id);
-        formData.append(fieldName, fieldValue);
-        formData.append('isActive', isActive);
-
-        fetch(`/Catalog/Edit${entityType}`, { method: 'POST', body: formData })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({ icon: 'success', title: 'Thành công!', text: data.message, timer: 1500, showConfirmButton: false });
-                    setTimeout(() => location.reload(), 1500);
-                } else { Swal.fire('Lỗi', data.message, 'error'); }
-            })
-            .catch(() => Swal.fire('Lỗi', 'Đã xảy ra lỗi kết nối.', 'error'));
-    }
+    // Removed: Product Category & Shipping Method JS functions
 
     // =========================================
     // SYSTEM PARAMETER MODAL

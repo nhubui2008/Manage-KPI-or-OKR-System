@@ -30,8 +30,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.FailReasons = await _context.FailReasons.OrderBy(x => x.Id).ToListAsync();
             ViewBag.GradingRanks = await _context.GradingRanks.OrderBy(x => x.MinScore).ToListAsync();
             ViewBag.Statuses = await _context.Statuses.OrderBy(x => x.StatusType).ThenBy(x => x.Id).ToListAsync();
-            ViewBag.ProductCategories = await _context.ProductCategories.OrderBy(x => x.Id).ToListAsync();
-            ViewBag.ShippingMethods = await _context.ShippingMethods.OrderBy(x => x.Id).ToListAsync();
+
             ViewBag.SystemParameters = await _context.SystemParameters.OrderBy(x => x.Id).ToListAsync();
 
             return View();
@@ -306,77 +305,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return Json(new { success = true, message = "Xóa thành công." });
         }
 
-        // =========================================
-        // PRODUCT CATEGORY CRUD
-        // =========================================
-        [HttpPost]
-        public async Task<IActionResult> CreateProductCategory(string categoryName)
-        {
-            if (string.IsNullOrWhiteSpace(categoryName))
-                return Json(new { success = false, message = "Tên danh mục không được để trống." });
 
-            var entity = new ProductCategory { CategoryName = categoryName, IsActive = true };
-            _context.ProductCategories.Add(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, id = entity.Id, message = "Thêm danh mục sản phẩm thành công." });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> EditProductCategory(int id, string categoryName, bool isActive)
-        {
-            var entity = await _context.ProductCategories.FindAsync(id);
-            if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            entity.CategoryName = categoryName;
-            entity.IsActive = isActive;
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Cập nhật thành công." });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> DeleteProductCategory(int id)
-        {
-            var entity = await _context.ProductCategories.FindAsync(id);
-            if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            _context.ProductCategories.Remove(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Xóa thành công." });
-        }
-
-        // =========================================
-        // SHIPPING METHOD CRUD
-        // =========================================
-        [HttpPost]
-        public async Task<IActionResult> CreateShippingMethod(string methodName)
-        {
-            if (string.IsNullOrWhiteSpace(methodName))
-                return Json(new { success = false, message = "Tên phương thức không được để trống." });
-
-            var entity = new ShippingMethod { MethodName = methodName, IsActive = true };
-            _context.ShippingMethods.Add(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, id = entity.Id, message = "Thêm phương thức vận chuyển thành công." });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> EditShippingMethod(int id, string methodName, bool isActive)
-        {
-            var entity = await _context.ShippingMethods.FindAsync(id);
-            if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            entity.MethodName = methodName;
-            entity.IsActive = isActive;
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Cập nhật thành công." });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> DeleteShippingMethod(int id)
-        {
-            var entity = await _context.ShippingMethods.FindAsync(id);
-            if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            _context.ShippingMethods.Remove(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Xóa thành công." });
-        }
 
         // =========================================
         // SYSTEM PARAMETER CRUD

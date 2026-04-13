@@ -44,9 +44,13 @@
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Chu kỳ (Quý/Năm)</label>
                     <select name="cycle" class="form-select">
-                        <option value="Q1-2026" selected="@(ViewBag.CurrentCycle == "Q1-2026" ? "selected" : null)">Quý 1 - 2026</option>
-                        <option value="Q2-2026" selected="@(ViewBag.CurrentCycle == "Q2-2026" ? "selected" : null)">Quý 2 - 2026</option>
-                        <option value="Năm 2026" selected="@(ViewBag.CurrentCycle == "Năm 2026" ? "selected" : null)">Cả năm 2026</option>
+                        @if (ViewBag.Cycles != null)
+                        {
+                            foreach (var c in (List<string>)ViewBag.Cycles)
+                            {
+                                <option value="@c" selected="@(ViewBag.CurrentCycle == c ? "selected" : null)">@c</option>
+                            }
+                        }
                     </select>
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
@@ -136,7 +140,7 @@
                     <ul class="list-unstyled mb-0">
                         <li class="mb-2"><span class="badge bg-danger rounded-pill me-2">!</span>Sự cố cúp điện 2h (Tháng 2) - Ảnh hưởng 15% năng suất KPI sản xuất.</li>
                         <li class="mb-2"><span class="badge bg-warning rounded-pill me-2">!</span>Biến động tỷ giá - Ảnh hưởng chỉ tiêu chi phí/lợi nhuận.</li>
-                        <li><i class="bi bi-plus-circle text-primary me-2 cursor-pointer"></i> Thêm sự cố vận hành năm nay</li>
+                        <li onclick="addIncident()" style="cursor: pointer;" class="text-primary hover-opacity"><i class="bi bi-plus-circle me-2"></i> Thêm sự cố vận hành năm nay</li>
                     </ul>
                 </div>
             </div>
@@ -146,6 +150,21 @@
 
 @section Scripts {
     <script>
+        function addIncident() {
+            Swal.fire({
+                title: 'Thêm sự cố vận hành',
+                input: 'textarea',
+                inputPlaceholder: 'Nhập chi tiết sự cố và mức độ ảnh hưởng...',
+                showCancelButton: true,
+                confirmButtonText: 'Lưu',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire('Đã lưu!', 'Sự cố đã được ghi nhận.', 'success');
+                }
+            });
+        }
+
         document.getElementById('btnSaveSummary')?.addEventListener('click', async function() {
             const btn = this;
             const textarea = document.getElementById('directorSummaryText');

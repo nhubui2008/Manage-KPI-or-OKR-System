@@ -7,7 +7,7 @@ namespace Manage_KPI_or_OKR_System.Data
     {
         public MiniERPDbContext(DbContextOptions<MiniERPDbContext> options) : base(options) { }
 
-        // MODULE 1 & 2
+        // MODULE 1 & 2: FOUNDATION, ORGANIZATION & HR
         public DbSet<Role> Roles { get; set; }
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<Role_Permission> Role_Permissions { get; set; }
@@ -20,10 +20,7 @@ namespace Manage_KPI_or_OKR_System.Data
         public DbSet<EmployeeAssignment> EmployeeAssignments { get; set; }
         public DbSet<GradingRank> GradingRanks { get; set; }
 
-        // MODULE CRM
-        public DbSet<Customer> Customers { get; set; }
-
-        // MODULE 3
+        // MODULE 3: OKR & MỤC TIÊU
         public DbSet<MissionVision> MissionVisions { get; set; }
         public DbSet<OKRType> OKRTypes { get; set; }
         public DbSet<OKR> OKRs { get; set; }
@@ -32,7 +29,7 @@ namespace Manage_KPI_or_OKR_System.Data
         public DbSet<OKR_Department_Allocation> OKR_Department_Allocations { get; set; }
         public DbSet<OKR_Employee_Allocation> OKR_Employee_Allocations { get; set; }
 
-        // MODULE 4
+        // MODULE 4: KPI SETUP
         public DbSet<EvaluationPeriod> EvaluationPeriods { get; set; }
         public DbSet<KPIType> KPITypes { get; set; }
         public DbSet<KPIProperty> KPIProperties { get; set; }
@@ -42,7 +39,7 @@ namespace Manage_KPI_or_OKR_System.Data
         public DbSet<KPI_Employee_Assignment> KPI_Employee_Assignments { get; set; }
         public DbSet<AdhocTask> AdhocTasks { get; set; }
 
-        // MODULE 5
+        // MODULE 5: CHECK-IN & EXECUTION
         public DbSet<CheckInStatus> CheckInStatuses { get; set; }
         public DbSet<FailReason> FailReasons { get; set; }
         public DbSet<KPICheckIn> KPICheckIns { get; set; }
@@ -52,7 +49,7 @@ namespace Manage_KPI_or_OKR_System.Data
         public DbSet<OneOnOneMeeting> OneOnOneMeetings { get; set; }
         public DbSet<KPI_Result_Comparison> KPI_Result_Comparisons { get; set; }
 
-        // MODULE 6
+        // MODULE 6: EVALUATION & HR
         public DbSet<EvaluationResult> EvaluationResults { get; set; }
         public DbSet<KPIAdjustmentHistory> KPIAdjustmentHistories { get; set; }
         public DbSet<BonusRule> BonusRules { get; set; }
@@ -60,30 +57,9 @@ namespace Manage_KPI_or_OKR_System.Data
         public DbSet<HRExportReport> HRExportReports { get; set; }
         public DbSet<EvaluationReportSummary> EvaluationReportSummaries { get; set; }
 
-        // MODULE 7
-        public DbSet<Warehouse> Warehouses { get; set; }
-        public DbSet<ProductCategory> ProductCategories { get; set; }
-        public DbSet<Product> Products { get; set; }
-        public DbSet<ProductDetail> ProductDetails { get; set; }
-        public DbSet<InventoryReceipt> InventoryReceipts { get; set; }
-        public DbSet<InventoryReceiptDetail> InventoryReceiptDetails { get; set; }
-
-        // MODULE 8
-        public DbSet<SalesOrder> SalesOrders { get; set; }
-        public DbSet<SalesOrderDetail> SalesOrderDetails { get; set; }
-        public DbSet<Invoice> Invoices { get; set; }
+        // SYSTEM
         public DbSet<SystemAlert> SystemAlerts { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
-        public DbSet<PackingSlip> PackingSlips { get; set; }
-
-        // MODULE 9
-        public DbSet<ShippingMethod> ShippingMethods { get; set; }
-        public DbSet<ShippingPartner> ShippingPartners { get; set; }
-        public DbSet<DeliveryStaff> DeliveryStaffs { get; set; }
-        public DbSet<DeliveryNote> DeliveryNotes { get; set; }
-        public DbSet<ShippingTracking> ShippingTrackings { get; set; }
-        public DbSet<ShippingComplaint> ShippingComplaints { get; set; }
-        public DbSet<ShippingPriceList> ShippingPriceLists { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -109,27 +85,18 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<SystemUser>().HasIndex(u => u.Email).IsUnique();
             modelBuilder.Entity<Employee>().HasIndex(e => e.EmployeeCode).IsUnique();
             modelBuilder.Entity<Employee>().HasIndex(e => e.SystemUserId).IsUnique();
-            modelBuilder.Entity<Customer>().HasIndex(c => c.CustomerCode).IsUnique();
             modelBuilder.Entity<OKRType>().HasIndex(o => o.TypeName).IsUnique();
             modelBuilder.Entity<KPIType>().HasIndex(k => k.TypeName).IsUnique();
             modelBuilder.Entity<CheckInStatus>().HasIndex(c => c.StatusName).IsUnique();
-            modelBuilder.Entity<Warehouse>().HasIndex(w => w.WarehouseCode).IsUnique();
-            modelBuilder.Entity<Product>().HasIndex(p => p.ProductCode).IsUnique();
-            modelBuilder.Entity<SalesOrder>().HasIndex(s => s.OrderCode).IsUnique();
-            modelBuilder.Entity<Invoice>().HasIndex(i => i.InvoiceNo).IsUnique();
-            modelBuilder.Entity<DeliveryNote>().HasIndex(d => d.TrackingCode).IsUnique();
 
             // ==========================================
             // 3. CẤU HÌNH FOREIGN KEYS (FLUENT API)
             // ==========================================
 
             // === A. NHỮNG BẢNG LIÊN KẾT ĐẾN CỘT CreatedById CỦA EMPLOYEE ===
-            // Dùng NoAction để tránh lỗi "Multiple Cascade Paths"
             var entitiesWithCreatedBy = new[] {
                 typeof(Role), typeof(SystemUser), typeof(MissionVision), typeof(OKR),
-                typeof(KPI), typeof(Product), typeof(Invoice), typeof(InventoryReceipt),
-                typeof(DeliveryNote), typeof(Department), typeof(Employee), typeof(Customer),
-                typeof(SalesOrder), typeof(PackingSlip)
+                typeof(KPI), typeof(Department), typeof(Employee)
             };
 
             foreach (var type in entitiesWithCreatedBy)
@@ -141,13 +108,11 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<Employee>().HasOne<SystemUser>().WithMany().HasForeignKey(e => e.SystemUserId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<SystemUser>().HasOne<Role>().WithMany().HasForeignKey(u => u.RoleId).OnDelete(DeleteBehavior.NoAction);
 
-            // Bảng Role_Permission (Có CASCADE theo script SQL)
             modelBuilder.Entity<Role_Permission>().HasOne<Role>().WithMany().HasForeignKey(rp => rp.RoleId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<Role_Permission>().HasOne<Permission>().WithMany().HasForeignKey(rp => rp.PermissionId).OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Department>().HasOne<Department>().WithMany().HasForeignKey(d => d.ParentDepartmentId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<Department>().HasOne<Employee>().WithMany().HasForeignKey(d => d.ManagerId).OnDelete(DeleteBehavior.NoAction);
-            //ymodelBuilder.Entity<Department>().HasOne(d => d.ParentDepartment).WithMany(d => d.ChildDepartments).HasForeignKey(d => d.ParentDepartmentId).OnDelete(DeleteBehavior.Restrict); // Không tự động xóa phòng ban con khi xóa phòng ban cha
 
             modelBuilder.Entity<EmployeeAssignment>().HasOne<Employee>().WithMany().HasForeignKey(ea => ea.EmployeeId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<EmployeeAssignment>().HasOne<Position>().WithMany().HasForeignKey(ea => ea.PositionId).OnDelete(DeleteBehavior.NoAction);
@@ -214,39 +179,9 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<RealtimeExpectedBonus>().HasOne<EvaluationPeriod>().WithMany().HasForeignKey(rb => rb.PeriodId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<HRExportReport>().HasOne<EvaluationPeriod>().WithMany().HasForeignKey(hr => hr.PeriodId).OnDelete(DeleteBehavior.NoAction);
 
-            // === G. INVENTORY & PRODUCT (MODULE 7) ===
-            modelBuilder.Entity<Product>().HasOne<ProductCategory>().WithMany().HasForeignKey(p => p.CategoryId).OnDelete(DeleteBehavior.NoAction);
-            modelBuilder.Entity<ProductDetail>().HasOne<Product>().WithMany().HasForeignKey(pd => pd.ProductId).OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<InventoryReceipt>().HasOne<Warehouse>().WithMany().HasForeignKey(ir => ir.WarehouseId).OnDelete(DeleteBehavior.NoAction);
-            modelBuilder.Entity<InventoryReceipt>().HasOne<Employee>().WithMany().HasForeignKey(ir => ir.WarehouseStaffId).OnDelete(DeleteBehavior.NoAction);
-            modelBuilder.Entity<InventoryReceiptDetail>().HasOne<InventoryReceipt>().WithMany().HasForeignKey(ird => ird.ReceiptId).OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<InventoryReceiptDetail>().HasOne<Product>().WithMany().HasForeignKey(ird => ird.ProductId).OnDelete(DeleteBehavior.NoAction);
-
-            // === H. SALES & INVOICE (MODULE 8) ===
-            modelBuilder.Entity<SalesOrder>().HasOne<Customer>().WithMany().HasForeignKey(so => so.CustomerId).OnDelete(DeleteBehavior.NoAction);
-            modelBuilder.Entity<SalesOrder>().HasOne<Employee>().WithMany().HasForeignKey(so => so.SalesStaffId).OnDelete(DeleteBehavior.NoAction);
-            modelBuilder.Entity<SalesOrderDetail>().HasOne<SalesOrder>().WithMany().HasForeignKey(sod => sod.OrderId).OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<SalesOrderDetail>().HasOne<Product>().WithMany().HasForeignKey(sod => sod.ProductId).OnDelete(DeleteBehavior.NoAction);
-            modelBuilder.Entity<Invoice>().HasOne<SalesOrder>().WithMany().HasForeignKey(i => i.OrderId).OnDelete(DeleteBehavior.NoAction);
-
+            // === G. SYSTEM ===
             modelBuilder.Entity<SystemAlert>().HasOne<Employee>().WithMany().HasForeignKey(sa => sa.ReceiverId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<AuditLog>().HasOne(al => al.SystemUser).WithMany().HasForeignKey(al => al.SystemUserId).OnDelete(DeleteBehavior.NoAction);
-
-            modelBuilder.Entity<PackingSlip>().HasOne<SalesOrder>().WithMany().HasForeignKey(ps => ps.OrderId).OnDelete(DeleteBehavior.NoAction);
-            modelBuilder.Entity<PackingSlip>().HasOne<Employee>().WithMany().HasForeignKey(ps => ps.PackerId).OnDelete(DeleteBehavior.NoAction);
-
-            // === I. LOGISTICS & SHIPPING (MODULE 9) ===
-            modelBuilder.Entity<DeliveryStaff>().HasOne<Employee>().WithMany().HasForeignKey(ds => ds.EmployeeId).OnDelete(DeleteBehavior.NoAction);
-
-            modelBuilder.Entity<DeliveryNote>().HasOne<SalesOrder>().WithMany().HasForeignKey(dn => dn.OrderId).OnDelete(DeleteBehavior.NoAction);
-            modelBuilder.Entity<DeliveryNote>().HasOne<ShippingMethod>().WithMany().HasForeignKey(dn => dn.ShippingMethodId).OnDelete(DeleteBehavior.NoAction);
-            modelBuilder.Entity<DeliveryNote>().HasOne<ShippingPartner>().WithMany().HasForeignKey(dn => dn.PartnerId).OnDelete(DeleteBehavior.NoAction);
-            modelBuilder.Entity<DeliveryNote>().HasOne<DeliveryStaff>().WithMany().HasForeignKey(dn => dn.ShipperId).OnDelete(DeleteBehavior.NoAction);
-
-            modelBuilder.Entity<ShippingTracking>().HasOne<DeliveryNote>().WithMany().HasForeignKey(st => st.DeliveryNoteId).OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<ShippingComplaint>().HasOne<DeliveryNote>().WithMany().HasForeignKey(sc => sc.DeliveryNoteId).OnDelete(DeleteBehavior.NoAction);
-            modelBuilder.Entity<ShippingPriceList>().HasOne<ShippingPartner>().WithMany().HasForeignKey(spl => spl.PartnerId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
