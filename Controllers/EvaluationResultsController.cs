@@ -87,6 +87,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (ModelState.IsValid)
             {
+                var isDuplicate = await _context.EvaluationResults
+                    .AnyAsync(r => r.EmployeeId == model.EmployeeId && r.PeriodId == model.PeriodId);
+                if (isDuplicate)
+                {
+                    TempData["ErrorMessage"] = "Kết quả đánh giá cho nhân viên này trong kỳ này đã tồn tại.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 _context.EvaluationResults.Add(model);
                 await _context.SaveChangesAsync();
 
@@ -135,8 +143,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 await LogAuditAsync("UPDATE", oldInfo, newInfo);
 
                 TempData["SuccessMessage"] = $"Đã cập nhật kết quả đánh giá thành công! Tổng điểm: {(model.TotalScore % 1 == 0 ? model.TotalScore?.ToString("0") : model.TotalScore?.ToString("0.#"))}đ";
+                return RedirectToAction(nameof(Index));
             }
-
+            
+            // If validation fails, reload dropdowns and returning view
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
             var allRanks = await _context.GradingRanks.ToListAsync();

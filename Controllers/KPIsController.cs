@@ -214,11 +214,26 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 User.IsInRole("Sales") || User.IsInRole("sales"))
                 return Forbid();
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
+            {
+                var errors = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                TempData["ErrorMessage"] = "Dữ liệu không hợp lệ: " + errors;
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
             {
                 kpi.CreatedAt = DateTime.Now;
                 kpi.IsActive = true;
                 kpi.StatusId = 0; // Mặc định: Chờ duyệt
+                
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int userId))
+                {
+                    kpi.CreatedById = userId;
+                    var emp = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
+                    if (emp != null) kpi.AssignerId = emp.Id;
+                }
 
                 _context.KPIs.Add(kpi);
                 await _context.SaveChangesAsync();
@@ -229,6 +244,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 TempData["SuccessMessage"] = "Đã tạo KPI mới thành công và đang chờ duyệt!";
             }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Đã xảy ra lỗi hệ thống: " + ex.Message;
+            }
+
             return RedirectToAction(nameof(Index));
         }
 

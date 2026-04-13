@@ -213,45 +213,23 @@
                                             <div class="action-btns justify-content-end">
                                             <a asp-action="Details" asp-route-id="@dept.Id" class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
                                             <a asp-action="Edit" asp-route-id="@dept.Id" class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
-
                                             @if (dept.IsActive == true)
                                             {
-                                                <button class="action-btn danger" title="Ngưng hoạt động" data-bs-toggle="modal" data-bs-target="#deleteModal-@dept.Id">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
+                                                <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0" style="display:inline;">
+                                                    <button type="submit" class="action-btn danger" title="Ngưng hoạt động" onclick="return confirm('Bạn có chắc muốn ngưng hoạt động phòng ban @dept.DepartmentName?');">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
                                             }
                                             else
                                             {
-                                                <form asp-action="Activate" asp-route-id="@dept.Id" method="post" class="m-0">
+                                                <form asp-action="Activate" asp-route-id="@dept.Id" method="post" class="m-0" style="display:inline;">
                                                     <button type="submit" class="action-btn success" title="Kích hoạt lại"><i class="bi bi-arrow-clockwise"></i></button>
                                                 </form>
                                             }
-                                        </div>
-                                        </td>
-                                    </tr>
-
-                                    @if (dept.IsActive == true)
-                                    {
-                                        <div class="modal fade" id="deleteModal-@dept.Id" tabindex="-1" aria-labelledby="deleteModalLabel-@dept.Id" aria-hidden="true">
-                                            <div class="modal-dialog modal-dialog-centered">
-                                                <div class="modal-content">
-                                                    <div class="modal-header bg-danger text-white">
-                                                        <h5 class="modal-title" id="deleteModalLabel-@dept.Id">Xác nhận ngưng hoạt động</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        Bạn có chắc muốn ngưng hoạt động phòng ban <strong>@dept.DepartmentName</strong>?
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                                                        <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0">
-                                                            <button type="submit" class="btn btn-danger">Xác nhận</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
+                                </div>
+                            </td>
+                        </tr>
                                 }
                             }
                             else

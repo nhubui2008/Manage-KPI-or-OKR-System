@@ -59,6 +59,8 @@
                             .Select(c => c.Value).ToList();
 
                         var userPermissions = new HashSet<string>();
+                        var dbContext = Context.RequestServices.GetService(typeof(Manage_KPI_or_OKR_System.Data.MiniERPDbContext)) as Manage_KPI_or_OKR_System.Data.MiniERPDbContext;
+                        
                         if (isAdmin)
                         {
                             // Admin có toàn quyền
@@ -71,7 +73,6 @@
                         }
                         else if (userRoles.Any())
                         {
-                            var dbContext = Context.RequestServices.GetService(typeof(Manage_KPI_or_OKR_System.Data.MiniERPDbContext)) as Manage_KPI_or_OKR_System.Data.MiniERPDbContext;
                             if (dbContext != null)
                             {
                                 userPermissions = new HashSet<string>(
@@ -87,6 +88,27 @@
 
                         // Helper: kiểm tra user có permission không
                         bool HasPerm(string code) => isAdmin || userPermissions.Contains(code);
+                        
+                        List<Manage_KPI_or_OKR_System.Models.SystemAlert> userAlerts = new List<Manage_KPI_or_OKR_System.Models.SystemAlert>();
+                        int unreadAlerts = 0;
+                        if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            var currentUsername = User.Identity.Name;
+                            if (dbContext != null && !string.IsNullOrEmpty(currentUsername))
+                            {
+                                var acc = dbContext.SystemUsers.FirstOrDefault(u => u.Username == currentUsername);
+                                if (acc != null)
+                                {
+                                    userAlerts = dbContext.SystemAlerts
+                                        .Where(a => a.ReceiverId == acc.Id)
+                                        .OrderByDescending(a => a.CreateDate)
+                                        .Take(5)
+                                        .ToList();
+                                        
+                                    unreadAlerts = dbContext.SystemAlerts.Count(a => a.ReceiverId == acc.Id && a.IsRead == false);
+                                }
+                            }
+                        }
                     }
 
                     <div class="sidebar-group">
@@ -266,10 +288,46 @@
                     </div>
 
                     <div class="header-right">
-                        <button class="header-icon-btn" title="Thông báo hệ thống">
-                            <i class="bi bi-bell"></i>
-                            <span class="badge-dot"></span>
-                        </button>
+                        <div class="dropdown">
+                            <button class="header-icon-btn" title="Thông báo hệ thống" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-bell"></i>
+                                @if(unreadAlerts > 0)
+                                {
+                                    <span class="badge-dot"></span>
+                                }
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-0" style="width: 320px; border-radius: 12px; overflow: hidden; margin-top: 10px;">
+                                <li class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold fs-6">Thông báo hệ thống</span>
+                                    @if(unreadAlerts > 0) { <span class="badge bg-danger rounded-pill">@unreadAlerts mới</span> }
+                                </li>
+                                <div style="max-height: 350px; overflow-y: auto;">
+                                    @if (userAlerts.Any())
+                                    {
+                                        foreach (var alert in userAlerts)
+                                        {
+                                            <li class="border-bottom list-group-item-action p-3" style="cursor: pointer; background-color: @(alert.IsRead == true ? "transparent" : "#f0f7ff")">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1 text-primary fw-bold" style="font-size: 0.85rem;"><i class="bi bi-info-circle me-1"></i> @alert.AlertType</h6>
+                                                    <small class="text-muted" style="font-size: 0.7rem;">@alert.CreateDate?.ToString("dd/MM HH:mm")</small>
+                                                </div>
+                                                <p class="mb-1 text-dark" style="font-size: 0.8rem;">@alert.Content</p>
+                                            </li>
+                                        }
+                                        <li class="p-2 text-center bg-light">
+                                            <a href="#" class="text-decoration-none small text-primary fw-medium">Xem tất cả thông báo</a>
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        <li class="p-4 text-center text-muted">
+                                            <i class="bi bi-bell-slash fs-4 d-block mb-2 opacity-50"></i>
+                                            <span class="small">Không có thông báo nào</span>
+                                        </li>
+                                    }
+                                </div>
+                            </ul>
+                        </div>
                         
                         @if (User.Identity == null || !User.Identity.IsAuthenticated)
                         {

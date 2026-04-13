@@ -152,6 +152,7 @@
                 <thead>
                     <tr>
                         <th class="fw-medium">Tên KPI</th>
+                        <th class="fw-medium">Loại mục tiêu</th>
                         <th class="fw-medium">Chỉ tiêu (Target)</th>
                         <th class="fw-medium">Kỳ đánh giá</th>
                         <th class="fw-medium">Phân bổ cho</th>
@@ -181,11 +182,13 @@
                                         </div>
                                         <div>
                                             <div class="fw-bold text-dark mb-1">@kpi.KPIName</div>
-                                            <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem;">
-                                                <span class="badge bg-light text-secondary border">@(kpi.KPITypeId.HasValue && kpiTypesDict.ContainsKey(kpi.KPITypeId.Value) ? kpiTypesDict[kpi.KPITypeId.Value] : "N/A")</span>
-                                            </div>
                                         </div>
                                     </div>
+                                </td>
+                                <td class="align-middle">
+                                    <span class="badge bg-light text-secondary border px-2 py-1 fw-medium" style="font-size: 0.8rem;">
+                                        @(kpi.KPITypeId.HasValue && kpiTypesDict.ContainsKey(kpi.KPITypeId.Value) ? kpiTypesDict[kpi.KPITypeId.Value] : "N/A")
+                                    </span>
                                 </td>
                                 <td>
                                     @if(detail != null)

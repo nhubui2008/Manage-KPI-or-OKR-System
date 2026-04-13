@@ -56,6 +56,15 @@ public class HasPermissionFilter : IAuthorizationFilter
             return;
         }
 
+        // 1.5. Đặc quyền cho HR: Được phép vào xem Nhân sự và Kỳ đánh giá (Read Only)
+        if (userRoles.Contains("HR") || userRoles.Contains("Human Resources"))
+        {
+            if (_permissions.Contains("EMPLOYEES_VIEW") || _permissions.Contains("EVALPERIODS_VIEW"))
+            {
+                return;
+            }
+        }
+
         // 4. Kiểm tra quyền trong Database từ bảng Role_Permissions liên kết Role và Permission
         // Chỉ cần CÓ ÍT NHẤT 1 permission trong danh sách là đủ (OR logic)
         var hasPermission = dbContext.Role_Permissions

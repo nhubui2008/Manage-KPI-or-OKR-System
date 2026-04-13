@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Manage_KPI_or_OKR_System.Migrations
 {
     [DbContext(typeof(MiniERPDbContext))]
-    [Migration("20260405095806_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260413000529_ver2")]
+    partial class ver2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -133,7 +133,7 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("ProgressPercentage")
-                        .HasColumnType("decimal(5,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -185,144 +185,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasFilter("[StatusName] IS NOT NULL");
 
                     b.ToTable("CheckInStatuses");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Customer", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<string>("CustomerCode")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("CustomerName")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Phone")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("TaxCode")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("CustomerCode")
-                        .IsUnique()
-                        .HasFilter("[CustomerCode] IS NOT NULL");
-
-                    b.ToTable("Customers");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.DeliveryNote", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("Deadline")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DispatchDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("OrderId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PartnerId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ShipperId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("ShippingFee")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int?>("ShippingMethodId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TrackingCode")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("OrderId");
-
-                    b.HasIndex("PartnerId");
-
-                    b.HasIndex("ShipperId");
-
-                    b.HasIndex("ShippingMethodId");
-
-                    b.HasIndex("TrackingCode")
-                        .IsUnique()
-                        .HasFilter("[TrackingCode] IS NOT NULL");
-
-                    b.ToTable("DeliveryNotes");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.DeliveryStaff", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AssignedArea")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int?>("EmployeeId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("LicensePlate")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.ToTable("DeliveryStaffs");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Department", b =>
@@ -412,6 +274,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .IsRequired()
                         .HasMaxLength(15)
                         .HasColumnType("nvarchar(15)");
+
+                    b.Property<int?>("StrategicGoalId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("SystemUserId")
                         .HasColumnType("int");
@@ -667,101 +532,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasIndex("PeriodId");
 
                     b.ToTable("HRExportReports");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.InventoryReceiptDetail", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Quantity")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ReceiptId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("UnitPrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("ReceiptId");
-
-                    b.ToTable("InventoryReceiptDetails");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Invoice", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("BillingAddress")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<string>("CustomerTaxCode")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal?>("DiscountAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("GrandTotal")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("InvoiceNo")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("OrderId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("PaymentDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PaymentMethod")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal?>("SubTotal")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("TaxAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("VATRate")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("InvoiceNo")
-                        .IsUnique()
-                        .HasFilter("[InvoiceNo] IS NOT NULL");
-
-                    b.HasIndex("OrderId");
-
-                    b.ToTable("Invoices");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.KPI", b =>
@@ -1268,50 +1038,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.ToTable("OneOnOneMeetings");
                 });
 
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.PackingSlip", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("OrderId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PackerId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("PackingEndTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("PackingStartTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("OrderId");
-
-                    b.HasIndex("PackerId");
-
-                    b.ToTable("PackingSlips");
-                });
-
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Permission", b =>
                 {
                     b.Property<int>("Id")
@@ -1363,97 +1089,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasFilter("[PositionCode] IS NOT NULL");
 
                     b.ToTable("Positions");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Product", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("CategoryId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ProductCode")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("ProductName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("ProductCode")
-                        .IsUnique();
-
-                    b.ToTable("Products");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.ProductCategory", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CategoryName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ProductCategories");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.ProductDetail", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SKU")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal?>("SellingPrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("UnitOfMeasure")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("ProductDetails");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.RealtimeExpectedBonus", b =>
@@ -1533,219 +1168,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasIndex("PermissionId");
 
                     b.ToTable("Role_Permissions");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.SalesOrder", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("CustomerId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ExpectedDeliveryDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("OrderCode")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int?>("SalesStaffId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ShippingAddress")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal?>("TotalAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("CustomerId");
-
-                    b.HasIndex("OrderCode")
-                        .IsUnique()
-                        .HasFilter("[OrderCode] IS NOT NULL");
-
-                    b.HasIndex("SalesStaffId");
-
-                    b.ToTable("SalesOrders");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.SalesOrderDetail", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("OrderId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Quantity")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("UnitPrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrderId");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("SalesOrderDetails");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.ShippingComplaint", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("DeliveryNoteId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("PenaltyAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("ProcessingStatus")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Reason")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DeliveryNoteId");
-
-                    b.ToTable("ShippingComplaints");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.ShippingMethod", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("MethodName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ShippingMethods");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.ShippingPartner", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("APIEndpoint")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("PartnerName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ShippingPartners");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.ShippingPriceList", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal?>("MaxWeight")
-                        .HasColumnType("decimal(10,2)");
-
-                    b.Property<int?>("PartnerId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("Price")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Province")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PartnerId");
-
-                    b.ToTable("ShippingPriceLists");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.ShippingTracking", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("DeliveryNoteId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Location")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("Status")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("UpdateTime")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DeliveryNoteId");
-
-                    b.ToTable("ShippingTrackings");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Status", b =>
@@ -1887,75 +1309,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.ToTable("SystemUsers");
                 });
 
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Warehouse", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<bool?>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("WarehouseCode")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("WarehouseName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WarehouseCode")
-                        .IsUnique()
-                        .HasFilter("[WarehouseCode] IS NOT NULL");
-
-                    b.ToTable("Warehouses");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Properties.InventoryReceipt", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("CreatedById")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ReceiptDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal?>("TotalAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int?>("WarehouseId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("WarehouseStaffId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("WarehouseId");
-
-                    b.HasIndex("WarehouseStaffId");
-
-                    b.ToTable("InventoryReceipts");
-                });
-
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AdhocTask", b =>
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
@@ -1996,50 +1349,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("CheckInId")
                         .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Customer", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.NoAction);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.DeliveryNote", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.SalesOrder", null)
-                        .WithMany()
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.ShippingPartner", null)
-                        .WithMany()
-                        .HasForeignKey("PartnerId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.DeliveryStaff", null)
-                        .WithMany()
-                        .HasForeignKey("ShipperId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.ShippingMethod", null)
-                        .WithMany()
-                        .HasForeignKey("ShippingMethodId")
-                        .OnDelete(DeleteBehavior.NoAction);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.DeliveryStaff", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.NoAction);
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Department", b =>
@@ -2135,32 +1444,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasOne("Manage_KPI_or_OKR_System.Models.EvaluationPeriod", null)
                         .WithMany()
                         .HasForeignKey("PeriodId")
-                        .OnDelete(DeleteBehavior.NoAction);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.InventoryReceiptDetail", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Product", null)
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Properties.InventoryReceipt", null)
-                        .WithMany()
-                        .HasForeignKey("ReceiptId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Invoice", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.SalesOrder", null)
-                        .WithMany()
-                        .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.NoAction);
                 });
 
@@ -2381,45 +1664,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .OnDelete(DeleteBehavior.NoAction);
                 });
 
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.PackingSlip", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.SalesOrder", null)
-                        .WithMany()
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("PackerId")
-                        .OnDelete(DeleteBehavior.NoAction);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Product", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.ProductCategory", null)
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.NoAction);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.ProductDetail", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Product", null)
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.RealtimeExpectedBonus", b =>
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
@@ -2456,61 +1700,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.SalesOrder", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Customer", null)
-                        .WithMany()
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("SalesStaffId")
-                        .OnDelete(DeleteBehavior.NoAction);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.SalesOrderDetail", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.SalesOrder", null)
-                        .WithMany()
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Product", null)
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.NoAction);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.ShippingComplaint", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.DeliveryNote", null)
-                        .WithMany()
-                        .HasForeignKey("DeliveryNoteId")
-                        .OnDelete(DeleteBehavior.NoAction);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.ShippingPriceList", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.ShippingPartner", null)
-                        .WithMany()
-                        .HasForeignKey("PartnerId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.ShippingTracking", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.DeliveryNote", null)
-                        .WithMany()
-                        .HasForeignKey("DeliveryNoteId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.SystemAlert", b =>
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
@@ -2537,24 +1726,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasOne("Manage_KPI_or_OKR_System.Models.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.NoAction);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Properties.InventoryReceipt", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Warehouse", null)
-                        .WithMany()
-                        .HasForeignKey("WarehouseId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("WarehouseStaffId")
                         .OnDelete(DeleteBehavior.NoAction);
                 });
 

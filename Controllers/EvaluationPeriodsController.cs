@@ -114,14 +114,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             // 3. Kiểm tra độ dài kỳ đánh giá
-            var durationDays = (model.EndDate.Value - model.StartDate.Value).Days + 1;
-            if (model.PeriodType == "MONTH" && durationDays > 32)
+            if (model.StartDate.HasValue && model.EndDate.HasValue)
             {
-                return "Kỳ đánh giá Hàng tháng không nên dài quá 31 ngày.";
-            }
-            else if (model.PeriodType == "QUARTER" && durationDays < 80)
-            {
-                return "Kỳ đánh giá Hàng quý phải có độ dài khoảng 3 tháng (ít nhất 80 ngày).";
+                var durationDays = (model.EndDate.Value - model.StartDate.Value).Days + 1;
+                if (model.PeriodType == "MONTH" && durationDays > 32)
+                {
+                    return "Kỳ đánh giá Hàng tháng không nên dài quá 31 ngày.";
+                }
+                else if (model.PeriodType == "QUARTER" && durationDays < 80)
+                {
+                    return "Kỳ đánh giá Hàng quý phải có độ dài khoảng 3 tháng (ít nhất 80 ngày).";
+                }
             }
 
             // 4. Kiểm tra trùng lặp khoảng thời gian (Overlap check cho cùng loại kỳ)

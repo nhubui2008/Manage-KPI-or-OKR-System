@@ -76,21 +76,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .ToListAsync();
             results.AddRange(okrs);
 
-            // 4. Search Products (Thiết bị/Sản phẩm)
-            var products = await _context.Products
-                .Where(p => (p.ProductName != null && p.ProductName.ToLower().Contains(term)) || 
-                            (p.ProductCode != null && p.ProductCode.ToLower().Contains(term)))
+            // 4. Search Departments
+            var departments = await _context.Departments
+                .Where(d => (d.DepartmentName != null && d.DepartmentName.ToLower().Contains(term)) || 
+                            (d.DepartmentCode != null && d.DepartmentCode.ToLower().Contains(term)))
+                .Where(d => d.IsActive == true)
                 .Take(5)
-                .Select(p => new SearchResult {
-                    Id = p.Id,
-                    Title = p.ProductName ?? "N/A",
-                    Subtitle = $"Mã hiệu: {p.ProductCode}",
-                    Type = "Sản phẩm",
-                    Url = $"/Products", // Assuming Products/Index or similar
-                    Icon = "bi-box-seam"
+                .Select(d => new SearchResult {
+                    Id = d.Id,
+                    Title = d.DepartmentName ?? "N/A",
+                    Subtitle = $"Mã PB: {d.DepartmentCode}",
+                    Type = "Phòng ban",
+                    Url = $"/Departments/Details/{d.Id}",
+                    Icon = "bi-diagram-3-fill"
                 })
                 .ToListAsync();
-            results.AddRange(products);
+            results.AddRange(departments);
 
             return Json(results);
         }

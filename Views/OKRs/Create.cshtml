@@ -73,7 +73,7 @@
                                                 <option value="">-- Chọn loại mục tiêu --</option>
                                                 @if (ViewBag.OKRTypes != null)
                                                 {
-                                                    foreach (var type in ViewBag.OKRTypes as IEnumerable<Manage_KPI_or_OKR_System.Models.OKRType>)
+                                                    foreach (var type in (ViewBag.OKRTypes as IEnumerable<Manage_KPI_or_OKR_System.Models.OKRType>)!)
                                                     {
                                                         <option value="@type.Id">@type.TypeName</option>
                                                     }
@@ -118,7 +118,7 @@
                                                 <option value="">-- Không phân bổ (Cấp độ phòng ban/cá nhân) --</option>
                                                 @if (ViewBag.Missions != null)
                                                 {
-                                                    foreach (var m in ViewBag.Missions as IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>)
+                                                    foreach (var m in (ViewBag.Missions as IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>)!)
                                                     {
                                                         <option value="@m.Id">Năm @m.TargetYear: @(m.Content?.Length > 60 ? m.Content.Substring(0, 60) + "..." : m.Content)</option>
                                                     }
@@ -137,7 +137,7 @@
                                                 <option value="">-- Áp dụng cho toàn tổ chức hoặc cá nhân --</option>
                                                 @if (ViewBag.Departments != null)
                                                 {
-                                                    foreach (var d in ViewBag.Departments as IEnumerable<Manage_KPI_or_OKR_System.Models.Department>)
+                                                    foreach (var d in (ViewBag.Departments as IEnumerable<Manage_KPI_or_OKR_System.Models.Department>)!)
                                                     {
                                                         <option value="@d.Id">@d.DepartmentName</option>
                                                     }
@@ -156,7 +156,7 @@
                                                 <option value="">-- Không phân bổ cá nhân --</option>
                                                 @if (ViewBag.Employees != null)
                                                 {
-                                                    foreach (var e in ViewBag.Employees as IEnumerable<Manage_KPI_or_OKR_System.Models.Employee>)
+                                                    foreach (var e in (ViewBag.Employees as IEnumerable<Manage_KPI_or_OKR_System.Models.Employee>)!)
                                                     {
                                                         <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
                                                     }

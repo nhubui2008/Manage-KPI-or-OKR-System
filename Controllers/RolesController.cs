@@ -129,11 +129,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var codes = new[] {
                 // ===== PERMISSION CŨ (giữ nguyên để backward-compatible) =====
                 "MANAGER_CREATE_OKR", "MANAGER_ASSIGN_KPI", "EMPLOYEE_UPDATE_KPI_PROGRESS",
-                "HR_EVALUATE_KPI", "HR_MANAGE_EMPLOYEES", "SALES_CREATE_ORDERS",
-                "SALES_MANAGE_CUSTOMERS", "SALES_CREATE_INVOICES", "WAREHOUSE_MANAGE_PRODUCTS",
-                "WAREHOUSE_IMPORT_INVENTORY", "WAREHOUSE_VIEW_INVENTORY", "HR_APPROVE_KPI",
-                "DELIVERY_UPDATE_STATUS", "DELIVERY_CREATE_NOTES", "ADMIN_VIEW_AUDIT_LOGS",
-                "ADMIN_MANAGE_ROLES", "ADMIN_MANAGE_USERS",
+                "HR_EVALUATE_KPI", "HR_MANAGE_EMPLOYEES", "HR_APPROVE_KPI",
+                "ADMIN_VIEW_AUDIT_LOGS", "ADMIN_MANAGE_ROLES", "ADMIN_MANAGE_USERS",
 
                 // ===== PERMISSION MỚI – PHÂN QUYỀN CHI TIẾT TỪNG CHỨC NĂNG =====
                 // Nhân viên

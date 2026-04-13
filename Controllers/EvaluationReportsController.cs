@@ -79,11 +79,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var departments = await _context.Departments.ToListAsync();
             var currentDept = await _context.Departments.FindAsync(departmentId);
 
+            var cycles = await _context.OKRs
+                .Where(o => !string.IsNullOrEmpty(o.Cycle))
+                .Select(o => o.Cycle!)
+                .Distinct()
+                .ToListAsync();
+            
+            if (!cycles.Any()) cycles = new List<string> { $"Q1-{DateTime.Now.Year}" };
+
             ViewBag.OKRs = okrs;
             ViewBag.KRs = krs;
             ViewBag.Employees = employees;
             ViewBag.FailReasons = failReasons;
             ViewBag.Departments = departments;
+            ViewBag.Cycles = cycles;
             ViewBag.CurrentDeptId = departmentId;
             ViewBag.CurrentDeptName = currentDept?.DepartmentName ?? "N/A";
             ViewBag.CurrentCycle = cycle;
