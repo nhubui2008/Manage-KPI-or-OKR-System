@@ -1,92 +1,275 @@
 @model Manage_KPI_or_OKR_System.Models.Department
 
 @{
-    ViewData["Title"] = "Chỉnh sửa Phòng Ban";
+    ViewData["Title"] = "Chỉnh sửa Phòng Ban - " + Model.DepartmentName;
     Layout = "~/Views/Shared/_Layout.cshtml";
     var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
     var departments = ViewBag.Departments as List<Manage_KPI_or_OKR_System.Models.Department> ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
 }
 
-<div class="container-fluid px-4 mt-4">
-    <div class="row mb-3">
-        <div class="col-12">
-            <h3 class="text-primary fw-bold">
-                <i class="bi bi-pencil-square me-2"></i>Chỉnh sửa Phòng Ban
-            </h3>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb bg-transparent p-0 m-0">
-                    <li class="breadcrumb-item"><a href="/Dashboard" class="text-decoration-none">Trang chủ</a></li>
-                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Danh sách phòng ban</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">@Model.DepartmentName</li>
-                </ol>
-            </nav>
+<div class="container-fluid px-0">
+
+    <!-- Page Header -->
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Chỉnh sửa Phòng ban</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <a asp-action="Index">Phòng ban</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>@Model.DepartmentName</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn-outline-custom d-flex align-items-center px-3 py-2" style="border-radius: 10px; text-decoration: none;">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </a>
         </div>
     </div>
 
-    <div class="content-card rounded-3">
-        <div class="card-body-custom p-4">
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert" style="border-radius: 12px; border-left: 5px solid #dc3545;">
+            <strong><i class="bi bi-exclamation-triangle-fill me-2"></i> Lỗi!</strong> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
-            @if (TempData["ErrorMessage"] != null)
-            {
-                <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-                    <strong><i class="bi bi-exclamation-triangle-fill me-2"></i> Lỗi!</strong> @TempData["ErrorMessage"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
+    <form asp-action="Edit" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <input type="hidden" asp-for="Id" />
 
-            <form asp-action="Edit" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                <input type="hidden" asp-for="Id" />
-
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label asp-for="DepartmentCode" class="form-label fw-semibold">Mã phòng ban <span class="text-danger">*</span></label>
-                        <input asp-for="DepartmentCode" class="form-control" placeholder="VD: PKD, HR" required />
-                        <span asp-validation-for="DepartmentCode" class="text-danger"></span>
+        <div class="row g-4">
+            <!-- Left Column: Main Information -->
+            <div class="col-lg-8">
+                <div class="content-card h-100">
+                    <div class="card-header-custom border-bottom">
+                        <h5 class="mb-0 fw-bold d-flex align-items-center">
+                            <div class="header-icon-box">
+                                <i class="bi bi-pencil-square"></i>
+                            </div>
+                            Thông tin chi tiết
+                        </h5>
                     </div>
+                    <div class="card-body-custom p-4">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label asp-for="DepartmentCode" class="form-label-custom">
+                                    <i class="bi bi-hash me-1"></i> Mã phòng ban <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group-custom">
+                                    <input asp-for="DepartmentCode" class="form-control-custom" placeholder="VD: PKD, HR" required />
+                                </div>
+                                <span asp-validation-for="DepartmentCode" class="text-danger small"></span>
+                            </div>
 
-                    <div class="col-md-6">
-                        <label asp-for="DepartmentName" class="form-label fw-semibold">Tên phòng ban <span class="text-danger">*</span></label>
-                        <input asp-for="DepartmentName" class="form-control" placeholder="VD: Phòng Kinh doanh" required />
-                        <span asp-validation-for="DepartmentName" class="text-danger"></span>
-                    </div>
+                            <div class="col-md-6">
+                                <label asp-for="DepartmentName" class="form-label-custom">
+                                    <i class="bi bi-tag me-1"></i> Tên phòng ban <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group-custom">
+                                    <input asp-for="DepartmentName" class="form-control-custom" placeholder="VD: Phòng Kinh doanh" required />
+                                </div>
+                                <span asp-validation-for="DepartmentName" class="text-danger small"></span>
+                            </div>
 
-                    <div class="col-md-6">
-                        <label for="ParentDepartmentId" class="form-label fw-semibold">Phòng ban cấp trên</label>
-                        <select asp-for="ParentDepartmentId" class="form-select">
-                            <option value="">-- Không có (Phòng ban gốc) --</option>
-                            @foreach (var dept in departments)
-                            {
-                                <option value="@dept.Id" selected="@(Model.ParentDepartmentId == dept.Id ? "selected" : null)">@dept.DepartmentName</option>
-                            }
-                        </select>
-                        <span asp-validation-for="ParentDepartmentId" class="text-danger"></span>
-                    </div>
+                            <div class="col-md-6">
+                                <label for="ParentDepartmentId" class="form-label-custom">
+                                    <i class="bi bi-diagram-3 me-1"></i> Phòng ban cấp trên
+                                </label>
+                                <div class="input-group-custom">
+                                    <select asp-for="ParentDepartmentId" class="form-select-custom">
+                                        <option value="">-- Không có (Phòng ban gốc) --</option>
+                                        @foreach (var dept in departments)
+                                        {
+                                            if (dept.Id != Model.Id) // Cannot be own parent
+                                            {
+                                                <option value="@dept.Id">@dept.DepartmentName</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                                <span asp-validation-for="ParentDepartmentId" class="text-danger small"></span>
+                            </div>
 
-                    <div class="col-md-6">
-                        <label for="ManagerId" class="form-label fw-semibold">Trưởng phòng</label>
-                        <select asp-for="ManagerId" class="form-select">
-                            <option value="">-- Chọn trưởng phòng --</option>
-                            @foreach (var emp in employees)
-                            {
-                                <option value="@emp.Key" selected="@(Model.ManagerId == emp.Key ? "selected" : null)">@emp.Value</option>
-                            }
-                        </select>
-                        <span asp-validation-for="ManagerId" class="text-danger"></span>
-                    </div>
-
-                    <div class="col-12">
-                        <div class="d-flex justify-content-end gap-2 pt-3">
-                            <a asp-action="Index" class="btn-outline-custom rounded-pill px-4">
-                                <i class="bi bi-arrow-left me-2"></i>Hủy
-                            </a>
-                            <button type="submit" class="btn-primary-custom rounded-pill px-4">
-                                <i class="bi bi-check-lg me-2"></i>Cập nhật phòng ban
-                            </button>
+                            <div class="col-md-6">
+                                <label for="ManagerId" class="form-label-custom">
+                                    <i class="bi bi-person-badge me-1"></i> Trưởng phòng
+                                </label>
+                                <div class="input-group-custom">
+                                    <select asp-for="ManagerId" class="form-select-custom">
+                                        <option value="">-- Chọn trưởng phòng --</option>
+                                        @foreach (var emp in employees)
+                                        {
+                                            <option value="@emp.Key">@emp.Value</option>
+                                        }
+                                    </select>
+                                </div>
+                                <span asp-validation-for="ManagerId" class="text-danger small"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </form>
+            </div>
+
+            <!-- Right Column: Settings & Metadata -->
+            <div class="col-lg-4">
+                <div class="content-card mb-4">
+                    <div class="card-header-custom border-bottom">
+                        <h5 class="mb-0 fw-bold d-flex align-items-center">
+                            <div class="header-icon-box" style="background: linear-gradient(135deg, #34a853, #2e7d32);">
+                                <i class="bi bi-gear"></i>
+                            </div>
+                            Cài đặt hệ thống
+                        </h5>
+                    </div>
+                    <div class="card-body-custom p-4">
+                        <div class="mb-4">
+                            <label class="form-label-custom d-block mb-3">
+                                <i class="bi bi-toggle-on me-1"></i> Trạng thái hoạt động
+                            </label>
+                            <div class="form-check form-switch custom-switch">
+                                <input class="form-check-input" type="checkbox" id="IsActiveSwitch" name="IsActive" value="true" @(Model.IsActive == true ? "checked" : "")>
+                                <input type="hidden" name="IsActive" value="false" />
+                                <label class="form-check-label fw-semibold" for="IsActiveSwitch">
+                                    <span class="status-label-active">Hoạt động</span>
+                                    <span class="status-label-inactive">Ngừng hoạt động</span>
+                                </label>
+                            </div>
+                            <div class="form-text mt-2 small text-muted">
+                                Tắt trạng thái này sẽ tạm thời vô hiệu hóa phòng ban trong hệ thống.
+                            </div>
+                        </div>
+
+                        <hr class="my-4 opacity-10">
+
+                        <div class="metadata-info">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted small">ID Phòng ban:</span>
+                                <span class="fw-bold small">#@Model.Id</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted small">Ngày tạo:</span>
+                                <span class="fw-bold small">@(Model.CreatedAt?.ToString("dd/MM/yyyy") ?? "—")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="content-card">
+                    <div class="card-body-custom p-4">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn-primary-custom py-3 rounded-3 shadow-sm">
+                                <i class="bi bi-check-circle-fill me-2"></i> Lưu thay đổi
+                            </button>
+                            <a asp-action="Index" class="btn-outline-custom py-3 rounded-3 text-center text-decoration-none">
+                                <i class="bi bi-x-circle me-1"></i> Hủy bỏ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+    </form>
 </div>
+
+<style>
+    /* Header Icons */
+    .header-icon-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.85rem;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+
+    /* Custom Form Elements */
+    .form-label-custom {
+        display: block;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--text-secondary, #5f6368);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .form-control-custom, .form-select-custom {
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 0.95rem;
+        border-radius: 12px;
+        border: 1.5px solid #e8eaed;
+        background: #f8f9fa;
+        color: #1a1a2e;
+        transition: all 0.2s;
+    }
+
+    .form-control-custom:focus, .form-select-custom:focus {
+        background: #fff;
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+        outline: none;
+    }
+
+    /* Custom Switch Styling */
+    .custom-switch {
+        padding-left: 3.5rem;
+        min-height: 2.5rem;
+        display: flex;
+        align-items: center;
+    }
+    .custom-switch .form-check-input {
+        width: 3rem;
+        height: 1.5rem;
+        margin-left: -3.5rem;
+        cursor: pointer;
+        border-color: #e8eaed;
+        background-color: #f8f9fa;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23e8eaed'/%3e%3c/svg%3e");
+    }
+    .custom-switch .form-check-input:checked {
+        background-color: #34a853;
+        border-color: #34a853;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+    }
+    .custom-switch .form-check-label span {
+        display: none;
+    }
+    .custom-switch .form-check-input:checked ~ .form-check-label .status-label-active {
+        display: inline;
+        color: #34a853;
+    }
+    .custom-switch .form-check-input:not(:checked) ~ .form-check-label .status-label-inactive {
+        display: inline;
+        color: #dc3545;
+    }
+
+    /* Input focus animation */
+    .input-group-custom {
+        position: relative;
+    }
+
+    /* Layout tweaks */
+    .content-card {
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    
+    .card-header-custom {
+        padding: 18px 24px;
+        background: transparent;
+    }
+
+    hr.opacity-10 {
+        opacity: 0.1;
+    }
+</style>

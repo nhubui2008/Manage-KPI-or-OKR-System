@@ -6,6 +6,7 @@
     var detailsDict = ViewBag.Details as Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail>();
     var employeesDict = ViewBag.Employees as Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>();
     var kpisDict = ViewBag.KPIs as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI>();
+    var failReasonsDict = (ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>()).ToDictionary(r => r.Id, r => r.ReasonName ?? "Chưa rõ");
 
     int inTimeCount = Model.Count(c => c.StatusId == 1 || c.StatusId == null);
     int riskCount = Model.Count(c => c.StatusId == 2);
@@ -87,9 +88,10 @@
                     <table class="data-table w-100 mb-0">
                         <thead>
                             <tr>
-                                <th class="ps-4 fw-medium border-0">Nhân viên</th>
+                                <th class="ps-4 fw-medium border-0">Người cập nhật</th>
                                 <th class="fw-medium border-0">Thực tế KPI</th>
-                                <th class="fw-medium border-0">Ngày CI</th>
+                                <th class="fw-medium border-0">Ngày Checkin</th>
+                                <th class="fw-medium border-0">Lý do chưa đạt</th>
                                 <th class="fw-medium border-0">Tiến độ</th>
                             </tr>
                         </thead>
@@ -131,6 +133,18 @@
                                         <td class="py-3 border-bottom-0">
                                             <div class="text-muted" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i> @(ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</div>
                                         </td>
+                                        <td class="py-3 border-bottom-0">
+                                            @if (ci.FailReasonId.HasValue && failReasonsDict.ContainsKey(ci.FailReasonId.Value))
+                                            {
+                                                <div class="status-badge-soft bg-danger bg-opacity-10 text-danger border-0" style="font-size: 0.75rem; white-space: nowrap;">
+                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i> @failReasonsDict[ci.FailReasonId.Value]
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="text-muted" style="font-size: 0.75rem;">--</div>
+                                            }
+                                        </td>
                                         <td class="py-3 border-bottom-0" style="min-width: 140px;">
                                             <div class="d-flex align-items-center justify-content-between mb-2">
                                                 <span class="@colorClass fw-bold" style="font-size: 0.85rem;">@progressVal%</span>
@@ -164,7 +178,7 @@
                             else
                             {
                                 <tr>
-                                    <td colspan="4" class="text-center py-5 text-muted bg-white">
+                                    <td colspan="5" class="text-center py-5 text-muted bg-white">
                                         <i class="bi bi-journal-x fs-2 opacity-50 mb-2 d-block"></i>
                                         Chưa có bản ghi Check-in nào
                                     </td>
@@ -296,7 +310,7 @@
                     </div>
 
                     <div class="d-flex justify-content-end gap-3 mt-4">
-                        <button type="button" class="btn-outline-custom px-4" data-bs-dismiss="modal">Hủy bỏ</button>
+                        <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Hủy bỏ</button>
                         <button type="submit" class="btn-primary-custom px-4">Xác nhận Check-in</button>
                     </div>
                 </div>

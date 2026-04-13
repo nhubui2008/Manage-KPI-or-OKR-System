@@ -97,6 +97,47 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("KPICHECKINS_CREATE")]
         public async Task<IActionResult> Create(int? kpiId)
         {
+            await PopulateCreateViewBag();
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
+            var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
+
+            var model = new KPICheckIn();
+            if (kpiId.HasValue)
+            {
+                model.KPIId = kpiId.Value;
+                
+                // Lọc danh sách KPI để chỉ hiện thị KPI đã chọn (theo yêu cầu người dùng)
+                var allKpis = ViewBag.AllKPIs as List<Manage_KPI_or_OKR_System.Models.KPI>;
+                if (allKpis != null && allKpis.Any(k => k.Id == kpiId.Value))
+                {
+                    ViewBag.AllKPIs = allKpis.Where(k => k.Id == kpiId.Value).ToList();
+                    
+                    // Lọc cả KPIData để đảm bảo JS vẫn hoạt động đúng
+                    var allKpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>;
+                    if (allKpiData != null && allKpiData.ContainsKey(kpiId.Value))
+                    {
+                        var filteredData = new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
+                        filteredData[kpiId.Value] = allKpiData[kpiId.Value];
+                        ViewBag.KPIData = filteredData;
+                    }
+                }
+
+                // Nếu là Employee, tự động gán EmployeeId
+                if (employee != null && (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                                       User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                                       User.IsInRole("Sales") || User.IsInRole("sales")))
+                {
+                    model.EmployeeId = employee.Id;
+                }
+            }
+
+            return View(model);
+        }
+
+        private async Task PopulateCreateViewBag()
+        {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
             var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
@@ -114,7 +155,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         .Where(a => a.EmployeeId == employee.Id)
                         .Select(a => a.KPIId)
                         .ToListAsync();
-                    
+
                     kpiQuery = kpiQuery.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
                     employeeQuery = employeeQuery.Where(e => e.Id == employee.Id);
                 }
@@ -131,26 +172,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.FailReasons = await _context.FailReasons.ToListAsync();
 
             // Fetch KPI details for real-time progress calculation in JS
-            var kpiIds = ((List<Manage_KPI_or_OKR_System.Models.KPI>)ViewBag.AllKPIs).Select(k => k.Id).ToList();
+            var kpis = (List<Manage_KPI_or_OKR_System.Models.KPI>)ViewBag.AllKPIs;
+            var kpiIds = kpis.Select(k => k.Id).ToList();
             var kpiDetails = await _context.KPIDetails
                 .Where(d => kpiIds.Contains(d.KPIId ?? 0))
                 .ToDictionaryAsync(d => d.KPIId ?? 0);
             ViewBag.KPIData = kpiDetails;
-
-            var model = new KPICheckIn();
-            if (kpiId.HasValue)
-            {
-                model.KPIId = kpiId.Value;
-                // Nếu là Employee, tự động gán EmployeeId
-                if (employee != null && (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                                       User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
-                                       User.IsInRole("Sales") || User.IsInRole("sales")))
-                {
-                    model.EmployeeId = employee.Id;
-                }
-            }
-
-            return View(model);
         }
 
         [HttpPost]
@@ -159,8 +186,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (AchievedValue < 0)
             {
-                TempData["ErrorMessage"] = "Kết quả đạt được không thể là số âm.";
-                return RedirectToAction(nameof(Index));
+                ModelState.AddModelError("AchievedValue", "Kết quả đạt được không thể là số âm.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                await PopulateCreateViewBag();
+                ViewBag.AchievedValue = AchievedValue;
+                ViewBag.Note = Note;
+                return View(model);
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -182,14 +216,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     }
                 }
 
-                if (!ModelState.IsValid)
-                {
-                    var errors = string.Join("; ", ModelState.Values
-                                    .SelectMany(v => v.Errors)
-                                    .Select(e => e.ErrorMessage));
-                    TempData["ErrorMessage"] = "Dữ liệu không hợp lệ: " + errors;
-                    return RedirectToAction(nameof(Index));
-                }
 
                 // 1. Lưu thông tin Check-in chính
                 model.CheckInDate = DateTime.Now;

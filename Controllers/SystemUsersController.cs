@@ -79,6 +79,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HasPermission("SYSUSERS_EDIT")]
+        public async Task<IActionResult> ResetPassword(int? id)
+        {
+            if (id == null) return NotFound();
+            var user = await _context.SystemUsers.FindAsync(id);
+            if (user == null) return NotFound();
+
+            return View(user);
+        }
+
         [HttpPost]
         [HasPermission("SYSUSERS_EDIT")]
         public async Task<IActionResult> ResetPassword(int userId, string newPassword)

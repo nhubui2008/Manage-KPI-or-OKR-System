@@ -1,0 +1,192 @@
+@model Manage_KPI_or_OKR_System.Models.Position
+@{
+    ViewData["Title"] = "Xóa Chức vụ - " + Model.PositionName;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid px-0">
+    <!-- Page Header -->
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1 text-danger">Xác nhận xóa</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <a asp-action="Index">Danh mục Chức vụ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <a asp-action="Details" asp-route-code="@Model.PositionCode">@Model.PositionName</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Xóa chức vụ</span>
+            </div>
+        </div>
+        <div>
+            <a asp-action="Details" asp-route-code="@Model.PositionCode" class="btn-outline-custom d-flex align-items-center px-3 py-2" style="border-radius: 10px; text-decoration: none;">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <!-- Warning Banner -->
+            <div class="content-card mb-4 card-danger-gradient" style="overflow: hidden; border: none;">
+                <div class="banner-danger">
+                    <div class="banner-danger-bg"></div>
+                    <div class="banner-danger-content p-4 text-white">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="banner-icon-bg">
+                                <i class="bi bi-exclamation-triangle-fill fs-2"></i>
+                            </div>
+                            <div>
+                                <h4 class="mb-1 fw-bold">Bạn có chắc chắn muốn xóa?</h4>
+                                <p class="mb-0 opacity-90">Hành động này sẽ ẩn chức vụ này khỏi hệ thống. Bạn có thể khôi phục lại sau nếu cần thiết.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Position Info to Delete -->
+            <div class="content-card">
+                <div class="card-header-custom border-bottom bg-light bg-opacity-50">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="header-icon-box bg-danger">
+                            <i class="bi bi-trash"></i>
+                        </div>
+                        Thông tin chức vụ sắp xóa
+                    </h5>
+                </div>
+                <div class="card-body-custom p-0">
+                    <div class="detail-info-list">
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-hash"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Mã chức vụ</div>
+                                <div class="detail-info-value">@Model.PositionCode</div>
+                            </div>
+                        </div>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-tag"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Tên chức vụ</div>
+                                <div class="detail-info-value">@Model.PositionName</div>
+                            </div>
+                        </div>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-reception-3"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Cấp bậc</div>
+                                <div class="detail-info-value">@(Model.RankLevel != null ? "Cấp " + Model.RankLevel : "—")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer p-4 bg-light border-top">
+                    <form asp-action="Delete" method="post" class="d-flex justify-content-end gap-2">
+                        <input type="hidden" asp-for="Id" />
+                        <a asp-action="Details" asp-route-code="@Model.PositionCode" class="btn btn-light fw-bold px-4 py-2" style="border-radius: 10px;">
+                            Hủy bỏ
+                        </a>
+                        <button type="submit" class="btn btn-danger fw-bold px-4 py-2 d-flex align-items-center shadow-sm" style="border-radius: 10px;">
+                            <i class="bi bi-trash-fill me-2"></i> Xác nhận xóa
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .header-icon-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.85rem;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+
+    .banner-danger {
+        position: relative;
+        min-height: 120px;
+        display: flex;
+        align-items: center;
+    }
+    .banner-danger-bg {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #d93025 0%, #a50e0e 100%);
+        z-index: 0;
+    }
+    .banner-danger-bg::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M20 18v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-18V-4h-2V0h-4v2h4v4h2V2h4V0h-4zM6 18v-4H4v4H0v2h4v4h2v-4h4v-2H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .banner-danger-content {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+    }
+    .banner-icon-bg {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+    }
+
+    .detail-info-list {
+        padding: 0;
+    }
+    .detail-info-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--border-color, #e8eaed);
+    }
+    .detail-info-row:last-child {
+        border-bottom: none;
+    }
+    .detail-info-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+    .detail-info-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-secondary, #5f6368);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 3px;
+    }
+    .detail-info-value {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-primary, #1a1a2e);
+    }
+
+    .page-header h1 {
+        font-size: 1.5rem;
+    }
+    .separator {
+        opacity: 0.5;
+        font-size: 0.8rem;
+    }
+</style>

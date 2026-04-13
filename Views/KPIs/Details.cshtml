@@ -8,6 +8,18 @@
 }
 
 <div class="container-fluid px-0">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+        </div>
+    }
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 font-weight-bold mb-1">Chi tiết KPI: @Model.KPIName</h1>
@@ -25,7 +37,7 @@
             </a>
             @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Warehouse") || User.IsInRole("warehouse") || User.IsInRole("Sales") || User.IsInRole("sales")))
             {
-                <button class="btn btn-primary rounded-pill px-4">
+                <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#editKpiModal">
                     <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa
                 </button>
             }
@@ -57,22 +69,24 @@
                         <div class="col-12"><hr class="text-muted opacity-25"></div>
 
                         <div class="col-md-4">
-                            <div class="p-3 bg-light rounded-3 text-center">
-                                <label class="text-muted small text-uppercase fw-bold d-block mb-1">Chỉ tiêu (Target)</label>
-                                <span class="fs-4 fw-bold text-primary">@String.Format("{0:N0}", detail?.TargetValue ?? 0)</span>
-                                <span class="text-muted small"> @ViewBag.PropertyName</span>
+                            <div class="p-3 bg-primary rounded-4 text-center shadow-sm">
+                                <label class="text-white text-opacity-75 small text-uppercase fw-bold d-block mb-1">Chỉ tiêu (Target)</label>
+                                <span class="fs-4 fw-bold text-white">@String.Format("{0:N0}", detail?.TargetValue ?? 0)</span>
+                                <div class="text-white text-opacity-50 small">@ViewBag.PropertyName</div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="p-3 bg-soft-success rounded-3 text-center">
-                                <label class="text-success small text-uppercase fw-bold d-block mb-1">Ngưỡng đạt</label>
-                                <span class="fs-4 fw-bold text-success">@String.Format("{0:N0}", detail?.PassThreshold ?? 0)</span>
+                            <div class="p-3 bg-success rounded-4 text-center shadow-sm">
+                                <label class="text-white text-opacity-75 small text-uppercase fw-bold d-block mb-1">Ngưỡng đạt</label>
+                                <span class="fs-4 fw-bold text-white">@String.Format("{0:N0}", detail?.PassThreshold ?? 0)</span>
+                                <div class="text-white text-opacity-50 small">Mục tiêu tối thiểu</div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="p-3 bg-soft-danger rounded-3 text-center">
-                                <label class="text-danger small text-uppercase fw-bold d-block mb-1">Ngưỡng không đạt</label>
-                                <span class="fs-4 fw-bold text-danger">@String.Format("{0:N0}", detail?.FailThreshold ?? 0)</span>
+                            <div class="p-3 bg-danger rounded-4 text-center shadow-sm">
+                                <label class="text-white text-opacity-75 small text-uppercase fw-bold d-block mb-1">Ngưỡng không đạt</label>
+                                <span class="fs-4 fw-bold text-white">@String.Format("{0:N0}", detail?.FailThreshold ?? 0)</span>
+                                <div class="text-white text-opacity-50 small">Mức cảnh báo</div>
                             </div>
                         </div>
                     </div>
@@ -90,9 +104,11 @@
                             <thead class="bg-light">
                                 <tr>
                                     <th class="ps-4 border-0">Ngày</th>
+                                    <th class="border-0">Người cập nhật</th>
                                     <th class="border-0">Giá trị</th>
                                     <th class="border-0">Tiến độ</th>
                                     <th class="border-0">Đánh giá</th>
+                                    <th class="border-0">Lý do</th>
                                     <th class="border-0 pe-4 text-end">Ghi chú</th>
                                 </tr>
                             </thead>
@@ -102,7 +118,8 @@
                                     foreach (var ci in recentCheckIns)
                                     {
                                         <tr>
-                                            <td class="ps-4">@ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td class="ps-4 text-muted small">@ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td class="fw-bold text-dark">@ci.employeeName</td>
                                             <td class="fw-bold text-dark">@String.Format("{0:N0}", ci.AchievedValue ?? 0)</td>
                                             <td>
                                                 <div class="d-flex align-items-center gap-2" style="min-width: 120px;">
@@ -116,9 +133,21 @@
                                                 @if (ci.StatusId != null && statuses.ContainsKey(ci.StatusId))
                                                 {
                                                     string statusName = statuses[ci.StatusId];
-                                                    string badgeClass = statusName == "Đạt" ? "bg-soft-success text-success" : 
-                                                                       statusName == "Gần đạt" ? "bg-soft-warning text-warning" : "bg-soft-danger text-danger";
-                                                    <span class="badge @badgeClass rounded-pill px-3">@statusName</span>
+                                                    string badgeClass = statusName == "Đạt" ? "bg-success" : 
+                                                                       statusName == "Gần đạt" ? "bg-warning" : "bg-danger";
+                                                    <span class="badge @badgeClass text-white rounded-pill px-3">@statusName</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(ci.failReason))
+                                                {
+                                                    <span class="badge bg-danger text-white border-0">
+                                                        <i class="bi bi-exclamation-triangle-fill me-1"></i> @ci.failReason
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">--</span>
                                                 }
                                             </td>
                                             <td class="pe-4 text-end text-muted small">@ci.Note</td>
@@ -128,7 +157,7 @@
                                 else
                                 {
                                     <tr>
-                                        <td colspan="5" class="text-center py-4 text-muted italic">Chưa có dữ liệu cập nhật nào.</td>
+                                        <td colspan="7" class="text-center py-4 text-muted italic">Chưa có dữ liệu cập nhật nào.</td>
                                     </tr>
                                 }
                             </tbody>
@@ -184,16 +213,132 @@
 </div>
 
 <style>
-    .bg-soft-success { background-color: rgba(25, 135, 84, 0.1); }
-    .bg-soft-danger { background-color: rgba(220, 53, 69, 0.1); }
-    .bg-soft-warning { background-color: rgba(255, 193, 7, 0.1); }
-    .bg-soft-primary { background-color: rgba(13, 110, 253, 0.1); }
+    .bg-soft-success { 
+        background-color: #ecfdf5; 
+        border: 1px solid #10b98120;
+    }
+    .bg-soft-danger { 
+        background-color: #fef2f2; 
+        border: 1px solid #ef444420;
+    }
+    .bg-soft-warning { 
+        background-color: #fffbeb; 
+        border: 1px solid #f59e0b20;
+    }
+    .bg-soft-primary { 
+        background-color: #eff6ff; 
+        border: 1px solid #3b82f620;
+    }
+
+    .text-success { color: #059669 !important; }
+    .text-danger { color: #dc2626 !important; }
+    .text-warning { color: #d97706 !important; }
+    .text-primary { color: #1d4ed8 !important; }
     
     .transition-hover:hover {
-        background-color: rgba(0,0,0,0.03) !important;
-        transform: translateX(5px);
-        transition: all 0.2s ease;
+        background-color: #f8fafc !important;
+        transform: translateX(4px);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
     }
     
     .smaller { font-size: 0.75rem; }
 </style>
+
+<!-- Modal Chỉnh sửa KPI -->
+<div class="modal fade" id="editKpiModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0 bg-light rounded-top p-4">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-2"></i>Chỉnh sửa KPI</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form asp-action="Edit" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="kpi.Id" value="@Model.Id" />
+                    
+                    <h6 class="fw-bold text-primary mb-3">Thông tin chung</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Tên KPI <span class="text-danger">*</span></label>
+                            <input type="text" name="kpi.KPIName" value="@Model.KPIName" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Phân loại KPI <span class="text-danger">*</span></label>
+                            <select name="kpi.KPITypeId" class="form-select" required>
+                                @foreach (var t in (ViewBag.KPITypes as List<Manage_KPI_or_OKR_System.Models.KPIType>) ?? new List<Manage_KPI_or_OKR_System.Models.KPIType>())
+                                {
+                                    @if(Model.KPITypeId == t.Id) {
+                                        <option value="@t.Id" selected>@t.TypeName</option>
+                                    } else {
+                                        <option value="@t.Id">@t.TypeName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Kỳ đánh giá <span class="text-danger">*</span></label>
+                            <select name="kpi.PeriodId" class="form-select" required>
+                                @foreach (var p in (ViewBag.AllPeriods as List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod>) ?? new List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod>())
+                                {
+                                    @if(Model.PeriodId == p.Id) {
+                                        <option value="@p.Id" selected>@p.PeriodName</option>
+                                    } else {
+                                        <option value="@p.Id">@p.PeriodName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Cấp độ quản lý</label>
+                            <select name="kpi.PropertyId" class="form-select">
+                                @foreach (var pr in (ViewBag.AllProperties as List<Manage_KPI_or_OKR_System.Models.KPIProperty>) ?? new List<Manage_KPI_or_OKR_System.Models.KPIProperty>())
+                                {
+                                    @if(Model.PropertyId == pr.Id) {
+                                        <option value="@pr.Id" selected>@pr.PropertyName</option>
+                                    } else {
+                                        <option value="@pr.Id">@pr.PropertyName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-sliders me-2"></i>Chi tiết Chỉ tiêu</h6>
+                    <div class="row g-3 mb-4 bg-light p-3 rounded-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" name="detail.TargetValue" value="@detail?.TargetValue" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Đơn vị đo lường</label>
+                            <input type="text" name="detail.MeasurementUnit" value="@detail?.MeasurementUnit" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Ngưỡng đạt (Pass Threshold)</label>
+                            <input type="number" step="0.01" name="detail.PassThreshold" value="@detail?.PassThreshold" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-danger">Ngưỡng trượt (Fail Threshold)</label>
+                            <input type="number" step="0.01" name="detail.FailThreshold" value="@detail?.FailThreshold" class="form-control">
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-check form-switch p-3 bg-white rounded-3 border border-warning border-opacity-25 shadow-sm">
+                                <input class="form-check-input ms-0 me-3" type="checkbox" name="detail.IsInverse" value="true" id="editIsInverseCheck" @(detail?.IsInverse == true ? "checked" : "")>
+                                <label class="form-check-label fw-bold text-dark cursor-pointer" for="editIsInverseCheck">
+                                    <i class="bi bi-arrow-down-circle text-warning me-1"></i> Chỉ tiêu thu nhỏ (Càng thấp càng tốt)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4"><i class="bi bi-save me-2"></i>Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

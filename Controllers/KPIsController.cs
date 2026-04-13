@@ -65,7 +65,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             .Where(a => a.EmployeeId == employee.Id)
                             .Select(a => a.KPIId)
                             .ToListAsync();
-                        query = query.Where(k => (allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id) && k.StatusId == 1);
+
+                        // Hiển thị KPI nếu: (Được phân bổ VÀ đã duyệt/đang thực hiện) HOẶC (Là người tạo VÀ chưa bị từ chối)
+                        query = query.Where(k => 
+                            (allocatedKpiIds.Contains(k.Id) && k.StatusId != 0 && k.StatusId != 2) || 
+                            (k.AssignerId == employee.Id && k.StatusId != 2)
+                        );
                     }
                     else
                     {
@@ -183,6 +188,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var recentCheckIns = await (from ci in _context.KPICheckIns
                                        join d in _context.CheckInDetails on ci.Id equals d.CheckInId into details
                                        from d in details.DefaultIfEmpty()
+                                       join e in _context.Employees on ci.EmployeeId equals e.Id into emps
+                                       from e in emps.DefaultIfEmpty()
+                                       join r in _context.FailReasons on ci.FailReasonId equals r.Id into reasons
+                                       from r in reasons.DefaultIfEmpty()
                                        where ci.KPIId == id
                                        orderby ci.CheckInDate descending
                                        select new {
@@ -190,7 +199,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                            ci.CheckInDate,
                                            ci.StatusId,
                                            AchievedValue = (decimal?)d.AchievedValue,
-                                           Note = d.Note
+                                           Note = d.Note,
+                                           employeeName = e.FullName,
+                                           failReason = r.ReasonName
                                        })
                                        .Take(10)
                                        .ToListAsync();
@@ -201,8 +212,62 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Assignments = assignedEmployees;
             ViewBag.RecentCheckIns = recentCheckIns;
             ViewBag.CheckInStatuses = checkInStatuses;
+            
+            // Data for editing
+            ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
+            ViewBag.KPITypes = await _context.KPITypes.OrderBy(t => t.Id).ToListAsync();
+            ViewBag.AllProperties = await _context.KPIProperties.ToListAsync();
 
             return View(kpi);
+        }
+
+        [HttpPost]
+        [HasPermission("KPIS_EDIT")]
+        public async Task<IActionResult> Edit(int id, KPI kpi, KPIDetail detail)
+        {
+            if (User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales"))
+                return Forbid();
+
+            if (id != kpi.Id) return NotFound();
+
+            try
+            {
+                var existingKpi = await _context.KPIs.FindAsync(id);
+                if (existingKpi == null) return NotFound();
+
+                // Update base KPI
+                existingKpi.KPIName = kpi.KPIName;
+                existingKpi.KPITypeId = kpi.KPITypeId;
+                existingKpi.PeriodId = kpi.PeriodId;
+                existingKpi.PropertyId = kpi.PropertyId;
+
+                // Update or Create Detail
+                var existingDetail = await _context.KPIDetails.FirstOrDefaultAsync(d => d.KPIId == id);
+                if (existingDetail != null)
+                {
+                    existingDetail.TargetValue = detail.TargetValue;
+                    existingDetail.PassThreshold = detail.PassThreshold;
+                    existingDetail.FailThreshold = detail.FailThreshold;
+                    existingDetail.MeasurementUnit = detail.MeasurementUnit;
+                    existingDetail.IsInverse = detail.IsInverse;
+                }
+                else
+                {
+                    detail.KPIId = id;
+                    _context.KPIDetails.Add(detail);
+                }
+
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Đã cập nhật KPI: {existingKpi.KPIName} thành công!";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Đã xảy ra lỗi hệ thống: " + ex.Message;
+            }
+
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost]

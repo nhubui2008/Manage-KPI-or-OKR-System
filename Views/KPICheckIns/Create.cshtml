@@ -82,10 +82,13 @@
                                     <div class="input-wrapper">
                                         <i class="bi bi-bullseye"></i>
                                         <select asp-for="KPIId" id="kpiSelect" class="form-select shadow-sm" required>
-                                            <option value="">-- Chọn KPI cần báo cáo --</option>
+                                            @if (kpis.Count != 1)
+                                            {
+                                                <option value="">-- Chọn KPI cần báo cáo --</option>
+                                            }
                                             @foreach(var k in kpis)
                                             {
-                                                <option value="@k.Id">@k.KPIName</option>
+                                                <option value="@k.Id" selected="@(kpis.Count == 1 ? "selected" : null)">@k.KPIName</option>
                                             }
                                         </select>
                                     </div>
@@ -108,8 +111,9 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Kết quả đạt được <span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-pencil-square"></i>
-                                        <input type="number" step="0.01" min="0" name="AchievedValue" id="achievedInput" class="form-control shadow-sm" placeholder="Nhập số liệu..." required>
+                                        <input type="number" step="0.01" name="AchievedValue" id="achievedInput" class="form-control shadow-sm" placeholder="Nhập số liệu..." required value="@ViewBag.AchievedValue">
                                     </div>
+                                    <span class="text-danger small mt-1 d-block">@Html.ValidationMessage("AchievedValue")</span>
                                 </div>
                             </div>
 
@@ -130,8 +134,9 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Chi tiết phân tích / Ghi chú</label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-textarea-t" style="top: 25px;"></i>
-                                        <textarea name="Note" class="form-control shadow-sm" placeholder="Mô tả các khó khăn hoặc thuận lợi trong quá trình thực hiện..." rows="4" style="padding-left: 48px; border-radius: 12px;"></textarea>
+                                        <textarea name="Note" class="form-control shadow-sm" placeholder="Mô tả các khó khăn hoặc thuận lợi trong quá trình thực hiện..." rows="4" style="padding-left: 48px; border-radius: 12px;">@ViewBag.Note</textarea>
                                     </div>
+                                    <span class="text-danger small mt-1 d-block">@Html.ValidationMessage("Note")</span>
                                 </div>
                             </div>
 

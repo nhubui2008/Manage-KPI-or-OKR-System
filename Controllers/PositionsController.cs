@@ -184,9 +184,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // ==========================================
         // 5. XÓA MỀM (DELETE)
         // ==========================================
-        [HttpPost]
         [HasPermission("POSITIONS_DELETE")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var position = await _context.Positions
+                .FirstOrDefaultAsync(m => m.Id == id && m.IsActive == true);
+            if (position == null) return NotFound();
+
+            return View(position);
+        }
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        [HasPermission("POSITIONS_DELETE")]
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var position = await _context.Positions.FindAsync(id);
             if (position == null)

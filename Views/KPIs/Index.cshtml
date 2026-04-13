@@ -255,18 +255,24 @@
                                 <td class="align-middle text-end">
                                     <div class="d-flex justify-content-end gap-2">
                                         <div class="dropdown">
-                                            <button class="btn btn-sm btn-light rounded-circle shadow-sm" style="width: 32px; height: 32px;" data-bs-toggle="dropdown">
+                                            <button class="btn btn-sm btn-light rounded-circle shadow-sm" style="width: 32px; height: 32px;" data-bs-toggle="dropdown" aria-expanded="false">
                                                 <i class="bi bi-three-dots-vertical"></i>
                                             </button>
-                                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 animate__animated animate__fadeIn animate__faster" style="z-index: 1060; min-width: 180px;">
                                                  <li><a class="dropdown-item py-2" asp-action="Details" asp-route-id="@kpi.Id"><i class="bi bi-info-circle text-primary me-2"></i> Chi tiết</a></li>
                                                  
-                                                 @if (kpi.StatusId == 1 || kpi.StatusId >= 3) // Allow actions for approved or in-progress KPIs
+                                                 @if (kpi.StatusId == 1 || kpi.StatusId >= 3)
                                                  {
                                                      <li><a class="dropdown-item py-2 text-success fw-bold" asp-controller="KPICheckIns" asp-action="Create" asp-route-kpiId="@kpi.Id"><i class="bi bi-calendar-check me-2"></i> Thực hiện Check-in</a></li>
-                                                     <li><a class="dropdown-item py-2" href="javascript:void(0)" onclick="openAssignPersonnelModal(@kpi.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kpi.KPIName ?? ""))', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assignedEmployees)))"><i class="bi bi-people text-info-emphasis me-2"></i> Phân bổ nhân sự</a></li>
+                                                     
+                                                     @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
+                                                          User.IsInRole("Warehouse") || User.IsInRole("warehouse") ||
+                                                          User.IsInRole("Sales") || User.IsInRole("sales")))
+                                                     {
+                                                         <li><a class="dropdown-item py-2" href="javascript:void(0)" onclick="openAssignPersonnelModal(@kpi.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kpi.KPIName ?? ""))', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assignedEmployees)))"><i class="bi bi-people text-info-emphasis me-2"></i> Phân bổ nhân sự</a></li>
+                                                     }
                                                  }
-
+                                                 
                                                  @if ((User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager")) && (kpi.StatusId == 0 || kpi.StatusId == null))
                                                  {
                                                      <li><hr class="dropdown-divider"></li>
@@ -289,15 +295,11 @@
                                                       User.IsInRole("Sales") || User.IsInRole("sales")))
                                                  {
                                                      <li><hr class="dropdown-divider"></li>
-                                                    <li>
-                                                        <form asp-action="Delete" asp-route-id="@kpi.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận vô hiệu hóa KPI này?');">
-                                                            <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Xóa KPI</button>
-                                                        </form>
-                                                    </li>
-                                                }
-                                                 else
-                                                 {
-                                                     <li><a class="dropdown-item py-2" asp-action="Details" asp-route-id="@kpi.Id"><i class="bi bi-info-circle text-primary me-2"></i> Chi tiết</a></li>
+                                                     <li>
+                                                         <form asp-action="Delete" asp-route-id="@kpi.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận vô hiệu hóa KPI này?');">
+                                                             <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Xóa KPI</button>
+                                                         </form>
+                                                     </li>
                                                  }
                                             </ul>
                                         </div>
@@ -455,6 +457,21 @@
     .stat-card:hover { transform: translateY(-3px); transition: all 0.3s ease; }
     .employee-item:hover { background-color: rgba(13, 202, 240, 0.05); }
     .cursor-pointer { cursor: pointer; }
+
+    .table-responsive {
+        overflow: visible !important;
+    }
+    
+    @@media (max-width: 991.98px) {
+        .table-responsive {
+            overflow-x: auto !important;
+            padding-bottom: 100px;
+        }
+    }
+    
+    .dropdown-menu {
+        z-index: 1060 !important;
+    }
 </style>
 
 <script>
