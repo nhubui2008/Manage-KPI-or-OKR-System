@@ -43,6 +43,176 @@
     };
 })();
 
+(function () {
+    const unitOptions = [
+        { value: '%', label: '% - Tỷ lệ phần trăm', kind: 'percent', step: '0.01', min: '0', max: '100', example: '0 - 100', suffix: '%' },
+        { value: 'VNĐ', label: 'VNĐ - Tiền tệ', kind: 'money', step: '1000', min: '0', max: '', example: 'VD: 5000000', suffix: 'VNĐ' },
+        { value: 'Triệu VNĐ', label: 'Triệu VNĐ - Tiền tệ rút gọn', kind: 'money', step: '0.01', min: '0', max: '', example: 'VD: 1500', suffix: 'triệu VNĐ' },
+        { value: 'Điểm', label: 'Điểm - Thang điểm', kind: 'score', step: '0.01', min: '0', max: '100', example: '0 - 100', suffix: 'điểm' },
+        { value: 'Người', label: 'Người - Nhân sự', kind: 'integer', step: '1', min: '0', max: '', example: 'VD: 10', suffix: 'người' },
+        { value: 'Khách hàng', label: 'Khách hàng', kind: 'integer', step: '1', min: '0', max: '', example: 'VD: 25', suffix: 'khách hàng' },
+        { value: 'Cơ hội', label: 'Cơ hội bán hàng', kind: 'integer', step: '1', min: '0', max: '', example: 'VD: 120', suffix: 'cơ hội' },
+        { value: 'Hợp đồng', label: 'Hợp đồng', kind: 'integer', step: '1', min: '0', max: '', example: 'VD: 12', suffix: 'hợp đồng' },
+        { value: 'Sản phẩm', label: 'Sản phẩm', kind: 'integer', step: '1', min: '0', max: '', example: 'VD: 100', suffix: 'sản phẩm' },
+        { value: 'Lần', label: 'Lần', kind: 'integer', step: '1', min: '0', max: '', example: 'VD: 5', suffix: 'lần' },
+        { value: 'Giờ', label: 'Giờ', kind: 'decimal', step: '0.25', min: '0', max: '', example: 'VD: 8', suffix: 'giờ' },
+        { value: 'Ngày', label: 'Ngày', kind: 'decimal', step: '0.5', min: '0', max: '', example: 'VD: 15', suffix: 'ngày' },
+        { value: 'Dự án', label: 'Dự án', kind: 'integer', step: '1', min: '0', max: '', example: 'VD: 3', suffix: 'dự án' },
+        { value: 'Công việc', label: 'Công việc', kind: 'integer', step: '1', min: '0', max: '', example: 'VD: 20', suffix: 'công việc' }
+    ];
+
+    const defaultConfig = {
+        value: '',
+        label: 'Đơn vị',
+        kind: 'decimal',
+        step: '0.01',
+        min: '0',
+        max: '',
+        example: 'VD: 100',
+        suffix: 'đơn vị'
+    };
+
+    function normalizeUnit(value) {
+        return String(value ?? '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .replace(/Đ/g, 'D')
+            .toLowerCase()
+            .trim();
+    }
+
+    function getMeasurementUnitConfig(unit) {
+        const normalized = normalizeUnit(unit);
+        if (!normalized) return defaultConfig;
+
+        const exact = unitOptions.find(option => normalizeUnit(option.value) === normalized);
+        if (exact) return exact;
+
+        if (normalized.includes('%') || normalized.includes('phan tram') || normalized.includes('ty le')) {
+            return unitOptions[0];
+        }
+
+        if (normalized.includes('vnd') || normalized.includes('vnđ') || normalized.includes('tien') || normalized.includes('doanh thu')) {
+            return normalized.includes('trieu') ? unitOptions[2] : unitOptions[1];
+        }
+
+        if (normalized.includes('diem') || normalized.includes('score')) {
+            return unitOptions[3];
+        }
+
+        if (normalized.includes('gio')) return unitOptions[10];
+        if (normalized.includes('ngay')) return unitOptions[11];
+
+        const integerHints = ['nguoi', 'khach', 'co hoi', 'hop dong', 'san pham', 'lan', 'du an', 'cong viec', 'ticket', 'lead'];
+        if (integerHints.some(hint => normalized.includes(hint))) {
+            return { ...defaultConfig, kind: 'integer', step: '1', example: 'VD: 10', suffix: unit || defaultConfig.suffix };
+        }
+
+        return { ...defaultConfig, suffix: unit || defaultConfig.suffix };
+    }
+
+    function placeholderFor(input, config) {
+        const role = input.dataset.measurementRole || 'value';
+        const labels = {
+            target: 'Nhập chỉ tiêu',
+            pass: 'Nhập ngưỡng đạt',
+            fail: 'Nhập ngưỡng trượt',
+            current: 'Nhập giá trị hiện tại',
+            achieved: 'Nhập kết quả đạt được',
+            allocated: 'Nhập giá trị phân bổ',
+            value: 'Nhập giá trị'
+        };
+
+        return `${labels[role] || labels.value} (${config.example})`;
+    }
+
+    function updateSuffix(input, config) {
+        const suffixId = input.dataset.measurementSuffixTarget;
+        let suffixElement = suffixId ? document.getElementById(suffixId) : null;
+        if (!suffixElement) {
+            suffixElement = input.closest('.input-group')?.querySelector('.measurement-unit-suffix') || null;
+        }
+
+        if (suffixElement) {
+            suffixElement.textContent = config.suffix || defaultConfig.suffix;
+        }
+    }
+
+    function applyConfigToInput(input, config) {
+        if (!input) return;
+
+        input.type = 'number';
+        input.step = config.step || defaultConfig.step;
+        input.min = config.min ?? defaultConfig.min;
+        input.inputMode = config.kind === 'integer' ? 'numeric' : 'decimal';
+        input.placeholder = placeholderFor(input, config);
+
+        if (config.max) {
+            input.max = config.max;
+        } else {
+            input.removeAttribute('max');
+        }
+
+        updateSuffix(input, config);
+    }
+
+    function applyMeasurementUnitConfigToInputs(unit, inputs) {
+        const config = getMeasurementUnitConfig(unit);
+        const targetInputs = Array.isArray(inputs) || inputs instanceof NodeList
+            ? inputs
+            : [inputs].filter(Boolean);
+
+        targetInputs.forEach(input => applyConfigToInput(input, config));
+        return config;
+    }
+
+    function updateScope(select) {
+        const scope = select.closest('[data-measurement-scope]') || select.closest('form') || document;
+        const config = getMeasurementUnitConfig(select.value);
+        scope.querySelectorAll('.measurement-value-input').forEach(input => applyConfigToInput(input, config));
+        scope.querySelectorAll('[data-measurement-unit-label]').forEach(label => {
+            label.textContent = config.suffix || select.value || '--';
+        });
+    }
+
+    function applyMeasurementUnitBehavior(root) {
+        const targetRoot = root || document;
+        targetRoot.querySelectorAll('.measurement-unit-select').forEach(select => {
+            if (select.dataset.measurementBehaviorReady === 'true') {
+                updateScope(select);
+                return;
+            }
+
+            select.dataset.measurementBehaviorReady = 'true';
+            select.addEventListener('change', () => updateScope(select));
+            select.addEventListener('input', () => updateScope(select));
+            updateScope(select);
+        });
+    }
+
+    function setMeasurementUnitSelectValue(select, value) {
+        if (!select) return;
+
+        const selectedValue = String(value ?? '').trim();
+        if (selectedValue && !Array.from(select.options).some(option => normalizeUnit(option.value) === normalizeUnit(selectedValue))) {
+            select.add(new Option(selectedValue, selectedValue, true, true));
+        }
+
+        select.value = selectedValue;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    window.measurementUnitOptions = unitOptions;
+    window.getMeasurementUnitConfig = getMeasurementUnitConfig;
+    window.applyMeasurementUnitConfigToInputs = applyMeasurementUnitConfigToInputs;
+    window.applyMeasurementUnitBehavior = applyMeasurementUnitBehavior;
+    window.setMeasurementUnitSelectValue = setMeasurementUnitSelectValue;
+
+    document.addEventListener('DOMContentLoaded', () => applyMeasurementUnitBehavior(document));
+    document.addEventListener('shown.bs.modal', event => applyMeasurementUnitBehavior(event.target));
+})();
+
 document.addEventListener('DOMContentLoaded', function () {
 
     // --- Sidebar Toggle ---

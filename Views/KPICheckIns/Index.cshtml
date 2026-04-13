@@ -1,5 +1,6 @@
 @model IEnumerable<Manage_KPI_or_OKR_System.Models.KPICheckIn>
 @using Manage_KPI_or_OKR_System.Helpers
+@using System.Text.Json
 @{
     ViewData["Title"] = "Lịch sử Check-in KPI";
     
@@ -7,6 +8,12 @@
     var employeesDict = ViewBag.Employees as Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>();
     var kpisDict = ViewBag.KPIs as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI>();
     var failReasonsDict = (ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>()).ToDictionary(r => r.Id, r => r.ReasonName ?? "Chưa rõ");
+    var kpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
+    var kpiDataJson = JsonSerializer.Serialize(kpiData.ToDictionary(k => k.Key, v => new {
+        target = v.Value.TargetValue,
+        unit = v.Value.MeasurementUnit,
+        isInverse = v.Value.IsInverse
+    }));
 
     int inTimeCount = Model.Count(c => c.StatusId == 1 || c.StatusId == null);
     int riskCount = Model.Count(c => c.StatusId == 2);
@@ -248,7 +255,7 @@
                                 <label>KPI Mục tiêu</label>
                                 <div class="input-wrapper">
                                     <i class="bi bi-speedometer2"></i>
-                                    <select name="KPIId" class="form-select" required>
+                                    <select name="KPIId" id="quickKpiSelect" class="form-select" required>
                                         @if (allKPIsList.Count != 1)
                                         {
                                             <option value="">-- Chọn KPI --</option>
@@ -281,9 +288,10 @@
                         <div class="col-md-6">
                             <div class="form-icon-group">
                                 <label>Kết quả thực tế</label>
-                                <div class="input-wrapper">
+                                <div class="input-wrapper input-group">
                                     <i class="bi bi-graph-up-arrow"></i>
-                                    <input type="number" step="0.01" min="0" name="AchievedValue" class="form-control" placeholder="0.00" required>
+                                    <input type="number" step="0.01" min="0" name="AchievedValue" id="quickAchievedInput" class="form-control measurement-value-input" data-measurement-role="achieved" data-measurement-suffix-target="quickAchievedUnitSuffix" placeholder="0.00" required>
+                                    <span class="input-group-text measurement-unit-suffix" id="quickAchievedUnitSuffix">đơn vị</span>
                                 </div>
                             </div>
                         </div>
@@ -327,5 +335,29 @@
         height: 10px;
     }
 </style>
+
+<script>
+    const quickCheckInKpiMap = @Html.Raw(kpiDataJson);
+
+    function updateQuickCheckInInput() {
+        const kpiSelect = document.getElementById('quickKpiSelect');
+        const achievedInput = document.getElementById('quickAchievedInput');
+        if (!kpiSelect || !achievedInput) return;
+
+        const selectedKpi = quickCheckInKpiMap[kpiSelect.value];
+        const unit = selectedKpi?.unit || '';
+        const config = window.applyMeasurementUnitConfigToInputs
+            ? window.applyMeasurementUnitConfigToInputs(unit, [achievedInput])
+            : { suffix: unit || 'đơn vị' };
+
+        const suffix = document.getElementById('quickAchievedUnitSuffix');
+        if (suffix) suffix.textContent = config.suffix || unit || 'đơn vị';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('quickKpiSelect')?.addEventListener('change', updateQuickCheckInInput);
+        updateQuickCheckInInput();
+    });
+</script>
 
 </div>

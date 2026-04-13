@@ -29,6 +29,7 @@ Phòng Kinh Doanh vẫn tồn tại trong hệ thống để phục vụ KPI/OKR
 - Sửa màn tạo Role để chỉ gợi ý các role đang dùng: `Admin`, `Director`, `Manager`, `HR`, `Sales`, `Employee`.
 - Chặn một số lỗi render dữ liệu động trong modal/table bằng encode/escape dữ liệu.
 - Cập nhật progress bar để không tràn layout khi tiến độ vượt 100%.
+- Chuyển đơn vị đo lường KPI/KR sang dropdown và tự điều chỉnh ô nhập giá trị theo loại đơn vị đang chọn.
 - Bổ sung token cho các form/action động để tránh lỗi POST sau khi bật anti-forgery toàn cục.
 - Sửa các form khôi phục/xóa mềm dùng đúng action.
 

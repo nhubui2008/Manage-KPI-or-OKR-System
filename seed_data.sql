@@ -351,11 +351,11 @@ BEGIN TRY
 
     SET IDENTITY_INSERT [dbo].[OKRKeyResults] ON;
     INSERT INTO [dbo].[OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus]) VALUES
-    (1, 1, N'Dat doanh thu ky moi toan cong ty', 50000.00, 18000.00, N'Trieu VND', 0, NULL, N'Dang thuc hien'),
+    (1, 1, N'Dat doanh thu ky moi toan cong ty', 50000.00, 18000.00, N'Triệu VNĐ', 0, NULL, N'Dang thuc hien'),
     (2, 1, N'Dat ty le hoan thanh KPI trung binh toan cong ty', 85.00, 0.00, N'%', 0, NULL, N'Cho check-in'),
-    (3, 2, N'Tao pipeline hop le phong Kinh Doanh', 15000.00, 8500.00, N'Trieu VND', 0, NULL, N'Dang thuc hien'),
+    (3, 2, N'Tao pipeline hop le phong Kinh Doanh', 15000.00, 8500.00, N'Triệu VNĐ', 0, NULL, N'Dang thuc hien'),
     (4, 2, N'Dat ty le chuyen doi co hoi sang hop dong', 25.00, 18.00, N'%', 0, NULL, N'Dang thuc hien'),
-    (5, 2, N'Hoan thanh so co hoi ban hang du dieu kien', 120.00, 62.00, N'Co hoi', 0, NULL, N'Dang thuc hien'),
+    (5, 2, N'Hoan thanh so co hoi ban hang du dieu kien', 120.00, 62.00, N'Cơ hội', 0, NULL, N'Dang thuc hien'),
     (6, 3, N'Hoan thanh ho so nhan su dung han', 95.00, 88.00, N'%', 0, NULL, N'Dang thuc hien'),
     (7, 3, N'Hoan thanh cau hinh ky danh gia va quy tac thuong', 100.00, 70.00, N'%', 0, NULL, N'Dang thuc hien'),
     (8, 4, N'Giam ty le loi sau trien khai noi bo', 3.00, 5.00, N'%', 1, NULL, N'Co rui ro'),
@@ -414,8 +414,8 @@ BEGIN TRY
 
     SET IDENTITY_INSERT [dbo].[KPIDetails] ON;
     INSERT INTO [dbo].[KPIDetails] ([Id], [KPIId], [TargetValue], [PassThreshold], [FailThreshold], [MeasurementUnit], [IsInverse]) VALUES
-    (1, 1, 15000.00, 12000.00, 8000.00, N'Trieu VND', 0),
-    (2, 2, 120.00, 90.00, 50.00, N'Co hoi', 0),
+    (1, 1, 15000.00, 12000.00, 8000.00, N'Triệu VNĐ', 0),
+    (2, 2, 120.00, 90.00, 50.00, N'Cơ hội', 0),
     (3, 3, 25.00, 20.00, 12.00, N'%', 0),
     (4, 4, 95.00, 90.00, 75.00, N'%', 0),
     (5, 5, 3.00, 5.00, 8.00, N'%', 1),

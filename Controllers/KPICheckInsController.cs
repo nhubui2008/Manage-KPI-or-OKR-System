@@ -72,13 +72,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var employees = await _context.Employees.ToDictionaryAsync(e => e.Id);
             var kpis = await _context.KPIs.ToDictionaryAsync(k => k.Id);
             var statuses = await _context.CheckInStatuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
+            var allEmployees = await employeeQuery.ToListAsync();
+            var allKpis = await kpiQuery.ToListAsync();
+            var allKpiIds = allKpis.Select(k => k.Id).ToList();
+            var kpiData = await _context.KPIDetails
+                .Where(d => d.KPIId.HasValue && allKpiIds.Contains(d.KPIId.Value))
+                .ToDictionaryAsync(d => d.KPIId ?? 0);
 
             ViewBag.Details = checkInDetails;
             ViewBag.Employees = employees;
             ViewBag.KPIs = kpis;
             ViewBag.CheckInStatuses = statuses;
-            ViewBag.AllEmployees = await employeeQuery.ToListAsync();
-            ViewBag.AllKPIs = await kpiQuery.ToListAsync();
+            ViewBag.AllEmployees = allEmployees;
+            ViewBag.AllKPIs = allKpis;
+            ViewBag.KPIData = kpiData;
             ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
             ViewBag.FailReasons = await _context.FailReasons.ToListAsync();
 

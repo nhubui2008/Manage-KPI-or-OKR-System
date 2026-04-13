@@ -74,6 +74,7 @@ Những phạm vi đã loại bỏ:
 - Tạo kỳ đánh giá theo quý/năm.
 - Tạo KPI theo kỳ đánh giá.
 - Cấu hình chỉ tiêu KPI gồm target, ngưỡng đạt, ngưỡng trượt, đơn vị đo và hướng đo.
+- Đơn vị đo lường được chọn bằng dropdown; các ô nhập giá trị tự đổi step, placeholder, giới hạn và hậu tố theo loại đơn vị.
 - Phân bổ KPI cho phòng ban hoặc nhân viên.
 - Gán trọng số KPI cho nhân viên để tính điểm tổng hợp theo mức độ quan trọng.
 - KPI cần ở trạng thái hợp lệ trước khi nhân viên check-in.
@@ -101,7 +102,6 @@ Role mặc định trong seed:
 - `Director`: xem dashboard, báo cáo, audit và dữ liệu quản trị cấp cao.
 - `Manager`: quản lý OKR/KPI/phân bổ/check-in trong phạm vi quản lý.
 - `HR`: quản lý nhân sự, kỳ đánh giá, kết quả đánh giá và thưởng.
-- `Sales`: xem OKR/KPI được phân bổ và tự nhập check-in KPI.
 - `Employee`: xem OKR/KPI được phân bổ và tự nhập check-in KPI.
 
 Permission được quản lý qua bảng `Permissions` và `Role_Permissions`. Các action quan trọng trong controller sử dụng `[HasPermission(...)]` để kiểm tra quyền truy cập.
@@ -183,12 +183,6 @@ Seed không nạp:
 
 - `KPICheckIns`
 - `CheckInDetails`
-- Dữ liệu khách hàng
-- Dữ liệu sản phẩm
-- Đơn hàng bán
-- Hóa đơn
-- Nhập kho
-- Giao vận
 
 Cách nạp seed:
 

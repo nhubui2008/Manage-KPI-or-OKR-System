@@ -9,6 +9,22 @@
     var kpiTypesList = ViewBag.KPITypes as List<Manage_KPI_or_OKR_System.Models.KPIType> ?? new List<Manage_KPI_or_OKR_System.Models.KPIType>();
     var kpiTypesDict = kpiTypesList.ToDictionary(t => t.Id, t => t.TypeName ?? "N/A");
     var latestProgress = ViewBag.LatestProgress as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    var measurementUnits = new[] {
+        new { Value = "%", Text = "% - Tỷ lệ phần trăm" },
+        new { Value = "VNĐ", Text = "VNĐ - Tiền tệ" },
+        new { Value = "Triệu VNĐ", Text = "Triệu VNĐ - Tiền tệ rút gọn" },
+        new { Value = "Điểm", Text = "Điểm - Thang điểm" },
+        new { Value = "Người", Text = "Người - Nhân sự" },
+        new { Value = "Khách hàng", Text = "Khách hàng" },
+        new { Value = "Cơ hội", Text = "Cơ hội bán hàng" },
+        new { Value = "Hợp đồng", Text = "Hợp đồng" },
+        new { Value = "Sản phẩm", Text = "Sản phẩm" },
+        new { Value = "Lần", Text = "Lần" },
+        new { Value = "Giờ", Text = "Giờ" },
+        new { Value = "Ngày", Text = "Ngày" },
+        new { Value = "Dự án", Text = "Dự án" },
+        new { Value = "Công việc", Text = "Công việc" }
+    };
 
     // Helper: Map StatusId to display info
     string GetStatusName(int? statusId, decimal? progress) {
@@ -359,22 +375,37 @@
                     </div>
                     
                     <h6 class="fw-bold text-primary mb-3"><i class="bi bi-sliders me-2"></i>Chi tiết Chỉ tiêu</h6>
-                    <div class="row g-3 mb-4 bg-light p-3 rounded-3">
+                    <div class="row g-3 mb-4 bg-light p-3 rounded-3" data-measurement-scope>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" name="detail.TargetValue" class="form-control" placeholder="1000000" required>
+                            <div class="input-group">
+                                <input type="number" step="0.01" name="detail.TargetValue" class="form-control measurement-value-input" data-measurement-role="target" placeholder="Nhập chỉ tiêu" required>
+                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Đơn vị đo lường</label>
-                            <input type="text" name="detail.MeasurementUnit" class="form-control" placeholder="VD: VNĐ, Sản phẩm, Khách hàng, Lần...">
+                            <label class="form-label fw-semibold">Đơn vị đo lường <span class="text-danger">*</span></label>
+                            <select name="detail.MeasurementUnit" class="form-select measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
+                                <option value="">-- Chọn đơn vị đo --</option>
+                                @foreach (var unit in measurementUnits)
+                                {
+                                    <option value="@unit.Value">@unit.Text</option>
+                                }
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Ngưỡng đạt (Pass Threshold)</label>
-                            <input type="number" step="0.01" name="detail.PassThreshold" class="form-control" placeholder="Mức tối thiểu để Đạt">
+                            <div class="input-group">
+                                <input type="number" step="0.01" name="detail.PassThreshold" class="form-control measurement-value-input" data-measurement-role="pass" placeholder="Mức tối thiểu để Đạt">
+                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold text-danger">Ngưỡng trượt (Fail Threshold)</label>
-                            <input type="number" step="0.01" name="detail.FailThreshold" class="form-control" placeholder="Mức xác định là Không đạt">
+                            <div class="input-group">
+                                <input type="number" step="0.01" name="detail.FailThreshold" class="form-control measurement-value-input" data-measurement-role="fail" placeholder="Mức xác định là Không đạt">
+                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
+                            </div>
                         </div>
                         <div class="col-md-12">
                             <div class="form-check form-switch p-3 bg-white rounded-3 border border-warning border-opacity-25 shadow-sm">

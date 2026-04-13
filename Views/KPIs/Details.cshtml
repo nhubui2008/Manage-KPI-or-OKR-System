@@ -6,6 +6,25 @@
     var assignments = ViewBag.Assignments as Dictionary<int, string> ?? new Dictionary<int, string>();
     var recentCheckIns = ViewBag.RecentCheckIns as IEnumerable<dynamic>;
     var statuses = ViewBag.CheckInStatuses as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var measurementUnits = new[] {
+        new { Value = "%", Text = "% - Tỷ lệ phần trăm" },
+        new { Value = "VNĐ", Text = "VNĐ - Tiền tệ" },
+        new { Value = "Triệu VNĐ", Text = "Triệu VNĐ - Tiền tệ rút gọn" },
+        new { Value = "Điểm", Text = "Điểm - Thang điểm" },
+        new { Value = "Người", Text = "Người - Nhân sự" },
+        new { Value = "Khách hàng", Text = "Khách hàng" },
+        new { Value = "Cơ hội", Text = "Cơ hội bán hàng" },
+        new { Value = "Hợp đồng", Text = "Hợp đồng" },
+        new { Value = "Sản phẩm", Text = "Sản phẩm" },
+        new { Value = "Lần", Text = "Lần" },
+        new { Value = "Giờ", Text = "Giờ" },
+        new { Value = "Ngày", Text = "Ngày" },
+        new { Value = "Dự án", Text = "Dự án" },
+        new { Value = "Công việc", Text = "Công việc" }
+    };
+    var currentMeasurementUnit = detail?.MeasurementUnit ?? "";
+    var hasCustomMeasurementUnit = !string.IsNullOrWhiteSpace(currentMeasurementUnit)
+        && !measurementUnits.Any(u => string.Equals(u.Value, currentMeasurementUnit, StringComparison.OrdinalIgnoreCase));
 }
 
 <div class="container-fluid px-0">
@@ -72,21 +91,21 @@
                         <div class="col-md-4">
                             <div class="p-3 bg-primary rounded-4 text-center shadow-sm">
                                 <label class="text-white text-opacity-75 small text-uppercase fw-bold d-block mb-1">Chỉ tiêu (Target)</label>
-                                <span class="fs-4 fw-bold text-white">@String.Format("{0:N0}", detail?.TargetValue ?? 0)</span>
+                                <span class="fs-4 fw-bold text-white">@String.Format("{0:N0}", detail?.TargetValue ?? 0) @currentMeasurementUnit</span>
                                 <div class="text-white text-opacity-50 small">@ViewBag.PropertyName</div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="p-3 bg-success rounded-4 text-center shadow-sm">
                                 <label class="text-white text-opacity-75 small text-uppercase fw-bold d-block mb-1">Ngưỡng đạt</label>
-                                <span class="fs-4 fw-bold text-white">@String.Format("{0:N0}", detail?.PassThreshold ?? 0)</span>
+                                <span class="fs-4 fw-bold text-white">@String.Format("{0:N0}", detail?.PassThreshold ?? 0) @currentMeasurementUnit</span>
                                 <div class="text-white text-opacity-50 small">Mục tiêu tối thiểu</div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="p-3 bg-danger rounded-4 text-center shadow-sm">
                                 <label class="text-white text-opacity-75 small text-uppercase fw-bold d-block mb-1">Ngưỡng không đạt</label>
-                                <span class="fs-4 fw-bold text-white">@String.Format("{0:N0}", detail?.FailThreshold ?? 0)</span>
+                                <span class="fs-4 fw-bold text-white">@String.Format("{0:N0}", detail?.FailThreshold ?? 0) @currentMeasurementUnit</span>
                                 <div class="text-white text-opacity-50 small">Mức cảnh báo</div>
                             </div>
                         </div>
@@ -124,7 +143,7 @@
                                         <tr>
                                             <td class="ps-4 text-muted small">@ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm")</td>
                                             <td class="fw-bold text-dark">@ci.employeeName</td>
-                                            <td class="fw-bold text-dark">@String.Format("{0:N0}", ci.AchievedValue ?? 0)</td>
+                                            <td class="fw-bold text-dark">@String.Format("{0:N0}", ci.AchievedValue ?? 0) @currentMeasurementUnit</td>
                                             <td>
                                                 <div class="d-flex align-items-center gap-2" style="min-width: 120px;">
                                                     <div class="progress flex-grow-1" style="height: 6px;">
@@ -310,22 +329,48 @@
                     </div>
                     
                     <h6 class="fw-bold text-primary mb-3"><i class="bi bi-sliders me-2"></i>Chi tiết Chỉ tiêu</h6>
-                    <div class="row g-3 mb-4 bg-light p-3 rounded-3">
+                    <div class="row g-3 mb-4 bg-light p-3 rounded-3" data-measurement-scope>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" name="detail.TargetValue" value="@detail?.TargetValue" class="form-control" required>
+                            <div class="input-group">
+                                <input type="number" step="0.01" name="detail.TargetValue" value="@detail?.TargetValue" class="form-control measurement-value-input" data-measurement-role="target" required>
+                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Đơn vị đo lường</label>
-                            <input type="text" name="detail.MeasurementUnit" value="@detail?.MeasurementUnit" class="form-control">
+                            <label class="form-label fw-semibold">Đơn vị đo lường <span class="text-danger">*</span></label>
+                            <select name="detail.MeasurementUnit" class="form-select measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
+                                <option value="">-- Chọn đơn vị đo --</option>
+                                @if (hasCustomMeasurementUnit)
+                                {
+                                    <option value="@currentMeasurementUnit" selected>@currentMeasurementUnit</option>
+                                }
+                                @foreach (var unit in measurementUnits)
+                                {
+                                    if (string.Equals(unit.Value, currentMeasurementUnit, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <option value="@unit.Value" selected>@unit.Text</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@unit.Value">@unit.Text</option>
+                                    }
+                                }
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Ngưỡng đạt (Pass Threshold)</label>
-                            <input type="number" step="0.01" name="detail.PassThreshold" value="@detail?.PassThreshold" class="form-control">
+                            <div class="input-group">
+                                <input type="number" step="0.01" name="detail.PassThreshold" value="@detail?.PassThreshold" class="form-control measurement-value-input" data-measurement-role="pass">
+                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold text-danger">Ngưỡng trượt (Fail Threshold)</label>
-                            <input type="number" step="0.01" name="detail.FailThreshold" value="@detail?.FailThreshold" class="form-control">
+                            <div class="input-group">
+                                <input type="number" step="0.01" name="detail.FailThreshold" value="@detail?.FailThreshold" class="form-control measurement-value-input" data-measurement-role="fail">
+                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
+                            </div>
                         </div>
                         <div class="col-md-12">
                             <div class="form-check form-switch p-3 bg-white rounded-3 border border-warning border-opacity-25 shadow-sm">

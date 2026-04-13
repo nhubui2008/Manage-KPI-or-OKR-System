@@ -109,9 +109,10 @@
                             <div class="col-md-6">
                                 <div class="form-icon-group mb-0">
                                     <label class="form-label small text-muted text-uppercase fw-800">Kết quả đạt được <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
+                                    <div class="input-wrapper input-group">
                                         <i class="bi bi-pencil-square"></i>
-                                        <input type="number" step="0.01" name="AchievedValue" id="achievedInput" class="form-control shadow-sm" placeholder="Nhập số liệu..." required value="@ViewBag.AchievedValue">
+                                        <input type="number" step="0.01" name="AchievedValue" id="achievedInput" class="form-control shadow-sm measurement-value-input" data-measurement-role="achieved" data-measurement-suffix-target="achievedUnitSuffix" placeholder="Nhập số liệu..." required value="@ViewBag.AchievedValue">
+                                        <span class="input-group-text measurement-unit-suffix" id="achievedUnitSuffix">đơn vị</span>
                                     </div>
                                     <span class="text-danger small mt-1 d-block">@Html.ValidationMessage("AchievedValue")</span>
                                 </div>
@@ -272,9 +273,13 @@
                 const target = data.target || 0;
                 const unit = data.unit || 'đơn vị';
                 const isInverse = data.isInverse;
+                const unitConfig = window.applyMeasurementUnitConfigToInputs
+                    ? window.applyMeasurementUnitConfigToInputs(unit, [achievedInput])
+                    : { suffix: unit };
 
                 targetDisplay.textContent = new Intl.NumberFormat().format(target);
                 unitDisplay.textContent = unit;
+                document.getElementById('achievedUnitSuffix').textContent = unitConfig.suffix || unit;
                 modeDisplay.textContent = isInverse ? "Càng thấp càng tốt" : "Càng cao càng tốt";
 
                 let progress = 0;
@@ -307,6 +312,9 @@
             } else {
                 targetDisplay.textContent = "--";
                 unitDisplay.textContent = "--";
+                if (window.applyMeasurementUnitConfigToInputs) {
+                    window.applyMeasurementUnitConfigToInputs('', [achievedInput]);
+                }
                 modeDisplay.textContent = "--";
                 progressPercentage.textContent = "0%";
                 liveProgressBar.style.width = "0%";
