@@ -341,6 +341,32 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
                 .Where(a => a.EmployeeId == id)
                 .FirstOrDefaultAsync();
             
+            // Lấy thông tin mục tiêu chiến lược
+            if (emp.StrategicGoalId.HasValue)
+            {
+                ViewBag.StrategicGoal = await _context.MissionVisions.FindAsync(emp.StrategicGoalId.Value);
+            }
+
+            // Lấy thông tin tài khoản liên kết
+            if (emp.SystemUserId.HasValue)
+            {
+                ViewBag.SystemUser = await _context.SystemUsers.FindAsync(emp.SystemUserId.Value);
+            }
+
+            // Lấy danh sách KPI được giao
+            var assignedKPIs = await _context.KPI_Employee_Assignments
+                .Where(a => a.EmployeeId == id)
+                .Join(_context.KPIs, a => a.KPIId, k => k.Id, (a, k) => k)
+                .ToListAsync();
+            ViewBag.AssignedKPIs = assignedKPIs;
+
+            // Lấy danh sách OKR được giao
+            var assignedOKRs = await _context.OKR_Employee_Allocations
+                .Where(a => a.EmployeeId == id)
+                .Join(_context.OKRs, a => a.OKRId, o => o.Id, (a, o) => o)
+                .ToListAsync();
+            ViewBag.AssignedOKRs = assignedOKRs;
+            
             ViewBag.Assignment = assignment;
             ViewBag.Departments = await _context.Departments.ToDictionaryAsync(d => d.Id, d => d.DepartmentName);
             ViewBag.Positions = await _context.Positions.ToDictionaryAsync(p => p.Id, p => p.PositionName);

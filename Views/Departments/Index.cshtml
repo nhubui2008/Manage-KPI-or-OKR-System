@@ -16,7 +16,10 @@
             {
                 var icon = depth == 0 ? "bi-folder-fill text-warning" : "bi-files text-secondary";
                 var count = counts.ContainsKey(child.Id) ? counts[child.Id] : 0;
-                <div class="d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded hover-bg-light" style="margin-left: -5px; cursor: pointer;">
+                <div class="org-tree-item d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded" 
+                     data-dept-id="@child.Id" 
+                     onclick="loadDepartmentDetail(@child.Id)"
+                     style="margin-left: -5px; cursor: pointer; transition: all 0.2s ease;">
                     <span class="d-flex align-items-center gap-2"><i class="bi @icon"></i> @child.DepartmentName</span>
                     <span class="badge bg-secondary rounded-pill">@count</span>
                 </div>
@@ -77,7 +80,8 @@
                 <h5 class="mb-0 fw-bold"><i class="bi bi-diagram-3 me-2"></i> Cây tổ chức</h5>
             </div>
             <div class="card-body-custom pt-3">
-                <div class="d-flex align-items-center gap-2 mb-3 px-2 py-2 rounded bg-primary bg-opacity-10 border border-primary border-opacity-25">
+                <div class="org-tree-item org-tree-company d-flex align-items-center gap-2 mb-3 px-2 py-2 rounded active" 
+                     onclick="showTableView()" style="cursor: pointer; transition: all 0.2s ease;">
                     <i class="bi bi-building text-primary fs-5"></i>
                     <span class="fw-bold text-dark">Tổ Chức / Công Ty</span>
                 </div>
@@ -101,8 +105,21 @@
 
     <div class="col-lg-8">
         <div class="content-card h-100">
-            <div class="card-body-custom">
-                <form asp-action="Index" method="get" class="toolbar">
+            <div class="card-body-custom" id="detail-panel">
+                <!-- Default: Hiển thị bảng danh sách phòng ban -->
+                <div id="detail-loading" style="display:none;" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <div class="mt-2 text-muted">Đang tải dữ liệu...</div>
+                </div>
+
+                <div id="detail-content" style="display:none;">
+                </div>
+
+                <!-- Bảng danh sách phòng ban (mặc định ẩn, hiện khi cần) -->
+                <div id="dept-table-view">
+                    <form asp-action="Index" method="get" class="toolbar">
                     <div class="toolbar-left">
                         <div class="toolbar-search">
                             <i class="bi bi-search"></i>
@@ -246,6 +263,7 @@
                         </tbody>
                     </table>
                 </div>
+                </div>
             </div>
         </div>
     </div>
@@ -253,3 +271,569 @@
         </div>
     </div>
 </div>
+
+<style>
+    .org-tree-item {
+        border: 1px solid transparent;
+        border-radius: 8px !important;
+    }
+    .org-tree-item:hover {
+        background-color: rgba(26, 115, 232, 0.06) !important;
+        border-color: rgba(26, 115, 232, 0.15);
+    }
+    .org-tree-item.active {
+        background-color: rgba(26, 115, 232, 0.1) !important;
+        border-color: rgba(26, 115, 232, 0.3) !important;
+        box-shadow: 0 0 0 1px rgba(26, 115, 232, 0.15);
+    }
+    .org-tree-company.active {
+        background: linear-gradient(135deg, rgba(26, 115, 232, 0.08), rgba(66, 133, 244, 0.12)) !important;
+        border-color: rgba(26, 115, 232, 0.35) !important;
+    }
+
+    /* Detail Panel Styles */
+    .detail-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border-color, #e8eaed);
+        background: linear-gradient(135deg, rgba(26, 115, 232, 0.03), rgba(66, 133, 244, 0.06));
+    }
+    .detail-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+    }
+    .detail-icon.company {
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+    }
+    .detail-icon.dept {
+        background: linear-gradient(135deg, #f9ab00, #fbbc04);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(249, 171, 0, 0.3);
+    }
+    .detail-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-primary, #1a1a2e);
+        margin-bottom: 2px;
+    }
+    .detail-subtitle {
+        font-size: 0.8rem;
+        color: var(--text-secondary, #5f6368);
+    }
+
+    .detail-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+        padding: 20px 24px;
+    }
+    .stat-card {
+        background: var(--bg-secondary, #f8f9fa);
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        border: 1px solid var(--border-color, #e8eaed);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .stat-value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary, #5f6368);
+        font-weight: 500;
+        margin-top: 4px;
+    }
+
+    .detail-section {
+        padding: 16px 24px;
+    }
+    .detail-section-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-primary, #1a1a2e);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .detail-section-title i {
+        color: var(--primary, #1a73e8);
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    .info-item {
+        background: var(--bg-secondary, #f8f9fa);
+        border-radius: 10px;
+        padding: 12px 16px;
+        border: 1px solid var(--border-color, #e8eaed);
+    }
+    .info-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-secondary, #5f6368);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+    .info-value {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary, #1a1a2e);
+    }
+
+    .emp-list-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color, #e8eaed);
+        background: var(--bg-secondary, #f8f9fa);
+        margin-bottom: 8px;
+        transition: all 0.2s;
+    }
+    .emp-list-item:hover {
+        background: rgba(26, 115, 232, 0.04);
+        border-color: rgba(26, 115, 232, 0.2);
+    }
+    .emp-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.8rem;
+        color: #fff;
+        flex-shrink: 0;
+    }
+    .emp-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .emp-name {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--text-primary, #1a1a2e);
+    }
+    .emp-position {
+        font-size: 0.75rem;
+        color: var(--text-secondary, #5f6368);
+    }
+    .emp-contact {
+        font-size: 0.7rem;
+        color: var(--text-secondary, #5f6368);
+    }
+
+    .child-dept-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        background: var(--bg-secondary, #f8f9fa);
+        border: 1px solid var(--border-color, #e8eaed);
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin: 0 6px 8px 0;
+    }
+    .child-dept-chip:hover {
+        background: rgba(26, 115, 232, 0.08);
+        border-color: rgba(26, 115, 232, 0.3);
+        color: var(--primary, #1a73e8);
+    }
+
+    .dept-overview-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color, #e8eaed);
+        background: var(--bg-secondary, #f8f9fa);
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .dept-overview-row:hover {
+        background: rgba(26, 115, 232, 0.04);
+        border-color: rgba(26, 115, 232, 0.2);
+        transform: translateX(4px);
+    }
+    .detail-action-btns {
+        display: flex;
+        gap: 8px;
+        padding: 0 24px 20px;
+    }
+    .detail-action-btns a {
+        padding: 8px 18px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+    }
+    .detail-btn-primary {
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        color: #fff !important;
+        border: none;
+        box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+    }
+    .detail-btn-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(26, 115, 232, 0.4);
+    }
+    .detail-btn-outline {
+        background: transparent;
+        color: var(--text-secondary, #5f6368) !important;
+        border: 1px solid var(--border-color, #e8eaed);
+    }
+    .detail-btn-outline:hover {
+        background: var(--bg-secondary, #f8f9fa);
+        border-color: var(--primary, #1a73e8);
+        color: var(--primary, #1a73e8) !important;
+    }
+
+    .empty-employees {
+        text-align: center;
+        padding: 32px 16px;
+        color: var(--text-secondary, #5f6368);
+    }
+    .empty-employees i {
+        font-size: 2.5rem;
+        opacity: 0.3;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    /* Animation */
+    @@keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .detail-animate {
+        animation: fadeInUp 0.3s ease forwards;
+    }
+</style>
+
+@section Scripts {
+<script>
+    // Avatar color palette
+    const avatarColors = [
+        '#1a73e8', '#ea4335', '#34a853', '#f9ab00', '#8e24aa',
+        '#00897b', '#e65100', '#1565c0', '#c62828', '#2e7d32'
+    ];
+
+    function getAvatarColor(name) {
+        let hash = 0;
+        for (let i = 0; i < (name || '').length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return avatarColors[Math.abs(hash) % avatarColors.length];
+    }
+
+    function setActiveTreeItem(element) {
+        document.querySelectorAll('.org-tree-item').forEach(el => el.classList.remove('active'));
+        if (element) element.classList.add('active');
+    }
+
+    function showLoading() {
+        document.getElementById('detail-loading').style.display = 'block';
+        document.getElementById('detail-content').style.display = 'none';
+        document.getElementById('dept-table-view').style.display = 'none';
+    }
+
+    function showContent() {
+        document.getElementById('detail-loading').style.display = 'none';
+        document.getElementById('detail-content').style.display = 'block';
+        document.getElementById('dept-table-view').style.display = 'none';
+    }
+
+    function showTable() {
+        document.getElementById('detail-loading').style.display = 'none';
+        document.getElementById('detail-content').style.display = 'none';
+        document.getElementById('dept-table-view').style.display = 'block';
+    }
+
+    function showTableView() {
+        const companyItem = document.querySelector('.org-tree-company');
+        setActiveTreeItem(companyItem);
+        showTable();
+    }
+
+    // ==========================================
+    // Load Company Overview
+    // ==========================================
+    function loadCompanyOverview() {
+        const companyItem = document.querySelector('.org-tree-company');
+        setActiveTreeItem(companyItem);
+        showLoading();
+
+        fetch('/Departments/GetCompanyOverview')
+            .then(res => res.json())
+            .then(data => {
+                renderCompanyOverview(data);
+                showContent();
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('detail-content').innerHTML = 
+                    '<div class="text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><div class="mt-2">Không thể tải dữ liệu</div></div>';
+                showContent();
+            });
+    }
+
+    function renderCompanyOverview(data) {
+        const container = document.getElementById('detail-content');
+        
+        // Build department list HTML
+        let deptListHtml = '';
+        const rootDepts = data.departments.filter(d => !d.parentDepartmentId);
+        
+        rootDepts.forEach(dept => {
+            const childDepts = data.departments.filter(d => d.parentDepartmentId === dept.id);
+            const childCount = childDepts.length;
+            
+            deptListHtml += `
+                <div class="dept-overview-row" onclick="loadDepartmentDetail(${dept.id})">
+                    <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #f9ab00, #fbbc04); 
+                                display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0;">
+                        <i class="bi bi-folder-fill"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary, #1a1a2e);">
+                            ${dept.departmentName || '—'}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary, #5f6368);">
+                            ${dept.departmentCode || '—'} · Quản lý: ${dept.managerName || 'Chưa phân công'}
+                            ${childCount > 0 ? ' · ' + childCount + ' đơn vị trực thuộc' : ''}
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge bg-secondary rounded-pill">${dept.employeeCount} NV</span>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </div>
+            `;
+        });
+
+        container.innerHTML = `
+            <div class="detail-animate">
+                <div class="detail-header">
+                    <div class="detail-icon company">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <div>
+                        <div class="detail-title">Tổ Chức / Công Ty</div>
+                        <div class="detail-subtitle">Tổng quan cơ cấu tổ chức doanh nghiệp</div>
+                    </div>
+                </div>
+
+                <div class="detail-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" style="color: #1a73e8;">${data.totalDepartments}</div>
+                        <div class="stat-label">Tổng phòng ban</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" style="color: #34a853;">${data.totalEmployees}</div>
+                        <div class="stat-label">Tổng nhân viên</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" style="color: #f9ab00;">${data.rootDepartments}</div>
+                        <div class="stat-label">Phòng ban gốc</div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-section-title">
+                        <i class="bi bi-diagram-3"></i> Danh sách phòng ban chính
+                    </div>
+                    ${deptListHtml || '<div class="text-muted fst-italic py-2">Chưa có phòng ban nào</div>'}
+                </div>
+            </div>
+        `;
+    }
+
+    // ==========================================
+    // Load Department Detail
+    // ==========================================
+    function loadDepartmentDetail(deptId) {
+        const treeItem = document.querySelector(`.org-tree-item[data-dept-id="${deptId}"]`);
+        setActiveTreeItem(treeItem);
+        showLoading();
+
+        fetch('/Departments/GetDepartmentDetail?id=' + deptId)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('detail-content').innerHTML = 
+                        '<div class="text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><div class="mt-2">' + data.error + '</div></div>';
+                } else {
+                    renderDepartmentDetail(data);
+                }
+                showContent();
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('detail-content').innerHTML = 
+                    '<div class="text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><div class="mt-2">Không thể tải dữ liệu</div></div>';
+                showContent();
+            });
+    }
+
+    function renderDepartmentDetail(data) {
+        const container = document.getElementById('detail-content');
+        
+        // Build employee list
+        let empListHtml = '';
+        if (data.employees && data.employees.length > 0) {
+            data.employees.forEach(emp => {
+                const initial = (emp.fullName || '?')[0].toUpperCase();
+                const color = getAvatarColor(emp.fullName);
+                empListHtml += `
+                    <div class="emp-list-item">
+                        <div class="emp-avatar" style="background: ${color};">${initial}</div>
+                        <div class="emp-info">
+                            <div class="emp-name"><a href="/Employees/Details/${emp.id}" class="text-decoration-none text-primary-hover fw-bold">${emp.fullName || '—'}</a></div>
+                            <div class="emp-position">${emp.positionName || 'Chưa xác định chức vụ'}</div>
+                        </div>
+                        <div class="emp-contact text-end">
+                            ${emp.email ? '<div><i class="bi bi-envelope me-1"></i>' + emp.email + '</div>' : ''}
+                            ${emp.phone ? '<div><i class="bi bi-telephone me-1"></i>' + emp.phone + '</div>' : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            empListHtml = `
+                <div class="empty-employees">
+                    <i class="bi bi-people"></i>
+                    <div class="fw-medium">Chưa có nhân viên</div>
+                    <div class="small">Phòng ban này hiện chưa có nhân viên nào được phân công</div>
+                </div>
+            `;
+        }
+
+        // Build child departments
+        let childDeptHtml = '';
+        if (data.childDepartments && data.childDepartments.length > 0) {
+            data.childDepartments.forEach(child => {
+                childDeptHtml += `
+                    <span class="child-dept-chip" onclick="loadDepartmentDetail(${child.id})">
+                        <i class="bi bi-folder text-warning"></i> ${child.departmentName || '—'}
+                    </span>
+                `;
+            });
+        }
+
+        // Format date
+        let createdDate = '—';
+        if (data.createdAt) {
+            const d = new Date(data.createdAt);
+            createdDate = d.toLocaleDateString('vi-VN');
+        }
+
+        container.innerHTML = `
+            <div class="detail-animate">
+                <div class="detail-header">
+                    <div class="detail-icon dept">
+                        <i class="bi bi-folder-fill"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="detail-title">${data.departmentName || '—'}</div>
+                        <div class="detail-subtitle">${data.departmentCode || '—'} · ${data.employeeCount} nhân viên</div>
+                    </div>
+                </div>
+
+                <div class="detail-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" style="color: #1a73e8;">${data.employeeCount}</div>
+                        <div class="stat-label">Nhân viên</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" style="color: #f9ab00;">${data.childDepartments ? data.childDepartments.length : 0}</div>
+                        <div class="stat-label">Đơn vị trực thuộc</div>
+                    </div>
+                </div>
+
+                <div class="detail-section" style="border-top: 1px solid var(--border-color, #e8eaed);">
+                    <div class="detail-section-title">
+                        <i class="bi bi-info-circle"></i> Thông tin chung
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Mã phòng ban</div>
+                            <div class="info-value">${data.departmentCode || '—'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Trưởng phòng</div>
+                            <div class="info-value">${data.managerName ? `<a href="/Employees/Details/${data.managerId}" class="text-decoration-none text-primary-hover fw-bold">${data.managerName}</a>` : '<span class="text-muted fst-italic">Chưa phân công</span>'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Trực thuộc</div>
+                            <div class="info-value">${data.parentName || '<span class="text-muted fst-italic">Cấp cao nhất</span>'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Ngày tạo</div>
+                            <div class="info-value">${createdDate}</div>
+                        </div>
+                    </div>
+                </div>
+
+                ${childDeptHtml ? `
+                <div class="detail-section" style="border-top: 1px solid var(--border-color, #e8eaed);">
+                    <div class="detail-section-title">
+                        <i class="bi bi-diagram-2"></i> Đơn vị trực thuộc
+                    </div>
+                    <div>${childDeptHtml}</div>
+                </div>` : ''}
+
+                <div class="detail-section" style="border-top: 1px solid var(--border-color, #e8eaed);">
+                    <div class="detail-section-title">
+                        <i class="bi bi-people"></i> Danh sách nhân viên (${data.employeeCount})
+                    </div>
+                    ${empListHtml}
+                </div>
+
+                <div class="detail-action-btns">
+                    <a href="/Departments/Details/${data.id}" class="detail-btn-primary">
+                        <i class="bi bi-eye"></i> Xem đầy đủ
+                    </a>
+                    <a href="/Departments/Edit/${data.id}" class="detail-btn-outline">
+                        <i class="bi bi-pencil"></i> Chỉnh sửa
+                    </a>
+                </div>
+            </div>
+        `;
+    }
+
+</script>
+}

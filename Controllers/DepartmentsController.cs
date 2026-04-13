@@ -98,11 +98,51 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 : "Không có (Cấp cao nhất)";
 
             // Đếm tổng nhân viên của phòng ban này
-            ViewBag.EmployeeCount = await _context.EmployeeAssignments
-                .CountAsync(a => a.DepartmentId == id && a.IsActive == true);
+            var assignments = await _context.EmployeeAssignments
+                .Where(a => a.DepartmentId == id && a.IsActive == true)
+                .ToListAsync();
+            ViewBag.EmployeeCount = assignments.Count;
+
+            // Lấy danh sách nhân viên chi tiết
+            var employeeIds = assignments.Select(a => a.EmployeeId).Where(eid => eid.HasValue).Select(eid => eid!.Value).ToList();
+            var positionIds = assignments.Select(a => a.PositionId).Where(pid => pid.HasValue).Select(pid => pid!.Value).Distinct().ToList();
+
+            var employeeEntities = await _context.Employees
+                .Where(e => employeeIds.Contains(e.Id))
+                .ToListAsync();
+            var positions = await _context.Positions
+                .Where(p => positionIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, p => p.PositionName);
+
+            ViewBag.EmployeeList = assignments.Select(a =>
+            {
+                var emp = employeeEntities.FirstOrDefault(e => e.Id == a.EmployeeId);
+                return new
+                {
+                    Id = emp?.Id ?? 0,
+                    FullName = emp?.FullName,
+                    Email = emp?.Email,
+                    Phone = emp?.Phone,
+                    PositionName = a.PositionId.HasValue && positions.ContainsKey(a.PositionId.Value)
+                        ? positions[a.PositionId.Value] : (string?)null
+                };
+            }).Where(e => e.FullName != null).ToList();
+
+            // Lấy phòng ban con
+            ViewBag.ChildDepartments = await _context.Departments
+                .Where(d => d.ParentDepartmentId == id && d.IsActive == true)
+                .ToListAsync();
+
+            // Lấy KPI được giao cho phòng ban
+            var kpiAssignments = await _context.KPI_Department_Assignments
+                .Where(k => k.DepartmentId == id)
+                .ToListAsync();
+            var kpiIds = kpiAssignments.Select(k => k.KPIId).Distinct().ToList();
+            ViewBag.AssignedKPIs = await _context.KPIs.Where(k => kpiIds.Contains(k.Id)).ToListAsync();
 
             return View(dept);
         }
+
 
         // ==========================================
         // 3. THÊM MỚI (CREATE)
@@ -325,6 +365,131 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 currentCheckId = parentDept.ParentDepartmentId;
             }
             return false;
+        }
+
+        // ==========================================
+        // API: TỔNG QUAN CÔNG TY (Company Overview)
+        // ==========================================
+        [HasPermission("DEPARTMENTS_VIEW")]
+        public async Task<IActionResult> GetCompanyOverview()
+        {
+            var activeDepts = await _context.Departments
+                .Where(d => d.IsActive == true)
+                .ToListAsync();
+
+            var totalEmployees = await _context.EmployeeAssignments
+                .Where(a => a.IsActive == true && a.DepartmentId.HasValue)
+                .Select(a => a.EmployeeId)
+                .Distinct()
+                .CountAsync();
+
+            var employeeCounts = await _context.EmployeeAssignments
+                .Where(a => a.IsActive == true && a.DepartmentId.HasValue)
+                .GroupBy(a => a.DepartmentId ?? 0)
+                .Select(g => new { DeptId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.DeptId, x => x.Count);
+
+            var employees = await _context.Employees
+                .Where(e => e.IsActive == true)
+                .ToDictionaryAsync(e => e.Id, e => e.FullName);
+
+            var deptList = activeDepts.Select(d => new
+            {
+                d.Id,
+                d.DepartmentCode,
+                d.DepartmentName,
+                d.ParentDepartmentId,
+                ManagerName = d.ManagerId.HasValue && employees.ContainsKey(d.ManagerId.Value)
+                    ? employees[d.ManagerId.Value]
+                    : null,
+                EmployeeCount = employeeCounts.ContainsKey(d.Id) ? employeeCounts[d.Id] : 0
+            }).ToList();
+
+            return Json(new
+            {
+                totalDepartments = activeDepts.Count,
+                totalEmployees,
+                rootDepartments = activeDepts.Count(d => d.ParentDepartmentId == null),
+                departments = deptList
+            });
+        }
+
+        // ==========================================
+        // API: CHI TIẾT PHÒNG BAN (Department Detail)
+        // ==========================================
+        [HasPermission("DEPARTMENTS_VIEW")]
+        public async Task<IActionResult> GetDepartmentDetail(int id)
+        {
+            var dept = await _context.Departments.FirstOrDefaultAsync(d => d.Id == id && d.IsActive == true);
+            if (dept == null)
+                return Json(new { error = "Không tìm thấy phòng ban" });
+
+            // Lấy tên quản lý
+            string? managerName = null;
+            if (dept.ManagerId.HasValue)
+            {
+                var manager = await _context.Employees.FindAsync(dept.ManagerId.Value);
+                managerName = manager?.FullName;
+            }
+
+            // Lấy tên phòng ban cấp trên
+            string? parentName = null;
+            if (dept.ParentDepartmentId.HasValue)
+            {
+                var parent = await _context.Departments.FindAsync(dept.ParentDepartmentId.Value);
+                parentName = parent?.DepartmentName;
+            }
+
+            // Lấy phòng ban con
+            var childDepts = await _context.Departments
+                .Where(d => d.ParentDepartmentId == id && d.IsActive == true)
+                .Select(d => new { d.Id, d.DepartmentName, d.DepartmentCode })
+                .ToListAsync();
+
+            // Lấy danh sách nhân viên thuộc phòng ban
+            var assignments = await _context.EmployeeAssignments
+                .Where(a => a.DepartmentId == id && a.IsActive == true)
+                .ToListAsync();
+
+            var employeeIds = assignments.Select(a => a.EmployeeId).Where(eid => eid.HasValue).Select(eid => eid!.Value).ToList();
+            var positionIds = assignments.Select(a => a.PositionId).Where(pid => pid.HasValue).Select(pid => pid!.Value).Distinct().ToList();
+
+            var employeeEntities = await _context.Employees
+                .Where(e => employeeIds.Contains(e.Id))
+                .ToListAsync();
+
+            var positions = await _context.Positions
+                .Where(p => positionIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, p => p.PositionName);
+
+            var employeeList = assignments.Select(a =>
+            {
+                var emp = employeeEntities.FirstOrDefault(e => e.Id == a.EmployeeId);
+                return new
+                {
+                    Id = emp?.Id ?? 0,
+                    FullName = emp?.FullName,
+                    Email = emp?.Email,
+                    Phone = emp?.Phone,
+                    PositionName = a.PositionId.HasValue && positions.ContainsKey(a.PositionId.Value)
+                        ? positions[a.PositionId.Value]
+                        : null
+                };
+            }).Where(e => e.FullName != null).ToList();
+
+            return Json(new
+            {
+                dept.Id,
+                dept.DepartmentCode,
+                dept.DepartmentName,
+                managerName,
+                dept.ManagerId,
+                parentName,
+                dept.CreatedAt,
+                employeeCount = employeeList.Count,
+                employees = employeeList,
+                childDepartments = childDepts
+            });
         }
 
         // Hàm hỗ trợ kiểm tra phòng ban có tồn tại không

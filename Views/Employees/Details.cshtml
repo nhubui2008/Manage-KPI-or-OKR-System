@@ -1,170 +1,561 @@
-﻿@model Manage_KPI_or_OKR_System.Models.Employee
+@model Manage_KPI_or_OKR_System.Models.Employee
 
 @{
     ViewData["Title"] = "Chi tiết nhân viên";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    
     var assignment = ViewBag.Assignment as Manage_KPI_or_OKR_System.Models.EmployeeAssignment;
     var departments = ViewBag.Departments as Dictionary<int, string> ?? new Dictionary<int, string>();
     var positions = ViewBag.Positions as Dictionary<int, string> ?? new Dictionary<int, string>();
+    
     var deptName = assignment?.DepartmentId.HasValue == true && departments.ContainsKey(assignment.DepartmentId.Value)
                    ? departments[assignment.DepartmentId.Value] : "Chưa phân bổ";
     var posName = assignment?.PositionId.HasValue == true && positions.ContainsKey(assignment.PositionId.Value)
                   ? positions[assignment.PositionId.Value] : "Chưa phân bổ";
+                  
+    var strategicGoal = ViewBag.StrategicGoal as Manage_KPI_or_OKR_System.Models.MissionVision;
+    var systemUser = ViewBag.SystemUser as Manage_KPI_or_OKR_System.Models.SystemUser;
+    var assignedKPIs = ViewBag.AssignedKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new List<Manage_KPI_or_OKR_System.Models.KPI>();
+    var assignedOKRs = ViewBag.AssignedOKRs as List<Manage_KPI_or_OKR_System.Models.OKR> ?? new List<Manage_KPI_or_OKR_System.Models.OKR>();
+
+    // Calculate Seniority
+    string seniority = "—";
+    if (Model.JoinDate.HasValue)
+    {
+        var diff = DateTime.Now - Model.JoinDate.Value;
+        int years = (int)(diff.TotalDays / 365);
+        int months = (int)((diff.TotalDays % 365) / 30);
+        if (years > 0)
+            seniority = $"{years} năm {months} tháng";
+        else if (months > 0)
+            seniority = $"{months} tháng";
+        else
+            seniority = "Mới gia nhập";
+    }
+
+    // Avatar Initial
+    string empName = Model.FullName ?? "Unknown";
+    string empInitial = empName.Length > 0 ? empName[0].ToString().ToUpper() : "?";
+    
+    // Status color
+    string statusText = Model.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc";
+    string statusClass = Model.IsActive == true ? "status-active" : "status-inactive";
+    string statusDot = Model.IsActive == true ? "bg-success" : "bg-danger";
 }
 
-<div class="container-fluid px-4 mt-4">
-    <div class="row mb-3">
-        <div class="col-12">
-            <h3 class="text-primary fw-bold">
-                <i class="bi bi-person-vcard me-2"></i>Chi tiết nhân viên
-            </h3>
+<div class="container-fluid px-4 py-4">
+    <!-- Breadcrumbs -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 fw-bold text-dark">Hồ sơ nhân viên</h4>
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb bg-transparent p-0 m-0">
-                    <li class="breadcrumb-item"><a href="/Dashboard" class="text-decoration-none">Trang chủ</a></li>
-                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Danh sách nhân viên</a></li>
+                <ol class="breadcrumb m-0" style="font-size: 0.85rem;">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-decoration-none">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Nhân sự</a></li>
                     <li class="breadcrumb-item active" aria-current="page">@Model.FullName</li>
                 </ol>
             </nav>
         </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary d-flex align-items-center">
+                <i class="bi bi-pencil-square me-2"></i> Chỉnh sửa
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary d-flex align-items-center">
+                <i class="bi bi-arrow-left me-2"></i> Quay lại
+            </a>
+        </div>
     </div>
 
-    <div class="card shadow-sm border-0 rounded-3">
-        <div class="card-body p-4">
-            <!-- Header với avatar và thông tin cơ bản -->
-            <div class="row g-4 mb-4 pb-4 border-bottom">
-                <div class="col-md-3 text-center">
-                    <div class="user-avatar mx-auto mb-3" 
-                         style="width: 120px; height: 120px; font-weight: 800; font-size: 3rem;">
-                        @(string.IsNullOrEmpty(Model.FullName) ? "U" : Model.FullName[0].ToString().ToUpper())
-                    </div>
-                    <h5 class="fw-semibold text-dark">@Model.FullName</h5>
-                    <p class="text-muted mb-2">Mã: <strong>@Model.EmployeeCode</strong></p>
-                    <span class="badge bg-@(Model.IsActive == true ? "success" : "danger") fs-6">
-                        <i class="bi bi-@(Model.IsActive == true ? "check-circle" : "x-circle") me-1"></i>
-                        @(Model.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc")
+    <!-- Banner Info -->
+    <div class="dept-banner mb-4">
+        <div class="dept-banner-content">
+            <div class="dept-banner-avatar" style="background: rgba(255,255,255,0.2); font-size: 2.5rem; font-weight: 700;">
+                @empInitial
+            </div>
+            <div class="dept-banner-info">
+                <div class="d-flex align-items-center gap-3 mb-1">
+                    <h2 class="dept-name m-0">@Model.FullName</h2>
+                    <span class="status-badge" style="background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.3);">
+                        <span class="status-dot @statusDot"></span> @statusText
                     </span>
                 </div>
+                <div class="dept-meta">
+                    <span class="me-3"><i class="bi bi-person-badge me-1"></i> Mã NV: @Model.EmployeeCode</span>
+                    <span><i class="bi bi-briefcase me-1"></i> @posName</span>
+                </div>
+            </div>
+        </div>
+        <div class="dept-banner-overlay"></div>
+    </div>
 
-                <div class="col-md-9">
-                    <div class="row g-3">
-                        <!-- Thông tin liên hệ -->
-                        <div class="col-md-6">
-                            <div class="info-section">
-                                <h6 class="text-muted small fw-semibold mb-2">
-                                    <i class="bi bi-envelope text-primary me-2"></i>Email
-                                </h6>
-                                <p class="text-dark fs-6">@(Model.Email ?? "Chưa cập nhật")</p>
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="content-card stats-card-detail">
+                <div class="stats-icon" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff;">
+                    <i class="bi bi-speedometer2"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-label">KPIs được giao</div>
+                    <div class="stats-value">@assignedKPIs.Count</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="content-card stats-card-detail">
+                <div class="stats-icon" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff;">
+                    <i class="bi bi-bullseye"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-label">OKRs được giao</div>
+                    <div class="stats-value">@assignedOKRs.Count</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="content-card stats-card-detail">
+                <div class="stats-icon" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff;">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-label">Thâm niên</div>
+                    <div class="stats-value" style="font-size: 1.1rem;">@seniority</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="content-card stats-card-detail">
+                <div class="stats-icon" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff;">
+                    <i class="bi bi-flag"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-label">Mục tiêu</div>
+                    <div class="stats-value">@(strategicGoal?.TargetYear.ToString() ?? "—")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column -->
+        <div class="col-lg-5">
+            <!-- Thông tin cá nhân -->
+            <div class="content-card mb-4">
+                <div class="card-header-custom border-bottom">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="header-icon-box">
+                            <i class="bi bi-person-circle"></i>
+                        </div>
+                        Thông tin cá nhân
+                    </h5>
+                </div>
+                <div class="card-body-custom p-0">
+                    <div class="detail-info-list">
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-envelope"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Email</div>
+                                <div class="detail-info-value">@(Model.Email ?? "—")</div>
                             </div>
                         </div>
-
-                        <div class="col-md-6">
-                            <div class="info-section">
-                                <h6 class="text-muted small fw-semibold mb-2">
-                                    <i class="bi bi-telephone text-primary me-2"></i>Số điện thoại
-                                </h6>
-                                <p class="text-dark fs-6">@(Model.Phone ?? "Chưa cập nhật")</p>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-telephone"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Số điện thoại</div>
+                                <div class="detail-info-value">@(Model.Phone ?? "—")</div>
                             </div>
                         </div>
-
-                        <!-- Ngày sinh và ngày vào làm -->
-                        <div class="col-md-6">
-                            <div class="info-section">
-                                <h6 class="text-muted small fw-semibold mb-2">
-                                    <i class="bi bi-calendar-heart text-primary me-2"></i>Ngày sinh
-                                </h6>
-                                <p class="text-dark fs-6">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</p>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-calendar-heart"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Ngày sinh</div>
+                                <div class="detail-info-value">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "—")</div>
                             </div>
                         </div>
-
-                        <div class="col-md-6">
-                            <div class="info-section">
-                                <h6 class="text-muted small fw-semibold mb-2">
-                                    <i class="bi bi-calendar-check text-primary me-2"></i>Ngày vào làm
-                                </h6>
-                                <p class="text-dark fs-6">@(Model.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</p>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-shield-lock"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Mã số thuế</div>
+                                <div class="detail-info-value">@(Model.TaxCode ?? "—")</div>
                             </div>
                         </div>
-
-                        <!-- Mã số thuế -->
-                        <div class="col-md-6">
-                            <div class="info-section">
-                                <h6 class="text-muted small fw-semibold mb-2">
-                                    <i class="bi bi-file-earmark-text text-primary me-2"></i>Mã số thuế
-                                </h6>
-                                <p class="text-dark fs-6">@(Model.TaxCode ?? "Chưa cập nhật")</p>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-person-workspace"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Tài khoản liên kết</div>
+                                <div class="detail-info-value">
+                                    @if(systemUser != null)
+                                    {
+                                        <span class="badge bg-light text-primary border"><i class="bi bi-person me-1"></i>@systemUser.Username</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fst-italic">Chưa liên kết</span>
+                                    }
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Phòng ban và chức vụ -->
-            <div class="row g-4 mb-4">
-                <div class="col-md-6">
-                    <div class="card bg-light border-0 p-3">
-                        <h6 class="text-muted small fw-semibold mb-2">
-                            <i class="bi bi-building text-info me-2"></i>Phòng ban
-                        </h6>
-                        <p class="text-dark fs-5 fw-semibold">@deptName</p>
-                        @if (assignment?.EffectiveDate.HasValue == true)
-                        {
-                            <small class="text-muted d-block">Từ ngày: @assignment.EffectiveDate.Value.ToString("dd/MM/yyyy")</small>
-                        }
-                    </div>
+            <!-- Thông tin công việc -->
+            <div class="content-card">
+                <div class="card-header-custom border-bottom">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="header-icon-box">
+                            <i class="bi bi-briefcase"></i>
+                        </div>
+                        Thông tin công việc
+                    </h5>
                 </div>
-
-                <div class="col-md-6">
-                    <div class="card bg-light border-0 p-3">
-                        <h6 class="text-muted small fw-semibold mb-2">
-                            <i class="bi bi-briefcase text-info me-2"></i>Vị trí công việc
-                        </h6>
-                        <p class="text-dark fs-5 fw-semibold">@posName</p>
-                        @if (assignment?.EffectiveDate.HasValue == true)
-                        {
-                            <small class="text-muted d-block">Từ ngày: @assignment.EffectiveDate.Value.ToString("dd/MM/yyyy")</small>
-                        }
+                <div class="card-body-custom p-0">
+                    <div class="detail-info-list">
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-building"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Phòng ban</div>
+                                <div class="detail-info-value text-primary fw-bold">@deptName</div>
+                            </div>
+                        </div>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-diagram-3"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Chức vụ</div>
+                                <div class="detail-info-value">@posName</div>
+                            </div>
+                        </div>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-calendar-check"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Ngày vào làm</div>
+                                <div class="detail-info-value">@(Model.JoinDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                            </div>
+                        </div>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-geo"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Mục tiêu chiến lược</div>
+                                <div class="detail-info-value">
+                                    @if(strategicGoal != null)
+                                    {
+                                        <div class="small text-muted mb-1">Năm @strategicGoal.TargetYear</div>
+                                        <div class="text-dark">@strategicGoal.Content</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fst-italic">Chưa xác định</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Thông tin thêm -->
-            @if (Model.CreatedAt.HasValue)
+        <!-- Right Column -->
+        <div class="col-lg-7">
+            <!-- KPI Section -->
+            <div class="content-card mb-4">
+                <div class="card-header-custom border-bottom">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="header-icon-box">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                        KPI được giao (@assignedKPIs.Count)
+                    </h5>
+                </div>
+                <div class="card-body-custom p-3">
+                    @if (assignedKPIs.Any())
+                    {
+                        @foreach (var kpi in assignedKPIs)
+                        {
+                            <div class="kpi-item d-flex align-items-center mb-2 p-2 border-bottom last-border-0">
+                                <div class="kpi-item-icon me-3">
+                                    <i class="bi bi-lightning-fill"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">@kpi.KPIName</div>
+                                </div>
+                                <a asp-controller="KPIs" asp-action="Details" asp-route-id="@kpi.Id" class="btn btn-sm btn-light border">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <div class="text-muted small">Chưa được giao chỉ tiêu KPI nào</div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- OKR Section -->
+            <div class="content-card">
+                <div class="card-header-custom border-bottom">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="header-icon-box">
+                            <i class="bi bi-bullseye"></i>
+                        </div>
+                        OKR được giao (@assignedOKRs.Count)
+                    </h5>
+                </div>
+                <div class="card-body-custom p-3">
+                    @if (assignedOKRs.Any())
+                    {
+                        @foreach (var okr in assignedOKRs)
+                        {
+                            <div class="kpi-item d-flex align-items-center mb-2 p-2 border-bottom last-border-0">
+                                <div class="kpi-item-icon me-3" style="background: linear-gradient(135deg, #1a73e8, #4285f4);">
+                                    <i class="bi bi-trophy-fill"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">@okr.ObjectiveName</div>
+                                    <div class="small text-muted">Chu kỳ: @okr.Cycle</div>
+                                </div>
+                                <a asp-controller="OKRs" asp-action="Details" asp-route-id="@okr.Id" class="btn btn-sm btn-light border">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <div class="text-muted small">Chưa được giao mục tiêu OKR nào</div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Delete Action -->
+            @if (Model.IsActive == true)
             {
-                <div class="alert alert-info p-3 mb-4" style="background-color: #e8f0fe; border-left: 4px solid #1a73e8;">
-                    <small class="text-dark">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <strong>Tạo ngày:</strong> @Model.CreatedAt.Value.ToString("dd/MM/yyyy HH:mm")
-                    </small>
+                <div class="mt-4 text-end">
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-link text-danger text-decoration-none small">
+                        <i class="bi bi-trash me-1"></i> Vô hiệu hóa nhân viên
+                    </a>
                 </div>
             }
-
-            <!-- Nút hành động -->
-            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                <a asp-action="Index" class="btn btn-light border px-4">
-                    <i class="bi bi-arrow-left me-1"></i> Quay lại
-                </a>
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning text-dark px-4">
-                    <i class="bi bi-pencil me-1"></i> Chỉnh sửa
-                </a>
-                @if (Model.IsActive == true)
-                {
-                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger px-4">
-                        <i class="bi bi-person-dash me-1"></i> Xóa
-                    </a>
-                }
-            </div>
         </div>
     </div>
 </div>
 
 <style>
-    .info-section {
-        padding: 0.5rem 0;
+    /* Reuse global styles or define local ones */
+    .content-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        overflow: hidden;
     }
-    
-    .info-section h6 {
+
+    .card-header-custom {
+        padding: 1.25rem 1.5rem;
+        background: #fff;
+    }
+
+    /* Header Icons */
+    .header-icon-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
         display: flex;
         align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.85rem;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+
+    /* Banner */
+    .dept-banner {
+        position: relative;
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        border-radius: 16px;
+        padding: 40px;
+        color: #fff;
+        overflow: hidden;
+    }
+
+    .dept-banner-overlay {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: url('https://www.transparenttextures.com/patterns/cubes.png');
+        opacity: 0.1;
+        pointer-events: none;
+    }
+
+    .dept-banner-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 25px;
+    }
+
+    .dept-banner-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        flex-shrink: 0;
+    }
+
+    .dept-name {
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+
+    .dept-meta {
+        font-size: 0.95rem;
+        opacity: 0.9;
+        margin-top: 5px;
+    }
+
+    /* Stats Cards */
+    .stats-card-detail {
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        transition: transform 0.2s;
+    }
+
+    .stats-card-detail:hover {
+        transform: translateY(-3px);
+    }
+
+    .stats-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .stats-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #5f6368;
+        font-weight: 600;
+        margin-bottom: 2px;
+    }
+
+    .stats-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #202124;
+        line-height: 1;
+    }
+
+    /* Info Lists */
+    .detail-info-list {
+        padding: 0.5rem 0;
+    }
+
+    .detail-info-row {
+        display: flex;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #f1f3f4;
+        transition: background 0.2s;
+    }
+
+    .detail-info-row:last-child {
+        border-bottom: none;
+    }
+
+    .detail-info-row:hover {
+        background: #f8f9fa;
+    }
+
+    .detail-info-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .detail-info-body {
+        margin-left: 1.25rem;
+    }
+
+    .detail-info-label {
+        font-size: 0.75rem;
+        color: #5f6368;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 3px;
+        letter-spacing: 0.3px;
+    }
+
+    .detail-info-value {
+        font-size: 1rem;
+        color: #202124;
+        font-weight: 500;
+    }
+
+    /* Badges */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+
+    /* KPI Items */
+    .kpi-item-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+
+    .last-border-0:last-child {
+        border-bottom: none !important;
+    }
+
+    .text-primary-hover:hover {
+        color: #174ea6 !important;
+        text-decoration: underline !important;
     }
 </style>
 

@@ -1,57 +1,667 @@
 @model Manage_KPI_or_OKR_System.Models.Department
 
 @{
-    ViewData["Title"] = "Chi tiết Phòng ban";
+    ViewData["Title"] = "Chi tiết Phòng ban - " + Model.DepartmentName;
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var managerName = ViewBag.ManagerName as string ?? "Chưa phân công";
+    var parentDeptName = ViewBag.ParentDeptName as string ?? "Không có";
+    var employeeCount = (int)(ViewBag.EmployeeCount ?? 0);
+    var employeeList = ViewBag.EmployeeList as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var childDepts = ViewBag.ChildDepartments as IEnumerable<Manage_KPI_or_OKR_System.Models.Department> ?? Enumerable.Empty<Manage_KPI_or_OKR_System.Models.Department>();
+    var assignedKPIs = ViewBag.AssignedKPIs as IEnumerable<Manage_KPI_or_OKR_System.Models.KPI> ?? Enumerable.Empty<Manage_KPI_or_OKR_System.Models.KPI>();
+
+    var statusText = Model.IsActive == true ? "Hoạt động" : "Ngừng hoạt động";
+    var statusClass = Model.IsActive == true ? "active" : "inactive";
+    var childCount = childDepts.Count();
+    var kpiCount = assignedKPIs.Count();
+    var managerInitial = managerName != "Chưa phân công" ? managerName[0].ToString().ToUpper() : "?";
 }
 
-<div class="container-fluid px-4 mt-4">
-    <div class="row mb-3">
-        <div class="col-12">
-            <h3 class="text-primary fw-bold"><i class="bi bi-card-list me-2"></i>Chi tiết Phòng ban</h3>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb bg-transparent p-0 m-0">
-                    <li class="breadcrumb-item"><a href="/Dashboard" class="text-decoration-none">Trang chủ</a></li>
-                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Danh sách phòng ban</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Chi tiết</li>
-                </ol>
-            </nav>
+<div class="container-fluid px-0">
+
+    <!-- Page Header -->
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Chi tiết Phòng ban</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <a asp-action="Index">Phòng ban</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>@Model.DepartmentName</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn-outline-custom d-flex align-items-center px-3 py-2" style="border-radius: 10px; text-decoration: none;">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </a>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-primary-custom d-flex align-items-center px-3 py-2" style="border-radius: 10px; text-decoration: none;">
+                <i class="bi bi-pencil me-1"></i> Chỉnh sửa
+            </a>
         </div>
     </div>
 
-    <div class="content-card rounded-3">
-        <div class="card-body-custom p-4">
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <strong>Mã phòng ban:</strong>
-                    <p>@Model.DepartmentCode</p>
+    <!-- Department Banner -->
+    <div class="content-card mb-4" style="overflow: hidden;">
+        <div class="dept-banner">
+            <div class="dept-banner-bg"></div>
+            <div class="dept-banner-content">
+                <div class="dept-banner-icon">
+                    <i class="bi bi-building"></i>
                 </div>
-                <div class="col-md-6">
-                    <strong>Tên phòng ban:</strong>
-                    <p>@Model.DepartmentName</p>
+                <div class="dept-banner-info">
+                    <h2 class="dept-banner-name">@Model.DepartmentName</h2>
+                    <div class="dept-banner-meta">
+                        <span class="dept-code-badge">@(Model.DepartmentCode ?? "—")</span>
+                        <span class="status-badge @statusClass ms-2"><span class="status-dot"></span> @statusText</span>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <strong>Phòng ban cấp trên:</strong>
-                    <p>@ViewBag.ParentDeptName</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="content-card stats-card-detail">
+                <div class="stats-icon" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff;">
+                    <i class="bi bi-people-fill"></i>
                 </div>
-                <div class="col-md-6">
-                    <strong>Trưởng phòng:</strong>
-                    <p>@ViewBag.ManagerName</p>
+                <div class="stats-info">
+                    <div class="stats-value">@employeeCount</div>
+                    <div class="stats-label">Nhân viên</div>
                 </div>
-                <div class="col-md-6">
-                    <strong>Trạng thái:</strong>
-                    <p>@(Model.IsActive == true ? "Hoạt động" : "Tạm dừng")</p>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="content-card stats-card-detail">
+                <div class="stats-icon" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff;">
+                    <i class="bi bi-diagram-2-fill"></i>
                 </div>
-                <div class="col-md-6">
-                    <strong>Số nhân viên:</strong>
-                    <p>@ViewBag.EmployeeCount</p>
+                <div class="stats-info">
+                    <div class="stats-value">@childCount</div>
+                    <div class="stats-label">Đơn vị trực thuộc</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="content-card stats-card-detail">
+                <div class="stats-icon" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff;">
+                    <i class="bi bi-speedometer2"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-value">@kpiCount</div>
+                    <div class="stats-label">KPI được giao</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="content-card stats-card-detail">
+                <div class="stats-icon" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff;">
+                    <i class="bi bi-person-badge-fill"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-value-sm">@(managerName != "Chưa phân công" ? managerName : "—")</div>
+                    <div class="stats-label">Trưởng phòng</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Column -->
+        <div class="col-lg-5">
+            <!-- Thông tin chung -->
+            <div class="content-card mb-4">
+                <div class="card-header-custom border-bottom">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="header-icon-box">
+                            <i class="bi bi-info-circle"></i>
+                        </div>
+                        Thông tin chung
+                    </h5>
+                </div>
+                <div class="card-body-custom p-0">
+                    <div class="detail-info-list">
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-hash"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Mã phòng ban</div>
+                                <div class="detail-info-value">@(Model.DepartmentCode ?? "—")</div>
+                            </div>
+                        </div>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-tag"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Tên phòng ban</div>
+                                <div class="detail-info-value">@(Model.DepartmentName ?? "—")</div>
+                            </div>
+                        </div>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-diagram-3"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Phòng ban cấp trên</div>
+                                <div class="detail-info-value">@parentDeptName</div>
+                            </div>
+                        </div>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-person-gear"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Trưởng phòng</div>
+                                <div class="detail-info-value">
+                                    @if (managerName != "Chưa phân công")
+                                    {
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="mini-avatar" style="background: #1a73e8;">@managerInitial</div>
+                                            <a asp-controller="Employees" asp-action="Details" asp-route-id="@Model.ManagerId" class="fw-semibold text-decoration-none text-primary-hover">@managerName</a>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fst-italic">Chưa phân công</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-toggle-on"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Trạng thái</div>
+                                <div class="detail-info-value">
+                                    <span class="status-badge @statusClass"><span class="status-dot"></span> @statusText</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-info-row">
+                            <div class="detail-info-icon"><i class="bi bi-calendar3"></i></div>
+                            <div class="detail-info-body">
+                                <div class="detail-info-label">Ngày tạo</div>
+                                <div class="detail-info-value">@(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-end gap-2">
-                <a asp-action="Index" class="btn-outline-custom rounded-pill px-4">Quay lại</a>
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-primary-custom rounded-pill px-4">Chỉnh sửa</a>
+            <!-- Đơn vị trực thuộc -->
+            @if (childCount > 0)
+            {
+                <div class="content-card mb-4">
+                    <div class="card-header-custom border-bottom">
+                        <h5 class="mb-0 fw-bold d-flex align-items-center">
+                            <div class="header-icon-box">
+                                <i class="bi bi-diagram-2"></i>
+                            </div>
+                            Đơn vị trực thuộc (@childCount)
+                        </h5>
+                    </div>
+                    <div class="card-body-custom p-3">
+                        <div class="child-dept-grid">
+                            @foreach (var child in childDepts)
+                            {
+                                <a asp-action="Details" asp-route-id="@child.Id" class="child-dept-card" title="Xem chi tiết @child.DepartmentName">
+                                    <div class="child-dept-icon">
+                                        <i class="bi bi-folder-fill"></i>
+                                    </div>
+                                    <div class="child-dept-info">
+                                        <div class="child-dept-name">@child.DepartmentName</div>
+                                        <div class="child-dept-code">@(child.DepartmentCode ?? "—")</div>
+                                    </div>
+                                    <i class="bi bi-chevron-right text-muted"></i>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- KPI được giao -->
+            @if (kpiCount > 0)
+            {
+                <div class="content-card mb-4">
+                    <div class="card-header-custom border-bottom">
+                        <h5 class="mb-0 fw-bold d-flex align-items-center">
+                            <div class="header-icon-box">
+                                <i class="bi bi-speedometer2"></i>
+                            </div>
+                            KPI được giao (@kpiCount)
+                        </h5>
+                    </div>
+                    <div class="card-body-custom p-3">
+                        @foreach (var kpi in assignedKPIs)
+                        {
+                            <div class="kpi-item">
+                                <div class="kpi-item-icon">
+                                    <i class="bi bi-bullseye"></i>
+                                </div>
+                                <div class="kpi-item-info">
+                                    <div class="kpi-item-name">@kpi.KPIName</div>
+                                </div>
+                                <a asp-controller="KPIs" asp-action="Details" asp-route-id="@kpi.Id" class="kpi-item-link" title="Xem KPI">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Right Column: Employee List -->
+        <div class="col-lg-7">
+            <div class="content-card">
+                <div class="card-header-custom border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="header-icon-box">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        Danh sách nhân viên (@employeeCount)
+                    </h5>
+                </div>
+                <div class="card-body-custom p-0">
+                    @if (employeeList.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="data-table w-100 mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;">#</th>
+                                        <th>Nhân viên</th>
+                                        <th>Chức vụ</th>
+                                        <th>Email</th>
+                                        <th>Điện thoại</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{int idx = 0;}
+                                    @foreach (var emp in employeeList)
+                                    {
+                                        idx++;
+                                        string empName = emp.FullName ?? "—";
+                                        string empInitial = empName[0].ToString().ToUpper();
+                                        string empEmail = emp.Email ?? "—";
+                                        string empPhone = emp.Phone ?? "—";
+                                        string empPosition = emp.PositionName ?? "Chưa xác định";
+
+                                        // Deterministic avatar color
+                                        string[] colors = { "#1a73e8", "#ea4335", "#34a853", "#f9ab00", "#8e24aa", "#00897b", "#e65100", "#1565c0" };
+                                        int hash = 0;
+                                        foreach (char c in empName) hash = c + ((hash << 5) - hash);
+                                        string avatarColor = colors[Math.Abs(hash) % colors.Length];
+
+                                        <tr>
+                                            <td class="text-muted">@idx</td>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="mini-avatar" style="background: @avatarColor; width: 32px; height: 32px; font-size: 0.75rem;">@empInitial</div>
+                                                    <a asp-controller="Employees" asp-action="Details" asp-route-id="@emp.Id" class="fw-semibold text-decoration-none text-primary-hover">@empName</a>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="position-chip">@empPosition</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-muted" style="font-size: 0.8rem;">
+                                                    <i class="bi bi-envelope me-1"></i>@empEmail
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="text-muted" style="font-size: 0.8rem;">
+                                                    <i class="bi bi-telephone me-1"></i>@empPhone
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <i class="bi bi-people"></i>
+                            </div>
+                            <div class="empty-state-title">Chưa có nhân viên</div>
+                            <div class="empty-state-desc">Phòng ban này hiện chưa có nhân viên nào được phân công</div>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    /* Header Icons */
+    .header-icon-box {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.85rem;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+
+    /* Department Banner */
+    .dept-banner {
+        position: relative;
+        padding: 32px 28px;
+        overflow: hidden;
+    }
+    .dept-banner-bg {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #1a73e8 0%, #4285f4 40%, #669df6 100%);
+        opacity: 0.95;
+    }
+    .dept-banner-bg::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .dept-banner-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    .dept-banner-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        color: #fff;
+        flex-shrink: 0;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+    .dept-banner-name {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #fff;
+        margin: 0 0 6px;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .dept-banner-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .dept-code-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 12px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff;
+        font-size: 0.78rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Stats Cards */
+    .stats-card-detail {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 20px !important;
+    }
+    .stats-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+    .stats-info {
+        flex: 1;
+    }
+    .stats-value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--text-primary, #1a1a2e);
+        line-height: 1.2;
+    }
+    .stats-value-sm {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--text-primary, #1a1a2e);
+        line-height: 1.3;
+        word-break: break-word;
+    }
+    .stats-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary, #5f6368);
+        font-weight: 500;
+        margin-top: 2px;
+    }
+
+    /* Info List */
+    .detail-info-list {
+        padding: 0;
+    }
+    .detail-info-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border-color, #e8eaed);
+        transition: background 0.15s;
+    }
+    .detail-info-row:last-child {
+        border-bottom: none;
+    }
+    .detail-info-row:hover {
+        background: rgba(26, 115, 232, 0.02);
+    }
+    .detail-info-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    .detail-info-body {
+        flex: 1;
+        min-width: 0;
+    }
+    .detail-info-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-secondary, #5f6368);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 3px;
+    }
+    .detail-info-value {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary, #1a1a2e);
+        word-break: break-word;
+    }
+
+    /* Mini Avatar */
+    .mini-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.7rem;
+        flex-shrink: 0;
+    }
+
+    /* Child Department Grid */
+    .child-dept-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .child-dept-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color, #e8eaed);
+        background: var(--bg-secondary, #f8f9fa);
+        text-decoration: none;
+        transition: all 0.2s;
+        color: inherit;
+    }
+    .child-dept-card:hover {
+        background: rgba(26, 115, 232, 0.04);
+        border-color: rgba(26, 115, 232, 0.25);
+        transform: translateX(4px);
+        color: inherit;
+    }
+    .child-dept-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+    .child-dept-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .child-dept-name {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--text-primary, #1a1a2e);
+    }
+    .child-dept-code {
+        font-size: 0.72rem;
+        color: var(--text-secondary, #5f6368);
+    }
+
+    /* KPI Items */
+    .kpi-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color, #e8eaed);
+        background: var(--bg-secondary, #f8f9fa);
+        margin-bottom: 8px;
+        transition: all 0.2s;
+    }
+    .kpi-item:last-child {
+        margin-bottom: 0;
+    }
+    .kpi-item:hover {
+        background: rgba(52, 168, 83, 0.04);
+        border-color: rgba(52, 168, 83, 0.25);
+    }
+    .kpi-item-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+    .kpi-item-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .kpi-item-name {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--text-primary, #1a1a2e);
+    }
+    .kpi-item-link {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary, #5f6368);
+        font-size: 0.8rem;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+    .kpi-item-link:hover {
+        background: rgba(52, 168, 83, 0.1);
+        color: #34a853;
+    }
+
+    /* Position Chip */
+    .position-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 10px;
+        border-radius: 6px;
+        background: rgba(26, 115, 232, 0.08);
+        color: #1a73e8;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+    }
+    .empty-state-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: var(--bg-secondary, #f8f9fa);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 1.8rem;
+        color: var(--text-secondary, #5f6368);
+        opacity: 0.5;
+    }
+    .empty-state-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary, #1a1a2e);
+        margin-bottom: 4px;
+    }
+    .empty-state-desc {
+        font-size: 0.82rem;
+        color: var(--text-secondary, #5f6368);
+    }
+</style>
