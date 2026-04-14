@@ -4,6 +4,7 @@ using Manage_KPI_or_OKR_System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Manage_KPI_or_OKR_System.Migrations
 {
     [DbContext(typeof(MiniERPDbContext))]
-    partial class MiniERPDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260414024143_aaaann")]
+    partial class aaaann
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1012,17 +1015,8 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ActionItems")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EmployeeComments")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int?>("EmployeeId")
                         .HasColumnType("int");
-
-                    b.Property<string>("ManagerFeedback")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("ManagerId")
                         .HasColumnType("int");
@@ -1030,9 +1024,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<string>("MeetingLink")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("MeetingNotes")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("MeetingTime")
                         .HasColumnType("datetime2");

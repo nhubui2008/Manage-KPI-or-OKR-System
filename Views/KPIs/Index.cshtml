@@ -3,7 +3,7 @@
     ViewData["Title"] = "Danh mục KPI";
     
     var kpiDetails = ViewBag.KPIDetails as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
-    var assignments = ViewBag.Assignments as Dictionary<int, List<int>> ?? new Dictionary<int, List<int>>();
+    var assignments = ViewBag.Assignments as Dictionary<int, List<object>> ?? new Dictionary<int, List<object>>();
     var employeesDict = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
     var periodsDict = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
     var kpiTypesList = ViewBag.KPITypes as List<Manage_KPI_or_OKR_System.Models.KPIType> ?? new List<Manage_KPI_or_OKR_System.Models.KPIType>();
@@ -181,7 +181,7 @@
                         foreach (var kpi in Model)
                         {
                             var detail = kpiDetails.ContainsKey(kpi.Id) ? kpiDetails[kpi.Id] : null;
-                            var assignedEmployees = assignments.ContainsKey(kpi.Id) ? assignments[kpi.Id] : new List<int>();
+                            var assignedEmployees = assignments.ContainsKey(kpi.Id) ? assignments[kpi.Id] : new List<object>();
                             
                             // Use new dynamic status helpers
                             var kpiProgress = latestProgress.ContainsKey(kpi.Id) ? (decimal?)latestProgress[kpi.Id] : null;
@@ -225,8 +225,10 @@
                                     @if (assignedEmployees.Any())
                                     {
                                         <div class="d-flex align-items-center">
-                                            @foreach(var empId in assignedEmployees.Take(3))
+                                            @foreach(var empObj in assignedEmployees.Take(3))
                                             {
+                                                var empId = (int)((dynamic)empObj).id;
+                                                var weight = (decimal)((dynamic)empObj).weight;
                                                 var name = employeesDict.ContainsKey(empId) ? employeesDict[empId] : "NV";
                                                 var initials = string.Join("", name.Split(' ').Select(n => n[0])).ToUpper();
                                                 if (initials.Length > 2) initials = initials.Substring(0, 2);
@@ -279,12 +281,12 @@
                                                  @if (kpi.StatusId == 1 || kpi.StatusId >= 3)
                                                  {
                                                      <li><a class="dropdown-item py-2 text-success fw-bold" asp-controller="KPICheckIns" asp-action="Create" asp-route-kpiId="@kpi.Id"><i class="bi bi-calendar-check me-2"></i> Thực hiện Check-in</a></li>
-                                                     
-                                                     @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
-                                                          User.IsInRole("Sales") || User.IsInRole("sales")))
-                                                     {
-                                                         <li><a class="dropdown-item py-2" href="javascript:void(0)" onclick="openAssignPersonnelModal(@kpi.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kpi.KPIName ?? ""))', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assignedEmployees)))"><i class="bi bi-people text-info-emphasis me-2"></i> Phân bổ nhân sự</a></li>
-                                                     }
+                                                 }
+                                                 
+                                                 @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
+                                                       User.IsInRole("Sales") || User.IsInRole("sales")))
+                                                 {
+                                                     <li><a class="dropdown-item py-2" asp-action="AllocatePersonnel" asp-route-id="@kpi.Id" data-legacy-onclick="openAssignPersonnelModal(@kpi.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kpi.KPIName ?? ""))', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assignedEmployees).Replace("\"", "&quot;")))"><i class="bi bi-people text-info-emphasis me-2"></i> Phân bổ nhân sự</a></li>
                                                  }
                                                  
                                                  @if ((User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager")) && (kpi.StatusId == 0 || kpi.StatusId == null))
@@ -428,63 +430,7 @@
     </div>
 </div>
 
-<!-- Modal Phân bổ Nhân sự -->
-<div class="modal fade" id="assignPersonnelModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-md">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0 bg-light rounded-top p-4">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-people-fill text-info me-2"></i>Phân bổ Nhân sự KPI</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="mb-4">
-                    <label class="form-label fw-bold text-muted small text-uppercase mb-1">Đang thiết lập cho KPI:</label>
-                    <p id="assignKpiName" class="fs-5 fw-bold text-primary mb-0"></p>
-                </div>
 
-                <form asp-controller="KPIs" asp-action="AssignPersonnel" method="post">
-                    <input type="hidden" name="kpiId" id="assignKpiId" />
-                    <div class="mb-3">
-                        <label for="assignWeight" class="form-label fw-semibold">Trọng số áp dụng</label>
-                        <input type="number" class="form-control" name="weight" id="assignWeight" value="1" min="0.01" step="0.01" />
-                        <div class="text-muted small mt-1">Trọng số này được dùng khi tính điểm tổng hợp KPI của các nhân viên được chọn.</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Chọn nhân viên <span class="text-danger">*</span></label>
-                        <div class="input-group mb-2">
-                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
-                            <input type="text" id="employeeSearch" class="form-control border-start-0 bg-light" placeholder="Tìm tên hoặc mã nhân viên...">
-                        </div>
-                        
-                        <div class="employee-list-container border rounded-3 p-2 bg-white" style="max-height: 300px; overflow-y: auto;">
-                            @if (ViewBag.AllEmployees != null)
-                            {
-                                foreach (var emp in (ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee>)!)
-                                {
-                                    <div class="form-check p-2 rounded transition-hover employee-item" data-search="@emp.FullName?.ToLower() @emp.EmployeeCode?.ToLower()">
-                                        <input class="form-check-input ms-0 me-2" type="checkbox" name="employeeIds" value="@emp.Id" id="empCheck-@emp.Id">
-                                        <label class="form-check-label d-flex justify-content-between w-100 cursor-pointer" for="empCheck-@emp.Id">
-                                            <span class="fw-medium text-dark">@emp.FullName</span>
-                                            <span class="text-muted small">@emp.EmployeeCode</span>
-                                        </label>
-                                    </div>
-                                }
-                            }
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn btn-light rounded-pill px-4 font-weight-bold" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-info text-white rounded-pill px-4 font-weight-bold shadow-sm">
-                            <i class="bi bi-check-lg me-2"></i>Cập nhật phân bổ
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
 <style>
     .stat-card:hover { transform: translateY(-3px); transition: all 0.3s ease; }
@@ -508,19 +454,7 @@
 </style>
 
 <script>
-    function openAssignPersonnelModal(kpiId, kpiName, assignedIds) {
-        document.getElementById('assignKpiId').value = kpiId;
-        document.getElementById('assignKpiName').innerText = kpiName;
-        
-        // Reset all checkboxes
-        const checkboxes = document.querySelectorAll('input[name="employeeIds"]');
-        checkboxes.forEach(cb => {
-            cb.checked = assignedIds.includes(parseInt(cb.value));
-        });
-        
-        const modal = new bootstrap.Modal(document.getElementById('assignPersonnelModal'));
-        modal.show();
-    }
+    // Empty placeholder for script segment if needed
 
     // Search functionality for employee list
     document.getElementById('employeeSearch')?.addEventListener('input', function(e) {

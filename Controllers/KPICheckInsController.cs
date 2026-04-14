@@ -9,6 +9,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System;
 using System.Security.Claims;
+using System.Globalization;
+
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -143,18 +145,62 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var kpiQuery = _context.KPIs.Where(k => k.IsActive == true && (k.StatusId == null || (k.StatusId != 0 && k.StatusId != 2)));
             var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
 
-            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+            bool isManager = User.IsInRole("Manager");
+            bool isDirector = User.IsInRole("Director");
+            bool isRestrictedRole = isManager || isDirector ||
+                User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales");
+
+            if (isRestrictedRole)
             {
                 if (employee != null)
                 {
-                    var allocatedKpiIds = await _context.KPI_Employee_Assignments
-                        .Where(a => a.EmployeeId == employee.Id && (a.Status == null || a.Status == "Active"))
+                    List<int> targetEmployeeIds = new List<int> { employee.Id };
+
+                    if (isManager)
+                    {
+                        // Trưởng phòng: Thấy KPI của nhân viên trong phòng ban
+                        var managedDeptIds = await _context.Departments
+                            .Where(d => d.ManagerId == employee.Id && d.IsActive == true)
+                            .Select(d => d.Id)
+                            .ToListAsync();
+
+                        var deptEmployeeIds = await _context.EmployeeAssignments
+                            .Where(ea => managedDeptIds.Contains(ea.DepartmentId ?? 0) && ea.IsActive == true)
+                            .Select(ea => ea.EmployeeId ?? 0)
+                            .ToListAsync();
+
+                        targetEmployeeIds.AddRange(deptEmployeeIds);
+                    }
+                    else if (isDirector)
+                    {
+                        // Giám đốc: Thấy KPI của toàn bộ trưởng phòng
+                        var allManagerIds = await _context.Departments
+                            .Where(d => d.IsActive == true && d.ManagerId != null)
+                            .Select(d => d.ManagerId!.Value)
+                            .ToListAsync();
+
+                        targetEmployeeIds.AddRange(allManagerIds);
+                    }
+
+                    targetEmployeeIds = targetEmployeeIds.Distinct().ToList();
+
+                    var allowedKpiIds = await _context.KPI_Employee_Assignments
+                        .Where(a => targetEmployeeIds.Contains(a.EmployeeId) && (a.Status == null || a.Status == "Active"))
                         .Select(a => a.KPIId)
                         .ToListAsync();
 
-                    kpiQuery = kpiQuery.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
-                    employeeQuery = employeeQuery.Where(e => e.Id == employee.Id);
+                    kpiQuery = kpiQuery.Where(k => allowedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
+                    
+                    // Lọc danh sách nhân viên để chọn (nếu là Manager/Director có quyền chọn cho người khác)
+                    if (isManager || isDirector)
+                    {
+                        employeeQuery = employeeQuery.Where(e => targetEmployeeIds.Contains(e.Id));
+                    }
+                    else
+                    {
+                        employeeQuery = employeeQuery.Where(e => e.Id == employee.Id);
+                    }
                 }
                 else
                 {
@@ -175,17 +221,42 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Where(d => kpiIds.Contains(d.KPIId ?? 0))
                 .ToDictionaryAsync(d => d.KPIId ?? 0);
             ViewBag.KPIData = kpiDetails;
+
+            // Fetch weights for the current employee to show individual targets
+            if (employee != null)
+            {
+                var weights = await _context.KPI_Employee_Assignments
+                    .Where(a => a.EmployeeId == employee.Id && (a.Status == null || a.Status == "Active"))
+                    .ToDictionaryAsync(a => a.KPIId, a => (a.Weight ?? 1m) * 100);
+                ViewBag.Weights = weights;
+            }
+            else
+            {
+                ViewBag.Weights = new Dictionary<int, decimal>();
+            }
         }
 
         [HttpPost]
         [HasPermission("KPICHECKINS_CREATE", "EMPLOYEE_UPDATE_KPI_PROGRESS")]
-        public async Task<IActionResult> Create(KPICheckIn model, decimal AchievedValue, string Note)
+        public async Task<IActionResult> Create(KPICheckIn model, string AchievedValue, string Note)
         {
+            decimal achievedValue = 0;
+            if (!string.IsNullOrEmpty(AchievedValue))
+            {
+                // Thay thế dấu phẩy bằng dấu chấm để luôn có định dạng chuẩn dot-separator nếu người dùng nhập tay dấu phẩy
+                // Tuy nhiên type="number" luôn gửi dấu chấm.
+                string normalizedValue = AchievedValue.Replace(",", ".");
+                if (!decimal.TryParse(normalizedValue, NumberStyles.Any, CultureInfo.InvariantCulture, out achievedValue))
+                {
+                    ModelState.AddModelError("AchievedValue", "Giá trị đạt được không hợp lệ.");
+                }
+            }
+
             bool isRestrictedRole = User.IsInRole("Employee") || User.IsInRole("employee") ||
                                     User.IsInRole("Sales") || User.IsInRole("sales");
             Employee? currentEmployee = null;
 
-            if (AchievedValue < 0)
+            if (achievedValue < 0)
             {
                 ModelState.AddModelError("AchievedValue", "Kết quả đạt được không thể là số âm.");
             }
@@ -203,7 +274,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!ModelState.IsValid)
             {
                 await PopulateCreateViewBag();
-                ViewBag.AchievedValue = AchievedValue;
+                ViewBag.AchievedValue = achievedValue;
                 ViewBag.Note = Note;
                 return View(model);
             }
@@ -267,7 +338,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!ModelState.IsValid)
             {
                 await PopulateCreateViewBag();
-                ViewBag.AchievedValue = AchievedValue;
+                ViewBag.achievedValue = achievedValue;
                 ViewBag.Note = Note;
                 return View(model);
             }
@@ -282,11 +353,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.KPICheckIns.Add(model);
                 await _context.SaveChangesAsync();
 
-                // 2. Tính % tiến độ theo cấu hình KPI
+                // 2. Tính % tiến độ theo cấu hình KPI (Dựa trên số lượng công việc được giao/trọng số)
                 decimal progress = 0;
                 if (kpiDetail != null)
                 {
-                    progress = ProgressHelper.CalculateProgress(AchievedValue, kpiDetail.TargetValue ?? 0, kpiDetail.IsInverse);
+                    // Lấy trọng số của nhân viên cho KPI này
+                    var assignment = await _context.KPI_Employee_Assignments
+                        .FirstOrDefaultAsync(a => a.KPIId == model.KPIId && a.EmployeeId == model.EmployeeId && (a.Status == null || a.Status == "Active"));
+                    
+                    decimal weight = assignment?.Weight ?? 1.0m;
+                    if (weight <= 0) weight = 1.0m; // Default to 100% if weight not set or 0
+                    
+                    decimal individualTarget = (kpiDetail.TargetValue ?? 0) * weight;
+                    progress = ProgressHelper.CalculateProgress(achievedValue, individualTarget, kpiDetail.IsInverse);
                 }
 
                 // Tự động gán trạng thái dựa trên tiến độ thực tế (1: On Track, 2: At Risk, 3: Late)
@@ -298,7 +377,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var detail = new CheckInDetail
                 {
                     CheckInId = model.Id,
-                    AchievedValue = AchievedValue,
+                    AchievedValue = achievedValue,
                     Note = Note,
                     ProgressPercentage = Math.Round(progress, 2)
                 };
@@ -315,7 +394,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                     // Tính progress dựa trên PassThreshold (% đạt so với ngưỡng qua)
                     decimal passProgress = passThreshold > 0 
-                        ? ProgressHelper.CalculateProgress(AchievedValue, passThreshold, kpiDetail.IsInverse)
+                        ? ProgressHelper.CalculateProgress(achievedValue, passThreshold, kpiDetail.IsInverse)
                         : progress;
 
                     if (progress >= 100) 

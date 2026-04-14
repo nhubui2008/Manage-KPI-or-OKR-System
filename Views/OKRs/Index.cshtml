@@ -46,8 +46,15 @@
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
+        <div class="alert alert-success shadow-sm border-0 mb-4 animate__animated animate__fadeInDown" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger shadow-sm border-0 mb-4 animate__animated animate__shakeX" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
         </div>
     }
 
@@ -149,6 +156,7 @@
                                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                                                     @if (canManageStructure)
                                                     {
+                                                        <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@okr.Id"><i class="bi bi-pencil-square me-2 text-primary"></i>Chỉnh sửa OKR</a></li>
                                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
                                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên</a></li>
                                                         <li><hr class="dropdown-divider"></li>
@@ -208,8 +216,15 @@
                                                                 <div class="d-flex gap-1">
                                                                     @if (canManageStructure)
                                                                     {
-                                                                        <button class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle" 
-                                                                                onclick="openEditKrModal(@kr.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.KeyResultName ?? "")), @(kr.TargetValue ?? 0), @(kr.CurrentValue ?? 0), @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.Unit ?? "")), @(kr.IsInverse.ToString().ToLower()))" title="Sửa KR">
+                                                                        <button class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle btn-edit-kr" 
+                                                                                data-id="@kr.Id"
+                                                                                data-okrid="@okr.Id"
+                                                                                data-name="@kr.KeyResultName"
+                                                                                data-target="@(kr.TargetValue ?? 0)"
+                                                                                data-current="@(kr.CurrentValue ?? 0)"
+                                                                                data-unit="@kr.Unit"
+                                                                                data-inverse="@kr.IsInverse.ToString().ToLower()"
+                                                                                title="Sửa KR">
                                                                             <i class="bi bi-pencil-square"></i>
                                                                         </button>
                                                                         <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
@@ -221,7 +236,12 @@
                                                                 </div>
                                                                 @if (canUpdateProgress)
                                                                 {
-                                                                    <button class="btn btn-sm btn-outline-primary rounded-circle" title="Cập nhật tiến độ" onclick="openUpdateProgressModal(@kr.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.KeyResultName ?? "")), @(kr.CurrentValue ?? 0), @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.Unit ?? "")))">
+                                                                    <button class="btn btn-sm btn-outline-primary rounded-circle btn-update-progress" 
+                                                                            data-id="@kr.Id"
+                                                                            data-name="@kr.KeyResultName"
+                                                                            data-current="@(kr.CurrentValue ?? 0)"
+                                                                            data-unit="@kr.Unit"
+                                                                            title="Cập nhật tiến độ">
                                                                         <i class="bi bi-pencil"></i>
                                                                     </button>
                                                                 }
@@ -474,6 +494,7 @@
             <div class="modal-body p-4">
                 <form asp-controller="OKRs" asp-action="EditKeyResult" method="post" data-measurement-scope>
                     <input type="hidden" name="Id" id="editKrId" />
+                    <input type="hidden" name="OKRId" id="editKrOkrId" />
                     <div class="mb-3">
                         <label class="form-label">Mô tả Key Result <span class="text-danger">*</span></label>
                         <input type="text" name="KeyResultName" id="editKrName" class="form-control" required>
@@ -522,48 +543,73 @@
 
 @section Scripts {
     <script>
+        // Modal opening functions
         function openAddKrModal(okrId, okrName) {
             document.getElementById('krOkrId').value = okrId;
             document.getElementById('krOkrNameDisplay').innerText = 'Objective: ' + okrName;
-            var modal = new bootstrap.Modal(document.getElementById('addKrModal'));
+            var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('addKrModal'));
             modal.show();
         }
 
         function openAllocateModal(okrId) {
             document.getElementById('allocOkrId').value = okrId;
-            var modal = new bootstrap.Modal(document.getElementById('allocateOkrModal'));
+            var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('allocateOkrModal'));
             modal.show();
         }
 
-        function openEditKrModal(id, name, target, current, unit, isInverse) {
-            document.getElementById('editKrId').value = id;
-            document.getElementById('editKrName').value = name;
-            document.getElementById('editKrTarget').value = target;
-            document.getElementById('editKrCurrent').value = current;
-            const editKrUnitSelect = document.getElementById('editKrUnit');
-            if (window.setMeasurementUnitSelectValue) {
-                window.setMeasurementUnitSelectValue(editKrUnitSelect, unit || '');
-            } else {
-                editKrUnitSelect.value = unit || '';
-            }
-            document.getElementById('editKrIsInverse').checked = isInverse;
-            if (window.applyMeasurementUnitBehavior) {
-                window.applyMeasurementUnitBehavior(document.getElementById('editKrModal'));
-            }
-            new bootstrap.Modal(document.getElementById('editKrModal')).show();
-        }
+        // Attach event listeners to refactored buttons
+        document.querySelectorAll('.btn-edit-kr').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const okrId = this.getAttribute('data-okrid');
+                const name = this.getAttribute('data-name');
+                const target = this.getAttribute('data-target');
+                const current = this.getAttribute('data-current');
+                const unit = this.getAttribute('data-unit');
+                const isInverse = this.getAttribute('data-inverse') === 'true';
 
-        function openUpdateProgressModal(krId, krName, currentVal, unit) {
-            document.getElementById('updateKrId').value = krId;
-            document.getElementById('updateKrNameDisplay').innerText = 'KR: ' + krName;
-            document.getElementById('updateKrCurrentValue').value = currentVal;
-            const config = window.applyMeasurementUnitConfigToInputs
-                ? window.applyMeasurementUnitConfigToInputs(unit, [document.getElementById('updateKrCurrentValue')])
-                : { suffix: unit || '' };
-            document.getElementById('updateKrUnitDisplay').innerText = config.suffix || unit || '';
-            var modal = new bootstrap.Modal(document.getElementById('updateKrProgressModal'));
-            modal.show();
-        }
+                document.getElementById('editKrId').value = id;
+                document.getElementById('editKrOkrId').value = okrId;
+                document.getElementById('editKrName').value = name;
+                document.getElementById('editKrTarget').value = target;
+                document.getElementById('editKrCurrent').value = current;
+                
+                const editKrUnitSelect = document.getElementById('editKrUnit');
+                if (window.setMeasurementUnitSelectValue) {
+                    window.setMeasurementUnitSelectValue(editKrUnitSelect, unit || '');
+                } else {
+                    editKrUnitSelect.value = unit || '';
+                }
+                document.getElementById('editKrIsInverse').checked = isInverse;
+                if (window.applyMeasurementUnitBehavior) {
+                    window.applyMeasurementUnitBehavior(document.getElementById('editKrModal'));
+                }
+                
+                var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('editKrModal'));
+                modal.show();
+            });
+        });
+
+        document.querySelectorAll('.btn-update-progress').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const krId = this.getAttribute('data-id');
+                const krName = this.getAttribute('data-name');
+                const currentVal = this.getAttribute('data-current');
+                const unit = this.getAttribute('data-unit');
+
+                document.getElementById('updateKrId').value = krId;
+                document.getElementById('updateKrNameDisplay').innerText = 'KR: ' + krName;
+                document.getElementById('updateKrCurrentValue').value = currentVal;
+                
+                const config = window.applyMeasurementUnitConfigToInputs
+                    ? window.applyMeasurementUnitConfigToInputs(unit, [document.getElementById('updateKrCurrentValue')])
+                    : { suffix: unit || '' };
+                document.getElementById('updateKrUnitDisplay').innerText = config.suffix || unit || '';
+                
+                var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('updateKrProgressModal'));
+                modal.show();
+            });
+        });
 
         // Toggle all accordions functionality
         document.getElementById('toggleAllBtn')?.addEventListener('click', function() {
@@ -579,8 +625,6 @@
                 }
             });
             
-            // Cập nhật text & icon: Nếu trước đó có ít nhất 1 cái đóng, giờ đã mở hết -> nút thành "Thu gọn". 
-            // Nếu trước đó mở hết -> giờ đã đóng hết -> nút thành "Mở rộng".
             if (anyCollapsed) {
                 this.innerHTML = '<i class="bi bi-dash-square"></i> Thu gọn tất cả';
             } else {

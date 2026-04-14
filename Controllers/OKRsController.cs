@@ -164,6 +164,122 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(model);
         }
 
+        [HttpGet]
+        [HasPermission("OKRS_EDIT")]
+        public async Task<IActionResult> Edit(int id)
+        {
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales")) 
+                return Forbid();
+
+            var okr = await _context.OKRs.FindAsync(id);
+            if (okr == null) return NotFound();
+
+            // Fetch current mappings
+            ViewBag.MissionId = (await _context.OKR_Mission_Mappings.FirstOrDefaultAsync(m => m.OKRId == id))?.MissionId;
+            ViewBag.DepartmentId = (await _context.OKR_Department_Allocations.FirstOrDefaultAsync(d => d.OKRId == id))?.DepartmentId;
+            ViewBag.EmployeeId = (await _context.OKR_Employee_Allocations.FirstOrDefaultAsync(e => e.OKRId == id))?.EmployeeId;
+
+            ViewBag.Missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
+            ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
+            ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
+
+            return View(okr);
+        }
+
+        [HttpPost]
+        [HasPermission("OKRS_EDIT")]
+        public async Task<IActionResult> Edit(OKR model, int? missionId, int? departmentId, int? employeeId)
+        {
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales")) 
+                return Forbid();
+
+            if (ModelState.IsValid)
+            {
+                var existingOkr = await _context.OKRs.FindAsync(model.Id);
+                if (existingOkr == null) return NotFound();
+
+                existingOkr.ObjectiveName = model.ObjectiveName;
+                existingOkr.OKRTypeId = model.OKRTypeId;
+                existingOkr.Cycle = model.Cycle;
+                existingOkr.StatusId = model.StatusId;
+
+                // Update Mission Mapping
+                var existingMission = await _context.OKR_Mission_Mappings.FirstOrDefaultAsync(m => m.OKRId == model.Id);
+                if (missionId.HasValue)
+                {
+                    if (existingMission == null)
+                    {
+                        _context.OKR_Mission_Mappings.Add(new OKR_Mission_Mapping { OKRId = model.Id, MissionId = missionId.Value });
+                    }
+                    else if (existingMission.MissionId != missionId.Value)
+                    {
+                        _context.OKR_Mission_Mappings.Remove(existingMission);
+                        _context.OKR_Mission_Mappings.Add(new OKR_Mission_Mapping { OKRId = model.Id, MissionId = missionId.Value });
+                    }
+                }
+                else if (existingMission != null)
+                {
+                    _context.OKR_Mission_Mappings.Remove(existingMission);
+                }
+
+                // Update Department Allocation
+                var existingDept = await _context.OKR_Department_Allocations.FirstOrDefaultAsync(d => d.OKRId == model.Id);
+                if (departmentId.HasValue)
+                {
+                    if (existingDept == null)
+                    {
+                        _context.OKR_Department_Allocations.Add(new OKR_Department_Allocation { OKRId = model.Id, DepartmentId = departmentId.Value });
+                    }
+                    else if (existingDept.DepartmentId != departmentId.Value)
+                    {
+                        _context.OKR_Department_Allocations.Remove(existingDept);
+                        _context.OKR_Department_Allocations.Add(new OKR_Department_Allocation { OKRId = model.Id, DepartmentId = departmentId.Value });
+                    }
+                }
+                else if (existingDept != null)
+                {
+                    _context.OKR_Department_Allocations.Remove(existingDept);
+                }
+
+                // Update Employee Allocation
+                var existingEmp = await _context.OKR_Employee_Allocations.FirstOrDefaultAsync(e => e.OKRId == model.Id);
+                if (employeeId.HasValue)
+                {
+                    if (existingEmp == null)
+                    {
+                        _context.OKR_Employee_Allocations.Add(new OKR_Employee_Allocation { OKRId = model.Id, EmployeeId = employeeId.Value });
+                    }
+                    else if (existingEmp.EmployeeId != employeeId.Value)
+                    {
+                        _context.OKR_Employee_Allocations.Remove(existingEmp);
+                        _context.OKR_Employee_Allocations.Add(new OKR_Employee_Allocation { OKRId = model.Id, EmployeeId = employeeId.Value });
+                    }
+                }
+                else if (existingEmp != null)
+                {
+                    _context.OKR_Employee_Allocations.Remove(existingEmp);
+                }
+
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Đã cập nhật OKR thành công!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            ViewBag.MissionId = missionId;
+            ViewBag.DepartmentId = departmentId;
+            ViewBag.EmployeeId = employeeId;
+            ViewBag.Missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
+            ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
+            ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
+
+            TempData["ErrorMessage"] = "Có lỗi xảy ra, vui lòng kiểm tra lại dữ liệu.";
+            return View(model);
+        }
+
         [HttpPost]
         [HasPermission("OKRS_CREATE")]
         public async Task<IActionResult> AddKeyResult(OKRKeyResult kr)
@@ -201,6 +317,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã cập nhật tiến độ Key Result và Đánh giá thành công!";
             }
+            else
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy Key Result cần cập nhật.";
+            }
             return RedirectToAction(nameof(Index));
         }
 
@@ -214,24 +334,40 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (ModelState.IsValid)
             {
-                var kr = await _context.OKRKeyResults.FindAsync(model.Id);
-                if (kr != null)
+                try
                 {
-                    kr.KeyResultName = model.KeyResultName;
-                    kr.TargetValue = model.TargetValue;
-                    kr.CurrentValue = model.CurrentValue;
-                    kr.Unit = model.Unit;
-                    kr.IsInverse = model.IsInverse;
-                    
-                    // Recalculate status
-                    decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, kr.TargetValue ?? 0, kr.IsInverse);
-                    kr.ResultStatus = ProgressHelper.GetResultStatus(progress);
-                    
-                    await _context.SaveChangesAsync();
-                    
-                    var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
-                    TempData["SuccessMessage"] = $"Đã cập nhật KR thành công! Tiến độ mục tiêu hiện tại: {okr?.TotalProgress}%";
+                    var kr = await _context.OKRKeyResults.FindAsync(model.Id);
+                    if (kr != null)
+                    {
+                        kr.KeyResultName = model.KeyResultName;
+                        kr.TargetValue = model.TargetValue;
+                        kr.CurrentValue = model.CurrentValue;
+                        kr.Unit = model.Unit;
+                        kr.IsInverse = model.IsInverse;
+                        
+                        // Recalculate status
+                        decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, kr.TargetValue ?? 0, kr.IsInverse);
+                        kr.ResultStatus = ProgressHelper.GetResultStatus(progress);
+                        
+                        await _context.SaveChangesAsync();
+                        
+                        var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
+                        TempData["SuccessMessage"] = $"Đã cập nhật KR thành công! Tiến độ mục tiêu hiện tại: {okr?.TotalProgress}%";
+                    }
+                    else
+                    {
+                        TempData["ErrorMessage"] = "Không tìm thấy Key Result cần chỉnh sửa.";
+                    }
                 }
+                catch (Exception ex)
+                {
+                    TempData["ErrorMessage"] = $"Lỗi hệ thống: {ex.Message}";
+                }
+            }
+            else
+            {
+                var errors = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                TempData["ErrorMessage"] = $"Dữ liệu không hợp lệ: {errors}";
             }
             return RedirectToAction(nameof(Index));
         }
