@@ -11,6 +11,8 @@ namespace Manage_KPI_or_OKR_System.Models
         public string? KPIName { get; set; }
         public int? PropertyId { get; set; }
         public int? KPITypeId { get; set; }
+        public int? OKRId { get; set; }
+        public int? OKRKeyResultId { get; set; }
         public int? AssignerId { get; set; }
         public int? StatusId { get; set; }
         public bool? IsActive { get; set; } = true;

@@ -1,5 +1,6 @@
 @model Manage_KPI_or_OKR_System.Helpers.PaginatedList<Manage_KPI_or_OKR_System.Models.OKR>
 @using Manage_KPI_or_OKR_System.Helpers
+@using System.Globalization
 @{
     ViewData["Title"] = "Quản lý OKR";
     var keyResultsDict = ViewBag.KeyResults as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>> ??
@@ -117,7 +118,7 @@
                                                       "okr-status-danger";
 
                                 <div class="accordion-item mb-3 border-0 shadow-sm rounded" style="overflow: visible;">
-                                    <h2 class="accordion-header position-relative" id="heading-@index">
+                                    <div class="accordion-header position-relative" id="heading-@index">
         
                                         <div class="accordion-button collapsed bg-white p-3 d-flex justify-content-between align-items-center w-100" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId" style="cursor: pointer; box-shadow: none;">
                                             
@@ -154,11 +155,11 @@
                                         @if (canCreateOkr || canEditOkr || canDeleteOkr)
                                         {
                                             <div class="action-btns dropdown position-absolute" style="right: 50px; top: 50%; transform: translateY(-50%); z-index: 10;" onclick="event.stopPropagation();">
-                                                <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
+                                                <button type="button" class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
                                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                                                     @if (canEditOkr)
                                                     {
-                                                        <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@okr.Id"><i class="bi bi-pencil-square me-2 text-primary"></i>Chỉnh sửa OKR</a></li>
+                                                        <li><a class="dropdown-item" href="@Url.Action("Edit", "OKRs", new { id = okr.Id })"><i class="bi bi-pencil-square me-2 text-primary"></i>Chỉnh sửa OKR</a></li>
                                                     }
                                                     @if (canCreateOkr)
                                                     {
@@ -181,7 +182,7 @@
                                             </div>
                                         }
                                         
-                                    </h2>
+                                    </div>
 
                                     <div id="@collapseId" class="accordion-collapse collapse border-top" aria-labelledby="heading-@index">
                                         <div class="accordion-body bg-light bg-opacity-25 p-3">
@@ -194,6 +195,8 @@
                                                 {
                                                     var krPercent = (int)kr.Progress;
                                                     var krWidth = (int)Math.Min(100, kr.Progress);
+                                                    var krTargetJs = (kr.TargetValue ?? 0).ToString(CultureInfo.InvariantCulture);
+                                                    var krCurrentJs = (kr.CurrentValue ?? 0).ToString(CultureInfo.InvariantCulture);
                                                     
                                                     string krColor = ProgressHelper.GetProgressColorClass(krPercent);
                                                     string krTextClass = ProgressHelper.GetProgressTextColorClass(krPercent);
@@ -224,8 +227,14 @@
                                                                 <div class="d-flex gap-1">
                                                                     @if (canEditOkr)
                                                                     {
-                                                                        <button type="button" class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle" 
-                                                                                onclick="openEditKrModal(@kr.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.KeyResultName ?? "")), @(kr.TargetValue ?? 0), @(kr.CurrentValue ?? 0), @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.Unit ?? "")), @(kr.IsInverse.ToString().ToLower()))" title="Sửa KR">
+                                                                        <button type="button" class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle js-edit-kr"
+                                                                                data-kr-id="@kr.Id"
+                                                                                data-kr-name="@kr.KeyResultName"
+                                                                                data-kr-target="@krTargetJs"
+                                                                                data-kr-current="@krCurrentJs"
+                                                                                data-kr-unit="@kr.Unit"
+                                                                                data-kr-is-inverse="@kr.IsInverse.ToString().ToLowerInvariant()"
+                                                                                title="Sửa KR">
                                                                             <i class="bi bi-pencil-square"></i>
                                                                         </button>
                                                                     }
@@ -240,7 +249,12 @@
                                                                 </div>
                                                                 @if (canUpdateProgress)
                                                                 {
-                                                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-circle" title="Cập nhật tiến độ" onclick="openUpdateProgressModal(@kr.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.KeyResultName ?? "")), @(kr.CurrentValue ?? 0), @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.Unit ?? "")))">
+                                                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-circle js-update-kr-progress"
+                                                                            title="Cập nhật tiến độ"
+                                                                            data-kr-id="@kr.Id"
+                                                                            data-kr-name="@kr.KeyResultName"
+                                                                            data-kr-current="@krCurrentJs"
+                                                                            data-kr-unit="@kr.Unit">
                                                                         <i class="bi bi-pencil"></i>
                                                                     </button>
                                                                 }
@@ -595,15 +609,15 @@
         function openEditKrModal(id, name, target, current, unit, isInverse) {
             document.getElementById('editKrId').value = id;
             document.getElementById('editKrName').value = name;
-            document.getElementById('editKrTarget').value = target;
-            document.getElementById('editKrCurrent').value = current;
+            document.getElementById('editKrTarget').value = normalizeDecimalValue(target);
+            document.getElementById('editKrCurrent').value = normalizeDecimalValue(current);
             const editKrUnitSelect = document.getElementById('editKrUnit');
             if (window.setMeasurementUnitSelectValue) {
                 window.setMeasurementUnitSelectValue(editKrUnitSelect, unit || '');
             } else {
                 editKrUnitSelect.value = unit || '';
             }
-            document.getElementById('editKrIsInverse').checked = isInverse;
+            document.getElementById('editKrIsInverse').checked = isInverse === true || isInverse === 'true';
             if (window.applyMeasurementUnitBehavior) {
                 window.applyMeasurementUnitBehavior(document.getElementById('editKrModal'));
             }
@@ -613,7 +627,7 @@
         function openUpdateProgressModal(krId, krName, currentVal, unit) {
             document.getElementById('updateKrId').value = krId;
             document.getElementById('updateKrNameDisplay').innerText = 'KR: ' + krName;
-            document.getElementById('updateKrCurrentValue').value = currentVal;
+            document.getElementById('updateKrCurrentValue').value = normalizeDecimalValue(currentVal);
             const config = window.applyMeasurementUnitConfigToInputs
                 ? window.applyMeasurementUnitConfigToInputs(unit, [document.getElementById('updateKrCurrentValue')])
                 : { suffix: unit || '' };
@@ -621,6 +635,38 @@
             var modal = new bootstrap.Modal(document.getElementById('updateKrProgressModal'));
             modal.show();
         }
+
+        function normalizeDecimalValue(value) {
+            return String(value ?? '').replace(',', '.');
+        }
+
+        document.querySelectorAll('.js-edit-kr').forEach(button => {
+            button.addEventListener('click', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                openEditKrModal(
+                    button.dataset.krId,
+                    button.dataset.krName || '',
+                    button.dataset.krTarget || '0',
+                    button.dataset.krCurrent || '0',
+                    button.dataset.krUnit || '',
+                    button.dataset.krIsInverse || 'false'
+                );
+            });
+        });
+
+        document.querySelectorAll('.js-update-kr-progress').forEach(button => {
+            button.addEventListener('click', event => {
+                event.preventDefault();
+                event.stopPropagation();
+                openUpdateProgressModal(
+                    button.dataset.krId,
+                    button.dataset.krName || '',
+                    button.dataset.krCurrent || '0',
+                    button.dataset.krUnit || ''
+                );
+            });
+        });
 
         // Toggle all accordions functionality
         document.getElementById('toggleAllBtn')?.addEventListener('click', function() {

@@ -24,7 +24,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
         }
 
-        [HasPermission("KPICHECKINS_VIEW")]
+        [HasPermission("KPICHECKINS_VIEW", "CHECKINS_VIEW")]
         public async Task<IActionResult> Index()
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -112,7 +112,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpGet]
-        [HasPermission("KPICHECKINS_CREATE")]
+        [HasPermission("KPICHECKINS_CREATE", "CHECKINS_CREATE")]
         public async Task<IActionResult> Create(int? kpiId)
         {
             await PopulateCreateViewBag();
@@ -279,7 +279,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("KPICHECKINS_CREATE", "EMPLOYEE_UPDATE_KPI_PROGRESS")]
+        [HasPermission("KPICHECKINS_CREATE", "CHECKINS_CREATE", "EMPLOYEE_UPDATE_KPI_PROGRESS")]
         public async Task<IActionResult> Create(KPICheckIn model, string AchievedValue, string Note)
         {
             decimal achievedValue = 0;

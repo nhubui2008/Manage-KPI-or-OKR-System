@@ -182,6 +182,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Periods = periods;
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
             ViewBag.KPITypes = await _context.KPITypes.OrderBy(t => t.Id).ToListAsync();
+            await PopulateOkrLinkViewBagAsync();
 
             // Lấy tiến độ mới nhất cho mỗi KPI (từ check-in gần nhất)
             var latestProgress = new Dictionary<int, decimal>();
@@ -235,10 +236,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var period = await _context.EvaluationPeriods.FindAsync(kpi.PeriodId);
             var type = await _context.KPITypes.FindAsync(kpi.KPITypeId);
             var property = await _context.KPIProperties.FindAsync(kpi.PropertyId);
+            var linkedOkr = kpi.OKRId.HasValue ? await _context.OKRs.FindAsync(kpi.OKRId.Value) : null;
+            var linkedKeyResult = kpi.OKRKeyResultId.HasValue ? await _context.OKRKeyResults.FindAsync(kpi.OKRKeyResultId.Value) : null;
 
             ViewBag.PeriodName = period?.PeriodName ?? "N/A";
             ViewBag.TypeName = type?.TypeName ?? "N/A";
             ViewBag.PropertyName = property?.PropertyName ?? "N/A";
+            ViewBag.LinkedOKRName = linkedOkr?.ObjectiveName;
+            ViewBag.LinkedKeyResultName = linkedKeyResult?.KeyResultName;
 
             // Security check for restricted roles
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
@@ -369,6 +374,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
             ViewBag.KPITypes = await _context.KPITypes.OrderBy(t => t.Id).ToListAsync();
             ViewBag.AllProperties = await _context.KPIProperties.ToListAsync();
+            await PopulateOkrLinkViewBagAsync();
 
             return View(kpi);
         }
@@ -397,6 +403,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 existingKpi.KPITypeId = kpi.KPITypeId;
                 existingKpi.PeriodId = kpi.PeriodId;
                 existingKpi.PropertyId = kpi.PropertyId;
+                await NormalizeOkrLinkAsync(kpi);
+                existingKpi.OKRId = kpi.OKRId;
+                existingKpi.OKRKeyResultId = kpi.OKRKeyResultId;
 
                 // Update or Create Detail
                 var existingDetail = await _context.KPIDetails.FirstOrDefaultAsync(d => d.KPIId == id);
@@ -457,6 +466,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     var emp = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
                     if (emp != null) kpi.AssignerId = emp.Id;
                 }
+
+                await NormalizeOkrLinkAsync(kpi);
 
                 _context.KPIs.Add(kpi);
                 await _context.SaveChangesAsync();
@@ -659,6 +670,61 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 assignValue(parsedValue);
                 ModelState.Remove(key);
             }
+        }
+
+        private async Task NormalizeOkrLinkAsync(KPI kpi)
+        {
+            if (!kpi.OKRId.HasValue)
+            {
+                kpi.OKRKeyResultId = null;
+                return;
+            }
+
+            var okrExists = await _context.OKRs
+                .AsNoTracking()
+                .AnyAsync(o => o.Id == kpi.OKRId.Value && o.IsActive == true);
+
+            if (!okrExists)
+            {
+                kpi.OKRId = null;
+                kpi.OKRKeyResultId = null;
+                return;
+            }
+
+            if (kpi.OKRKeyResultId.HasValue)
+            {
+                var keyResult = await _context.OKRKeyResults
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(kr => kr.Id == kpi.OKRKeyResultId.Value);
+
+                if (keyResult?.OKRId != kpi.OKRId)
+                {
+                    kpi.OKRKeyResultId = null;
+                }
+            }
+        }
+
+        private async Task PopulateOkrLinkViewBagAsync()
+        {
+            var okrs = await _context.OKRs
+                .Where(o => o.IsActive == true)
+                .OrderByDescending(o => o.CreatedAt)
+                .ThenBy(o => o.Id)
+                .ToListAsync();
+
+            var okrIds = okrs.Select(o => o.Id).ToList();
+            var keyResults = okrIds.Any()
+                ? await _context.OKRKeyResults
+                    .Where(kr => kr.OKRId.HasValue && okrIds.Contains(kr.OKRId.Value))
+                    .OrderBy(kr => kr.OKRId)
+                    .ThenBy(kr => kr.Id)
+                    .ToListAsync()
+                : new List<OKRKeyResult>();
+
+            ViewBag.OKRs = okrs;
+            ViewBag.OKRKeyResults = keyResults;
+            ViewBag.OKRNames = okrs.ToDictionary(o => o.Id, o => o.ObjectiveName ?? "N/A");
+            ViewBag.OKRKeyResultNames = keyResults.ToDictionary(kr => kr.Id, kr => kr.KeyResultName ?? "N/A");
         }
     }
 }

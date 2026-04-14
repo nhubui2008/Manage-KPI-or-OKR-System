@@ -4,6 +4,8 @@
     var longTermStatements = ViewBag.LongTermStatements as List<Manage_KPI_or_OKR_System.Models.MissionVision> ?? new List<Manage_KPI_or_OKR_System.Models.MissionVision>();
     var selectedYear = ViewBag.SelectedYear as int? ?? DateTime.Now.Year;
     var availableYears = ViewBag.AvailableYears as List<int?> ?? new List<int?>();
+    var isAdminRole = User.IsInRole("Admin") || User.IsInRole("Administrator");
+    var canEditMission = isAdminRole || User.HasClaim("Permission", "MISSIONS_EDIT");
 }
 
 <div class="container-fluid px-0">
@@ -42,9 +44,17 @@
 
             <div class="@(longTermStatements.Count == 1 ? "col-12" : "col-lg-6")">
                 <div class="content-card bg-primary text-white border-0 position-relative h-100" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
-                    <form asp-action="Delete" asp-route-id="@statement.Id" method="post" class="position-absolute top-0 end-0 p-3 m-0" onsubmit="return confirm('Bạn có chắc muốn xóa @statement.TypeDisplayName này?');">
-                        <button type="submit" class="btn btn-sm btn-outline-light border-0"><i class="bi bi-trash"></i></button>
-                    </form>
+                    <div class="position-absolute top-0 end-0 p-3 d-flex gap-2">
+                        @if (canEditMission)
+                        {
+                            <a asp-action="Edit" asp-route-id="@statement.Id" class="btn btn-sm btn-outline-light border-0" title="Chỉnh sửa @statement.TypeDisplayName">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                        }
+                        <form asp-action="Delete" asp-route-id="@statement.Id" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc muốn xóa @statement.TypeDisplayName này?');">
+                            <button type="submit" class="btn btn-sm btn-outline-light border-0"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </div>
                     <div class="card-body-custom px-4 py-5 text-center">
                         <i class="bi @iconClass mb-3" style="font-size: 3rem; opacity: 0.9;"></i>
                         <div class="badge bg-white bg-opacity-25 text-white rounded-pill px-3 py-2 mb-3">@statement.TypeDisplayName</div>
@@ -112,8 +122,11 @@
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                                    <li><a class="dropdown-item" href="#" onclick="event.preventDefault();showComingSoonToast('Chỉnh sửa Mục tiêu Chiến lược')"><i class="bi bi-pencil me-2"></i>Chỉnh sửa</a></li>
-                                    <li><hr class="dropdown-divider"></li>
+                                    @if (canEditMission)
+                                    {
+                                        <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@goal.Id"><i class="bi bi-pencil me-2"></i>Chỉnh sửa</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                    }
                                     <li>
                                         <form asp-action="Delete" asp-route-id="@goal.Id" method="post" class="m-0" onsubmit="return confirm('Xóa mục tiêu chiến lược năm @goal.TargetYear?');">
                                             <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa mục tiêu</button>

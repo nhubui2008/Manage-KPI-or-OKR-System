@@ -59,25 +59,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("MISSIONS_CREATE")]
         public async Task<IActionResult> Create(MissionVision model)
         {
-            model.MissionVisionType = NormalizeMissionVisionType(model.MissionVisionType);
-
-            if (string.IsNullOrWhiteSpace(model.Content))
-            {
-                ModelState.AddModelError(nameof(model.Content), "Vui lòng nhập nội dung chiến lược.");
-            }
-
-            if (model.MissionVisionType == MissionVision.TypeYearlyGoal)
-            {
-                if (!model.TargetYear.HasValue)
-                {
-                    ModelState.AddModelError(nameof(model.TargetYear), "Vui lòng nhập năm áp dụng cho mục tiêu theo năm.");
-                }
-            }
-            else
-            {
-                model.TargetYear = null;
-                ModelState.Remove(nameof(model.TargetYear));
-            }
+            PrepareMissionVisionForSave(model);
+            ValidateMissionVision(model);
 
             if (ModelState.IsValid)
             {
@@ -91,6 +74,53 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     : RedirectToAction(nameof(Index));
             }
             return View(model);
+        }
+
+        [HttpGet]
+        [HasPermission("MISSIONS_EDIT")]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var missionVision = await _context.MissionVisions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Id == id && m.IsActive == true);
+
+            if (missionVision == null) return NotFound();
+
+            return View(missionVision);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [HasPermission("MISSIONS_EDIT")]
+        public async Task<IActionResult> Edit(int id, [Bind("Id,MissionVisionType,TargetYear,Content,FinancialTarget")] MissionVision model)
+        {
+            if (id != model.Id) return NotFound();
+
+            PrepareMissionVisionForSave(model);
+            ValidateMissionVision(model);
+
+            if (!ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = "Có lỗi xảy ra, vui lòng kiểm tra lại dữ liệu.";
+                return View(model);
+            }
+
+            var existingMissionVision = await _context.MissionVisions
+                .FirstOrDefaultAsync(m => m.Id == id && m.IsActive == true);
+
+            if (existingMissionVision == null) return NotFound();
+
+            existingMissionVision.MissionVisionType = model.MissionVisionType;
+            existingMissionVision.TargetYear = model.TargetYear;
+            existingMissionVision.Content = model.Content;
+            existingMissionVision.FinancialTarget = model.FinancialTarget;
+
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã cập nhật mục tiêu chiến lược thành công!";
+
+            return existingMissionVision.MissionVisionType == MissionVision.TypeYearlyGoal
+                ? RedirectToAction(nameof(Index), new { year = existingMissionVision.TargetYear })
+                : RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
@@ -132,6 +162,31 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 MissionVision.TypeMission => 2,
                 _ => 3
             };
+        }
+
+        private void PrepareMissionVisionForSave(MissionVision model)
+        {
+            model.MissionVisionType = NormalizeMissionVisionType(model.MissionVisionType);
+            model.Content = model.Content?.Trim();
+
+            if (model.MissionVisionType != MissionVision.TypeYearlyGoal)
+            {
+                model.TargetYear = null;
+                ModelState.Remove(nameof(model.TargetYear));
+            }
+        }
+
+        private void ValidateMissionVision(MissionVision model)
+        {
+            if (string.IsNullOrWhiteSpace(model.Content))
+            {
+                ModelState.AddModelError(nameof(model.Content), "Vui lòng nhập nội dung chiến lược.");
+            }
+
+            if (model.MissionVisionType == MissionVision.TypeYearlyGoal && !model.TargetYear.HasValue)
+            {
+                ModelState.AddModelError(nameof(model.TargetYear), "Vui lòng nhập năm áp dụng cho mục tiêu theo năm.");
+            }
         }
     }
 }

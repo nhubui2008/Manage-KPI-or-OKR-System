@@ -1,0 +1,385 @@
+@model Manage_KPI_or_OKR_System.Models.MissionVision
+
+@{
+    ViewData["Title"] = "Chỉnh sửa Mục Tiêu Chiến Lược";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-content py-4 container-fluid px-4">
+    <!-- HEADER -->
+    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
+        <div>
+            <h1 class="mb-2 fw-800 text-dark text-gradient">Chỉnh sửa Mục tiêu Chiến lược</h1>
+            <div class="page-breadcrumb">
+                <a href="/" class="text-decoration-none opacity-75">Trang chủ</a>
+                <span class="separator mx-2 text-muted">/</span>
+                <a asp-action="Index" class="text-decoration-none opacity-75">Sứ mệnh & Tầm nhìn</a>
+                <span class="separator mx-2 text-muted">/</span>
+                <span class="text-primary fw-bold">Chỉnh sửa</span>
+            </div>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-light shadow-sm border-0 bg-white px-4 py-2" style="border-radius: 12px; font-weight: 600; color: #475569; transition: all 0.3s;">
+                <i class="bi bi-arrow-left me-2"></i> Quay lại danh sách
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- FORM COLUMN -->
+        <div class="col-xl-8 animate__animated animate__fadeInLeft">
+            <div class="content-card border-0 shadow-lg overflow-visible" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 24px; position: relative;">
+                <div class="card-header-custom border-bottom bg-white bg-opacity-50 py-4 px-4" style="border-radius: 24px 24px 0 0;">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-4 me-3">
+                            <i class="bi bi-flag-fill text-primary fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold fs-5 mb-0 text-dark">Cập nhật Định hướng & Sứ mệnh</h5>
+                            <p class="text-muted small mb-0">Điều chỉnh nội dung chiến lược đang áp dụng</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body-custom p-4 p-md-5">
+                    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" id="editMissionForm">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+
+                        <!-- SECTION: TYPE -->
+                        <div class="form-icon-group mb-5">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-info me-2" style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">1</span>
+                                <label asp-for="MissionVisionType" class="form-label small text-muted text-uppercase fw-800 mb-0">Loại thiết lập <span class="text-danger">*</span></label>
+                            </div>
+                            <div class="input-wrapper shadow-sm rounded-4 overflow-hidden border">
+                                <i class="bi bi-ui-checks-grid"></i>
+                                <select asp-for="MissionVisionType" id="missionVisionType" class="form-select border-0" style="padding-left: 45px !important; height: 55px; background: #fff;">
+                                    <option value="@MissionVision.TypeYearlyGoal">Mục tiêu chiến lược theo năm</option>
+                                    <option value="@MissionVision.TypeVision">Tầm nhìn</option>
+                                    <option value="@MissionVision.TypeMission">Sứ mệnh</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="MissionVisionType" class="text-danger small"></span>
+                            <div id="inputModeHint" class="form-text mt-3 text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Chọn loại để hệ thống tự điều chỉnh cách nhập phù hợp.
+                            </div>
+                        </div>
+
+                        <!-- SECTION: CONTENT -->
+                        <div class="form-icon-group mb-5">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-primary me-2" style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">2</span>
+                                <label asp-for="Content" id="contentLabel" class="form-label small text-muted text-uppercase fw-800 mb-0">Nội dung chiến lược / Sứ mệnh <span class="text-danger">*</span></label>
+                            </div>
+                            <div class="input-wrapper shadow-sm rounded-4 overflow-hidden border">
+                                <i class="bi bi-pencil-square" style="top: 25px;"></i>
+                                <textarea asp-for="Content" id="missionContent" class="form-control border-0 px-4" rows="5" placeholder="Nhập định hướng kinh doanh cốt lõi của năm nay hoặc tầm nhìn chung..." required style="padding-top: 15px !important; padding-left: 45px !important; background: #fff;"></textarea>
+                            </div>
+                            <span asp-validation-for="Content" class="text-danger small"></span>
+                            <div id="contentHint" class="form-text mt-3 text-muted">
+                                <i class="bi bi-info-circle me-1"></i> Gợi ý: Hãy bắt đầu bằng "Trở thành...", "Sứ mệnh của chúng tôi là..." 
+                            </div>
+                        </div>
+
+                        <!-- SECTION: FINANCIAL & YEAR -->
+                        <div class="row g-4 mb-3">
+                            <div class="col-md-6">
+                                <div class="form-icon-group mb-0">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="badge bg-success me-2" style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">3</span>
+                                        <label asp-for="FinancialTarget" id="financialTargetLabel" class="form-label small text-muted text-uppercase fw-800 mb-0">Mục tiêu tài chính (VNĐ)</label>
+                                    </div>
+                                    <div class="input-wrapper shadow-sm rounded-4 overflow-hidden border">
+                                        <i class="bi bi-cash-coin"></i>
+                                        <input asp-for="FinancialTarget" type="number" step="1000000" class="form-control border-0" placeholder="VD: 50,000,000,000" style="padding-left: 45px !important; height: 55px; background: #fff;">
+                                    </div>
+                                    <span asp-validation-for="FinancialTarget" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6" id="targetYearWrapper">
+                                <div class="form-icon-group mb-0">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="badge bg-warning text-dark me-2" style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">4</span>
+                                        <label asp-for="TargetYear" class="form-label small text-muted text-uppercase fw-800 mb-0">Năm áp dụng</label>
+                                    </div>
+                                    <div class="input-wrapper shadow-sm rounded-4 overflow-hidden border">
+                                        <i class="bi bi-calendar-check text-warning"></i>
+                                        <input asp-for="TargetYear" type="number" id="targetYearInput" class="form-control border-0" style="padding-left: 45px !important; height: 55px; background: #fff;">
+                                    </div>
+                                    <span asp-validation-for="TargetYear" class="text-danger small"></span>
+                                    <div class="form-text mt-2 text-muted">
+                                        Trường này chỉ áp dụng cho mục tiêu chiến lược theo năm.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
+                            <a asp-action="Index" class="btn btn-outline-secondary px-4 py-3" style="border-radius: 12px; font-weight: 600; border: 1.5px solid #e2e8f0;">
+                                Hủy bỏ
+                            </a>
+                            <button type="submit" class="btn btn-primary px-5 py-3 shadow-lg" style="border-radius: 15px; font-weight: 700; background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%); border: none;">
+                                <i class="bi bi-check-circle-fill me-2"></i> Cập nhật mục tiêu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIDEBAR COLUMN -->
+        <div class="col-xl-4 animate__animated animate__fadeInRight">
+            <div class="sticky-top" style="top: 100px;">
+                <!-- TIPS CARD -->
+                <div class="okr-tips-card mb-4">
+                    <div class="okr-tips-card-inner">
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="okr-tips-icon-box">
+                                <i class="bi bi-lightbulb fs-3 text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small text-white">Hướng dẫn nhanh</h6>
+                                <h4 class="mb-0 fw-800 text-white">Cấu trúc Chiến lược</h4>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3 d-flex align-items-center text-white"><i class="bi bi-star-fill me-2 text-warning small"></i> Tầm nhìn & Sứ mệnh</h6>
+                            <ul class="list-unstyled mb-0 small" style="opacity: 0.92; line-height: 1.8;">
+                                <li class="mb-3 d-flex align-items-start text-white">
+                                    <i class="bi bi-check2-circle me-2 mt-1 fs-5"></i> 
+                                    <span><strong>Sứ mệnh:</strong> Xác định giá trị cốt lõi và mục đích phục vụ khách hàng.</span>
+                                </li>
+                                <li class="mb-3 d-flex align-items-start text-white">
+                                    <i class="bi bi-check2-circle me-2 mt-1 fs-5"></i> 
+                                    <span><strong>Tầm nhìn:</strong> Mục tiêu dài hạn (5-10 năm) mà công ty hướng tới.</span>
+                                </li>
+                                <li class="d-flex align-items-start text-white">
+                                    <i class="bi bi-check2-circle me-2 mt-1 fs-5"></i> 
+                                    <span><strong>Mục tiêu Năm:</strong> Kế hoạch cụ thể để hiện thực hóa Tầm nhìn.</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="okr-tips-quote">
+                            <p class="small mb-0 fst-italic text-white">"Chiến lược không phải là làm cái gì, mà là làm như thế nào để khác biệt."</p>
+                        </div>
+                    </div>
+                    <!-- Decorative elements -->
+                    <div class="okr-tips-deco-1"></div>
+                    <div class="okr-tips-deco-2"></div>
+                    <div class="okr-tips-deco-3"></div>
+                </div>
+
+                <!-- INFO CARD -->
+                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <h6 class="fw-bold text-dark mb-4">
+                        <i class="bi bi-info-circle text-primary me-2"></i> Lưu ý cấu hình
+                    </h6>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item px-0 py-3 border-0">
+                            <div class="d-flex align-items-start">
+                                <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3 me-3">
+                                    <i class="bi bi-infinity"></i>
+                                </div>
+                                <p class="small text-muted mb-0"><strong>Tầm nhìn chung:</strong> Để trống <strong>Năm áp dụng</strong> nếu muốn thiết lập Sứ mệnh Kim chỉ nam dài hạn.</p>
+                            </div>
+                        </div>
+                        <div class="list-group-item px-0 py-3 border-0">
+                            <div class="d-flex align-items-start">
+                                <div class="bg-success bg-opacity-10 text-success p-2 rounded-3 me-3">
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                </div>
+                                <p class="small text-muted mb-0"><strong>Chỉ tiêu năm:</strong> Nhập <strong>Mục tiêu tài chính</strong> để theo dõi mức độ đóng góp của các OKRs.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-800 { font-weight: 800; }
+    .text-gradient { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .backdrop-blur { backdrop-filter: blur(10px); }
+    
+    /* Premium Form Styling */
+    .form-icon-group .input-wrapper {
+        position: relative;
+        transition: all 0.3s ease;
+        background: #fff;
+    }
+    
+    .form-icon-group .input-wrapper:focus-within {
+        border-color: #1a73e8 !important;
+        box-shadow: 0 10px 20px -5px rgba(0, 120, 212, 0.15) !important;
+        transform: translateY(-2px);
+    }
+    
+    .form-icon-group .input-wrapper i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 1.1rem;
+        z-index: 10;
+        transition: color 0.3s;
+    }
+    
+    .form-control:focus {
+        box-shadow: none !important;
+        color: #1e293b;
+    }
+    
+    .form-icon-group .input-wrapper:focus-within i {
+        color: #1a73e8;
+    }
+
+    /* === TIPS CARD (Sidebar Sync with OKR) === */
+    .okr-tips-card {
+        position: relative;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 12px 40px rgba(0, 90, 158, 0.2);
+    }
+    .okr-tips-card-inner {
+        padding: 28px;
+        position: relative;
+        z-index: 2;
+        background: linear-gradient(135deg, #1557b0 0%, #1a73e8 40%, #00a4ef 100%);
+    }
+    .okr-tips-icon-box {
+        background: rgba(255, 255, 255, 0.18);
+        padding: 14px;
+        border-radius: 16px;
+        margin-right: 14px;
+        backdrop-filter: blur(10px);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .okr-tips-quote {
+        background: rgba(255, 255, 255, 0.12);
+        padding: 14px 18px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(8px);
+    }
+    /* Decorative circles */
+    .okr-tips-deco-1 {
+        position: absolute;
+        top: -30px; right: -30px;
+        width: 120px; height: 120px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 50%;
+        z-index: 1;
+    }
+    .okr-tips-deco-2 {
+        position: absolute;
+        bottom: -15px; left: -15px;
+        width: 70px; height: 70px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        z-index: 1;
+    }
+    .okr-tips-deco-3 {
+        position: absolute;
+        top: 40%; right: 10%;
+        width: 50px; height: 50px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 50%;
+        z-index: 1;
+        animation: okrFloat 6s ease-in-out infinite alternate;
+    }
+    @@keyframes okrFloat {
+        from { transform: translateY(0); }
+        to   { transform: translateY(-12px); }
+    }
+
+    /* Page effects */
+    .animate__animated { animation-duration: 0.8s; }
+</style>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const currentYear = '@DateTime.Now.Year';
+            const typeSelect = document.getElementById('missionVisionType');
+            const contentLabel = document.getElementById('contentLabel');
+            const contentInput = document.getElementById('missionContent');
+            const contentHint = document.getElementById('contentHint');
+            const inputModeHint = document.getElementById('inputModeHint');
+            const financialTargetLabel = document.getElementById('financialTargetLabel');
+            const targetYearWrapper = document.getElementById('targetYearWrapper');
+            const targetYearInput = document.getElementById('targetYearInput');
+
+            const configs = {
+                '@MissionVision.TypeYearlyGoal': {
+                    label: 'Nội dung mục tiêu chiến lược',
+                    placeholder: 'VD: Nâng cao chất lượng dịch vụ, đạt tỷ lệ hài lòng khách hàng trên 95%...',
+                    hint: 'Gợi ý: Nhập mục tiêu cụ thể cho năm, có thể đo lường và liên kết được với OKR.',
+                    modeHint: 'Cách nhập: nhập nội dung mục tiêu, năm áp dụng và mục tiêu tài chính nếu có.',
+                    financialLabel: 'Mục tiêu tài chính năm (VNĐ)',
+                    showYear: true
+                },
+                '@MissionVision.TypeVision': {
+                    label: 'Nội dung tầm nhìn',
+                    placeholder: 'VD: Trở thành doanh nghiệp công nghệ hàng đầu tại Việt Nam...',
+                    hint: 'Gợi ý: Tầm nhìn nên mô tả trạng thái tương lai dài hạn mà doanh nghiệp muốn đạt được.',
+                    modeHint: 'Cách nhập: nhập định hướng dài hạn, hệ thống sẽ tự bỏ qua trường năm áp dụng.',
+                    financialLabel: 'Mục tiêu tài chính dài hạn (VNĐ)',
+                    showYear: false
+                },
+                '@MissionVision.TypeMission': {
+                    label: 'Nội dung sứ mệnh',
+                    placeholder: 'VD: Sứ mệnh của chúng tôi là tạo ra giải pháp giúp khách hàng vận hành hiệu quả hơn...',
+                    hint: 'Gợi ý: Sứ mệnh nên thể hiện lý do tồn tại, đối tượng phục vụ và giá trị cốt lõi.',
+                    modeHint: 'Cách nhập: nhập tuyên bố sứ mệnh, hệ thống sẽ tự bỏ qua trường năm áp dụng.',
+                    financialLabel: 'Mục tiêu tài chính hỗ trợ (nếu có)',
+                    showYear: false
+                }
+            };
+
+            function applyTypeConfig() {
+                const config = configs[typeSelect.value] || configs['@MissionVision.TypeYearlyGoal'];
+
+                contentLabel.innerHTML = config.label + ' <span class="text-danger">*</span>';
+                contentInput.placeholder = config.placeholder;
+                contentHint.innerHTML = '<i class="bi bi-info-circle me-1"></i> ' + config.hint;
+                inputModeHint.innerHTML = '<i class="bi bi-magic me-1"></i> ' + config.modeHint;
+                financialTargetLabel.textContent = config.financialLabel;
+
+                if (config.showYear) {
+                    targetYearWrapper.classList.remove('d-none');
+                    targetYearInput.disabled = false;
+                    targetYearInput.required = true;
+                    if (!targetYearInput.value) {
+                        targetYearInput.value = currentYear;
+                    }
+                } else {
+                    targetYearWrapper.classList.add('d-none');
+                    targetYearInput.required = false;
+                    targetYearInput.disabled = true;
+                    targetYearInput.value = '';
+                }
+            }
+
+            typeSelect.addEventListener('change', applyTypeConfig);
+            applyTypeConfig();
+        });
+    </script>
+}

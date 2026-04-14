@@ -138,6 +138,8 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<KPI>().HasOne<EvaluationPeriod>().WithMany().HasForeignKey(k => k.PeriodId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<KPI>().HasOne<KPIProperty>().WithMany().HasForeignKey(k => k.PropertyId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<KPI>().HasOne<KPIType>().WithMany().HasForeignKey(k => k.KPITypeId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<KPI>().HasOne<OKR>().WithMany().HasForeignKey(k => k.OKRId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<KPI>().HasOne<OKRKeyResult>().WithMany().HasForeignKey(k => k.OKRKeyResultId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<KPI>().HasOne<Employee>().WithMany().HasForeignKey(k => k.AssignerId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<KPI>().HasOne<Status>().WithMany().HasForeignKey(k => k.StatusId).OnDelete(DeleteBehavior.NoAction);
 

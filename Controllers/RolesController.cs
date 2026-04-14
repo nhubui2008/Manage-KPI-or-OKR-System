@@ -154,7 +154,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 // Quy tắc thưởng
                 "BONUSRULES_VIEW", "BONUSRULES_CREATE", "BONUSRULES_EDIT", "BONUSRULES_DELETE",
                 // Sứ mệnh & Tầm nhìn
-                "MISSIONS_VIEW", "MISSIONS_CREATE", "MISSIONS_DELETE",
+                "MISSIONS_VIEW", "MISSIONS_CREATE", "MISSIONS_EDIT", "MISSIONS_DELETE",
                 // Người dùng hệ thống
                 "SYSUSERS_VIEW", "SYSUSERS_CREATE", "SYSUSERS_EDIT", "SYSUSERS_DELETE",
                 // Vai trò (Roles)

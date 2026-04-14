@@ -10,6 +10,10 @@
     var periodsDict = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
     var kpiTypesList = ViewBag.KPITypes as List<Manage_KPI_or_OKR_System.Models.KPIType> ?? new List<Manage_KPI_or_OKR_System.Models.KPIType>();
     var kpiTypesDict = kpiTypesList.ToDictionary(t => t.Id, t => t.TypeName ?? "N/A");
+    var okrsList = ViewBag.OKRs as List<Manage_KPI_or_OKR_System.Models.OKR> ?? new List<Manage_KPI_or_OKR_System.Models.OKR>();
+    var okrKeyResultsList = ViewBag.OKRKeyResults as List<Manage_KPI_or_OKR_System.Models.OKRKeyResult> ?? new List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>();
+    var okrNamesDict = ViewBag.OKRNames as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var okrKeyResultNamesDict = ViewBag.OKRKeyResultNames as Dictionary<int, string> ?? new Dictionary<int, string>();
     var latestProgress = ViewBag.LatestProgress as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
     var allocatedKpiCount = Model?.Count(k => assignments.ContainsKey(k.Id) || departmentAssignments.ContainsKey(k.Id)) ?? 0;
     var measurementUnits = new[] {
@@ -201,6 +205,26 @@
                                         </div>
                                         <div>
                                             <div class="fw-bold text-dark mb-1">@kpi.KPIName</div>
+                                            @if (kpi.OKRId.HasValue && okrNamesDict.ContainsKey(kpi.OKRId.Value))
+                                            {
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
+                                                        <i class="bi bi-diagram-3 me-1"></i>@okrNamesDict[kpi.OKRId.Value]
+                                                    </span>
+                                                    @if (kpi.OKRKeyResultId.HasValue && okrKeyResultNamesDict.ContainsKey(kpi.OKRKeyResultId.Value))
+                                                    {
+                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                                                            <i class="bi bi-check2-circle me-1"></i>@okrKeyResultNamesDict[kpi.OKRKeyResultId.Value]
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-light text-muted border px-2 py-1">
+                                                    <i class="bi bi-unlink me-1"></i>KPI độc lập
+                                                </span>
+                                            }
                                         </div>
                                     </div>
                                 </td>
@@ -378,7 +402,7 @@
             <div class="modal-body p-4">
                 <form asp-controller="KPIs" asp-action="Create" method="post">
                     <h6 class="fw-bold text-primary mb-3">Thông tin chung</h6>
-                    <div class="row g-3 mb-4">
+                    <div class="row g-3 mb-4" data-okr-link-scope>
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Tên KPI <span class="text-danger">*</span></label>
                             <input type="text" name="kpi.KPIName" class="form-control" placeholder="VD: Doanh thu bán hàng tháng" required>
@@ -401,6 +425,31 @@
                                     <option value="@kvp.Key">@kvp.Value</option>
                                 }
                             </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Liên kết OKR <span class="text-muted">(tùy chọn)</span></label>
+                            <select name="kpi.OKRId" class="form-select js-okr-select">
+                                <option value="">-- Không liên kết OKR --</option>
+                                @foreach (var okr in okrsList)
+                                {
+                                    <option value="@okr.Id">@okr.ObjectiveName</option>
+                                }
+                            </select>
+                            <div class="form-text">KPI có thể độc lập nếu không gắn với OKR cụ thể.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Key Result <span class="text-muted">(tùy chọn)</span></label>
+                            <select name="kpi.OKRKeyResultId" class="form-select js-kr-select">
+                                <option value="">-- Không liên kết Key Result --</option>
+                                @foreach (var kr in okrKeyResultsList)
+                                {
+                                    var parentOkrName = kr.OKRId.HasValue && okrNamesDict.ContainsKey(kr.OKRId.Value)
+                                        ? okrNamesDict[kr.OKRId.Value]
+                                        : "OKR";
+                                    <option value="@kr.Id" data-okr-id="@kr.OKRId">@parentOkrName - @kr.KeyResultName</option>
+                                }
+                            </select>
+                            <div class="form-text">Danh sách Key Result sẽ đổi theo OKR đã chọn.</div>
                         </div>
                     </div>
 
@@ -498,6 +547,57 @@
             }
         });
     });
+
+    function setupOkrLinkScope(scope) {
+        const okrSelect = scope.querySelector('.js-okr-select');
+        const keyResultSelect = scope.querySelector('.js-kr-select');
+        if (!okrSelect || !keyResultSelect) return;
+
+        const allKeyResults = Array.from(keyResultSelect.querySelectorAll('option[data-okr-id]')).map(option => ({
+            value: option.value,
+            text: option.textContent,
+            okrId: option.dataset.okrId
+        }));
+
+        function filterKeyResults() {
+            const selectedOkrId = okrSelect.value;
+            const selectedKeyResultId = keyResultSelect.value;
+            const matchingKeyResults = allKeyResults.filter(option => option.okrId === selectedOkrId);
+
+            keyResultSelect.innerHTML = '';
+            keyResultSelect.disabled = !selectedOkrId;
+
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = !selectedOkrId
+                ? '-- Chọn OKR trước --'
+                : matchingKeyResults.length
+                    ? '-- Không liên kết Key Result --'
+                    : '-- OKR này chưa có Key Result --';
+            keyResultSelect.appendChild(placeholder);
+
+            matchingKeyResults.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.value;
+                option.textContent = item.text;
+                option.dataset.okrId = item.okrId;
+                keyResultSelect.appendChild(option);
+            });
+
+            if (matchingKeyResults.some(item => item.value === selectedKeyResultId)) {
+                keyResultSelect.value = selectedKeyResultId;
+            }
+        }
+
+        okrSelect.addEventListener('change', filterKeyResults);
+        keyResultSelect.addEventListener('change', function () {
+            filterKeyResults();
+        });
+
+        filterKeyResults();
+    }
+
+    document.querySelectorAll('[data-okr-link-scope]').forEach(setupOkrLinkScope);
 </script>
 
 </div>
