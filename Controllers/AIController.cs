@@ -99,6 +99,31 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
         }
 
+        [HttpGet]
+        [HasPermission("KPIS_CREATE")]
+        public async Task<IActionResult> SuggestKpiOptions([FromQuery] SuggestKpiOptionsRequest request)
+        {
+            if (User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Sales") || User.IsInRole("sales"))
+            {
+                return StatusCode(403, new SuggestKpiOptionsResponse { Success = false, Warnings = { "Vai tro hien tai khong duoc phep dung AI de goi y KPI." } });
+            }
+
+            try
+            {
+                var response = await _dataService.GetKpiSuggestionOptionsAsync(User, request);
+                return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, new SuggestKpiOptionsResponse { Success = false, Warnings = { ex.Message } });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load KPI suggestion options");
+                return StatusCode(500, new SuggestKpiOptionsResponse { Success = false, Warnings = { "Khong the tai danh sach lua chon cho AI goi y KPI." } });
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> AnalyzePerformance([FromBody] AnalyzePerformanceRequest request, CancellationToken cancellationToken)
         {

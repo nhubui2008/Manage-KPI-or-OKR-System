@@ -548,7 +548,7 @@
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Kỳ đánh giá</label>
                         <select id="aiSuggestPeriodId" class="form-select">
-                            <option value="">-- Kỳ gần nhất --</option>
+                            <option value="">-- Kỳ được phân công gần nhất --</option>
                             @foreach (var p in periodsDict)
                             {
                                 <option value="@p.Key">@p.Value</option>
@@ -574,11 +574,12 @@
                                 var parentOkrName = kr.OKRId.HasValue && okrNamesDict.ContainsKey(kr.OKRId.Value)
                                     ? okrNamesDict[kr.OKRId.Value]
                                     : "OKR";
-                                <option value="@kr.Id">@parentOkrName - @kr.KeyResultName</option>
+                                <option value="@kr.Id" data-okr-id="@kr.OKRId">@parentOkrName - @kr.KeyResultName</option>
                             }
                         </select>
                     </div>
                 </div>
+                <div id="aiSuggestOptionsStatus" class="text-muted small mb-3"></div>
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <p class="text-muted small mb-0">AI sẽ tạo bản nháp KPI. Bạn chọn “Áp dụng” rồi kiểm tra lại trước khi lưu.</p>
                     <button type="button" class="btn btn-primary" id="aiRunKpiSuggestBtn">
@@ -681,6 +682,183 @@
     }
 
     document.querySelectorAll('[data-okr-link-scope]').forEach(setupOkrLinkScope);
+
+    const aiSuggestState = {
+        keyResults: [],
+        requestId: 0
+    };
+
+    function getAiSuggestControls() {
+        return {
+            employee: document.getElementById('aiSuggestEmployeeId'),
+            department: document.getElementById('aiSuggestDepartmentId'),
+            period: document.getElementById('aiSuggestPeriodId'),
+            okr: document.getElementById('aiSuggestOkrId'),
+            kr: document.getElementById('aiSuggestKrId'),
+            status: document.getElementById('aiSuggestOptionsStatus')
+        };
+    }
+
+    function setSelectOptions(select, placeholderText, items, selectedValue, disableWhenEmpty = false) {
+        if (!select) return;
+
+        const selected = selectedValue ? String(selectedValue) : '';
+        select.innerHTML = '';
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = placeholderText;
+        select.appendChild(placeholder);
+
+        (items || []).forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item.text;
+            if (item.parentId !== null && item.parentId !== undefined) {
+                option.dataset.okrId = item.parentId;
+            }
+            if (item.departmentId !== null && item.departmentId !== undefined) {
+                option.dataset.departmentId = item.departmentId;
+            }
+            select.appendChild(option);
+        });
+
+        if ((items || []).some(item => String(item.id) === selected)) {
+            select.value = selected;
+        }
+
+        select.disabled = disableWhenEmpty && !(items || []).length;
+    }
+
+    function renderAiKeyResultOptions(selectedKeyResultId) {
+        const controls = getAiSuggestControls();
+        if (!controls.kr) return;
+
+        const okrId = controls.okr?.value || '';
+        const matchingKeyResults = okrId
+            ? aiSuggestState.keyResults.filter(item => String(item.parentId) === okrId)
+            : [];
+
+        const placeholder = !okrId
+            ? '-- Chọn OKR trước --'
+            : matchingKeyResults.length
+                ? '-- Không bắt buộc --'
+                : '-- OKR này chưa có Key Result --';
+
+        setSelectOptions(controls.kr, placeholder, matchingKeyResults, selectedKeyResultId, true);
+        controls.kr.disabled = !okrId || !matchingKeyResults.length;
+    }
+
+    function setAiSuggestStatus(message) {
+        const status = getAiSuggestControls().status;
+        if (status) {
+            status.textContent = message || '';
+        }
+    }
+
+    async function refreshAiSuggestOptions(source) {
+        const controls = getAiSuggestControls();
+        if (!controls.employee || !controls.department || !controls.period || !controls.okr || !controls.kr) return;
+
+        if (source === 'department') {
+            controls.employee.value = '';
+        }
+
+        const previous = {
+            employeeId: controls.employee.value,
+            departmentId: controls.department.value,
+            periodId: controls.period.value,
+            okrId: controls.okr.value,
+            krId: controls.kr.value
+        };
+
+        const params = new URLSearchParams();
+        if (previous.employeeId) params.set('employeeId', previous.employeeId);
+        if (previous.departmentId) params.set('departmentId', previous.departmentId);
+
+        const currentRequestId = ++aiSuggestState.requestId;
+        setAiSuggestStatus('Đang lọc dữ liệu theo lựa chọn hiện tại...');
+
+        try {
+            const queryString = params.toString();
+            const response = await fetch(queryString ? `/AI/SuggestKpiOptions?${queryString}` : '/AI/SuggestKpiOptions');
+            const data = await response.json();
+
+            if (currentRequestId !== aiSuggestState.requestId) return;
+
+            if (!response.ok || data.success === false) {
+                setAiSuggestStatus('');
+                Swal.fire('Không thể tải dữ liệu', data.warnings?.[0] || 'Không thể lọc danh sách cho AI gợi ý KPI.', 'warning');
+                return;
+            }
+
+            const selectedDepartmentId = data.selectedDepartmentId ? String(data.selectedDepartmentId) : '';
+            const selectedEmployeeId = (data.employees || []).some(item => String(item.id) === previous.employeeId)
+                ? previous.employeeId
+                : '';
+            const selectedPeriodId = (data.periods || []).some(item => String(item.id) === previous.periodId)
+                ? previous.periodId
+                : '';
+            const selectedOkrId = (data.okrs || []).some(item => String(item.id) === previous.okrId)
+                ? previous.okrId
+                : '';
+
+            setSelectOptions(controls.department, '-- Không chọn phòng ban cụ thể --', data.departments || [], selectedDepartmentId);
+            setSelectOptions(controls.employee, '-- Không chọn nhân viên cụ thể --', data.employees || [], selectedEmployeeId);
+            setSelectOptions(
+                controls.period,
+                (data.periods || []).length ? '-- Kỳ được phân công gần nhất --' : '-- Chưa có kỳ được phân công --',
+                data.periods || [],
+                selectedPeriodId,
+                true);
+            setSelectOptions(
+                controls.okr,
+                (data.okrs || []).length ? '-- Không bắt buộc --' : '-- Chưa có OKR được phân công --',
+                data.okrs || [],
+                selectedOkrId,
+                true);
+
+            aiSuggestState.keyResults = data.keyResults || [];
+            renderAiKeyResultOptions(previous.krId);
+
+            if (data.warnings?.length) {
+                setAiSuggestStatus(data.warnings[0]);
+            } else if (previous.employeeId || selectedDepartmentId) {
+                setAiSuggestStatus('Dữ liệu đang được lọc theo phân công của nhân viên hoặc phòng ban đã chọn.');
+            } else {
+                setAiSuggestStatus('');
+            }
+        } catch {
+            if (currentRequestId !== aiSuggestState.requestId) return;
+            setAiSuggestStatus('');
+            Swal.fire('Lỗi', 'Không thể tải danh sách cho AI gợi ý KPI.', 'error');
+        }
+    }
+
+    function setupAiSuggestControls() {
+        const controls = getAiSuggestControls();
+        if (!controls.employee || !controls.department || !controls.okr) return;
+
+        controls.employee.addEventListener('change', function () {
+            refreshAiSuggestOptions('employee');
+        });
+
+        controls.department.addEventListener('change', function () {
+            refreshAiSuggestOptions('department');
+        });
+
+        controls.okr.addEventListener('change', function () {
+            renderAiKeyResultOptions();
+        });
+
+        document.getElementById('aiKpiSuggestModal')?.addEventListener('shown.bs.modal', function () {
+            refreshAiSuggestOptions('modal');
+        });
+
+        renderAiKeyResultOptions();
+    }
+
+    setupAiSuggestControls();
 
     document.getElementById('aiRunKpiSuggestBtn')?.addEventListener('click', async function () {
         const btn = this;

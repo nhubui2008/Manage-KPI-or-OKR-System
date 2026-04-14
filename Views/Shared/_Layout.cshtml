@@ -298,14 +298,14 @@
 
                     <div class="header-right">
                         <div class="dropdown">
-                            <button class="header-icon-btn" title="Thông báo hệ thống" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="header-icon-btn" title="Thông báo hệ thống" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                 <i class="bi bi-bell"></i>
                                 @if(unreadAlerts + unreadAiAlerts > 0)
                                 {
                                     <span class="badge-dot"></span>
                                 }
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-0" data-bs-auto-close="outside" style="width: 360px; border-radius: 12px; overflow: hidden; margin-top: 10px;">
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-0" style="width: 360px; border-radius: 12px; overflow: hidden; margin-top: 10px;">
                                 <li class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
                                     <span class="fw-bold fs-6">Thông báo</span>
                                     @if(unreadAlerts + unreadAiAlerts > 0) { <span class="badge bg-danger rounded-pill">@(unreadAlerts + unreadAiAlerts) mới</span> }

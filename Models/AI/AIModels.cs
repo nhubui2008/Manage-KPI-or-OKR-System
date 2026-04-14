@@ -31,6 +31,32 @@ namespace Manage_KPI_or_OKR_System.Models.AI
         public int? PeriodId { get; set; }
     }
 
+    public class SuggestKpiOptionsRequest
+    {
+        public int? EmployeeId { get; set; }
+        public int? DepartmentId { get; set; }
+    }
+
+    public class SuggestKpiOptionItem
+    {
+        public int Id { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public int? ParentId { get; set; }
+        public int? DepartmentId { get; set; }
+    }
+
+    public class SuggestKpiOptionsResponse
+    {
+        public bool Success { get; set; } = true;
+        public int? SelectedDepartmentId { get; set; }
+        public List<SuggestKpiOptionItem> Employees { get; set; } = new();
+        public List<SuggestKpiOptionItem> Departments { get; set; } = new();
+        public List<SuggestKpiOptionItem> Periods { get; set; } = new();
+        public List<SuggestKpiOptionItem> Okrs { get; set; } = new();
+        public List<SuggestKpiOptionItem> KeyResults { get; set; } = new();
+        public List<string> Warnings { get; set; } = new();
+    }
+
     public class SuggestedKpi
     {
         public string? Name { get; set; }
