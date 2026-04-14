@@ -13,5 +13,21 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    const usernameInput = document.getElementById('username');
+    const demoAccountButtons = document.querySelectorAll('.demo-account');
+
+    demoAccountButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+            if (usernameInput && !usernameInput.readOnly) {
+                usernameInput.value = button.dataset.username || '';
+                usernameInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            if (passwordInput) {
+                passwordInput.value = button.dataset.password || '';
+                passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+    });
 
 });

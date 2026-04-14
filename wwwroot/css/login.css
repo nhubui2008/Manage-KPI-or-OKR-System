@@ -134,6 +134,76 @@ body, html {
     min-height: 18px;
 }
 
+.demo-accounts {
+    border: 1px solid #d8e6fb;
+    border-radius: 8px;
+    background: #f8fbff;
+    padding: 14px;
+    margin-bottom: 20px;
+}
+
+.demo-accounts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    color: #1a2940;
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.demo-accounts-header small {
+    color: #5f6f86;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.demo-account-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.demo-account {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #1a2940;
+    padding: 9px 10px;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.demo-account:hover,
+.demo-account:focus {
+    border-color: #1a73e8;
+    background: #eef5ff;
+    box-shadow: 0 3px 10px rgba(26, 115, 232, 0.1);
+}
+
+.demo-account span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.demo-account small {
+    flex: 0 0 auto;
+    color: #6b7c93;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
 .comfort-options {
     display: flex;
     justify-content: space-between;
@@ -391,5 +461,21 @@ input[type="text"] ~ .gentle-toggle .eye-closed { display: block; }
 
 a, a:hover, a:focus, a:active {
     text-decoration: none !important;
+}
+
+@media (max-width: 480px) {
+    .soft-card {
+        margin: 16px;
+        padding: 36px 20px 28px 20px;
+    }
+
+    .demo-accounts-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .demo-account-list {
+        grid-template-columns: 1fr;
+    }
 }
 

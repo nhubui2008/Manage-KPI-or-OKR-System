@@ -113,6 +113,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var positions = await _context.Positions
                 .Where(p => positionIds.Contains(p.Id))
                 .ToDictionaryAsync(p => p.Id, p => p.PositionName);
+            ViewBag.Positions = await _context.Positions
+                .Where(p => p.IsActive == true)
+                .OrderBy(p => p.RankLevel)
+                .ThenBy(p => p.PositionName)
+                .ToListAsync();
+
+            var activeEmployeeIdsInDept = employeeIds.ToHashSet();
+            ViewBag.AvailableEmployees = await _context.Employees
+                .Where(e => e.IsActive == true && !activeEmployeeIdsInDept.Contains(e.Id))
+                .OrderBy(e => e.FullName)
+                .ToListAsync();
 
             ViewBag.EmployeeList = assignments.Select(a =>
             {
@@ -141,6 +152,71 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.AssignedKPIs = await _context.KPIs.Where(k => kpiIds.Contains(k.Id)).ToListAsync();
 
             return View(dept);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [HasPermission("DEPARTMENTS_EDIT")]
+        public async Task<IActionResult> AddEmployee(int departmentId, int employeeId, int positionId)
+        {
+            var department = await _context.Departments
+                .FirstOrDefaultAsync(d => d.Id == departmentId && d.IsActive == true);
+            if (department == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy phòng ban cần thêm nhân viên.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var employee = await _context.Employees
+                .FirstOrDefaultAsync(e => e.Id == employeeId && e.IsActive == true);
+            if (employee == null)
+            {
+                TempData["ErrorMessage"] = "Nhân viên được chọn không tồn tại hoặc đã ngừng hoạt động.";
+                return RedirectToAction(nameof(Details), new { id = departmentId });
+            }
+
+            var position = await _context.Positions
+                .FirstOrDefaultAsync(p => p.Id == positionId && p.IsActive == true);
+            if (position == null)
+            {
+                TempData["ErrorMessage"] = "Chức vụ được chọn không hợp lệ.";
+                return RedirectToAction(nameof(Details), new { id = departmentId });
+            }
+
+            var currentAssignments = await _context.EmployeeAssignments
+                .Where(a => a.EmployeeId == employeeId && a.IsActive == true)
+                .ToListAsync();
+
+            var existingInDepartment = currentAssignments
+                .FirstOrDefault(a => a.DepartmentId == departmentId);
+
+            if (existingInDepartment != null)
+            {
+                existingInDepartment.PositionId = positionId;
+                existingInDepartment.EffectiveDate = DateTime.Today;
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Đã cập nhật chức vụ của {employee.FullName} trong phòng ban {department.DepartmentName}.";
+                return RedirectToAction(nameof(Details), new { id = departmentId });
+            }
+
+            foreach (var assignment in currentAssignments)
+            {
+                assignment.IsActive = false;
+            }
+
+            _context.EmployeeAssignments.Add(new EmployeeAssignment
+            {
+                EmployeeId = employeeId,
+                DepartmentId = departmentId,
+                PositionId = positionId,
+                EffectiveDate = DateTime.Today,
+                IsActive = true
+            });
+
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = $"Đã thêm {employee.FullName} vào phòng ban {department.DepartmentName}.";
+
+            return RedirectToAction(nameof(Details), new { id = departmentId });
         }
 
 

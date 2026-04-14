@@ -28,6 +28,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewData["CurrentFilter"] = searchString;
 
             var query = _context.OKRs.Where(o => o.IsActive == true).Include(o => o.KeyResults).AsQueryable();
+            int? currentEmployeeId = null;
+            var allocatedOkrIds = new List<int>();
+            var departmentOkrIds = new List<int>();
 
             if (!string.IsNullOrEmpty(searchString))
             {
@@ -35,26 +38,54 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 query = query.Where(o => o.ObjectiveName != null && o.ObjectiveName.Contains(searchString));
             }
 
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdStr, out int userId))
+            {
+                var employee = await _context.Employees
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(e => e.SystemUserId == userId && e.IsActive == true);
+
+                if (employee != null)
+                {
+                    currentEmployeeId = employee.Id;
+
+                    allocatedOkrIds = await _context.OKR_Employee_Allocations
+                        .AsNoTracking()
+                        .Where(a => a.EmployeeId == employee.Id)
+                        .Select(a => a.OKRId)
+                        .ToListAsync();
+
+                    var departmentIds = await _context.EmployeeAssignments
+                        .AsNoTracking()
+                        .Where(a => a.EmployeeId == employee.Id && a.IsActive == true && a.DepartmentId.HasValue)
+                        .Select(a => a.DepartmentId!.Value)
+                        .ToListAsync();
+
+                    if (departmentIds.Any())
+                    {
+                        departmentOkrIds = await _context.OKR_Department_Allocations
+                            .AsNoTracking()
+                            .Where(a => departmentIds.Contains(a.DepartmentId))
+                            .Select(a => a.OKRId)
+                            .ToListAsync();
+                    }
+                }
+            }
+
             // Filter OKRs if Sales or Employee
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales"))
             {
-                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (int.TryParse(userIdStr, out int userId))
+                if (currentEmployeeId.HasValue)
                 {
-                    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
-                    if (employee != null)
-                    {
-                        var allocatedOkrIds = await _context.OKR_Employee_Allocations
-                            .Where(a => a.EmployeeId == employee.Id)
-                            .Select(a => a.OKRId)
-                            .ToListAsync();
-                        query = query.Where(o => allocatedOkrIds.Contains(o.Id) || o.CreatedById == employee.Id);
-                    }
-                    else
-                    {
-                        query = query.Where(o => false);
-                    }
+                    query = query.Where(o =>
+                        allocatedOkrIds.Contains(o.Id) ||
+                        departmentOkrIds.Contains(o.Id) ||
+                        o.CreatedById == currentEmployeeId.Value);
+                }
+                else
+                {
+                    query = query.Where(o => false);
                 }
             }
 
@@ -82,6 +113,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             ViewBag.KeyResults = krDict;
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.CurrentEmployeeId = currentEmployeeId;
+            ViewBag.AllocatedOkrIds = allocatedOkrIds;
+            ViewBag.DepartmentOkrIds = departmentOkrIds;
 
             // Lấy dữ liệu danh mục cho modal Tạo OKR
             ViewBag.Missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
@@ -185,22 +219,37 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [HasPermission("OKRS_EDIT")]
+        [HasPermission("OKRS_EDIT", "EMPLOYEE_UPDATE_KPI_PROGRESS")]
         public async Task<IActionResult> UpdateKeyResultProgress(int krId, decimal currentValue)
         {
             var kr = await _context.OKRKeyResults.FindAsync(krId);
-            if (kr != null)
+            if (kr == null)
             {
-                kr.CurrentValue = currentValue;
-                
-                // Calculate Status using ProgressHelper
-                decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, kr.TargetValue ?? 0, kr.IsInverse);
-                kr.ResultStatus = ProgressHelper.GetResultStatus(progress);
-
-                _context.Update(kr);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã cập nhật tiến độ Key Result và Đánh giá thành công!";
+                TempData["ErrorMessage"] = "Không tìm thấy Key Result cần cập nhật.";
+                return RedirectToAction(nameof(Index));
             }
+
+            if (!kr.OKRId.HasValue || !await CanCurrentUserUpdateOkrProgressAsync(kr.OKRId.Value))
+            {
+                return Forbid();
+            }
+
+            if (currentValue < 0)
+            {
+                TempData["ErrorMessage"] = "Giá trị tiến độ không được nhỏ hơn 0.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            kr.CurrentValue = currentValue;
+            
+            // Calculate Status using ProgressHelper
+            decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, kr.TargetValue ?? 0, kr.IsInverse);
+            kr.ResultStatus = ProgressHelper.GetResultStatus(progress);
+
+            _context.Update(kr);
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã cập nhật tiến độ Key Result và đánh giá thành công!";
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -381,6 +430,67 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     unit = kr.Unit
                 }).ToList()
             };
+        }
+
+        private bool IsRestrictedOkrRole()
+        {
+            return User.IsInRole("Employee") || User.IsInRole("employee") ||
+                   User.IsInRole("Sales") || User.IsInRole("sales");
+        }
+
+        private async Task<Employee?> GetCurrentEmployeeAsync()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out int userId))
+            {
+                return null;
+            }
+
+            return await _context.Employees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.SystemUserId == userId && e.IsActive == true);
+        }
+
+        private async Task<bool> CanCurrentUserUpdateOkrProgressAsync(int okrId)
+        {
+            if (!IsRestrictedOkrRole())
+            {
+                return true;
+            }
+
+            var employee = await GetCurrentEmployeeAsync();
+            if (employee == null)
+            {
+                return false;
+            }
+
+            var hasEmployeeAllocation = await _context.OKR_Employee_Allocations
+                .AsNoTracking()
+                .AnyAsync(a => a.OKRId == okrId && a.EmployeeId == employee.Id);
+
+            if (hasEmployeeAllocation)
+            {
+                return true;
+            }
+
+            var departmentIds = await _context.EmployeeAssignments
+                .AsNoTracking()
+                .Where(a => a.EmployeeId == employee.Id && a.IsActive == true && a.DepartmentId.HasValue)
+                .Select(a => a.DepartmentId!.Value)
+                .ToListAsync();
+
+            var hasDepartmentAllocation = departmentIds.Any() && await _context.OKR_Department_Allocations
+                .AsNoTracking()
+                .AnyAsync(a => a.OKRId == okrId && departmentIds.Contains(a.DepartmentId));
+
+            if (hasDepartmentAllocation)
+            {
+                return true;
+            }
+
+            return await _context.OKRs
+                .AsNoTracking()
+                .AnyAsync(o => o.Id == okrId && o.CreatedById == employee.Id);
         }
 
         [HttpPost]

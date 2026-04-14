@@ -10,6 +10,9 @@
     var employeeList = ViewBag.EmployeeList as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var childDepts = ViewBag.ChildDepartments as IEnumerable<Manage_KPI_or_OKR_System.Models.Department> ?? Enumerable.Empty<Manage_KPI_or_OKR_System.Models.Department>();
     var assignedKPIs = ViewBag.AssignedKPIs as IEnumerable<Manage_KPI_or_OKR_System.Models.KPI> ?? Enumerable.Empty<Manage_KPI_or_OKR_System.Models.KPI>();
+    var availableEmployees = ViewBag.AvailableEmployees as IEnumerable<Employee> ?? Enumerable.Empty<Employee>();
+    var positions = ViewBag.Positions as IEnumerable<Position> ?? Enumerable.Empty<Position>();
+    var canEditDepartments = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.HasClaim("Permission", "DEPARTMENTS_EDIT");
 
     var statusText = Model.IsActive == true ? "Hoạt động" : "Ngừng hoạt động";
     var statusClass = Model.IsActive == true ? "active" : "inactive";
@@ -36,11 +39,33 @@
             <a asp-action="Index" class="btn-outline-custom d-flex align-items-center px-3 py-2" style="border-radius: 10px; text-decoration: none;">
                 <i class="bi bi-arrow-left me-1"></i> Quay lại
             </a>
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-primary-custom d-flex align-items-center px-3 py-2" style="border-radius: 10px; text-decoration: none;">
-                <i class="bi bi-pencil me-1"></i> Chỉnh sửa
-            </a>
+            @if (canEditDepartments)
+            {
+                <button type="button" class="btn-outline-custom d-flex align-items-center px-3 py-2" data-bs-toggle="modal" data-bs-target="#addEmployeeModal" style="border-radius: 10px;">
+                    <i class="bi bi-person-plus me-1"></i> Thêm nhân viên
+                </button>
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn-primary-custom d-flex align-items-center px-3 py-2" style="border-radius: 10px; text-decoration: none;">
+                    <i class="bi bi-pencil me-1"></i> Chỉnh sửa
+                </a>
+            }
         </div>
     </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
     <!-- Department Banner -->
     <div class="content-card mb-4" style="overflow: hidden;">
@@ -258,6 +283,12 @@
                         </div>
                         Danh sách nhân viên (@employeeCount)
                     </h5>
+                    @if (canEditDepartments)
+                    {
+                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                            <i class="bi bi-person-plus me-1"></i> Thêm nhân viên
+                        </button>
+                    }
                 </div>
                 <div class="card-body-custom p-0">
                     @if (employeeList.Any())
@@ -332,6 +363,69 @@
         </div>
     </div>
 </div>
+
+@if (canEditDepartments)
+{
+    <div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold text-dark" id="addEmployeeModalLabel">
+                        <i class="bi bi-person-plus text-primary me-2"></i>Thêm nhân viên vào phòng ban
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form asp-action="AddEmployee" method="post">
+                        <input type="hidden" name="departmentId" value="@Model.Id" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Phòng ban</label>
+                            <input type="text" class="form-control bg-light" value="@Model.DepartmentName" readonly />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nhân viên <span class="text-danger">*</span></label>
+                            <select name="employeeId" class="form-select" required>
+                                <option value="">-- Chọn nhân viên --</option>
+                                @foreach (var employee in availableEmployees)
+                                {
+                                    <option value="@employee.Id">@employee.FullName (@employee.EmployeeCode)</option>
+                                }
+                            </select>
+                            @if (!availableEmployees.Any())
+                            {
+                                <div class="form-text text-muted">Tất cả nhân viên hoạt động hiện đã thuộc phòng ban này.</div>
+                            }
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Chức vụ <span class="text-danger">*</span></label>
+                            <select name="positionId" class="form-select" required>
+                                <option value="">-- Chọn chức vụ --</option>
+                                @foreach (var position in positions)
+                                {
+                                    <option value="@position.Id">@position.PositionName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="alert alert-info border-0 small">
+                            Nếu nhân viên đang thuộc phòng ban khác, hệ thống sẽ chuyển nhân viên sang phòng ban này và lưu lại lịch sử phân công cũ.
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" disabled="@(!availableEmployees.Any() || !positions.Any())">
+                                Thêm vào phòng ban
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 <style>
     /* Header Icons */

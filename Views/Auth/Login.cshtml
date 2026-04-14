@@ -65,6 +65,46 @@
         {
             <span class="gentle-error">@ViewBag.Error</span>
         }
+        <div class="demo-accounts" aria-label="Tài khoản demo">
+            <div class="demo-accounts-header">
+                <span>Tài khoản demo</span>
+                <small>Mật khẩu chung: <strong>123</strong></small>
+            </div>
+            <div class="demo-account-list">
+                <button type="button" class="demo-account" data-username="admin" data-password="123">
+                    <span>admin</span>
+                    <small>Admin</small>
+                </button>
+                <button type="button" class="demo-account" data-username="director" data-password="123">
+                    <span>director</span>
+                    <small>Director</small>
+                </button>
+                <button type="button" class="demo-account" data-username="sales.manager" data-password="123">
+                    <span>sales.manager</span>
+                    <small>Manager</small>
+                </button>
+                <button type="button" class="demo-account" data-username="hr.manager" data-password="123">
+                    <span>hr.manager</span>
+                    <small>HR</small>
+                </button>
+                <button type="button" class="demo-account" data-username="sales01" data-password="123">
+                    <span>sales01</span>
+                    <small>Sales</small>
+                </button>
+                <button type="button" class="demo-account" data-username="sales02" data-password="123">
+                    <span>sales02</span>
+                    <small>Sales</small>
+                </button>
+                <button type="button" class="demo-account" data-username="ops01" data-password="123">
+                    <span>ops01</span>
+                    <small>Employee</small>
+                </button>
+                <button type="button" class="demo-account" data-username="tech01" data-password="123">
+                    <span>tech01</span>
+                    <small>Employee</small>
+                </button>
+            </div>
+        </div>
         <form asp-controller="Auth" asp-action="Login" method="post" class="comfort-form" id="loginForm" novalidate>
             <div class="soft-field">
                 <div class="field-container">

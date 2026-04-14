@@ -5,6 +5,13 @@
     var keyResultsDict = ViewBag.KeyResults as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>> ??
                          new Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>>();
     var currentFilter = ViewData["CurrentFilter"] as string;
+    bool isAdminRole = User.IsInRole("Admin") || User.IsInRole("Administrator");
+    bool isRestrictedRole = User.IsInRole("Employee") || User.IsInRole("employee") ||
+                            User.IsInRole("Sales") || User.IsInRole("sales");
+    bool canCreateOkr = isAdminRole || User.HasClaim("Permission", "OKRS_CREATE");
+    bool canEditOkr = isAdminRole || User.HasClaim("Permission", "OKRS_EDIT");
+    bool canDeleteOkr = isAdminRole || User.HasClaim("Permission", "OKRS_DELETE");
+    bool canUpdateOwnProgress = isAdminRole || User.HasClaim("Permission", "EMPLOYEE_UPDATE_KPI_PROGRESS");
     var measurementUnits = new[] {
         new { Value = "%", Text = "% - Tỷ lệ phần trăm" },
         new { Value = "VNĐ", Text = "VNĐ - Tiền tệ" },
@@ -35,7 +42,7 @@
             </div>
         </div>
         <div class="d-flex justify-content-end gap-2">
-            @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Sales") || User.IsInRole("sales")))
+            @if (canCreateOkr)
             {
                 <a asp-action="Create" class="text-decoration-none btn-primary-custom d-flex align-items-center">
                     <i class="bi bi-plus-lg me-1"></i> Tạo OKR mới
@@ -48,6 +55,12 @@
     {
         <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
         </div>
     }
 
@@ -81,8 +94,6 @@
                             var currentEmployeeId = ViewBag.CurrentEmployeeId as int?;
                             var allocatedIds = ViewBag.AllocatedOkrIds as List<int> ?? new List<int>();
                             var deptOkrIds = ViewBag.DepartmentOkrIds as List<int> ?? new List<int>();
-                            bool isRestrictedRole = User.IsInRole("Employee") || User.IsInRole("employee") || 
-                                                   User.IsInRole("Sales") || User.IsInRole("sales");
 
                             foreach (var okr in Model)
                             {
@@ -93,9 +104,7 @@
                                 bool isOwner = okr.CreatedById == currentEmployeeId;
                                 bool isAllocated = allocatedIds.Contains(okr.Id) || deptOkrIds.Contains(okr.Id);
                                 
-                                bool canManageStructure = !isRestrictedRole;
-                                bool canUpdateProgress = true; // All visible OKRs for restricted roles are relevant (Personal, Dept, or Strategic)
-                                bool canDelete = !isRestrictedRole;
+                                bool canUpdateProgress = canEditOkr || (canUpdateOwnProgress && (isOwner || isAllocated));
 
                                 // Sử dụng TotalProgress từ model đã được chuẩn hóa
                                 int okrProgressInt = (int)okr.TotalProgress;
@@ -136,24 +145,24 @@
                                                 </div>
                                             </div>
 
-                                            @if (canManageStructure || canDelete)
+                                            @if (canCreateOkr || canDeleteOkr)
                                             {
                                                 <div style="width: 45px;"></div>
                                             }
                                         </div>
 
-                                        @if (canManageStructure || canDelete)
+                                        @if (canCreateOkr || canDeleteOkr)
                                         {
                                             <div class="action-btns dropdown position-absolute" style="right: 50px; top: 50%; transform: translateY(-50%); z-index: 10;" onclick="event.stopPropagation();">
                                                 <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
                                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                                    @if (canManageStructure)
+                                                    @if (canCreateOkr)
                                                     {
                                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
                                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên</a></li>
                                                         <li><hr class="dropdown-divider"></li>
                                                     }
-                                                    @if (canDelete)
+                                                    @if (canDeleteOkr)
                                                     {
                                                         <li>
                                                             <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận xóa OKR này?');">
@@ -203,15 +212,18 @@
                                                                 </div>
                                                             </div>
 
-                                                            @if (canManageStructure || canUpdateProgress)
+                                                            @if (canEditOkr || canDeleteOkr || canUpdateProgress)
                                                             {
                                                                 <div class="d-flex gap-1">
-                                                                    @if (canManageStructure)
+                                                                    @if (canEditOkr)
                                                                     {
-                                                                        <button class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle" 
+                                                                        <button type="button" class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle" 
                                                                                 onclick="openEditKrModal(@kr.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.KeyResultName ?? "")), @(kr.TargetValue ?? 0), @(kr.CurrentValue ?? 0), @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.Unit ?? "")), @(kr.IsInverse.ToString().ToLower()))" title="Sửa KR">
                                                                             <i class="bi bi-pencil-square"></i>
                                                                         </button>
+                                                                    }
+                                                                    @if (canDeleteOkr)
+                                                                    {
                                                                         <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
                                                                             <button type="submit" class="btn btn-sm btn-light-danger text-danger border-0 rounded-circle" title="Xóa KR">
                                                                                 <i class="bi bi-trash"></i>
@@ -221,7 +233,7 @@
                                                                 </div>
                                                                 @if (canUpdateProgress)
                                                                 {
-                                                                    <button class="btn btn-sm btn-outline-primary rounded-circle" title="Cập nhật tiến độ" onclick="openUpdateProgressModal(@kr.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.KeyResultName ?? "")), @(kr.CurrentValue ?? 0), @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.Unit ?? "")))">
+                                                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-circle" title="Cập nhật tiến độ" onclick="openUpdateProgressModal(@kr.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.KeyResultName ?? "")), @(kr.CurrentValue ?? 0), @Html.Raw(System.Text.Json.JsonSerializer.Serialize(kr.Unit ?? "")))">
                                                                         <i class="bi bi-pencil"></i>
                                                                     </button>
                                                                 }
@@ -448,7 +460,7 @@
                         <label>Thực tế hiện tại</label>
                         <div class="input-wrapper">
                             <i class="bi bi-lightning-charge-fill"></i>
-                            <input type="number" step="0.01" name="currentValue" id="updateKrCurrentValue" class="form-control measurement-value-input" data-measurement-role="current" data-measurement-suffix-target="updateKrUnitDisplay" required>
+                            <input type="number" step="0.01" min="0" name="currentValue" id="updateKrCurrentValue" class="form-control measurement-value-input" data-measurement-role="current" data-measurement-suffix-target="updateKrUnitDisplay" required>
                             <span class="position-absolute end-0 top-50 translate-middle-y pe-4 fw-bold text-muted" id="updateKrUnitDisplay"></span>
                         </div>
                     </div>

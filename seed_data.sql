@@ -76,8 +76,7 @@ BEGIN TRY
     (2, 'Director', N'Ban giam doc, xem tong quan KPI/OKR va bao cao', 1, '2026-01-01T08:00:00', NULL),
     (3, 'Manager', N'Quan ly phong ban, tao va phan bo OKR/KPI', 1, '2026-01-01T08:00:00', NULL),
     (4, 'HR', N'Quan tri nhan su, ky danh gia, xep loai va thuong', 1, '2026-01-01T08:00:00', NULL),
-    (5, 'Sales', N'Nhan su phong Kinh Doanh, nhap check-in KPI thu cong', 1, '2026-01-01T08:00:00', NULL),
-    (6, 'Employee', N'Nhan vien thuc hien KPI/OKR ca nhan', 1, '2026-01-01T08:00:00', NULL);
+    (5, 'Employee', N'Nhan vien thuc hien KPI/OKR ca nhan', 1, '2026-01-01T08:00:00', NULL);
     SET IDENTITY_INSERT [dbo].[Roles] OFF;
 
     -- ==========================================
