@@ -120,7 +120,10 @@
                                                 {
                                                     foreach (var m in (ViewBag.Missions as IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>)!)
                                                     {
-                                                        <option value="@m.Id">Năm @m.TargetYear: @(m.Content?.Length > 60 ? m.Content.Substring(0, 60) + "..." : m.Content)</option>
+                                                        var labelPrefix = m.TargetYear.HasValue ? $"{m.TypeDisplayName} {m.TargetYear}" : m.TypeDisplayName;
+                                                        var content = m.Content ?? "";
+                                                        var shortContent = content.Length > 60 ? content.Substring(0, 60) + "..." : content;
+                                                        <option value="@m.Id">@labelPrefix: @shortContent</option>
                                                     }
                                                 }
                                             </select>

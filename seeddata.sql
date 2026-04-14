@@ -420,10 +420,10 @@ GO
 -- MODULE 13: MISSION VISIONS
 -- ============================================================
 SET IDENTITY_INSERT [MissionVisions] ON;
-INSERT INTO [MissionVisions] ([Id], [TargetYear], [Content], [FinancialTarget], [IsActive], [CreatedAt], [CreatedById])
+INSERT INTO [MissionVisions] ([Id], [TargetYear], [Content], [FinancialTarget], [IsActive], [CreatedAt], [CreatedById], [MissionVisionType])
 VALUES
-    (1, 2026, N'Trở thành doanh nghiệp hàng đầu trong lĩnh vực công nghệ tại Việt Nam', 50000000000.00, 1, GETDATE(), 2),
-    (2, 2026, N'Nâng cao chất lượng dịch vụ, đạt tỷ lệ hài lòng khách hàng trên 95%',   NULL,           1, GETDATE(), 2);
+    (1, 2026, N'Trở thành doanh nghiệp hàng đầu trong lĩnh vực công nghệ tại Việt Nam', 50000000000.00, 1, GETDATE(), 2, N'YearlyGoal'),
+    (2, 2026, N'Nâng cao chất lượng dịch vụ, đạt tỷ lệ hài lòng khách hàng trên 95%',   NULL,           1, GETDATE(), 2, N'YearlyGoal');
 SET IDENTITY_INSERT [MissionVisions] OFF;
 GO
 

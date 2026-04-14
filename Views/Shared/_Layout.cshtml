@@ -401,6 +401,79 @@
         </script>
     }
 
+    @if (User.Identity != null && User.Identity.IsAuthenticated && ViewData["IsLoginPage"] is not true)
+    {
+        <script>
+            // ==========================================
+            // SESSION TIMEOUT - Phát hiện không hoạt động
+            // ==========================================
+            (function() {
+                const IDLE_LIMIT = 25 * 60 * 1000;    // 25 phút không hoạt động → cảnh báo
+                const COUNTDOWN_SECS = 300;            // 5 phút đếm ngược trước khi logout
+                let idleTimer = null;
+                let countdownTimer = null;
+                let warningShown = false;
+
+                function resetIdleTimer() {
+                    if (warningShown) return; // Đang hiện cảnh báo thì không reset
+                    clearTimeout(idleTimer);
+                    idleTimer = setTimeout(showWarning, IDLE_LIMIT);
+                }
+
+                function showWarning() {
+                    if (warningShown) return;
+                    warningShown = true;
+
+                    let remaining = COUNTDOWN_SECS;
+
+                    Swal.fire({
+                        title: 'Phiên đăng nhập sắp hết hạn',
+                        html: `<p>Bạn đã không hoạt động trong một thời gian dài.</p>
+                               <p>Hệ thống sẽ tự động đăng xuất sau <b id="swal-countdown">${remaining}</b> giây.</p>`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Tiếp tục làm việc',
+                        cancelButtonText: 'Đăng xuất ngay',
+                        confirmButtonColor: '#1a73e8',
+                        cancelButtonColor: '#dc3545',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: function() {
+                            countdownTimer = setInterval(function() {
+                                remaining--;
+                                var el = document.getElementById('swal-countdown');
+                                if (el) el.textContent = remaining;
+                                if (remaining <= 0) {
+                                    clearInterval(countdownTimer);
+                                    Swal.close();
+                                    window.location.href = '/Auth/Logout';
+                                }
+                            }, 1000);
+                        }
+                    }).then(function(result) {
+                        clearInterval(countdownTimer);
+                        warningShown = false;
+                        if (result.isConfirmed) {
+                            // Gọi 1 request nhẹ để reset SlidingExpiration server-side
+                            fetch('/', { method: 'GET', credentials: 'same-origin' });
+                            resetIdleTimer();
+                        } else {
+                            window.location.href = '/Auth/Logout';
+                        }
+                    });
+                }
+
+                // Lắng nghe tất cả hoạt động của người dùng
+                ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach(function(evt) {
+                    document.addEventListener(evt, resetIdleTimer, { passive: true });
+                });
+
+                // Bắt đầu đếm
+                resetIdleTimer();
+            })();
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

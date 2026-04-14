@@ -45,17 +45,39 @@
                     <form asp-action="Create" method="post" id="createMissionForm">
                         <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
 
+                        <!-- SECTION: TYPE -->
+                        <div class="form-icon-group mb-5">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-info me-2" style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">1</span>
+                                <label asp-for="MissionVisionType" class="form-label small text-muted text-uppercase fw-800 mb-0">Loại thiết lập <span class="text-danger">*</span></label>
+                            </div>
+                            <div class="input-wrapper shadow-sm rounded-4 overflow-hidden border">
+                                <i class="bi bi-ui-checks-grid"></i>
+                                <select asp-for="MissionVisionType" id="missionVisionType" class="form-select border-0" style="padding-left: 45px !important; height: 55px; background: #fff;">
+                                    <option value="@MissionVision.TypeYearlyGoal">Mục tiêu chiến lược theo năm</option>
+                                    <option value="@MissionVision.TypeVision">Tầm nhìn</option>
+                                    <option value="@MissionVision.TypeMission">Sứ mệnh</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="MissionVisionType" class="text-danger small"></span>
+                            <div id="inputModeHint" class="form-text mt-3 text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Chọn loại để hệ thống tự điều chỉnh cách nhập phù hợp.
+                            </div>
+                        </div>
+
                         <!-- SECTION: CONTENT -->
                         <div class="form-icon-group mb-5">
                             <div class="d-flex align-items-center mb-3">
-                                <span class="badge bg-primary me-2" style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">1</span>
-                                <label class="form-label small text-muted text-uppercase fw-800 mb-0">Nội dung chiến lược / Sứ mệnh <span class="text-danger">*</span></label>
+                                <span class="badge bg-primary me-2" style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">2</span>
+                                <label asp-for="Content" id="contentLabel" class="form-label small text-muted text-uppercase fw-800 mb-0">Nội dung chiến lược / Sứ mệnh <span class="text-danger">*</span></label>
                             </div>
                             <div class="input-wrapper shadow-sm rounded-4 overflow-hidden border">
                                 <i class="bi bi-pencil-square" style="top: 25px;"></i>
-                                <textarea name="Content" class="form-control border-0 px-4" rows="5" placeholder="Nhập định hướng kinh doanh cốt lõi của năm nay hoặc tầm nhìn chung..." required style="padding-top: 15px !important; padding-left: 45px !important; background: #fff;"></textarea>
+                                <textarea asp-for="Content" id="missionContent" class="form-control border-0 px-4" rows="5" placeholder="Nhập định hướng kinh doanh cốt lõi của năm nay hoặc tầm nhìn chung..." required style="padding-top: 15px !important; padding-left: 45px !important; background: #fff;"></textarea>
                             </div>
-                            <div class="form-text mt-3 text-muted">
+                            <span asp-validation-for="Content" class="text-danger small"></span>
+                            <div id="contentHint" class="form-text mt-3 text-muted">
                                 <i class="bi bi-info-circle me-1"></i> Gợi ý: Hãy bắt đầu bằng "Trở thành...", "Sứ mệnh của chúng tôi là..." 
                             </div>
                         </div>
@@ -65,25 +87,30 @@
                             <div class="col-md-6">
                                 <div class="form-icon-group mb-0">
                                     <div class="d-flex align-items-center mb-3">
-                                        <span class="badge bg-success me-2" style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">2</span>
-                                        <label class="form-label small text-muted text-uppercase fw-800 mb-0">Mục tiêu tài chính (VNĐ)</label>
+                                        <span class="badge bg-success me-2" style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">3</span>
+                                        <label asp-for="FinancialTarget" id="financialTargetLabel" class="form-label small text-muted text-uppercase fw-800 mb-0">Mục tiêu tài chính (VNĐ)</label>
                                     </div>
                                     <div class="input-wrapper shadow-sm rounded-4 overflow-hidden border">
                                         <i class="bi bi-cash-coin"></i>
-                                        <input type="number" step="1000000" name="FinancialTarget" class="form-control border-0" placeholder="VD: 50,000,000,000" style="padding-left: 45px !important; height: 55px; background: #fff;">
+                                        <input asp-for="FinancialTarget" type="number" step="1000000" class="form-control border-0" placeholder="VD: 50,000,000,000" style="padding-left: 45px !important; height: 55px; background: #fff;">
                                     </div>
+                                    <span asp-validation-for="FinancialTarget" class="text-danger small"></span>
                                 </div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-6" id="targetYearWrapper">
                                 <div class="form-icon-group mb-0">
                                     <div class="d-flex align-items-center mb-3">
-                                        <span class="badge bg-warning text-dark me-2" style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">3</span>
-                                        <label class="form-label small text-muted text-uppercase fw-800 mb-0">Năm áp dụng</label>
+                                        <span class="badge bg-warning text-dark me-2" style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">4</span>
+                                        <label asp-for="TargetYear" class="form-label small text-muted text-uppercase fw-800 mb-0">Năm áp dụng</label>
                                     </div>
                                     <div class="input-wrapper shadow-sm rounded-4 overflow-hidden border">
                                         <i class="bi bi-calendar-check text-warning"></i>
-                                        <input type="number" name="TargetYear" class="form-control border-0" value="@DateTime.Now.Year" style="padding-left: 45px !important; height: 55px; background: #fff;">
+                                        <input asp-for="TargetYear" type="number" id="targetYearInput" class="form-control border-0" style="padding-left: 45px !important; height: 55px; background: #fff;">
+                                    </div>
+                                    <span asp-validation-for="TargetYear" class="text-danger small"></span>
+                                    <div class="form-text mt-2 text-muted">
+                                        Trường này chỉ áp dụng cho mục tiêu chiến lược theo năm.
                                     </div>
                                 </div>
                             </div>
@@ -280,4 +307,71 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const currentYear = '@DateTime.Now.Year';
+            const typeSelect = document.getElementById('missionVisionType');
+            const contentLabel = document.getElementById('contentLabel');
+            const contentInput = document.getElementById('missionContent');
+            const contentHint = document.getElementById('contentHint');
+            const inputModeHint = document.getElementById('inputModeHint');
+            const financialTargetLabel = document.getElementById('financialTargetLabel');
+            const targetYearWrapper = document.getElementById('targetYearWrapper');
+            const targetYearInput = document.getElementById('targetYearInput');
+
+            const configs = {
+                '@MissionVision.TypeYearlyGoal': {
+                    label: 'Nội dung mục tiêu chiến lược',
+                    placeholder: 'VD: Nâng cao chất lượng dịch vụ, đạt tỷ lệ hài lòng khách hàng trên 95%...',
+                    hint: 'Gợi ý: Nhập mục tiêu cụ thể cho năm, có thể đo lường và liên kết được với OKR.',
+                    modeHint: 'Cách nhập: nhập nội dung mục tiêu, năm áp dụng và mục tiêu tài chính nếu có.',
+                    financialLabel: 'Mục tiêu tài chính năm (VNĐ)',
+                    showYear: true
+                },
+                '@MissionVision.TypeVision': {
+                    label: 'Nội dung tầm nhìn',
+                    placeholder: 'VD: Trở thành doanh nghiệp công nghệ hàng đầu tại Việt Nam...',
+                    hint: 'Gợi ý: Tầm nhìn nên mô tả trạng thái tương lai dài hạn mà doanh nghiệp muốn đạt được.',
+                    modeHint: 'Cách nhập: nhập định hướng dài hạn, hệ thống sẽ tự bỏ qua trường năm áp dụng.',
+                    financialLabel: 'Mục tiêu tài chính dài hạn (VNĐ)',
+                    showYear: false
+                },
+                '@MissionVision.TypeMission': {
+                    label: 'Nội dung sứ mệnh',
+                    placeholder: 'VD: Sứ mệnh của chúng tôi là tạo ra giải pháp giúp khách hàng vận hành hiệu quả hơn...',
+                    hint: 'Gợi ý: Sứ mệnh nên thể hiện lý do tồn tại, đối tượng phục vụ và giá trị cốt lõi.',
+                    modeHint: 'Cách nhập: nhập tuyên bố sứ mệnh, hệ thống sẽ tự bỏ qua trường năm áp dụng.',
+                    financialLabel: 'Mục tiêu tài chính hỗ trợ (nếu có)',
+                    showYear: false
+                }
+            };
+
+            function applyTypeConfig() {
+                const config = configs[typeSelect.value] || configs['@MissionVision.TypeYearlyGoal'];
+
+                contentLabel.innerHTML = config.label + ' <span class="text-danger">*</span>';
+                contentInput.placeholder = config.placeholder;
+                contentHint.innerHTML = '<i class="bi bi-info-circle me-1"></i> ' + config.hint;
+                inputModeHint.innerHTML = '<i class="bi bi-magic me-1"></i> ' + config.modeHint;
+                financialTargetLabel.textContent = config.financialLabel;
+
+                if (config.showYear) {
+                    targetYearWrapper.classList.remove('d-none');
+                    targetYearInput.disabled = false;
+                    targetYearInput.required = true;
+                    if (!targetYearInput.value) {
+                        targetYearInput.value = currentYear;
+                    }
+                } else {
+                    targetYearWrapper.classList.add('d-none');
+                    targetYearInput.required = false;
+                    targetYearInput.disabled = true;
+                    targetYearInput.value = '';
+                }
+            }
+
+            typeSelect.addEventListener('change', applyTypeConfig);
+            applyTypeConfig();
+        });
+    </script>
 }

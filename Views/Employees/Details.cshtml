@@ -130,7 +130,7 @@
                 </div>
                 <div class="stats-info">
                     <div class="stats-label">Mục tiêu</div>
-                    <div class="stats-value">@(strategicGoal?.TargetYear.ToString() ?? "—")</div>
+                    <div class="stats-value">@(strategicGoal == null ? "—" : (strategicGoal.TargetYear.HasValue ? strategicGoal.TargetYear.ToString() : strategicGoal.TypeDisplayName))</div>
                 </div>
             </div>
         </div>
@@ -239,7 +239,7 @@
                                 <div class="detail-info-value">
                                     @if(strategicGoal != null)
                                     {
-                                        <div class="small text-muted mb-1">Năm @strategicGoal.TargetYear</div>
+                                        <div class="small text-muted mb-1">@(strategicGoal.TargetYear.HasValue ? $"{strategicGoal.TypeDisplayName} {strategicGoal.TargetYear}" : strategicGoal.TypeDisplayName)</div>
                                         <div class="text-dark">@strategicGoal.Content</div>
                                     }
                                     else

@@ -11,6 +11,7 @@ ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 var builder = WebApplication.CreateBuilder(args);
 Env.Load();
 builder.Configuration.AddEnvironmentVariables();
+
 // 1. Đăng ký các dịch vụ (Services)
 builder.Services.AddControllersWithViews(options =>
 {
@@ -33,13 +34,16 @@ builder.Services.AddAuthentication("Cookies")
         options.LoginPath = "/Auth/Login";
         options.LogoutPath = "/Auth/Logout";
         options.AccessDeniedPath = "/Auth/AccessDenied";
+        // Session timeout: cookie hết hạn sau 30 phút không hoạt động
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        // SlidingExpiration: mỗi request sẽ reset lại bộ đếm thời gian
+        options.SlidingExpiration = true;
     })
     .AddGoogle(options =>
     {
         options.ClientId = builder.Configuration["GOOGLE_CLIENT_ID"] ?? string.Empty;
         options.ClientSecret = builder.Configuration["GOOGLE_CLIENT_SECRET"] ?? string.Empty;
     });
-
 
 builder.Services.AddDbContext<MiniERPDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

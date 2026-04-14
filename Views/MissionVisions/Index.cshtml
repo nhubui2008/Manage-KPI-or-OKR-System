@@ -1,7 +1,7 @@
 ﻿@model IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>
 @{
     ViewData["Title"] = "Sứ mệnh & Tầm nhìn";
-    var generalMission = ViewBag.GeneralMission as Manage_KPI_or_OKR_System.Models.MissionVision;
+    var longTermStatements = ViewBag.LongTermStatements as List<Manage_KPI_or_OKR_System.Models.MissionVision> ?? new List<Manage_KPI_or_OKR_System.Models.MissionVision>();
     var selectedYear = ViewBag.SelectedYear as int? ?? DateTime.Now.Year;
     var availableYears = ViewBag.AvailableYears as List<int?> ?? new List<int?>();
 }
@@ -33,36 +33,47 @@
 
 <div class="row g-4 mb-4">
     <!-- Tầm nhìn & Sứ mệnh chung -->
-    <div class="col-12">
-        <div class="content-card bg-primary text-white border-0 position-relative" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
-            @if (generalMission != null)
-            {
-                <form asp-action="Delete" asp-route-id="@generalMission.Id" method="post" class="position-absolute top-0 end-0 p-3 m-0" onsubmit="return confirm('Bạn có chắc muốn xóa Tầm nhìn & Sứ mệnh này?');">
-                    <button type="submit" class="btn btn-sm btn-outline-light border-0"><i class="bi bi-trash"></i></button>
-                </form>
-            }
-            <div class="card-body-custom px-4 py-5 text-center">
-                <i class="bi bi-compass mb-3" style="font-size: 3rem; opacity: 0.9;"></i>
-                @if (generalMission != null)
-                {
-                    <h2 class="fw-bold mb-3" style="max-width: 900px; margin: 0 auto; line-height: 1.4;">@generalMission.Content</h2>
-                    @if (generalMission.FinancialTarget.HasValue)
-                    {
-                        <p class="mb-0 mx-auto" style="opacity: 0.9; font-size: 1.1rem;">
-                            Mục tiêu tài chính dài hạn: <strong>@String.Format("{0:N0} đ", generalMission.FinancialTarget.Value)</strong>
-                        </p>
-                    }
-                }
-                else
-                {
+    @if (longTermStatements.Any())
+    {
+        foreach (var statement in longTermStatements)
+        {
+            var iconClass = statement.MissionVisionType == MissionVision.TypeMission ? "bi-bullseye" : "bi-compass";
+            var financialLabel = statement.MissionVisionType == MissionVision.TypeMission ? "Mục tiêu tài chính hỗ trợ" : "Mục tiêu tài chính dài hạn";
+
+            <div class="@(longTermStatements.Count == 1 ? "col-12" : "col-lg-6")">
+                <div class="content-card bg-primary text-white border-0 position-relative h-100" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+                    <form asp-action="Delete" asp-route-id="@statement.Id" method="post" class="position-absolute top-0 end-0 p-3 m-0" onsubmit="return confirm('Bạn có chắc muốn xóa @statement.TypeDisplayName này?');">
+                        <button type="submit" class="btn btn-sm btn-outline-light border-0"><i class="bi bi-trash"></i></button>
+                    </form>
+                    <div class="card-body-custom px-4 py-5 text-center">
+                        <i class="bi @iconClass mb-3" style="font-size: 3rem; opacity: 0.9;"></i>
+                        <div class="badge bg-white bg-opacity-25 text-white rounded-pill px-3 py-2 mb-3">@statement.TypeDisplayName</div>
+                        <h2 class="fw-bold mb-3" style="max-width: 900px; margin: 0 auto; line-height: 1.4;">@statement.Content</h2>
+                        @if (statement.FinancialTarget.HasValue)
+                        {
+                            <p class="mb-0 mx-auto" style="opacity: 0.9; font-size: 1.1rem;">
+                                @financialLabel: <strong>@String.Format("{0:N0} đ", statement.FinancialTarget.Value)</strong>
+                            </p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="content-card bg-primary text-white border-0 position-relative" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+                <div class="card-body-custom px-4 py-5 text-center">
+                    <i class="bi bi-compass mb-3" style="font-size: 3rem; opacity: 0.9;"></i>
                     <h2 class="fw-bold mb-3">Chưa thiết lập Tầm nhìn & Sứ mệnh</h2>
                     <p class="mb-0 mx-auto" style="opacity: 0.9; font-size: 1.1rem;">
-                        Hãy bấm "Thêm mục tiêu" và bỏ trống phần "Năm áp dụng" để cài đặt Sứ mệnh chung.
+                        Hãy bấm "Thêm mục tiêu" và chọn loại "Tầm nhìn" hoặc "Sứ mệnh" để cài đặt định hướng dài hạn.
                     </p>
-                }
+                </div>
             </div>
         </div>
-    </div>
+    }
 </div>
 
 <div class="d-flex align-items-center justify-content-between mb-3 mt-5">
@@ -97,7 +108,7 @@
                 <div class="content-card h-100">
                     <div class="card-body-custom p-4">
                         <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-semibold">Giai đoạn @goal.TargetYear</div>
+                            <div class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-semibold">@goal.TypeDisplayName @goal.TargetYear</div>
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">

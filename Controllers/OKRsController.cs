@@ -513,7 +513,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var missionNode = new
                 {
                     id = $"mission_{mission.Id}",
-                    name = $"Sứ mệnh {mission.TargetYear}: {mission.Content}",
+                    name = mission.TargetYear.HasValue
+                        ? $"{mission.TypeDisplayName} {mission.TargetYear}: {mission.Content}"
+                        : $"{mission.TypeDisplayName}: {mission.Content}",
                     type = "Mission",
                     children = new List<object>()
                 };
