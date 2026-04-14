@@ -1,8 +1,10 @@
 @model Manage_KPI_or_OKR_System.Models.KPI
 @{
-    ViewData["Title"] = "Phân bổ nhân sự KPI";
+    ViewData["Title"] = "Phân bổ KPI";
     var detail = ViewBag.KPIDetail as Manage_KPI_or_OKR_System.Models.KPIDetail;
     var currentAssignments = ViewBag.Assignments as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    var currentDepartmentAssignments = ViewBag.DepartmentAssignments as HashSet<int> ?? new HashSet<int>();
+    var departments = ViewBag.Departments as List<Manage_KPI_or_OKR_System.Models.Department> ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
     var groupedEmployees = ViewBag.GroupedEmployees as Dictionary<string, List<Manage_KPI_or_OKR_System.Models.Employee>> ?? new Dictionary<string, List<Manage_KPI_or_OKR_System.Models.Employee>>();
     
     var targetValue = (decimal?)detail?.TargetValue ?? 0m;
@@ -12,7 +14,7 @@
 <div class="container-fluid px-0">
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 font-weight-bold mb-1">Phân bổ nhân sự: @Model.KPIName</h1>
+            <h1 class="h3 font-weight-bold mb-1">Phân bổ KPI: @Model.KPIName</h1>
             <div class="page-breadcrumb">
                 <a href="/">Trang chủ</a>
                 <i class="bi bi-chevron-right separator"></i>
@@ -20,7 +22,7 @@
                 <i class="bi bi-chevron-right separator"></i>
                 <a asp-action="Details" asp-route-id="@Model.Id">Chi tiết</a>
                 <i class="bi bi-chevron-right separator"></i>
-                <span>Phân bổ nhân sự</span>
+                <span>Phân bổ phòng ban/nhân sự</span>
             </div>
         </div>
         <div>
@@ -48,6 +50,9 @@
                             <span id="totalPercentageDisplay" class="fs-3 fw-bold text-primary">0%</span>
                             <i id="validationIcon" class="bi bi-exclamation-circle text-warning fs-4"></i>
                         </div>
+                        <div class="small text-muted mt-1">
+                            Phòng ban: <span id="departmentCountDisplay" class="fw-bold text-info">0</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -63,9 +68,49 @@
             <div class="col-lg-5">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-header bg-white border-0 py-3">
-                        <h5 class="mb-0 fw-bold"><i class="bi bi-people text-info me-2"></i>Chọn nhân viên</h5>
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-diagram-3 text-info me-2"></i>Chọn phòng ban và nhân viên</h5>
                     </div>
                     <div class="card-body p-4">
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                                <h6 class="text-uppercase fw-bold text-primary smaller mb-0">
+                                    <i class="bi bi-building me-1"></i> Phòng ban
+                                </h6>
+                            </div>
+
+                            @if (departments.Any())
+                            {
+                                <div class="department-selector-list d-flex flex-column gap-2" style="max-height: 220px; overflow-y: auto;">
+                                    @foreach (var dept in departments)
+                                    {
+                                        var isDepartmentAssigned = currentDepartmentAssignments.Contains(dept.Id);
+                                        <div class="department-select-item p-2 rounded-3 transition-hover border @(isDepartmentAssigned ? "border-info bg-info bg-opacity-10" : "border-transparent bg-light")"
+                                             onclick="handleDepartmentClick(event, @dept.Id)">
+                                            <div class="form-check m-0 d-flex align-items-center">
+                                                <input class="form-check-input ms-0 me-3 department-cb" type="checkbox" name="departmentIds" value="@dept.Id" id="dept-cb-@dept.Id" @(isDepartmentAssigned ? "checked" : "")>
+                                                <div class="flex-grow-1 cursor-pointer">
+                                                    <div class="fw-bold text-dark">@dept.DepartmentName</div>
+                                                    <div class="text-muted smaller">@dept.DepartmentCode</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-muted small text-center py-3 bg-light rounded-3">Chưa có phòng ban hoạt động.</div>
+                            }
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                            <h6 class="text-uppercase fw-bold text-primary smaller mb-0">
+                                <i class="bi bi-people me-1"></i> Nhân viên
+                            </h6>
+                        </div>
+
                         <div class="input-group mb-3 position-relative">
                             <span class="input-group-text bg-light border-0 ps-3 rounded-pill-start">
                                 <i class="bi bi-search text-muted"></i>
@@ -131,7 +176,7 @@
                     </div>
                     <div class="card-footer bg-white border-0 p-4">
                         <button type="submit" class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm" id="saveBtn">
-                            <i class="bi bi-check2-circle me-2"></i> Lưu phân bổ nhân sự
+                            <i class="bi bi-check2-circle me-2"></i> Lưu phân bổ KPI
                         </button>
                     </div>
                 </div>
@@ -181,7 +226,9 @@
 
 <style>
     .employee-select-item { cursor: pointer; border-width: 2px !important; }
+    .department-select-item { cursor: pointer; border-width: 2px !important; }
     .employee-select-item:hover { transform: translateX(5px); }
+    .department-select-item:hover { transform: translateX(5px); }
     .transition-hover { transition: all 0.2s ease; }
     .smaller { font-size: 0.75rem; }
     
@@ -189,6 +236,8 @@
     
     .employee-selector-list::-webkit-scrollbar { width: 4px; }
     .employee-selector-list::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 4px; }
+    .department-selector-list::-webkit-scrollbar { width: 4px; }
+    .department-selector-list::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 4px; }
 
     #summaryCard.valid { border-color: var(--success) !important; background: var(--success-bg) !important; }
     #summaryCard.invalid { border-color: var(--danger) !important; background: var(--danger-bg) !important; }
@@ -207,8 +256,40 @@
                 renderAllocationCard(parseInt(empId), initialAssignments[empId]);
             });
         }
+        document.querySelectorAll('.department-cb').forEach(cb => {
+            updateDepartmentSelectionState(cb);
+            cb.addEventListener('change', function() {
+                updateDepartmentSelectionState(this);
+                updateDepartmentCount();
+            });
+        });
+        updateDepartmentCount();
         updateTotals();
     });
+
+    function handleDepartmentClick(event, deptId) {
+        if (event.target.tagName === 'INPUT') return;
+        const cb = document.getElementById('dept-cb-' + deptId);
+        cb.checked = !cb.checked;
+        updateDepartmentSelectionState(cb);
+        updateDepartmentCount();
+    }
+
+    function updateDepartmentSelectionState(cb) {
+        const item = cb.closest('.department-select-item');
+        if (!item) return;
+
+        if (cb.checked) {
+            item.classList.add('border-info', 'bg-info', 'bg-opacity-10');
+        } else {
+            item.classList.remove('border-info', 'bg-info', 'bg-opacity-10');
+        }
+    }
+
+    function updateDepartmentCount() {
+        const selectedCount = document.querySelectorAll('.department-cb:checked').length;
+        document.getElementById('departmentCountDisplay').innerText = selectedCount;
+    }
 
     function handleItemClick(event, empId) {
         if (event.target.tagName === 'INPUT') return;
@@ -331,7 +412,7 @@
             card.classList.add('valid');
             icon.className = 'bi bi-check-circle-fill text-success fs-4';
             saveBtn.disabled = false;
-            saveBtn.innerHTML = '<i class="bi bi-check2-circle me-2"></i> Lưu phân bổ nhân sự';
+            saveBtn.innerHTML = '<i class="bi bi-check2-circle me-2"></i> Lưu phân bổ KPI';
         } else {
             card.classList.add('invalid');
             icon.className = 'bi bi-exclamation-circle-fill text-danger fs-4';

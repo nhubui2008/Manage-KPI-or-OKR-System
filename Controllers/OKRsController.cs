@@ -433,6 +433,45 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("OKRS_CREATE")]
+        public async Task<IActionResult> AllocateDepartment(int okrId, int departmentId)
+        {
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales"))
+                return Forbid();
+
+            var okr = await _context.OKRs.FindAsync(okrId);
+            if (okr == null || okr.IsActive != true) return NotFound();
+
+            var department = await _context.Departments
+                .FirstOrDefaultAsync(d => d.Id == departmentId && d.IsActive == true);
+            if (department == null)
+            {
+                TempData["ErrorMessage"] = "Phòng ban được chọn không tồn tại hoặc đã ngừng hoạt động.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var allocationExists = await _context.OKR_Department_Allocations
+                .AnyAsync(a => a.OKRId == okrId && a.DepartmentId == departmentId);
+
+            if (allocationExists)
+            {
+                TempData["SuccessMessage"] = $"OKR này đã được phân bổ cho phòng ban {department.DepartmentName}.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            _context.OKR_Department_Allocations.Add(new OKR_Department_Allocation
+            {
+                OKRId = okrId,
+                DepartmentId = departmentId
+            });
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Đã phân bổ OKR cho phòng ban {department.DepartmentName} thành công!";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
         [HasPermission("OKRS_DELETE")]
         public async Task<IActionResult> DeleteKeyResult(int id)
         {

@@ -163,7 +163,7 @@
                                                     @if (canCreateOkr)
                                                     {
                                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
-                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên</a></li>
+                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên/phòng ban</a></li>
                                                     }
                                                     @if ((canEditOkr || canCreateOkr) && canDeleteOkr)
                                                     {
@@ -394,20 +394,25 @@
     </div>
 </div>
 
-<!-- Modal Allocate to Employee -->
+<!-- Modal Allocate OKR -->
 <div class="modal fade" id="allocateOkrModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header-soft primary">
                 <h5 class="modal-title-custom">
                     <i class="bi bi-person-plus-fill text-primary"></i>
-                    Phân bổ chỉ tiêu nhân viên
+                    Phân bổ OKR
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body-soft">
                 <form asp-controller="OKRs" asp-action="AllocateTarget" method="post">
                     <input type="hidden" name="okrId" id="allocOkrId" />
+
+                    <div class="soft-tag-indicator">
+                        <i class="bi bi-person-check"></i>
+                        <span>Phân bổ cho nhân viên</span>
+                    </div>
                     
                     <div class="form-icon-group">
                         <label>Chọn nhân viên phụ trách</label>
@@ -436,6 +441,38 @@
                     <div class="d-flex justify-content-end gap-3 mt-4">
                         <button type="button" class="btn-outline-custom px-4" data-bs-dismiss="modal">Hủy bỏ</button>
                         <button type="submit" class="btn-primary-custom px-4">Xác nhận phân bổ</button>
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <form asp-controller="OKRs" asp-action="AllocateDepartment" method="post">
+                    <input type="hidden" name="okrId" id="allocDeptOkrId" />
+
+                    <div class="soft-tag-indicator">
+                        <i class="bi bi-building"></i>
+                        <span>Phân bổ cho phòng ban</span>
+                    </div>
+
+                    <div class="form-icon-group">
+                        <label>Chọn phòng ban phụ trách</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-building"></i>
+                            <select name="departmentId" class="form-select" required>
+                                <option value="">-- Chọn phòng ban --</option>
+                                @foreach(var d in (ViewBag.Departments as List<Manage_KPI_or_OKR_System.Models.Department> ?? new List<Manage_KPI_or_OKR_System.Models.Department>())){
+                                    <option value="@d.Id">@d.DepartmentName (@d.DepartmentCode)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-text text-muted small mt-2">
+                            <i class="bi bi-info-circle me-1"></i> Nhân viên đang thuộc phòng ban này có thể nhìn thấy và cập nhật OKR theo quyền được cấp.
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-3 mt-4">
+                        <button type="button" class="btn-outline-custom px-4" data-bs-dismiss="modal">Hủy bỏ</button>
+                        <button type="submit" class="btn-primary-custom px-4">Phân bổ phòng ban</button>
                     </div>
                 </form>
             </div>
@@ -550,6 +587,7 @@
 
         function openAllocateModal(okrId) {
             document.getElementById('allocOkrId').value = okrId;
+            document.getElementById('allocDeptOkrId').value = okrId;
             var modal = new bootstrap.Modal(document.getElementById('allocateOkrModal'));
             modal.show();
         }

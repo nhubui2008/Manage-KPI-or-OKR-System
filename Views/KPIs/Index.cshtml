@@ -4,11 +4,14 @@
 
     var kpiDetails = ViewBag.KPIDetails as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
     var assignments = ViewBag.Assignments as Dictionary<int, List<Tuple<int, decimal>>> ?? new Dictionary<int, List<Tuple<int, decimal>>>();
+    var departmentAssignments = ViewBag.DepartmentAssignments as Dictionary<int, List<int>> ?? new Dictionary<int, List<int>>();
     var employeesDict = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var departmentsDict = ViewBag.Departments as Dictionary<int, string> ?? new Dictionary<int, string>();
     var periodsDict = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
     var kpiTypesList = ViewBag.KPITypes as List<Manage_KPI_or_OKR_System.Models.KPIType> ?? new List<Manage_KPI_or_OKR_System.Models.KPIType>();
     var kpiTypesDict = kpiTypesList.ToDictionary(t => t.Id, t => t.TypeName ?? "N/A");
     var latestProgress = ViewBag.LatestProgress as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    var allocatedKpiCount = Model?.Count(k => assignments.ContainsKey(k.Id) || departmentAssignments.ContainsKey(k.Id)) ?? 0;
     var measurementUnits = new[] {
         new { Value = "%", Text = "% - Tỷ lệ phần trăm" },
         new { Value = "VNĐ", Text = "VNĐ - Tiền tệ" },
@@ -121,7 +124,7 @@
                     <i class="bi bi-people-fill"></i>
                 </div>
             </div>
-            <div class="fw-bold text-dark fs-3">@assignments.Count</div>
+            <div class="fw-bold text-dark fs-3">@allocatedKpiCount</div>
         </div>
     </div>
 </div>
@@ -182,6 +185,7 @@
                         {
                             var detail = kpiDetails.ContainsKey(kpi.Id) ? kpiDetails[kpi.Id] : null;
                             var assignedEmployees = assignments.ContainsKey(kpi.Id) ? assignments[kpi.Id] : new List<Tuple<int, decimal>>();
+                            var assignedDepartmentIds = departmentAssignments.ContainsKey(kpi.Id) ? departmentAssignments[kpi.Id] : new List<int>();
 
                             // Use new dynamic status helpers
                             var kpiProgress = latestProgress.ContainsKey(kpi.Id) ? (decimal?)latestProgress[kpi.Id] : null;
@@ -222,25 +226,49 @@
                                     </div>
                                 </td>
                                 <td>
-                                    @if (assignedEmployees.Any())
+                                    @if (assignedEmployees.Any() || assignedDepartmentIds.Any())
                                     {
-                                        <div class="d-flex align-items-center">
-                                            @foreach(var empObj in assignedEmployees.Take(3))
+                                        <div class="d-flex flex-column gap-2">
+                                            @if (assignedDepartmentIds.Any())
                                             {
-                                                var empId = empObj.Item1;
-                                                var weight = empObj.Item2;
-                                                var name = employeesDict.ContainsKey(empId) ? employeesDict[empId] : "NV";
-                                                var initials = string.Join("", name.Split(' ').Select(n => n[0])).ToUpper();
-                                                if (initials.Length > 2) initials = initials.Substring(0, 2);
-
-                                                <div class="user-avatar bg-primary text-white border border-2 border-white position-relative rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 3;" title="@name">
-                                                    @initials
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    @foreach (var deptId in assignedDepartmentIds.Take(2))
+                                                    {
+                                                        var deptName = departmentsDict.ContainsKey(deptId) ? departmentsDict[deptId] : "Phòng ban";
+                                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1">
+                                                            <i class="bi bi-building me-1"></i>@deptName
+                                                        </span>
+                                                    }
+                                                    @if (assignedDepartmentIds.Count > 2)
+                                                    {
+                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">
+                                                            +@(assignedDepartmentIds.Count - 2) phòng ban
+                                                        </span>
+                                                    }
                                                 </div>
                                             }
-                                            @if (assignedEmployees.Count > 3)
+                                            @if (assignedEmployees.Any())
                                             {
-                                                <div class="user-avatar bg-secondary text-white border border-2 border-white position-relative rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 1;">
-                                                    +@(assignedEmployees.Count - 3)
+                                                <div class="d-flex align-items-center">
+                                                    @foreach(var empObj in assignedEmployees.Take(3))
+                                                    {
+                                                        var empId = empObj.Item1;
+                                                        var weight = empObj.Item2;
+                                                        var name = employeesDict.ContainsKey(empId) ? employeesDict[empId] : "NV";
+                                                        var initials = string.Join("", name.Split(' ').Where(n => !string.IsNullOrWhiteSpace(n)).Select(n => n[0])).ToUpper();
+                                                        if (initials.Length > 2) initials = initials.Substring(0, 2);
+                                                        if (initials.Length == 0) initials = "NV";
+
+                                                        <div class="user-avatar bg-primary text-white border border-2 border-white position-relative rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 3;" title="@name">
+                                                            @initials
+                                                        </div>
+                                                    }
+                                                    @if (assignedEmployees.Count > 3)
+                                                    {
+                                                        <div class="user-avatar bg-secondary text-white border border-2 border-white position-relative rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 1;">
+                                                            +@(assignedEmployees.Count - 3)
+                                                        </div>
+                                                    }
                                                 </div>
                                             }
                                         </div>
@@ -286,7 +314,7 @@
                                                  @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
                                                        User.IsInRole("Sales") || User.IsInRole("sales")))
                                                  {
-                                                     <li><a class="dropdown-item py-2" asp-action="AllocatePersonnel" asp-route-id="@kpi.Id" data-legacy-onclick="openAssignPersonnelModal(@kpi.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kpi.KPIName ?? ""))', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assignedEmployees).Replace("\"", "&quot;")))"><i class="bi bi-people text-info-emphasis me-2"></i> Phân bổ nhân sự</a></li>
+                                                     <li><a class="dropdown-item py-2" asp-action="AllocatePersonnel" asp-route-id="@kpi.Id" data-legacy-onclick="openAssignPersonnelModal(@kpi.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kpi.KPIName ?? ""))', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assignedEmployees).Replace("\"", "&quot;")))"><i class="bi bi-people text-info-emphasis me-2"></i> Phân bổ phòng ban/nhân sự</a></li>
                                                  }
 
                                                  @if ((User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager")) && (kpi.StatusId == 0 || kpi.StatusId == null))
@@ -326,7 +354,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <div class="mb-3"><i class="bi bi-folder-x fs-1 opacity-50"></i></div>
                                 <h5>Chưa có dữ liệu KPI</h5>
                                 <p>Bắt đầu bằng cách thêm một KPI mới cho hệ thống.</p>

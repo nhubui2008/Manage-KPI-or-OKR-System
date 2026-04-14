@@ -48,6 +48,23 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         .Select(a => a.KPIId)
                         .ToListAsync();
 
+                    var employeeDepartmentIds = await _context.EmployeeAssignments
+                        .Where(a => a.EmployeeId == employee.Id && a.IsActive == true && a.DepartmentId.HasValue)
+                        .Select(a => a.DepartmentId!.Value)
+                        .ToListAsync();
+
+                    var departmentAllocatedKpiIds = employeeDepartmentIds.Any()
+                        ? await _context.KPI_Department_Assignments
+                            .Where(a => employeeDepartmentIds.Contains(a.DepartmentId))
+                            .Select(a => a.KPIId)
+                            .ToListAsync()
+                        : new List<int>();
+
+                    allocatedKpiIds = allocatedKpiIds
+                        .Concat(departmentAllocatedKpiIds)
+                        .Distinct()
+                        .ToList();
+
                     kpiQuery = kpiQuery.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
                     employeeQuery = employeeQuery.Where(e => e.Id == employee.Id);
                 }
@@ -156,6 +173,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 if (employee != null)
                 {
                     List<int> targetEmployeeIds = new List<int> { employee.Id };
+                    var targetDepartmentIds = await _context.EmployeeAssignments
+                        .Where(ea => ea.EmployeeId == employee.Id && ea.IsActive == true && ea.DepartmentId.HasValue)
+                        .Select(ea => ea.DepartmentId!.Value)
+                        .ToListAsync();
 
                     if (isManager)
                     {
@@ -171,6 +192,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             .ToListAsync();
 
                         targetEmployeeIds.AddRange(deptEmployeeIds);
+                        targetDepartmentIds.AddRange(managedDeptIds);
                     }
                     else if (isDirector)
                     {
@@ -181,14 +203,34 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             .ToListAsync();
 
                         targetEmployeeIds.AddRange(allManagerIds);
+
+                        var allDepartmentIds = await _context.Departments
+                            .Where(d => d.IsActive == true)
+                            .Select(d => d.Id)
+                            .ToListAsync();
+
+                        targetDepartmentIds.AddRange(allDepartmentIds);
                     }
 
                     targetEmployeeIds = targetEmployeeIds.Distinct().ToList();
+                    targetDepartmentIds = targetDepartmentIds.Distinct().ToList();
 
-                    var allowedKpiIds = await _context.KPI_Employee_Assignments
+                    var employeeAllowedKpiIds = await _context.KPI_Employee_Assignments
                         .Where(a => targetEmployeeIds.Contains(a.EmployeeId) && (a.Status == null || a.Status == "Active"))
                         .Select(a => a.KPIId)
                         .ToListAsync();
+
+                    var departmentAllowedKpiIds = targetDepartmentIds.Any()
+                        ? await _context.KPI_Department_Assignments
+                            .Where(a => targetDepartmentIds.Contains(a.DepartmentId))
+                            .Select(a => a.KPIId)
+                            .ToListAsync()
+                        : new List<int>();
+
+                    var allowedKpiIds = employeeAllowedKpiIds
+                        .Concat(departmentAllowedKpiIds)
+                        .Distinct()
+                        .ToList();
 
                     kpiQuery = kpiQuery.Where(k => allowedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
 
@@ -320,7 +362,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                    a.EmployeeId == model.EmployeeId.Value &&
                                    (a.Status == null || a.Status == "Active"));
 
-                if (!isAssignedToKpi && kpi.AssignerId != model.EmployeeId.Value)
+                var selectedEmployeeDepartmentIds = await _context.EmployeeAssignments
+                    .Where(a => a.EmployeeId == model.EmployeeId.Value &&
+                                a.IsActive == true &&
+                                a.DepartmentId.HasValue)
+                    .Select(a => a.DepartmentId!.Value)
+                    .ToListAsync();
+
+                var isAssignedToDepartment = selectedEmployeeDepartmentIds.Any() && await _context.KPI_Department_Assignments
+                    .AnyAsync(a => a.KPIId == kpi.Id && selectedEmployeeDepartmentIds.Contains(a.DepartmentId));
+
+                if (!isAssignedToKpi && !isAssignedToDepartment && kpi.AssignerId != model.EmployeeId.Value)
                 {
                     ModelState.AddModelError(nameof(model.KPIId), "Nhân viên này chưa được phân bổ KPI được chọn.");
                 }
@@ -430,8 +482,29 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .Select(a => new { a.KPIId, Weight = a.Weight ?? 1m })
                     .ToListAsync();
 
-                var assignedKpiIds = assignedKpiWeights.Select(a => a.KPIId).ToList();
-                var weightByKpiId = assignedKpiWeights.ToDictionary(a => a.KPIId, a => a.Weight <= 0 ? 1m : a.Weight);
+                var employeeDepartmentIdsForScore = await _context.EmployeeAssignments
+                    .Where(a => a.EmployeeId == model.EmployeeId &&
+                                a.IsActive == true &&
+                                a.DepartmentId.HasValue)
+                    .Select(a => a.DepartmentId!.Value)
+                    .ToListAsync();
+
+                var departmentAssignedKpiIds = employeeDepartmentIdsForScore.Any()
+                    ? await _context.KPI_Department_Assignments
+                        .Where(a => employeeDepartmentIdsForScore.Contains(a.DepartmentId))
+                        .Select(a => a.KPIId)
+                        .ToListAsync()
+                    : new List<int>();
+
+                var assignedKpiIds = assignedKpiWeights
+                    .Select(a => a.KPIId)
+                    .Concat(departmentAssignedKpiIds)
+                    .Distinct()
+                    .ToList();
+
+                var weightByKpiId = assignedKpiWeights
+                    .GroupBy(a => a.KPIId)
+                    .ToDictionary(a => a.Key, a => a.First().Weight <= 0 ? 1m : a.First().Weight);
 
                 var periodKpis = await _context.KPIs
                     .Where(k => k.PeriodId == validatedKpi.PeriodId && k.IsActive == true && assignedKpiIds.Contains(k.Id))
