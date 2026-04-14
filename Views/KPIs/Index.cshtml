@@ -7,6 +7,8 @@
     var departmentAssignments = ViewBag.DepartmentAssignments as Dictionary<int, List<int>> ?? new Dictionary<int, List<int>>();
     var employeesDict = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
     var departmentsDict = ViewBag.Departments as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var allEmployees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
+    var allDepartments = ViewBag.AllDepartments as List<Manage_KPI_or_OKR_System.Models.Department> ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
     var periodsDict = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
     var kpiTypesList = ViewBag.KPITypes as List<Manage_KPI_or_OKR_System.Models.KPIType> ?? new List<Manage_KPI_or_OKR_System.Models.KPIType>();
     var kpiTypesDict = kpiTypesList.ToDictionary(t => t.Id, t => t.TypeName ?? "N/A");
@@ -95,9 +97,14 @@
         @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales")))
         {
-            <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createKpiModal">
-                <i class="bi bi-plus-lg me-1"></i> Thêm KPI mới
-            </button>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#aiKpiSuggestModal">
+                    <i class="bi bi-stars me-1"></i> AI Gợi ý KPI
+                </button>
+                <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createKpiModal">
+                    <i class="bi bi-plus-lg me-1"></i> Thêm KPI mới
+                </button>
+            </div>
         }
 </div>
 
@@ -405,7 +412,7 @@
                     <div class="row g-3 mb-4" data-okr-link-scope>
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Tên KPI <span class="text-danger">*</span></label>
-                            <input type="text" name="kpi.KPIName" class="form-control" placeholder="VD: Doanh thu bán hàng tháng" required>
+                            <input type="text" name="kpi.KPIName" id="createKpiName" class="form-control" placeholder="VD: Doanh thu bán hàng tháng" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Phân loại KPI <span class="text-danger">*</span></label>
@@ -419,7 +426,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Kỳ đánh giá <span class="text-danger">*</span></label>
-                            <select name="kpi.PeriodId" class="form-select" required>
+                            <select name="kpi.PeriodId" id="createPeriodId" class="form-select" required>
                                 @foreach(var kvp in periodsDict)
                                 {
                                     <option value="@kvp.Key">@kvp.Value</option>
@@ -428,7 +435,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Liên kết OKR <span class="text-muted">(tùy chọn)</span></label>
-                            <select name="kpi.OKRId" class="form-select js-okr-select">
+                            <select name="kpi.OKRId" id="createOkrId" class="form-select js-okr-select">
                                 <option value="">-- Không liên kết OKR --</option>
                                 @foreach (var okr in okrsList)
                                 {
@@ -439,7 +446,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Key Result <span class="text-muted">(tùy chọn)</span></label>
-                            <select name="kpi.OKRKeyResultId" class="form-select js-kr-select">
+                            <select name="kpi.OKRKeyResultId" id="createKrId" class="form-select js-kr-select">
                                 <option value="">-- Không liên kết Key Result --</option>
                                 @foreach (var kr in okrKeyResultsList)
                                 {
@@ -458,13 +465,13 @@
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <input type="number" step="0.01" name="detail.TargetValue" class="form-control measurement-value-input" data-measurement-role="target" placeholder="Nhập chỉ tiêu" required>
+                                <input type="number" step="0.01" name="detail.TargetValue" id="createTarget" class="form-control measurement-value-input" data-measurement-role="target" placeholder="Nhập chỉ tiêu" required>
                                 <span class="input-group-text measurement-unit-suffix">đơn vị</span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Đơn vị đo lường <span class="text-danger">*</span></label>
-                            <select name="detail.MeasurementUnit" class="form-select measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
+                            <select name="detail.MeasurementUnit" id="createUnit" class="form-select measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
                                 <option value="">-- Chọn đơn vị đo --</option>
                                 @foreach (var unit in measurementUnits)
                                 {
@@ -475,14 +482,14 @@
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Ngưỡng đạt (Pass Threshold)</label>
                             <div class="input-group">
-                                <input type="number" step="0.01" name="detail.PassThreshold" class="form-control measurement-value-input" data-measurement-role="pass" placeholder="Mức tối thiểu để Đạt">
+                                <input type="number" step="0.01" name="detail.PassThreshold" id="createPass" class="form-control measurement-value-input" data-measurement-role="pass" placeholder="Mức tối thiểu để Đạt">
                                 <span class="input-group-text measurement-unit-suffix">đơn vị</span>
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold text-danger">Ngưỡng trượt (Fail Threshold)</label>
                             <div class="input-group">
-                                <input type="number" step="0.01" name="detail.FailThreshold" class="form-control measurement-value-input" data-measurement-role="fail" placeholder="Mức xác định là Không đạt">
+                                <input type="number" step="0.01" name="detail.FailThreshold" id="createFail" class="form-control measurement-value-input" data-measurement-role="fail" placeholder="Mức xác định là Không đạt">
                                 <span class="input-group-text measurement-unit-suffix">đơn vị</span>
                             </div>
                         </div>
@@ -507,6 +514,82 @@
     </div>
 </div>
 
+
+<!-- Modal AI Suggest KPI -->
+<div class="modal fade" id="aiKpiSuggestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-bottom-0 pb-0 bg-light rounded-top p-4">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-stars text-primary me-2"></i>AI Gợi ý KPI</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Nhân viên</label>
+                        <select id="aiSuggestEmployeeId" class="form-select">
+                            <option value="">-- Không chọn nhân viên cụ thể --</option>
+                            @foreach (var e in allEmployees)
+                            {
+                                <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Phòng ban</label>
+                        <select id="aiSuggestDepartmentId" class="form-select">
+                            <option value="">-- Không chọn phòng ban cụ thể --</option>
+                            @foreach (var d in allDepartments)
+                            {
+                                <option value="@d.Id">@d.DepartmentName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Kỳ đánh giá</label>
+                        <select id="aiSuggestPeriodId" class="form-select">
+                            <option value="">-- Kỳ gần nhất --</option>
+                            @foreach (var p in periodsDict)
+                            {
+                                <option value="@p.Key">@p.Value</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">OKR</label>
+                        <select id="aiSuggestOkrId" class="form-select">
+                            <option value="">-- Không bắt buộc --</option>
+                            @foreach (var okr in okrsList)
+                            {
+                                <option value="@okr.Id">@okr.ObjectiveName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Key Result</label>
+                        <select id="aiSuggestKrId" class="form-select">
+                            <option value="">-- Không bắt buộc --</option>
+                            @foreach (var kr in okrKeyResultsList)
+                            {
+                                var parentOkrName = kr.OKRId.HasValue && okrNamesDict.ContainsKey(kr.OKRId.Value)
+                                    ? okrNamesDict[kr.OKRId.Value]
+                                    : "OKR";
+                                <option value="@kr.Id">@parentOkrName - @kr.KeyResultName</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <p class="text-muted small mb-0">AI sẽ tạo bản nháp KPI. Bạn chọn “Áp dụng” rồi kiểm tra lại trước khi lưu.</p>
+                    <button type="button" class="btn btn-primary" id="aiRunKpiSuggestBtn">
+                        <i class="bi bi-magic me-1"></i> Tạo gợi ý
+                    </button>
+                </div>
+                <div id="aiKpiSuggestResults" class="d-grid gap-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 <style>
@@ -598,6 +681,110 @@
     }
 
     document.querySelectorAll('[data-okr-link-scope]').forEach(setupOkrLinkScope);
+
+    document.getElementById('aiRunKpiSuggestBtn')?.addEventListener('click', async function () {
+        const btn = this;
+        const results = document.getElementById('aiKpiSuggestResults');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> AI đang tạo...';
+        results.innerHTML = '<div class="text-muted small">Đang phân tích dữ liệu KPI/OKR...</div>';
+
+        const payload = {
+            employeeId: numberOrNull(document.getElementById('aiSuggestEmployeeId')?.value),
+            departmentId: numberOrNull(document.getElementById('aiSuggestDepartmentId')?.value),
+            okrId: numberOrNull(document.getElementById('aiSuggestOkrId')?.value),
+            okrKeyResultId: numberOrNull(document.getElementById('aiSuggestKrId')?.value),
+            periodId: numberOrNull(document.getElementById('aiSuggestPeriodId')?.value)
+        };
+
+        try {
+            const response = await fetch('/AI/SuggestKPI', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...window.antiForgeryHeaders()
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (!response.ok || data.success === false) {
+                results.innerHTML = '';
+                Swal.fire('AI chưa sẵn sàng', data.warnings?.[0] || 'Không thể tạo gợi ý KPI.', 'warning');
+                return;
+            }
+
+            renderKpiSuggestions(data.suggestions || []);
+        } catch {
+            results.innerHTML = '';
+            Swal.fire('Lỗi', 'Không thể kết nối AI. Vui lòng thử lại sau.', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    });
+
+    function renderKpiSuggestions(suggestions) {
+        const results = document.getElementById('aiKpiSuggestResults');
+        if (!suggestions.length) {
+            results.innerHTML = '<div class="text-muted small">AI chưa trả về gợi ý phù hợp.</div>';
+            return;
+        }
+
+        results.innerHTML = suggestions.map((item, index) => `
+            <div class="ai-suggestion-item">
+                <div class="d-flex justify-content-between gap-2">
+                    <div>
+                        <div class="fw-bold text-dark">${escapeHtml(item.name || 'KPI đề xuất')}</div>
+                        <div class="small text-muted mt-1">${escapeHtml(item.rationale || '')}</div>
+                        <div class="small mt-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary">Target: ${escapeHtml(item.targetValue ?? 'N/A')} ${escapeHtml(item.unit || '')}</span>
+                            <span class="badge bg-success bg-opacity-10 text-success">Đạt: ${escapeHtml(item.passThreshold ?? 'N/A')}</span>
+                            <span class="badge bg-danger bg-opacity-10 text-danger">Trượt: ${escapeHtml(item.failThreshold ?? 'N/A')}</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-success align-self-start" data-apply-kpi="${index}">Áp dụng</button>
+                </div>
+            </div>
+        `).join('');
+
+        results.querySelectorAll('[data-apply-kpi]').forEach(button => {
+            button.addEventListener('click', function () {
+                applyKpiSuggestion(suggestions[parseInt(button.dataset.applyKpi, 10)]);
+            });
+        });
+    }
+
+    function applyKpiSuggestion(item) {
+        document.getElementById('createKpiName').value = item.name || '';
+        document.getElementById('createTarget').value = item.targetValue ?? '';
+        document.getElementById('createPass').value = item.passThreshold ?? '';
+        document.getElementById('createFail').value = item.failThreshold ?? '';
+
+        if (window.setMeasurementUnitSelectValue) {
+            window.setMeasurementUnitSelectValue(document.getElementById('createUnit'), item.unit || '');
+        } else {
+            document.getElementById('createUnit').value = item.unit || '';
+        }
+
+        const periodId = document.getElementById('aiSuggestPeriodId')?.value;
+        const okrId = document.getElementById('aiSuggestOkrId')?.value;
+        const krId = document.getElementById('aiSuggestKrId')?.value;
+        if (periodId) document.getElementById('createPeriodId').value = periodId;
+        if (okrId) {
+            document.getElementById('createOkrId').value = okrId;
+            document.getElementById('createOkrId').dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (krId) document.getElementById('createKrId').value = krId;
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('aiKpiSuggestModal')).hide();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('createKpiModal')).show();
+    }
+
+    function numberOrNull(value) {
+        const n = parseInt(value || '', 10);
+        return Number.isFinite(n) ? n : null;
+    }
 </script>
 
 </div>

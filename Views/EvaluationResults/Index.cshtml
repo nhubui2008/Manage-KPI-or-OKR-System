@@ -32,7 +32,7 @@
             <div class="card-body-custom">
                 <div class="table-responsive w-100">
                     <table class="data-table w-100">
-                        <thead><tr><th>Nhân viên</th><th>Kỳ đánh giá</th><th>Tổng điểm</th><th>Xếp hạng</th><th>Phân loại</th>@if(canManage){<th class="text-end">Thao tác</th>}</tr></thead>
+                        <thead><tr><th>Nhân viên</th><th>Kỳ đánh giá</th><th>Tổng điểm</th><th>Xếp hạng</th><th>Phân loại</th><th>Nhận xét</th>@if(canManage){<th class="text-end">Thao tác</th>}</tr></thead>
                         <tbody>
                             @if (Model != null && Model.Any())
                             {
@@ -42,15 +42,20 @@
                                     var periodName = r.PeriodId.HasValue && periods.ContainsKey(r.PeriodId.Value) ? periods[r.PeriodId.Value] : "N/A";
                                     var rankCode = r.RankId.HasValue && ranks.ContainsKey(r.RankId.Value) ? ranks[r.RankId.Value] : "N/A";
                                     var scoreColor = r.TotalScore >= 90 ? "success" : r.TotalScore >= 70 ? "primary" : r.TotalScore >= 50 ? "warning" : "danger";
+                                    var safeClassification = System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(r.Classification ?? "");
+                                    var safeReviewComment = System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(r.ReviewComment ?? "");
                                     <tr>
                                         <td><div class="d-flex align-items-center gap-2"><div class="user-avatar" style="width:28px;height:28px;font-size:0.7rem;">@(empName.Length > 0 ? empName[0].ToString() : "?")</div><span class="fw-medium text-dark">@empName</span></div></td>
                                         <td class="text-muted">@periodName</td>
                                         <td><span class="badge bg-@scoreColor bg-opacity-10 text-@scoreColor rounded-pill px-2">@(r.TotalScore % 1 == 0 ? r.TotalScore?.ToString("0") : r.TotalScore?.ToString("0.#"))đ</span></td>
                                         <td><span class="badge bg-dark text-white px-2">@rankCode</span></td>
                                         <td>@(r.Classification ?? "Chưa phân loại")</td>
+                                        <td class="text-muted" style="max-width:260px;">
+                                            <span class="d-inline-block text-truncate" style="max-width:250px;" title="@(r.ReviewComment ?? "Chưa có nhận xét")">@(string.IsNullOrWhiteSpace(r.ReviewComment) ? "Chưa có nhận xét" : r.ReviewComment)</span>
+                                        </td>
                                         @if(canManage){
                                         <td><div class="action-btns justify-content-end">
-                                            <button type="button" class="action-btn" title="Sửa" onclick="editResult('@r.Id', '@r.EmployeeId', '@r.PeriodId', '@(r.TotalScore?.ToString() ?? "0")', '@r.RankId', '@r.Classification')"><i class="bi bi-pencil-square"></i></button>
+                                            <button type="button" class="action-btn" title="Sửa" onclick="editResult('@r.Id', '@r.EmployeeId', '@r.PeriodId', '@(r.TotalScore?.ToString() ?? "0")', '@r.RankId', '@safeClassification', '@safeReviewComment')"><i class="bi bi-pencil-square"></i></button>
                                             <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa kết quả này?')"><i class="bi bi-trash"></i></button></form>
                                         </div></td>
                                         }
@@ -58,7 +63,7 @@
                                 }
                             }
                             else
-                            {<tr><td colspan="@(canManage ? "6" : "5")" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có kết quả đánh giá</p></td></tr>}
+                            {<tr><td colspan="@(canManage ? "7" : "6")" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có kết quả đánh giá</p></td></tr>}
                         </tbody>
                     </table>
                 </div>
@@ -84,6 +89,7 @@
                             <option value="@cls">@cls</option>
                         }
                         </select></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Nhận xét đánh giá</label><textarea name="ReviewComment" class="form-control" rows="4" maxlength="2000" placeholder="Nhập nhận xét hoặc để trống để bổ sung sau"></textarea></div>
                 </div>
                 <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Lưu kết quả</button></div></form>
             </div></div>
@@ -109,6 +115,13 @@
                             <option value="@cls">@cls</option>
                         }
                         </select></div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-semibold mb-0">Nhận xét đánh giá</label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="aiGenerateReviewBtn"><i class="bi bi-magic me-1"></i> AI Viết nhận xét</button>
+                        </div>
+                        <textarea name="ReviewComment" id="editReviewComment" class="form-control" rows="5" maxlength="2000" placeholder="AI sẽ tạo bản nháp, quản lý có thể chỉnh sửa trước khi lưu"></textarea>
+                    </div>
                 </div>
                 <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Cập nhật kết quả</button></div></form>
             </div></div>
@@ -119,16 +132,50 @@
 </div>
 
 <script>
-    function editResult(id, empId, periodId, score, rankId, classification) {
+    function editResult(id, empId, periodId, score, rankId, classification, reviewComment) {
         document.getElementById('editId').value = id;
         document.getElementById('editEmployeeId').value = empId;
         document.getElementById('editPeriodId').value = periodId;
         document.getElementById('editTotalScore').value = score;
         document.getElementById('editRankId').value = rankId;
         document.getElementById('editClassification').value = classification || "Trung bình";
+        document.getElementById('editReviewComment').value = reviewComment || "";
         document.getElementById('editModalScoreHeader').innerText = parseFloat(score);
         
         var editModal = new bootstrap.Modal(document.getElementById('editModal'));
         editModal.show();
     }
+
+    document.getElementById('aiGenerateReviewBtn')?.addEventListener('click', async function () {
+        const resultId = parseInt(document.getElementById('editId').value || '0', 10);
+        if (!resultId) return;
+
+        const btn = this;
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> AI đang viết...';
+
+        try {
+            const response = await fetch('/AI/GenerateReview', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...window.antiForgeryHeaders()
+                },
+                body: JSON.stringify({ evaluationResultId: resultId })
+            });
+            const data = await response.json();
+            if (!response.ok || data.success === false) {
+                const message = data.warnings?.[0] || 'Không thể sinh nhận xét AI.';
+                Swal.fire('AI chưa sẵn sàng', message, 'warning');
+                return;
+            }
+            document.getElementById('editReviewComment').value = data.text || '';
+        } catch {
+            Swal.fire('Lỗi', 'Không thể kết nối AI. Vui lòng thử lại sau.', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    });
 </script>

@@ -14,5 +14,7 @@ namespace Manage_KPI_or_OKR_System.Models
         public int? RankId { get; set; }
         [StringLength(50)]
         public string? Classification { get; set; }
+        [StringLength(2000)]
+        public string? ReviewComment { get; set; }
     }
 }

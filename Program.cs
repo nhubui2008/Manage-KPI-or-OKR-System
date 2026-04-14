@@ -1,5 +1,6 @@
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
+using Manage_KPI_or_OKR_System.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using DotNetEnv;
@@ -23,6 +24,11 @@ builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.EmailService>();
 
 // Register OKRProgressService
 builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IOKRProgressService, Manage_KPI_or_OKR_System.Services.OKRProgressService>();
+
+// Register AI services
+builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+builder.Services.AddScoped<IAIDataService, AIDataService>();
+builder.Services.AddScoped<IAIAlertService, AIAlertService>();
 
 // Đăng ký Data Protection & EncryptionHelper
 builder.Services.AddDataProtection();

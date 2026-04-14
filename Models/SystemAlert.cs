@@ -11,6 +11,13 @@ namespace Manage_KPI_or_OKR_System.Models
         [StringLength(255)]
         public string? Content { get; set; }
         public int? ReceiverId { get; set; }
+        [StringLength(30)]
+        public string? Severity { get; set; }
+        [StringLength(50)]
+        public string? SourceType { get; set; }
+        public int? SourceRefId { get; set; }
+        public int? PeriodId { get; set; }
+        public DateTime? ExpiresAt { get; set; }
         public bool? IsRead { get; set; } = false;
         public DateTime? CreateDate { get; set; } = DateTime.Now;
     }

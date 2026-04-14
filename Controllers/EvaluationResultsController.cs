@@ -131,6 +131,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 existing.TotalScore = model.TotalScore;
                 existing.RankId = model.RankId;
                 existing.Classification = model.Classification;
+                existing.ReviewComment = model.ReviewComment;
 
                 _context.Update(existing);
                 await _context.SaveChangesAsync();

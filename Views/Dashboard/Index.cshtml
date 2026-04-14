@@ -159,6 +159,25 @@
     </div>
 </div>
 
+@* ============ AI PERFORMANCE ANALYSIS ============ *@
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-stars text-primary"></i> AI Phân tích Hiệu suất</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="runAiPerformanceAnalysis" data-period-id="@(selectedPeriod?.Id)">
+                    <i class="bi bi-magic me-1"></i> Phân tích
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="aiPerformanceAnalysisResult" class="text-muted small">
+                    Chọn kỳ báo cáo rồi bấm phân tích để AI tóm tắt xu hướng, rủi ro và hành động cải thiện.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @* ============ MAIN CHART + RECENT CHECKINS ============ *@
 <div class="row g-4 mb-4">
     <div class="col-lg-8">
@@ -374,6 +393,43 @@
         const deptProgress = @Html.Raw(ViewBag.DeptProgress ?? "[]");
         const mainLabels = @Html.Raw(ViewBag.MainChartLabels ?? "[]");
         const mainData = @Html.Raw(ViewBag.MainChartData ?? "[]");
+
+        document.getElementById('runAiPerformanceAnalysis')?.addEventListener('click', async function () {
+            const btn = this;
+            const result = document.getElementById('aiPerformanceAnalysisResult');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> AI đang phân tích...';
+            result.innerHTML = '<div class="text-muted small">Đang tổng hợp dữ liệu KPI/OKR...</div>';
+
+            try {
+                const response = await fetch('/AI/AnalyzePerformance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...window.antiForgeryHeaders()
+                    },
+                    body: JSON.stringify({ periodId: btn.dataset.periodId ? parseInt(btn.dataset.periodId, 10) : null })
+                });
+                const data = await response.json();
+                if (!response.ok || data.success === false) {
+                    result.innerHTML = `<div class="alert alert-warning mb-0">${escapeHtml(data.warnings?.[0] || 'Không thể phân tích AI.')}</div>`;
+                    return;
+                }
+                result.innerHTML = `<div class="ai-result-card">${formatAiAnalysis(data.text || '')}</div>`;
+            } catch {
+                result.innerHTML = '<div class="alert alert-danger mb-0">Không thể kết nối AI. Vui lòng thử lại sau.</div>';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        });
+
+        function formatAiAnalysis(text) {
+            return escapeHtml(text)
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+        }
 
         // --- 1. BIỂU ĐỒ XU HƯỚNG 6 THÁNG GẦN NHẤT ---
         const ctxMain = document.getElementById('mainDashboardChart').getContext('2d');

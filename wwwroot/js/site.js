@@ -446,14 +446,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // 2. Header Notification Bell (Thông báo)
-    const notifBtn = document.querySelector('.header-icon-btn[title="Thông báo hệ thống"]');
-    if (notifBtn) {
-        notifBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            showComingSoonToast('Thông báo hệ thống');
-        });
-    }
+    // 2. Header Notification Bell is handled by Bootstrap dropdown in _Layout.
 
     // 3. Settings dropdown item (Cài đặt)
     const settingsLink = document.querySelector('.dropdown-item[href="#"]');
