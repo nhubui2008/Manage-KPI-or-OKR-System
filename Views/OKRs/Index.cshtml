@@ -145,21 +145,28 @@
                                                 </div>
                                             </div>
 
-                                            @if (canCreateOkr || canDeleteOkr)
+                                            @if (canCreateOkr || canEditOkr || canDeleteOkr)
                                             {
                                                 <div style="width: 45px;"></div>
                                             }
                                         </div>
 
-                                        @if (canCreateOkr || canDeleteOkr)
+                                        @if (canCreateOkr || canEditOkr || canDeleteOkr)
                                         {
                                             <div class="action-btns dropdown position-absolute" style="right: 50px; top: 50%; transform: translateY(-50%); z-index: 10;" onclick="event.stopPropagation();">
                                                 <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
                                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                                    @if (canEditOkr)
+                                                    {
+                                                        <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@okr.Id"><i class="bi bi-pencil-square me-2 text-primary"></i>Chỉnh sửa OKR</a></li>
+                                                    }
                                                     @if (canCreateOkr)
                                                     {
                                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
                                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên</a></li>
+                                                    }
+                                                    @if ((canEditOkr || canCreateOkr) && canDeleteOkr)
+                                                    {
                                                         <li><hr class="dropdown-divider"></li>
                                                     }
                                                     @if (canDeleteOkr)

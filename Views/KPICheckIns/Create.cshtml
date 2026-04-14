@@ -10,13 +10,15 @@
     var statuses = ViewBag.AllStatuses as List<Manage_KPI_or_OKR_System.Models.CheckInStatus> ?? new List<Manage_KPI_or_OKR_System.Models.CheckInStatus>();
     var failReasons = ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>();
     var kpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
+    var assignmentWeights = ViewBag.AssignmentWeights as Dictionary<int, Dictionary<int, decimal>> ?? new Dictionary<int, Dictionary<int, decimal>>();
     
     // Serialize data for JS use
-    var kpiDataJson = JsonSerializer.Serialize(kpiData.ToDictionary(k => k.Key, v => new {
-        target = v.Value.TargetValue,
-        unit = v.Value.MeasurementUnit,
-        isInverse = v.Value.IsInverse
+    var kpiDataJson = JsonSerializer.Serialize(kpiData.ToDictionary(kvp => kvp.Key, kvp => new {
+        target = kvp.Value.TargetValue,
+        unit = kvp.Value.MeasurementUnit,
+        isInverse = kvp.Value.IsInverse
     }));
+    var assignmentWeightsJson = JsonSerializer.Serialize(assignmentWeights);
 }
 
 <div class="page-content">
@@ -64,7 +66,7 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Nhân viên <span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-person-badge"></i>
-                                        <select asp-for="EmployeeId" class="form-select shadow-sm" required>
+                                        <select asp-for="EmployeeId" id="employeeSelect" class="form-select shadow-sm" required>
                                             @if(employees.Count != 1) { <option value="">-- Chọn nhân viên --</option> }
                                             @foreach(var e in employees)
                                             {
@@ -178,8 +180,20 @@
                                 <i class="bi bi-graph-up-arrow fs-3 text-white"></i>
                             </div>
                             <div>
-                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small">Mục tiêu hiện tại</h6>
+                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small">Tổng chỉ tiêu</h6>
                                 <h4 class="mb-0 fw-800" id="targetDisplay">--</h4>
+                            </div>
+                        </div>
+
+                        <div class="bg-white bg-opacity-10 p-3 rounded-4 mb-4 border border-white border-opacity-20 shadow-sm" id="individualTargetContainer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="small opacity-75 text-uppercase fw-bold" style="font-size: 0.7rem;">Chỉ tiêu cá nhân (<span id="weightLabel">100%</span>)</div>
+                                    <div class="h3 mb-0 fw-bold" id="individualTargetDisplay">--</div>
+                                </div>
+                                <div class="bg-white bg-opacity-20 p-2 rounded-3">
+                                    <i class="bi bi-person-check fs-4"></i>
+                                </div>
                             </div>
                         </div>
                         
@@ -256,7 +270,9 @@
 
     <script>
         const kpiMap = @Html.Raw(kpiDataJson);
+        const assignmentWeights = @Html.Raw(assignmentWeightsJson);
         const kpiSelect = document.getElementById('kpiSelect');
+        const employeeSelect = document.getElementById('employeeSelect');
         const achievedInput = document.getElementById('achievedInput');
         const targetDisplay = document.getElementById('targetDisplay');
         const unitDisplay = document.getElementById('unitDisplay');
@@ -271,6 +287,10 @@
             if (kpiId && kpiMap[kpiId]) {
                 const data = kpiMap[kpiId];
                 const target = data.target || 0;
+                const employeeId = employeeSelect.value;
+                const employeeWeights = assignmentWeights[employeeId] || {};
+                const weight = employeeWeights[kpiId] || 100;
+                const individualTarget = target * (weight / 100);
                 const unit = data.unit || 'đơn vị';
                 const isInverse = data.isInverse;
                 const unitConfig = window.applyMeasurementUnitConfigToInputs
@@ -278,22 +298,24 @@
                     : { suffix: unit };
 
                 targetDisplay.textContent = new Intl.NumberFormat().format(target);
+                document.getElementById('individualTargetDisplay').textContent = new Intl.NumberFormat().format(individualTarget);
+                document.getElementById('weightLabel').textContent = weight + '%';
                 unitDisplay.textContent = unit;
                 document.getElementById('achievedUnitSuffix').textContent = unitConfig.suffix || unit;
                 modeDisplay.textContent = isInverse ? "Càng thấp càng tốt" : "Càng cao càng tốt";
 
                 let progress = 0;
-                if (target > 0) {
+                if (individualTarget > 0) {
                     if (isInverse) {
-                        if (value <= target) {
+                        if (value <= individualTarget) {
                             progress = 100;
                         } else {
-                            const excess = value - target;
-                            const penalty = (excess / target) * 100;
+                            const excess = value - individualTarget;
+                            const penalty = (excess / individualTarget) * 100;
                             progress = Math.max(0, 100 - penalty);
                         }
                     } else {
-                        progress = (value / target) * 100;
+                        progress = (value / individualTarget) * 100;
                     }
                 }
 
@@ -323,6 +345,7 @@
         }
 
         kpiSelect.addEventListener('change', updateStats);
+        employeeSelect.addEventListener('change', updateStats);
         achievedInput.addEventListener('input', updateStats);
 
         // Initial check if pre-filled

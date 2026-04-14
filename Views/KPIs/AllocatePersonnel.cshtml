@@ -1,0 +1,378 @@
+@model Manage_KPI_or_OKR_System.Models.KPI
+@{
+    ViewData["Title"] = "Phân bổ nhân sự KPI";
+    var detail = ViewBag.KPIDetail as Manage_KPI_or_OKR_System.Models.KPIDetail;
+    var currentAssignments = ViewBag.Assignments as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    var groupedEmployees = ViewBag.GroupedEmployees as Dictionary<string, List<Manage_KPI_or_OKR_System.Models.Employee>> ?? new Dictionary<string, List<Manage_KPI_or_OKR_System.Models.Employee>>();
+    
+    var targetValue = (decimal?)detail?.TargetValue ?? 0m;
+    var unit = detail?.MeasurementUnit ?? "";
+}
+
+<div class="container-fluid px-0">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Phân bổ nhân sự: @Model.KPIName</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <a asp-action="Index">Danh sách KPI</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <a asp-action="Details" asp-route-id="@Model.Id">Chi tiết</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Phân bổ nhân sự</span>
+            </div>
+        </div>
+        <div>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <!-- Thông tin KPI -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-primary bg-opacity-10">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="fw-bold text-primary mb-1">@Model.KPIName</h5>
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-calendar-event me-1"></i> Chu kỳ: <span class="fw-semibold">@ViewBag.PeriodName</span> | 
+                        <i class="bi bi-bullseye me-1"></i> Tổng chỉ tiêu: <span class="fw-bold text-success">@String.Format("{0:N0}", targetValue) @unit</span>
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <div id="summaryCard" class="bg-white p-3 rounded-4 shadow-sm border border-primary border-opacity-25 d-inline-block text-start" style="min-width: 200px;">
+                        <div class="text-muted small text-uppercase fw-bold mb-1">Tổng phân bổ</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span id="totalPercentageDisplay" class="fs-3 fw-bold text-primary">0%</span>
+                            <i id="validationIcon" class="bi bi-exclamation-circle text-warning fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="AssignPersonnel" method="post" id="allocationForm">
+        <input type="hidden" name="kpiId" value="@Model.Id" />
+        <input type="hidden" name="returnUrl" value="@Url.Action("Details", new { id = Model.Id })" />
+        
+        <div class="row g-4">
+            <!-- Cột Trái: Danh sách nhân viên -->
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-people text-info me-2"></i>Chọn nhân viên</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="input-group mb-3 position-relative">
+                            <span class="input-group-text bg-light border-0 ps-3 rounded-pill-start">
+                                <i class="bi bi-search text-muted"></i>
+                            </span>
+                            <input type="text" id="employeeSearch" class="form-control bg-light border-0 py-2 rounded-pill-end" placeholder="Tìm tên hoặc mã nhân viên...">
+                        </div>
+                        
+                        <div class="employee-selector-list" style="max-height: 500px; overflow-y: auto;">
+                            @foreach (var group in groupedEmployees)
+                            {
+                                var departmentNameJson = System.Text.Json.JsonSerializer.Serialize(group.Key);
+                                <div class="department-group mb-4" data-dept="@group.Key">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                                        <h6 class="text-uppercase fw-bold text-primary smaller mb-0">
+                                            <i class="bi bi-building me-1"></i> @group.Key
+                                        </h6>
+                                        <div class="form-check form-switch m-0" style="min-height: auto;">
+                                            <input class="form-check-input dept-toggle" type="checkbox" role="switch" id="toggle-@group.Key.Replace(" ", "-")" onchange="toggleDepartment(@Html.Raw(departmentNameJson), this)">
+                                            <label class="form-check-label smaller text-muted cursor-pointer" for="toggle-@group.Key.Replace(" ", "-")">Tất cả</label>
+                                        </div>
+                                    </div>
+                                    
+                                    @foreach (var emp in group.Value)
+                                    {
+                                        var isAssigned = currentAssignments.ContainsKey(emp.Id);
+                                        <div class="employee-select-item p-2 mb-2 rounded-3 transition-hover border @(isAssigned ? "border-primary bg-primary bg-opacity-5" : "border-transparent bg-light")" 
+                                             data-search="@emp.FullName?.ToLower() @emp.EmployeeCode?.ToLower()"
+                                             data-dept="@group.Key"
+                                             onclick="handleItemClick(event, @emp.Id)">
+                                            <div class="form-check m-0 d-flex align-items-center">
+                                                <input class="form-check-input ms-0 me-3 employee-cb" type="checkbox" name="employeeIds" value="@emp.Id" id="cb-@emp.Id" @(isAssigned ? "checked" : "") data-dept="@group.Key">
+                                                <div class="flex-grow-1 cursor-pointer">
+                                                    <div class="fw-bold text-dark">@emp.FullName</div>
+                                                    <div class="text-muted smaller">@emp.EmployeeCode</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cột Phải: Phân bổ chi tiết -->
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-sliders text-primary me-2"></i>Thiết lập tỷ lệ</h5>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="equalizeWeights()">
+                            <i class="bi bi-distribute-vertical me-1"></i> Chia đều
+                        </button>
+                    </div>
+                    <div class="card-body p-4 bg-light bg-opacity-30">
+                        <div id="allocationList" class="d-flex flex-column gap-3">
+                            <!-- Cards will be injected here by JS -->
+                            <div id="emptyState" class="text-center py-5 text-muted @(currentAssignments.Any() ? "d-none" : "")">
+                                <i class="bi bi-person-plus fs-1 opacity-25"></i>
+                                <p class="mt-2 text-uppercase fw-bold small">Chọn nhân viên từ cột bên trái để bắt đầu phân bổ</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-0 p-4">
+                        <button type="submit" class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm" id="saveBtn">
+                            <i class="bi bi-check2-circle me-2"></i> Lưu phân bổ nhân sự
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<template id="allocationCardTemplate">
+    <div class="allocation-card card border-0 shadow-sm rounded-4 animate__animated animate__fadeInUp animate__faster" id="card-{id}">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar-sm bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark name-label"></div>
+                        <div class="text-muted smaller code-label"></div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" onclick="removeEmployee({id})"></button>
+            </div>
+            
+            <div class="row align-items-center g-3">
+                <div class="col-md-8">
+                    <input type="range" class="form-range weight-slider" min="0" max="100" step="1" 
+                           oninput="onWeightChange({id}, this.value)">
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm">
+                        <input type="number" name="weights" class="form-control fw-bold text-center weight-input" 
+                               min="0" max="100" step="0.1" value="{weight}" id="input-{id}"
+                               oninput="onWeightChange({id}, this.value)">
+                        <span class="input-group-text bg-light border-start-0">%</span>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-2 opacity-5">
+            <div class="d-flex justify-content-between align-items-center text-muted smaller">
+                <span>Chỉ tiêu tính toán:</span>
+                <span class="fw-bold text-primary target-calc">0 @unit</span>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style>
+    .employee-select-item { cursor: pointer; border-width: 2px !important; }
+    .employee-select-item:hover { transform: translateX(5px); }
+    .transition-hover { transition: all 0.2s ease; }
+    .smaller { font-size: 0.75rem; }
+    
+    .allocation-card { border-left: 4px solid var(--primary) !important; }
+    
+    .employee-selector-list::-webkit-scrollbar { width: 4px; }
+    .employee-selector-list::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 4px; }
+
+    #summaryCard.valid { border-color: var(--success) !important; background: var(--success-bg) !important; }
+    #summaryCard.invalid { border-color: var(--danger) !important; background: var(--danger-bg) !important; }
+</style>
+
+<script>
+    const totalKpiTarget = @Json.Serialize(targetValue);
+    const initialAssignments = @Json.Serialize(currentAssignments);
+    const employeesData = @Json.Serialize(groupedEmployees.SelectMany(g => g.Value).ToDictionary(e => e.Id, e => new { name = e.FullName, code = e.EmployeeCode }));
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize existing assignments
+        const assignmentKeys = Object.keys(initialAssignments);
+        if (assignmentKeys.length > 0) {
+            assignmentKeys.forEach(empId => {
+                renderAllocationCard(parseInt(empId), initialAssignments[empId]);
+            });
+        }
+        updateTotals();
+    });
+
+    function handleItemClick(event, empId) {
+        if (event.target.tagName === 'INPUT') return;
+        const cb = document.getElementById('cb-' + empId);
+        cb.checked = !cb.checked;
+        onCheckboxChange(cb);
+    }
+
+    document.querySelectorAll('.employee-cb').forEach(cb => {
+        cb.addEventListener('change', function() {
+            onCheckboxChange(this);
+        });
+    });
+
+    function onCheckboxChange(cb) {
+        const empId = parseInt(cb.value);
+        const item = cb.closest('.employee-select-item');
+        
+        if (cb.checked) {
+            item.classList.add('border-primary', 'bg-primary', 'bg-opacity-5');
+            renderAllocationCard(empId, 0); // Start with 0 if new
+            updateTotals();
+        } else {
+            item.classList.remove('border-primary', 'bg-primary', 'bg-opacity-5');
+            removeEmployee(empId, false);
+        }
+    }
+
+    function renderAllocationCard(empId, weight) {
+        document.getElementById('emptyState').classList.add('d-none');
+        
+        if (document.getElementById('card-' + empId)) return;
+
+        const template = document.getElementById('allocationCardTemplate').innerHTML;
+        const data = employeesData[empId];
+        
+        let html = template.replaceAll('{id}', empId)
+                           .replace('{weight}', weight)
+                           .replace('{name}', data.name)
+                           .replace('{code}', data.code);
+        
+        const container = document.getElementById('allocationList');
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = html;
+        const cardNode = wrapper.firstElementChild;
+        
+        container.appendChild(cardNode);
+        
+        // Internal setup
+        const card = document.getElementById('card-' + empId);
+        card.querySelector('.name-label').innerText = data.name;
+        card.querySelector('.code-label').innerText = data.code;
+        card.querySelector('.weight-slider').value = weight;
+        
+        updateCalculatedTarget(empId, weight);
+    }
+
+    function onWeightChange(empId, value) {
+        const slider = document.querySelector(`#card-${empId} .weight-slider`);
+        const input = document.getElementById('input-' + empId);
+        
+        slider.value = value;
+        input.value = value;
+        
+        updateCalculatedTarget(empId, value);
+        updateTotals();
+    }
+
+    function removeEmployee(empId, updateCheckbox = true) {
+        const card = document.getElementById('card-' + empId);
+        if (card) {
+            card.classList.replace('animate__fadeInUp', 'animate__fadeOutDown');
+            setTimeout(() => {
+                card.remove();
+                if (document.querySelectorAll('.allocation-card').length === 0) {
+                    document.getElementById('emptyState').classList.remove('d-none');
+                }
+                updateTotals();
+            }, 200);
+        }
+        
+        if (updateCheckbox) {
+            const cb = document.getElementById('cb-' + empId);
+            cb.checked = false;
+            cb.closest('.employee-select-item').classList.remove('border-primary', 'bg-primary', 'bg-opacity-5');
+        }
+    }
+
+    function updateCalculatedTarget(empId, weight) {
+        const targetLabel = document.querySelector(`#card-${empId} .target-calc`);
+        const calcValue = (totalKpiTarget * (weight / 100)).toLocaleString();
+        targetLabel.innerText = calcValue + ' ' + '@unit';
+    }
+
+    function equalizeWeights() {
+        const cards = document.querySelectorAll('.allocation-card');
+        if (cards.length === 0) return;
+        
+        const equalWeight = (100 / cards.length).toFixed(1);
+        cards.forEach(card => {
+            const id = card.id.replace('card-', '');
+            onWeightChange(id, equalWeight);
+        });
+    }
+
+    function updateTotals() {
+        const inputs = document.querySelectorAll('.weight-input');
+        let total = 0;
+        inputs.forEach(input => total += parseFloat(input.value || 0));
+        
+        const display = document.getElementById('totalPercentageDisplay');
+        const card = document.getElementById('summaryCard');
+        const icon = document.getElementById('validationIcon');
+        const saveBtn = document.getElementById('saveBtn');
+        
+        display.innerText = Math.round(total) + '%';
+        
+        card.classList.remove('valid', 'invalid');
+        if (Math.abs(total - 100) < 0.1) {
+            card.classList.add('valid');
+            icon.className = 'bi bi-check-circle-fill text-success fs-4';
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="bi bi-check2-circle me-2"></i> Lưu phân bổ nhân sự';
+        } else {
+            card.classList.add('invalid');
+            icon.className = 'bi bi-exclamation-circle-fill text-danger fs-4';
+            // Optional: warn user but don't strictly block if they don't want 100% split
+            // saveBtn.disabled = true;
+            saveBtn.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i> Tổng ${Math.round(total)}% (Cần 100%)`;
+        }
+    }
+
+    function toggleDepartment(deptName, toggle) {
+        const checkboxes = Array.from(document.querySelectorAll('.employee-cb'))
+            .filter(cb => cb.dataset.dept === deptName);
+        checkboxes.forEach(cb => {
+            if (cb.checked !== toggle.checked) {
+                cb.checked = toggle.checked;
+                onCheckboxChange(cb);
+            }
+        });
+    }
+
+    // Search functionality for employee list
+    document.getElementById('employeeSearch').addEventListener('input', function(e) {
+        const searchText = e.target.value.toLowerCase();
+        
+        // Loop through each department group
+        document.querySelectorAll('.department-group').forEach(group => {
+            const items = group.querySelectorAll('.employee-select-item');
+            let hasVisible = false;
+            
+            items.forEach(item => {
+                const data = item.getAttribute('data-search');
+                if (data.includes(searchText)) {
+                    item.style.display = 'block';
+                    hasVisible = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Hide/Show department header
+            group.style.display = hasVisible ? 'block' : 'none';
+        });
+    });
+</script>

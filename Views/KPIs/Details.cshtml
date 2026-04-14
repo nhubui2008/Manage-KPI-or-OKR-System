@@ -113,6 +113,50 @@
                 </div>
             </div>
 
+            <!-- Tiến độ nhóm -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Tiến độ tổng hợp nhóm</h5>
+                        <div class="text-end">
+                            <span class="fs-4 fw-bold text-primary">@ViewBag.GroupProgressPercentage%</span>
+                        </div>
+                    </div>
+
+                    @{
+                        decimal groupProgress = ViewBag.GroupProgressPercentage ?? 0m;
+                        string progressColor = groupProgress >= 100 ? "bg-success" :
+                                             groupProgress >= 70 ? "bg-primary" :
+                                             groupProgress >= 40 ? "bg-warning" : "bg-danger";
+                    }
+
+                    <div class="progress rounded-pill mb-3" style="height: 12px; background-color: #f1f5f9;">
+                        <div class="progress-bar @progressColor progress-bar-striped progress-bar-animated rounded-pill"
+                             role="progressbar" style="width: @(Math.Min(100, groupProgress))%"
+                             aria-valuenow="@groupProgress" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill fw-bold">
+                                Thực tế: @String.Format("{0:N0}", ViewBag.TotalGroupAchieved ?? 0) @currentMeasurementUnit
+                            </span>
+                            <span class="badge bg-warning bg-opacity-10 text-danger border border-warning border-opacity-25 px-3 py-2 rounded-pill fw-bold">
+                                Còn lại: @String.Format("{0:N0}", ViewBag.RemainingGroupValue ?? 0) @currentMeasurementUnit
+                            </span>
+                            <i class="bi bi-arrow-right text-muted mx-1"></i>
+                            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-bold">
+                                Chỉ tiêu: @String.Format("{0:N0}", detail?.TargetValue ?? 0) @currentMeasurementUnit
+                            </span>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="bi bi-info-circle me-1"></i> Tính dựa trên cập nhật mới nhất của mỗi nhân viên
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
             <!-- Lịch sử Check-in -->
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
@@ -138,7 +182,7 @@
                                     foreach (var ci in recentCheckIns)
                                     {
                                         decimal achievedValue = ci.AchievedValue != null ? (decimal)ci.AchievedValue : 0m;
-                                        decimal progress = detail != null ? ProgressHelper.CalculateProgress(achievedValue, detail.TargetValue ?? 0, detail.IsInverse) : 0m;
+                                        decimal progress = ci.ProgressPercentage != null ? (decimal)ci.ProgressPercentage : 0m;
                                         decimal progressWidth = Math.Min(100, progress);
                                         <tr>
                                             <td class="ps-4 text-muted small">@ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm")</td>
@@ -156,7 +200,7 @@
                                                 @if (ci.StatusId != null && statuses.ContainsKey(ci.StatusId))
                                                 {
                                                     string statusName = statuses[ci.StatusId];
-                                                    string badgeClass = statusName == "Đạt" ? "bg-success" : 
+                                                    string badgeClass = statusName == "Đạt" ? "bg-success" :
                                                                        statusName == "Gần đạt" ? "bg-warning" : "bg-danger";
                                                     <span class="badge @badgeClass text-white rounded-pill px-3">@statusName</span>
                                                 }
@@ -194,8 +238,14 @@
         <div class="col-lg-4">
             <!-- Nhân viên phụ trách -->
             <div class="card border-0 shadow-sm rounded-4 mb-4">
-                <div class="card-header bg-white border-0 py-3">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 fw-bold"><i class="bi bi-people text-info me-2"></i>Nhân sự phụ trách</h5>
+                    @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Sales") || User.IsInRole("sales")))
+                    {
+                        <a asp-action="AllocatePersonnel" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                            <i class="bi bi-person-plus me-1"></i> @(assignments.Any() ? "Phân bổ lại" : "Phân bổ")
+                        </a>
+                    }
                 </div>
                 <div class="card-body p-4">
                     @if (assignments.Any())
@@ -203,13 +253,42 @@
                         <div class="d-flex flex-column gap-3">
                             @foreach (var emp in assignments)
                             {
+                                var weight = ViewBag.AssignmentWeights is Dictionary<int, decimal> weights && weights.ContainsKey(emp.Key) ? weights[emp.Key] : 100m;
+                                var individualTarget = ((decimal?)detail?.TargetValue ?? 0m) * (weight / 100m);
+                                var unit = detail?.MeasurementUnit ?? "";
+
                                 <div class="d-flex align-items-center gap-3 p-2 bg-light rounded-3 transition-hover">
                                     <div class="avatar-sm bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                                         <i class="bi bi-person-fill"></i>
                                     </div>
-                                    <div>
-                                        <p class="mb-0 fw-bold text-dark">@emp.Value</p>
-                                        <span class="text-muted smaller">ID: @emp.Key</span>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <p class="mb-0 fw-bold text-dark">@emp.Value</p>
+                                            <span class="text-muted smaller">ID: @emp.Key</span>
+                                        </div>
+                                        @{
+                                            decimal indAchieved = 0;
+                                            var achievements = ViewBag.IndividualAchievements as Dictionary<int, decimal>;
+                                            if (achievements != null && achievements.ContainsKey(emp.Key))
+                                            {
+                                                indAchieved = achievements[emp.Key];
+                                            }
+                                            decimal indRemaining = Math.Max(0, individualTarget - indAchieved);
+                                            decimal indProgress = individualTarget > 0 ? (indAchieved / individualTarget) * 100 : 0;
+                                        }
+                                        <div class="text-muted mb-1" style="font-size: 0.75rem;">
+                                            <span class="me-2"><i class="bi bi-bullseye me-1"></i>Chỉ tiêu: <strong>@String.Format("{0:N0}", individualTarget)</strong></span>
+                                            <span class="text-danger"><i class="bi bi-hourglass-split me-1"></i>Còn lại: <strong>@String.Format("{0:N0}", indRemaining)</strong></span>
+                                        </div>
+                                        <div class="progress rounded-pill" style="height: 6px; background-color: #f1f5f9;">
+                                            <div class="progress-bar @(indProgress >= 100 ? "bg-success" : "bg-primary")" role="progressbar"
+                                                 style="width: @(Math.Min(100, indProgress))%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3">
+                                            @Math.Round(weight, 0)%
+                                        </div>
                                     </div>
                                 </div>
                             }
@@ -236,20 +315,20 @@
 </div>
 
 <style>
-    .bg-soft-success { 
-        background-color: #ecfdf5; 
+    .bg-soft-success {
+        background-color: #ecfdf5;
         border: 1px solid #10b98120;
     }
-    .bg-soft-danger { 
-        background-color: #fef2f2; 
+    .bg-soft-danger {
+        background-color: #fef2f2;
         border: 1px solid #ef444420;
     }
-    .bg-soft-warning { 
-        background-color: #fffbeb; 
+    .bg-soft-warning {
+        background-color: #fffbeb;
         border: 1px solid #f59e0b20;
     }
-    .bg-soft-primary { 
-        background-color: #eff6ff; 
+    .bg-soft-primary {
+        background-color: #eff6ff;
         border: 1px solid #3b82f620;
     }
 
@@ -257,14 +336,14 @@
     .text-danger { color: #dc2626 !important; }
     .text-warning { color: #d97706 !important; }
     .text-primary { color: #1d4ed8 !important; }
-    
+
     .transition-hover:hover {
         background-color: #f8fafc !important;
         transform: translateX(4px);
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
     }
-    
+
     .smaller { font-size: 0.75rem; }
 </style>
 
@@ -280,7 +359,7 @@
                 <form asp-action="Edit" method="post">
                     <input type="hidden" name="id" value="@Model.Id" />
                     <input type="hidden" name="kpi.Id" value="@Model.Id" />
-                    
+
                     <h6 class="fw-bold text-primary mb-3">Thông tin chung</h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-12">
@@ -327,7 +406,7 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <h6 class="fw-bold text-primary mb-3"><i class="bi bi-sliders me-2"></i>Chi tiết Chỉ tiêu</h6>
                     <div class="row g-3 mb-4 bg-light p-3 rounded-3" data-measurement-scope>
                         <div class="col-md-6">

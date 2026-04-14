@@ -198,6 +198,105 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View(model);
         }
 
+        [HttpGet]
+        [HasPermission("OKRS_EDIT")]
+        public async Task<IActionResult> Edit(int id)
+        {
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales"))
+                return Forbid();
+
+            var okr = await _context.OKRs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Id == id && o.IsActive == true);
+            if (okr == null) return NotFound();
+
+            ViewBag.MissionId = (await _context.OKR_Mission_Mappings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.OKRId == id))?.MissionId;
+            ViewBag.DepartmentId = (await _context.OKR_Department_Allocations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.OKRId == id))?.DepartmentId;
+            ViewBag.EmployeeId = (await _context.OKR_Employee_Allocations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.OKRId == id))?.EmployeeId;
+
+            await PopulateOkrEditListsAsync();
+            return View(okr);
+        }
+
+        [HttpPost]
+        [HasPermission("OKRS_EDIT")]
+        public async Task<IActionResult> Edit(OKR model, int? missionId, int? departmentId, int? employeeId)
+        {
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales"))
+                return Forbid();
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.MissionId = missionId;
+                ViewBag.DepartmentId = departmentId;
+                ViewBag.EmployeeId = employeeId;
+                await PopulateOkrEditListsAsync();
+                TempData["ErrorMessage"] = "Có lỗi xảy ra, vui lòng kiểm tra lại dữ liệu.";
+                return View(model);
+            }
+
+            var existingOkr = await _context.OKRs.FindAsync(model.Id);
+            if (existingOkr == null || existingOkr.IsActive != true) return NotFound();
+
+            existingOkr.ObjectiveName = model.ObjectiveName;
+            existingOkr.OKRTypeId = model.OKRTypeId;
+            existingOkr.Cycle = model.Cycle;
+            existingOkr.StatusId = model.StatusId;
+
+            var existingMissions = await _context.OKR_Mission_Mappings
+                .Where(m => m.OKRId == model.Id)
+                .ToListAsync();
+            _context.OKR_Mission_Mappings.RemoveRange(existingMissions);
+            if (missionId.HasValue)
+            {
+                _context.OKR_Mission_Mappings.Add(new OKR_Mission_Mapping
+                {
+                    OKRId = model.Id,
+                    MissionId = missionId.Value
+                });
+            }
+
+            var existingDepartments = await _context.OKR_Department_Allocations
+                .Where(d => d.OKRId == model.Id)
+                .ToListAsync();
+            _context.OKR_Department_Allocations.RemoveRange(existingDepartments);
+            if (departmentId.HasValue)
+            {
+                _context.OKR_Department_Allocations.Add(new OKR_Department_Allocation
+                {
+                    OKRId = model.Id,
+                    DepartmentId = departmentId.Value
+                });
+            }
+
+            if (employeeId.HasValue)
+            {
+                var employeeAllocationExists = await _context.OKR_Employee_Allocations
+                    .AnyAsync(e => e.OKRId == model.Id && e.EmployeeId == employeeId.Value);
+                if (!employeeAllocationExists)
+                {
+                    _context.OKR_Employee_Allocations.Add(new OKR_Employee_Allocation
+                    {
+                        OKRId = model.Id,
+                        EmployeeId = employeeId.Value,
+                        AllocatedValue = 0
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã cập nhật OKR thành công!";
+            return RedirectToAction(nameof(Index));
+        }
+
         [HttpPost]
         [HasPermission("OKRS_CREATE")]
         public async Task<IActionResult> AddKeyResult(OKRKeyResult kr)
@@ -430,6 +529,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     unit = kr.Unit
                 }).ToList()
             };
+        }
+
+        private async Task PopulateOkrEditListsAsync()
+        {
+            ViewBag.Missions = await _context.MissionVisions
+                .Where(m => m.IsActive == true)
+                .ToListAsync();
+            ViewBag.Departments = await _context.Departments
+                .Where(d => d.IsActive == true)
+                .ToListAsync();
+            ViewBag.Employees = await _context.Employees
+                .Where(e => e.IsActive == true)
+                .ToListAsync();
+            ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
         }
 
         private bool IsRestrictedOkrRole()
