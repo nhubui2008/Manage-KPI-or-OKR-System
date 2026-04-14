@@ -22,7 +22,7 @@
             <div class="ai-chat-actions">
                 <button type="button" data-ai-prompt="Tóm tắt tiến độ KPI hiện tại của tôi">Tiến độ KPI</button>
                 <button type="button" data-ai-prompt="KPI nào đang có rủi ro không đạt?">KPI rủi ro</button>
-                <button type="button" data-ai-prompt="Gợi ý 3 hành động cải thiện hiệu suất tuần này">Gợi ý cải thiện</button>
+                <button type="button" data-ai-prompt="Gợi ý đúng 3 hành động cải thiện hiệu suất tuần này, đánh số 1, 2, 3 và mỗi hành động có cách làm cụ thể">Gợi ý cải thiện</button>
             </div>
             <form class="ai-chat-form" id="aiChatForm">
                 <textarea id="aiChatInput" rows="1" placeholder="Hỏi AI về KPI/OKR..." maxlength="1000"></textarea>
@@ -66,10 +66,54 @@
             }
 
             function formatAiText(text) {
-                const safe = window.escapeHtml ? window.escapeHtml(text || '') : String(text || '');
-                return safe
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\n/g, '<br>');
+                const lines = String(text || '')
+                    .replace(/\r\n/g, '\n')
+                    .split('\n')
+                    .map(line => line.trim());
+
+                const chunks = [];
+                let listType = null;
+                let listItems = [];
+
+                function escape(value) {
+                    return window.escapeHtml ? window.escapeHtml(value || '') : String(value || '');
+                }
+
+                function inlineMarkdown(value) {
+                    return escape(value).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                }
+
+                function flushList() {
+                    if (!listItems.length || !listType) return;
+                    chunks.push(`<${listType}>${listItems.map(item => `<li>${inlineMarkdown(item)}</li>`).join('')}</${listType}>`);
+                    listType = null;
+                    listItems = [];
+                }
+
+                lines.forEach(line => {
+                    if (!line) {
+                        flushList();
+                        return;
+                    }
+
+                    const unordered = line.match(/^[-*]\s+(.+)$/);
+                    const ordered = line.match(/^\d+[.)]\s+(.+)$/);
+                    if (unordered || ordered) {
+                        const nextListType = unordered ? 'ul' : 'ol';
+                        if (listType && listType !== nextListType) {
+                            flushList();
+                        }
+                        listType = nextListType;
+                        listItems.push((unordered || ordered)[1]);
+                        return;
+                    }
+
+                    flushList();
+                    chunks.push(`<p>${inlineMarkdown(line)}</p>`);
+                });
+
+                flushList();
+                return `<div class="ai-message-content">${chunks.join('')}</div>`;
             }
 
             async function sendPrompt(prompt) {

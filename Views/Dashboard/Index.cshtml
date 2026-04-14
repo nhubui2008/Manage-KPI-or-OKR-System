@@ -178,6 +178,42 @@
     </div>
 </div>
 
+<style>
+    #aiPerformanceAnalysisResult,
+    #aiPerformanceAnalysisResult .ai-result-card,
+    #aiPerformanceAnalysisResult .ai-analysis-content {
+        width: 100%;
+        max-width: 100%;
+        white-space: normal;
+        overflow: visible;
+        overflow-wrap: anywhere;
+        word-break: normal;
+        line-height: 1.7;
+    }
+
+    #aiPerformanceAnalysisResult .ai-result-card {
+        color: var(--text-secondary);
+    }
+
+    #aiPerformanceAnalysisResult .ai-analysis-content p {
+        margin: 0 0 0.75rem;
+    }
+
+    #aiPerformanceAnalysisResult .ai-analysis-content p:last-child,
+    #aiPerformanceAnalysisResult .ai-analysis-content ul:last-child {
+        margin-bottom: 0;
+    }
+
+    #aiPerformanceAnalysisResult .ai-analysis-content ul {
+        margin: 0 0 0.75rem;
+        padding-left: 1.1rem;
+    }
+
+    #aiPerformanceAnalysisResult .ai-analysis-content li {
+        margin-bottom: 0.35rem;
+    }
+</style>
+
 @* ============ MAIN CHART + RECENT CHECKINS ============ *@
 <div class="row g-4 mb-4">
     <div class="col-lg-8">
@@ -426,9 +462,43 @@
         });
 
         function formatAiAnalysis(text) {
-            return escapeHtml(text)
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\n/g, '<br>');
+            const lines = String(text || '')
+                .replace(/\r\n/g, '\n')
+                .split('\n')
+                .map(line => line.trim());
+
+            const chunks = [];
+            let listItems = [];
+
+            function inlineMarkdown(value) {
+                return escapeHtml(value)
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            }
+
+            function flushList() {
+                if (!listItems.length) return;
+                chunks.push(`<ul>${listItems.map(item => `<li>${inlineMarkdown(item)}</li>`).join('')}</ul>`);
+                listItems = [];
+            }
+
+            lines.forEach(line => {
+                if (!line) {
+                    flushList();
+                    return;
+                }
+
+                const bullet = line.match(/^[-*]\s+(.+)$/);
+                if (bullet) {
+                    listItems.push(bullet[1]);
+                    return;
+                }
+
+                flushList();
+                chunks.push(`<p>${inlineMarkdown(line)}</p>`);
+            });
+
+            flushList();
+            return `<div class="ai-analysis-content">${chunks.join('')}</div>`;
         }
 
         // --- 1. BIỂU ĐỒ XU HƯỚNG 6 THÁNG GẦN NHẤT ---

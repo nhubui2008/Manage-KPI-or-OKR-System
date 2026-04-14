@@ -52,7 +52,7 @@ namespace Manage_KPI_or_OKR_System.Services
                     var text = await _geminiService.GenerateTextAsync(
                         "Ban la AI phan tich KPI/OKR. Viet canh bao ngan gon bang tieng Viet, thuc te, khong bia them so lieu. Chi tra ve JSON array hop le.",
                         prompt,
-                        new GeminiGenerationOptions { Temperature = 0.2, MaxOutputTokens = 1200, ResponseMimeType = "application/json" },
+                        new GeminiGenerationOptions { Temperature = 0.2, ResponseMimeType = "application/json" },
                         cancellationToken);
                     alerts = ParseAlertDtos(text, candidates);
                 }

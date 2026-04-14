@@ -51,11 +51,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
                 prompt.AppendLine("Cau hoi hien tai:");
                 prompt.AppendLine(request.Message);
+                if (IsImprovementSuggestionRequest(request.Message))
+                {
+                    prompt.AppendLine("Yeu cau dinh dang bat buoc cho cau hoi nay:");
+                    prompt.AppendLine("- Tra ve dung 3 hanh dong cai thien, danh so 1, 2, 3 tren 3 dong rieng.");
+                    prompt.AppendLine("- Moi hanh dong gom ten hanh dong ngan gon va 1 cau cach lam cu the dua tren context.");
+                    prompt.AppendLine("- Khong dung loi mo dau dai; khong chi tra ve 1 muc.");
+                }
 
                 var text = await _geminiService.GenerateTextAsync(
-                    "Ban la VietMach AI Assistant cho he thong KPI/OKR. Tra loi bang tieng Viet, ngan gon, thuc te, chi dua vao context duoc cap. Neu thieu du lieu, noi ro thieu du lieu.",
+                    "Ban la VietMach AI Assistant cho he thong KPI/OKR. Tra loi bang tieng Viet, ngan gon, thuc te, chi dua vao context duoc cap. Neu thieu du lieu, noi ro thieu du lieu. Luon ton trong dung so luong muc ma nguoi dung yeu cau.",
                     prompt.ToString(),
-                    new GeminiGenerationOptions { Temperature = 0.35, MaxOutputTokens = 1000 },
+                    new GeminiGenerationOptions { Temperature = 0.35 },
                     cancellationToken);
 
                 return Ok(new AITextResponse { Text = text });
@@ -82,7 +89,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var text = await _geminiService.GenerateTextAsync(
                     "Ban la chuyen gia KPI/OKR. Tao KPI do luong duoc, gan voi vi tri/phong ban/OKR, khong trung lap voi KPI da co.",
                     prompt,
-                    new GeminiGenerationOptions { Temperature = 0.35, MaxOutputTokens = 1400, ResponseMimeType = "application/json" },
+                    new GeminiGenerationOptions { Temperature = 0.35, ResponseMimeType = "application/json" },
                     cancellationToken);
 
                 var suggestions = ParseSuggestedKpis(text);
@@ -133,7 +140,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var text = await _geminiService.GenerateTextAsync(
                     "Ban la AI phan tich hieu suat KPI/OKR. Viet bang tieng Viet, cau truc gom: Tong quan, Diem manh, Rui ro, Goi y hanh dong. Khong bia so lieu.",
                     context,
-                    new GeminiGenerationOptions { Temperature = 0.3, MaxOutputTokens = 1200 },
+                    new GeminiGenerationOptions { Temperature = 0.3 },
                     cancellationToken);
 
                 return Ok(new AITextResponse { Text = text });
@@ -158,7 +165,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var text = await _geminiService.GenerateTextAsync(
                     "Ban la tro ly HR viet nhan xet danh gia 1-1. Viet 1-2 doan tieng Viet chuyen nghiep, can bang thanh tich/rui ro/goi y cai thien, dua tren du lieu thuc te.",
                     reviewContext.ContextText,
-                    new GeminiGenerationOptions { Temperature = 0.35, MaxOutputTokens = 900 },
+                    new GeminiGenerationOptions { Temperature = 0.35 },
                     cancellationToken);
 
                 return Ok(new AITextResponse { Text = text });
@@ -209,6 +216,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 return new List<SuggestedKpi>();
             }
+        }
+
+        private static bool IsImprovementSuggestionRequest(string? message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return false;
+            }
+
+            var normalized = message.ToLowerInvariant();
+            return (normalized.Contains("goi y") || normalized.Contains("gợi ý")) &&
+                   (normalized.Contains("cai thien") || normalized.Contains("cải thiện"));
         }
 
         private static string ExtractJsonArray(string text)

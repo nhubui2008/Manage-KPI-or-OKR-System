@@ -12,7 +12,6 @@ namespace Manage_KPI_or_OKR_System.Services
     public class GeminiGenerationOptions
     {
         public double? Temperature { get; set; }
-        public int? MaxOutputTokens { get; set; }
         public string? ResponseMimeType { get; set; }
     }
 
@@ -63,8 +62,7 @@ namespace Manage_KPI_or_OKR_System.Services
 
             var generationConfig = new Dictionary<string, object?>
             {
-                ["temperature"] = options?.Temperature ?? 0.3,
-                ["maxOutputTokens"] = options?.MaxOutputTokens ?? 1200
+                ["temperature"] = options?.Temperature ?? 0.3
             };
 
             if (!string.IsNullOrWhiteSpace(options?.ResponseMimeType))
