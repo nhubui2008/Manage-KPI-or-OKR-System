@@ -554,4 +554,55 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Xuất ra window để gọi thủ công nếu cần
     window.refreshSelect2 = initGlobalSelect2;
+
+    // =========================================================
+    // THÊM MỚI: Tối ưu hóa giao diện Thông báo đẩy (Push Notifications) Toàn Cục
+    // Chuyển rải rác các alert HTML thô thành Toast Notification hiện đại
+    // =========================================================
+    const flashAlerts = document.querySelectorAll('.alert-success[role="alert"], .alert-danger[role="alert"]');
+    
+    flashAlerts.forEach(function (alertEl) {
+        if (alertEl.querySelector('ul') || alertEl.classList.contains('validation-summary-errors')) return;
+
+        let message = '';
+        alertEl.childNodes.forEach(node => {
+            if (node.nodeType === 3) { 
+                message += node.textContent;
+            } else if (node.tagName && node.tagName.toLowerCase() !== 'i' && node.tagName.toLowerCase() !== 'svg') {
+                message += node.innerText || node.textContent;
+            }
+        });
+        
+        message = message.trim();
+        if (!message) return;
+
+        let toastIcon = alertEl.classList.contains('alert-success') ? 'success' : 'error';
+        
+        // Ẩn vĩnh viễn HTML cũ
+        alertEl.style.setProperty('display', 'none', 'important');
+        alertEl.classList.remove('d-flex');
+        
+        // Đẩy Toast xịn xò
+        setTimeout(() => {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: toastIcon,
+                title: message,
+                showConfirmButton: false,
+                timer: 4000,
+                timerProgressBar: true,
+                background: '#ffffff',
+                color: '#1e293b',
+                customClass: {
+                    popup: 'shadow-lg border-0 rounded-4',
+                    title: 'fw-medium fs-6'
+                },
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
+        }, 100); // delay nhẹ để UI ổn định
+    });
 });

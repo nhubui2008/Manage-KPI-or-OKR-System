@@ -5,123 +5,194 @@
     string GetRoleColor(string roleName) 
     {
         roleName = roleName?.ToLower() ?? "";
-        if (roleName.Contains("admin")) return "dark";
-        if (roleName.Contains("manager")) return "secondary";
-        return "dark";
+        if (roleName.Contains("admin") || roleName.Contains("quản trị")) return "danger";
+        if (roleName.Contains("manager") || roleName.Contains("quản lý") || roleName.Contains("giám đốc")) return "warning";
+        if (roleName.Contains("leader") || roleName.Contains("trưởng phòng") || roleName.Contains("trưởng nhóm")) return "success";
+        if (roleName.Contains("user") || roleName.Contains("nhân viên")) return "info";
+        return "primary";
     }
     
     string GetRoleIcon(string roleName) 
     {
         roleName = roleName?.ToLower() ?? "";
-        if (roleName.Contains("admin")) return "shield-lock-fill";
-        if (roleName.Contains("manager")) return "person-badge-fill";
-        return "person-fill";
+        if (roleName.Contains("admin") || roleName.Contains("quản trị")) return "shield-lock-fill";
+        if (roleName.Contains("manager") || roleName.Contains("quản lý") || roleName.Contains("giám đốc")) return "briefcase-fill";
+        if (roleName.Contains("leader") || roleName.Contains("trưởng phòng") || roleName.Contains("trưởng nhóm")) return "person-badge-fill";
+        if (roleName.Contains("user") || roleName.Contains("nhân viên")) return "person-fill";
+        return "people-fill";
     }
 }
+
+<style>
+    .role-card {
+        background: #fff;
+        border-radius: 1.25rem;
+        border: 1px solid rgba(0,0,0,0.04);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        overflow: hidden;
+    }
+    .role-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+        border-color: rgba(0,0,0,0.08);
+    }
+    .role-icon-wrapper {
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .role-card:hover .role-icon-wrapper {
+        transform: scale(1.15) rotate(5deg);
+    }
+    .btn-action {
+        transition: all 0.2s ease;
+    }
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+    }
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: white;
+    }
+    .bg-glass {
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.4);
+    }
+    .page-header-modern {
+        background: url('data:image/svg+xml;utf8,<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,0,0,0.02)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)" /></svg>'), linear-gradient(to right, #ffffff, #fdfdfd);
+    }
+</style>
 
 <div class="container-fluid px-0">
     
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Phân quyền Hệ thống</h1>
-        <div class="page-breadcrumb">
-            <a href="/">Trang chủ</a>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Hệ thống</span>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Quản lý roles</span>
+    <div class="page-header d-flex justify-content-between align-items-center mb-4 p-4 rounded-4 shadow-sm border border-black border-opacity-10 page-header-modern">
+        <div>
+            <h1 class="h3 font-weight-bold mb-2 text-dark d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3 me-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px;">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                Phân quyền Hệ thống
+            </h1>
+            <div class="page-breadcrumb text-muted" style="font-size: 0.85rem;">
+                <a href="/" class="text-decoration-none text-muted hover-primary">Trang chủ</a>
+                <i class="bi bi-chevron-right mx-2" style="font-size: 0.7rem;"></i>
+                <span>Hệ thống</span>
+                <i class="bi bi-chevron-right mx-2" style="font-size: 0.7rem;"></i>
+                <span class="text-primary fw-medium">Quản lý roles</span>
+            </div>
+        </div>
+        <div class="d-flex gap-3">
+            <form asp-action="SyncPermissions" method="post" class="m-0">
+                <button type="submit" class="btn btn-light rounded-pill d-flex align-items-center bg-white shadow-sm border btn-action h-100 px-4">
+                    <i class="bi bi-arrow-repeat me-2 text-primary"></i> <span class="fw-medium">Đồng bộ Quyền</span>
+                </button>
+            </form>
+            <a asp-action="Create" class="btn btn-primary bg-gradient-primary rounded-pill d-flex align-items-center shadow-sm px-4 py-2 btn-action border-0">
+                <i class="bi bi-shield-plus me-2"></i> <span class="fw-medium">Tạo Role mới</span>
+            </a>
         </div>
     </div>
-    <div class="d-flex justify-content-end gap-2">
-        <form asp-action="SyncPermissions" method="post" class="m-0">
-            <button type="submit" class="btn btn-outline-primary rounded-pill d-flex align-items-center shadow-none btn-sm px-3">
-                <i class="bi bi-arrow-repeat me-1"></i> Đồng bộ Quyền
-            </button>
-        </form>
-        <a asp-action="Create" class="btn-primary-custom d-flex align-items-center text-decoration-none">
-            <i class="bi bi-shield-plus me-1"></i> Tạo Role mới
-        </a>
-    </div>
-</div>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
-    </div>
-}
-
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger shadow-sm border-0 mb-4" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
-    </div>
-}
-
-<div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <div class="row g-4 w-100">
-    @if (Model != null && Model.Any())
+    @if (TempData["SuccessMessage"] != null)
     {
-        foreach (var role in Model)
-        {
-            var roleName = role.RoleName ?? "";
-            var color = GetRoleColor(roleName);
-            var icon = GetRoleIcon(roleName);
+        <div class="alert alert-success shadow-sm border-0 mb-4 rounded-4 d-flex align-items-center p-3 bg-glass" role="alert">
+            <i class="bi bi-check-circle-fill fs-3 me-3 text-success"></i>
+            <div>
+                <h6 class="mb-0 fw-bold text-success">Thành công!</h6>
+                <div class="text-success text-opacity-75" style="font-size: 0.9rem;">@TempData["SuccessMessage"]</div>
+            </div>
+        </div>
+    }
 
-            <div class="col-md-4">
-                <div class="content-card h-100 position-relative">
-                    @if (color == "danger")
-                    {
-                        <div class="position-absolute top-0 end-0 p-3">
-                            <span class="badge bg-danger rounded-pill"><i class="bi bi-star-fill me-1"></i>Toàn quyền</span>
-                        </div>
-                    }
-                    <div class="card-body-custom p-4">
-                        <div class="d-inline-flex align-items-center justify-content-center bg-@color bg-opacity-10 text-@color rounded-circle mb-3 border border-@color border-opacity-25" style="width: 48px; height: 48px; font-size: 1.25rem;">
-                            <i class="bi bi-@icon"></i>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-start mb-1">
-                            <h5 class="fw-bold text-dark mb-0">@role.RoleName</h5>
-                        </div>
-                        <p class="text-muted mb-4 mt-2" style="font-size: 0.85rem; height: 40px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-                            @(string.IsNullOrEmpty(role.Description) ? "Không có mô tả..." : role.Description)
-                        </p>
-                        
-                        <div class="d-flex align-items-center gap-2 mb-3 pb-3 border-bottom">
-                            <div class="user-avatar bg-dark text-white" style="width: 24px; height: 24px; font-size: 0.6rem;">
-                                <i class="bi bi-people"></i>
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger shadow-sm border-0 mb-4 rounded-4 d-flex align-items-center p-3 bg-glass" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-3 me-3 text-danger"></i>
+            <div>
+                <h6 class="mb-0 fw-bold text-danger">Đã xảy ra lỗi!</h6>
+                <div class="text-danger text-opacity-75" style="font-size: 0.9rem;">@TempData["ErrorMessage"]</div>
+            </div>
+        </div>
+    }
+
+    <div class="row g-4 w-100 m-0 pb-4">
+        @if (Model != null && Model.Any())
+        {
+            foreach (var role in Model)
+            {
+                var roleName = role.RoleName ?? "";
+                var color = GetRoleColor(roleName);
+                var icon = GetRoleIcon(roleName);
+                var isAdmin = roleName.Contains("admin") || roleName.Contains("quản trị");
+
+                <div class="col-12 col-md-6 col-xl-4 px-2">
+                    <div class="role-card h-100 p-4 d-flex flex-column position-relative">
+                        @if (isAdmin)
+                        {
+                            <div class="position-absolute shadow-sm" style="top: 0; right: 0; width: 68px; height: 68px; overflow: hidden; border-radius: 0 1.25rem 0 0; z-index: 2;">
+                                <div class="bg-danger bg-gradient text-white text-center fw-bold py-1 shadow-sm" style="font-size: 0.75rem; transform: rotate(45deg); width: 95px; position: absolute; top: 14px; right: -24px;">
+                                    <i class="bi bi-star-fill me-1" style="font-size: 0.65rem;"></i>VIP
+                                </div>
                             </div>
-                            <span class="fw-medium text-muted" style="font-size: 0.85rem;">Phân quyền người dùng</span>
+                        }
+
+                        <div class="d-flex align-items-center mb-4 position-relative z-1">
+                            <div class="role-icon-wrapper flex-shrink-0 d-flex align-items-center justify-content-center bg-@color bg-opacity-10 text-@color rounded-circle me-3 border border-@color border-opacity-25" style="width: 60px; height: 60px; font-size: 1.6rem; box-shadow: inset 0 2px 5px rgba(255,255,255,0.8);">
+                                <i class="bi bi-@icon"></i>
+                            </div>
+                            <div class="flex-grow-1 min-w-0" style="padding-right: @(isAdmin ? "35px" : "0");">
+                                <h5 class="fw-bold text-dark mb-1 text-truncate" style="font-size: 1.2rem; letter-spacing: -0.01em;">@role.RoleName</h5>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="badge bg-light text-muted border border-secondary border-opacity-10 rounded-pill fw-normal shadow-sm" style="font-size: 0.75rem; padding: 0.35em 0.75em;">
+                                        <i class="bi bi-award me-1 opacity-75"></i>Quyền Hệ Thống
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                        
-                        <div class="d-flex justify-content-end gap-2">
-                            <a asp-action="ManagePermissions" asp-route-id="@role.Id" class="btn btn-sm btn-outline-@color flex-grow-1 @(color == "danger" ? "disabled" : "")">Cấu hình chi tiết</a>
-                            <form asp-action="Delete" asp-route-id="@role.Id" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa quyền này?');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa role" @(color == "danger" ? "disabled" : "")>
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
+
+                        <div class="bg-light bg-opacity-50 rounded-4 p-3 mb-4 flex-grow-1 border border-secondary border-opacity-10 position-relative z-1">
+                            <p class="text-muted mb-0 position-relative" style="font-size: 0.9rem; line-height: 1.6; height: 46px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                                <span>@(string.IsNullOrEmpty(role.Description) ? "Chưa có mô tả chi tiết cho nhóm quyền này. Hãy cập nhật để rõ ràng hơn." : role.Description)</span>
+                            </p>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top border-secondary border-opacity-10 position-relative z-1">
+                            <div class="d-flex align-items-center text-muted" style="font-size: 0.85rem;">
+                                <div class="d-flex align-items-center justify-content-center bg-@color bg-opacity-10 rounded-circle me-2" style="width: 28px; height: 28px;">
+                                    <i class="bi bi-shield-lock-fill text-@color" style="font-size: 0.75rem;"></i>
+                                </div>
+                                <span class="fw-medium text-@color text-opacity-75">Quyền hạn truy cập</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a asp-action="ManagePermissions" asp-route-id="@role.Id" class="btn btn-sm btn-action btn-outline-@color bg-white rounded-pill px-3 shadow-sm d-flex align-items-center" style="font-weight: 500; border-width: 1.5px;">
+                                    <i class="bi bi-sliders me-1"></i> Cấu hình
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@role.Id" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa quyền này?');">
+                                    <button type="submit" class="btn btn-sm btn-action btn-outline-danger bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; padding: 0; border-width: 1.5px;" title="Xóa role" @(isAdmin ? "disabled" : "")>
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 px-2">
+                <div class="alert alert-secondary border-0 shadow-sm text-center py-5 px-4 bg-white rounded-4 border border-black border-opacity-10 page-header-modern">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-4 shadow-sm border border-white border-4" style="width: 90px; height: 90px;">
+                        <i class="bi bi-shield-x display-5 text-muted"></i>
+                    </div>
+                    <h4 class="text-dark fw-bold mb-3">Chưa có nhóm quyền nào</h4>
+                    <p class="text-muted mb-4 mx-auto" style="max-width: 500px;">Hệ thống hiện tại chưa được thiết lập các nhóm quyền. Bạn cần tạo các vai trò để có thể phân loại và phân quyền truy cập cho người dùng.</p>
+                    <a asp-action="Create" class="btn btn-primary bg-gradient-primary px-4 py-2 rounded-pill shadow-sm btn-action">
+                        <i class="bi bi-shield-plus me-2"></i> Tạo Role đầu tiên
+                    </a>
+                </div>
             </div>
         }
-    }
-    else
-    {
-        <div class="col-12">
-            <div class="alert alert-secondary border-0 shadow-sm text-center p-5 bg-light">
-                <i class="bi bi-shield-x display-4 text-muted mb-3 d-block"></i>
-                <h5 class="text-dark fw-bold">Chưa có nhóm quyền nào</h5>
-                <p class="text-muted mb-4">Bạn cần tạo mới các nhóm quyền để có thể phân loại người dùng trong hệ thống.</p>
-                <a asp-action="Create" class="btn-primary-custom px-4 rounded-pill">Tạo Role đầu tiên</a>
-            </div>
-        </div>
-    }
-</div>
-
-
-        </div>
     </div>
 </div>

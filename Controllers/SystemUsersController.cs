@@ -236,6 +236,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("SYSUSERS_DELETE")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(currentUserIdStr, out int currentUserId) && currentUserId == id)
+            {
+                TempData["ErrorMessage"] = "Bạn không thể xóa tài khoản đang đăng nhập.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var user = await _context.SystemUsers.FindAsync(id);
             if (user != null)
             {

@@ -2,46 +2,137 @@
 
 @{
     ViewData["Title"] = "Chi tiết Tài khoản";
-    Layout = "~/Views/Shared/_Layout.cshtml";
     var roles = ViewBag.Roles as Dictionary<int, string> ?? new Dictionary<int, string>();
-    var roleName = Model.RoleId.HasValue && roles.ContainsKey(Model.RoleId.Value) ? roles[Model.RoleId.Value] : "N/A";
-    var statusClass = Model.IsActive == true ? "bg-success" : "bg-danger";
+    var roleName = Model.RoleId.HasValue && roles.ContainsKey(Model.RoleId.Value) ? roles[Model.RoleId.Value] : "Chưa phân quyền";
+    var statusColor = Model.IsActive == true ? "success" : "danger";
     var statusText = Model.IsActive == true ? "Đang hoạt động" : "Bị khóa";
+    var userInitial = Model.Username?[0].ToString().ToUpper() ?? "U";
 }
 
-<div class="container-fluid px-4 mt-4">
-    <div class="row mb-3">
-        <div class="col-12 flex-grow-1">
-            <h3 class="text-primary fw-bold"><i class="bi bi-person-lines-fill me-2"></i>Hồ sơ Tài khoản</h3>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb bg-transparent p-0 m-0">
-                    <li class="breadcrumb-item"><a href="/Dashboard" class="text-decoration-none">Trang chủ</a></li>
-                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Tài khoản Hệ thống</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Hồ sơ</li>
-                </ol>
-            </nav>
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        border-radius: 1.5rem;
+        overflow: hidden;
+    }
+    .page-header-modern {
+        background: url('data:image/svg+xml;utf8,<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,0,0,0.02)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)" /></svg>'), linear-gradient(to right, #ffffff, #fdfdfd);
+    }
+    .btn-gradient {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: white;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-gradient:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(13, 110, 253, 0.2);
+    }
+    .detail-row {
+        padding: 1.25rem 0;
+        border-bottom: 1px dashed rgba(0,0,0,0.08);
+        transition: background 0.2s;
+    }
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    .detail-row:hover {
+        background: rgba(0,0,0,0.01);
+        border-radius: 0.5rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        margin-left: -0.5rem;
+        margin-right: -0.5rem;
+    }
+    .avatar-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+    .avatar-modern {
+        width: 100px; 
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0d6efd 0%, #00b4d8 100%);
+        color: white;
+        font-size: 3rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 20px rgba(13, 110, 253, 0.3);
+        border: 4px solid #fff;
+    }
+    .status-indicator {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+
+<div class="container-fluid px-0">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4 p-4 rounded-4 shadow-sm border border-black border-opacity-10 page-header-modern">
+        <div>
+            <h1 class="h3 font-weight-bold mb-2 text-dark d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3 me-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px;">
+                    <i class="bi bi-person-badge"></i>
+                </div>
+                Hồ Sơ Tài Khoản
+            </h1>
+            <div class="page-breadcrumb text-muted" style="font-size: 0.85rem;">
+                <a href="/" class="text-decoration-none text-muted hover-primary">Trang chủ</a>
+                <i class="bi bi-chevron-right mx-2" style="font-size: 0.7rem;"></i>
+                <a asp-action="Index" class="text-decoration-none text-muted hover-primary">Tài khoản Hệ thống</a>
+                <i class="bi bi-chevron-right mx-2" style="font-size: 0.7rem;"></i>
+                <span class="text-primary fw-medium">Chi tiết hồ sơ</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-white bg-white border rounded-pill px-4 shadow-sm d-flex align-items-center" style="transition: all 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <i class="bi bi-arrow-left me-2"></i> Trở về
+            </a>
         </div>
     </div>
 
-    <div class="row align-items-start g-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 rounded-3 text-center">
-                <div class="card-body p-5">
-                    <div class="user-avatar bg-primary text-white mx-auto mb-3 fw-bold d-flex justify-content-center align-items-center" style="width: 80px; height: 80px; font-size: 2.5rem; border-radius: 50%;">
-                        @(Model.Username?[0].ToString().ToUpper() ?? "U")
+    <div class="row align-items-stretch g-4 pb-4">
+        <!-- Cột Trái: Thông tin nhận diện -->
+        <div class="col-md-5 col-lg-4">
+            <div class="glass-card text-center h-100 d-flex flex-column">
+                <div class="bg-light bg-opacity-50 py-5 position-relative" style="background: url(data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\"><rect width=\"100%\" height=\"100%\" fill=\"%23f8f9fa\"/><circle cx=\"50%\" cy=\"100%\" r=\"150\" fill=\"%23e9ecef\" opacity=\"0.5\"/></svg>
+                    <div class="avatar-wrapper mb-3 mt-2">
+                        <div class="avatar-modern">
+                            @userInitial
+                        </div>
+                        <div class="status-indicator bg-@statusColor" title="@statusText"></div>
                     </div>
-                    <h4 class="fw-bold mb-1">@Model.Username</h4>
-                    <span class="badge @statusClass mb-3 px-3 py-2 rounded-pill">@statusText</span>
+                    <h4 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px;">@Model.Username</h4>
+                    <span class="badge bg-@statusColor bg-opacity-10 text-@statusColor border border-@statusColor border-opacity-25 rounded-pill px-3 py-1 shadow-sm mt-2 fw-medium" style="font-size: 0.8rem;">
+                        <i class="bi @(Model.IsActive == true ? "bi-check-circle-fill" : "bi-lock-fill") me-1"></i> @statusText
+                    </span>
+                </div>
+                
+                <div class="card-body p-4 d-flex flex-column flex-grow-1 border-top border-secondary border-opacity-10">
+                    <p class="text-muted small mb-4 px-2" style="font-size: 0.9rem; line-height: 1.6;">Tài khoản được phân quyền sử dụng hệ thống. @(Model.IsActive == false ? "Hồ sơ hiện đăng bị tạm khóa và giới hạn quyền truy cập." : "Tài khoản đang hoạt động bình thường.")</p>
                     
-                    <div class="d-flex justify-content-center gap-2 mt-2">
-                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                            <i class="bi bi-pencil me-1"></i> Chỉnh sửa
+                    <div class="d-grid gap-2 mt-auto">
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary rounded-pill fw-medium py-2">
+                            <i class="bi bi-pencil me-1"></i> Cập nhật hồ sơ
                         </a>
+                        
                         @if (Model.IsActive == false)
                         {
-                            <form asp-action="ToggleLock" method="post" class="d-inline m-0">
+                            <form asp-action="ToggleLock" method="post" class="m-0 d-grid">
                                 <input type="hidden" name="userId" value="@Model.Id" />
-                                <button type="submit" class="btn btn-outline-success btn-sm rounded-pill px-3"><i class="bi bi-unlock-fill me-1"></i> Mở khóa</button>
+                                <button type="submit" class="btn btn-outline-success rounded-pill fw-medium py-2 shadow-sm">
+                                    <i class="bi bi-unlock-fill me-1"></i> Mở khóa tài khoản
+                                </button>
                             </form>
                         }
                     </div>
@@ -49,37 +140,57 @@
             </div>
         </div>
 
-        <div class="col-md-8">
-            <div class="card shadow-sm border-0 rounded-3 h-100">
-                <div class="card-header bg-white border-bottom py-3">
-                    <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle me-2 text-primary"></i>Thông tin tổng quan</h5>
+        <!-- Cột Phải: Thông tin chi tiết -->
+        <div class="col-md-7 col-lg-8">
+            <div class="glass-card h-100 pb-3">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 p-4">
+                    <h5 class="mb-0 fw-bold text-dark d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                            <i class="bi bi-card-list"></i>
+                        </div>
+                        Thông tin chi tiết
+                    </h5>
                 </div>
-                <div class="card-body p-4">
-                    <div class="row mb-4">
-                        <div class="col-sm-4 text-muted fw-semibold">Đăng nhập ID</div>
-                        <div class="col-sm-8 text-dark fw-bold">@Model.Username</div>
+                
+                <div class="card-body p-4 p-lg-5">
+                    <div class="detail-row row align-items-center">
+                        <div class="col-sm-4 col-md-5 col-lg-4 text-muted fw-semibold text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Tên đăng nhập HT</div>
+                        <div class="col-sm-8 col-md-7 col-lg-8 text-dark fw-bold fs-5 mt-1 mt-sm-0">@Model.Username</div>
                     </div>
-                    <div class="row mb-4">
-                        <div class="col-sm-4 text-muted fw-semibold">Địa chỉ Email</div>
-                        <div class="col-sm-8 text-dark"><a href="mailto:@Model.Email">@Model.Email</a></div>
-                    </div>
-                    <div class="row mb-4">
-                        <div class="col-sm-4 text-muted fw-semibold">Phân quyền Hệ thống</div>
-                        <div class="col-sm-8">
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 rounded-pill">@roleName</span>
+                    
+                    <div class="detail-row row align-items-center">
+                        <div class="col-sm-4 col-md-5 col-lg-4 text-muted fw-semibold text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Địa chỉ Email</div>
+                        <div class="col-sm-8 col-md-7 col-lg-8 mt-1 mt-sm-0">
+                            <a href="mailto:@Model.Email" class="text-decoration-none d-inline-flex align-items-center text-primary fw-medium border shadow-sm" style="background: rgba(13, 110, 253, 0.02); padding: 0.4rem 1rem; border-radius: 2rem;">
+                                <i class="bi bi-envelope-at me-2"></i> @Model.Email
+                            </a>
                         </div>
                     </div>
-                    <div class="row mb-4">
-                        <div class="col-sm-4 text-muted fw-semibold">Thời gian tạo (Đăng ký)</div>
-                        <div class="col-sm-8 text-dark">@(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Không có dữ liệu")</div>
+                    
+                    <div class="detail-row row align-items-center">
+                        <div class="col-sm-4 col-md-5 col-lg-4 text-muted fw-semibold text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Vai trò & Phân quyền</div>
+                        <div class="col-sm-8 col-md-7 col-lg-8 mt-1 mt-sm-0">
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-2 rounded-pill shadow-sm" style="font-size: 0.85rem;">
+                                <i class="bi bi-shield-check me-1"></i> @roleName
+                            </span>
+                        </div>
                     </div>
-                    <div class="row mb-4">
-                        <div class="col-sm-4 text-muted fw-semibold">Thay đổi MK cuối cùng</div>
-                        <div class="col-sm-8 text-dark">@(Model.LastPasswordChange?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Không có dữ liệu")</div>
+                    
+                    <div class="detail-row row align-items-center">
+                        <div class="col-sm-4 col-md-5 col-lg-4 text-muted fw-semibold text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Khởi tạo tài khoản</div>
+                        <div class="col-sm-8 col-md-7 col-lg-8 text-dark mt-1 mt-sm-0 d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border" style="width: 28px; height: 28px;"><i class="bi bi-calendar3 text-muted" style="font-size:0.75rem;"></i></div>
+                            @(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Không có dữ liệu")
+                        </div>
                     </div>
-                </div>
-                <div class="card-footer bg-white border-top text-end py-3">
-                    <a asp-action="Index" class="btn btn-light rounded-pill px-4">Quay về danh sách</a>
+                    
+                    <div class="detail-row row align-items-center">
+                        <div class="col-sm-4 col-md-5 col-lg-4 text-muted fw-semibold text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Lần đổi MK cuối</div>
+                        <div class="col-sm-8 col-md-7 col-lg-8 text-dark mt-1 mt-sm-0 d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border" style="width: 28px; height: 28px;"><i class="bi bi-clock-history text-muted" style="font-size:0.75rem;"></i></div>
+                            @(Model.LastPasswordChange?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Chưa rõ")
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
