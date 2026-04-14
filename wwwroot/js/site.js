@@ -514,7 +514,9 @@ document.addEventListener('DOMContentLoaded', function () {
             
             // Cấu hình dựa trên data attributes hoặc mặc định
             const placeholder = $el.data('placeholder') || $el.find('option[value=""]').text() || 'Chọn một tùy chọn';
-            const allowClear = $el.prop('required') ? false : true;
+            
+            // Xóa bỏ hoàn toàn nút 'x' (clear button) trên toàn dự án theo yêu cầu
+            const allowClear = false;
             
             // Chỉ hiện ô tìm kiếm nếu số lượng option > 8
             const minResultsForSearch = $el.data('minimum-results-for-search') || ($el.find('option').length > 8 ? 0 : -1);

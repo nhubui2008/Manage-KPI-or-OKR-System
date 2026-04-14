@@ -1,275 +1,353 @@
 @model Manage_KPI_or_OKR_System.Models.Department
 
 @{
-    ViewData["Title"] = "Chỉnh sửa Phòng Ban - " + Model.DepartmentName;
+    ViewData["Title"] = "Chỉnh sửa Phòng ban";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
     var departments = ViewBag.Departments as List<Manage_KPI_or_OKR_System.Models.Department> ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
 }
 
-<div class="container-fluid px-0">
-
-    <!-- Page Header -->
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+<div class="page-content">
+    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
         <div>
-            <h1 class="h3 font-weight-bold mb-1">Chỉnh sửa Phòng ban</h1>
+            <h1 class="mb-2 fw-800">Cập Nhật Phòng Ban</h1>
             <div class="page-breadcrumb">
                 <a href="/">Trang chủ</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <a asp-action="Index">Phòng ban</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <span>@Model.DepartmentName</span>
+                <span class="separator">/</span>
+                <a asp-action="Index">Hệ thống phòng ban</a>
+                <span class="separator">/</span>
+                <span class="text-muted">Chỉnh sửa</span>
             </div>
         </div>
-        <div class="d-flex gap-2">
-            <a asp-action="Index" class="btn-outline-custom d-flex align-items-center px-3 py-2" style="border-radius: 10px; text-decoration: none;">
-                <i class="bi bi-arrow-left me-1"></i> Quay lại
+        <div>
+            <a asp-action="Index" class="btn-outline-custom shadow-sm">
+                <i class="bi bi-arrow-left me-2"></i> Quay lại
             </a>
         </div>
     </div>
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert" style="border-radius: 12px; border-left: 5px solid #dc3545;">
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4 animate__animated animate__fadeIn" role="alert" style="border-radius: 12px; border-left: 5px solid #dc3545;">
             <strong><i class="bi bi-exclamation-triangle-fill me-2"></i> Lỗi!</strong> @TempData["ErrorMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <form asp-action="Edit" method="post">
-        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-        <input type="hidden" asp-for="Id" />
+    <div class="row g-4">
+        <!-- FORM COLUMN -->
+        <div class="col-xl-8 animate__animated animate__fadeInLeft">
+            <div class="content-card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+                <div class="card-header-custom border-bottom bg-transparent py-4">
+                    <h5 class="fw-bold fs-5 mb-0">
+                        <i class="bi bi-pencil-square me-2"></i> Chỉnh sửa thông tin
+                    </h5>
+                </div>
 
-        <div class="row g-4">
-            <!-- Left Column: Main Information -->
-            <div class="col-lg-8">
-                <div class="content-card h-100">
-                    <div class="card-header-custom border-bottom">
-                        <h5 class="mb-0 fw-bold d-flex align-items-center">
-                            <div class="header-icon-box">
-                                <i class="bi bi-pencil-square"></i>
+                <div class="card-body-custom p-4">
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
+                        <input type="hidden" asp-for="Id" />
+
+                        <!-- SECTION 1: THÔNG TIN ĐỊNH DANH -->
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="icon-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center shadow"
+                                 style="width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;">
+                                <span class="fw-bold">1</span>
                             </div>
-                            Thông tin chi tiết
-                        </h5>
-                    </div>
-                    <div class="card-body-custom p-4">
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <label asp-for="DepartmentCode" class="form-label-custom">
-                                    <i class="bi bi-hash me-1"></i> Mã phòng ban <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group-custom">
-                                    <input asp-for="DepartmentCode" class="form-control-custom" placeholder="VD: PKD, HR" required />
+                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Thông tin định danh</h6>
+                        </div>
+
+                        <div class="row g-4 mb-5 p-3 rounded-4 bg-light bg-opacity-50 border border-white">
+                            <div class="col-md-5">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">
+                                        Mã phòng ban <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-hash"></i>
+                                        <input asp-for="DepartmentCode"
+                                               class="form-control shadow-sm"
+                                               placeholder="VD: PKT, PNS, PBH..."
+                                               required />
+                                    </div>
+                                    <span asp-validation-for="DepartmentCode" class="text-danger small mt-1 d-block"></span>
                                 </div>
-                                <span asp-validation-for="DepartmentCode" class="text-danger small"></span>
                             </div>
 
-                            <div class="col-md-6">
-                                <label asp-for="DepartmentName" class="form-label-custom">
-                                    <i class="bi bi-tag me-1"></i> Tên phòng ban <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group-custom">
-                                    <input asp-for="DepartmentName" class="form-control-custom" placeholder="VD: Phòng Kinh doanh" required />
+                            <div class="col-md-7">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">
+                                        Tên phòng ban <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-building"></i>
+                                        <input asp-for="DepartmentName"
+                                               class="form-control shadow-sm"
+                                               placeholder="VD: Phòng Kinh doanh"
+                                               required />
+                                    </div>
+                                    <span asp-validation-for="DepartmentName" class="text-danger small mt-1 d-block"></span>
                                 </div>
-                                <span asp-validation-for="DepartmentName" class="text-danger small"></span>
                             </div>
+                        </div>
 
+                        <!-- SECTION 2: CẤU TRÚC TỔ CHỨC & TRẠNG THÁI -->
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="icon-circle bg-success text-white me-3 d-flex align-items-center justify-content-center shadow"
+                                 style="width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;">
+                                <span class="fw-bold">2</span>
+                            </div>
+                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Cấu trúc & Trạng thái</h6>
+                        </div>
+
+                        <div class="row g-4 p-3 rounded-4 bg-light bg-opacity-50 border border-white mb-4">
                             <div class="col-md-6">
-                                <label for="ParentDepartmentId" class="form-label-custom">
-                                    <i class="bi bi-diagram-3 me-1"></i> Phòng ban cấp trên
-                                </label>
-                                <div class="input-group-custom">
-                                    <select asp-for="ParentDepartmentId" class="form-select-custom">
-                                        <option value="">-- Không có (Phòng ban gốc) --</option>
-                                        @foreach (var dept in departments)
-                                        {
-                                            if (dept.Id != Model.Id) // Cannot be own parent
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Phòng ban cấp trên</label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-diagram-3"></i>
+                                        <select asp-for="ParentDepartmentId" class="form-select shadow-sm" data-allow-clear="false">
+                                            <option value="">-- Chọn phòng ban cấp trên --</option>
+                                            @foreach (var d in departments)
                                             {
-                                                <option value="@dept.Id">@dept.DepartmentName</option>
+                                                if (d.Id != Model.Id)
+                                                {
+                                                    <option value="@d.Id">@d.DepartmentName (@d.DepartmentCode)</option>
+                                                }
                                             }
-                                        }
-                                    </select>
+                                        </select>
+                                    </div>
+                                    <span asp-validation-for="ParentDepartmentId" class="text-danger small mt-1 d-block"></span>
                                 </div>
-                                <span asp-validation-for="ParentDepartmentId" class="text-danger small"></span>
                             </div>
 
                             <div class="col-md-6">
-                                <label for="ManagerId" class="form-label-custom">
-                                    <i class="bi bi-person-badge me-1"></i> Trưởng phòng
-                                </label>
-                                <div class="input-group-custom">
-                                    <select asp-for="ManagerId" class="form-select-custom">
-                                        <option value="">-- Chọn trưởng phòng --</option>
-                                        @foreach (var emp in employees)
-                                        {
-                                            <option value="@emp.Key">@emp.Value</option>
-                                        }
-                                    </select>
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Người quản lý (Trưởng bộ phận)</label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-person-badge"></i>
+                                        <select asp-for="ManagerId" class="form-select shadow-sm" data-allow-clear="false">
+                                            <option value="">-- Chọn trưởng phòng --</option>
+                                            @foreach (var emp in employees)
+                                            {
+                                                <option value="@emp.Key">@emp.Value</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <span asp-validation-for="ManagerId" class="text-danger small mt-1 d-block"></span>
                                 </div>
-                                <span asp-validation-for="ManagerId" class="text-danger small"></span>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column: Settings & Metadata -->
-            <div class="col-lg-4">
-                <div class="content-card mb-4">
-                    <div class="card-header-custom border-bottom">
-                        <h5 class="mb-0 fw-bold d-flex align-items-center">
-                            <div class="header-icon-box" style="background: linear-gradient(135deg, #34a853, #2e7d32);">
-                                <i class="bi bi-gear"></i>
-                            </div>
-                            Cài đặt hệ thống
-                        </h5>
-                    </div>
-                    <div class="card-body-custom p-4">
-                        <div class="mb-4">
-                            <label class="form-label-custom d-block mb-3">
-                                <i class="bi bi-toggle-on me-1"></i> Trạng thái hoạt động
-                            </label>
-                            <div class="form-check form-switch custom-switch">
-                                <input class="form-check-input" type="checkbox" id="IsActiveSwitch" name="IsActive" value="true" @(Model.IsActive == true ? "checked" : "")>
-                                <input type="hidden" name="IsActive" value="false" />
-                                <label class="form-check-label fw-semibold" for="IsActiveSwitch">
-                                    <span class="status-label-active">Hoạt động</span>
-                                    <span class="status-label-inactive">Ngừng hoạt động</span>
-                                </label>
-                            </div>
-                            <div class="form-text mt-2 small text-muted">
-                                Tắt trạng thái này sẽ tạm thời vô hiệu hóa phòng ban trong hệ thống.
+                            
+                            <div class="col-md-12">
+                                <div class="form-icon-group mb-0 mt-2">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Trạng thái hoạt động</label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-activity"></i>
+                                        <select asp-for="IsActive" class="form-select shadow-sm" required>
+                                            <option value="true">Đang hoạt động</option>
+                                            <option value="false">Ngưng hoạt động (Khóa)</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <hr class="my-4 opacity-10">
-
-                        <div class="metadata-info">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted small">ID Phòng ban:</span>
-                                <span class="fw-bold small">#@Model.Id</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-muted small">Ngày tạo:</span>
-                                <span class="fw-bold small">@(Model.CreatedAt?.ToString("dd/MM/yyyy") ?? "—")</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="content-card">
-                    <div class="card-body-custom p-4">
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn-primary-custom py-3 rounded-3 shadow-sm">
-                                <i class="bi bi-check-circle-fill me-2"></i> Lưu thay đổi
-                            </button>
-                            <a asp-action="Index" class="btn-outline-custom py-3 rounded-3 text-center text-decoration-none">
-                                <i class="bi bi-x-circle me-1"></i> Hủy bỏ
+                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
+                            <a asp-action="Index" class="btn-outline-custom">
+                                <i class="bi bi-x-lg me-2"></i> Hủy thao tác
                             </a>
+                            <button type="submit" class="btn-primary-custom" style="padding: 12px 40px; border-radius: 12px;">
+                                <i class="bi bi-cloud-arrow-up-fill fs-5 me-2"></i> Lưu thay đổi
+                            </button>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>
-    </form>
+
+        <!-- SIDEBAR COLUMN -->
+        <div class="col-xl-4 animate__animated animate__fadeInRight">
+            <div class="sticky-top" style="top: 100px;">
+
+                <!-- Preview Card -->
+                <div class="content-card border-0 shadow-lg text-white mb-4" id="previewCard"
+                     style="background: linear-gradient(135deg, #1a73e8, #1557b0); border-radius: 24px; transition: background 0.3s ease;">
+                    <div class="card-body-custom p-4">
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="position-relative me-4 ms-2 mt-2" style="margin-bottom: 0.5rem;">
+                                <div class="avatar-custom-ui">D</div>
+                                <span id="statusIndicator" class="position-absolute p-2 bg-success border border-white rounded-circle shadow-sm" style="bottom: 0; right: 0; transform: translate(15%, 15%); z-index: 2;" title="Đang hoạt động">
+                                    <span class="visually-hidden">New alerts</span>
+                                </span>
+                            </div>
+                            <div>
+                                <div class="small opacity-75 fw-bold text-uppercase">Mã phòng ban</div>
+                                <h4 class="mb-0 fw-800" id="previewCode">--</h4>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="small opacity-75 fw-bold text-uppercase mb-1">Tên phòng ban</div>
+                            <div class="fw-bold fs-6" id="previewName" style="min-height: 28px;">--</div>
+                        </div>
+
+                        <div class="row g-3 mt-1">
+                            <div class="col-6">
+                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
+                                    <i class="bi bi-diagram-3 fs-4 me-3 opacity-75"></i>
+                                    <div>
+                                        <div class="small opacity-75 mb-1">Phòng ban cha</div>
+                                        <div class="fw-bold small" id="previewParent">Cấp cao nhất</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
+                                    <i class="bi bi-person-badge fs-4 me-3 opacity-75"></i>
+                                    <div>
+                                        <div class="small opacity-75 mb-1">Trưởng bộ phận</div>
+                                        <div class="fw-bold small" id="previewManager">Chưa chỉ định</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metadata Card -->
+                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <h6 class="fw-bold text-dark mb-3">
+                        <i class="bi bi-info-circle text-primary me-2"></i> Thông tin hệ thống
+                    </h6>
+                    <ul class="list-unstyled mb-0 small text-muted" style="line-height: 1.8;">
+                        <li class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span><i class="bi bi-dot text-primary fs-5"></i> ID Hệ thống:</span>
+                                <span class="fw-bold text-dark">#@Model.Id</span>
+                            </div>
+                        </li>
+                        <li class="mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span><i class="bi bi-dot text-primary fs-5"></i> Ngày tạo:</span>
+                                <span class="fw-bold text-dark">@(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</span>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="d-flex justify-content-between">
+                                <span><i class="bi bi-dot text-primary fs-5"></i> Tình trạng:</span>
+                                <span class="fw-bold text-dark" id="previewStatusText">Đang hoạt động</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
-    /* Header Icons */
-    .header-icon-box {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        background: linear-gradient(135deg, #1a73e8, #4285f4);
+    .avatar-custom-ui {
+        width: 60px;
+        height: 60px;
+        background: #ffffff;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #fff;
-        font-size: 0.85rem;
-        margin-right: 12px;
-        flex-shrink: 0;
-    }
-
-    /* Custom Form Elements */
-    .form-label-custom {
-        display: block;
-        font-size: 0.82rem;
-        font-weight: 700;
-        color: var(--text-secondary, #5f6368);
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-
-    .form-control-custom, .form-select-custom {
-        width: 100%;
-        padding: 12px 16px;
-        font-size: 0.95rem;
-        border-radius: 12px;
-        border: 1.5px solid #e8eaed;
-        background: #f8f9fa;
-        color: #1a1a2e;
-        transition: all 0.2s;
-    }
-
-    .form-control-custom:focus, .form-select-custom:focus {
-        background: #fff;
-        border-color: #1a73e8;
-        box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
-        outline: none;
-    }
-
-    /* Custom Switch Styling */
-    .custom-switch {
-        padding-left: 3.5rem;
-        min-height: 2.5rem;
-        display: flex;
-        align-items: center;
-    }
-    .custom-switch .form-check-input {
-        width: 3rem;
-        height: 1.5rem;
-        margin-left: -3.5rem;
-        cursor: pointer;
-        border-color: #e8eaed;
-        background-color: #f8f9fa;
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23e8eaed'/%3e%3c/svg%3e");
-    }
-    .custom-switch .form-check-input:checked {
-        background-color: #34a853;
-        border-color: #34a853;
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
-    }
-    .custom-switch .form-check-label span {
-        display: none;
-    }
-    .custom-switch .form-check-input:checked ~ .form-check-label .status-label-active {
-        display: inline;
-        color: #34a853;
-    }
-    .custom-switch .form-check-input:not(:checked) ~ .form-check-label .status-label-inactive {
-        display: inline;
-        color: #dc3545;
-    }
-
-    /* Input focus animation */
-    .input-group-custom {
+        font-size: 28px;
+        font-weight: 800;
+        color: #0d6efd;
         position: relative;
+        z-index: 1;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .avatar-custom-ui::before {
+        content: '';
+        position: absolute;
+        top: -6px; right: -6px; bottom: -6px; left: -6px;
+        border-radius: 50%;
+        border: 2px dashed rgba(255, 192, 203, 0.7);
+        box-shadow: 0 0 15px rgba(255, 192, 203, 0.2);
+        z-index: -1;
     }
 
-    /* Layout tweaks */
-    .content-card {
-        border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-    }
-    
-    .card-header-custom {
-        padding: 18px 24px;
-        background: transparent;
+    .fw-800 { font-weight: 800; }
+    .letter-spacing-1 { letter-spacing: 0.1em; }
+    .transition-all { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    .form-select, .form-control {
+        border: 1.5px solid #edf2f7;
+        padding-top: 12px;
+        padding-bottom: 12px;
     }
 
-    hr.opacity-10 {
-        opacity: 0.1;
+    .form-select:focus, .form-control:focus {
+        border-color: #a3c9f9;
+        box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.1);
     }
-</style>
+
+    .animate__animated { animation-duration: 0.8s; }
+</style>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+    <script>
+        const codeInput = document.getElementById('DepartmentCode');
+        const nameInput = document.getElementById('DepartmentName');
+        const parentSelect = document.getElementById('ParentDepartmentId');
+        const managerSelect = document.getElementById('ManagerId');
+        const activeSelect = document.getElementById('IsActive');
+
+        const previewCode = document.getElementById('previewCode');
+        const previewName = document.getElementById('previewName');
+        const previewParent = document.getElementById('previewParent');
+        const previewManager = document.getElementById('previewManager');
+        
+        function updatePreview() {
+            previewCode.textContent = codeInput.value.trim().toUpperCase() || '--';
+            previewName.textContent = nameInput.value.trim() || '--';
+
+            const parentOpt = parentSelect.options[parentSelect.selectedIndex];
+            previewParent.textContent = parentOpt && parentOpt.value ? parentOpt.text : 'Cấp cao nhất';
+
+            const managerOpt = managerSelect.options[managerSelect.selectedIndex];
+            previewManager.textContent = managerOpt && managerOpt.value ? managerOpt.text : 'Chưa chỉ định';
+
+            const deptStr = nameInput.value.trim();
+            const initial = deptStr ? deptStr.charAt(0).toUpperCase() : 'D';
+            const avatarEl = document.querySelector('.avatar-custom-ui');
+            if (avatarEl) avatarEl.textContent = initial;
+
+            const statusIndicator = document.getElementById('statusIndicator');
+            const previewCard = document.getElementById('previewCard');
+            const previewStatusText = document.getElementById('previewStatusText');
+            
+            if (activeSelect && activeSelect.value && activeSelect.value.toLowerCase() === 'false') {
+                statusIndicator.classList.remove('bg-success');
+                statusIndicator.classList.add('bg-danger');
+                statusIndicator.title = 'Đã khóa';
+                previewCard.style.background = 'linear-gradient(135deg, #6c757d, #343a40)';
+                if (previewStatusText) previewStatusText.textContent = 'Ngừng hoạt động';
+            } else {
+                statusIndicator.classList.remove('bg-danger');
+                statusIndicator.classList.add('bg-success');
+                statusIndicator.title = 'Đang hoạt động';
+                previewCard.style.background = 'linear-gradient(135deg, #1a73e8, #1557b0)';
+                if (previewStatusText) previewStatusText.textContent = 'Đang hoạt động';
+            }
+        }
+
+        codeInput.addEventListener('input', updatePreview);
+        nameInput.addEventListener('input', updatePreview);
+        parentSelect.addEventListener('change', updatePreview);
+        managerSelect.addEventListener('change', updatePreview);
+        if (activeSelect) activeSelect.addEventListener('change', updatePreview);
+
+        window.addEventListener('DOMContentLoaded', updatePreview);
+    </script>
+}

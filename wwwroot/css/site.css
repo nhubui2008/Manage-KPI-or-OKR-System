@@ -42,7 +42,7 @@
     --sidebar-bg-solid: #0d2137;
     --sidebar-text: rgba(255, 255, 255, 0.65);
     --sidebar-text-active: #ffffff;
-    --sidebar-hover: rgba(255, 255, 255, 0.08);
+    --sidebar-hover: rgba(26, 115, 232, 0.15); /* Synchronized to blue hover */
     --sidebar-width: 80px;
     --sidebar-width-expanded: 280px;
 
@@ -549,8 +549,13 @@ html.sidebar-expanded .main-content {
 }
 
 .search-item:hover {
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--primary-bg);
     padding-left: 22px;
+}
+
+.search-item:hover .search-item-title,
+.search-item:hover .search-item-icon {
+    color: var(--primary);
 }
 
 .search-item-icon {
@@ -1466,8 +1471,8 @@ html.sidebar-expanded .main-content {
 }
 
 .form-switch-premium:hover {
-    border-color: var(--primary-light);
-    background-color: #fff;
+    border-color: var(--primary);
+    background-color: var(--primary-bg);
 }
 
 .form-switch-premium .form-check-input {
@@ -1619,13 +1624,35 @@ html.sidebar-expanded .main-content {
     border-color: rgba(26, 115, 232, 0.28) !important;
 }
 
-/* --- GLOBAL: REMOVE ALL TEXT UNDERLINES --- */
+/* --- GLOBAL: REMOVE ALL TEXT UNDERLINES & STANDARD THEME HOVER --- */
 * {
     text-decoration: none !important;
 }
 
 a, a:hover, a:focus, a:active {
     text-decoration: none !important;
+}
+
+/* Đồng bộ toàn bộ hover chung của hệ thống sang màu xanh theo yêu cầu */
+a:not(.btn):not(.btn-danger):not(.text-danger):not(.nav-link):not(.sidebar-link):not(.page-link):hover {
+    color: var(--primary-dark) !important;
+    transition: color var(--transition-fast);
+}
+
+.table-hover tbody tr:hover,
+.table-hover tbody tr:hover td,
+.table-hover tbody tr:hover th {
+    background-color: var(--primary-bg) !important;
+}
+
+.dropdown-item:hover, .dropdown-item:focus,
+.list-group-item-action:hover, .list-group-item-action:focus {
+    background-color: var(--primary-bg) !important;
+    color: var(--primary-dark) !important;
+}
+
+.nav-link:not(.active):hover {
+    color: var(--primary) !important;
 }
 
 /* ============================================================
@@ -1688,22 +1715,26 @@ select.form-select.w-auto {
 
 /* 1. Base Container */
 .select2-container--default .select2-selection--single {
-    height: 44px !important;
-    border: 1.5px solid var(--border-color) !important;
-    border-radius: var(--radius-md) !important;
-    background-color: #fcfdfe !important;
-    display: flex;
-    align-items: center;
+    height: 42px !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    background-color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
     transition: all var(--transition-fast) !important;
     outline: none !important;
+}
+.select2-container--default .select2-selection--single:hover {
+    border-color: #3b82f6 !important;
+    background-color: #f0f7ff !important;
 }
 
 /* 2. Selection Text & Icon Handling */
 .select2-container--default .select2-selection--single .select2-selection__rendered {
-    color: var(--text-primary) !important;
-    font-size: var(--font-size-sm) !important; /* Slightly smaller font for sleek look */
-    padding-left: 16px !important;
-    padding-right: 40px !important;
+    color: #0f172a !important;
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+    padding-left: 10px !important;
     line-height: normal !important;
     display: flex;
     align-items: center;
@@ -1722,22 +1753,22 @@ select.form-select.w-auto {
 
 /* 4. Arrow / Caret */
 .select2-container--default .select2-selection--single .select2-selection__arrow {
-    height: 42px !important;
-    right: 12px !important;
-    width: 20px !important;
+    height: 40px !important;
+    right: 8px !important;
+    width: 25px !important;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .select2-container--default .select2-selection--single .select2-selection__arrow b {
-    border-color: var(--primary) transparent transparent transparent !important;
+    border-color: #2563eb transparent transparent transparent !important;
     border-width: 6px 5px 0 5px !important;
     margin-left: -5px !important;
 }
 
 .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
-    border-color: transparent transparent var(--primary) transparent !important;
+    border-color: transparent transparent #2563eb transparent !important;
     border-width: 0 5px 6px 5px !important;
 }
 
@@ -1751,10 +1782,11 @@ select.form-select.w-auto {
 
 /* 6. Dropdown Menu (Results) */
 .select2-container--open .select2-dropdown {
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius-md) !important;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important;
     overflow: hidden;
+    margin-top: 5px !important;
     z-index: 9999;
     animation: select2FadeIn 0.2s ease-out;
 }
@@ -1786,21 +1818,22 @@ select.form-select.w-auto {
 }
 
 .select2-results__option {
-    padding: 10px 16px !important;
-    font-size: var(--font-size-sm) !important;
-    color: var(--text-secondary) !important;
+    padding: 10px 15px !important;
+    font-size: 0.9rem !important;
+    color: #475569 !important;
     transition: all 0.1s ease !important;
 }
 
 .select2-container--default .select2-results__option--highlighted[aria-selected],
 .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
-    background-color: var(--primary-bg) !important;
-    color: var(--primary) !important;
+    background-color: #ecf3ff !important;
+    color: #2563eb !important;
+    font-weight: 600 !important;
 }
 
 .select2-container--default .select2-results__option[aria-selected=true] {
-    background-color: var(--primary-light) !important;
-    color: var(--primary-dark) !important;
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
     font-weight: 700 !important;
 }
 

@@ -98,8 +98,8 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Phòng ban cấp trên</label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-diagram-3"></i>
-                                        <select asp-for="ParentDepartmentId" class="form-select shadow-sm">
-                                            <option value="">-- Là phòng ban cấp cao nhất --</option>
+                                        <select asp-for="ParentDepartmentId" class="form-select shadow-sm" data-allow-clear="false">
+                                            <option value="">-- Chọn phòng ban cấp cao nhất --</option>
                                             @foreach (var d in departments)
                                             {
                                                 <option value="@d.Id">@d.DepartmentName (@d.DepartmentCode)</option>
@@ -115,8 +115,8 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Người quản lý (Trưởng bộ phận)</label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-person-badge"></i>
-                                        <select asp-for="ManagerId" class="form-select shadow-sm">
-                                            <option value="">-- Chưa chỉ định --</option>
+                                        <select asp-for="ManagerId" class="form-select shadow-sm" data-allow-clear="false">
+                                            <option value="">-- Chọn trưởng phòng --</option>
                                             @foreach (var emp in employees)
                                             {
                                                 <option value="@emp.Key">@emp.Value</option>
