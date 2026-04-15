@@ -457,14 +457,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 kpi.CreatedAt = DateTime.Now;
                 kpi.IsActive = true;
-                kpi.StatusId = 0; // Mặc định: Chờ duyệt
+                kpi.StatusId = null; // Mặc định: Chờ duyệt
 
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(userIdStr, out int userId))
                 {
-                    kpi.CreatedById = userId;
                     var emp = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
-                    if (emp != null) kpi.AssignerId = emp.Id;
+                    if (emp != null) 
+                    {
+                        kpi.CreatedById = emp.Id;
+                        kpi.AssignerId = emp.Id;
+                    }
                 }
 
                 await NormalizeOkrLinkAsync(kpi);
@@ -480,7 +483,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Đã xảy ra lỗi hệ thống: " + ex.Message;
+                var innerMsg = ex.InnerException != null ? " - Chi tiết: " + ex.InnerException.Message : "";
+                TempData["ErrorMessage"] = "Đã xảy ra lỗi hệ thống: " + ex.Message + innerMsg;
             }
 
             return RedirectToAction(nameof(Index));
@@ -669,6 +673,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 assignValue(parsedValue);
                 ModelState.Remove(key);
+                var keyWithoutPrefix = key.Contains(".") ? key.Substring(key.IndexOf(".") + 1) : key;
+                ModelState.Remove(keyWithoutPrefix);
             }
         }
 
