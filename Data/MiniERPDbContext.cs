@@ -173,6 +173,8 @@ namespace Manage_KPI_or_OKR_System.Data
 
             // === F. EVALUATION & HR (MODULE 6) ===
             modelBuilder.Entity<EvaluationResult>().HasOne<Employee>().WithMany().HasForeignKey(er => er.EmployeeId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<EvaluationResult>().HasOne<Employee>().WithMany().HasForeignKey(er => er.SubmittedById).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<EvaluationResult>().HasOne<Employee>().WithMany().HasForeignKey(er => er.DirectorReviewedById).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<EvaluationResult>().HasOne<EvaluationPeriod>().WithMany().HasForeignKey(er => er.PeriodId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<EvaluationResult>().HasOne<GradingRank>().WithMany().HasForeignKey(er => er.RankId).OnDelete(DeleteBehavior.NoAction);
 

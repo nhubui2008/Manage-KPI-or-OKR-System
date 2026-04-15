@@ -11,6 +11,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
     [Authorize]
     public class EvaluationResultsController : Controller
     {
+        private const string SubmissionDraft = "Draft";
+        private const string SubmissionPendingDirector = "PendingDirectorReview";
+        private const string SubmissionApproved = "Approved";
+        private const string SubmissionRejected = "Rejected";
+
         private readonly MiniERPDbContext _context;
         public EvaluationResultsController(MiniERPDbContext context) { _context = context; }
 
@@ -43,10 +48,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var employees = await _context.Employees.ToDictionaryAsync(e => e.Id, e => e.FullName);
             var periods = await _context.EvaluationPeriods.ToDictionaryAsync(p => p.Id, p => p.PeriodName);
             var ranks = await _context.GradingRanks.ToDictionaryAsync(r => r.Id, r => r.RankCode);
+            var submitterIds = results
+                .Where(r => r.SubmittedById.HasValue)
+                .Select(r => r.SubmittedById!.Value)
+                .Concat(results.Where(r => r.DirectorReviewedById.HasValue).Select(r => r.DirectorReviewedById!.Value))
+                .Distinct()
+                .ToList();
+            var workflowEmployees = submitterIds.Any()
+                ? await _context.Employees.Where(e => submitterIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName)
+                : new Dictionary<int, string>();
 
             ViewBag.Employees = employees;
             ViewBag.Periods = periods;
             ViewBag.Ranks = ranks;
+            ViewBag.WorkflowEmployees = workflowEmployees;
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
             var allRanks = await _context.GradingRanks.ToListAsync();
@@ -55,6 +70,64 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                               .Select(r => r.Description)
                                               .Distinct()
                                               .ToList();
+            ViewBag.CanSubmitEvaluation = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager");
+            ViewBag.CanReviewEvaluation = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Director");
+
+            return View(results);
+        }
+
+        [HasPermission("EVALRESULTS_REVIEW", "EVALRESULTS_EDIT")]
+        public async Task<IActionResult> ReviewBoard()
+        {
+            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") ||
+                  User.IsInRole("Director") || User.IsInRole("Manager") ||
+                  User.IsInRole("HR") || User.IsInRole("Human Resources")))
+            {
+                return Forbid();
+            }
+
+            var currentEmployee = await GetCurrentEmployeeAsync();
+            var query = _context.EvaluationResults.AsQueryable();
+
+            if (User.IsInRole("Director") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
+            {
+                query = query.Where(r => r.SubmissionStatus == SubmissionPendingDirector);
+            }
+            else if (User.IsInRole("Manager") && currentEmployee != null)
+            {
+                query = query.Where(r => r.SubmittedById == currentEmployee.Id);
+            }
+            else
+            {
+                query = query.Where(r => false);
+            }
+
+            var results = await query.OrderByDescending(r => r.SubmittedAt ?? DateTime.MinValue).ToListAsync();
+            var employeeIds = results
+                .Select(r => r.EmployeeId ?? 0)
+                .Concat(results.Select(r => r.SubmittedById ?? 0))
+                .Concat(results.Select(r => r.DirectorReviewedById ?? 0))
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+            var employees = employeeIds.Any()
+                ? await _context.Employees.Where(e => employeeIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName)
+                : new Dictionary<int, string>();
+
+            var periodIds = results.Where(r => r.PeriodId.HasValue).Select(r => r.PeriodId!.Value).Distinct().ToList();
+            var periods = periodIds.Any()
+                ? await _context.EvaluationPeriods.Where(p => periodIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.PeriodName)
+                : new Dictionary<int, string?>();
+
+            var rankIds = results.Where(r => r.RankId.HasValue).Select(r => r.RankId!.Value).Distinct().ToList();
+            var ranks = rankIds.Any()
+                ? await _context.GradingRanks.Where(r => rankIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id, r => r.RankCode)
+                : new Dictionary<int, string?>();
+
+            ViewBag.Employees = employees;
+            ViewBag.Periods = periods;
+            ViewBag.Ranks = ranks;
+            ViewBag.CanDirectorReview = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Director");
 
             return View(results);
         }
@@ -94,6 +167,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
+                model.SubmissionStatus ??= SubmissionDraft;
                 _context.EvaluationResults.Add(model);
                 await _context.SaveChangesAsync();
 
@@ -160,6 +234,79 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [HasPermission("EVALRESULTS_EDIT")]
+        public async Task<IActionResult> SubmitForDirectorReview(int id, string? managerComment, string? returnUrl)
+        {
+            var result = await _context.EvaluationResults.FindAsync(id);
+            if (result == null) return NotFound();
+
+            var submitter = await GetCurrentEmployeeAsync();
+            if (!await CanSubmitEvaluationAsync(result, submitter))
+            {
+                return Forbid();
+            }
+
+            if (!string.IsNullOrWhiteSpace(managerComment))
+            {
+                result.ReviewComment = managerComment.Trim();
+            }
+
+            result.SubmissionStatus = SubmissionPendingDirector;
+            result.SubmittedById = submitter?.Id;
+            result.SubmittedAt = DateTime.Now;
+            result.DirectorReviewedById = null;
+            result.DirectorReviewedAt = null;
+            result.DirectorReviewComment = null;
+
+            await _context.SaveChangesAsync();
+            await LogAuditAsync("SUBMIT_REVIEW", null, $"Trưởng phòng gửi đánh giá #{id} lên giám đốc duyệt");
+
+            TempData["SuccessMessage"] = "Đã gửi đánh giá lên giám đốc để review.";
+            return RedirectBack(returnUrl);
+        }
+
+        [HttpPost]
+        [HasPermission("EVALRESULTS_REVIEW", "EVALRESULTS_EDIT")]
+        public async Task<IActionResult> DirectorReview(int id, string decision, string? directorReviewComment, string? returnUrl)
+        {
+            var result = await _context.EvaluationResults.FindAsync(id);
+            if (result == null) return NotFound();
+
+            var reviewer = await GetCurrentEmployeeAsync();
+            if (!CanReviewEvaluation(reviewer))
+            {
+                return Forbid();
+            }
+
+            if (result.SubmissionStatus != SubmissionPendingDirector)
+            {
+                TempData["ErrorMessage"] = "Đánh giá này không còn ở trạng thái chờ giám đốc review.";
+                return RedirectBack(returnUrl);
+            }
+
+            var isApproved = string.Equals(decision, SubmissionApproved, StringComparison.OrdinalIgnoreCase);
+            var isRejected = string.Equals(decision, SubmissionRejected, StringComparison.OrdinalIgnoreCase);
+            if (!isApproved && !isRejected)
+            {
+                TempData["ErrorMessage"] = "Quyết định review không hợp lệ.";
+                return RedirectBack(returnUrl);
+            }
+
+            result.SubmissionStatus = isApproved ? SubmissionApproved : SubmissionRejected;
+            result.DirectorReviewedById = reviewer?.Id;
+            result.DirectorReviewedAt = DateTime.Now;
+            result.DirectorReviewComment = directorReviewComment?.Trim();
+
+            await _context.SaveChangesAsync();
+            await LogAuditAsync(isApproved ? "DIRECTOR_APPROVE" : "DIRECTOR_REJECT", null, $"Giám đốc review đánh giá #{id}: {result.SubmissionStatus}");
+
+            TempData["SuccessMessage"] = isApproved
+                ? "Đã duyệt đánh giá và kết quả."
+                : "Đã từ chối đánh giá, trưởng phòng cần rà soát lại.";
+            return RedirectBack(returnUrl);
+        }
+
+        [HttpPost]
         [HasPermission("EVALRESULTS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -181,6 +328,62 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 TempData["SuccessMessage"] = "Đã xóa kết quả đánh giá!";
             }
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<Employee?> GetCurrentEmployeeAsync()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out int userId))
+            {
+                return null;
+            }
+
+            return await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId && e.IsActive == true);
+        }
+
+        private async Task<bool> CanSubmitEvaluationAsync(EvaluationResult result, Employee? submitter)
+        {
+            if (User.IsInRole("Admin") || User.IsInRole("Administrator"))
+            {
+                return true;
+            }
+
+            if (submitter == null || !User.IsInRole("Manager") || !result.EmployeeId.HasValue)
+            {
+                return false;
+            }
+
+            var managedDeptIds = await _context.Departments
+                .Where(d => d.ManagerId == submitter.Id && d.IsActive == true)
+                .Select(d => d.Id)
+                .ToListAsync();
+
+            if (!managedDeptIds.Any())
+            {
+                return false;
+            }
+
+            return await _context.EmployeeAssignments.AnyAsync(a =>
+                a.EmployeeId == result.EmployeeId &&
+                a.DepartmentId.HasValue &&
+                managedDeptIds.Contains(a.DepartmentId.Value) &&
+                a.IsActive == true);
+        }
+
+        private bool CanReviewEvaluation(Employee? reviewer)
+        {
+            return User.IsInRole("Admin") || User.IsInRole("Administrator") ||
+                   (reviewer != null && User.IsInRole("Director"));
+        }
+
+        private IActionResult RedirectBack(string? returnUrl)
+        {
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return LocalRedirect(returnUrl);
+            }
+
             return RedirectToAction(nameof(Index));
         }
 

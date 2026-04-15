@@ -146,7 +146,7 @@
                         </div>
                     }
 
-                    @if (HasPerm("EVALPERIODS_VIEW") || HasPerm("KPIS_VIEW") || HasPerm("KPICHECKINS_VIEW"))
+                    @if (HasPerm("EVALPERIODS_VIEW") || HasPerm("KPIS_VIEW") || HasPerm("KPICHECKINS_VIEW") || HasPerm("KPICHECKINS_REVIEW"))
                     {
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Đo lường hiệu suất</div>
@@ -167,11 +167,20 @@
                                 <a href="/KPICheckIns" class="sidebar-link">
                                     <i class="bi bi-check2-square"></i> <span>Cập nhật tiến độ KPI</span>
                                 </a>
+                                <a href="/KPICheckIns/EmployeeTracking" class="sidebar-link">
+                                    <i class="bi bi-person-lines-fill"></i> <span>Theo dõi KPI nhân viên</span>
+                                </a>
+                            }
+                            @if (HasPerm("KPICHECKINS_REVIEW"))
+                            {
+                                <a href="/KPICheckIns/ReviewQueue" class="sidebar-link">
+                                    <i class="bi bi-patch-check-fill"></i> <span>Xác nhận check-in KPI</span>
+                                </a>
                             }
                         </div>
                     }
 
-                    @if (HasPerm("EVALRESULTS_VIEW") || HasPerm("EVALREPORTS_VIEW") || HasPerm("BONUSRULES_VIEW"))
+                    @if (HasPerm("EVALRESULTS_VIEW") || HasPerm("EVALRESULTS_REVIEW") || HasPerm("EVALREPORTS_VIEW") || HasPerm("BONUSRULES_VIEW"))
                     {
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Đánh giá & Thưởng</div>
@@ -179,6 +188,12 @@
                             {
                                 <a href="/EvaluationResults" class="sidebar-link">
                                     <i class="bi bi-award-fill"></i> <span>Đánh giá 1-1 / Kết quả</span>
+                                </a>
+                            }
+                            @if (HasPerm("EVALRESULTS_REVIEW"))
+                            {
+                                <a href="/EvaluationResults/ReviewBoard" class="sidebar-link">
+                                    <i class="bi bi-clipboard-check-fill"></i> <span>Duyệt đánh giá & kết quả</span>
                                 </a>
                             }
                             @if (HasPerm("EVALREPORTS_VIEW"))

@@ -1,0 +1,145 @@
+@model List<Manage_KPI_or_OKR_System.Models.ViewModels.EmployeeKpiTrackingRow>
+@using Manage_KPI_or_OKR_System.Helpers
+@{
+    ViewData["Title"] = "Theo dõi KPI nhân viên";
+    var employees = ViewBag.Employees as List<Manage_KPI_or_OKR_System.Models.ViewModels.TrackableEmployeeOption> ?? new List<Manage_KPI_or_OKR_System.Models.ViewModels.TrackableEmployeeOption>();
+    var selectedEmployee = ViewBag.SelectedEmployee as Manage_KPI_or_OKR_System.Models.ViewModels.TrackableEmployeeOption;
+}
+
+<div class="container-fluid px-0">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Theo dõi KPI nhân viên</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <a asp-action="Index">Check-in KPI</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Theo dõi cá nhân</span>
+            </div>
+        </div>
+        <a asp-action="ReviewQueue" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="bi bi-check2-square me-1"></i> Xác nhận check-in
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <div class="content-card h-100">
+                <div class="card-header-custom border-bottom p-3">
+                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-people me-2"></i>Danh sách có thể xem</h5>
+                </div>
+                <div class="card-body-custom p-3">
+                    <form asp-action="EmployeeTracking" method="get" class="mb-3">
+                        <label class="form-label small text-muted fw-bold">Chọn nhân viên/trưởng phòng</label>
+                        <select name="employeeId" class="form-select" onchange="this.form.submit()">
+                            @foreach (var employee in employees)
+                            {
+                                <option value="@employee.EmployeeId" selected="@(selectedEmployee?.EmployeeId == employee.EmployeeId ? "selected" : null)">
+                                    @employee.EmployeeName @(employee.IsDepartmentManager ? "(Trưởng phòng)" : "")
+                                </option>
+                            }
+                        </select>
+                    </form>
+
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var employee in employees)
+                        {
+                            var active = selectedEmployee?.EmployeeId == employee.EmployeeId;
+                            <a asp-action="EmployeeTracking" asp-route-employeeId="@employee.EmployeeId" class="text-decoration-none p-3 rounded-3 border @(active ? "bg-primary bg-opacity-10 border-primary" : "bg-light border-light")">
+                                <div class="fw-bold @(active ? "text-primary" : "text-dark")">@employee.EmployeeName</div>
+                                <div class="text-muted small">@employee.DepartmentNames</div>
+                                @if (employee.IsDepartmentManager)
+                                {
+                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 mt-2">Trưởng phòng</span>
+                                }
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="content-card mb-4">
+                <div class="card-body-custom p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small text-uppercase fw-bold">Đang theo dõi</div>
+                        <h4 class="mb-1 fw-bold">@selectedEmployee?.EmployeeName</h4>
+                        <div class="text-muted">@selectedEmployee?.DepartmentNames</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="h3 fw-bold text-primary mb-0">@Model.Count</div>
+                        <div class="text-muted small">KPI liên quan</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <div class="card-header-custom border-bottom p-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-speedometer2 me-2"></i>KPI và check-in mới nhất</h5>
+                </div>
+                <div class="card-body-custom p-0">
+                    <div class="table-responsive">
+                        <table class="data-table w-100 mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">KPI</th>
+                                    <th>Chỉ tiêu</th>
+                                    <th>Thực tế mới nhất</th>
+                                    <th>Tiến độ</th>
+                                    <th>Ngày check-in</th>
+                                    <th>Xác nhận</th>
+                                    <th class="pe-4">Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Any())
+                                {
+                                    foreach (var row in Model)
+                                    {
+                                        var progress = row.LatestProgress ?? 0;
+                                        var progressWidth = Math.Min(100, progress);
+                                        var reviewBadge = row.ReviewStatus == "Đã xác nhận" ? "bg-success bg-opacity-10 text-success border-success" :
+                                                          row.ReviewStatus == "Chờ quản lý xác nhận" ? "bg-warning bg-opacity-10 text-warning border-warning" :
+                                                          row.ReviewStatus == "Bị từ chối" ? "bg-danger bg-opacity-10 text-danger border-danger" :
+                                                          "bg-secondary bg-opacity-10 text-secondary border-secondary";
+                                        <tr>
+                                            <td class="ps-4">
+                                                <div class="fw-bold text-dark">@row.KpiName</div>
+                                                <div class="text-muted small">KPI #@row.KpiId</div>
+                                            </td>
+                                            <td>@String.Format("{0:N0}", row.TargetValue) @row.Unit</td>
+                                            <td class="fw-bold">@(row.LatestAchievedValue.HasValue ? String.Format("{0:N2}", row.LatestAchievedValue) : "--") @row.Unit</td>
+                                            <td style="min-width: 170px;">
+                                                <div class="d-flex justify-content-between small mb-1">
+                                                    <span class="@ProgressHelper.GetProgressTextColorClass(progress) fw-bold">@progress.ToString("0.##")%</span>
+                                                    <span class="text-muted">@row.CheckInStatus</span>
+                                                </div>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar @ProgressHelper.GetProgressColorClass(progress)" style="width: @progressWidth%;"></div>
+                                                </div>
+                                            </td>
+                                            <td class="text-muted">@row.LatestCheckInDate?.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td><span class="badge border rounded-pill px-3 py-2 @reviewBadge">@row.ReviewStatus</span></td>
+                                            <td class="pe-4 text-muted small" style="max-width: 260px;">@(string.IsNullOrWhiteSpace(row.Note) ? "--" : row.Note)</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-5">
+                                            <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+                                            Nhân viên này chưa có KPI được phân bổ hoặc chưa có dữ liệu theo dõi
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

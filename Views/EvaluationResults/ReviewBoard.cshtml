@@ -1,0 +1,133 @@
+@model List<Manage_KPI_or_OKR_System.Models.EvaluationResult>
+@{
+    ViewData["Title"] = "Duyệt đánh giá & kết quả";
+    var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var periods = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var ranks = ViewBag.Ranks as Dictionary<int, string> ?? new Dictionary<int, string>();
+    bool canDirectorReview = ViewBag.CanDirectorReview == true;
+    string returnUrl = Context.Request.Path + Context.Request.QueryString;
+
+    string StatusText(string? status) => status switch
+    {
+        "PendingDirectorReview" => "Chờ giám đốc review",
+        "Approved" => "Đã duyệt",
+        "Rejected" => "Từ chối",
+        _ => "Bản nháp"
+    };
+}
+
+<div class="container-fluid px-0">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Duyệt đánh giá & kết quả</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <a asp-action="Index">Kết quả đánh giá</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Review</span>
+            </div>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại
+        </a>
+    </div>
+
+    <div class="content-card w-100">
+        <div class="card-header-custom border-bottom p-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-clipboard-check me-2"></i>Hồ sơ đang xử lý</h5>
+            <span class="badge bg-primary rounded-pill">@Model.Count bản ghi</span>
+        </div>
+        <div class="card-body-custom p-0">
+            <div class="table-responsive">
+                <table class="data-table w-100 mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Nhân viên</th>
+                            <th>Kỳ đánh giá</th>
+                            <th>Tổng điểm</th>
+                            <th>Xếp hạng</th>
+                            <th>Nhận xét trưởng phòng</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end pe-4">Review giám đốc</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
+                        {
+                            foreach (var result in Model)
+                            {
+                                var empName = result.EmployeeId.HasValue && employees.ContainsKey(result.EmployeeId.Value) ? employees[result.EmployeeId.Value] : "N/A";
+                                var periodName = result.PeriodId.HasValue && periods.ContainsKey(result.PeriodId.Value) ? periods[result.PeriodId.Value] : "N/A";
+                                var rankCode = result.RankId.HasValue && ranks.ContainsKey(result.RankId.Value) ? ranks[result.RankId.Value] : "N/A";
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">@empName</div>
+                                        <div class="text-muted small">@result.Classification</div>
+                                    </td>
+                                    <td class="text-muted">@periodName</td>
+                                    <td><span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3">@result.TotalScore?.ToString("0.##") điểm</span></td>
+                                    <td><span class="badge bg-dark text-white">@rankCode</span></td>
+                                    <td style="max-width: 360px;">
+                                        <div class="text-muted small">@(string.IsNullOrWhiteSpace(result.ReviewComment) ? "Chưa có nhận xét" : result.ReviewComment)</div>
+                                        @if (result.SubmittedAt.HasValue)
+                                        {
+                                            <div class="text-muted mt-1" style="font-size: 0.72rem;">Gửi lúc @result.SubmittedAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                        }
+                                    </td>
+                                    <td><span class="badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill px-3 py-2">@StatusText(result.SubmissionStatus)</span></td>
+                                    <td class="pe-4 text-end" style="min-width: 300px;">
+                                        @if (canDirectorReview)
+                                        {
+                                            <form asp-action="DirectorReview" method="post" class="text-start">
+                                                <input type="hidden" name="id" value="@result.Id" />
+                                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                                <textarea name="directorReviewComment" class="form-control form-control-sm mb-2" rows="2" placeholder="Nhận xét của giám đốc..."></textarea>
+                                                <div class="d-flex gap-2 justify-content-end">
+                                                    <button type="submit" name="decision" value="Approved" class="btn btn-sm btn-success">
+                                                        <i class="bi bi-check2-circle me-1"></i>Duyệt
+                                                    </button>
+                                                    <button type="submit" name="decision" value="Rejected" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-x-circle me-1"></i>Từ chối
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Đang chờ giám đốc review</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+                                    Chưa có đánh giá nào cần xử lý
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

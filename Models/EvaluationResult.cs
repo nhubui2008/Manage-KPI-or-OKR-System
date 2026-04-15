@@ -16,5 +16,13 @@ namespace Manage_KPI_or_OKR_System.Models
         public string? Classification { get; set; }
         [StringLength(2000)]
         public string? ReviewComment { get; set; }
+        [StringLength(30)]
+        public string? SubmissionStatus { get; set; } = "Draft";
+        public int? SubmittedById { get; set; }
+        public DateTime? SubmittedAt { get; set; }
+        public int? DirectorReviewedById { get; set; }
+        public DateTime? DirectorReviewedAt { get; set; }
+        [StringLength(2000)]
+        public string? DirectorReviewComment { get; set; }
     }
 }

@@ -1,0 +1,133 @@
+@model List<Manage_KPI_or_OKR_System.Models.KPICheckIn>
+@using Manage_KPI_or_OKR_System.Helpers
+@{
+    ViewData["Title"] = "Xác nhận check-in KPI";
+    var details = ViewBag.Details as Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail>();
+    var employees = ViewBag.Employees as Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>();
+    var kpis = ViewBag.KPIs as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI>();
+    var failReasons = ViewBag.FailReasons as Dictionary<int, string> ?? new Dictionary<int, string>();
+    string returnUrl = ViewBag.ReturnUrl as string ?? "/KPICheckIns/ReviewQueue";
+}
+
+<div class="container-fluid px-0">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Xác nhận check-in KPI</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <a asp-action="Index">Check-in KPI</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Chờ xác nhận</span>
+            </div>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
+            <i class="bi bi-clock-history me-1"></i> Lịch sử
+        </a>
+    </div>
+
+    <div class="content-card w-100">
+        <div class="card-header-custom border-bottom p-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-check2-square me-2"></i>Danh sách chờ quản lý xác nhận</h5>
+            <span class="badge bg-warning text-dark rounded-pill">@Model.Count chờ duyệt</span>
+        </div>
+        <div class="card-body-custom p-0">
+            <div class="table-responsive">
+                <table class="data-table w-100 mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Nhân viên</th>
+                            <th>KPI</th>
+                            <th>Ngày check-in</th>
+                            <th>Kết quả</th>
+                            <th>Tiến độ</th>
+                            <th>Lý do/Ghi chú</th>
+                            <th class="text-end pe-4">Xác nhận</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                var detail = details.ContainsKey(item.Id) ? details[item.Id] : null;
+                                var employee = item.EmployeeId.HasValue && employees.ContainsKey(item.EmployeeId.Value) ? employees[item.EmployeeId.Value] : null;
+                                var kpi = item.KPIId.HasValue && kpis.ContainsKey(item.KPIId.Value) ? kpis[item.KPIId.Value] : null;
+                                var progress = detail?.ProgressPercentage ?? 0;
+                                var progressWidth = Math.Min(100, progress);
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">@(employee?.FullName ?? "N/A")</div>
+                                        <div class="text-muted small">@employee?.EmployeeCode</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">@kpi?.KPIName</div>
+                                        <div class="text-muted small">KPI #@item.KPIId</div>
+                                    </td>
+                                    <td class="text-muted">@item.CheckInDate?.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="fw-bold">@String.Format("{0:N2}", detail?.AchievedValue ?? 0)</td>
+                                    <td style="min-width: 160px;">
+                                        <div class="d-flex justify-content-between small mb-1">
+                                            <span class="@ProgressHelper.GetProgressTextColorClass(progress) fw-bold">@progress.ToString("0.##")%</span>
+                                            <span class="text-muted">Pending</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar @ProgressHelper.GetProgressColorClass(progress)" style="width: @progressWidth%;"></div>
+                                        </div>
+                                    </td>
+                                    <td style="max-width: 280px;">
+                                        @if (item.FailReasonId.HasValue && failReasons.ContainsKey(item.FailReasonId.Value))
+                                        {
+                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 mb-1">@failReasons[item.FailReasonId.Value]</span>
+                                        }
+                                        <div class="text-muted small">@(string.IsNullOrWhiteSpace(detail?.Note) ? "--" : detail.Note)</div>
+                                    </td>
+                                    <td class="pe-4 text-end" style="min-width: 300px;">
+                                        <form asp-action="Review" method="post" class="text-start">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                            <input type="number" min="0" max="100" step="0.01" name="reviewScore" class="form-control form-control-sm mb-2" placeholder="Điểm đánh giá 0-100" />
+                                            <textarea name="reviewComment" class="form-control form-control-sm mb-2" rows="2" placeholder="Nhận xét của quản lý..."></textarea>
+                                            <div class="d-flex gap-2 justify-content-end">
+                                                <button type="submit" name="decision" value="Approved" class="btn btn-sm btn-success">
+                                                    <i class="bi bi-check2-circle me-1"></i>Xác nhận
+                                                </button>
+                                                <button type="submit" name="decision" value="Rejected" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-x-circle me-1"></i>Từ chối
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-5">
+                                    <i class="bi bi-check2-circle fs-2 d-block mb-2 opacity-50"></i>
+                                    Không có check-in nào đang chờ xác nhận
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -4,12 +4,32 @@
     var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
     var periods = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
     var ranks = ViewBag.Ranks as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var workflowEmployees = ViewBag.WorkflowEmployees as Dictionary<int, string> ?? new Dictionary<int, string>();
     var allEmployees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
     var allPeriods = ViewBag.AllPeriods as List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod> ?? new List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod>();
     var allRanks = ViewBag.AllRanks as List<Manage_KPI_or_OKR_System.Models.GradingRank> ?? new List<Manage_KPI_or_OKR_System.Models.GradingRank>();
     var classificationsList = ViewBag.Classifications as List<string> ?? new List<string> { "Xuất sắc", "Giỏi", "Khá", "Trung bình", "Yếu" };
     
     bool canManage = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR");
+    bool canSubmitEvaluation = ViewBag.CanSubmitEvaluation == true;
+    bool canReviewEvaluation = ViewBag.CanReviewEvaluation == true;
+    string returnUrl = Context.Request.Path + Context.Request.QueryString;
+
+    string SubmissionText(string? status) => status switch
+    {
+        "PendingDirectorReview" => "Chờ giám đốc duyệt",
+        "Approved" => "Giám đốc đã duyệt",
+        "Rejected" => "Giám đốc từ chối",
+        _ => "Bản nháp"
+    };
+
+    string SubmissionBadge(string? status) => status switch
+    {
+        "PendingDirectorReview" => "bg-warning bg-opacity-10 text-warning border-warning",
+        "Approved" => "bg-success bg-opacity-10 text-success border-success",
+        "Rejected" => "bg-danger bg-opacity-10 text-danger border-danger",
+        _ => "bg-secondary bg-opacity-10 text-secondary border-secondary"
+    };
 }
 @if (TempData["SuccessMessage"] != null)
 {<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
@@ -23,6 +43,12 @@
         {
             <a asp-action="Create" class="btn-primary-custom d-flex align-items-center"><i class="bi bi-plus-lg me-1"></i> Thêm kết quả</a>
         }
+        @if (canSubmitEvaluation || canReviewEvaluation)
+        {
+            <a asp-action="ReviewBoard" class="btn btn-outline-primary rounded-pill px-4 d-flex align-items-center">
+                <i class="bi bi-clipboard-check me-1"></i> Duyệt đánh giá & kết quả
+            </a>
+        }
     </div>
 </div>
 
@@ -32,7 +58,7 @@
             <div class="card-body-custom">
                 <div class="table-responsive w-100">
                     <table class="data-table w-100">
-                        <thead><tr><th>Nhân viên</th><th>Kỳ đánh giá</th><th>Tổng điểm</th><th>Xếp hạng</th><th>Phân loại</th><th>Nhận xét</th>@if(canManage){<th class="text-end">Thao tác</th>}</tr></thead>
+                        <thead><tr><th>Nhân viên</th><th>Kỳ đánh giá</th><th>Tổng điểm</th><th>Xếp hạng</th><th>Phân loại</th><th>Trạng thái duyệt</th><th>Nhận xét</th>@if(canManage || canSubmitEvaluation || canReviewEvaluation){<th class="text-end">Thao tác</th>}</tr></thead>
                         <tbody>
                             @if (Model != null && Model.Any())
                             {
@@ -44,26 +70,47 @@
                                     var scoreColor = r.TotalScore >= 90 ? "success" : r.TotalScore >= 70 ? "primary" : r.TotalScore >= 50 ? "warning" : "danger";
                                     var safeClassification = System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(r.Classification ?? "");
                                     var safeReviewComment = System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(r.ReviewComment ?? "");
+                                    var submitterName = r.SubmittedById.HasValue && workflowEmployees.ContainsKey(r.SubmittedById.Value) ? workflowEmployees[r.SubmittedById.Value] : "";
                                     <tr>
                                         <td><div class="d-flex align-items-center gap-2"><div class="user-avatar" style="width:28px;height:28px;font-size:0.7rem;">@(empName.Length > 0 ? empName[0].ToString() : "?")</div><span class="fw-medium text-dark">@empName</span></div></td>
                                         <td class="text-muted">@periodName</td>
                                         <td><span class="badge bg-@scoreColor bg-opacity-10 text-@scoreColor rounded-pill px-2">@(r.TotalScore % 1 == 0 ? r.TotalScore?.ToString("0") : r.TotalScore?.ToString("0.#"))đ</span></td>
                                         <td><span class="badge bg-dark text-white px-2">@rankCode</span></td>
                                         <td>@(r.Classification ?? "Chưa phân loại")</td>
+                                        <td>
+                                            <span class="badge border rounded-pill px-3 py-2 @SubmissionBadge(r.SubmissionStatus)">
+                                                @SubmissionText(r.SubmissionStatus)
+                                            </span>
+                                            @if (!string.IsNullOrWhiteSpace(submitterName))
+                                            {
+                                                <div class="text-muted small mt-1">Gửi bởi: @submitterName</div>
+                                            }
+                                        </td>
                                         <td class="text-muted" style="max-width:260px;">
                                             <span class="d-inline-block text-truncate" style="max-width:250px;" title="@(r.ReviewComment ?? "Chưa có nhận xét")">@(string.IsNullOrWhiteSpace(r.ReviewComment) ? "Chưa có nhận xét" : r.ReviewComment)</span>
                                         </td>
-                                        @if(canManage){
+                                        @if(canManage || canSubmitEvaluation || canReviewEvaluation){
                                         <td><div class="action-btns justify-content-end">
-                                            <button type="button" class="action-btn" title="Sửa" onclick="editResult('@r.Id', '@r.EmployeeId', '@r.PeriodId', '@(r.TotalScore?.ToString() ?? "0")', '@r.RankId', '@safeClassification', '@safeReviewComment')"><i class="bi bi-pencil-square"></i></button>
-                                            <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa kết quả này?')"><i class="bi bi-trash"></i></button></form>
+                                            @if (canManage)
+                                            {
+                                                <button type="button" class="action-btn" title="Sửa" onclick="editResult('@r.Id', '@r.EmployeeId', '@r.PeriodId', '@(r.TotalScore?.ToString() ?? "0")', '@r.RankId', '@safeClassification', '@safeReviewComment')"><i class="bi bi-pencil-square"></i></button>
+                                                <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa kết quả này?')"><i class="bi bi-trash"></i></button></form>
+                                            }
+                                            @if (canSubmitEvaluation && (string.IsNullOrWhiteSpace(r.SubmissionStatus) || r.SubmissionStatus == "Draft" || r.SubmissionStatus == "Rejected"))
+                                            {
+                                                <form asp-action="SubmitForDirectorReview" method="post" style="display:inline;">
+                                                    <input type="hidden" name="id" value="@r.Id" />
+                                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                                    <button type="submit" class="action-btn text-primary" title="Gửi giám đốc duyệt"><i class="bi bi-send-check"></i></button>
+                                                </form>
+                                            }
                                         </div></td>
                                         }
                                     </tr>
                                 }
                             }
                             else
-                            {<tr><td colspan="@(canManage ? "7" : "6")" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có kết quả đánh giá</p></td></tr>}
+                            {<tr><td colspan="@(canManage || canSubmitEvaluation || canReviewEvaluation ? "8" : "7")" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có kết quả đánh giá</p></td></tr>}
                         </tbody>
                     </table>
                 </div>

@@ -148,7 +148,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 // Kỳ đánh giá
                 "EVALPERIODS_VIEW", "EVALPERIODS_CREATE", "EVALPERIODS_EDIT", "EVALPERIODS_DELETE",
                 // Kết quả đánh giá
-                "EVALRESULTS_VIEW", "EVALRESULTS_CREATE", "EVALRESULTS_EDIT", "EVALRESULTS_DELETE",
+                "EVALRESULTS_VIEW", "EVALRESULTS_CREATE", "EVALRESULTS_EDIT", "EVALRESULTS_DELETE", "EVALRESULTS_REVIEW",
                 // Báo cáo đánh giá
                 "EVALREPORTS_VIEW", "EVALREPORTS_EDIT",
                 // Quy tắc thưởng
