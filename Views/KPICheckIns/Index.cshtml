@@ -7,6 +7,9 @@
     var detailsDict = ViewBag.Details as Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail>();
     var employeesDict = ViewBag.Employees as Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>();
     var kpisDict = ViewBag.KPIs as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI>();
+    var commentsByCheckIn = ViewBag.CheckInComments as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.GoalComment>> ?? new Dictionary<int, List<Manage_KPI_or_OKR_System.Models.GoalComment>>();
+    bool canReviewCheckIns = ViewBag.CanReviewCheckIns == true;
+    string returnUrl = ViewBag.ReturnUrl as string ?? "/KPICheckIns";
     var failReasonsDict = (ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>()).ToDictionary(r => r.Id, r => r.ReasonName ?? "Chưa rõ");
     var kpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
     var kpiDataJson = JsonSerializer.Serialize(kpiData.ToDictionary(k => k.Key, v => new {
@@ -23,6 +26,20 @@
     int inTimePct = totalCount > 0 ? (inTimeCount * 100) / totalCount : 0;
     int riskPct = totalCount > 0 ? (riskCount * 100) / totalCount : 0;
     int latePct = totalCount > 0 ? (lateCount * 100) / totalCount : 0;
+
+    string GetReviewText(string? status) => status switch
+    {
+        "Pending" => "Chờ quản lý xác nhận",
+        "Rejected" => "Từ chối",
+        _ => "Đã xác nhận"
+    };
+
+    string GetReviewBadgeClass(string? status) => status switch
+    {
+        "Pending" => "bg-warning bg-opacity-10 text-warning border-warning",
+        "Rejected" => "bg-danger bg-opacity-10 text-danger border-danger",
+        _ => "bg-success bg-opacity-10 text-success border-success"
+    };
 }
 
 <div class="container-fluid px-0">
@@ -100,6 +117,9 @@
                                 <th class="fw-medium border-0">Ngày Checkin</th>
                                 <th class="fw-medium border-0">Lý do chưa đạt</th>
                                 <th class="fw-medium border-0">Tiến độ</th>
+                                <th class="fw-medium border-0">Xác nhận</th>
+                                <th class="fw-medium border-0">Đánh giá QL</th>
+                                <th class="fw-medium border-0 text-end pe-4">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -180,13 +200,124 @@
                                                 <div class="progress-bar @barColor" style="width: @progressWidth%;"></div>
                                             </div>
                                         </td>
+                                        <td class="py-3 border-bottom-0">
+                                            @{
+                                                var reviewStatus = string.IsNullOrWhiteSpace(ci.ReviewStatus) ? "Approved" : ci.ReviewStatus;
+                                                var reviewer = (ci.ReviewedById.HasValue && employeesDict.ContainsKey(ci.ReviewedById.Value)) ? employeesDict[ci.ReviewedById.Value] : null;
+                                            }
+                                            <span class="badge border rounded-pill px-3 py-2 @GetReviewBadgeClass(reviewStatus)">
+                                                @GetReviewText(reviewStatus)
+                                            </span>
+                                            @if (ci.ReviewedAt.HasValue)
+                                            {
+                                                <div class="text-muted mt-1" style="font-size: 0.72rem;">
+                                                    @reviewer?.FullName - @ci.ReviewedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                                                </div>
+                                            }
+                                        </td>
+                                        <td class="py-3 border-bottom-0" style="min-width: 170px;">
+                                            @if (ci.ReviewScore.HasValue)
+                                            {
+                                                <div class="fw-bold text-primary">@ci.ReviewScore.Value.ToString("0.##")/100</div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(ci.ReviewComment))
+                                            {
+                                                <div class="text-muted small" title="@ci.ReviewComment">
+                                                    @(ci.ReviewComment.Length > 70 ? ci.ReviewComment.Substring(0, 70) + "..." : ci.ReviewComment)
+                                                </div>
+                                            }
+                                            @if (!ci.ReviewScore.HasValue && string.IsNullOrWhiteSpace(ci.ReviewComment))
+                                            {
+                                                <span class="text-muted small">--</span>
+                                            }
+                                        </td>
+                                        <td class="py-3 border-bottom-0 pe-4 text-end" style="min-width: 260px;">
+                                            @if (canReviewCheckIns && reviewStatus == "Pending")
+                                            {
+                                                <form asp-action="Review" method="post" class="review-inline-form text-start">
+                                                    <input type="hidden" name="id" value="@ci.Id" />
+                                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                                    <div class="d-flex gap-2 mb-2">
+                                                        <input type="number" min="0" max="100" step="0.01" name="reviewScore" class="form-control form-control-sm" placeholder="Điểm 0-100" />
+                                                    </div>
+                                                    <textarea name="reviewComment" class="form-control form-control-sm mb-2" rows="2" placeholder="Nhận xét của quản lý..."></textarea>
+                                                    <div class="d-flex gap-2 justify-content-end">
+                                                        <button type="submit" name="decision" value="Approved" class="btn btn-sm btn-success">
+                                                            <i class="bi bi-check2-circle me-1"></i>Xác nhận
+                                                        </button>
+                                                        <button type="submit" name="decision" value="Rejected" class="btn btn-sm btn-outline-danger">
+                                                            <i class="bi bi-x-circle me-1"></i>Từ chối
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">--</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-white">
+                                        <td colspan="8" class="px-4 pb-4 pt-0">
+                                            @{
+                                                var comments = commentsByCheckIn.ContainsKey(ci.Id) ? commentsByCheckIn[ci.Id] : new List<Manage_KPI_or_OKR_System.Models.GoalComment>();
+                                            }
+                                            <div class="checkin-comments border rounded-3 p-3 bg-light bg-opacity-50">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <div class="fw-bold small text-dark">
+                                                        <i class="bi bi-chat-left-text me-1 text-primary"></i>Trao đổi & đánh giá bổ sung
+                                                    </div>
+                                                    <span class="text-muted small">@comments.Count bình luận</span>
+                                                </div>
+                                                @if (comments.Any())
+                                                {
+                                                    <div class="d-flex flex-column gap-2 mb-3">
+                                                        @foreach (var comment in comments)
+                                                        {
+                                                            var commenter = comment.CommenterId.HasValue && employeesDict.ContainsKey(comment.CommenterId.Value)
+                                                                ? employeesDict[comment.CommenterId.Value].FullName
+                                                                : "Hệ thống";
+                                                            <div class="bg-white border rounded-3 p-2">
+                                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                    <span class="fw-semibold small">@commenter</span>
+                                                                    <span class="text-muted" style="font-size: 0.72rem;">@comment.CommentTime?.ToString("dd/MM/yyyy HH:mm")</span>
+                                                                </div>
+                                                                @if (comment.Rating.HasValue)
+                                                                {
+                                                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-1">
+                                                                        Đánh giá: @comment.Rating.Value.ToString("0.##")/100
+                                                                    </span>
+                                                                }
+                                                                <div class="text-muted small">@comment.Content</div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                                <form asp-action="AddComment" method="post" class="row g-2 align-items-start">
+                                                    <input type="hidden" name="checkInId" value="@ci.Id" />
+                                                    <input type="hidden" name="kpiId" value="@ci.KPIId" />
+                                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                                    <div class="col-lg-8">
+                                                        <textarea name="content" class="form-control form-control-sm" rows="2" placeholder="Thêm bình luận về lần check-in này..." required></textarea>
+                                                    </div>
+                                                    <div class="col-lg-2">
+                                                        <input type="number" min="0" max="100" step="0.01" name="rating" class="form-control form-control-sm" placeholder="Điểm" />
+                                                    </div>
+                                                    <div class="col-lg-2 d-grid">
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                            <i class="bi bi-send me-1"></i>Gửi
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </td>
                                     </tr>
                                 }
                             }
                             else
                             {
                                 <tr>
-                                    <td colspan="5" class="text-center py-5 text-muted bg-white">
+                                    <td colspan="8" class="text-center py-5 text-muted bg-white">
                                         <i class="bi bi-journal-x fs-2 opacity-50 mb-2 d-block"></i>
                                         Chưa có bản ghi Check-in nào
                                     </td>
@@ -333,6 +464,15 @@
     .status-dot {
         width: 10px;
         height: 10px;
+    }
+
+    .review-inline-form {
+        max-width: 280px;
+        margin-left: auto;
+    }
+
+    .checkin-comments {
+        border-color: #e5e7eb !important;
     }
 </style>
 

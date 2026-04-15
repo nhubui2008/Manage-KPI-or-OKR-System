@@ -142,7 +142,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 // KPI
                 "KPIS_VIEW", "KPIS_CREATE", "KPIS_EDIT", "KPIS_DELETE",
                 // KPI Check-in
-                "KPICHECKINS_VIEW", "KPICHECKINS_CREATE",
+                "KPICHECKINS_VIEW", "KPICHECKINS_CREATE", "KPICHECKINS_REVIEW",
                 // OKR
                 "OKRS_VIEW", "OKRS_CREATE", "OKRS_EDIT", "OKRS_DELETE",
                 // Kỳ đánh giá

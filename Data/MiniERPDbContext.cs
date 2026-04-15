@@ -153,6 +153,8 @@ namespace Manage_KPI_or_OKR_System.Data
             // === E. EXECUTION & CHECK-IN (MODULE 5) ===
             modelBuilder.Entity<KPICheckIn>().HasOne<Employee>().WithMany().HasForeignKey(c => c.EmployeeId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<KPICheckIn>().HasOne<KPI>().WithMany().HasForeignKey(c => c.KPIId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<KPICheckIn>().HasOne<Employee>().WithMany().HasForeignKey(c => c.SubmittedById).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<KPICheckIn>().HasOne<Employee>().WithMany().HasForeignKey(c => c.ReviewedById).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<KPICheckIn>().HasOne<CheckInStatus>().WithMany().HasForeignKey(c => c.StatusId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<KPICheckIn>().HasOne<FailReason>().WithMany().HasForeignKey(c => c.FailReasonId).OnDelete(DeleteBehavior.NoAction);
 
@@ -160,6 +162,7 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<CheckInHistoryLog>().HasOne<KPICheckIn>().WithMany().HasForeignKey(cl => cl.CheckInId).OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<GoalComment>().HasOne<KPI>().WithMany().HasForeignKey(gc => gc.KPIId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<GoalComment>().HasOne<KPICheckIn>().WithMany().HasForeignKey(gc => gc.CheckInId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<GoalComment>().HasOne<Employee>().WithMany().HasForeignKey(gc => gc.CommenterId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<OneOnOneMeeting>().HasOne<Employee>().WithMany().HasForeignKey(om => om.ManagerId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<OneOnOneMeeting>().HasOne<Employee>().WithMany().HasForeignKey(om => om.EmployeeId).OnDelete(DeleteBehavior.NoAction);

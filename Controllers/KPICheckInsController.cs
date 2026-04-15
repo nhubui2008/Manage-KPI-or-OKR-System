@@ -17,6 +17,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
     [Authorize]
     public class KPICheckInsController : Controller
     {
+        private const string ReviewStatusPending = "Pending";
+        private const string ReviewStatusApproved = "Approved";
+        private const string ReviewStatusRejected = "Rejected";
+
         private readonly MiniERPDbContext _context;
 
         public KPICheckInsController(MiniERPDbContext context)
@@ -88,6 +92,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Where(d => checkInIds.Contains(d.CheckInId ?? 0))
                 .ToDictionaryAsync(d => d.CheckInId ?? 0);
 
+            var checkInComments = await _context.GoalComments
+                .Where(c => c.CheckInId.HasValue && checkInIds.Contains(c.CheckInId.Value))
+                .OrderBy(c => c.CommentTime)
+                .ToListAsync();
+
             var employees = await _context.Employees.ToDictionaryAsync(e => e.Id);
             var kpis = await _context.KPIs.ToDictionaryAsync(k => k.Id);
             var statuses = await _context.CheckInStatuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
@@ -102,11 +111,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Employees = employees;
             ViewBag.KPIs = kpis;
             ViewBag.CheckInStatuses = statuses;
+            ViewBag.CheckInComments = checkInComments
+                .GroupBy(c => c.CheckInId ?? 0)
+                .ToDictionary(g => g.Key, g => g.ToList());
             ViewBag.AllEmployees = allEmployees;
             ViewBag.AllKPIs = allKpis;
             ViewBag.KPIData = kpiData;
             ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
             ViewBag.FailReasons = await _context.FailReasons.ToListAsync();
+            ViewBag.CanReviewCheckIns = User.IsInRole("Admin") || User.IsInRole("Administrator") ||
+                User.IsInRole("Manager") || User.IsInRole("Director") ||
+                User.IsInRole("HR") || User.IsInRole("Human Resources");
+            ViewBag.ReturnUrl = Request.Path + Request.QueryString;
 
             return View(checkIns);
         }
@@ -372,7 +388,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             bool isRestrictedRole = User.IsInRole("Employee") || User.IsInRole("employee") ||
                                     User.IsInRole("Sales") || User.IsInRole("sales");
-            Employee? currentEmployee = null;
+            Employee? currentEmployee = await GetCurrentEmployeeAsync();
 
             if (!string.IsNullOrWhiteSpace(AchievedValue) && achievedValue < 0)
             {
@@ -419,12 +435,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (isRestrictedRole)
             {
-                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (int.TryParse(userIdStr, out int userId))
-                {
-                    currentEmployee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId && e.IsActive == true);
-                }
-
                 if (currentEmployee == null || model.EmployeeId != currentEmployee.Id)
                 {
                     return Forbid();
@@ -478,6 +488,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 // 1. Lưu thông tin Check-in chính
                 model.CheckInDate = DateTime.Now;
+                model.SubmittedById = currentEmployee?.Id;
+                var isReviewerSubmitting = User.IsInRole("Admin") || User.IsInRole("Administrator") ||
+                                           User.IsInRole("Manager") || User.IsInRole("Director") ||
+                                           User.IsInRole("HR") || User.IsInRole("Human Resources");
+                model.ReviewStatus = isReviewerSubmitting ? ReviewStatusApproved : ReviewStatusPending;
+                if (isReviewerSubmitting)
+                {
+                    model.ReviewedById = currentEmployee?.Id;
+                    model.ReviewedAt = DateTime.Now;
+                    model.ReviewComment = "Tự động xác nhận vì người cập nhật có quyền quản lý.";
+                }
                 _context.KPICheckIns.Add(model);
                 await _context.SaveChangesAsync();
 
@@ -510,6 +531,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     ProgressPercentage = Math.Round(progress, 2)
                 };
                 _context.CheckInDetails.Add(detail);
+
+                if (model.ReviewStatus != ReviewStatusApproved)
+                {
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    TempData["SuccessMessage"] = "Đã gửi check-in KPI và đang chờ quản lý xác nhận trước khi cập nhật điểm chính thức.";
+                    return RedirectToAction(nameof(Index));
+                }
 
                 // ============================================
                 // 3.5 TỰ ĐỘNG CẬP NHẬT TRẠNG THÁI KPI
@@ -597,7 +627,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         totalWeight += weight;
 
                         var latestCheckIn = await _context.KPICheckIns
-                            .Where(c => c.KPIId == pk.Id && c.EmployeeId == model.EmployeeId)
+                            .Where(c => c.KPIId == pk.Id &&
+                                        c.EmployeeId == model.EmployeeId &&
+                                        (c.ReviewStatus == ReviewStatusApproved || c.ReviewStatus == null))
                             .OrderByDescending(c => c.CheckInDate)
                             .FirstOrDefaultAsync();
 
@@ -689,6 +721,422 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 await transaction.RollbackAsync();
                 TempData["ErrorMessage"] = "Lỗi khi lưu Check-in: " + (ex.InnerException?.Message ?? ex.Message);
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [HasPermission("KPICHECKINS_REVIEW", "CHECKINS_EDIT")]
+        public async Task<IActionResult> Review(int id, string decision, string? reviewComment, string? reviewScore, string? returnUrl)
+        {
+            var checkIn = await _context.KPICheckIns.FirstOrDefaultAsync(c => c.Id == id);
+            if (checkIn == null) return NotFound();
+
+            var reviewer = await GetCurrentEmployeeAsync();
+            if (!await CanReviewCheckInAsync(checkIn, reviewer))
+            {
+                return Forbid();
+            }
+
+            var currentReviewStatus = string.IsNullOrWhiteSpace(checkIn.ReviewStatus)
+                ? ReviewStatusApproved
+                : checkIn.ReviewStatus;
+            if (!string.Equals(currentReviewStatus, ReviewStatusPending, StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Check-in này đã được xử lý, không thể duyệt lại.";
+                return RedirectBack(returnUrl);
+            }
+
+            var isApproved = string.Equals(decision, ReviewStatusApproved, StringComparison.OrdinalIgnoreCase);
+            var isRejected = string.Equals(decision, ReviewStatusRejected, StringComparison.OrdinalIgnoreCase);
+            if (!isApproved && !isRejected)
+            {
+                TempData["ErrorMessage"] = "Trạng thái xác nhận không hợp lệ.";
+                return RedirectBack(returnUrl);
+            }
+
+            if (!TryParseOptionalScore(reviewScore, out var score, out var scoreError))
+            {
+                TempData["ErrorMessage"] = scoreError;
+                return RedirectBack(returnUrl);
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                checkIn.ReviewStatus = isApproved ? ReviewStatusApproved : ReviewStatusRejected;
+                checkIn.ReviewedById = reviewer?.Id;
+                checkIn.ReviewedAt = DateTime.Now;
+                checkIn.ReviewComment = reviewComment?.Trim();
+                checkIn.ReviewScore = score;
+
+                if (!string.IsNullOrWhiteSpace(checkIn.ReviewComment) || score.HasValue)
+                {
+                    _context.GoalComments.Add(new GoalComment
+                    {
+                        KPIId = checkIn.KPIId,
+                        CheckInId = checkIn.Id,
+                        CommenterId = reviewer?.Id,
+                        CommentType = isApproved ? "ReviewApproved" : "ReviewRejected",
+                        Rating = score,
+                        Content = checkIn.ReviewComment,
+                        CommentTime = DateTime.Now
+                    });
+                }
+
+                if (isApproved)
+                {
+                    var detail = await _context.CheckInDetails.FirstOrDefaultAsync(d => d.CheckInId == checkIn.Id);
+                    var kpi = checkIn.KPIId.HasValue
+                        ? await _context.KPIs.FirstOrDefaultAsync(k => k.Id == checkIn.KPIId.Value && k.IsActive == true)
+                        : null;
+                    var kpiDetail = checkIn.KPIId.HasValue
+                        ? await _context.KPIDetails.FirstOrDefaultAsync(d => d.KPIId == checkIn.KPIId.Value)
+                        : null;
+
+                    if (detail != null && kpi != null)
+                    {
+                        await ApplyApprovedCheckInImpactAsync(checkIn, detail, kpi, kpiDetail);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                TempData["SuccessMessage"] = isApproved
+                    ? "Đã xác nhận check-in KPI và cập nhật điểm chính thức."
+                    : "Đã từ chối check-in KPI. Kết quả này sẽ không được tính vào đánh giá chính thức.";
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                TempData["ErrorMessage"] = "Lỗi khi xử lý xác nhận check-in: " + (ex.InnerException?.Message ?? ex.Message);
+            }
+
+            return RedirectBack(returnUrl);
+        }
+
+        [HttpPost]
+        [HasPermission("KPICHECKINS_VIEW", "CHECKINS_VIEW", "KPIS_VIEW")]
+        public async Task<IActionResult> AddComment(int? kpiId, int? checkInId, string content, string? rating, string? returnUrl)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                TempData["ErrorMessage"] = "Vui lòng nhập nội dung bình luận.";
+                return RedirectBack(returnUrl);
+            }
+
+            if (!TryParseOptionalScore(rating, out var parsedRating, out var ratingError))
+            {
+                TempData["ErrorMessage"] = ratingError;
+                return RedirectBack(returnUrl);
+            }
+
+            var commenter = await GetCurrentEmployeeAsync();
+            KPICheckIn? checkIn = null;
+            if (checkInId.HasValue)
+            {
+                checkIn = await _context.KPICheckIns.FirstOrDefaultAsync(c => c.Id == checkInId.Value);
+                if (checkIn == null) return NotFound();
+
+                if (!await CanAccessCheckInAsync(checkIn, commenter))
+                {
+                    return Forbid();
+                }
+
+                kpiId = checkIn.KPIId;
+            }
+
+            _context.GoalComments.Add(new GoalComment
+            {
+                KPIId = kpiId,
+                CheckInId = checkInId,
+                CommenterId = commenter?.Id,
+                CommentType = "Comment",
+                Rating = parsedRating,
+                Content = content.Trim(),
+                CommentTime = DateTime.Now
+            });
+
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã thêm bình luận/đánh giá cho KPI.";
+            return RedirectBack(returnUrl);
+        }
+
+        private async Task ApplyApprovedCheckInImpactAsync(KPICheckIn checkIn, CheckInDetail detail, KPI kpi, KPIDetail? kpiDetail)
+        {
+            var progress = detail.ProgressPercentage ?? 0m;
+            var achievedValue = detail.AchievedValue ?? 0m;
+
+            if (kpiDetail != null)
+            {
+                decimal passThreshold = kpiDetail.PassThreshold ?? kpiDetail.TargetValue ?? 100;
+                decimal passProgress = passThreshold > 0
+                    ? ProgressHelper.CalculateProgress(achievedValue, passThreshold, kpiDetail.IsInverse)
+                    : progress;
+
+                if (progress >= 100)
+                {
+                    kpi.StatusId = 4;
+                }
+                else if (passProgress >= 100 || progress >= 70)
+                {
+                    kpi.StatusId = 5;
+                }
+                else if (progress >= 40)
+                {
+                    kpi.StatusId = 3;
+                }
+                else
+                {
+                    kpi.StatusId = 6;
+                }
+            }
+            else
+            {
+                kpi.StatusId = 3;
+            }
+
+            if (!checkIn.EmployeeId.HasValue)
+            {
+                return;
+            }
+
+            var assignedKpiWeights = await _context.KPI_Employee_Assignments
+                .Where(a => a.EmployeeId == checkIn.EmployeeId && (a.Status == null || a.Status == "Active"))
+                .Select(a => new { a.KPIId, Weight = a.Weight ?? 1m })
+                .ToListAsync();
+
+            var employeeDepartmentIdsForScore = await _context.EmployeeAssignments
+                .Where(a => a.EmployeeId == checkIn.EmployeeId &&
+                            a.IsActive == true &&
+                            a.DepartmentId.HasValue)
+                .Select(a => a.DepartmentId!.Value)
+                .ToListAsync();
+
+            var departmentAssignedKpiIds = employeeDepartmentIdsForScore.Any()
+                ? await _context.KPI_Department_Assignments
+                    .Where(a => employeeDepartmentIdsForScore.Contains(a.DepartmentId))
+                    .Select(a => a.KPIId)
+                    .ToListAsync()
+                : new List<int>();
+
+            var assignedKpiIds = assignedKpiWeights
+                .Select(a => a.KPIId)
+                .Concat(departmentAssignedKpiIds)
+                .Distinct()
+                .ToList();
+
+            var weightByKpiId = assignedKpiWeights
+                .GroupBy(a => a.KPIId)
+                .ToDictionary(a => a.Key, a => a.First().Weight <= 0 ? 1m : a.First().Weight);
+
+            var periodKpis = await _context.KPIs
+                .Where(pk => pk.PeriodId == kpi.PeriodId && pk.IsActive == true && assignedKpiIds.Contains(pk.Id))
+                .ToListAsync();
+
+            decimal totalScore = 0;
+            if (periodKpis.Any())
+            {
+                decimal weightedProgress = 0;
+                decimal totalWeight = 0;
+                foreach (var periodKpi in periodKpis)
+                {
+                    var weight = weightByKpiId.GetValueOrDefault(periodKpi.Id, 1m);
+                    totalWeight += weight;
+
+                    var latestCheckIn = await _context.KPICheckIns
+                        .Where(c => c.KPIId == periodKpi.Id &&
+                                    c.EmployeeId == checkIn.EmployeeId &&
+                                    (c.ReviewStatus == ReviewStatusApproved || c.ReviewStatus == null))
+                        .OrderByDescending(c => c.CheckInDate)
+                        .FirstOrDefaultAsync();
+
+                    if (latestCheckIn != null)
+                    {
+                        var latestDetail = await _context.CheckInDetails.FirstOrDefaultAsync(d => d.CheckInId == latestCheckIn.Id);
+                        if (latestDetail != null)
+                        {
+                            weightedProgress += (latestDetail.ProgressPercentage ?? 0) * weight;
+                        }
+                    }
+                }
+
+                if (totalWeight > 0)
+                {
+                    totalScore = Math.Round(weightedProgress / totalWeight, 2);
+                }
+            }
+
+            var rank = await _context.GradingRanks
+                .Where(r => r.MinScore <= totalScore)
+                .OrderByDescending(r => r.MinScore)
+                .FirstOrDefaultAsync();
+
+            if (rank == null)
+            {
+                return;
+            }
+
+            var evalResult = await _context.EvaluationResults
+                .FirstOrDefaultAsync(er => er.EmployeeId == checkIn.EmployeeId && er.PeriodId == kpi.PeriodId);
+
+            if (evalResult == null)
+            {
+                evalResult = new EvaluationResult
+                {
+                    EmployeeId = checkIn.EmployeeId,
+                    PeriodId = kpi.PeriodId,
+                    TotalScore = totalScore,
+                    RankId = rank.Id,
+                    Classification = rank.Description
+                };
+                _context.EvaluationResults.Add(evalResult);
+            }
+            else
+            {
+                evalResult.TotalScore = totalScore;
+                evalResult.RankId = rank.Id;
+                evalResult.Classification = rank.Description;
+            }
+
+            var bonusRule = await _context.BonusRules.FirstOrDefaultAsync(br => br.RankId == rank.Id);
+            if (bonusRule == null)
+            {
+                return;
+            }
+
+            var expectedBonus = await _context.RealtimeExpectedBonuses
+                .FirstOrDefaultAsync(rb => rb.EmployeeId == checkIn.EmployeeId && rb.PeriodId == kpi.PeriodId);
+
+            decimal fixedAmount = bonusRule.FixedAmount ?? 0;
+            decimal percentageAmount = fixedAmount != 0 && bonusRule.BonusPercentage.HasValue
+                ? fixedAmount * bonusRule.BonusPercentage.Value / 100m
+                : 0m;
+            decimal bonusAmount = fixedAmount + percentageAmount;
+
+            if (expectedBonus == null)
+            {
+                expectedBonus = new RealtimeExpectedBonus
+                {
+                    EmployeeId = checkIn.EmployeeId,
+                    PeriodId = kpi.PeriodId,
+                    ExpectedBonus = bonusAmount,
+                    LastUpdated = DateTime.Now
+                };
+                _context.RealtimeExpectedBonuses.Add(expectedBonus);
+            }
+            else
+            {
+                expectedBonus.ExpectedBonus = bonusAmount;
+                expectedBonus.LastUpdated = DateTime.Now;
+            }
+        }
+
+        private async Task<Employee?> GetCurrentEmployeeAsync()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out int userId))
+            {
+                return null;
+            }
+
+            return await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId && e.IsActive == true);
+        }
+
+        private async Task<bool> CanAccessCheckInAsync(KPICheckIn checkIn, Employee? currentEmployee)
+        {
+            if (User.IsInRole("Admin") || User.IsInRole("Administrator") ||
+                User.IsInRole("HR") || User.IsInRole("Human Resources") ||
+                User.IsInRole("Director"))
+            {
+                return true;
+            }
+
+            if (currentEmployee == null)
+            {
+                return false;
+            }
+
+            if (checkIn.EmployeeId == currentEmployee.Id || checkIn.SubmittedById == currentEmployee.Id)
+            {
+                return true;
+            }
+
+            return await CanReviewCheckInAsync(checkIn, currentEmployee);
+        }
+
+        private async Task<bool> CanReviewCheckInAsync(KPICheckIn checkIn, Employee? reviewer)
+        {
+            if (User.IsInRole("Admin") || User.IsInRole("Administrator") ||
+                User.IsInRole("HR") || User.IsInRole("Human Resources") ||
+                User.IsInRole("Director"))
+            {
+                return true;
+            }
+
+            if (reviewer == null || !User.IsInRole("Manager") || checkIn.EmployeeId == reviewer.Id)
+            {
+                return false;
+            }
+
+            var managedDeptIds = await _context.Departments
+                .Where(d => d.ManagerId == reviewer.Id && d.IsActive == true)
+                .Select(d => d.Id)
+                .ToListAsync();
+
+            if (managedDeptIds.Any())
+            {
+                var employeeDeptIds = await _context.EmployeeAssignments
+                    .Where(a => a.EmployeeId == checkIn.EmployeeId &&
+                                a.IsActive == true &&
+                                a.DepartmentId.HasValue)
+                    .Select(a => a.DepartmentId!.Value)
+                    .ToListAsync();
+
+                if (employeeDeptIds.Any(id => managedDeptIds.Contains(id)))
+                {
+                    return true;
+                }
+            }
+
+            return checkIn.KPIId.HasValue && await _context.KPIs
+                .AnyAsync(k => k.Id == checkIn.KPIId.Value && k.AssignerId == reviewer.Id);
+        }
+
+        private static bool TryParseOptionalScore(string? rawScore, out decimal? score, out string? error)
+        {
+            score = null;
+            error = null;
+
+            if (string.IsNullOrWhiteSpace(rawScore))
+            {
+                return true;
+            }
+
+            var normalized = rawScore.Replace(",", ".");
+            if (!decimal.TryParse(normalized, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedScore))
+            {
+                error = "Điểm đánh giá không hợp lệ.";
+                return false;
+            }
+
+            if (parsedScore < 0 || parsedScore > 100)
+            {
+                error = "Điểm đánh giá phải nằm trong khoảng 0 đến 100.";
+                return false;
+            }
+
+            score = Math.Round(parsedScore, 2);
+            return true;
+        }
+
+        private IActionResult RedirectBack(string? returnUrl)
+        {
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return LocalRedirect(returnUrl);
             }
 
             return RedirectToAction(nameof(Index));

@@ -155,7 +155,8 @@ VALUES
     (51, N'CATALOG_EDIT',        N'Chỉnh sửa danh mục hệ thống'),
 
     -- Nhân viên tự cập nhật tiến độ
-    (52, N'EMPLOYEE_UPDATE_KPI_PROGRESS', N'Nhân viên cập nhật tiến độ KPI/OKR');
+    (52, N'EMPLOYEE_UPDATE_KPI_PROGRESS', N'Nhân viên cập nhật tiến độ KPI/OKR'),
+    (53, N'KPICHECKINS_REVIEW', N'Quản lý xác nhận và đánh giá check-in KPI');
 SET IDENTITY_INSERT [Permissions] OFF;
 GO
 
@@ -163,7 +164,7 @@ GO
 -- MODULE 3: ROLE_PERMISSIONS (Phân quyền chi tiết)
 -- ============================================================
 
--- === ADMIN: TOÀN QUYỀN (tất cả 52 permissions) ===
+-- === ADMIN: TOÀN QUYỀN (tất cả 53 permissions) ===
 INSERT INTO [Role_Permissions] ([RoleId], [PermissionId])
 SELECT 1, Id FROM [Permissions];
 GO
@@ -178,7 +179,7 @@ VALUES
     (2, 25), (2, 26), (2, 27), (2, 28),  -- KPI: Full
     (2, 29), (2, 30), (2, 31), (2, 32),  -- Mission: Full
     (2, 33), (2, 34), (2, 35),           -- EvalPeriod: View+Create+Edit
-    (2, 37), (2, 39),                    -- CheckIn: View+Edit
+    (2, 37), (2, 39), (2, 53),           -- CheckIn: View+Edit+Review
     (2, 41), (2, 42), (2, 43),           -- Evaluation: Full
     (2, 44), (2, 45),                    -- Bonus: View+Edit
     (2, 46), (2, 47),                    -- Reports: Full
@@ -197,7 +198,7 @@ VALUES
     (3, 25), (3, 26), (3, 27),   -- KPI: View+Create+Edit
     (3, 29),                     -- Mission: View
     (3, 33),                     -- EvalPeriod: View
-    (3, 37), (3, 38), (3, 39),   -- CheckIn: View+Create+Edit
+    (3, 37), (3, 38), (3, 39), (3, 53),  -- CheckIn: View+Create+Edit+Review
     (3, 41), (3, 42), (3, 43),   -- Evaluation: Full
     (3, 44),                     -- Bonus: View
     (3, 46), (3, 47),            -- Reports: View+Export

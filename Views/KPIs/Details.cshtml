@@ -31,6 +31,20 @@
     var currentMeasurementUnit = detail?.MeasurementUnit ?? "";
     var hasCustomMeasurementUnit = !string.IsNullOrWhiteSpace(currentMeasurementUnit)
         && !measurementUnits.Any(u => string.Equals(u.Value, currentMeasurementUnit, StringComparison.OrdinalIgnoreCase));
+
+    string GetReviewText(string? status) => status switch
+    {
+        "Pending" => "Chờ xác nhận",
+        "Rejected" => "Từ chối",
+        _ => "Đã xác nhận"
+    };
+
+    string GetReviewBadgeClass(string? status) => status switch
+    {
+        "Pending" => "bg-warning text-dark",
+        "Rejected" => "bg-danger text-white",
+        _ => "bg-success text-white"
+    };
 }
 
 <div class="container-fluid px-0">
@@ -197,6 +211,8 @@
                                     <th class="border-0">Giá trị</th>
                                     <th class="border-0">Tiến độ</th>
                                     <th class="border-0">Đánh giá</th>
+                                    <th class="border-0">Xác nhận</th>
+                                    <th class="border-0">Đánh giá QL</th>
                                     <th class="border-0">Lý do</th>
                                     <th class="border-0 pe-4 text-end">Ghi chú</th>
                                 </tr>
@@ -231,6 +247,33 @@
                                                 }
                                             </td>
                                             <td>
+                                                @{
+                                                    string reviewStatusRaw = Convert.ToString(ci.ReviewStatus) ?? "";
+                                                    string reviewStatus = string.IsNullOrWhiteSpace(reviewStatusRaw) ? "Approved" : reviewStatusRaw;
+                                                    string reviewComment = Convert.ToString(ci.ReviewComment) ?? "";
+                                                }
+                                                <span class="badge @GetReviewBadgeClass(reviewStatus) rounded-pill px-3">@GetReviewText(reviewStatus)</span>
+                                                @if (ci.ReviewedAt != null)
+                                                {
+                                                    var reviewedAtText = ((DateTime)ci.ReviewedAt).ToString("dd/MM HH:mm");
+                                                    <div class="text-muted mt-1" style="font-size: 0.72rem;">@ci.reviewerName - @reviewedAtText</div>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (ci.ReviewScore != null)
+                                                {
+                                                    <div class="fw-bold text-primary">@(((decimal)ci.ReviewScore).ToString("0.##"))/100</div>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(reviewComment))
+                                                {
+                                                    <div class="text-muted small">@reviewComment</div>
+                                                }
+                                                @if (ci.ReviewScore == null && string.IsNullOrWhiteSpace(reviewComment))
+                                                {
+                                                    <span class="text-muted">--</span>
+                                                }
+                                            </td>
+                                            <td>
                                                 @if (!string.IsNullOrEmpty(ci.failReason))
                                                 {
                                                     <span class="badge bg-danger text-white border-0">
@@ -249,7 +292,7 @@
                                 else
                                 {
                                     <tr>
-                                        <td colspan="7" class="text-center py-4 text-muted italic">Chưa có dữ liệu cập nhật nào.</td>
+                                        <td colspan="9" class="text-center py-4 text-muted italic">Chưa có dữ liệu cập nhật nào.</td>
                                     </tr>
                                 }
                             </tbody>

@@ -54,7 +54,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var kpiQuery = _context.KPIs.Where(k => k.IsActive == true);
             var okrQuery = _context.OKRs.Where(o => o.IsActive == true);
-            var checkInQuery = _context.KPICheckIns.AsQueryable();
+            var checkInQuery = _context.KPICheckIns
+                .Where(c => c.ReviewStatus == "Approved" || c.ReviewStatus == null);
 
             if (selectedPeriod != null)
             {
@@ -217,8 +218,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                  join ci in _context.KPICheckIns on ea.EmployeeId equals ci.EmployeeId
                                  join cd in _context.CheckInDetails on ci.Id equals cd.CheckInId
                                  where d.IsActive == true
-                                       && ea.IsActive == true
-                                       && (!startDate.HasValue || ci.CheckInDate >= startDate.Value)
+                                        && ea.IsActive == true
+                                        && (ci.ReviewStatus == "Approved" || ci.ReviewStatus == null)
+                                        && (!startDate.HasValue || ci.CheckInDate >= startDate.Value)
                                        && (!endDate.HasValue || ci.CheckInDate <= endDate.Value)
                                        && (!isEmployeeRole || ci.EmployeeId == scopedEmployeeId)
                                  group cd by d.DepartmentName into g
@@ -252,7 +254,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 // Lấy trung bình progress của tất cả check-in trong tháng đó
                 var monthCheckInQuery = _context.KPICheckIns
-                    .Where(c => c.CheckInDate >= monthStart && c.CheckInDate <= monthEnd);
+                    .Where(c => c.CheckInDate >= monthStart &&
+                                c.CheckInDate <= monthEnd &&
+                                (c.ReviewStatus == "Approved" || c.ReviewStatus == null));
                 if (isEmployeeRole)
                 {
                     monthCheckInQuery = employee != null
@@ -299,7 +303,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // ========================================
             // 11. TOP NHÂN VIÊN HIỆU SUẤT CAO
             // ========================================
-            var topCheckInQuery = _context.KPICheckIns.AsQueryable();
+            var topCheckInQuery = _context.KPICheckIns
+                .Where(c => c.ReviewStatus == "Approved" || c.ReviewStatus == null);
             if (startDate.HasValue && endDate.HasValue)
             {
                 topCheckInQuery = topCheckInQuery.Where(c => c.CheckInDate >= startDate.Value && c.CheckInDate <= endDate.Value);

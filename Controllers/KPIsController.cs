@@ -189,7 +189,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             foreach (var kpiId in kpiIds)
             {
                 var latestCheckInQuery = _context.KPICheckIns
-                    .Where(c => c.KPIId == kpiId);
+                    .Where(c => c.KPIId == kpiId &&
+                                (c.ReviewStatus == "Approved" || c.ReviewStatus == null));
 
                 if (isRestrictedRole && currentEmployee != null)
                 {
@@ -302,16 +303,23 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                        from e in emps.DefaultIfEmpty()
                                        join r in _context.FailReasons on ci.FailReasonId equals r.Id into reasons
                                        from r in reasons.DefaultIfEmpty()
+                                       join rev in _context.Employees on ci.ReviewedById equals rev.Id into reviewers
+                                       from rev in reviewers.DefaultIfEmpty()
                                        where ci.KPIId == id
                                        orderby ci.CheckInDate descending
                                        select new {
                                            ci.Id,
                                            ci.CheckInDate,
                                            ci.StatusId,
+                                           ci.ReviewStatus,
+                                           ci.ReviewScore,
+                                           ci.ReviewComment,
+                                           ci.ReviewedAt,
                                            AchievedValue = (decimal?)d.AchievedValue,
                                            ProgressPercentage = (decimal?)d.ProgressPercentage,
                                            Note = d.Note,
                                            employeeName = e.FullName,
+                                           reviewerName = rev.FullName,
                                            failReason = r.ReasonName
                                        })
                                        .Take(10)
@@ -349,7 +357,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 var latestCheckInsQuery = from ci in _context.KPICheckIns
                                          join d in _context.CheckInDetails on ci.Id equals d.CheckInId
-                                         where ci.KPIId == id && contributorEmployeeIds.Contains(ci.EmployeeId ?? 0)
+                                         where ci.KPIId == id &&
+                                               contributorEmployeeIds.Contains(ci.EmployeeId ?? 0) &&
+                                               (ci.ReviewStatus == "Approved" || ci.ReviewStatus == null)
                                          group new { ci, d } by ci.EmployeeId into g
                                          select new {
                                              EmployeeId = g.Key ?? 0,
