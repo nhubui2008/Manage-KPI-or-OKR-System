@@ -11,6 +11,7 @@
     var failReasons = ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>();
     var kpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
     var assignmentWeights = ViewBag.AssignmentWeights as Dictionary<int, Dictionary<int, decimal>> ?? new Dictionary<int, Dictionary<int, decimal>>();
+    var employeeKpiIds = ViewBag.EmployeeKPIIds as Dictionary<int, List<int>> ?? new Dictionary<int, List<int>>();
     
     // Serialize data for JS use
     var kpiDataJson = JsonSerializer.Serialize(kpiData.ToDictionary(kvp => kvp.Key, kvp => new {
@@ -19,6 +20,11 @@
         isInverse = kvp.Value.IsInverse
     }));
     var assignmentWeightsJson = JsonSerializer.Serialize(assignmentWeights);
+    var employeeKpiIdsJson = JsonSerializer.Serialize(employeeKpiIds);
+    var kpiOptionsJson = JsonSerializer.Serialize(kpis.Select(k => new {
+        id = k.Id,
+        name = k.KPIName ?? $"KPI #{k.Id}"
+    }));
 }
 
 <div class="page-content">
@@ -70,7 +76,7 @@
                                             @if(employees.Count != 1) { <option value="">-- Chọn nhân viên --</option> }
                                             @foreach(var e in employees)
                                             {
-                                                <option value="@e.Id" selected="@(employees.Count == 1 ? "selected" : null)">@e.FullName (@e.EmployeeCode)</option>
+                                                <option value="@e.Id" selected="@((Model.EmployeeId == e.Id || employees.Count == 1) ? "selected" : null)">@e.FullName (@e.EmployeeCode)</option>
                                             }
                                         </select>
                                     </div>
@@ -90,7 +96,7 @@
                                             }
                                             @foreach(var k in kpis)
                                             {
-                                                <option value="@k.Id" selected="@(kpis.Count == 1 ? "selected" : null)">@k.KPIName</option>
+                                                <option value="@k.Id" selected="@((Model.KPIId == k.Id || kpis.Count == 1) ? "selected" : null)">@k.KPIName</option>
                                             }
                                         </select>
                                     </div>
@@ -113,10 +119,10 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Kết quả đạt được <span class="text-danger">*</span></label>
                                     <div class="input-wrapper input-group">
                                         <i class="bi bi-pencil-square"></i>
-                                        <input type="number" step="0.01" name="AchievedValue" id="achievedInput" class="form-control shadow-sm measurement-value-input" data-measurement-role="achieved" data-measurement-suffix-target="achievedUnitSuffix" placeholder="Nhập số liệu..." required value="@ViewBag.AchievedValue">
+                                        <input type="number" step="0.01" min="0" name="AchievedValue" id="achievedInput" class="form-control shadow-sm measurement-value-input" data-measurement-role="achieved" data-measurement-suffix-target="achievedUnitSuffix" placeholder="Nhập số liệu..." required data-val="true" data-val-required="Vui lòng nhập kết quả đạt được." data-val-number="Kết quả đạt được phải là số hợp lệ." data-msg-required="Vui lòng nhập kết quả đạt được." data-msg-min="Kết quả đạt được không thể là số âm." value="@ViewBag.AchievedValue">
                                         <span class="input-group-text measurement-unit-suffix" id="achievedUnitSuffix">đơn vị</span>
                                     </div>
-                                    <span class="text-danger small mt-1 d-block">@Html.ValidationMessage("AchievedValue")</span>
+                                    @Html.ValidationMessage("AchievedValue", null, new { @class = "text-danger small mt-1 d-block" })
                                 </div>
                             </div>
 
@@ -259,6 +265,21 @@
         box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.1);
     }
 
+    #checkinForm .form-icon-group label.error {
+        color: #dc3545;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0;
+        margin: 0.35rem 0 0;
+        text-transform: none;
+    }
+
+    #checkinForm .input-group label.error {
+        flex: 0 0 100%;
+        order: 20;
+        width: 100%;
+    }
+
     /* Animation effects */
     .animate__animated { animation-duration: 0.8s; }
 </style>
@@ -271,6 +292,8 @@
     <script>
         const kpiMap = @Html.Raw(kpiDataJson);
         const assignmentWeights = @Html.Raw(assignmentWeightsJson);
+        const employeeKpiIds = @Html.Raw(employeeKpiIdsJson);
+        const allKpiOptions = @Html.Raw(kpiOptionsJson);
         const kpiSelect = document.getElementById('kpiSelect');
         const employeeSelect = document.getElementById('employeeSelect');
         const achievedInput = document.getElementById('achievedInput');
@@ -279,6 +302,31 @@
         const modeDisplay = document.getElementById('modeDisplay');
         const progressPercentage = document.getElementById('progressPercentage');
         const liveProgressBar = document.getElementById('liveProgressBar');
+
+        function filterKpisByEmployee() {
+            const employeeId = employeeSelect.value;
+            const previousKpiId = kpiSelect.value;
+            const allowedKpiIds = new Set((employeeKpiIds[employeeId] || []).map(String));
+            const filteredKpis = employeeId
+                ? allKpiOptions.filter(kpi => allowedKpiIds.has(String(kpi.id)))
+                : [];
+
+            kpiSelect.innerHTML = '';
+            const placeholderText = employeeId
+                ? (filteredKpis.length ? '-- Chọn KPI cần báo cáo --' : 'Nhân viên này chưa có KPI được phân bổ')
+                : '-- Chọn nhân viên trước --';
+            kpiSelect.add(new Option(placeholderText, ''));
+
+            filteredKpis.forEach(kpi => {
+                kpiSelect.add(new Option(kpi.name, kpi.id));
+            });
+
+            if (previousKpiId && filteredKpis.some(kpi => String(kpi.id) === String(previousKpiId))) {
+                kpiSelect.value = previousKpiId;
+            } else if (filteredKpis.length === 1) {
+                kpiSelect.value = filteredKpis[0].id;
+            }
+        }
 
         function updateStats() {
             const kpiId = kpiSelect.value;
@@ -333,10 +381,13 @@
                 }
             } else {
                 targetDisplay.textContent = "--";
+                document.getElementById('individualTargetDisplay').textContent = "--";
+                document.getElementById('weightLabel').textContent = "100%";
                 unitDisplay.textContent = "--";
                 if (window.applyMeasurementUnitConfigToInputs) {
                     window.applyMeasurementUnitConfigToInputs('', [achievedInput]);
                 }
+                document.getElementById('achievedUnitSuffix').textContent = "đơn vị";
                 modeDisplay.textContent = "--";
                 progressPercentage.textContent = "0%";
                 liveProgressBar.style.width = "0%";
@@ -345,10 +396,16 @@
         }
 
         kpiSelect.addEventListener('change', updateStats);
-        employeeSelect.addEventListener('change', updateStats);
+        employeeSelect.addEventListener('change', function () {
+            filterKpisByEmployee();
+            updateStats();
+        });
         achievedInput.addEventListener('input', updateStats);
 
         // Initial check if pre-filled
-        window.addEventListener('DOMContentLoaded', updateStats);
+        window.addEventListener('DOMContentLoaded', function () {
+            filterKpisByEmployee();
+            updateStats();
+        });
     </script>
 }

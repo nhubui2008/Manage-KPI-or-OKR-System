@@ -276,6 +276,78 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .ToDictionary(
                     g => g.Key,
                     g => g.ToDictionary(a => a.KPIId, a => (a.Weight ?? 1m) * 100));
+
+            ViewBag.EmployeeKPIIds = await BuildEmployeeKpiMapAsync((List<Employee>)ViewBag.AllEmployees, kpis);
+        }
+
+        private async Task<Dictionary<int, List<int>>> BuildEmployeeKpiMapAsync(List<Employee> employees, List<KPI> kpis)
+        {
+            var employeeIds = employees.Select(e => e.Id).Distinct().ToList();
+            var kpiIds = kpis.Select(k => k.Id).Distinct().ToList();
+            var kpiOrder = kpiIds.Select((id, index) => new { id, index }).ToDictionary(x => x.id, x => x.index);
+            var map = employeeIds.ToDictionary(id => id, _ => new HashSet<int>());
+
+            if (!employeeIds.Any() || !kpiIds.Any())
+            {
+                return map.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToList());
+            }
+
+            var directAssignments = await _context.KPI_Employee_Assignments
+                .Where(a => employeeIds.Contains(a.EmployeeId) &&
+                            kpiIds.Contains(a.KPIId) &&
+                            (a.Status == null || a.Status == "Active"))
+                .Select(a => new { a.EmployeeId, a.KPIId })
+                .ToListAsync();
+
+            foreach (var assignment in directAssignments)
+            {
+                map[assignment.EmployeeId].Add(assignment.KPIId);
+            }
+
+            var employeeDepartmentPairs = await _context.EmployeeAssignments
+                .Where(a => a.EmployeeId.HasValue &&
+                            employeeIds.Contains(a.EmployeeId.Value) &&
+                            a.DepartmentId.HasValue &&
+                            a.IsActive == true)
+                .Select(a => new { EmployeeId = a.EmployeeId!.Value, DepartmentId = a.DepartmentId!.Value })
+                .ToListAsync();
+
+            var departmentIds = employeeDepartmentPairs.Select(a => a.DepartmentId).Distinct().ToList();
+            if (departmentIds.Any())
+            {
+                var departmentAssignments = await _context.KPI_Department_Assignments
+                    .Where(a => departmentIds.Contains(a.DepartmentId) && kpiIds.Contains(a.KPIId))
+                    .Select(a => new { a.DepartmentId, a.KPIId })
+                    .ToListAsync();
+
+                var kpisByDepartment = departmentAssignments
+                    .GroupBy(a => a.DepartmentId)
+                    .ToDictionary(g => g.Key, g => g.Select(a => a.KPIId).Distinct().ToList());
+
+                foreach (var employeeDepartment in employeeDepartmentPairs)
+                {
+                    if (!kpisByDepartment.TryGetValue(employeeDepartment.DepartmentId, out var departmentKpiIds))
+                    {
+                        continue;
+                    }
+
+                    foreach (var kpiId in departmentKpiIds)
+                    {
+                        map[employeeDepartment.EmployeeId].Add(kpiId);
+                    }
+                }
+            }
+
+            foreach (var kpi in kpis.Where(k => k.AssignerId.HasValue && employeeIds.Contains(k.AssignerId.Value)))
+            {
+                map[kpi.AssignerId!.Value].Add(kpi.Id);
+            }
+
+            return map.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value
+                    .OrderBy(id => kpiOrder.GetValueOrDefault(id, int.MaxValue))
+                    .ToList());
         }
 
         [HttpPost]
@@ -283,7 +355,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Create(KPICheckIn model, string AchievedValue, string Note)
         {
             decimal achievedValue = 0;
-            if (!string.IsNullOrEmpty(AchievedValue))
+            if (string.IsNullOrWhiteSpace(AchievedValue))
+            {
+                ModelState.AddModelError("AchievedValue", "Vui lòng nhập kết quả đạt được.");
+            }
+            else
             {
                 // Thay thế dấu phẩy bằng dấu chấm để luôn có định dạng chuẩn dot-separator nếu người dùng nhập tay dấu phẩy
                 // Tuy nhiên type="number" luôn gửi dấu chấm.
@@ -298,7 +374,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                     User.IsInRole("Sales") || User.IsInRole("sales");
             Employee? currentEmployee = null;
 
-            if (achievedValue < 0)
+            if (!string.IsNullOrWhiteSpace(AchievedValue) && achievedValue < 0)
             {
                 ModelState.AddModelError("AchievedValue", "Kết quả đạt được không thể là số âm.");
             }
@@ -316,7 +392,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!ModelState.IsValid)
             {
                 await PopulateCreateViewBag();
-                ViewBag.AchievedValue = achievedValue;
+                ViewBag.AchievedValue = AchievedValue;
                 ViewBag.Note = Note;
                 return View(model);
             }
@@ -390,7 +466,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!ModelState.IsValid)
             {
                 await PopulateCreateViewBag();
-                ViewBag.AchievedValue = achievedValue;
+                ViewBag.AchievedValue = AchievedValue;
                 ViewBag.Note = Note;
                 return View(model);
             }
