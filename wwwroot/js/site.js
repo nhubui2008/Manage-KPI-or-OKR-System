@@ -236,30 +236,53 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // --- Active Menu Highlighting ---
-    const currentPath = window.location.pathname.toLowerCase();
-    const sidebarLinks = document.querySelectorAll('.sidebar-link[href]');
+    function normalizeSidebarPath(path) {
+        if (!path) return '/';
+
+        const normalized = path.toLowerCase();
+        if (normalized.length > 1 && normalized.endsWith('/')) {
+            return normalized.slice(0, -1);
+        }
+
+        return normalized;
+    }
+
+    const currentPath = normalizeSidebarPath(window.location.pathname);
+    const sidebarLinks = Array.from(document.querySelectorAll('.sidebar-link[href]'));
+    let activeSidebarLink = null;
+    let activeSidebarScore = -1;
 
     sidebarLinks.forEach(function (link) {
         const href = link.getAttribute('href');
         if (!href || href === '#') return;
 
-        const linkPath = href.toLowerCase();
+        const linkPath = normalizeSidebarPath(href);
+        const isExactMatch = currentPath === linkPath;
+        const isNestedMatch = linkPath !== '/' && currentPath.startsWith(linkPath + '/');
 
-        if (currentPath === linkPath || (linkPath !== '/' && currentPath.startsWith(linkPath))) {
-            link.classList.add('active');
+        if (!isExactMatch && !isNestedMatch) return;
 
-            // Expand parent submenu if exists
-            const submenu = link.closest('.sidebar-submenu');
-            if (submenu) {
-                submenu.classList.add('show');
-                const toggle = submenu.previousElementSibling;
-                if (toggle) {
-                    toggle.setAttribute('aria-expanded', 'true');
-                    toggle.classList.remove('collapsed');
-                }
-            }
+        const matchScore = isExactMatch ? (1000 + linkPath.length) : linkPath.length;
+        if (matchScore > activeSidebarScore) {
+            activeSidebarLink = link;
+            activeSidebarScore = matchScore;
         }
     });
+
+    if (activeSidebarLink) {
+        activeSidebarLink.classList.add('active');
+
+        // Expand parent submenu if exists
+        const submenu = activeSidebarLink.closest('.sidebar-submenu');
+        if (submenu) {
+            submenu.classList.add('show');
+            const toggle = submenu.previousElementSibling;
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', 'true');
+                toggle.classList.remove('collapsed');
+            }
+        }
+    }
 
     // --- Close sidebar on link click (mobile) ---
     sidebarLinks.forEach(function (link) {
