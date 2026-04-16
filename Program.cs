@@ -40,9 +40,7 @@ builder.Services.AddAuthentication("Cookies")
         options.LoginPath = "/Auth/Login";
         options.LogoutPath = "/Auth/Logout";
         options.AccessDeniedPath = "/Auth/AccessDenied";
-        // Session timeout: cookie hết hạn sau 30 phút không hoạt động
         options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
-        // SlidingExpiration: mỗi request sẽ reset lại bộ đếm thời gian
         options.SlidingExpiration = true;
     })
     .AddGoogle(options =>
@@ -56,6 +54,22 @@ builder.Services.AddDbContext<MiniERPDbContext>(options =>
 
 var app = builder.Build();
 
+// Tự chạy migration khi app khởi động
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+
+    try
+    {
+        var dbContext = services.GetRequiredService<MiniERPDbContext>();
+        dbContext.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Database migration failed: " + ex);
+        throw;
+    }
+}
 
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler("/Home/Error");
