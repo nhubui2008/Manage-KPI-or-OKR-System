@@ -4,43 +4,91 @@
     var rolePermissionIds = ViewBag.RolePermissionIds as List<int> ?? new List<int>();
     ViewData["Title"] = $"Cấu hình quyền cho {role?.RoleName}";
 
-    string GetGroup(string code)
+    (string Key, string Title, string Icon, string Accent, string SoftBg, string SoftBorder) GetGroupMeta(string? code)
     {
-        // ===== NHÓM PERMISSION MỚI (CHI TIẾT) =====
-        if (code.StartsWith("EMPLOYEES_")) return "👥 Quản lý Nhân viên";
-        if (code.StartsWith("DEPARTMENTS_")) return "🏢 Quản lý Phòng ban";
-        if (code.StartsWith("POSITIONS_")) return "🎖️ Quản lý Chức vụ";
-        if (code.StartsWith("KPIS_")) return "📊 Quản lý KPI";
-        if (code.StartsWith("KPICHECKINS_")) return "✅ Cập nhật tiến độ KPI";
-        if (code.StartsWith("OKRS_")) return "🎯 Quản lý OKR / Mục tiêu";
-        if (code.StartsWith("EVALPERIODS_")) return "📅 Kỳ đánh giá";
-        if (code.StartsWith("EVALRESULTS_")) return "🏆 Kết quả đánh giá";
-        if (code.StartsWith("EVALREPORTS_")) return "📈 Báo cáo đánh giá";
-        if (code.StartsWith("BONUSRULES_")) return "💰 Quy tắc thưởng";
-        if (code.StartsWith("MISSIONS_")) return "🧭 Sứ mệnh & Tầm nhìn";
-        if (code.StartsWith("SYSUSERS_")) return "🔐 Người dùng hệ thống";
-        if (code.StartsWith("ROLES_")) return "👑 Phân quyền (Roles)";
-        if (code.StartsWith("AUDITLOGS_")) return "📋 Nhật ký hệ thống";
+        var normalized = (code ?? string.Empty).ToUpperInvariant();
 
-        // ===== NHÓM PERMISSION CŨ =====
-        if (code.StartsWith("ADMIN_")) return "⚙️ Cấu hình Hệ thống (cũ)";
-        if (code.StartsWith("HR_")) return "🧑‍💼 Quản trị Nhân sự (cũ)";
-        if (code.StartsWith("MANAGER_")) return "📋 Quản lý OKR & KPI (cũ)";
-        if (code.StartsWith("EMPLOYEE_")) return "👤 Tác vụ Nhân viên (cũ)";
-        if (code.StartsWith("SALES_")) return "💼 Kinh doanh & Khách hàng (cũ)";
-        if (code.StartsWith("WAREHOUSE_")) return "📦 Quản lý Kho (cũ)";
-        if (code.StartsWith("DELIVERY_")) return "🚚 Vận chuyển (cũ)";
-        return "Khác";
+        if (normalized.StartsWith("EMPLOYEES_")) return ("employees", "Quản lý Nhân viên", "people-fill", "#1a73e8", "rgba(26, 115, 232, 0.10)", "rgba(26, 115, 232, 0.18)");
+        if (normalized.StartsWith("DEPARTMENTS_")) return ("departments", "Quản lý Phòng ban", "building-fill", "#0f9d58", "rgba(15, 157, 88, 0.10)", "rgba(15, 157, 88, 0.18)");
+        if (normalized.StartsWith("POSITIONS_")) return ("positions", "Quản lý Chức vụ", "person-badge-fill", "#7c4dff", "rgba(124, 77, 255, 0.10)", "rgba(124, 77, 255, 0.18)");
+        if (normalized.StartsWith("KPIS_")) return ("kpis", "Quản lý KPI", "speedometer2", "#f29900", "rgba(242, 153, 0, 0.12)", "rgba(242, 153, 0, 0.20)");
+        if (normalized.StartsWith("KPICHECKINS_")) return ("kpicheckins", "Cập nhật tiến độ KPI", "check2-square", "#0f9d58", "rgba(15, 157, 88, 0.10)", "rgba(15, 157, 88, 0.18)");
+        if (normalized.StartsWith("OKRS_")) return ("okrs", "Quản lý OKR / Mục tiêu", "bullseye", "#d93025", "rgba(217, 48, 37, 0.10)", "rgba(217, 48, 37, 0.18)");
+        if (normalized.StartsWith("EVALPERIODS_")) return ("evalperiods", "Kỳ đánh giá", "calendar3", "#4285f4", "rgba(66, 133, 244, 0.10)", "rgba(66, 133, 244, 0.18)");
+        if (normalized.StartsWith("EVALRESULTS_")) return ("evalresults", "Kết quả đánh giá", "award-fill", "#0f9d58", "rgba(15, 157, 88, 0.10)", "rgba(15, 157, 88, 0.18)");
+        if (normalized.StartsWith("EVALREPORTS_")) return ("evalreports", "Báo cáo đánh giá", "bar-chart-fill", "#1a73e8", "rgba(26, 115, 232, 0.10)", "rgba(26, 115, 232, 0.18)");
+        if (normalized.StartsWith("BONUSRULES_")) return ("bonusrules", "Quy tắc thưởng", "cash-coin", "#f29900", "rgba(242, 153, 0, 0.12)", "rgba(242, 153, 0, 0.20)");
+        if (normalized.StartsWith("MISSIONS_")) return ("missions", "Sứ mệnh & Tầm nhìn", "compass-fill", "#5b6cff", "rgba(91, 108, 255, 0.10)", "rgba(91, 108, 255, 0.18)");
+        if (normalized.StartsWith("SYSUSERS_")) return ("sysusers", "Người dùng hệ thống", "shield-lock-fill", "#1557b0", "rgba(21, 87, 176, 0.10)", "rgba(21, 87, 176, 0.18)");
+        if (normalized.StartsWith("ROLES_")) return ("roles", "Phân quyền (Roles)", "diagram-3-fill", "#d93025", "rgba(217, 48, 37, 0.10)", "rgba(217, 48, 37, 0.18)");
+        if (normalized.StartsWith("AUDITLOGS_")) return ("auditlogs", "Nhật ký hệ thống", "journal-text", "#5f6368", "rgba(95, 99, 104, 0.10)", "rgba(95, 99, 104, 0.18)");
+
+        if (normalized.StartsWith("ADMIN_")) return ("legacy-admin", "Cấu hình Hệ thống (cũ)", "gear-fill", "#5f6368", "rgba(95, 99, 104, 0.10)", "rgba(95, 99, 104, 0.18)");
+        if (normalized.StartsWith("HR_")) return ("legacy-hr", "Quản trị Nhân sự (cũ)", "people-fill", "#5f6368", "rgba(95, 99, 104, 0.10)", "rgba(95, 99, 104, 0.18)");
+        if (normalized.StartsWith("MANAGER_")) return ("legacy-manager", "Quản lý OKR & KPI (cũ)", "clipboard-data-fill", "#5f6368", "rgba(95, 99, 104, 0.10)", "rgba(95, 99, 104, 0.18)");
+        if (normalized.StartsWith("EMPLOYEE_")) return ("legacy-employee", "Tác vụ Nhân viên (cũ)", "person-fill", "#5f6368", "rgba(95, 99, 104, 0.10)", "rgba(95, 99, 104, 0.18)");
+        if (normalized.StartsWith("SALES_")) return ("legacy-sales", "Kinh doanh & Khách hàng (cũ)", "graph-up-arrow", "#5f6368", "rgba(95, 99, 104, 0.10)", "rgba(95, 99, 104, 0.18)");
+        if (normalized.StartsWith("WAREHOUSE_")) return ("legacy-warehouse", "Quản lý Kho (cũ)", "boxes", "#5f6368", "rgba(95, 99, 104, 0.10)", "rgba(95, 99, 104, 0.18)");
+        if (normalized.StartsWith("DELIVERY_")) return ("legacy-delivery", "Vận chuyển (cũ)", "truck", "#5f6368", "rgba(95, 99, 104, 0.10)", "rgba(95, 99, 104, 0.18)");
+
+        return ("other", "Nhóm khác", "grid-3x3-gap-fill", "#5f6368", "rgba(95, 99, 104, 0.10)", "rgba(95, 99, 104, 0.18)");
     }
 
+    (string Label, string ClassName) GetActionMeta(string? code)
+    {
+        var normalized = (code ?? string.Empty).ToUpperInvariant();
+        var parts = normalized.Split('_', StringSplitOptions.RemoveEmptyEntries);
+        var action = parts.Length > 0 ? parts[parts.Length - 1] : string.Empty;
 
-    var groupedPermissions = Model.GroupBy(p => GetGroup(p.PermissionCode ?? ""));
+        return action switch
+        {
+            "VIEW" => ("Xem", "action-view"),
+            "CREATE" => ("Tạo", "action-create"),
+            "EDIT" => ("Sửa", "action-edit"),
+            "DELETE" => ("Xóa", "action-delete"),
+            "REVIEW" => ("Duyệt", "action-review"),
+            _ => ("Khác", "action-other")
+        };
+    }
+
+    var permissions = Model?.ToList() ?? new List<Manage_KPI_or_OKR_System.Models.Permission>();
+    var selectedPermissionSet = rolePermissionIds.Distinct().ToHashSet();
+    var groupedPermissions = permissions
+        .Select(permission => new { Permission = permission, Meta = GetGroupMeta(permission.PermissionCode) })
+        .GroupBy(x => x.Meta.Key)
+        .Select(g => new
+        {
+            Key = g.Key,
+            Title = g.First().Meta.Title,
+            Icon = g.First().Meta.Icon,
+            Accent = g.First().Meta.Accent,
+            SoftBg = g.First().Meta.SoftBg,
+            SoftBorder = g.First().Meta.SoftBorder,
+            Permissions = g.Select(x => x.Permission)
+                .OrderBy(p => p.PermissionName)
+                .ThenBy(p => p.PermissionCode)
+                .ToList()
+        })
+        .OrderBy(g => g.Title)
+        .ToList();
+
+    var totalPermissions = permissions.Count;
+    var selectedPermissions = permissions.Count(p => selectedPermissionSet.Contains(p.Id));
+    var groupCount = groupedPermissions.Count;
+    var selectedGroupCount = groupedPermissions.Count(g => g.Permissions.Any(p => selectedPermissionSet.Contains(p.Id)));
+    var selectionPercent = totalPermissions == 0 ? 0 : (int)Math.Round((double)selectedPermissions * 100 / totalPermissions);
+    var roleDescription = string.IsNullOrWhiteSpace(role?.Description)
+        ? "Vai trò này chưa có mô tả. Bạn có thể dùng cấu hình quyền bên dưới để xác định chính xác phạm vi truy cập."
+        : role!.Description!;
 }
 
-<div class="container-fluid px-0">
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+<div class="container-fluid px-0 permissions-page">
+    <div class="page-header d-flex justify-content-between align-items-start gap-3 mb-4">
         <div>
-            <h1 class="h3 font-weight-bold mb-1">Cấu hình chi tiết quyền: <span class="text-primary">@role?.RoleName</span></h1>
+            <h1 class="h3 font-weight-bold mb-1">
+                Cấu hình chi tiết quyền:
+                <span class="text-primary">@role?.RoleName</span>
+            </h1>
             <div class="page-breadcrumb">
                 <a asp-action="Index">Quản lý roles</a>
                 <i class="bi bi-chevron-right separator"></i>
@@ -49,103 +97,713 @@
         </div>
         <div>
             <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
-                <i class="bi bi-arrow-left me-1"></i> Quay lại
+                <i class="bi bi-arrow-left me-2"></i> Quay lại
             </a>
         </div>
     </div>
 
-    <div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <form asp-action="UpdatePermissions" method="post" id="permissionForm">
-                <input type="hidden" name="roleId" value="@role?.Id" />
-                
-                <div class="row g-4 w-100">
-                    @foreach (var group in groupedPermissions)
-                    {
-                        <div class="col-12 col-xl-6">
-                            <div class="content-card h-100">
-                                <div class="card-header-custom border-bottom bg-light p-3 d-flex justify-content-between align-items-center">
-                                    <h6 class="fw-bold mb-0 text-dark">
-                                        <i class="bi bi-collection-fill me-2 text-primary"></i>@group.Key
-                                    </h6>
-                                    <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 select-all-group" data-group="@group.Key.Replace(" ", "")">Chọn tất cả</button>
-                                </div>
-                                <div class="card-body-custom p-3">
-                                    <div class="row g-2">
-                                        @foreach (var permission in group)
-                                        {
-                                            <div class="col-12">
-                                                <div class="form-check form-switch permission-item p-2 rounded border border-transparent hover-shadow-sm transition-all d-flex align-items-center">
-                                                    <input class="form-check-input ms-0 me-3 @group.Key.Replace(" ", "")-check" type="checkbox" 
-                                                           name="permissionIds" value="@permission.Id" 
-                                                           id="perm_@permission.Id" 
-                                                           @(rolePermissionIds.Contains(permission.Id) ? "checked" : "")>
-                                                    <label class="form-check-label w-100 cursor-pointer" for="perm_@permission.Id">
-                                                        <span class="d-block fw-medium">@permission.PermissionName</span>
-                                                        <span class="small text-muted font-monospace">@permission.PermissionCode</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    }
+    <div class="permissions-hero mb-4">
+        <div class="permissions-hero-content">
+            <div>
+                <span class="permissions-hero-kicker">Permission Mapping</span>
+                <h2 class="permissions-hero-title">@role?.RoleName</h2>
+                <p class="permissions-hero-copy mb-0">@roleDescription</p>
+            </div>
+            <div class="permissions-hero-summary">
+                <div class="permissions-hero-summary-label">Mức độ cấu hình hiện tại</div>
+                <div class="permissions-hero-summary-value">
+                    <span id="selectedPermissionHero">@selectedPermissions</span>/<span>@totalPermissions</span>
                 </div>
-
-                <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-3 mb-5">
-                    <button type="reset" class="btn btn-outline-secondary rounded-pill px-5">Hoàn tác</button>
-                    <button type="submit" class="btn-primary-custom rounded-pill px-5 shadow-sm">
-                        <i class="bi bi-save me-2"></i> Lưu cấu hình quyền
-                    </button>
+                <div class="permissions-hero-progress">
+                    <div id="selectedPermissionHeroBar" style="width:@selectionPercent%;"></div>
                 </div>
-            </form>
+                <div class="permissions-hero-summary-meta">@selectionPercent% permission đã được gán</div>
+            </div>
         </div>
     </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="permission-stat-card">
+                <div class="permission-stat-icon text-primary">
+                    <i class="bi bi-key-fill"></i>
+                </div>
+                <div>
+                    <div class="permission-stat-value">@totalPermissions</div>
+                    <div class="permission-stat-label">Tổng permission</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="permission-stat-card">
+                <div class="permission-stat-icon text-success">
+                    <i class="bi bi-check2-square"></i>
+                </div>
+                <div>
+                    <div id="selectedPermissionCount" class="permission-stat-value">@selectedPermissions</div>
+                    <div class="permission-stat-label">Đã chọn</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="permission-stat-card">
+                <div class="permission-stat-icon text-info">
+                    <i class="bi bi-collection-fill"></i>
+                </div>
+                <div>
+                    <div class="permission-stat-value">@groupCount</div>
+                    <div class="permission-stat-label">Nhóm chức năng</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="permission-stat-card">
+                <div class="permission-stat-icon text-warning">
+                    <i class="bi bi-diagram-3-fill"></i>
+                </div>
+                <div>
+                    <div id="selectedGroupCount" class="permission-stat-value">@selectedGroupCount</div>
+                    <div class="permission-stat-label">Nhóm đang kích hoạt</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-card permission-toolbar-card mb-4">
+        <div class="card-body-custom p-3 p-lg-4">
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+                <div class="permission-search-wrap">
+                    <i class="bi bi-search"></i>
+                    <input type="text"
+                           id="permissionSearch"
+                           class="form-control"
+                           placeholder="Tìm theo tên quyền hoặc mã quyền..."
+                           autocomplete="off">
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" id="selectVisiblePermissions" class="btn btn-outline-primary rounded-pill px-3">
+                        <i class="bi bi-check2-all me-2"></i> Chọn đang hiển thị
+                    </button>
+                    <button type="button" id="clearAllPermissions" class="btn btn-outline-secondary rounded-pill px-3">
+                        <i class="bi bi-eraser me-2"></i> Bỏ chọn tất cả
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="UpdatePermissions" method="post" id="permissionForm">
+        <input type="hidden" name="roleId" value="@role?.Id" />
+
+        <div class="row g-4">
+            @foreach (var group in groupedPermissions)
+            {
+                var checkedCount = group.Permissions.Count(p => selectedPermissionSet.Contains(p.Id));
+                var isFullyChecked = checkedCount == group.Permissions.Count && group.Permissions.Count > 0;
+
+                <div class="col-12 col-xl-6 permission-group-col" data-group-column="@group.Key">
+                    <div class="content-card permission-group-card h-100"
+                         style="--group-accent:@group.Accent; --group-soft:@group.SoftBg; --group-border:@group.SoftBorder;">
+                        <div class="card-header-custom permission-group-header border-bottom p-3 p-lg-4">
+                            <div class="d-flex justify-content-between align-items-start gap-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="permission-group-icon">
+                                        <i class="bi bi-@group.Icon"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-1">@group.Title</h5>
+                                        <div class="permission-group-meta">
+                                            <span id="group-counter-@group.Key">@checkedCount/@group.Permissions.Count đã chọn</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button"
+                                        class="btn btn-sm btn-link text-decoration-none p-0 fw-semibold select-all-group"
+                                        data-group="@group.Key">
+                                    @(isFullyChecked ? "Bỏ chọn tất cả" : "Chọn tất cả")
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body-custom p-3 p-lg-4">
+                            <div class="permission-list">
+                                @foreach (var permission in group.Permissions)
+                                {
+                                    var actionMeta = GetActionMeta(permission.PermissionCode);
+                                    var isChecked = selectedPermissionSet.Contains(permission.Id);
+                                    var permissionName = string.IsNullOrWhiteSpace(permission.PermissionName) ? permission.PermissionCode : permission.PermissionName;
+
+                                    <label class="permission-item @(isChecked ? "is-checked" : string.Empty)"
+                                           data-permission-item
+                                           data-group-key="@group.Key"
+                                           data-filter-text="@($"{permissionName} {permission.PermissionCode}".ToLowerInvariant())">
+                                        <input class="form-check-input permission-checkbox"
+                                               type="checkbox"
+                                               name="permissionIds"
+                                               value="@permission.Id"
+                                               data-group-key="@group.Key"
+                                               @(isChecked ? "checked" : string.Empty)>
+                                        <div class="permission-item-content">
+                                            <div class="permission-item-top">
+                                                <span class="permission-name">@permissionName</span>
+                                                <span class="permission-action-badge @actionMeta.ClassName">@actionMeta.Label</span>
+                                            </div>
+                                            <div class="permission-code">@permission.PermissionCode</div>
+                                        </div>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="permission-save-bar mt-4 mb-5">
+            <div class="permission-save-summary">
+                <div class="permission-save-title">
+                    Đã chọn <strong id="selectedPermissionFooter">@selectedPermissions</strong> trên <strong>@totalPermissions</strong> permission
+                </div>
+                <div class="permission-save-progress">
+                    <div id="selectedPermissionFooterBar" style="width:@selectionPercent%;"></div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end gap-3 flex-wrap">
+                <button type="reset" class="btn btn-outline-secondary rounded-pill px-4">Hoàn tác</button>
+                <button type="submit" class="btn-primary-custom rounded-pill px-5 shadow-sm">
+                    <i class="bi bi-save me-2"></i> Lưu cấu hình quyền
+                </button>
+            </div>
+        </div>
+    </form>
 </div>
 
 <style>
-    .hover-shadow-sm:hover {
-        background-color: #f8f9fa;
-        border-color: #dee2e6 !important;
-        box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important;
+    .permissions-page .permissions-hero {
+        position: relative;
+        overflow: hidden;
+        padding: 28px 30px;
+        border-radius: 24px;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.16), transparent 26%),
+            linear-gradient(135deg, #0d3b7a 0%, #1557b0 45%, #1a73e8 100%);
+        color: #ffffff;
+        box-shadow: 0 18px 42px rgba(21, 87, 176, 0.22);
     }
-    .cursor-pointer {
+
+    .permissions-page .permissions-hero-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .permissions-page .permissions-hero-kicker {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+    }
+
+    .permissions-page .permissions-hero-title {
+        font-size: clamp(1.45rem, 2vw, 2.05rem);
+        font-weight: 800;
+        margin: 0 0 8px;
+        line-height: 1.2;
+    }
+
+    .permissions-page .permissions-hero-copy {
+        max-width: 760px;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 0.95rem;
+        line-height: 1.65;
+    }
+
+    .permissions-page .permissions-hero-summary {
+        min-width: 250px;
+        padding: 20px 22px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(8px);
+    }
+
+    .permissions-page .permissions-hero-summary-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.72);
+        font-weight: 700;
+    }
+
+    .permissions-page .permissions-hero-summary-value {
+        margin: 8px 0;
+        font-size: 1.95rem;
+        line-height: 1.15;
+        font-weight: 800;
+    }
+
+    .permissions-page .permissions-hero-progress,
+    .permissions-page .permission-save-progress {
+        width: 100%;
+        height: 8px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.18);
+    }
+
+    .permissions-page .permissions-hero-progress > div,
+    .permissions-page .permission-save-progress > div {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #ffffff, #d6e4ff);
+        transition: width 0.2s ease;
+    }
+
+    .permissions-page .permissions-hero-summary-meta {
+        margin-top: 10px;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 0.84rem;
+    }
+
+    .permissions-page .permission-stat-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 100%;
+        padding: 20px;
+        border-radius: 20px;
+        background: #ffffff;
+        border: 1px solid rgba(26, 115, 232, 0.08);
+        box-shadow: 0 10px 28px rgba(26, 115, 232, 0.08);
+    }
+
+    .permissions-page .permission-stat-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        background: rgba(26, 115, 232, 0.08);
+        flex-shrink: 0;
+    }
+
+    .permissions-page .permission-stat-value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1.1;
+    }
+
+    .permissions-page .permission-stat-label {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    .permissions-page .permission-toolbar-card {
+        border: 1px solid rgba(26, 115, 232, 0.08);
+    }
+
+    .permissions-page .permission-search-wrap {
+        position: relative;
+        width: min(100%, 420px);
+    }
+
+    .permissions-page .permission-search-wrap i {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+    }
+
+    .permissions-page .permission-search-wrap .form-control {
+        height: 46px;
+        padding-left: 44px;
+        border-radius: 14px;
+        border: 1px solid rgba(26, 115, 232, 0.12);
+        background: #f7fafe;
+    }
+
+    .permissions-page .permission-search-wrap .form-control:focus {
+        background: #ffffff;
+        border-color: rgba(26, 115, 232, 0.22);
+        box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.08);
+    }
+
+    .permissions-page .permission-group-card {
+        border: 1px solid rgba(26, 115, 232, 0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .permissions-page .permission-group-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 34px rgba(26, 115, 232, 0.12);
+    }
+
+    .permissions-page .permission-group-header {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 254, 0.92));
+    }
+
+    .permissions-page .permission-group-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--group-soft);
+        color: var(--group-accent);
+        border: 1px solid var(--group-border);
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .permissions-page .permission-group-header h5 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+
+    .permissions-page .permission-group-meta {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+    }
+
+    .permissions-page .permission-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .permissions-page .permission-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 15px 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(26, 115, 232, 0.08);
+        background: #ffffff;
         cursor: pointer;
+        transition: all 0.2s ease;
     }
-    .transition-all {
-        transition: all 0.2s ease-in-out;
+
+    .permissions-page .permission-item:hover {
+        border-color: var(--group-border);
+        background: #f9fbff;
+        box-shadow: 0 12px 24px rgba(26, 115, 232, 0.08);
     }
-    .form-check-input:checked {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
+
+    .permissions-page .permission-item.is-checked {
+        background: var(--group-soft);
+        border-color: var(--group-border);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+    }
+
+    .permissions-page .permission-item .form-check-input {
+        width: 1.15rem;
+        height: 1.15rem;
+        margin-top: 0.18rem;
+        flex-shrink: 0;
+        border-width: 1.5px;
+    }
+
+    .permissions-page .permission-item-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .permissions-page .permission-item-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 6px;
+    }
+
+    .permissions-page .permission-name {
+        font-size: 0.94rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.4;
+    }
+
+    .permissions-page .permission-code {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        font-family: Consolas, "Courier New", monospace;
+        word-break: break-all;
+    }
+
+    .permissions-page .permission-action-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .permissions-page .permission-action-badge.action-view {
+        background: rgba(26, 115, 232, 0.10);
+        color: #1a73e8;
+        border-color: rgba(26, 115, 232, 0.16);
+    }
+
+    .permissions-page .permission-action-badge.action-create {
+        background: rgba(15, 157, 88, 0.10);
+        color: #0f9d58;
+        border-color: rgba(15, 157, 88, 0.16);
+    }
+
+    .permissions-page .permission-action-badge.action-edit {
+        background: rgba(242, 153, 0, 0.12);
+        color: #b06c00;
+        border-color: rgba(242, 153, 0, 0.18);
+    }
+
+    .permissions-page .permission-action-badge.action-delete {
+        background: rgba(217, 48, 37, 0.10);
+        color: #d93025;
+        border-color: rgba(217, 48, 37, 0.16);
+    }
+
+    .permissions-page .permission-action-badge.action-review,
+    .permissions-page .permission-action-badge.action-other {
+        background: rgba(95, 99, 104, 0.10);
+        color: #5f6368;
+        border-color: rgba(95, 99, 104, 0.16);
+    }
+
+    .permissions-page .permission-save-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 20px;
+        border-radius: 22px;
+        background: #ffffff;
+        border: 1px solid rgba(26, 115, 232, 0.08);
+        box-shadow: 0 12px 28px rgba(26, 115, 232, 0.08);
+    }
+
+    .permissions-page .permission-save-summary {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .permissions-page .permission-save-title {
+        font-size: 0.92rem;
+        color: var(--text-secondary);
+        margin-bottom: 10px;
+    }
+
+    .permissions-page .permission-save-progress {
+        background: rgba(26, 115, 232, 0.10);
+    }
+
+    .permissions-page [hidden] {
+        display: none !important;
+    }
+
+    @@media (max-width: 991.98px) {
+        .permissions-page .permissions-hero-content,
+        .permissions-page .permission-save-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .permissions-page .permissions-hero-summary {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .permissions-page .permission-item-top {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .permissions-page .page-header {
+            align-items: stretch !important;
+        }
     }
 </style>
 
 @section Scripts {
     <script>
-        $(document).ready(function() {
-            $('.select-all-group').click(function() {
-                var groupClass = '.' + $(this).data('group') + '-check';
-                var allChecked = true;
-                $(groupClass).each(function() {
-                    if (!$(this).prop('checked')) allChecked = false;
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('permissionForm');
+            const searchInput = document.getElementById('permissionSearch');
+            const groupButtons = Array.from(document.querySelectorAll('.select-all-group'));
+            const checkboxes = Array.from(document.querySelectorAll('.permission-checkbox'));
+            const permissionItems = Array.from(document.querySelectorAll('[data-permission-item]'));
+            const groupColumns = Array.from(document.querySelectorAll('[data-group-column]'));
+            const selectVisibleButton = document.getElementById('selectVisiblePermissions');
+            const clearAllButton = document.getElementById('clearAllPermissions');
+            const selectedPermissionCount = document.getElementById('selectedPermissionCount');
+            const selectedPermissionFooter = document.getElementById('selectedPermissionFooter');
+            const selectedPermissionHero = document.getElementById('selectedPermissionHero');
+            const selectedGroupCount = document.getElementById('selectedGroupCount');
+            const selectedPermissionHeroBar = document.getElementById('selectedPermissionHeroBar');
+            const selectedPermissionFooterBar = document.getElementById('selectedPermissionFooterBar');
+            const totalPermissions = checkboxes.length;
+
+            function getGroupCheckboxes(groupKey) {
+                return checkboxes.filter(function (checkbox) {
+                    return checkbox.dataset.groupKey === groupKey;
                 });
-                
-                $(groupClass).prop('checked', !allChecked);
-                $(this).text(!allChecked ? 'Bỏ chọn tất cả' : 'Chọn tất cả');
+            }
+
+            function getVisibleGroupCheckboxes(groupKey) {
+                const visible = getGroupCheckboxes(groupKey).filter(function (checkbox) {
+                    return !checkbox.closest('[data-permission-item]').hidden;
+                });
+
+                return visible.length > 0 ? visible : getGroupCheckboxes(groupKey);
+            }
+
+            function updatePermissionItemState(checkbox) {
+                const item = checkbox.closest('[data-permission-item]');
+                if (!item) {
+                    return;
+                }
+
+                item.classList.toggle('is-checked', checkbox.checked);
+            }
+
+            function updateGroupState(groupKey) {
+                const groupCheckboxes = getGroupCheckboxes(groupKey);
+                const checkedCount = groupCheckboxes.filter(function (checkbox) { return checkbox.checked; }).length;
+                const counter = document.getElementById('group-counter-' + groupKey);
+                const button = groupButtons.find(function (groupButton) {
+                    return groupButton.dataset.group === groupKey;
+                });
+
+                if (counter) {
+                    counter.textContent = checkedCount + '/' + groupCheckboxes.length + ' đã chọn';
+                }
+
+                if (button) {
+                    button.textContent = checkedCount === groupCheckboxes.length && groupCheckboxes.length > 0
+                        ? 'Bỏ chọn tất cả'
+                        : 'Chọn tất cả';
+                }
+            }
+
+            function updateSummary() {
+                const checkedCount = checkboxes.filter(function (checkbox) { return checkbox.checked; }).length;
+                const activeGroups = groupColumns.filter(function (column) {
+                    const groupKey = column.dataset.groupColumn;
+                    return getGroupCheckboxes(groupKey).some(function (checkbox) { return checkbox.checked; });
+                }).length;
+                const percentage = totalPermissions === 0 ? 0 : Math.round((checkedCount * 100) / totalPermissions);
+
+                selectedPermissionCount.textContent = checkedCount;
+                selectedPermissionFooter.textContent = checkedCount;
+                selectedPermissionHero.textContent = checkedCount;
+                selectedGroupCount.textContent = activeGroups;
+                selectedPermissionHeroBar.style.width = percentage + '%';
+                selectedPermissionFooterBar.style.width = percentage + '%';
+            }
+
+            function updateAllStates() {
+                checkboxes.forEach(updatePermissionItemState);
+                groupColumns.forEach(function (column) {
+                    updateGroupState(column.dataset.groupColumn);
+                });
+                updateSummary();
+            }
+
+            function applyFilter() {
+                const keyword = (searchInput.value || '').trim().toLowerCase();
+
+                permissionItems.forEach(function (item) {
+                    const haystack = item.dataset.filterText || '';
+                    item.hidden = keyword.length > 0 && !haystack.includes(keyword);
+                });
+
+                groupColumns.forEach(function (column) {
+                    const groupKey = column.dataset.groupColumn;
+                    const hasVisibleItems = permissionItems.some(function (item) {
+                        return item.dataset.groupKey === groupKey && !item.hidden;
+                    });
+
+                    column.hidden = !hasVisibleItems;
+                });
+            }
+
+            checkboxes.forEach(function (checkbox) {
+                checkbox.addEventListener('change', function () {
+                    updatePermissionItemState(checkbox);
+                    updateGroupState(checkbox.dataset.groupKey);
+                    updateSummary();
+                });
             });
 
-            // Update text based on initial state
-            $('.select-all-group').each(function() {
-                var groupClass = '.' + $(this).data('group') + '-check';
-                var allChecked = true;
-                $(groupClass).each(function() {
-                    if (!$(this).prop('checked')) allChecked = false;
+            groupButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const groupKey = button.dataset.group;
+                    const targetCheckboxes = getVisibleGroupCheckboxes(groupKey);
+                    const shouldCheck = targetCheckboxes.some(function (checkbox) { return !checkbox.checked; });
+
+                    targetCheckboxes.forEach(function (checkbox) {
+                        checkbox.checked = shouldCheck;
+                        updatePermissionItemState(checkbox);
+                    });
+
+                    updateGroupState(groupKey);
+                    updateSummary();
                 });
-                if (allChecked) $(this).text('Bỏ chọn tất cả');
             });
+
+            searchInput.addEventListener('input', applyFilter);
+
+            selectVisibleButton.addEventListener('click', function () {
+                permissionItems
+                    .filter(function (item) { return !item.hidden; })
+                    .forEach(function (item) {
+                        const checkbox = item.querySelector('.permission-checkbox');
+                        checkbox.checked = true;
+                        updatePermissionItemState(checkbox);
+                    });
+
+                updateAllStates();
+            });
+
+            clearAllButton.addEventListener('click', function () {
+                checkboxes.forEach(function (checkbox) {
+                    checkbox.checked = false;
+                    updatePermissionItemState(checkbox);
+                });
+
+                updateAllStates();
+            });
+
+            form.addEventListener('reset', function () {
+                window.requestAnimationFrame(function () {
+                    updateAllStates();
+                    applyFilter();
+                });
+            });
+
+            updateAllStates();
+            applyFilter();
         });
     </script>
 }

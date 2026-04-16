@@ -1,127 +1,627 @@
 @model IEnumerable<Manage_KPI_or_OKR_System.Models.Role>
 @{
-    ViewData["Title"] = "Quản lý Vai trò (Roles)";
-    
-    string GetRoleColor(string roleName) 
+    ViewData["Title"] = "Phân quyền Hệ thống";
+
+    var roles = Model?.ToList() ?? new List<Manage_KPI_or_OKR_System.Models.Role>();
+    var totalRoles = roles.Count;
+    var activeRoles = roles.Count(r => r.IsActive != false);
+    var protectedRoles = roles.Count(r => IsProtectedRole(r.RoleName));
+    var describedRoles = roles.Count(r => !string.IsNullOrWhiteSpace(r.Description));
+
+    bool IsProtectedRole(string? roleName)
     {
-        roleName = roleName?.ToLower() ?? "";
-        if (roleName.Contains("admin")) return "dark";
-        if (roleName.Contains("manager")) return "secondary";
-        return "dark";
+        var normalized = (roleName ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized.Contains("admin") || normalized.Contains("administrator");
     }
-    
-    string GetRoleIcon(string roleName) 
+
+    (string Accent, string SoftBg, string SoftBorder, string Icon, string Label) GetRoleTheme(string? roleName)
     {
-        roleName = roleName?.ToLower() ?? "";
-        if (roleName.Contains("admin")) return "shield-lock-fill";
-        if (roleName.Contains("manager")) return "person-badge-fill";
-        return "person-fill";
+        var normalized = (roleName ?? string.Empty).Trim().ToLowerInvariant();
+
+        if (normalized.Contains("admin") || normalized.Contains("administrator"))
+        {
+            return ("#d93025", "rgba(217, 48, 37, 0.10)", "rgba(217, 48, 37, 0.18)", "shield-lock-fill", "Vai trò hệ thống");
+        }
+
+        if (normalized.Contains("manager") || normalized.Contains("leader") || normalized.Contains("director"))
+        {
+            return ("#1a73e8", "rgba(26, 115, 232, 0.10)", "rgba(26, 115, 232, 0.18)", "briefcase-fill", "Vai trò quản lý");
+        }
+
+        if (normalized.Contains("hr") || normalized.Contains("human"))
+        {
+            return ("#0f9d58", "rgba(15, 157, 88, 0.10)", "rgba(15, 157, 88, 0.18)", "people-fill", "Vai trò nhân sự");
+        }
+
+        if (normalized.Contains("sale") || normalized.Contains("business"))
+        {
+            return ("#f29900", "rgba(242, 153, 0, 0.12)", "rgba(242, 153, 0, 0.20)", "graph-up-arrow", "Vai trò kinh doanh");
+        }
+
+        return ("#5f6368", "rgba(95, 99, 104, 0.10)", "rgba(95, 99, 104, 0.18)", "person-badge-fill", "Vai trò tùy chỉnh");
     }
 }
 
-<div class="container-fluid px-0">
-    
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Phân quyền Hệ thống</h1>
-        <div class="page-breadcrumb">
-            <a href="/">Trang chủ</a>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Hệ thống</span>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Quản lý roles</span>
+<div class="container-fluid px-0 roles-page">
+    <div class="page-header d-flex justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Phân quyền Hệ thống</h1>
+            <div class="page-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Hệ thống</span>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Quản lý roles</span>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2 flex-wrap">
+            <form asp-action="SyncPermissions" method="post" class="m-0">
+                <button type="submit" class="btn btn-outline-primary rounded-pill d-flex align-items-center shadow-none px-3 py-2">
+                    <i class="bi bi-arrow-repeat me-2"></i> Đồng bộ Quyền
+                </button>
+            </form>
+            <a asp-action="Create" class="btn-primary-custom d-flex align-items-center text-decoration-none">
+                <i class="bi bi-shield-plus me-2"></i> Tạo Role mới
+            </a>
         </div>
     </div>
-    <div class="d-flex justify-content-end gap-2">
-        <form asp-action="SyncPermissions" method="post" class="m-0">
-            <button type="submit" class="btn btn-outline-primary rounded-pill d-flex align-items-center shadow-none btn-sm px-3">
-                <i class="bi bi-arrow-repeat me-1"></i> Đồng bộ Quyền
-            </button>
-        </form>
-        <a asp-action="Create" class="btn-primary-custom d-flex align-items-center text-decoration-none">
-            <i class="bi bi-shield-plus me-1"></i> Tạo Role mới
-        </a>
-    </div>
-</div>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+    <div class="roles-hero mb-4">
+        <div class="roles-hero-content">
+            <div>
+                <span class="roles-hero-kicker">Trung tâm phân quyền</span>
+                <h2 class="roles-hero-title">Sắp xếp vai trò rõ ràng, dễ quản trị và đồng bộ với toàn hệ thống</h2>
+                <p class="roles-hero-copy mb-0">
+                    Giao diện này giúp theo dõi nhanh nhóm quyền hệ thống, role đang hoạt động và mức độ hoàn thiện mô tả để đội vận hành quản trị người dùng mạch lạc hơn.
+                </p>
+            </div>
+            <div class="roles-hero-pill">
+                <div class="roles-hero-pill-label">Tỷ lệ có mô tả</div>
+                <div class="roles-hero-pill-value">
+                    @(totalRoles == 0 ? "0%" : $"{Math.Round((double)describedRoles * 100 / totalRoles)}%")
+                </div>
+                <div class="roles-hero-pill-meta">@describedRoles / @totalRoles role đã có mô tả</div>
+            </div>
+        </div>
     </div>
-}
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger shadow-sm border-0 mb-4" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="role-metric-card">
+                <div class="role-metric-icon text-primary">
+                    <i class="bi bi-person-badge-fill"></i>
+                </div>
+                <div>
+                    <div class="role-metric-value">@totalRoles</div>
+                    <div class="role-metric-label">Tổng nhóm quyền</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="role-metric-card">
+                <div class="role-metric-icon text-success">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+                <div>
+                    <div class="role-metric-value">@activeRoles</div>
+                    <div class="role-metric-label">Đang hoạt động</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="role-metric-card">
+                <div class="role-metric-icon text-danger">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <div>
+                    <div class="role-metric-value">@protectedRoles</div>
+                    <div class="role-metric-label">Vai trò hệ thống</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="role-metric-card">
+                <div class="role-metric-icon text-info">
+                    <i class="bi bi-card-text"></i>
+                </div>
+                <div>
+                    <div class="role-metric-value">@describedRoles</div>
+                    <div class="role-metric-label">Có mô tả đầy đủ</div>
+                </div>
+            </div>
+        </div>
     </div>
-}
 
-<div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <div class="row g-4 w-100">
-    @if (Model != null && Model.Any())
+    @if (TempData["SuccessMessage"] != null)
     {
-        foreach (var role in Model)
-        {
-            var roleName = role.RoleName ?? "";
-            var color = GetRoleColor(roleName);
-            var icon = GetRoleIcon(roleName);
+        <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        </div>
+    }
 
-            <div class="col-md-4">
-                <div class="content-card h-100 position-relative">
-                    @if (color == "danger")
-                    {
-                        <div class="position-absolute top-0 end-0 p-3">
-                            <span class="badge bg-danger rounded-pill"><i class="bi bi-star-fill me-1"></i>Toàn quyền</span>
-                        </div>
-                    }
-                    <div class="card-body-custom p-4">
-                        <div class="d-inline-flex align-items-center justify-content-center bg-@color bg-opacity-10 text-@color rounded-circle mb-3 border border-@color border-opacity-25" style="width: 48px; height: 48px; font-size: 1.25rem;">
-                            <i class="bi bi-@icon"></i>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-start mb-1">
-                            <h5 class="fw-bold text-dark mb-0">@role.RoleName</h5>
-                        </div>
-                        <p class="text-muted mb-4 mt-2" style="font-size: 0.85rem; height: 40px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-                            @(string.IsNullOrEmpty(role.Description) ? "Không có mô tả..." : role.Description)
-                        </p>
-                        
-                        <div class="d-flex align-items-center gap-2 mb-3 pb-3 border-bottom">
-                            <div class="user-avatar bg-dark text-white" style="width: 24px; height: 24px; font-size: 0.6rem;">
-                                <i class="bi bi-people"></i>
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @if (roles.Any())
+    {
+        <div class="row g-4">
+            @foreach (var role in roles
+                .OrderByDescending(r => IsProtectedRole(r.RoleName))
+                .ThenBy(r => r.RoleName))
+            {
+                var theme = GetRoleTheme(role.RoleName);
+                var isProtected = IsProtectedRole(role.RoleName);
+                var isActive = role.IsActive != false;
+                var roleName = string.IsNullOrWhiteSpace(role.RoleName) ? "Chưa đặt tên" : role.RoleName;
+                var description = string.IsNullOrWhiteSpace(role.Description) ? "Role này chưa có mô tả. Bạn nên bổ sung để đội vận hành hiểu rõ phạm vi quyền hạn." : role.Description;
+
+                <div class="col-md-6 col-xl-4">
+                    <div class="content-card role-card h-100" style="--role-accent:@theme.Accent; --role-soft:@theme.SoftBg; --role-soft-border:@theme.SoftBorder;">
+                        <div class="card-body-custom p-4 d-flex flex-column h-100">
+                            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="role-icon-wrap">
+                                        <i class="bi bi-@theme.Icon"></i>
+                                    </div>
+                                    <div>
+                                        <div class="role-card-title">@roleName</div>
+                                        <div class="role-card-subtitle">@theme.Label</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-column align-items-end gap-2">
+                                    <span class="role-badge @(isActive ? "is-active" : "is-inactive")">
+                                        <span class="role-status-dot"></span>
+                                        @(isActive ? "Hoạt động" : "Tạm khóa")
+                                    </span>
+                                    @if (isProtected)
+                                    {
+                                        <span class="role-badge is-system">
+                                            <i class="bi bi-stars me-1"></i> Mặc định
+                                        </span>
+                                    }
+                                </div>
                             </div>
-                            <span class="fw-medium text-muted" style="font-size: 0.85rem;">Phân quyền người dùng</span>
-                        </div>
-                        
-                        <div class="d-flex justify-content-end gap-2">
-                            <a asp-action="ManagePermissions" asp-route-id="@role.Id" class="btn btn-sm btn-outline-@color flex-grow-1 @(color == "danger" ? "disabled" : "")">Cấu hình chi tiết</a>
-                            <form asp-action="Delete" asp-route-id="@role.Id" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa quyền này?');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa role" @(color == "danger" ? "disabled" : "")>
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
+
+                            <p class="role-card-description flex-grow-1">@description</p>
+
+                            <div class="role-meta-grid mb-4">
+                                <div class="role-meta-chip">
+                                    <i class="bi bi-calendar3"></i>
+                                    <span>@(role.CreatedAt?.ToString("dd/MM/yyyy") ?? "Chưa có ngày tạo")</span>
+                                </div>
+                                <div class="role-meta-chip">
+                                    <i class="bi bi-grid"></i>
+                                    <span>@(isProtected ? "Vai trò lõi" : "Vai trò mở rộng")</span>
+                                </div>
+                                <div class="role-meta-chip">
+                                    <i class="bi bi-chat-left-text"></i>
+                                    <span>@(string.IsNullOrWhiteSpace(role.Description) ? "Thiếu mô tả" : "Có mô tả")</span>
+                                </div>
+                            </div>
+
+                            <div class="role-card-note @(isProtected ? "role-card-note-system" : string.Empty)">
+                                <i class="bi @(isProtected ? "bi-lock-fill" : "bi-lightning-charge-fill")"></i>
+                                <span>
+                                    @(isProtected
+                                        ? "Role hệ thống được đánh dấu nổi bật để tránh thao tác xóa hoặc chỉnh cấu hình không cần thiết."
+                                        : "Bạn có thể mở cấu hình chi tiết để gán permission code phù hợp cho nhóm quyền này.")
+                                </span>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-4">
+                                <a asp-action="ManagePermissions"
+                                   asp-route-id="@role.Id"
+                                   class="role-action-btn role-action-primary flex-grow-1 @(isProtected ? "disabled" : string.Empty)"
+                                   aria-disabled="@(isProtected ? "true" : "false")">
+                                    <i class="bi bi-sliders me-2"></i> Cấu hình quyền
+                                </a>
+                                <form asp-action="Delete"
+                                      asp-route-id="@role.Id"
+                                      method="post"
+                                      class="m-0"
+                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa quyền này?');">
+                                    <button type="submit"
+                                            class="role-action-btn role-action-danger"
+                                            title="Xóa role"
+                                            @(isProtected ? "disabled" : string.Empty)>
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
     }
     else
     {
-        <div class="col-12">
-            <div class="alert alert-secondary border-0 shadow-sm text-center p-5 bg-light">
-                <i class="bi bi-shield-x display-4 text-muted mb-3 d-block"></i>
-                <h5 class="text-dark fw-bold">Chưa có nhóm quyền nào</h5>
-                <p class="text-muted mb-4">Bạn cần tạo mới các nhóm quyền để có thể phân loại người dùng trong hệ thống.</p>
-                <a asp-action="Create" class="btn-primary-custom px-4 rounded-pill">Tạo Role đầu tiên</a>
+        <div class="content-card empty-role-state text-center">
+            <div class="empty-role-icon">
+                <i class="bi bi-shield-x"></i>
+            </div>
+            <h4 class="fw-bold text-dark mb-2">Chưa có nhóm quyền nào</h4>
+            <p class="text-muted mb-4">
+                Bạn cần tạo mới các nhóm quyền để phân tách truy cập theo chức năng, phòng ban hoặc cấp quản lý trong hệ thống.
+            </p>
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <form asp-action="SyncPermissions" method="post" class="m-0">
+                    <button type="submit" class="btn btn-outline-primary rounded-pill px-4 py-2">
+                        <i class="bi bi-arrow-repeat me-2"></i> Đồng bộ Quyền
+                    </button>
+                </form>
+                <a asp-action="Create" class="btn-primary-custom px-4 rounded-pill">
+                    <i class="bi bi-shield-plus me-2"></i> Tạo Role đầu tiên
+                </a>
             </div>
         </div>
     }
 </div>
 
+<style>
+    .roles-page .roles-hero {
+        position: relative;
+        overflow: hidden;
+        padding: 28px 30px;
+        border-radius: 24px;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 28%),
+            linear-gradient(135deg, #0d3b7a 0%, #1557b0 45%, #1a73e8 100%);
+        color: #ffffff;
+        box-shadow: 0 18px 42px rgba(21, 87, 176, 0.22);
+    }
 
-        </div>
-    </div>
-</div>
+    .roles-page .roles-hero::after {
+        content: "";
+        position: absolute;
+        inset: auto -40px -80px auto;
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .roles-page .roles-hero-content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .roles-page .roles-hero-kicker {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+    }
+
+    .roles-page .roles-hero-title {
+        max-width: 760px;
+        margin: 0 0 10px;
+        font-size: clamp(1.35rem, 2vw, 2rem);
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    .roles-page .roles-hero-copy {
+        max-width: 720px;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 0.95rem;
+    }
+
+    .roles-page .roles-hero-pill {
+        min-width: 220px;
+        padding: 20px 22px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(8px);
+    }
+
+    .roles-page .roles-hero-pill-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: 700;
+    }
+
+    .roles-page .roles-hero-pill-value {
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1.15;
+        margin: 8px 0 4px;
+    }
+
+    .roles-page .roles-hero-pill-meta {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.85rem;
+    }
+
+    .roles-page .role-metric-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 100%;
+        padding: 20px;
+        border-radius: 20px;
+        background: #ffffff;
+        border: 1px solid rgba(26, 115, 232, 0.08);
+        box-shadow: 0 10px 28px rgba(26, 115, 232, 0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .roles-page .role-metric-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 34px rgba(26, 115, 232, 0.12);
+    }
+
+    .roles-page .role-metric-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(26, 115, 232, 0.08);
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .roles-page .role-metric-value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1.1;
+    }
+
+    .roles-page .role-metric-label {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    .roles-page .role-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(26, 115, 232, 0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .roles-page .role-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto;
+        height: 4px;
+        background: linear-gradient(90deg, var(--role-accent), rgba(255, 255, 255, 0));
+    }
+
+    .roles-page .role-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 18px 38px rgba(26, 115, 232, 0.12);
+    }
+
+    .roles-page .role-icon-wrap {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--role-soft);
+        color: var(--role-accent);
+        border: 1px solid var(--role-soft-border);
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+
+    .roles-page .role-card-title {
+        font-size: 1.08rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1.25;
+    }
+
+    .roles-page .role-card-subtitle {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        margin-top: 2px;
+    }
+
+    .roles-page .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .roles-page .role-badge.is-active {
+        background: rgba(15, 157, 88, 0.10);
+        color: #0f9d58;
+        border: 1px solid rgba(15, 157, 88, 0.16);
+    }
+
+    .roles-page .role-badge.is-inactive {
+        background: rgba(95, 99, 104, 0.10);
+        color: #5f6368;
+        border: 1px solid rgba(95, 99, 104, 0.16);
+    }
+
+    .roles-page .role-badge.is-system {
+        background: rgba(217, 48, 37, 0.10);
+        color: #d93025;
+        border: 1px solid rgba(217, 48, 37, 0.16);
+    }
+
+    .roles-page .role-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.5);
+    }
+
+    .roles-page .role-card-description {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: 0.92rem;
+        line-height: 1.65;
+        min-height: 74px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .roles-page .role-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .roles-page .role-meta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: #f7fafe;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: 1px solid rgba(26, 115, 232, 0.08);
+    }
+
+    .roles-page .role-meta-chip i {
+        color: var(--role-accent);
+    }
+
+    .roles-page .role-card-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: var(--role-soft);
+        color: var(--text-secondary);
+        border: 1px solid var(--role-soft-border);
+        font-size: 0.82rem;
+    }
+
+    .roles-page .role-card-note i {
+        color: var(--role-accent);
+        margin-top: 2px;
+    }
+
+    .roles-page .role-card-note-system {
+        background: rgba(217, 48, 37, 0.08);
+        border-color: rgba(217, 48, 37, 0.16);
+    }
+
+    .roles-page .role-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        border: 1px solid transparent;
+        border-radius: 14px;
+        padding: 0 16px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .roles-page .role-action-primary {
+        background: linear-gradient(135deg, #1a73e8, #1557b0);
+        color: #ffffff;
+        box-shadow: 0 10px 24px rgba(26, 115, 232, 0.18);
+    }
+
+    .roles-page .role-action-primary:hover {
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 28px rgba(26, 115, 232, 0.24);
+    }
+
+    .roles-page .role-action-danger {
+        width: 44px;
+        background: #ffffff;
+        color: #d93025;
+        border-color: rgba(217, 48, 37, 0.16);
+    }
+
+    .roles-page .role-action-danger:hover:not(:disabled) {
+        background: rgba(217, 48, 37, 0.08);
+    }
+
+    .roles-page .role-action-btn.disabled,
+    .roles-page .role-action-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        pointer-events: none;
+        box-shadow: none;
+    }
+
+    .roles-page .empty-role-state {
+        padding: 56px 24px;
+        border-radius: 24px;
+        border: 1px dashed rgba(26, 115, 232, 0.22);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 255, 0.98));
+    }
+
+    .roles-page .empty-role-icon {
+        width: 86px;
+        height: 86px;
+        margin: 0 auto 18px;
+        border-radius: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: var(--primary);
+        background: rgba(26, 115, 232, 0.10);
+    }
+
+    @@media (max-width: 991.98px) {
+        .roles-page .roles-hero-content {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .roles-page .roles-hero-pill {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .roles-page .role-meta-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .roles-page .page-header {
+            align-items: stretch !important;
+        }
+
+        .roles-page .page-header > div:last-child {
+            width: 100%;
+        }
+    }
+</style>
