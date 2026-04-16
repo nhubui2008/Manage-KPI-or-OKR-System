@@ -507,7 +507,10 @@ document.addEventListener('DOMContentLoaded', function () {
             
             // Cấu hình dựa trên data attributes hoặc mặc định
             const placeholder = $el.data('placeholder') || $el.find('option[value=""]').text() || 'Chọn một tùy chọn';
-            const allowClear = $el.prop('required') ? false : true;
+            const allowClearData = $el.data('allow-clear');
+            const allowClear = allowClearData !== undefined
+                ? allowClearData === true || allowClearData === 'true'
+                : !$el.prop('required');
             
             // Chỉ hiện ô tìm kiếm nếu số lượng option > 8
             const minResultsForSearch = $el.data('minimum-results-for-search') || ($el.find('option').length > 8 ? 0 : -1);

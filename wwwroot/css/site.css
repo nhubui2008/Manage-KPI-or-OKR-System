@@ -2070,28 +2070,28 @@ select.form-select.w-auto {
     height: 38px !important;
 }
 
-/* 9. Fixed width for Dashboard period select */
-.dashboard-period-select {
+/* 9. Fixed width for shared page filter selects */
+.page-filter-select {
     width: 320px !important;
     min-width: 320px;
     max-width: 320px;
 }
 
-.dashboard-period-select + .select2-container {
+.page-filter-select + .select2-container {
     width: 320px !important;
     min-width: 320px;
     max-width: 320px;
 }
 
-.dashboard-period-select + .select2-container .select2-selection--single .select2-selection__rendered {
+.page-filter-select + .select2-container .select2-selection--single .select2-selection__rendered {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 @media (max-width: 575.98px) {
-    .dashboard-period-select,
-    .dashboard-period-select + .select2-container {
+    .page-filter-select,
+    .page-filter-select + .select2-container {
         width: 100% !important;
         min-width: 0;
         max-width: 100%;

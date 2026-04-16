@@ -32,10 +32,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .OrderByDescending(m => m.TargetYear)
                 .ToList();
 
-            var availableYears = yearlyGoals.Select(m => m.TargetYear).Distinct().OrderByDescending(y => y).ToList();
+            var availableYears = yearlyGoals
+                .Where(m => m.TargetYear.HasValue)
+                .Select(m => m.TargetYear!.Value)
+                .Distinct()
+                .OrderByDescending(y => y)
+                .ToList();
 
-            int selectedYear = year ?? (availableYears.FirstOrDefault() ?? DateTime.Now.Year);
-            var currentYearGoals = yearlyGoals.Where(m => m.TargetYear == selectedYear).ToList();
+            int? selectedYear = year.HasValue && availableYears.Contains(year.Value)
+                ? year.Value
+                : null;
+            var currentYearGoals = selectedYear.HasValue
+                ? yearlyGoals.Where(m => m.TargetYear == selectedYear.Value).ToList()
+                : yearlyGoals;
 
             ViewBag.LongTermStatements = longTermStatements;
             ViewBag.SelectedYear = selectedYear;
