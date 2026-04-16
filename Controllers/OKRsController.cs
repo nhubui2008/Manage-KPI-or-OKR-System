@@ -133,10 +133,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (User.IsInRole("Employee") || User.IsInRole("employee"))
                 return Forbid();
 
-            ViewBag.Missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
-            ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
-            ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
-            ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
+            await PopulateOkrCreateListsAsync();
 
             return View();
         }
@@ -151,6 +148,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (ModelState.IsValid)
             {
+                departmentId = await ResolveDepartmentIdFromEmployeeAsync(employeeId, departmentId);
+
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(userIdStr, out int userId))
                 {
@@ -190,10 +189,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return RedirectToAction(nameof(Index));
             }
             
-            ViewBag.Missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
-            ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
-            ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
-            ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
+            await PopulateOkrCreateListsAsync();
             
             return View(model);
         }
@@ -584,6 +580,53 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Where(e => e.IsActive == true)
                 .ToListAsync();
             ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
+        }
+
+        private async Task PopulateOkrCreateListsAsync()
+        {
+            ViewBag.Missions = await _context.MissionVisions
+                .Where(m => m.IsActive == true)
+                .ToListAsync();
+            ViewBag.Departments = await _context.Departments
+                .Where(d => d.IsActive == true)
+                .ToListAsync();
+            ViewBag.Employees = await _context.Employees
+                .Where(e => e.IsActive == true)
+                .ToListAsync();
+            ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
+            ViewBag.EmployeeDepartmentMap = await GetActiveEmployeeDepartmentMapAsync();
+        }
+
+        private async Task<int?> ResolveDepartmentIdFromEmployeeAsync(int? employeeId, int? currentDepartmentId)
+        {
+            if (!employeeId.HasValue)
+            {
+                return currentDepartmentId;
+            }
+
+            var employeeDepartmentMap = await GetActiveEmployeeDepartmentMapAsync();
+            return employeeDepartmentMap.TryGetValue(employeeId.Value, out var employeeDepartmentId)
+                ? employeeDepartmentId
+                : currentDepartmentId;
+        }
+
+        private async Task<Dictionary<int, int>> GetActiveEmployeeDepartmentMapAsync()
+        {
+            var assignments = await _context.EmployeeAssignments
+                .AsNoTracking()
+                .Where(a => a.IsActive == true && a.EmployeeId.HasValue && a.DepartmentId.HasValue)
+                .OrderByDescending(a => a.EffectiveDate ?? DateTime.MinValue)
+                .ThenByDescending(a => a.Id)
+                .Select(a => new
+                {
+                    EmployeeId = a.EmployeeId!.Value,
+                    DepartmentId = a.DepartmentId!.Value
+                })
+                .ToListAsync();
+
+            return assignments
+                .GroupBy(a => a.EmployeeId)
+                .ToDictionary(g => g.Key, g => g.First().DepartmentId);
         }
 
         private bool IsRestrictedOkrRole()

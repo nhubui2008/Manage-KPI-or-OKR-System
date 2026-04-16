@@ -30,7 +30,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 query = query.Where(l => 
                     (l.ActionType != null && l.ActionType.Contains(searchString)) ||
                     (l.ImpactedTable != null && l.ImpactedTable.Contains(searchString)) ||
-                    (l.SystemUser != null && l.SystemUser.Username != null && l.SystemUser.Username.Contains(searchString))
+                    (l.SystemUser != null && l.SystemUser.Username != null && l.SystemUser.Username.Contains(searchString)) ||
+                    (l.OldData != null && l.OldData.Contains(searchString)) ||
+                    (l.NewData != null && l.NewData.Contains(searchString))
                 );
             }
 

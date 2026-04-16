@@ -29,8 +29,9 @@
                 <div class="row g-4">
                     <!-- Thông tin cơ bản -->
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">Tên đăng nhập <span class="text-muted fw-normal">(Không thể sửa)</span></label>
-                        <input asp-for="Username" class="form-control bg-light" readonly />
+                        <label asp-for="Username" class="form-label fw-semibold">Tên đăng nhập <span class="text-danger">*</span></label>
+                        <input asp-for="Username" class="form-control" required maxlength="50" />
+                        <span asp-validation-for="Username" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-6">

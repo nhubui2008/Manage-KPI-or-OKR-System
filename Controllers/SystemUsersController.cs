@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -59,8 +60,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var user = await _context.SystemUsers.FindAsync(userId);
             if (user != null)
             {
+                var oldData = new
+                {
+                    user.Id,
+                    user.Username,
+                    user.RoleId
+                };
+
                 user.RoleId = roleId;
                 await _context.SaveChangesAsync();
+                await LogSystemUserAuditAsync("UPDATE", oldData, new
+                {
+                    user.Id,
+                    user.Username,
+                    user.RoleId
+                });
+
                 TempData["SuccessMessage"] = $"Đã cập nhật phân quyền cho tài khoản {user.Username}!";
             }
             return RedirectToAction(nameof(Index));
@@ -80,8 +95,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var user = await _context.SystemUsers.FindAsync(userId);
             if (user != null)
             {
+                var oldData = new
+                {
+                    user.Id,
+                    user.Username,
+                    user.IsActive
+                };
+
                 user.IsActive = !(user.IsActive ?? true);
                 await _context.SaveChangesAsync();
+                await LogSystemUserAuditAsync("UPDATE", oldData, new
+                {
+                    user.Id,
+                    user.Username,
+                    user.IsActive
+                });
+
                 TempData["SuccessMessage"] = user.IsActive == true ? $"Đã mở khóa tài khoản {user.Username}." : $"Đã khóa tài khoản {user.Username}.";
             }
             return RedirectToAction(nameof(Index));
@@ -104,9 +133,24 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var user = await _context.SystemUsers.FindAsync(userId);
             if (user != null && !string.IsNullOrEmpty(newPassword))
             {
+                var oldLastPasswordChange = user.LastPasswordChange;
                 user.PasswordHash = PasswordHelper.HashPassword(newPassword);
                 user.LastPasswordChange = DateTime.Now;
                 await _context.SaveChangesAsync();
+                await LogSystemUserAuditAsync("UPDATE", new
+                {
+                    user.Id,
+                    user.Username,
+                    PasswordChanged = false,
+                    LastPasswordChange = oldLastPasswordChange
+                }, new
+                {
+                    user.Id,
+                    user.Username,
+                    PasswordChanged = true,
+                    user.LastPasswordChange
+                });
+
                 TempData["SuccessMessage"] = $"Đã làm mới mật khẩu cho tài khoản {user.Username}.";
             }
             return RedirectToAction(nameof(Index));
@@ -148,6 +192,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
                 _context.Add(user);
                 await _context.SaveChangesAsync();
+                await LogSystemUserAuditAsync("CREATE", null, new
+                {
+                    user.Id,
+                    user.Username,
+                    user.Email,
+                    user.RoleId,
+                    user.IsActive
+                });
+
                 TempData["SuccessMessage"] = $"Đã tạo tài khoản {user.Username} thành công!";
                 return RedirectToAction(nameof(Index));
             }
@@ -179,6 +232,23 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var existingUser = await _context.SystemUsers.FindAsync(id);
                 if (existingUser != null)
                 {
+                    user.Username = user.Username?.Trim();
+                    user.Email = user.Email?.Trim();
+
+                    if (string.IsNullOrWhiteSpace(user.Username))
+                    {
+                        ModelState.AddModelError(nameof(user.Username), "Tên đăng nhập không được để trống.");
+                        ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+                        return View(user);
+                    }
+
+                    if (await _context.SystemUsers.AnyAsync(u => u.Id != id && u.Username == user.Username))
+                    {
+                        ModelState.AddModelError(nameof(user.Username), "Tên đăng nhập đã tồn tại.");
+                        ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+                        return View(user);
+                    }
+
                     if (!string.IsNullOrWhiteSpace(user.Email) &&
                         await _context.SystemUsers.AnyAsync(u => u.Id != id && u.Email == user.Email))
                     {
@@ -187,18 +257,41 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         return View(user);
                     }
 
+                    var oldData = new
+                    {
+                        existingUser.Id,
+                        existingUser.Username,
+                        existingUser.Email,
+                        existingUser.RoleId,
+                        existingUser.IsActive,
+                        PasswordChanged = false
+                    };
+
+                    existingUser.Username = user.Username;
                     existingUser.Email = user.Email;
                     existingUser.RoleId = user.RoleId;
                     existingUser.IsActive = user.IsActive;
 
+                    var passwordChanged = false;
                     if (!string.IsNullOrEmpty(newPassword))
                     {
                         existingUser.PasswordHash = PasswordHelper.HashPassword(newPassword);
                         existingUser.LastPasswordChange = DateTime.Now;
+                        passwordChanged = true;
                     }
                     
                     _context.Update(existingUser);
                     await _context.SaveChangesAsync();
+                    await LogSystemUserAuditAsync("UPDATE", oldData, new
+                    {
+                        existingUser.Id,
+                        existingUser.Username,
+                        existingUser.Email,
+                        existingUser.RoleId,
+                        existingUser.IsActive,
+                        PasswordChanged = passwordChanged
+                    });
+
                     TempData["SuccessMessage"] = $"Đã cập nhật tài khoản {existingUser.Username} thành công!";
                     return RedirectToAction(nameof(Index));
                 }
@@ -236,19 +329,62 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("SYSUSERS_DELETE")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(currentUserIdStr, out int currentUserId) && currentUserId == id)
+            {
+                TempData["ErrorMessage"] = "Bạn không thể xóa tài khoản đang đăng nhập.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var user = await _context.SystemUsers.FindAsync(id);
             if (user != null)
             {
+                var oldData = new
+                {
+                    user.Id,
+                    user.Username,
+                    user.Email,
+                    user.RoleId,
+                    user.IsActive
+                };
+
                 try {
                     _context.SystemUsers.Remove(user);
                     await _context.SaveChangesAsync();
+                    await LogSystemUserAuditAsync("DELETE", oldData, new
+                    {
+                        user.Id,
+                        Deleted = true
+                    });
+
                     TempData["SuccessMessage"] = $"Đã xóa vĩnh viễn tài khoản {user.Username}.";
                 }
                 catch (Exception) {
-                    TempData["SuccessMessage"] = $"Lỗi: Tài khoản {user.Username} đã có dữ liệu liên kết, không thể xóa cứng. Hãy dùng tùy chọn Vô hiệu hóa (Khóa) thay vì xóa.";
+                    TempData["ErrorMessage"] = $"Lỗi: Tài khoản {user.Username} đã có dữ liệu liên kết, không thể xóa cứng. Hãy dùng tùy chọn Vô hiệu hóa (Khóa) thay vì xóa.";
                 }
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task LogSystemUserAuditAsync(string actionType, object? oldData, object? newData)
+        {
+            var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(currentUserIdStr, out int currentUserId))
+            {
+                return;
+            }
+
+            _context.AuditLogs.Add(new AuditLog
+            {
+                SystemUserId = currentUserId,
+                ActionType = actionType,
+                ImpactedTable = "SystemUsers",
+                OldData = oldData == null ? null : JsonSerializer.Serialize(oldData),
+                NewData = newData == null ? null : JsonSerializer.Serialize(newData),
+                LogTime = DateTime.Now
+            });
+
+            await _context.SaveChangesAsync();
         }
     }
 }

@@ -351,7 +351,7 @@
                     <span id="krOkrNameDisplay" class="text-truncate">Objective: </span>
                 </div>
 
-                <form asp-controller="OKRs" asp-action="AddKeyResult" method="post" data-measurement-scope>
+                <form asp-controller="OKRs" asp-action="AddKeyResult" method="post" id="addKrForm" data-measurement-scope>
                     <input type="hidden" name="OKRId" id="krOkrId" />
                     
                     <div class="form-icon-group">
@@ -390,13 +390,13 @@
                         </div>
                     </div>
 
-                    <div class="form-switch-premium">
+                    <label class="form-switch-premium" for="isInverseCheck">
                         <div class="label-content">
                             <span class="label-title">Chỉ tiêu thu nhỏ</span>
                             <span class="label-desc">Kích hoạt nếu giá trị càng thấp càng tốt</span>
                         </div>
-                        <input class="form-check-input" type="checkbox" name="IsInverse" value="true" id="isInverseCheck">
-                    </div>
+                        <input class="form-check-input" type="checkbox" name="IsInverse" value="true" id="isInverseCheck" role="switch">
+                    </label>
 
                     <div class="d-flex justify-content-end gap-3 mt-4">
                         <button type="button" class="btn-outline-custom px-4" data-bs-dismiss="modal">Hủy bỏ</button>
@@ -593,8 +593,19 @@
 @section Scripts {
     <script>
         function openAddKrModal(okrId, okrName) {
+            const addKrForm = document.getElementById('addKrForm');
+            if (addKrForm) {
+                addKrForm.reset();
+            }
+
             document.getElementById('krOkrId').value = okrId;
             document.getElementById('krOkrNameDisplay').innerText = 'Objective: ' + okrName;
+            document.getElementById('isInverseCheck').checked = false;
+
+            if (window.applyMeasurementUnitBehavior) {
+                window.applyMeasurementUnitBehavior(document.getElementById('addKrModal'));
+            }
+
             var modal = new bootstrap.Modal(document.getElementById('addKrModal'));
             modal.show();
         }
