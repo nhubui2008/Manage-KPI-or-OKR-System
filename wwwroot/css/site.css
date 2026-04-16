@@ -2868,6 +2868,45 @@ html.sidebar-expanded .main-content {
     z-index: 1086;
 }
 
+/* ============================================================
+   FIX: Ngăn flickering khi di chuột vào modal (Phân bổ OKR, …)
+   Khi body có class modal-open (Bootstrap thêm tự động khi modal mở),
+   tắt pointer-events trên accordion-button và các nút action bên dưới
+   để backdrop modal có thể chặn sự kiện hover hoàn toàn.
+   ============================================================ */
+body.modal-open .accordion-button,
+body.modal-open .accordion-button:hover,
+body.modal-open .accordion-button:focus {
+    pointer-events: none !important;
+    background-color: white !important;
+    box-shadow: none !important;
+}
+
+body.modal-open .okr-action-dropdown {
+    pointer-events: none !important;
+}
+
+body.modal-open .accordion-item {
+    pointer-events: none !important;
+}
+
+/* Nhưng chính modal thì vẫn hoạt động bình thường */
+body.modal-open .modal,
+body.modal-open .modal * {
+    pointer-events: auto !important;
+}
+
+/* Ép z-index dropdown OKR xuống dưới modal-backdrop (1040)
+   để dropdown không bao giờ đè lên modal — lớp bảo vệ thứ 2 */
+body.modal-open .okr-action-dropdown,
+body.modal-open .okr-action-dropdown .dropdown-menu,
+body.modal-open .okr-index-page .okr-action-dropdown.show,
+body.modal-open .okr-index-page .okr-action-dropdown .dropdown-menu {
+    z-index: 1 !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
 /* --- GLOBAL: REMOVE ALL TEXT UNDERLINES --- */
 * {
     text-decoration: none !important;

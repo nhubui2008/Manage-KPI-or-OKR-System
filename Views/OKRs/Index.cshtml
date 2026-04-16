@@ -592,7 +592,21 @@
 
 @section Scripts {
     <script>
+        // Đóng tất cả dropdown OKR đang mở (tránh dropdown đè lên modal)
+        function closeAllOkrDropdowns() {
+            document.querySelectorAll('.okr-index-page .okr-action-dropdown [data-bs-toggle="dropdown"]').forEach(function (toggleEl) {
+                var dd = bootstrap.Dropdown.getInstance(toggleEl);
+                if (dd) dd.hide();
+            });
+            // Reset z-index layering
+            document.querySelectorAll('.okr-index-page #accordionOKRs .accordion-item').forEach(function (el) {
+                el.classList.remove('okr-dropdown-open');
+            });
+        }
+
         function openAddKrModal(okrId, okrName) {
+            closeAllOkrDropdowns();
+
             const addKrForm = document.getElementById('addKrForm');
             if (addKrForm) {
                 addKrForm.reset();
@@ -611,6 +625,8 @@
         }
 
         function openAllocateModal(okrId) {
+            closeAllOkrDropdowns();
+
             document.getElementById('allocOkrId').value = okrId;
             document.getElementById('allocDeptOkrId').value = okrId;
             var modal = new bootstrap.Modal(document.getElementById('allocateOkrModal'));
