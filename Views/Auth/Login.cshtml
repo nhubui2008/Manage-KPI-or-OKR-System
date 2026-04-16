@@ -1,5 +1,6 @@
 @{
     ViewData["Title"] = "Đăng nhập";
+    ViewData["IsLoginPage"] = true;
 }
 <link rel="stylesheet" href="~/css/login.css" />
 
@@ -8,7 +9,7 @@
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style="vertical-align:middle;">
             <path d="M12.5 17L7.5 12L12.5 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        Về trang quản lý
+        Về trang chủ
     </a>
 </nav>
 
@@ -19,7 +20,6 @@
         <div class="soft-blob blob-3"></div>
         <div class="soft-blob blob-4"></div>
     </div>
-</div>
 </div>
 <script src="~/js/login.js"></script>
 
@@ -39,8 +39,8 @@
                     <div class="gentle-glow"></div>
                 </div>
             </div>
-            <h1 class="comfort-title">Welcome back</h1>
-            <p class="gentle-subtitle">Sign in to your peaceful space</p>
+            <h1 class="comfort-title">Đăng nhập</h1>
+            <p class="gentle-subtitle">Hệ thống Quản lý KPI & OKR</p>
         </div>
         @if (TempData["SuccessMessage"] != null)
         {
@@ -104,7 +104,7 @@
                     {
                         <input type="text" id="username" name="username" required autocomplete="username" placeholder=" " value="@ViewBag.Username" />
                     }
-                    <label for="username">Username</label>
+                    <label for="username">Tên đăng nhập</label>
                     <div class="field-accent"></div>
                 </div>
                 <span class="gentle-error" id="usernameError"></span>
@@ -113,7 +113,7 @@
             <div class="soft-field">
                 <div class="field-container">
                     <input type="password" id="password" name="password" required autocomplete="current-password" placeholder=" " />
-                    <label for="password">Password</label>
+                    <label for="password">Mật khẩu</label>
                     <button type="button" class="gentle-toggle" id="passwordToggle" aria-label="Toggle password visibility">
                         <div class="toggle-icon">
                             <svg class="eye-open" width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -147,15 +147,15 @@
                                 <path d="M1 5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </span>
-                        <span class="checkbox-text">Remember me</span>
+                        <span class="checkbox-text">Ghi nhớ đăng nhập</span>
                     </label>
                 }
-                <a asp-controller="Auth" asp-action="ForgotPassword" class="comfort-link">Forgot password?</a>
+                <a asp-controller="Auth" asp-action="ForgotPassword" class="comfort-link">Quên mật khẩu?</a>
             </div>
 
             <button type="submit" class="comfort-button">
                 <div class="button-background"></div>
-                <span class="button-text">Sign in</span>
+                <span class="button-text">Đăng nhập</span>
 
                 <div class="button-glow"></div>
             </button>
@@ -163,7 +163,7 @@
 
         <div class="gentle-divider">
             <div class="divider-line"></div>
-            <span class="divider-text">or continue with</span>
+            <span class="divider-text">Hoặc tiếp tục với</span>
             <div class="divider-line"></div>
         </div>
 
@@ -183,8 +183,8 @@
         </div>
 
         <div class="comfort-signup">
-            <span class="signup-text">Don't have an account?</span>
-            <a href="/Auth/Register" class="comfort-link signup-link">Sign up</a>
+            <span class="signup-text">Bạn chưa có tài khoản?</span>
+            <a href="/Auth/Register" class="comfort-link signup-link">Đăng ký ngay</a>
         </div>
     </div>
 </div>

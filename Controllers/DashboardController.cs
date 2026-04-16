@@ -34,10 +34,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             ViewBag.AllPeriods = allPeriods;
 
-            // Nếu không chọn kỳ nào, lấy kỳ đánh giá gần nhất
+            // Chỉ chọn kỳ khi query có periodId; mặc định giữ trạng thái "Tất cả"
             var selectedPeriod = periodId.HasValue
                 ? allPeriods.FirstOrDefault(p => p.Id == periodId.Value)
-                : allPeriods.FirstOrDefault();
+                : null;
 
             ViewBag.SelectedPeriod = selectedPeriod;
 
