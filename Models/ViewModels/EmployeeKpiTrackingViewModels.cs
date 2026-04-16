@@ -11,6 +11,10 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
 
     public class EmployeeKpiTrackingRow
     {
+        public int EmployeeId { get; set; }
+        public string EmployeeName { get; set; } = string.Empty;
+        public string EmployeeCode { get; set; } = string.Empty;
+        public string DepartmentNames { get; set; } = string.Empty;
         public int KpiId { get; set; }
         public string KpiName { get; set; } = string.Empty;
         public decimal TargetValue { get; set; }

@@ -202,10 +202,45 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var selectedEmployeeId = employeeId.HasValue && employees.Any(e => e.EmployeeId == employeeId.Value)
                 ? employeeId.Value
-                : employees.First().EmployeeId;
+                : (int?)null;
 
-            var selectedEmployee = employees.First(e => e.EmployeeId == selectedEmployeeId);
-            var rows = await BuildEmployeeKpiTrackingRowsAsync(selectedEmployeeId);
+            var selectedEmployee = selectedEmployeeId.HasValue
+                ? employees.First(e => e.EmployeeId == selectedEmployeeId.Value)
+                : null;
+
+            var rows = new List<EmployeeKpiTrackingRow>();
+            if (selectedEmployee != null)
+            {
+                rows = await BuildEmployeeKpiTrackingRowsAsync(selectedEmployee.EmployeeId);
+                foreach (var row in rows)
+                {
+                    row.EmployeeId = selectedEmployee.EmployeeId;
+                    row.EmployeeName = selectedEmployee.EmployeeName;
+                    row.EmployeeCode = selectedEmployee.EmployeeCode;
+                    row.DepartmentNames = selectedEmployee.DepartmentNames;
+                }
+            }
+            else
+            {
+                foreach (var employee in employees)
+                {
+                    var employeeRows = await BuildEmployeeKpiTrackingRowsAsync(employee.EmployeeId);
+                    foreach (var row in employeeRows)
+                    {
+                        row.EmployeeId = employee.EmployeeId;
+                        row.EmployeeName = employee.EmployeeName;
+                        row.EmployeeCode = employee.EmployeeCode;
+                        row.DepartmentNames = employee.DepartmentNames;
+                    }
+
+                    rows.AddRange(employeeRows);
+                }
+
+                rows = rows
+                    .OrderBy(r => r.EmployeeName)
+                    .ThenBy(r => r.KpiName)
+                    .ToList();
+            }
 
             ViewBag.Employees = employees;
             ViewBag.SelectedEmployee = selectedEmployee;
