@@ -1693,6 +1693,8 @@ html.sidebar-expanded .main-content {
     justify-content: space-between;
     margin-bottom: 28px;
     transition: all var(--transition-fast);
+    cursor: pointer;
+    user-select: none;
 }
 
 .form-switch-premium:hover {
@@ -1705,12 +1707,18 @@ html.sidebar-expanded .main-content {
     height: 1.6rem;
     margin-top: 0;
     cursor: pointer;
+    flex-shrink: 0;
+    border-radius: 999px;
+    background-position: left center;
+    background-size: contain;
+    transition: background-position var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(0,0,0,0.25)'/%3e%3c/svg%3e");
 }
 
 .form-switch-premium .form-check-input:checked {
     background-color: var(--primary);
     border-color: var(--primary);
+    background-position: right center;
 }
 
 .form-switch-premium .label-content {

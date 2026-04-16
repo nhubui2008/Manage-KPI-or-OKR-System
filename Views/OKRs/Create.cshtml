@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Khởi tạo OKR";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var employeeDepartmentMap = ViewBag.EmployeeDepartmentMap as Dictionary<int, int> ?? new Dictionary<int, int>();
 }
 
 <div class="page-content py-4 container-fluid px-4">
@@ -136,7 +137,7 @@
                                         <label class="form-label small text-muted text-uppercase fw-800">Phòng ban phụ trách</label>
                                         <div class="input-wrapper">
                                             <i class="bi bi-building"></i>
-                                            <select name="departmentId" class="form-select shadow-sm border-0">
+                                            <select name="departmentId" id="departmentId" class="form-select shadow-sm border-0">
                                                 <option value="">-- Áp dụng cho toàn tổ chức hoặc cá nhân --</option>
                                                 @if (ViewBag.Departments != null)
                                                 {
@@ -155,13 +156,14 @@
                                         <label class="form-label small text-muted text-uppercase fw-800">Nhân viên chịu trách nhiệm</label>
                                         <div class="input-wrapper">
                                             <i class="bi bi-person-check"></i>
-                                            <select name="employeeId" class="form-select shadow-sm border-0">
+                                            <select name="employeeId" id="employeeId" class="form-select shadow-sm border-0">
                                                 <option value="">-- Không phân bổ cá nhân --</option>
                                                 @if (ViewBag.Employees != null)
                                                 {
                                                     foreach (var e in (ViewBag.Employees as IEnumerable<Manage_KPI_or_OKR_System.Models.Employee>)!)
                                                     {
-                                                        <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                                        var employeeDepartmentId = employeeDepartmentMap.TryGetValue(e.Id, out var mappedDepartmentId) ? mappedDepartmentId.ToString() : "";
+                                                        <option value="@e.Id" data-department-id="@employeeDepartmentId">@e.FullName (@e.EmployeeCode)</option>
                                                     }
                                                 }
                                             </select>
@@ -520,4 +522,82 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const departmentSelect = document.getElementById('departmentId');
+            const employeeSelect = document.getElementById('employeeId');
+
+            if (!departmentSelect || !employeeSelect) {
+                return;
+            }
+
+            let syncingSelects = false;
+            const employeeOptions = Array.from(employeeSelect.options).map(option => ({
+                value: option.value,
+                text: option.text,
+                departmentId: option.dataset.departmentId || ''
+            }));
+
+            function refreshSelect(select) {
+                if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2 && window.jQuery(select).hasClass('select2-hidden-accessible')) {
+                    window.jQuery(select).trigger('change.select2');
+                }
+            }
+
+            function renderEmployeeOptions(selectedDepartmentId, requestedEmployeeId) {
+                const selectedEmployeeId = requestedEmployeeId ?? employeeSelect.value;
+                const allowedOptions = employeeOptions.filter(option =>
+                    option.value === '' || !selectedDepartmentId || option.departmentId === selectedDepartmentId
+                );
+                const selectedStillVisible = allowedOptions.some(option => option.value === selectedEmployeeId);
+
+                employeeSelect.innerHTML = '';
+                allowedOptions.forEach(optionData => {
+                    const option = new Option(optionData.text, optionData.value);
+                    option.dataset.departmentId = optionData.departmentId;
+                    employeeSelect.add(option);
+                });
+
+                employeeSelect.value = selectedStillVisible ? selectedEmployeeId : '';
+                refreshSelect(employeeSelect);
+            }
+
+            function setDepartmentValue(departmentId) {
+                if (!departmentId || departmentSelect.value === departmentId) {
+                    return;
+                }
+
+                departmentSelect.value = departmentId;
+                refreshSelect(departmentSelect);
+            }
+
+            departmentSelect.addEventListener('change', function () {
+                if (syncingSelects) {
+                    return;
+                }
+
+                syncingSelects = true;
+                renderEmployeeOptions(departmentSelect.value);
+                syncingSelects = false;
+            });
+
+            employeeSelect.addEventListener('change', function () {
+                if (syncingSelects) {
+                    return;
+                }
+
+                const selectedEmployee = employeeOptions.find(option => option.value === employeeSelect.value);
+                if (!selectedEmployee || !selectedEmployee.departmentId) {
+                    return;
+                }
+
+                syncingSelects = true;
+                setDepartmentValue(selectedEmployee.departmentId);
+                renderEmployeeOptions(selectedEmployee.departmentId, selectedEmployee.value);
+                syncingSelects = false;
+            });
+
+            renderEmployeeOptions(departmentSelect.value);
+        });
+    </script>
 }
