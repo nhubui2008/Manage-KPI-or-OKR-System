@@ -154,7 +154,7 @@
 
                                         @if (canCreateOkr || canEditOkr || canDeleteOkr)
                                         {
-                                            <div class="action-btns dropdown position-absolute" style="right: 50px; top: 50%; transform: translateY(-50%); z-index: 10;" onclick="event.stopPropagation();">
+                                            <div class="action-btns dropdown position-absolute okr-action-dropdown" style="right: 50px; top: 50%; transform: translateY(-50%);" onclick="event.stopPropagation();">
                                                 <button type="button" class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
                                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                                                     @if (canEditOkr)
@@ -665,6 +665,54 @@
                     button.dataset.krCurrent || '0',
                     button.dataset.krUnit || ''
                 );
+            });
+        });
+
+        function hideOtherOkrDropdowns(currentToggleEl) {
+            document.querySelectorAll('.okr-index-page .okr-action-dropdown [data-bs-toggle="dropdown"]').forEach(toggleEl => {
+                if (toggleEl !== currentToggleEl) {
+                    bootstrap.Dropdown.getOrCreateInstance(toggleEl).hide();
+                }
+            });
+        }
+
+        function getOpenOkrDropdown() {
+            return Array.from(document.querySelectorAll('.okr-index-page .okr-action-dropdown'))
+                .find(dropdownEl => dropdownEl.querySelector('.dropdown-menu.show'));
+        }
+
+        function syncOkrDropdownLayering(activeDropdownEl = null) {
+            const openDropdownEl = activeDropdownEl || getOpenOkrDropdown();
+
+            document.querySelectorAll('.okr-index-page #accordionOKRs .accordion-item').forEach(accordionItemEl => {
+                accordionItemEl.classList.toggle(
+                    'okr-dropdown-open',
+                    openDropdownEl !== null && accordionItemEl.contains(openDropdownEl)
+                );
+            });
+        }
+
+        document.querySelectorAll('.okr-index-page .okr-action-dropdown').forEach(dropdownEl => {
+            const toggleEl = dropdownEl.querySelector('[data-bs-toggle="dropdown"]');
+            if (!toggleEl) {
+                return;
+            }
+
+            toggleEl.addEventListener('click', () => {
+                hideOtherOkrDropdowns(toggleEl);
+            });
+
+            dropdownEl.addEventListener('show.bs.dropdown', () => {
+                hideOtherOkrDropdowns(toggleEl);
+                syncOkrDropdownLayering(dropdownEl);
+            });
+
+            dropdownEl.addEventListener('shown.bs.dropdown', () => {
+                syncOkrDropdownLayering(dropdownEl);
+            });
+
+            dropdownEl.addEventListener('hidden.bs.dropdown', () => {
+                syncOkrDropdownLayering();
             });
         });
 

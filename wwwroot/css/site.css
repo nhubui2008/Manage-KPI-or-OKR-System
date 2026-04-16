@@ -1849,6 +1849,27 @@ html.sidebar-expanded .main-content {
     border-color: rgba(26, 115, 232, 0.28) !important;
 }
 
+.okr-index-page #accordionOKRs .accordion-item {
+    position: relative;
+    z-index: 1;
+}
+
+.okr-index-page #accordionOKRs .accordion-item.okr-dropdown-open {
+    z-index: 1080;
+}
+
+.okr-index-page .okr-action-dropdown {
+    z-index: 2;
+}
+
+.okr-index-page .okr-action-dropdown.show {
+    z-index: 1085;
+}
+
+.okr-index-page .okr-action-dropdown .dropdown-menu {
+    z-index: 1086;
+}
+
 /* --- GLOBAL: REMOVE ALL TEXT UNDERLINES --- */
 * {
     text-decoration: none !important;
