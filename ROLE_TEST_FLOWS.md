@@ -193,7 +193,7 @@ Test@123
 
 ## 8. Luồng Employee
 
-Đăng nhập bằng `employee`.
+Đăng nhập bằng `test_employee`.
 
 ### Kỳ vọng được phép
 
@@ -224,7 +224,7 @@ Test@123
 
 ## 9. Luồng Sales
 
-Đăng nhập bằng `sales`.
+Đăng nhập bằng `test_sales`.
 
 Sales không có trong seed role gốc, nhưng code có nhánh xử lý `Sales` như nhóm employee-like. Script đã tạo role này để test.
 

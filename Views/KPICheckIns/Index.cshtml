@@ -7,15 +7,30 @@
     var detailsDict = ViewBag.Details as Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail>();
     var employeesDict = ViewBag.Employees as Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>();
     var kpisDict = ViewBag.KPIs as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI>();
+    var statusesDict = ViewBag.CheckInStatuses as Dictionary<int, string> ?? new Dictionary<int, string>();
     var commentsByCheckIn = ViewBag.CheckInComments as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.GoalComment>> ?? new Dictionary<int, List<Manage_KPI_or_OKR_System.Models.GoalComment>>();
     bool canReviewCheckIns = ViewBag.CanReviewCheckIns == true;
     string returnUrl = ViewBag.ReturnUrl as string ?? "/KPICheckIns";
     var failReasonsDict = (ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>()).ToDictionary(r => r.Id, r => r.ReasonName ?? "Chưa rõ");
     var kpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
+    var kpiPeriods = ViewBag.KPIPeriods as Dictionary<int, Manage_KPI_or_OKR_System.Models.EvaluationPeriod> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.EvaluationPeriod>();
+    var kpisForSchedule = (ViewBag.AllKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new List<Manage_KPI_or_OKR_System.Models.KPI>())
+        .Concat(kpisDict.Values)
+        .GroupBy(k => k.Id)
+        .ToDictionary(g => g.Key, g => g.First());
     var kpiDataJson = JsonSerializer.Serialize(kpiData.ToDictionary(k => k.Key, v => new {
         target = v.Value.TargetValue,
         unit = v.Value.MeasurementUnit,
-        isInverse = v.Value.IsInverse
+        isInverse = v.Value.IsInverse,
+        frequencyDays = v.Value.CheckInFrequencyDays ?? 1,
+        deadlineTime = (v.Value.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0)).ToString(@"hh\:mm"),
+        reminderBeforeHours = v.Value.ReminderBeforeHours ?? 24,
+        periodStart = kpisForSchedule.ContainsKey(v.Key) && kpisForSchedule[v.Key].PeriodId.HasValue && kpiPeriods.ContainsKey(kpisForSchedule[v.Key].PeriodId!.Value)
+            ? kpiPeriods[kpisForSchedule[v.Key].PeriodId!.Value].StartDate
+            : null,
+        periodEnd = kpisForSchedule.ContainsKey(v.Key) && kpisForSchedule[v.Key].PeriodId.HasValue && kpiPeriods.ContainsKey(kpisForSchedule[v.Key].PeriodId!.Value)
+            ? kpiPeriods[kpisForSchedule[v.Key].PeriodId!.Value].EndDate
+            : null
     }));
 
     int inTimeCount = Model.Count(c => c.StatusId == 1 || c.StatusId == null);
@@ -115,6 +130,7 @@
                                 <th class="ps-4 fw-medium border-0">Người cập nhật</th>
                                 <th class="fw-medium border-0">Thực tế KPI</th>
                                 <th class="fw-medium border-0">Ngày Checkin</th>
+                                <th class="fw-medium border-0">Deadline</th>
                                 <th class="fw-medium border-0">Lý do chưa đạt</th>
                                 <th class="fw-medium border-0">Tiến độ</th>
                                 <th class="fw-medium border-0">Xác nhận</th>
@@ -162,6 +178,17 @@
                                             <div class="text-muted" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i> @(ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</div>
                                         </td>
                                         <td class="py-3 border-bottom-0">
+                                            <div class="fw-semibold @(ci.IsLate == true ? "text-danger" : "text-success")" style="font-size: 0.82rem;">
+                                                <i class="bi bi-alarm me-1"></i>@(ci.DeadlineAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa đặt")
+                                            </div>
+                                            @if (detail.ExpectedValueAtDeadline.HasValue)
+                                            {
+                                                <div class="text-muted" style="font-size: 0.72rem;">
+                                                    Cần đạt: @String.Format("{0:N0}", detail.ExpectedValueAtDeadline)
+                                                </div>
+                                            }
+                                        </td>
+                                        <td class="py-3 border-bottom-0">
                                             @if (ci.FailReasonId.HasValue && failReasonsDict.ContainsKey(ci.FailReasonId.Value))
                                             {
                                                 <div class="status-badge-soft bg-danger bg-opacity-10 text-danger border-0" style="font-size: 0.75rem; white-space: nowrap;">
@@ -177,20 +204,11 @@
                                             <div class="d-flex align-items-center justify-content-between mb-2">
                                                 <span class="@colorClass fw-bold" style="font-size: 0.85rem;">@progressVal%</span>
                                                 @{
-                                                    string badgeClass = ci.StatusId == 2 ? "badge-at-risk" : (ci.StatusId == 3 ? "badge-late" : "badge-on-track");
-                                                    string badgeText = ci.StatusId == 2 ? "At Risk" : (ci.StatusId == 3 ? "Late" : "On Track");
-                                                    
-                                                    // Bổ sung logic hiển thị thông minh: nếu tiến độ quá thấp mà trạng thái vẫn là On Track thì hiển thị cảnh báo
-                                                    if (progressVal < 40 && (ci.StatusId == 1 || ci.StatusId == null)) 
-                                                    { 
-                                                        badgeText = "Late"; 
-                                                        badgeClass = "badge-late"; 
-                                                    }
-                                                    else if (progressVal >= 95 && ci.StatusId != 1)
-                                                    {
-                                                        badgeText = "On Track";
-                                                        badgeClass = "badge-on-track";
-                                                    }
+                                                    var statusName = ci.StatusId.HasValue && statusesDict.ContainsKey(ci.StatusId.Value) ? statusesDict[ci.StatusId.Value] : "Đúng tiến độ";
+                                                    string badgeClass = ci.IsLate == true || statusName.Contains("Chậm") ? "badge-late" :
+                                                        statusName.Contains("Vượt") ? "badge-at-risk" : "badge-on-track";
+                                                    string badgeText = ci.IsLate == true || statusName.Contains("Chậm") ? "Late" :
+                                                        statusName.Contains("Vượt") ? "Ahead" : "On Track";
                                                 }
                                                 <span class="status-badge-soft @badgeClass" style="font-size: 0.65rem; padding: 2px 8px;">
                                                     <span class="status-dot"></span> @badgeText
@@ -428,6 +446,11 @@
                         </div>
                     </div>
 
+                    <div class="alert alert-info bg-info bg-opacity-10 border-0 rounded-3 py-2 px-3 mb-3">
+                        <div class="fw-semibold small"><i class="bi bi-alarm me-1"></i> Deadline: <span id="quickDeadlineDisplay">--</span></div>
+                        <div class="text-muted small">Mục tiêu tới hạn: <span id="quickDeadlineTargetDisplay">--</span></div>
+                    </div>
+
                     <div class="form-icon-group">
                         <label>Ghi chú / Trở ngại</label>
                         <div class="input-wrapper">
@@ -479,6 +502,39 @@
 <script>
     const quickCheckInKpiMap = @Html.Raw(kpiDataJson);
 
+    function resolveQuickDeadline(data) {
+        const now = new Date();
+        const frequencyDays = Math.max(1, parseInt(data?.frequencyDays || 1, 10));
+        const periodStart = data?.periodStart ? new Date(data.periodStart) : new Date(now);
+        const periodEnd = data?.periodEnd ? new Date(data.periodEnd) : null;
+        const startDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
+        let targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (targetDate < startDate) targetDate = startDate;
+        if (periodEnd) {
+            const endDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
+            if (targetDate > endDate) targetDate = endDate;
+        }
+        const offsetDays = Math.max(0, Math.floor((targetDate - startDate) / 86400000));
+        const due = new Date(startDate);
+        due.setDate(startDate.getDate() + Math.floor(offsetDays / frequencyDays) * frequencyDays);
+        const [hour, minute] = String(data?.deadlineTime || '10:00').split(':').map(Number);
+        due.setHours(hour || 0, minute || 0, 0, 0);
+        return due;
+    }
+
+    function calculateQuickExpected(data, deadline) {
+        const target = data?.target || 0;
+        if (!data?.periodStart || !data?.periodEnd || !target) return target;
+        const periodStart = new Date(data.periodStart);
+        const periodEnd = new Date(data.periodEnd);
+        const startDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
+        const endDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
+        const dueDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
+        const totalDays = Math.max(1, Math.floor((endDate - startDate) / 86400000) + 1);
+        const elapsedDays = Math.min(totalDays, Math.max(1, Math.floor((dueDate - startDate) / 86400000) + 1));
+        return target * (elapsedDays / totalDays);
+    }
+
     function updateQuickCheckInInput() {
         const kpiSelect = document.getElementById('quickKpiSelect');
         const achievedInput = document.getElementById('quickAchievedInput');
@@ -492,6 +548,18 @@
 
         const suffix = document.getElementById('quickAchievedUnitSuffix');
         if (suffix) suffix.textContent = config.suffix || unit || 'đơn vị';
+
+        const deadlineDisplay = document.getElementById('quickDeadlineDisplay');
+        const deadlineTargetDisplay = document.getElementById('quickDeadlineTargetDisplay');
+        if (selectedKpi && deadlineDisplay && deadlineTargetDisplay) {
+            const deadline = resolveQuickDeadline(selectedKpi);
+            const expected = calculateQuickExpected(selectedKpi, deadline);
+            deadlineDisplay.textContent = deadline.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            deadlineTargetDisplay.textContent = new Intl.NumberFormat('vi-VN').format(expected) + (unit ? ` ${unit}` : '');
+        } else {
+            if (deadlineDisplay) deadlineDisplay.textContent = '--';
+            if (deadlineTargetDisplay) deadlineTargetDisplay.textContent = '--';
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {

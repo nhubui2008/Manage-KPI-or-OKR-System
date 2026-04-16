@@ -21,7 +21,11 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public string Unit { get; set; } = string.Empty;
         public decimal? LatestAchievedValue { get; set; }
         public decimal? LatestProgress { get; set; }
+        public decimal? ExpectedValueAtDeadline { get; set; }
+        public decimal? ScheduleProgressPercentage { get; set; }
         public DateTime? LatestCheckInDate { get; set; }
+        public DateTime? LatestDeadlineAt { get; set; }
+        public bool IsLate { get; set; }
         public int? LatestCheckInId { get; set; }
         public string ReviewStatus { get; set; } = "Chưa check-in";
         public string CheckInStatus { get; set; } = "Chưa cập nhật";

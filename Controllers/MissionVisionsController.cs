@@ -49,6 +49,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.LongTermStatements = longTermStatements;
             ViewBag.SelectedYear = selectedYear;
             ViewBag.AvailableYears = availableYears;
+            ViewBag.CanCreateMission = await PermissionLookupHelper.HasPermissionAsync(_context, User, "MISSIONS_CREATE");
+            ViewBag.CanEditMission = await PermissionLookupHelper.HasPermissionAsync(_context, User, "MISSIONS_EDIT");
+            ViewBag.CanDeleteMission = await PermissionLookupHelper.HasPermissionAsync(_context, User, "MISSIONS_DELETE");
             
             return View(currentYearGoals);
         }

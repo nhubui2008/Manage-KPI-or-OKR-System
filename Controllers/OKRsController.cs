@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System;
 using System.Security.Claims;
+using Manage_KPI_or_OKR_System.Services;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -16,10 +17,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
     public class OKRsController : Controller
     {
         private readonly MiniERPDbContext _context;
+        private readonly IGeminiService _geminiService;
 
-        public OKRsController(MiniERPDbContext context)
+        public OKRsController(MiniERPDbContext context, IGeminiService geminiService)
         {
             _context = context;
+            _geminiService = geminiService;
         }
 
         [HasPermission("OKRS_VIEW")]
@@ -31,6 +34,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             int? currentEmployeeId = null;
             var allocatedOkrIds = new List<int>();
             var departmentOkrIds = new List<int>();
+            Employee? currentEmployee = null;
 
             if (!string.IsNullOrEmpty(searchString))
             {
@@ -41,23 +45,23 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (int.TryParse(userIdStr, out int userId))
             {
-                var employee = await _context.Employees
+                currentEmployee = await _context.Employees
                     .AsNoTracking()
                     .FirstOrDefaultAsync(e => e.SystemUserId == userId && e.IsActive == true);
 
-                if (employee != null)
+                if (currentEmployee != null)
                 {
-                    currentEmployeeId = employee.Id;
+                    currentEmployeeId = currentEmployee.Id;
 
                     allocatedOkrIds = await _context.OKR_Employee_Allocations
                         .AsNoTracking()
-                        .Where(a => a.EmployeeId == employee.Id)
+                        .Where(a => a.EmployeeId == currentEmployee.Id)
                         .Select(a => a.OKRId)
                         .ToListAsync();
 
                     var departmentIds = await _context.EmployeeAssignments
                         .AsNoTracking()
-                        .Where(a => a.EmployeeId == employee.Id && a.IsActive == true && a.DepartmentId.HasValue)
+                        .Where(a => a.EmployeeId == currentEmployee.Id && a.IsActive == true && a.DepartmentId.HasValue)
                         .Select(a => a.DepartmentId!.Value)
                         .ToListAsync();
 
@@ -69,6 +73,41 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             .Select(a => a.OKRId)
                             .ToListAsync();
                     }
+                }
+            }
+
+            if (IsManagerScopedRole())
+            {
+                if (currentEmployee != null)
+                {
+                    var managedDepartmentIds = await GetManagedDepartmentIdsAsync(currentEmployee);
+                    var managedEmployeeIds = await GetEmployeeIdsInDepartmentsAsync(managedDepartmentIds);
+                    var managerDepartmentOkrIds = managedDepartmentIds.Any()
+                        ? await _context.OKR_Department_Allocations
+                            .AsNoTracking()
+                            .Where(a => managedDepartmentIds.Contains(a.DepartmentId))
+                            .Select(a => a.OKRId)
+                            .ToListAsync()
+                        : new List<int>();
+                    var managerEmployeeOkrIds = managedEmployeeIds.Any()
+                        ? await _context.OKR_Employee_Allocations
+                            .AsNoTracking()
+                            .Where(a => managedEmployeeIds.Contains(a.EmployeeId))
+                            .Select(a => a.OKRId)
+                            .ToListAsync()
+                        : new List<int>();
+                    var managerVisibleOkrIds = managerDepartmentOkrIds
+                        .Concat(managerEmployeeOkrIds)
+                        .Distinct()
+                        .ToList();
+
+                    query = query.Where(o => managerVisibleOkrIds.Contains(o.Id) || o.CreatedById == currentEmployee.Id);
+                    allocatedOkrIds = allocatedOkrIds.Concat(managerEmployeeOkrIds).Distinct().ToList();
+                    departmentOkrIds = departmentOkrIds.Concat(managerDepartmentOkrIds).Distinct().ToList();
+                }
+                else
+                {
+                    query = query.Where(o => false);
                 }
             }
 
@@ -112,15 +151,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             ViewBag.KeyResults = krDict;
-            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.CurrentEmployeeId = currentEmployeeId;
             ViewBag.AllocatedOkrIds = allocatedOkrIds;
             ViewBag.DepartmentOkrIds = departmentOkrIds;
+            ViewBag.CanCreateOkr = await PermissionLookupHelper.HasPermissionAsync(_context, User, "OKRS_CREATE");
+            ViewBag.CanEditOkr = await PermissionLookupHelper.HasPermissionAsync(_context, User, "OKRS_EDIT");
+            ViewBag.CanDeleteOkr = await PermissionLookupHelper.HasPermissionAsync(_context, User, "OKRS_DELETE");
+            ViewBag.CanUpdateOkrProgress = await PermissionLookupHelper.HasPermissionAsync(_context, User, "EMPLOYEE_UPDATE_KPI_PROGRESS");
 
             // Lấy dữ liệu danh mục cho modal Tạo OKR
+            var assignableDepartments = await GetAssignableDepartmentsAsync();
+            var assignableEmployees = await GetAssignableEmployeesAsync(assignableDepartments.Select(d => d.Id).ToList());
             ViewBag.Missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
-            ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
-            ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.Departments = assignableDepartments;
+            ViewBag.Employees = assignableEmployees;
+            ViewBag.AllEmployees = assignableEmployees;
             ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
 
             return View(paginatedOkrs);
@@ -130,7 +175,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("OKRS_CREATE")]
         public async Task<IActionResult> Create()
         {
-            if (User.IsInRole("Employee") || User.IsInRole("employee"))
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales"))
                 return Forbid();
 
             await PopulateOkrCreateListsAsync();
@@ -148,7 +194,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (ModelState.IsValid)
             {
-                departmentId = await ResolveDepartmentIdFromEmployeeAsync(employeeId, departmentId);
+                var scopeValidation = await ResolveAndValidateOkrAllocationScopeAsync(employeeId, departmentId);
+                if (!scopeValidation.IsAllowed)
+                {
+                    ModelState.AddModelError(string.Empty, "Bạn chỉ được tạo hoặc phân bổ OKR cho phòng ban mình quản lý.");
+                    await PopulateOkrCreateListsAsync();
+                    return View(model);
+                }
+
+                departmentId = scopeValidation.DepartmentId;
 
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(userIdStr, out int userId))
@@ -206,6 +260,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .AsNoTracking()
                 .FirstOrDefaultAsync(o => o.Id == id && o.IsActive == true);
             if (okr == null) return NotFound();
+            if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(id))
+            {
+                return Forbid();
+            }
 
             ViewBag.MissionId = (await _context.OKR_Mission_Mappings
                 .AsNoTracking()
@@ -229,6 +287,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 User.IsInRole("Sales") || User.IsInRole("sales"))
                 return Forbid();
 
+            var okrExists = await _context.OKRs
+                .AsNoTracking()
+                .AnyAsync(o => o.Id == model.Id && o.IsActive == true);
+            if (!okrExists) return NotFound();
+            if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(model.Id))
+            {
+                return Forbid();
+            }
+
             if (!ModelState.IsValid)
             {
                 ViewBag.MissionId = missionId;
@@ -241,6 +308,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var existingOkr = await _context.OKRs.FindAsync(model.Id);
             if (existingOkr == null || existingOkr.IsActive != true) return NotFound();
+
+            var scopeValidation = await ResolveAndValidateOkrAllocationScopeAsync(employeeId, departmentId);
+            if (!scopeValidation.IsAllowed)
+            {
+                ModelState.AddModelError(string.Empty, "Bạn chỉ được cập nhật hoặc phân bổ OKR cho phòng ban mình quản lý.");
+                ViewBag.MissionId = missionId;
+                ViewBag.DepartmentId = departmentId;
+                ViewBag.EmployeeId = employeeId;
+                await PopulateOkrEditListsAsync();
+                return View(model);
+            }
+
+            departmentId = scopeValidation.DepartmentId;
 
             existingOkr.ObjectiveName = model.ObjectiveName;
             existingOkr.OKRTypeId = model.OKRTypeId;
@@ -300,6 +380,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
+            if (!kr.OKRId.HasValue)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy OKR cần thêm KR.";
+                return RedirectToAction(nameof(Index));
+            }
+            if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(kr.OKRId.Value))
+            {
+                return Forbid();
+            }
+
             if (ModelState.IsValid)
             {
                 kr.CurrentValue = 0; // Khởi tạo tiến độ ban đầu là 0
@@ -311,6 +401,89 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 TempData["SuccessMessage"] = $"Đã thêm KR thành công! Tiến độ mục tiêu: {okr?.TotalProgress}%";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        [HasPermission("OKRS_CREATE")]
+        public async Task<IActionResult> SuggestKeyResultsAPI(int id)
+        {
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales"))
+                return Forbid();
+
+            var okr = await _context.OKRs.FindAsync(id);
+            if (okr == null) return NotFound("Không tìm thấy OKR.");
+
+            if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(id))
+            {
+                return Forbid();
+            }
+
+            string prompt = $"Mục tiêu (Objective) hiện tại là: '{okr.ObjectiveName}'. " +
+                            $"Hãy tạo ra danh sách 3 đến 5 Kết quả then chốt (Key Results) tối ưu nhất, mang tính định lượng rõ ràng. " +
+                            $"Mỗi Key Result bao gồm: Tên (KeyResultName), Chỉ tiêu (TargetValue - là số nguyên hoặc thập phân), Đơn vị tính (Unit, có thể là %, VNĐ, Người, Sản phẩm, vv...), và Cờ thu nhỏ (IsInverse - trả về true nếu thuộc tính này là chỉ tiêu mà khi giá trị càng nhỏ càng tốt, ngược lại false nếu càng lớn càng tốt). " +
+                            $"Chỉ trả về danh sách JSON thuần, mảng các đối tượng chứa: KeyResultName (chuỗi), TargetValue (số), Unit (chuỗi), IsInverse (boolean). Định dạng chuẩn: [{{ \"KeyResultName\": \"...\", \"TargetValue\": 10, \"Unit\": \"%\", \"IsInverse\": false }}]. Không bao gồm đoạn giải thích nào khác, không dùng markdown ```json.";
+            string systemInstruction = "Bạn là chuyên gia thiết lập cấu trúc OKR chuyên nghiệp của các công ty công nghệ lớn.";
+
+            try
+            {
+                var options = new GeminiGenerationOptions { Temperature = 0.6, ResponseMimeType = "application/json" };
+                var responseJson = await _geminiService.GenerateTextAsync(systemInstruction, prompt, options);
+                
+                var cleanJson = responseJson.Trim();
+                if (cleanJson.StartsWith("```json"))
+                {
+                    cleanJson = cleanJson.Substring(7);
+                    if (cleanJson.EndsWith("```")) cleanJson = cleanJson.Substring(0, cleanJson.Length - 3);
+                }
+                else if (cleanJson.StartsWith("```"))
+                {
+                    cleanJson = cleanJson.Substring(3);
+                    if (cleanJson.EndsWith("```")) cleanJson = cleanJson.Substring(0, cleanJson.Length - 3);
+                }
+
+                return Content(cleanJson.Trim(), "application/json");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi khi gọi AI: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [HasPermission("OKRS_CREATE")]
+        public async Task<IActionResult> AddMultipleKeyResults([FromBody] List<OKRKeyResult> keyResults)
+        {
+            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales"))
+                return Forbid();
+
+            if (keyResults == null || !keyResults.Any())
+            {
+                return BadRequest("Danh sách KR rỗng.");
+            }
+
+            int okrId = keyResults.First().OKRId ?? 0;
+            if (okrId == 0) return BadRequest("OkrId không hợp lệ.");
+
+            if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(okrId))
+            {
+                return Forbid();
+            }
+
+            foreach(var kr in keyResults)
+            {
+                kr.CurrentValue = 0;
+                kr.OKRId = okrId;
+                _context.OKRKeyResults.Add(kr);
+            }
+            
+            await _context.SaveChangesAsync();
+
+            var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == okrId);
+            TempData["SuccessMessage"] = $"Đã thêm {keyResults.Count} KR thành công! Tiến độ mục tiêu mới cập nhật: {okr?.TotalProgress}%";
+            
+            return Ok(new { success = true });
         }
 
         [HttpPost]
@@ -348,7 +521,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
         [HasPermission("OKRS_EDIT")]
         public async Task<IActionResult> EditKeyResult(OKRKeyResult model)
         {
@@ -361,6 +533,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var kr = await _context.OKRKeyResults.FindAsync(model.Id);
                 if (kr != null)
                 {
+                    if (!kr.OKRId.HasValue || (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(kr.OKRId.Value)))
+                    {
+                        return Forbid();
+                    }
+
                     kr.KeyResultName = model.KeyResultName;
                     kr.TargetValue = model.TargetValue;
                     kr.CurrentValue = model.CurrentValue;
@@ -397,6 +574,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var okr = await _context.OKRs.FindAsync(okrId);
             if (okr == null) return NotFound();
+            if (IsManagerScopedRole())
+            {
+                if (!await CanCurrentManagerAccessOkrAsync(okrId) ||
+                    !await CanCurrentManagerAssignEmployeeAsync(employeeId))
+                {
+                    return Forbid();
+                }
+            }
 
             // Check if this allocation already exists
             var existingAllocation = await _context.OKR_Employee_Allocations
@@ -438,6 +623,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var okr = await _context.OKRs.FindAsync(okrId);
             if (okr == null || okr.IsActive != true) return NotFound();
+            if (IsManagerScopedRole())
+            {
+                if (!await CanCurrentManagerAccessOkrAsync(okrId) ||
+                    !await CanCurrentManagerAssignDepartmentAsync(departmentId))
+                {
+                    return Forbid();
+                }
+            }
 
             var department = await _context.Departments
                 .FirstOrDefaultAsync(d => d.Id == departmentId && d.IsActive == true);
@@ -479,6 +672,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (kr != null)
             {
                 int? okrId = kr.OKRId;
+                if (!okrId.HasValue || (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(okrId.Value)))
+                {
+                    return Forbid();
+                }
+
                 _context.OKRKeyResults.Remove(kr);
                 await _context.SaveChangesAsync();
                 
@@ -570,29 +768,28 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         private async Task PopulateOkrEditListsAsync()
         {
+            var assignableDepartments = await GetAssignableDepartmentsAsync();
+            var assignableEmployees = await GetAssignableEmployeesAsync(assignableDepartments.Select(d => d.Id).ToList());
+
             ViewBag.Missions = await _context.MissionVisions
                 .Where(m => m.IsActive == true)
                 .ToListAsync();
-            ViewBag.Departments = await _context.Departments
-                .Where(d => d.IsActive == true)
-                .ToListAsync();
-            ViewBag.Employees = await _context.Employees
-                .Where(e => e.IsActive == true)
-                .ToListAsync();
+            ViewBag.Departments = assignableDepartments;
+            ViewBag.Employees = assignableEmployees;
             ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
+            ViewBag.EmployeeDepartmentMap = await GetActiveEmployeeDepartmentMapAsync();
         }
 
         private async Task PopulateOkrCreateListsAsync()
         {
+            var assignableDepartments = await GetAssignableDepartmentsAsync();
+            var assignableEmployees = await GetAssignableEmployeesAsync(assignableDepartments.Select(d => d.Id).ToList());
+
             ViewBag.Missions = await _context.MissionVisions
                 .Where(m => m.IsActive == true)
                 .ToListAsync();
-            ViewBag.Departments = await _context.Departments
-                .Where(d => d.IsActive == true)
-                .ToListAsync();
-            ViewBag.Employees = await _context.Employees
-                .Where(e => e.IsActive == true)
-                .ToListAsync();
+            ViewBag.Departments = assignableDepartments;
+            ViewBag.Employees = assignableEmployees;
             ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
             ViewBag.EmployeeDepartmentMap = await GetActiveEmployeeDepartmentMapAsync();
         }
@@ -629,6 +826,195 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .ToDictionary(g => g.Key, g => g.First().DepartmentId);
         }
 
+        private bool IsManagerScopedRole()
+        {
+            return (User.IsInRole("Manager") || User.IsInRole("manager")) &&
+                   !PermissionLookupHelper.IsAdmin(User) &&
+                   !User.IsInRole("Director") &&
+                   !User.IsInRole("HR") &&
+                   !User.IsInRole("Human Resources");
+        }
+
+        private async Task<List<int>> GetManagedDepartmentIdsAsync(Employee? manager)
+        {
+            if (manager == null)
+            {
+                return new List<int>();
+            }
+
+            return await _context.Departments
+                .AsNoTracking()
+                .Where(d => d.ManagerId == manager.Id && d.IsActive == true)
+                .Select(d => d.Id)
+                .ToListAsync();
+        }
+
+        private async Task<List<int>> GetEmployeeIdsInDepartmentsAsync(List<int> departmentIds)
+        {
+            if (!departmentIds.Any())
+            {
+                return new List<int>();
+            }
+
+            return await _context.EmployeeAssignments
+                .AsNoTracking()
+                .Where(a => a.IsActive == true &&
+                            a.EmployeeId.HasValue &&
+                            a.DepartmentId.HasValue &&
+                            departmentIds.Contains(a.DepartmentId.Value))
+                .Select(a => a.EmployeeId!.Value)
+                .Distinct()
+                .ToListAsync();
+        }
+
+        private async Task<List<Department>> GetAssignableDepartmentsAsync()
+        {
+            var query = _context.Departments
+                .AsNoTracking()
+                .Where(d => d.IsActive == true);
+
+            if (IsManagerScopedRole())
+            {
+                var manager = await GetCurrentEmployeeAsync();
+                var managedDepartmentIds = await GetManagedDepartmentIdsAsync(manager);
+                query = query.Where(d => managedDepartmentIds.Contains(d.Id));
+            }
+
+            return await query
+                .OrderBy(d => d.DepartmentName)
+                .ToListAsync();
+        }
+
+        private async Task<List<Employee>> GetAssignableEmployeesAsync(List<int> scopedDepartmentIds)
+        {
+            var query = _context.Employees
+                .AsNoTracking()
+                .Where(e => e.IsActive == true);
+
+            if (IsManagerScopedRole())
+            {
+                var employeeIds = await GetEmployeeIdsInDepartmentsAsync(scopedDepartmentIds);
+                query = query.Where(e => employeeIds.Contains(e.Id));
+            }
+
+            return await query
+                .OrderBy(e => e.FullName)
+                .ToListAsync();
+        }
+
+        private async Task<(bool IsAllowed, int? DepartmentId)> ResolveAndValidateOkrAllocationScopeAsync(int? employeeId, int? departmentId)
+        {
+            var resolvedDepartmentId = await ResolveDepartmentIdFromEmployeeAsync(employeeId, departmentId);
+            if (!IsManagerScopedRole())
+            {
+                return (true, resolvedDepartmentId);
+            }
+
+            var manager = await GetCurrentEmployeeAsync();
+            var managedDepartmentIds = await GetManagedDepartmentIdsAsync(manager);
+            if (manager == null || !managedDepartmentIds.Any())
+            {
+                return (false, resolvedDepartmentId);
+            }
+
+            if (employeeId.HasValue && !await IsEmployeeInDepartmentsAsync(employeeId.Value, managedDepartmentIds))
+            {
+                return (false, resolvedDepartmentId);
+            }
+
+            if (!resolvedDepartmentId.HasValue && managedDepartmentIds.Count == 1)
+            {
+                resolvedDepartmentId = managedDepartmentIds[0];
+            }
+
+            if (!resolvedDepartmentId.HasValue || !managedDepartmentIds.Contains(resolvedDepartmentId.Value))
+            {
+                return (false, resolvedDepartmentId);
+            }
+
+            return (true, resolvedDepartmentId);
+        }
+
+        private async Task<bool> IsEmployeeInDepartmentsAsync(int employeeId, List<int> departmentIds)
+        {
+            if (!departmentIds.Any())
+            {
+                return false;
+            }
+
+            return await _context.EmployeeAssignments
+                .AsNoTracking()
+                .AnyAsync(a => a.EmployeeId == employeeId &&
+                               a.IsActive == true &&
+                               a.DepartmentId.HasValue &&
+                               departmentIds.Contains(a.DepartmentId.Value));
+        }
+
+        private async Task<bool> CanCurrentManagerAccessOkrAsync(int okrId)
+        {
+            if (!IsManagerScopedRole())
+            {
+                return true;
+            }
+
+            var manager = await GetCurrentEmployeeAsync();
+            if (manager == null)
+            {
+                return false;
+            }
+
+            var ownsOkr = await _context.OKRs
+                .AsNoTracking()
+                .AnyAsync(o => o.Id == okrId && o.IsActive == true && o.CreatedById == manager.Id);
+            if (ownsOkr)
+            {
+                return true;
+            }
+
+            var managedDepartmentIds = await GetManagedDepartmentIdsAsync(manager);
+            if (!managedDepartmentIds.Any())
+            {
+                return false;
+            }
+
+            var departmentAllocated = await _context.OKR_Department_Allocations
+                .AsNoTracking()
+                .AnyAsync(a => a.OKRId == okrId && managedDepartmentIds.Contains(a.DepartmentId));
+            if (departmentAllocated)
+            {
+                return true;
+            }
+
+            var managedEmployeeIds = await GetEmployeeIdsInDepartmentsAsync(managedDepartmentIds);
+            return managedEmployeeIds.Any() && await _context.OKR_Employee_Allocations
+                .AsNoTracking()
+                .AnyAsync(a => a.OKRId == okrId && managedEmployeeIds.Contains(a.EmployeeId));
+        }
+
+        private async Task<bool> CanCurrentManagerAssignDepartmentAsync(int departmentId)
+        {
+            if (!IsManagerScopedRole())
+            {
+                return true;
+            }
+
+            var manager = await GetCurrentEmployeeAsync();
+            var managedDepartmentIds = await GetManagedDepartmentIdsAsync(manager);
+            return managedDepartmentIds.Contains(departmentId);
+        }
+
+        private async Task<bool> CanCurrentManagerAssignEmployeeAsync(int employeeId)
+        {
+            if (!IsManagerScopedRole())
+            {
+                return true;
+            }
+
+            var manager = await GetCurrentEmployeeAsync();
+            var managedDepartmentIds = await GetManagedDepartmentIdsAsync(manager);
+            return await IsEmployeeInDepartmentsAsync(employeeId, managedDepartmentIds);
+        }
+
         private bool IsRestrictedOkrRole()
         {
             return User.IsInRole("Employee") || User.IsInRole("employee") ||
@@ -650,6 +1036,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         private async Task<bool> CanCurrentUserUpdateOkrProgressAsync(int okrId)
         {
+            if (IsManagerScopedRole())
+            {
+                return await CanCurrentManagerAccessOkrAsync(okrId);
+            }
+
             if (!IsRestrictedOkrRole())
             {
                 return true;
@@ -701,6 +1092,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var okr = await _context.OKRs.FindAsync(id);
             if (okr != null)
             {
+                if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(id))
+                {
+                    return Forbid();
+                }
+
                 okr.IsActive = false;
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã vô hiệu hóa OKR!";

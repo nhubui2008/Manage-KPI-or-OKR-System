@@ -10,14 +10,25 @@
     var statuses = ViewBag.AllStatuses as List<Manage_KPI_or_OKR_System.Models.CheckInStatus> ?? new List<Manage_KPI_or_OKR_System.Models.CheckInStatus>();
     var failReasons = ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>();
     var kpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
+    var kpiPeriods = ViewBag.KPIPeriods as Dictionary<int, Manage_KPI_or_OKR_System.Models.EvaluationPeriod> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.EvaluationPeriod>();
     var assignmentWeights = ViewBag.AssignmentWeights as Dictionary<int, Dictionary<int, decimal>> ?? new Dictionary<int, Dictionary<int, decimal>>();
     var employeeKpiIds = ViewBag.EmployeeKPIIds as Dictionary<int, List<int>> ?? new Dictionary<int, List<int>>();
+    var kpisById = kpis.ToDictionary(k => k.Id);
     
     // Serialize data for JS use
     var kpiDataJson = JsonSerializer.Serialize(kpiData.ToDictionary(kvp => kvp.Key, kvp => new {
         target = kvp.Value.TargetValue,
         unit = kvp.Value.MeasurementUnit,
-        isInverse = kvp.Value.IsInverse
+        isInverse = kvp.Value.IsInverse,
+        frequencyDays = kvp.Value.CheckInFrequencyDays ?? 1,
+        deadlineTime = (kvp.Value.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0)).ToString(@"hh\:mm"),
+        reminderBeforeHours = kvp.Value.ReminderBeforeHours ?? 24,
+        periodStart = kpisById.ContainsKey(kvp.Key) && kpisById[kvp.Key].PeriodId.HasValue && kpiPeriods.ContainsKey(kpisById[kvp.Key].PeriodId!.Value)
+            ? kpiPeriods[kpisById[kvp.Key].PeriodId!.Value].StartDate
+            : null,
+        periodEnd = kpisById.ContainsKey(kvp.Key) && kpisById[kvp.Key].PeriodId.HasValue && kpiPeriods.ContainsKey(kpisById[kvp.Key].PeriodId!.Value)
+            ? kpiPeriods[kpisById[kvp.Key].PeriodId!.Value].EndDate
+            : null
     }));
     var assignmentWeightsJson = JsonSerializer.Serialize(assignmentWeights);
     var employeeKpiIdsJson = JsonSerializer.Serialize(employeeKpiIds);
@@ -202,7 +213,14 @@
                                 </div>
                             </div>
                         </div>
-                        
+
+                        <div class="bg-white bg-opacity-10 p-3 rounded-4 mb-4 border border-white border-opacity-20 shadow-sm">
+                            <div class="small opacity-75 text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Deadline check-in kỳ này</div>
+                            <div class="h5 mb-1 fw-bold" id="deadlineDisplay">--</div>
+                            <div class="small opacity-75">Mục tiêu cần đạt tới hạn: <strong id="deadlineTargetDisplay">--</strong></div>
+                            <div class="small opacity-75">Nhắc trước: <strong id="reminderDisplay">--</strong></div>
+                        </div>
+                         
                         <div class="mb-4">
                             <div class="d-flex justify-content-between align-items-end mb-2">
                                 <span class="small fw-bold opacity-75 text-uppercase">Tiến độ ước tính</span>
@@ -302,6 +320,43 @@
         const modeDisplay = document.getElementById('modeDisplay');
         const progressPercentage = document.getElementById('progressPercentage');
         const liveProgressBar = document.getElementById('liveProgressBar');
+        const deadlineDisplay = document.getElementById('deadlineDisplay');
+        const deadlineTargetDisplay = document.getElementById('deadlineTargetDisplay');
+        const reminderDisplay = document.getElementById('reminderDisplay');
+
+        function resolveCurrentDeadline(data) {
+            const now = new Date();
+            const frequencyDays = Math.max(1, parseInt(data.frequencyDays || 1, 10));
+            const periodStart = data.periodStart ? new Date(data.periodStart) : new Date(now);
+            const periodEnd = data.periodEnd ? new Date(data.periodEnd) : null;
+            const baseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const startDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
+            let targetDate = baseDate < startDate ? startDate : baseDate;
+
+            if (periodEnd) {
+                const endDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
+                if (targetDate > endDate) targetDate = endDate;
+            }
+
+            const offsetDays = Math.max(0, Math.floor((targetDate - startDate) / 86400000));
+            const slotDate = new Date(startDate);
+            slotDate.setDate(startDate.getDate() + Math.floor(offsetDays / frequencyDays) * frequencyDays);
+            const [hour, minute] = String(data.deadlineTime || '10:00').split(':').map(Number);
+            slotDate.setHours(hour || 0, minute || 0, 0, 0);
+            return slotDate;
+        }
+
+        function calculateExpectedAtDeadline(individualTarget, data, deadline) {
+            if (!data.periodStart || !data.periodEnd || !individualTarget) return individualTarget;
+            const periodStart = new Date(data.periodStart);
+            const periodEnd = new Date(data.periodEnd);
+            const startDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
+            const endDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
+            const dueDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
+            const totalDays = Math.max(1, Math.floor((endDate - startDate) / 86400000) + 1);
+            const elapsedDays = Math.min(totalDays, Math.max(1, Math.floor((dueDate - startDate) / 86400000) + 1));
+            return individualTarget * (elapsedDays / totalDays);
+        }
 
         function filterKpisByEmployee() {
             const employeeId = employeeSelect.value;
@@ -341,6 +396,8 @@
                 const individualTarget = target * (weight / 100);
                 const unit = data.unit || 'đơn vị';
                 const isInverse = data.isInverse;
+                const deadline = resolveCurrentDeadline(data);
+                const expectedAtDeadline = calculateExpectedAtDeadline(individualTarget, data, deadline);
                 const unitConfig = window.applyMeasurementUnitConfigToInputs
                     ? window.applyMeasurementUnitConfigToInputs(unit, [achievedInput])
                     : { suffix: unit };
@@ -351,6 +408,9 @@
                 unitDisplay.textContent = unit;
                 document.getElementById('achievedUnitSuffix').textContent = unitConfig.suffix || unit;
                 modeDisplay.textContent = isInverse ? "Càng thấp càng tốt" : "Càng cao càng tốt";
+                deadlineDisplay.textContent = deadline.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                deadlineTargetDisplay.textContent = new Intl.NumberFormat('vi-VN').format(expectedAtDeadline) + ' ' + unit;
+                reminderDisplay.textContent = (data.reminderBeforeHours || 24) + ' giờ trước deadline';
 
                 let progress = 0;
                 if (individualTarget > 0) {
@@ -384,6 +444,9 @@
                 document.getElementById('individualTargetDisplay').textContent = "--";
                 document.getElementById('weightLabel').textContent = "100%";
                 unitDisplay.textContent = "--";
+                deadlineDisplay.textContent = "--";
+                deadlineTargetDisplay.textContent = "--";
+                reminderDisplay.textContent = "--";
                 if (window.applyMeasurementUnitConfigToInputs) {
                     window.applyMeasurementUnitConfigToInputs('', [achievedInput]);
                 }

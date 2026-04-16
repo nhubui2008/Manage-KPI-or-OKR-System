@@ -21,6 +21,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private const string ReviewStatusPending = "Pending";
         private const string ReviewStatusApproved = "Approved";
         private const string ReviewStatusRejected = "Rejected";
+        private const string CheckInStatusOnTrack = "Đúng tiến độ";
+        private const string CheckInStatusLate = "Chậm tiến độ";
+        private const string CheckInStatusAhead = "Vượt tiến độ";
+        private const string CheckInStatusBlocked = "Gặp trở ngại";
+        private const string CheckInStatusDone = "Hoàn thành";
 
         private readonly MiniERPDbContext _context;
 
@@ -107,6 +112,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var kpiData = await _context.KPIDetails
                 .Where(d => d.KPIId.HasValue && allKpiIds.Contains(d.KPIId.Value))
                 .ToDictionaryAsync(d => d.KPIId ?? 0);
+            var periodIds = allKpis
+                .Where(k => k.PeriodId.HasValue)
+                .Select(k => k.PeriodId!.Value)
+                .Distinct()
+                .ToList();
 
             ViewBag.Details = checkInDetails;
             ViewBag.Employees = employees;
@@ -118,6 +128,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.AllEmployees = allEmployees;
             ViewBag.AllKPIs = allKpis;
             ViewBag.KPIData = kpiData;
+            ViewBag.KPIPeriods = periodIds.Any()
+                ? await _context.EvaluationPeriods
+                    .Where(p => periodIds.Contains(p.Id))
+                    .ToDictionaryAsync(p => p.Id)
+                : new Dictionary<int, EvaluationPeriod>();
             ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
             ViewBag.FailReasons = await _context.FailReasons.ToListAsync();
             ViewBag.CanReviewCheckIns = User.IsInRole("Admin") || User.IsInRole("Administrator") ||
@@ -244,6 +259,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             ViewBag.Employees = employees;
             ViewBag.SelectedEmployee = selectedEmployee;
+            ViewBag.CanReviewCheckIns = User.IsInRole("Admin") || User.IsInRole("Administrator") ||
+                User.IsInRole("Manager") || User.IsInRole("Director") ||
+                User.IsInRole("HR") || User.IsInRole("Human Resources");
 
             return View(rows);
         }
@@ -400,6 +418,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Where(d => kpiIds.Contains(d.KPIId ?? 0))
                 .ToDictionaryAsync(d => d.KPIId ?? 0);
             ViewBag.KPIData = kpiDetails;
+
+            var periodIds = kpis
+                .Where(k => k.PeriodId.HasValue)
+                .Select(k => k.PeriodId!.Value)
+                .Distinct()
+                .ToList();
+            ViewBag.KPIPeriods = periodIds.Any()
+                ? await _context.EvaluationPeriods
+                    .Where(p => periodIds.Contains(p.Id))
+                    .ToDictionaryAsync(p => p.Id)
+                : new Dictionary<int, EvaluationPeriod>();
 
             var visibleEmployeeIds = ((List<Employee>)ViewBag.AllEmployees).Select(e => e.Id).ToList();
             var assignmentWeights = await _context.KPI_Employee_Assignments
@@ -603,12 +632,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var validatedKpi = kpi!;
+            var kpiPeriod = validatedKpi.PeriodId.HasValue
+                ? await _context.EvaluationPeriods.FirstOrDefaultAsync(p => p.Id == validatedKpi.PeriodId.Value)
+                : null;
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // 1. Lưu thông tin Check-in chính
-                model.CheckInDate = DateTime.Now;
+                var submittedAt = DateTime.Now;
+                model.CheckInDate = submittedAt;
                 model.SubmittedById = currentEmployee?.Id;
                 var isReviewerSubmitting = User.IsInRole("Admin") || User.IsInRole("Administrator") ||
                                            User.IsInRole("Manager") || User.IsInRole("Director") ||
@@ -625,23 +658,30 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 // 2. Tính % tiến độ theo cấu hình KPI (Dựa trên số lượng công việc được giao/trọng số)
                 decimal progress = 0;
+                decimal assignmentWeight = 1.0m;
                 if (kpiDetail != null)
                 {
                     // Lấy trọng số của nhân viên cho KPI này
                     var assignment = await _context.KPI_Employee_Assignments
                         .FirstOrDefaultAsync(a => a.KPIId == model.KPIId && a.EmployeeId == model.EmployeeId && (a.Status == null || a.Status == "Active"));
 
-                    decimal weight = assignment?.Weight ?? 1.0m;
-                    if (weight <= 0) weight = 1.0m; // Default to 100% if weight not set or 0
+                    assignmentWeight = assignment?.Weight ?? 1.0m;
+                    if (assignmentWeight <= 0) assignmentWeight = 1.0m; // Default to 100% if weight not set or 0
 
-                    decimal individualTarget = (kpiDetail.TargetValue ?? 0) * weight;
+                    decimal individualTarget = KpiCheckInScheduleHelper.CalculateIndividualTarget(kpiDetail, assignmentWeight);
                     progress = ProgressHelper.CalculateProgress(achievedValue, individualTarget, kpiDetail.IsInverse);
                 }
 
-                // Tự động gán trạng thái dựa trên tiến độ thực tế (1: On Track, 2: At Risk, 3: Late)
-                if (progress >= 95) model.StatusId = 1;
-                else if (progress >= 50) model.StatusId = 2;
-                else model.StatusId = 3;
+                var deadlineAt = KpiCheckInScheduleHelper.ResolveDeadlineForCheckIn(submittedAt, kpiDetail, kpiPeriod);
+                var expectedValueAtDeadline = KpiCheckInScheduleHelper.CalculateExpectedValueAtDeadline(kpiDetail, kpiPeriod, deadlineAt, assignmentWeight);
+                var scheduleProgress = kpiDetail != null
+                    ? KpiCheckInScheduleHelper.CalculateScheduleProgress(achievedValue, expectedValueAtDeadline, kpiDetail.IsInverse)
+                    : progress;
+                var isLate = KpiCheckInScheduleHelper.IsLate(submittedAt, deadlineAt, scheduleProgress);
+
+                model.DeadlineAt = deadlineAt;
+                model.IsLate = isLate;
+                model.StatusId = await ResolveCheckInStatusIdAsync(isLate, scheduleProgress, progress, model.FailReasonId.HasValue);
 
                 // 3. Lưu thông tin chi tiết (Achieved Value, Note, Progress %)
                 var detail = new CheckInDetail
@@ -649,7 +689,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     CheckInId = model.Id,
                     AchievedValue = achievedValue,
                     Note = Note,
-                    ProgressPercentage = Math.Round(progress, 2)
+                    ProgressPercentage = Math.Round(progress, 2),
+                    ExpectedValueAtDeadline = expectedValueAtDeadline,
+                    ScheduleProgressPercentage = Math.Round(scheduleProgress, 2)
                 };
                 _context.CheckInDetails.Add(detail);
 
@@ -676,26 +718,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         ? ProgressHelper.CalculateProgress(achievedValue, passThreshold, kpiDetail.IsInverse)
                         : progress;
 
-                    if (progress >= 100)
-                    {
-                        // Đạt hoặc vượt mục tiêu
-                        validatedKpi.StatusId = 4; // "Hoàn thành"
-                    }
-                    else if (passProgress >= 100 || progress >= 70)
-                    {
-                        // Vượt ngưỡng Pass hoặc >= 70% Target
-                        validatedKpi.StatusId = 5; // "Gần đạt"
-                    }
-                    else if (progress >= 40)
-                    {
-                        // Đang triển khai nhưng chưa chắc đạt
-                        validatedKpi.StatusId = 3; // "Đang thực hiện"
-                    }
-                    else
-                    {
-                        // Dưới 40% target → nguy cơ không đạt
-                        validatedKpi.StatusId = 6; // "Không đạt"
-                    }
+                    validatedKpi.StatusId = ResolveOverallKpiStatusId(progress, passProgress, kpiPeriod);
                 }
                 else
                 {
@@ -997,22 +1020,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     ? ProgressHelper.CalculateProgress(achievedValue, passThreshold, kpiDetail.IsInverse)
                     : progress;
 
-                if (progress >= 100)
-                {
-                    kpi.StatusId = 4;
-                }
-                else if (passProgress >= 100 || progress >= 70)
-                {
-                    kpi.StatusId = 5;
-                }
-                else if (progress >= 40)
-                {
-                    kpi.StatusId = 3;
-                }
-                else
-                {
-                    kpi.StatusId = 6;
-                }
+                var period = kpi.PeriodId.HasValue
+                    ? await _context.EvaluationPeriods.FirstOrDefaultAsync(p => p.Id == kpi.PeriodId.Value)
+                    : null;
+                kpi.StatusId = ResolveOverallKpiStatusId(progress, passProgress, period);
             }
             else
             {
@@ -1251,10 +1262,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         private async Task<List<EmployeeKpiTrackingRow>> BuildEmployeeKpiTrackingRowsAsync(int employeeId)
         {
-            var directKpiIds = await _context.KPI_Employee_Assignments
+            var directKpiAssignments = await _context.KPI_Employee_Assignments
                 .Where(a => a.EmployeeId == employeeId && (a.Status == null || a.Status == "Active"))
-                .Select(a => a.KPIId)
                 .ToListAsync();
+            var directKpiIds = directKpiAssignments.Select(a => a.KPIId).ToList();
+            var directWeightByKpiId = directKpiAssignments
+                .GroupBy(a => a.KPIId)
+                .ToDictionary(g => g.Key, g => g.First().Weight.GetValueOrDefault(1m) <= 0 ? 1m : g.First().Weight.GetValueOrDefault(1m));
 
             var employeeDepartmentIds = await _context.EmployeeAssignments
                 .Where(a => a.EmployeeId == employeeId &&
@@ -1308,12 +1322,36 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .ToDictionaryAsync(d => d.CheckInId!.Value)
                 : new Dictionary<int, CheckInDetail>();
             var statuses = await _context.CheckInStatuses.ToDictionaryAsync(s => s.Id, s => s.StatusName ?? "Chưa rõ");
+            var periodIds = kpis
+                .Where(k => k.PeriodId.HasValue)
+                .Select(k => k.PeriodId!.Value)
+                .Distinct()
+                .ToList();
+            var periods = periodIds.Any()
+                ? await _context.EvaluationPeriods
+                    .Where(p => periodIds.Contains(p.Id))
+                    .ToDictionaryAsync(p => p.Id)
+                : new Dictionary<int, EvaluationPeriod>();
 
             return kpis.Select(kpi =>
             {
                 latestCheckIns.TryGetValue(kpi.Id, out var checkIn);
                 var detail = checkIn != null && checkInDetails.ContainsKey(checkIn.Id) ? checkInDetails[checkIn.Id] : null;
                 var kpiDetail = kpiDetails.GetValueOrDefault(kpi.Id);
+                var assignmentWeight = directWeightByKpiId.GetValueOrDefault(kpi.Id, 1m);
+                var period = kpi.PeriodId.HasValue && periods.ContainsKey(kpi.PeriodId.Value)
+                    ? periods[kpi.PeriodId.Value]
+                    : null;
+                var deadlineAt = checkIn?.DeadlineAt ?? (kpiDetail != null
+                    ? KpiCheckInScheduleHelper.ResolveDeadlineForCheckIn(DateTime.Now, kpiDetail, period)
+                    : (DateTime?)null);
+                var expectedValueAtDeadline = detail?.ExpectedValueAtDeadline ?? (kpiDetail != null && deadlineAt.HasValue
+                    ? KpiCheckInScheduleHelper.CalculateExpectedValueAtDeadline(kpiDetail, period, deadlineAt.Value, assignmentWeight)
+                    : (decimal?)null);
+                var scheduleProgress = detail?.ScheduleProgressPercentage;
+                var isLate = checkIn?.IsLate == true ||
+                             (deadlineAt.HasValue && DateTime.Now > deadlineAt.Value &&
+                              (checkIn?.CheckInDate == null || checkIn.CheckInDate.Value < deadlineAt.Value));
 
                 return new EmployeeKpiTrackingRow
                 {
@@ -1323,7 +1361,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     Unit = kpiDetail?.MeasurementUnit ?? string.Empty,
                     LatestAchievedValue = detail?.AchievedValue,
                     LatestProgress = detail?.ProgressPercentage,
+                    ExpectedValueAtDeadline = expectedValueAtDeadline,
+                    ScheduleProgressPercentage = scheduleProgress,
                     LatestCheckInDate = checkIn?.CheckInDate,
+                    LatestDeadlineAt = deadlineAt,
+                    IsLate = isLate,
                     LatestCheckInId = checkIn?.Id,
                     ReviewStatus = checkIn?.ReviewStatus switch
                     {
@@ -1399,6 +1441,53 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             return checkIn.KPIId.HasValue && await _context.KPIs
                 .AnyAsync(k => k.Id == checkIn.KPIId.Value && k.AssignerId == reviewer.Id);
+        }
+
+        private async Task<int?> ResolveCheckInStatusIdAsync(bool isLate, decimal scheduleProgress, decimal totalProgress, bool hasFailReason)
+        {
+            var statuses = await _context.CheckInStatuses.ToListAsync();
+            var statusByName = statuses
+                .Where(s => !string.IsNullOrWhiteSpace(s.StatusName))
+                .GroupBy(s => s.StatusName!)
+                .ToDictionary(g => g.Key, g => g.First().Id);
+
+            if (isLate)
+            {
+                return statusByName.GetValueOrDefault(CheckInStatusLate, 2);
+            }
+
+            if (hasFailReason && statusByName.TryGetValue(CheckInStatusBlocked, out var blockedId))
+            {
+                return blockedId;
+            }
+
+            if (totalProgress >= 100m)
+            {
+                return statusByName.GetValueOrDefault(CheckInStatusDone, 5);
+            }
+
+            if (scheduleProgress >= 120m)
+            {
+                return statusByName.GetValueOrDefault(CheckInStatusAhead, 3);
+            }
+
+            return statusByName.GetValueOrDefault(CheckInStatusOnTrack, 1);
+        }
+
+        private static int ResolveOverallKpiStatusId(decimal totalProgress, decimal passProgress, EvaluationPeriod? period)
+        {
+            if (totalProgress >= 100m)
+            {
+                return 4;
+            }
+
+            if (passProgress >= 100m || totalProgress >= 70m)
+            {
+                return 5;
+            }
+
+            var periodEnded = period?.EndDate.HasValue == true && DateTime.Now.Date > period.EndDate.Value.Date;
+            return periodEnded ? 6 : 3;
         }
 
         private static bool TryParseOptionalScore(string? rawScore, out decimal? score, out string? error)

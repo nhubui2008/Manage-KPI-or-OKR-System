@@ -7,6 +7,7 @@
     var selectedEmployee = ViewBag.SelectedEmployee as Manage_KPI_or_OKR_System.Models.ViewModels.TrackableEmployeeOption;
     var isViewingAll = selectedEmployee == null;
     var trackedEmployeeCount = isViewingAll ? Model.Select(r => r.EmployeeId).Distinct().Count() : (selectedEmployee != null ? 1 : 0);
+    bool canReviewCheckIns = ViewBag.CanReviewCheckIns == true;
 }
 
 <div class="container-fluid px-0">
@@ -21,9 +22,17 @@
                 <span>Theo dõi cá nhân</span>
             </div>
         </div>
-        <a asp-action="ReviewQueue" class="btn btn-outline-primary rounded-pill px-4">
-            <i class="bi bi-check2-square me-1"></i> Xác nhận check-in
-        </a>
+        <div class="d-flex gap-2">
+            <a asp-action="Create" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-calendar-check me-1"></i> Cập nhật tiến độ
+            </a>
+            @if (canReviewCheckIns)
+            {
+                <a asp-action="ReviewQueue" class="btn btn-outline-primary rounded-pill px-4">
+                    <i class="bi bi-check2-square me-1"></i> Xác nhận check-in
+                </a>
+            }
+        </div>
     </div>
 
     <div class="row g-4">
@@ -108,8 +117,9 @@
                                     <th class="@(isViewingAll ? string.Empty : "ps-4")">KPI</th>
                                     <th>Chỉ tiêu</th>
                                     <th>Thực tế mới nhất</th>
-                                    <th>Tiến độ</th>
-                                    <th>Ngày check-in</th>
+                                     <th>Tiến độ</th>
+                                     <th>Deadline</th>
+                                     <th>Ngày check-in</th>
                                     <th>Xác nhận</th>
                                     <th class="pe-4">Ghi chú</th>
                                 </tr>
@@ -148,6 +158,15 @@
                                                     <div class="progress-bar @ProgressHelper.GetProgressColorClass(progress)" style="width: @progressWidth%;"></div>
                                                 </div>
                                             </td>
+                                            <td>
+                                                <div class="fw-semibold @(row.IsLate ? "text-danger" : "text-success")" style="font-size: 0.82rem;">
+                                                    @(row.LatestDeadlineAt?.ToString("dd/MM/yyyy HH:mm") ?? "--")
+                                                </div>
+                                                @if (row.ExpectedValueAtDeadline.HasValue)
+                                                {
+                                                    <div class="text-muted" style="font-size: 0.72rem;">Cần đạt: @String.Format("{0:N0}", row.ExpectedValueAtDeadline) @row.Unit</div>
+                                                }
+                                            </td>
                                             <td class="text-muted">@row.LatestCheckInDate?.ToString("dd/MM/yyyy HH:mm")</td>
                                             <td><span class="badge border rounded-pill px-3 py-2 @reviewBadge">@row.ReviewStatus</span></td>
                                             <td class="pe-4 text-muted small" style="max-width: 260px;">@(string.IsNullOrWhiteSpace(row.Note) ? "--" : row.Note)</td>
@@ -157,7 +176,7 @@
                                 else
                                 {
                                     <tr>
-                                        <td colspan="@(isViewingAll ? 8 : 7)" class="text-center text-muted py-5">
+                                        <td colspan="@(isViewingAll ? 9 : 8)" class="text-center text-muted py-5">
                                             <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
                                             @(isViewingAll
                                                 ? "Chưa có KPI được phân bổ hoặc chưa có dữ liệu theo dõi trong phạm vi hiện tại"

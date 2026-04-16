@@ -23,6 +23,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var statuses = await _context.Statuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
             ViewBag.Statuses = statuses;
+            ViewBag.CanCreatePeriod = await PermissionLookupHelper.HasPermissionAsync(_context, User, "EVALPERIODS_CREATE");
+            ViewBag.CanEditPeriod = await PermissionLookupHelper.HasPermissionAsync(_context, User, "EVALPERIODS_EDIT");
+            ViewBag.CanDeletePeriod = await PermissionLookupHelper.HasPermissionAsync(_context, User, "EVALPERIODS_DELETE");
 
             // Count KPIs per period
             var kpiCounts = await _context.KPIs

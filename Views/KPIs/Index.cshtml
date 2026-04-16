@@ -245,6 +245,9 @@
                                     {
                                         <div class="fw-bold text-success fs-6">@String.Format("{0:N0}", detail.TargetValue) @detail.MeasurementUnit</div>
                                         <div class="text-muted" style="font-size: 0.75rem;">Ngưỡng qua: @String.Format("{0:N0}", detail.PassThreshold)</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">
+                                            Deadline: @((detail.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0)).ToString(@"hh\:mm")) / mỗi @(detail.CheckInFrequencyDays ?? 1) ngày
+                                        </div>
                                     }
                                     else
                                     {
@@ -500,6 +503,24 @@
                                     <i class="bi bi-arrow-down-circle text-warning me-1"></i> Chỉ tiêu thu nhỏ (Càng thấp càng tốt)
                                 </label>
                                 <div class="text-muted small ms-5 ps-1 mt-1">Sử dụng cho các chỉ số như tỷ lệ lỗi, chi phí, thời gian chờ...</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Tần suất check-in</label>
+                            <div class="input-group">
+                                <input type="number" min="1" step="1" name="detail.CheckInFrequencyDays" class="form-control" value="1">
+                                <span class="input-group-text">ngày/lần</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Giờ deadline</label>
+                            <input type="time" name="detail.CheckInDeadlineTime" class="form-control" value="10:00">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Nhắc trước deadline</label>
+                            <div class="input-group">
+                                <input type="number" min="0" step="1" name="detail.ReminderBeforeHours" class="form-control" value="24">
+                                <span class="input-group-text">giờ</span>
                             </div>
                         </div>
                     </div>

@@ -3,6 +3,10 @@
     ViewData["Title"] = "Quản lý Kỳ Đánh giá";
     var statuses = ViewBag.Statuses as Dictionary<int, string> ?? new Dictionary<int, string>();
     var kpiCounts = ViewBag.KPICounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+    var isAdminRole = User.IsInRole("Admin") || User.IsInRole("Administrator");
+    var canCreatePeriod = ViewBag.CanCreatePeriod is bool canCreateFromDb ? canCreateFromDb : isAdminRole || User.HasClaim("Permission", "EVALPERIODS_CREATE");
+    var canEditPeriod = ViewBag.CanEditPeriod is bool canEditFromDb ? canEditFromDb : isAdminRole || User.HasClaim("Permission", "EVALPERIODS_EDIT");
+    var canDeletePeriod = ViewBag.CanDeletePeriod is bool canDeleteFromDb ? canDeleteFromDb : isAdminRole || User.HasClaim("Permission", "EVALPERIODS_DELETE");
 }
 
 @if (TempData["SuccessMessage"] != null)
@@ -33,9 +37,12 @@
         </div>
     </div>
     <div class="d-flex justify-content-end gap-2">
-        <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
-            <i class="bi bi-plus-lg me-1"></i> Thêm kỳ đánh giá
-        </a>
+        @if (canCreatePeriod)
+        {
+            <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
+                <i class="bi bi-plus-lg me-1"></i> Thêm kỳ đánh giá
+            </a>
+        }
     </div>
 </div>
 
@@ -80,14 +87,24 @@
                                 </td>
                                 <td>
                                     <div class="action-btns justify-content-end">
-                                        <button type="button" class="action-btn" title="Sửa" 
-                                                onclick="openEditModal(@p.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(p.PeriodName ?? ""))', '@p.PeriodType', '@p.StartDate?.ToString("yyyy-MM-dd")', '@p.EndDate?.ToString("yyyy-MM-dd")', @(p.StatusId ?? 0))">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </button>
-                                        <form asp-action="Delete" method="post" style="display:inline;">
-                                            <input type="hidden" name="id" value="@p.Id" />
-                                            <button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Bạn có chắc muốn vô hiệu hóa kỳ đánh giá này?')"><i class="bi bi-trash"></i></button>
-                                        </form>
+                                        @if (canEditPeriod)
+                                        {
+                                            <button type="button" class="action-btn" title="Sửa" 
+                                                    onclick="openEditModal(@p.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(p.PeriodName ?? ""))', '@p.PeriodType', '@p.StartDate?.ToString("yyyy-MM-dd")', '@p.EndDate?.ToString("yyyy-MM-dd")', @(p.StatusId ?? 0))">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                        }
+                                        @if (canDeletePeriod)
+                                        {
+                                            <form asp-action="Delete" method="post" style="display:inline;">
+                                                <input type="hidden" name="id" value="@p.Id" />
+                                                <button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Bạn có chắc muốn vô hiệu hóa kỳ đánh giá này?')"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        }
+                                        @if (!canEditPeriod && !canDeletePeriod)
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
                                     </div>
                                 </td>
                             </tr>
@@ -104,6 +121,8 @@
 </div>
 
 
+@if (canEditPeriod)
+{
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog">
@@ -239,6 +258,7 @@
         });
     });
 </script>
+}
 
         </div>
     </div>

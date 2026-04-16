@@ -17,6 +17,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
     [Authorize]
     public class KPIsController : Controller
     {
+        private const string ReviewStatusApproved = "Approved";
+        private const string CheckInStatusOnTrack = "Đúng tiến độ";
+        private const string CheckInStatusLate = "Chậm tiến độ";
+        private const string CheckInStatusAhead = "Vượt tiến độ";
+        private const string CheckInStatusDone = "Hoàn thành";
         private readonly MiniERPDbContext _context;
 
         public KPIsController(MiniERPDbContext context)
@@ -309,14 +314,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                        orderby ci.CheckInDate descending
                                        select new {
                                            ci.Id,
-                                           ci.CheckInDate,
-                                           ci.StatusId,
+                                            ci.CheckInDate,
+                                            ci.DeadlineAt,
+                                            ci.IsLate,
+                                            ci.StatusId,
                                            ci.ReviewStatus,
                                            ci.ReviewScore,
                                            ci.ReviewComment,
                                            ci.ReviewedAt,
-                                           AchievedValue = (decimal?)d.AchievedValue,
-                                           ProgressPercentage = (decimal?)d.ProgressPercentage,
+                                            AchievedValue = (decimal?)d.AchievedValue,
+                                            ProgressPercentage = (decimal?)d.ProgressPercentage,
+                                            ExpectedValueAtDeadline = (decimal?)d.ExpectedValueAtDeadline,
+                                            ScheduleProgressPercentage = (decimal?)d.ScheduleProgressPercentage,
                                            Note = d.Note,
                                            employeeName = e.FullName,
                                            reviewerName = rev.FullName,
@@ -396,6 +405,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             NormalizeDecimalFormValue("detail.TargetValue", value => detail.TargetValue = value);
             NormalizeDecimalFormValue("detail.PassThreshold", value => detail.PassThreshold = value);
             NormalizeDecimalFormValue("detail.FailThreshold", value => detail.FailThreshold = value);
+            NormalizeCheckInScheduleDetail(detail);
 
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales"))
@@ -426,6 +436,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     existingDetail.FailThreshold = detail.FailThreshold;
                     existingDetail.MeasurementUnit = detail.MeasurementUnit;
                     existingDetail.IsInverse = detail.IsInverse;
+                    existingDetail.CheckInFrequencyDays = detail.CheckInFrequencyDays;
+                    existingDetail.CheckInDeadlineTime = detail.CheckInDeadlineTime;
+                    existingDetail.ReminderBeforeHours = detail.ReminderBeforeHours;
                 }
                 else
                 {
@@ -451,6 +464,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             NormalizeDecimalFormValue("detail.TargetValue", value => detail.TargetValue = value);
             NormalizeDecimalFormValue("detail.PassThreshold", value => detail.PassThreshold = value);
             NormalizeDecimalFormValue("detail.FailThreshold", value => detail.FailThreshold = value);
+            NormalizeCheckInScheduleDetail(detail);
 
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales"))
@@ -562,67 +576,196 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var kpi = await _context.KPIs.FindAsync(kpiId);
             if (kpi == null) return NotFound();
 
-            // Xóa các phân bổ cũ
-            var existingAssignments = await _context.KPI_Employee_Assignments
-                .Where(a => a.KPIId == kpiId)
-                .ToListAsync();
-            _context.KPI_Employee_Assignments.RemoveRange(existingAssignments);
-
-            var existingDepartmentAssignments = await _context.KPI_Department_Assignments
-                .Where(a => a.KPIId == kpiId)
-                .ToListAsync();
-            _context.KPI_Department_Assignments.RemoveRange(existingDepartmentAssignments);
-
-            if (departmentIds != null && departmentIds.Any())
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                var validDepartmentIds = await _context.Departments
-                    .Where(d => d.IsActive == true && departmentIds.Contains(d.Id))
-                    .Select(d => d.Id)
+                // Xóa các phân bổ cũ
+                var existingAssignments = await _context.KPI_Employee_Assignments
+                    .Where(a => a.KPIId == kpiId)
                     .ToListAsync();
+                var previousActiveEmployeeIds = existingAssignments
+                    .Where(a => a.Status == null || a.Status == "Active")
+                    .Select(a => a.EmployeeId)
+                    .Distinct()
+                    .ToList();
+                _context.KPI_Employee_Assignments.RemoveRange(existingAssignments);
 
-                foreach (var departmentId in validDepartmentIds.Distinct())
-                {
-                    _context.KPI_Department_Assignments.Add(new KPI_Department_Assignment
-                    {
-                        KPIId = kpiId,
-                        DepartmentId = departmentId
-                    });
-                }
-            }
+                var existingDepartmentAssignments = await _context.KPI_Department_Assignments
+                    .Where(a => a.KPIId == kpiId)
+                    .ToListAsync();
+                _context.KPI_Department_Assignments.RemoveRange(existingDepartmentAssignments);
 
-            // Thêm các phân bổ mới
-            if (employeeIds != null && employeeIds.Any())
-            {
-                for (int i = 0; i < employeeIds.Count; i++)
+                if (departmentIds != null && departmentIds.Any())
                 {
-                    var empId = employeeIds[i];
-                    decimal weightValue = 100m;
-                    if (weights != null && i < weights.Count)
+                    var validDepartmentIds = await _context.Departments
+                        .Where(d => d.IsActive == true && departmentIds.Contains(d.Id))
+                        .Select(d => d.Id)
+                        .ToListAsync();
+
+                    foreach (var departmentId in validDepartmentIds.Distinct())
                     {
-                        string normalizedWeight = weights[i].Replace(",", ".");
-                        if (decimal.TryParse(normalizedWeight, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal parsedWeight))
+                        _context.KPI_Department_Assignments.Add(new KPI_Department_Assignment
                         {
-                            weightValue = parsedWeight;
-                        }
+                            KPIId = kpiId,
+                            DepartmentId = departmentId
+                        });
                     }
-                    var weight = weightValue / 100m;
-                    if (weight <= 0) weight = 0.01m; // Bảo đảm trọng số dương nhỏ nhất
-
-                    _context.KPI_Employee_Assignments.Add(new KPI_Employee_Assignment
-                    {
-                        KPIId = kpiId,
-                        EmployeeId = empId,
-                        Weight = weight,
-                        Status = "Active"
-                    });
                 }
+
+                var requestedEmployeeIds = employeeIds?.Distinct().ToList() ?? new List<int>();
+                var validEmployeeIds = requestedEmployeeIds.Any()
+                    ? await _context.Employees
+                        .Where(e => e.IsActive == true && requestedEmployeeIds.Contains(e.Id))
+                        .Select(e => e.Id)
+                        .ToListAsync()
+                    : new List<int>();
+                var validEmployeeIdSet = validEmployeeIds.ToHashSet();
+                var newAssignments = new List<KPI_Employee_Assignment>();
+                var addedEmployeeOrder = new HashSet<int>();
+
+                // Thêm các phân bổ mới
+                if (employeeIds != null && employeeIds.Any())
+                {
+                    for (int i = 0; i < employeeIds.Count; i++)
+                    {
+                        var empId = employeeIds[i];
+                        if (!validEmployeeIdSet.Contains(empId) || !addedEmployeeOrder.Add(empId))
+                        {
+                            continue;
+                        }
+
+                        decimal weightValue = 100m;
+                        if (weights != null && i < weights.Count)
+                        {
+                            string normalizedWeight = weights[i].Replace(",", ".");
+                            if (decimal.TryParse(normalizedWeight, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal parsedWeight))
+                            {
+                                weightValue = parsedWeight;
+                            }
+                        }
+                        var weight = weightValue / 100m;
+                        if (weight <= 0) weight = 0.01m; // Bảo đảm trọng số dương nhỏ nhất
+
+                        var assignment = new KPI_Employee_Assignment
+                        {
+                            KPIId = kpiId,
+                            EmployeeId = empId,
+                            Weight = weight,
+                            Status = "Active"
+                        };
+                        newAssignments.Add(assignment);
+                        _context.KPI_Employee_Assignments.Add(assignment);
+                    }
+                }
+
+                var newEmployeeIds = newAssignments.Select(a => a.EmployeeId).Distinct().ToList();
+                var removedEmployeeIds = previousActiveEmployeeIds.Except(newEmployeeIds).ToList();
+                var addedEmployeeIds = newEmployeeIds.Except(previousActiveEmployeeIds).ToList();
+                var syncedHandoverCount = 0;
+
+                if (removedEmployeeIds.Count == 1 && addedEmployeeIds.Count == 1)
+                {
+                    var successorAssignment = newAssignments.First(a => a.EmployeeId == addedEmployeeIds[0]);
+                    var currentEmployee = await GetCurrentEmployeeAsync();
+                    syncedHandoverCount = await SyncHandoverProgressAsync(
+                        kpi,
+                        removedEmployeeIds[0],
+                        addedEmployeeIds[0],
+                        successorAssignment.Weight ?? 1m,
+                        currentEmployee);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                var syncMessage = syncedHandoverCount > 0
+                    ? $" Hệ thống đã đồng bộ {syncedHandoverCount} bản tiến độ bàn giao cho người kế thừa."
+                    : string.Empty;
+                TempData["SuccessMessage"] = $"Đã cập nhật phân bổ phòng ban/nhân sự cho KPI: {kpi.KPIName} thành công!{syncMessage}";
+
+                if (!string.IsNullOrEmpty(returnUrl)) return LocalRedirect(returnUrl);
+                return RedirectToAction(nameof(Details), new { id = kpiId });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                TempData["ErrorMessage"] = "Lỗi khi cập nhật phân bổ KPI: " + (ex.InnerException?.Message ?? ex.Message);
+                if (!string.IsNullOrEmpty(returnUrl)) return LocalRedirect(returnUrl);
+                return RedirectToAction(nameof(Details), new { id = kpiId });
+            }
+        }
+
+        private async Task<int> SyncHandoverProgressAsync(KPI kpi, int fromEmployeeId, int toEmployeeId, decimal successorWeight, Employee? currentEmployee)
+        {
+            var sourceCheckIn = await _context.KPICheckIns
+                .Where(c => c.KPIId == kpi.Id &&
+                            c.EmployeeId == fromEmployeeId &&
+                            (c.ReviewStatus == ReviewStatusApproved || c.ReviewStatus == null))
+                .OrderByDescending(c => c.CheckInDate)
+                .FirstOrDefaultAsync();
+            if (sourceCheckIn == null)
+            {
+                return 0;
             }
 
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = $"Đã cập nhật phân bổ phòng ban/nhân sự cho KPI: {kpi.KPIName} thành công!";
+            var sourceDetail = await _context.CheckInDetails.FirstOrDefaultAsync(d => d.CheckInId == sourceCheckIn.Id);
+            if (sourceDetail == null)
+            {
+                return 0;
+            }
 
-            if (!string.IsNullOrEmpty(returnUrl)) return LocalRedirect(returnUrl);
-            return RedirectToAction(nameof(Details), new { id = kpiId });
+            var kpiDetail = await _context.KPIDetails.FirstOrDefaultAsync(d => d.KPIId == kpi.Id);
+            var period = kpi.PeriodId.HasValue
+                ? await _context.EvaluationPeriods.FirstOrDefaultAsync(p => p.Id == kpi.PeriodId.Value)
+                : null;
+            var submittedAt = DateTime.Now;
+            var deadlineAt = KpiCheckInScheduleHelper.ResolveDeadlineForCheckIn(submittedAt, kpiDetail, period);
+            var achievedValue = sourceDetail.AchievedValue ?? 0m;
+            var totalProgress = kpiDetail != null
+                ? ProgressHelper.CalculateProgress(
+                    achievedValue,
+                    KpiCheckInScheduleHelper.CalculateIndividualTarget(kpiDetail, successorWeight),
+                    kpiDetail.IsInverse)
+                : sourceDetail.ProgressPercentage ?? 0m;
+            var expectedValueAtDeadline = KpiCheckInScheduleHelper.CalculateExpectedValueAtDeadline(kpiDetail, period, deadlineAt, successorWeight);
+            var scheduleProgress = kpiDetail != null
+                ? KpiCheckInScheduleHelper.CalculateScheduleProgress(achievedValue, expectedValueAtDeadline, kpiDetail.IsInverse)
+                : totalProgress;
+            var isLate = KpiCheckInScheduleHelper.IsLate(submittedAt, deadlineAt, scheduleProgress);
+            var statusId = await ResolveCheckInStatusIdAsync(isLate, scheduleProgress, totalProgress);
+            var fromEmployee = await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == fromEmployeeId);
+            var toEmployee = await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == toEmployeeId);
+
+            var handoverCheckIn = new KPICheckIn
+            {
+                EmployeeId = toEmployeeId,
+                KPIId = kpi.Id,
+                SubmittedById = currentEmployee?.Id,
+                CheckInDate = submittedAt,
+                DeadlineAt = deadlineAt,
+                IsLate = isLate,
+                StatusId = statusId,
+                FailReasonId = sourceCheckIn.FailReasonId,
+                ReviewStatus = ReviewStatusApproved,
+                ReviewedById = currentEmployee?.Id,
+                ReviewedAt = submittedAt,
+                ReviewComment = $"Đồng bộ tiến độ khi chuyển phụ trách từ {fromEmployee?.FullName ?? $"#{fromEmployeeId}"} sang {toEmployee?.FullName ?? $"#{toEmployeeId}"}."
+            };
+
+            _context.KPICheckIns.Add(handoverCheckIn);
+            await _context.SaveChangesAsync();
+
+            _context.CheckInDetails.Add(new CheckInDetail
+            {
+                CheckInId = handoverCheckIn.Id,
+                AchievedValue = achievedValue,
+                ProgressPercentage = Math.Round(totalProgress, 2),
+                ExpectedValueAtDeadline = expectedValueAtDeadline,
+                ScheduleProgressPercentage = Math.Round(scheduleProgress, 2),
+                Note = $"Đồng bộ từ check-in #{sourceCheckIn.Id}: {sourceDetail.Note}".Trim()
+            });
+
+            return 1;
         }
 
         [HttpPost]
@@ -686,6 +829,50 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var keyWithoutPrefix = key.Contains(".") ? key.Substring(key.IndexOf(".") + 1) : key;
                 ModelState.Remove(keyWithoutPrefix);
             }
+        }
+
+        private static void NormalizeCheckInScheduleDetail(KPIDetail detail)
+        {
+            detail.CheckInFrequencyDays = Math.Max(1, detail.CheckInFrequencyDays ?? 1);
+            detail.CheckInDeadlineTime ??= new TimeSpan(10, 0, 0);
+            detail.ReminderBeforeHours = Math.Max(0, detail.ReminderBeforeHours ?? 24);
+        }
+
+        private async Task<Employee?> GetCurrentEmployeeAsync()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out int userId))
+            {
+                return null;
+            }
+
+            return await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId && e.IsActive == true);
+        }
+
+        private async Task<int?> ResolveCheckInStatusIdAsync(bool isLate, decimal scheduleProgress, decimal totalProgress)
+        {
+            var statuses = await _context.CheckInStatuses.ToListAsync();
+            var statusByName = statuses
+                .Where(s => !string.IsNullOrWhiteSpace(s.StatusName))
+                .GroupBy(s => s.StatusName!)
+                .ToDictionary(g => g.Key, g => g.First().Id);
+
+            if (isLate)
+            {
+                return statusByName.GetValueOrDefault(CheckInStatusLate, 2);
+            }
+
+            if (totalProgress >= 100m)
+            {
+                return statusByName.GetValueOrDefault(CheckInStatusDone, 5);
+            }
+
+            if (scheduleProgress >= 120m)
+            {
+                return statusByName.GetValueOrDefault(CheckInStatusAhead, 3);
+            }
+
+            return statusByName.GetValueOrDefault(CheckInStatusOnTrack, 1);
         }
 
         private async Task NormalizeOkrLinkAsync(KPI kpi)

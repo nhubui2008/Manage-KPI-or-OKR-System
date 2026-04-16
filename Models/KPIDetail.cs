@@ -17,5 +17,8 @@ namespace Manage_KPI_or_OKR_System.Models
         [StringLength(50)]
         public string? MeasurementUnit { get; set; }
         public bool IsInverse { get; set; } = false;
+        public int? CheckInFrequencyDays { get; set; } = 1;
+        public TimeSpan? CheckInDeadlineTime { get; set; } = new TimeSpan(10, 0, 0);
+        public int? ReminderBeforeHours { get; set; } = 24;
     }
 }

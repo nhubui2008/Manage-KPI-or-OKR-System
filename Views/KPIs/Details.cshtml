@@ -29,6 +29,7 @@
         new { Value = "Công việc", Text = "Công việc" }
     };
     var currentMeasurementUnit = detail?.MeasurementUnit ?? "";
+    var currentDeadlineTime = (detail?.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0)).ToString(@"hh\:mm");
     var hasCustomMeasurementUnit = !string.IsNullOrWhiteSpace(currentMeasurementUnit)
         && !measurementUnits.Any(u => string.Equals(u.Value, currentMeasurementUnit, StringComparison.OrdinalIgnoreCase));
 
@@ -148,6 +149,20 @@
                                 <div class="text-white text-opacity-50 small">Mức cảnh báo</div>
                             </div>
                         </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-info rounded-4 text-center shadow-sm">
+                                <label class="text-white text-opacity-75 small text-uppercase fw-bold d-block mb-1">Deadline check-in</label>
+                                <span class="fs-5 fw-bold text-white">@currentDeadlineTime</span>
+                                <div class="text-white text-opacity-50 small">Mỗi @(detail?.CheckInFrequencyDays ?? 1) ngày</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-warning rounded-4 text-center shadow-sm">
+                                <label class="text-white text-opacity-75 small text-uppercase fw-bold d-block mb-1">Nhắc trước hạn</label>
+                                <span class="fs-5 fw-bold text-white">@(detail?.ReminderBeforeHours ?? 24) giờ</span>
+                                <div class="text-white text-opacity-50 small">Thông báo deadline</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -207,6 +222,7 @@
                             <thead class="bg-light">
                                 <tr>
                                     <th class="ps-4 border-0">Ngày</th>
+                                    <th class="border-0">Deadline</th>
                                     <th class="border-0">Người cập nhật</th>
                                     <th class="border-0">Giá trị</th>
                                     <th class="border-0">Tiến độ</th>
@@ -225,8 +241,18 @@
                                         decimal achievedValue = ci.AchievedValue != null ? (decimal)ci.AchievedValue : 0m;
                                         decimal progress = ci.ProgressPercentage != null ? (decimal)ci.ProgressPercentage : 0m;
                                         decimal progressWidth = Math.Min(100, progress);
+                                        bool checkinIsLate = ci.IsLate != null && (bool)ci.IsLate;
                                         <tr>
                                             <td class="ps-4 text-muted small">@ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>
+                                                <div class="small fw-semibold @(checkinIsLate ? "text-danger" : "text-success")">
+                                                    @(((DateTime?)ci.DeadlineAt)?.ToString("dd/MM/yyyy HH:mm") ?? "--")
+                                                </div>
+                                                @if (ci.ExpectedValueAtDeadline != null)
+                                                {
+                                                    <div class="text-muted" style="font-size: 0.72rem;">Cần đạt: @String.Format("{0:N0}", ci.ExpectedValueAtDeadline)</div>
+                                                }
+                                            </td>
                                             <td class="fw-bold text-dark">@ci.employeeName</td>
                                             <td class="fw-bold text-dark">@String.Format("{0:N0}", ci.AchievedValue ?? 0) @currentMeasurementUnit</td>
                                             <td>
@@ -241,8 +267,8 @@
                                                 @if (ci.StatusId != null && statuses.ContainsKey(ci.StatusId))
                                                 {
                                                     string statusName = statuses[ci.StatusId];
-                                                    string badgeClass = statusName == "Đạt" ? "bg-success" :
-                                                                       statusName == "Gần đạt" ? "bg-warning" : "bg-danger";
+                                                    string badgeClass = statusName.Contains("Chậm") || statusName.Contains("trở ngại") ? "bg-danger" :
+                                                                       statusName.Contains("Vượt") ? "bg-info" : "bg-success";
                                                     <span class="badge @badgeClass text-white rounded-pill px-3">@statusName</span>
                                                 }
                                             </td>
@@ -292,7 +318,7 @@
                                 else
                                 {
                                     <tr>
-                                        <td colspan="9" class="text-center py-4 text-muted italic">Chưa có dữ liệu cập nhật nào.</td>
+                                        <td colspan="10" class="text-center py-4 text-muted italic">Chưa có dữ liệu cập nhật nào.</td>
                                     </tr>
                                 }
                             </tbody>
@@ -602,6 +628,24 @@
                                 <label class="form-check-label fw-bold text-dark cursor-pointer" for="editIsInverseCheck">
                                     <i class="bi bi-arrow-down-circle text-warning me-1"></i> Chỉ tiêu thu nhỏ (Càng thấp càng tốt)
                                 </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Tần suất check-in</label>
+                            <div class="input-group">
+                                <input type="number" min="1" step="1" name="detail.CheckInFrequencyDays" value="@(detail?.CheckInFrequencyDays ?? 1)" class="form-control">
+                                <span class="input-group-text">ngày/lần</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Giờ deadline</label>
+                            <input type="time" name="detail.CheckInDeadlineTime" value="@currentDeadlineTime" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Nhắc trước deadline</label>
+                            <div class="input-group">
+                                <input type="number" min="0" step="1" name="detail.ReminderBeforeHours" value="@(detail?.ReminderBeforeHours ?? 24)" class="form-control">
+                                <span class="input-group-text">giờ</span>
                             </div>
                         </div>
                     </div>

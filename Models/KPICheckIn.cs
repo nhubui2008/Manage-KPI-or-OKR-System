@@ -11,6 +11,8 @@ namespace Manage_KPI_or_OKR_System.Models
         public int? KPIId { get; set; }
         public int? SubmittedById { get; set; }
         public DateTime? CheckInDate { get; set; } = DateTime.Now;
+        public DateTime? DeadlineAt { get; set; }
+        public bool? IsLate { get; set; }
         public int? StatusId { get; set; }
         public int? FailReasonId { get; set; }
         [StringLength(30)]

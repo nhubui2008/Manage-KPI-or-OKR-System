@@ -126,10 +126,16 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("CheckInId")
                         .HasColumnType("int");
 
+                    b.Property<decimal?>("ExpectedValueAtDeadline")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("ProgressPercentage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ScheduleProgressPercentage")
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
@@ -680,6 +686,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<DateTime?>("CheckInDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeadlineAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("EmployeeId")
                         .HasColumnType("int");
 
@@ -688,6 +697,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     b.Property<int?>("KPIId")
                         .HasColumnType("int");
+
+                    b.Property<bool?>("IsLate")
+                        .HasColumnType("bit");
 
                     b.Property<string>("ReviewComment")
                         .HasMaxLength(2000)
@@ -737,6 +749,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<TimeSpan?>("CheckInDeadlineTime")
+                        .HasColumnType("time");
+
+                    b.Property<int?>("CheckInFrequencyDays")
+                        .HasColumnType("int");
+
                     b.Property<decimal?>("FailThreshold")
                         .HasColumnType("decimal(18,2)");
 
@@ -752,6 +770,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     b.Property<decimal?>("PassThreshold")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("ReminderBeforeHours")
+                        .HasColumnType("int");
 
                     b.Property<decimal?>("TargetValue")
                         .HasColumnType("decimal(18,2)");

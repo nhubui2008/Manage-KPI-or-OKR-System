@@ -162,6 +162,35 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="col-md-4">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Tần suất check-in</label>
+                                    <div class="input-wrapper input-group">
+                                        <i class="bi bi-repeat"></i>
+                                        <input type="number" min="1" step="1" name="detail.CheckInFrequencyDays" class="form-control shadow-sm" value="1" />
+                                        <span class="input-group-text">ngày/lần</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Giờ deadline</label>
+                                    <div class="input-wrapper">
+                                        <i class="bi bi-alarm"></i>
+                                        <input type="time" name="detail.CheckInDeadlineTime" class="form-control shadow-sm" value="10:00" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-icon-group mb-0">
+                                    <label class="form-label small text-muted text-uppercase fw-800">Nhắc trước hạn</label>
+                                    <div class="input-wrapper input-group">
+                                        <i class="bi bi-bell"></i>
+                                        <input type="number" min="0" step="1" name="detail.ReminderBeforeHours" class="form-control shadow-sm" value="24" />
+                                        <span class="input-group-text">giờ</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">

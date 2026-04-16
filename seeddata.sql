@@ -197,8 +197,8 @@ VALUES
     (3, 17),  -- POSITIONS_VIEW
     (3, 21), (3, 22), (3, 23),   -- OKR: View+Create+Edit
     (3, 25), (3, 26), (3, 27),   -- KPI: View+Create+Edit
-    (3, 29),                     -- Mission: View
-    (3, 33),                     -- EvalPeriod: View
+    (3, 29), (3, 30), (3, 31),   -- Mission: View+Create+Edit
+    (3, 33), (3, 34), (3, 35),   -- EvalPeriod: View+Create+Edit
     (3, 37), (3, 38), (3, 39), (3, 53),  -- CheckIn: View+Create+Edit+Review
     (3, 41), (3, 42), (3, 43),   -- Evaluation: Full
     (3, 44),                     -- Bonus: View
@@ -414,7 +414,8 @@ VALUES
     (2, N'CHECKIN_FREQUENCY',     N'Weekly',          N'Tần suất check-in',                  NULL),
     (3, N'MAX_KPI_PER_EMPLOYEE',  N'10',              N'Số KPI tối đa mỗi nhân viên',        NULL),
     (4, N'MAX_OKR_PER_EMPLOYEE',  N'5',               N'Số OKR tối đa mỗi nhân viên',        NULL),
-    (5, N'DEFAULT_PASS_THRESHOLD',N'60',              N'Ngưỡng đạt KPI mặc định (%)',        NULL);
+    (5, N'DEFAULT_PASS_THRESHOLD',N'60',              N'Ngưỡng đạt KPI mặc định (%)',        NULL),
+    (6, N'CHECKIN_REMINDER_BEFORE_HOURS', N'24',      N'Số giờ mặc định nhắc trước deadline check-in KPI', NULL);
 SET IDENTITY_INSERT [SystemParameters] OFF;
 GO
 
@@ -471,11 +472,11 @@ SET IDENTITY_INSERT [KPIs] OFF;
 GO
 
 SET IDENTITY_INSERT [KPIDetails] ON;
-INSERT INTO [KPIDetails] ([Id], [KPIId], [TargetValue], [PassThreshold], [FailThreshold], [MeasurementUnit], [IsInverse])
+INSERT INTO [KPIDetails] ([Id], [KPIId], [TargetValue], [PassThreshold], [FailThreshold], [MeasurementUnit], [IsInverse], [CheckInFrequencyDays], [CheckInDeadlineTime], [ReminderBeforeHours])
 VALUES
-    (1, 1, 5000.00, 3500.00, 2000.00, N'Triệu đồng', 0),
-    (2, 2, 100.00,  80.00,   60.00,   N'%',           0),
-    (3, 3, 90.00,   75.00,   50.00,   N'%',           0);
+    (1, 1, 5000.00, 3500.00, 2000.00, N'Triệu đồng', 0, 1, '10:00:00', 24),
+    (2, 2, 100.00,  80.00,   60.00,   N'%',           0, 1, '10:00:00', 24),
+    (3, 3, 90.00,   75.00,   50.00,   N'%',           0, 1, '10:00:00', 24);
 SET IDENTITY_INSERT [KPIDetails] OFF;
 GO
 
