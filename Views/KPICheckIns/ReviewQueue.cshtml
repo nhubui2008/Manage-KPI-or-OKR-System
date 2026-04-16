@@ -7,24 +7,237 @@
     var kpis = ViewBag.KPIs as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI>();
     var failReasons = ViewBag.FailReasons as Dictionary<int, string> ?? new Dictionary<int, string>();
     string returnUrl = ViewBag.ReturnUrl as string ?? "/KPICheckIns/ReviewQueue";
+
+    int totalPending = Model.Count;
+    int highProgress = Model.Where(m => {
+        var d = details.ContainsKey(m.Id) ? details[m.Id] : null;
+        return (d?.ProgressPercentage ?? 0) >= 80;
+    }).Count();
+    int lowProgress = Model.Where(m => {
+        var d = details.ContainsKey(m.Id) ? details[m.Id] : null;
+        return (d?.ProgressPercentage ?? 0) < 50;
+    }).Count();
 }
 
+<style>
+    /* ===== REVIEW QUEUE CUSTOM STYLES ===== */
+    .rq-stat-card {
+        background: #ffffff;
+        border: 1px solid var(--card-border, #e1e8f0);
+        border-radius: 14px;
+        padding: 20px 24px;
+        box-shadow: 0 1px 4px rgba(26, 115, 232, 0.06);
+        transition: all 0.25s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .rq-stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+    }
+    .rq-stat-card.card-pending::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .rq-stat-card.card-good::before   { background: linear-gradient(90deg, #10b981, #34d399); }
+    .rq-stat-card.card-risk::before   { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .rq-stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(26, 115, 232, 0.10);
+    }
+    .rq-stat-icon {
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+    .rq-stat-card.card-pending .rq-stat-icon { background: #fef3c7; color: #d97706; }
+    .rq-stat-card.card-good   .rq-stat-icon { background: #d1fae5; color: #059669; }
+    .rq-stat-card.card-risk   .rq-stat-icon { background: #fee2e2; color: #dc2626; }
+    .rq-stat-value {
+        font-size: 2rem; font-weight: 800;
+        line-height: 1; color: #1a2940;
+        margin-top: 14px;
+    }
+    .rq-stat-label {
+        font-size: 0.8rem; color: #6b7c93;
+        margin-top: 4px; font-weight: 500;
+    }
+
+    /* ===== TABLE ROWS ===== */
+    .rq-table thead th {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #6b7c93;
+        background: #f8fafd;
+        border-bottom: 1px solid #e1e8f0;
+        padding: 12px 14px;
+        white-space: nowrap;
+    }
+    .rq-table thead th:first-child { padding-left: 24px; border-radius: 0; }
+    .rq-table thead th:last-child  { padding-right: 24px; }
+
+    .rq-table tbody tr {
+        border-bottom: 1px solid #f0f4f8;
+        transition: background 0.15s ease;
+    }
+    .rq-table tbody tr:hover { background: #f5f9ff; }
+    .rq-table tbody tr:last-child { border-bottom: none; }
+    .rq-table tbody td {
+        padding: 16px 14px;
+        vertical-align: top;
+    }
+    .rq-table tbody td:first-child { padding-left: 24px; }
+    .rq-table tbody td:last-child  { padding-right: 24px; }
+
+    /* Avatar chip */
+    .emp-avatar {
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        color: #fff;
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(26, 115, 232, 0.25);
+    }
+
+    /* Progress bar column */
+    .rq-progress-wrap { min-width: 150px; }
+    .rq-progress-bar-track {
+        height: 7px; border-radius: 999px;
+        background: #e9ecef; overflow: hidden;
+        margin-top: 6px;
+    }
+    .rq-progress-bar-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+
+    /* Badge for pending status */
+    .badge-pending {
+        background: #fef3c7; color: #b45309;
+        border: 1px solid #fde68a;
+        border-radius: 999px;
+        padding: 3px 10px;
+        font-size: 0.7rem; font-weight: 700;
+        letter-spacing: 0.03em;
+    }
+    .badge-fail-reason {
+        background: #fee2e2; color: #b91c1c;
+        border: 1px solid #fecaca;
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 0.72rem; font-weight: 600;
+        display: inline-block;
+    }
+
+    /* Review form in table */
+    .rq-review-form {
+        min-width: 260px;
+    }
+    .rq-review-form .form-control-sm {
+        border-color: #e1e8f0;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .rq-review-form .form-control-sm:focus {
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+    }
+    .rq-btn-approve {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex; align-items: center; gap: 5px;
+    }
+    .rq-btn-approve:hover {
+        background: linear-gradient(135deg, #059669, #047857);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        transform: translateY(-1px);
+    }
+    .rq-btn-reject {
+        background: transparent;
+        color: #dc2626;
+        border: 1.5px solid #fca5a5;
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex; align-items: center; gap: 5px;
+    }
+    .rq-btn-reject:hover {
+        background: #fee2e2;
+        border-color: #ef4444;
+        transform: translateY(-1px);
+    }
+
+    /* Empty state */
+    .rq-empty {
+        padding: 72px 24px;
+        text-align: center;
+    }
+    .rq-empty-icon {
+        width: 80px; height: 80px;
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 2.2rem; color: #059669;
+        animation: rqPulse 2.5s ease-in-out infinite;
+    }
+    @@keyframes rqPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.25); }
+        50%       { box-shadow: 0 0 0 14px rgba(16,185,129,0); }
+    }
+    .rq-empty-title { font-size: 1.15rem; font-weight: 700; color: #1a2940; margin-bottom: 6px; }
+    .rq-empty-sub   { font-size: 0.88rem; color: #6b7c93; }
+
+    /* Alert styles */
+    .rq-alert {
+        display: flex; align-items: flex-start; gap: 12px;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        border: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .rq-alert.success { background: #d1fae5; color: #065f46; }
+    .rq-alert.danger  { background: #fee2e2; color: #7f1d1d; }
+    .rq-alert-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .rq-alert .btn-close { margin-left: auto; }
+</style>
+
 <div class="container-fluid px-0">
+
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="rq-alert success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill rq-alert-icon"></i>
+            <span>@TempData["SuccessMessage"]</span>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
         </div>
     }
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="rq-alert danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill rq-alert-icon"></i>
+            <span>@TempData["ErrorMessage"]</span>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
         </div>
     }
 
+    <!-- Page Header -->
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 font-weight-bold mb-1">Xác nhận check-in KPI</h1>
@@ -36,28 +249,66 @@
                 <span>Chờ xác nhận</span>
             </div>
         </div>
-        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
-            <i class="bi bi-clock-history me-1"></i> Lịch sử
+        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history"></i>
+            <span>Lịch sử check-in</span>
         </a>
     </div>
 
+    <!-- Stat Cards Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div class="rq-stat-card card-pending">
+                <div class="rq-stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                <div class="rq-stat-value">@totalPending</div>
+                <div class="rq-stat-label">Đang chờ duyệt</div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="rq-stat-card card-good">
+                <div class="rq-stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                <div class="rq-stat-value">@highProgress</div>
+                <div class="rq-stat-label">Tiến độ tốt (&ge;80%)</div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="rq-stat-card card-risk">
+                <div class="rq-stat-icon"><i class="bi bi-exclamation-octagon"></i></div>
+                <div class="rq-stat-value">@lowProgress</div>
+                <div class="rq-stat-label">Tiến độ thấp (&lt;50%)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Card -->
     <div class="content-card w-100">
         <div class="card-header-custom border-bottom p-3 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-check2-square me-2"></i>Danh sách chờ quản lý xác nhận</h5>
-            <span class="badge bg-warning text-dark rounded-pill">@Model.Count chờ duyệt</span>
+            <h5 class="mb-0 fs-6 fw-bold d-flex align-items-center gap-2">
+                <span style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#1a73e8,#4285f4);display:inline-flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(26,115,232,0.3);flex-shrink:0;">
+                    <i class="bi bi-check2-square" style="color:#fff;font-size:1rem;"></i>
+                </span>
+                Danh sách chờ quản lý xác nhận
+            </h5>
+            @if (totalPending > 0)
+            {
+                <span class="badge rounded-pill" style="background: linear-gradient(135deg,#f59e0b,#fbbf24); color: #fff; font-size: 0.78rem; padding: 5px 14px;">
+                    @totalPending mục chờ duyệt
+                </span>
+            }
         </div>
+
         <div class="card-body-custom p-0">
             <div class="table-responsive">
-                <table class="data-table w-100 mb-0">
+                <table class="rq-table w-100 mb-0" style="border-collapse: collapse;">
                     <thead>
                         <tr>
-                            <th class="ps-4">Nhân viên</th>
+                            <th>Nhân viên</th>
                             <th>KPI</th>
                             <th>Ngày check-in</th>
                             <th>Kết quả</th>
                             <th>Tiến độ</th>
-                            <th>Lý do/Ghi chú</th>
-                            <th class="text-end pe-4">Xác nhận</th>
+                            <th>Lý do / Ghi chú</th>
+                            <th class="text-end">Xác nhận</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -70,45 +321,91 @@
                                 var kpi = item.KPIId.HasValue && kpis.ContainsKey(item.KPIId.Value) ? kpis[item.KPIId.Value] : null;
                                 var progress = detail?.ProgressPercentage ?? 0;
                                 var progressWidth = Math.Min(100, progress);
+
+                                string empName = employee?.FullName ?? "N/A";
+                                string initials = string.Join("", empName.Split(' ').Select(n => n.Length > 0 ? n[0].ToString() : "")).ToUpper();
+                                if (initials.Length > 2) initials = initials.Substring(0, 2);
+
+                                // Progress color
+                                string barColor = progress >= 80 ? "#10b981" : progress >= 50 ? "#f59e0b" : "#ef4444";
+                                string textColor = progress >= 80 ? "#059669" : progress >= 50 ? "#d97706" : "#dc2626";
+
                                 <tr>
-                                    <td class="ps-4">
-                                        <div class="fw-bold text-dark">@(employee?.FullName ?? "N/A")</div>
-                                        <div class="text-muted small">@employee?.EmployeeCode</div>
-                                    </td>
+                                    <!-- Nhân viên -->
                                     <td>
-                                        <div class="fw-bold">@kpi?.KPIName</div>
-                                        <div class="text-muted small">KPI #@item.KPIId</div>
-                                    </td>
-                                    <td class="text-muted">@item.CheckInDate?.ToString("dd/MM/yyyy HH:mm")</td>
-                                    <td class="fw-bold">@String.Format("{0:N2}", detail?.AchievedValue ?? 0)</td>
-                                    <td style="min-width: 160px;">
-                                        <div class="d-flex justify-content-between small mb-1">
-                                            <span class="@ProgressHelper.GetProgressTextColorClass(progress) fw-bold">@progress.ToString("0.##")%</span>
-                                            <span class="text-muted">Pending</span>
-                                        </div>
-                                        <div class="progress" style="height: 6px;">
-                                            <div class="progress-bar @ProgressHelper.GetProgressColorClass(progress)" style="width: @progressWidth%;"></div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="emp-avatar">@initials</div>
+                                            <div>
+                                                <div class="fw-semibold text-dark" style="font-size:.88rem;">@empName</div>
+                                                <div class="text-muted" style="font-size:.75rem;">@employee?.EmployeeCode</div>
+                                            </div>
                                         </div>
                                     </td>
-                                    <td style="max-width: 280px;">
+
+                                    <!-- KPI -->
+                                    <td>
+                                        <div class="fw-semibold text-dark" style="font-size:.875rem;max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="@kpi?.KPIName">@kpi?.KPIName</div>
+                                        <div class="text-muted" style="font-size:.75rem;">#@item.KPIId</div>
+                                    </td>
+
+                                    <!-- Ngày -->
+                                    <td>
+                                        <div class="d-flex align-items-center gap-1 text-muted" style="font-size:.82rem; white-space:nowrap;">
+                                            <i class="bi bi-clock text-primary opacity-75"></i>
+                                            @item.CheckInDate?.ToString("dd/MM/yyyy")
+                                        </div>
+                                        <div class="text-muted" style="font-size:.75rem; padding-left:1.2rem;">@item.CheckInDate?.ToString("HH:mm")</div>
+                                    </td>
+
+                                    <!-- Kết quả -->
+                                    <td>
+                                        <span class="fw-bold" style="font-size:1rem; color:#1a2940;">
+                                            @String.Format("{0:N2}", detail?.AchievedValue ?? 0)
+                                        </span>
+                                    </td>
+
+                                    <!-- Tiến độ -->
+                                    <td>
+                                        <div class="rq-progress-wrap">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="fw-bold" style="font-size:.8rem; color:@textColor;">@progress.ToString("0.##")%</span>
+                                                <span class="badge-pending" style="font-size:.68rem;">Pending</span>
+                                            </div>
+                                            <div class="rq-progress-bar-track">
+                                                <div class="rq-progress-bar-fill" style="width:@progressWidth%; background:@barColor;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Lý do / Ghi chú -->
+                                    <td style="max-width:220px;">
                                         @if (item.FailReasonId.HasValue && failReasons.ContainsKey(item.FailReasonId.Value))
                                         {
-                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 mb-1">@failReasons[item.FailReasonId.Value]</span>
+                                            <span class="badge-fail-reason mb-1 d-inline-block">
+                                                <i class="bi bi-exclamation-triangle-fill me-1"></i>@failReasons[item.FailReasonId.Value]
+                                            </span>
                                         }
-                                        <div class="text-muted small">@(string.IsNullOrWhiteSpace(detail?.Note) ? "--" : detail.Note)</div>
+                                        <div class="text-muted" style="font-size:.78rem; word-break:break-word;">
+                                            @(string.IsNullOrWhiteSpace(detail?.Note) ? "—" : detail.Note)
+                                        </div>
                                     </td>
-                                    <td class="pe-4 text-end" style="min-width: 300px;">
-                                        <form asp-action="Review" method="post" class="text-start">
+
+                                    <!-- Review Form -->
+                                    <td>
+                                        <form asp-action="Review" method="post" class="rq-review-form">
                                             <input type="hidden" name="id" value="@item.Id" />
                                             <input type="hidden" name="returnUrl" value="@returnUrl" />
-                                            <input type="number" min="0" max="100" step="0.01" name="reviewScore" class="form-control form-control-sm mb-2" placeholder="Điểm đánh giá 0-100" />
-                                            <textarea name="reviewComment" class="form-control form-control-sm mb-2" rows="2" placeholder="Nhận xét của quản lý..."></textarea>
+                                            <input type="number" min="0" max="100" step="0.01" name="reviewScore"
+                                                   class="form-control form-control-sm mb-2"
+                                                   placeholder="Điểm đánh giá (0–100)" />
+                                            <textarea name="reviewComment" class="form-control form-control-sm mb-2"
+                                                      rows="2" placeholder="Nhận xét của quản lý…"></textarea>
                                             <div class="d-flex gap-2 justify-content-end">
-                                                <button type="submit" name="decision" value="Approved" class="btn btn-sm btn-success">
-                                                    <i class="bi bi-check2-circle me-1"></i>Xác nhận
+                                                <button type="submit" name="decision" value="Approved" class="rq-btn-approve">
+                                                    <i class="bi bi-check2-circle"></i>Xác nhận
                                                 </button>
-                                                <button type="submit" name="decision" value="Rejected" class="btn btn-sm btn-outline-danger">
-                                                    <i class="bi bi-x-circle me-1"></i>Từ chối
+                                                <button type="submit" name="decision" value="Rejected" class="rq-btn-reject">
+                                                    <i class="bi bi-x-circle"></i>Từ chối
                                                 </button>
                                             </div>
                                         </form>
@@ -119,9 +416,17 @@
                         else
                         {
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-5">
-                                    <i class="bi bi-check2-circle fs-2 d-block mb-2 opacity-50"></i>
-                                    Không có check-in nào đang chờ xác nhận
+                                <td colspan="7" class="p-0">
+                                    <div class="rq-empty">
+                                        <div class="rq-empty-icon">
+                                            <i class="bi bi-check2-circle"></i>
+                                        </div>
+                                        <div class="rq-empty-title">Tất cả đã được xác nhận!</div>
+                                        <div class="rq-empty-sub">Không có check-in nào đang chờ xác nhận lúc này.</div>
+                                        <a asp-action="Index" class="btn btn-outline-primary rounded-pill mt-3 px-4" style="font-size:.85rem;">
+                                            <i class="bi bi-clock-history me-1"></i>Xem lịch sử check-in
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -130,4 +435,5 @@
             </div>
         </div>
     </div>
+
 </div>
