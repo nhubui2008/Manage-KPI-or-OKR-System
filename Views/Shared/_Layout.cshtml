@@ -232,6 +232,12 @@
                                     <i class="bi bi-journal-text"></i> <span>Lịch sử hệ thống</span>
                                 </a>
                             }
+                            @if (User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("HR"))
+                            {
+                                <a href="/SystemParameters" class="sidebar-link">
+                                    <i class="bi bi-sliders"></i> <span>Cài đặt tham số</span>
+                                </a>
+                            }
                             @if (isAdmin)
                             {
                                 <a href="/Catalog" class="sidebar-link">
@@ -578,5 +584,6 @@
     }
 
     @await RenderSectionAsync("Scripts", required: false)
+    <partial name="_AiHistoryModal" />
 </body>
 </html>

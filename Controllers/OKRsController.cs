@@ -430,7 +430,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var options = new GeminiGenerationOptions { Temperature = 0.6, ResponseMimeType = "application/json" };
                 var responseJson = await _geminiService.GenerateTextAsync(systemInstruction, prompt, options);
                 
-                var cleanJson = responseJson.Trim();
+                string cleanJson = responseJson.Trim();
                 if (cleanJson.StartsWith("```json"))
                 {
                     cleanJson = cleanJson.Substring(7);
@@ -442,6 +442,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     if (cleanJson.EndsWith("```")) cleanJson = cleanJson.Substring(0, cleanJson.Length - 3);
                 }
 
+                // Luu vao lich su (AIGenerationHistories)
+                var suIdClaim = User.Claims.FirstOrDefault(c => c.Type == "SystemUserId");
+                if (suIdClaim != null && int.TryParse(suIdClaim.Value, out int suId))
+                {
+                    _context.AIGenerationHistories.Add(new AIGenerationHistory
+                    {
+                        FeatureName = "SuggestKR",
+                        TargetId = id,
+                        Prompt = prompt,
+                        Response = cleanJson.Trim(),
+                        SystemUserId = suId,
+                        CreatedAt = DateTime.Now
+                    });
+                    await _context.SaveChangesAsync();
+                }
+
                 return Content(cleanJson.Trim(), "application/json");
             }
             catch (Exception ex)
@@ -451,6 +467,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         [HasPermission("OKRS_CREATE")]
         public async Task<IActionResult> AddMultipleKeyResults([FromBody] List<OKRKeyResult> keyResults)
         {

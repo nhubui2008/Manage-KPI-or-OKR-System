@@ -347,11 +347,15 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body-soft">
-                <div class="soft-tag-indicator mb-3">
-                    <i class="bi bi-bullseye"></i>
-                    <span id="aiOkrNameDisplay" class="text-truncate fw-bold">Objective: </span>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="soft-tag-indicator mb-0">
+                        <i class="bi bi-bullseye"></i>
+                        <span id="aiOkrNameDisplay" class="text-truncate fw-bold">Objective: </span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill" onclick="openAiHistoryModal('SuggestKR', document.getElementById('aiOkrId').value, applyAiHistoryKR)">
+                        <i class="bi bi-clock-history"></i> Lịch sử AI
+                    </button>
                 </div>
-
                 <div id="aiLoadingIndicator" class="text-center py-5">
                     <div class="spinner-grow text-info" role="status" style="width: 3rem; height: 3rem;">
                         <span class="visually-hidden">Loading...</span>
@@ -821,6 +825,45 @@
             }
         });
 
+        function renderAiKrResults(data) {
+            document.getElementById('aiLoadingIndicator').style.display = 'none';
+            document.getElementById('aiSuggestionContent').style.display = 'block';
+            
+            const tbody = document.getElementById('aiKrListTableBody');
+            let html = '';
+            data.forEach((kr, index) => {
+                let isInverseChecked = kr.IsInverse || kr.isInverse ? 'checked' : '';
+                html += `
+                    <tr>
+                        <td><input class="form-check-input ai-kr-checkbox" type="checkbox" checked data-index="${index}"></td>
+                        <td><input type="text" class="form-control form-control-sm ai-kr-name" value="${kr.KeyResultName || kr.keyResultName}" required></td>
+                        <td><input type="number" step="0.01" class="form-control form-control-sm ai-kr-target" value="${kr.TargetValue || kr.targetValue}" required></td>
+                        <td><input type="text" class="form-control form-control-sm ai-kr-unit" value="${kr.Unit || kr.unit}" list="unitList" required></td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input ai-kr-is-inverse" type="checkbox" ${isInverseChecked}>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            // Add datalist for units if not exist
+            if (!document.getElementById('unitList')) {
+                let datalistHTML = `<datalist id="unitList">`;
+                document.querySelectorAll('.measurement-unit-select option').forEach(opt => {
+                    if(opt.value) datalistHTML += `<option value="${opt.value}">`;
+                });
+                datalistHTML += `</datalist>`;
+                document.body.insertAdjacentHTML('beforeend', datalistHTML);
+            }
+            
+            tbody.innerHTML = html;
+        }
+
+        function applyAiHistoryKR(parsedData) {
+            renderAiKrResults(parsedData);
+        }
+
         // AI Gợi ý KR
         function openAiSuggestKrModal(okrId, okrName) {
             closeAllOkrDropdowns();
@@ -840,38 +883,7 @@
                     return response.json();
                 })
                 .then(data => {
-                    document.getElementById('aiLoadingIndicator').style.display = 'none';
-                    document.getElementById('aiSuggestionContent').style.display = 'block';
-                    
-                    const tbody = document.getElementById('aiKrListTableBody');
-                    let html = '';
-                    data.forEach((kr, index) => {
-                        let isInverseChecked = kr.IsInverse || kr.isInverse ? 'checked' : '';
-                        html += `
-                            <tr>
-                                <td><input class="form-check-input ai-kr-checkbox" type="checkbox" checked data-index="${index}"></td>
-                                <td><input type="text" class="form-control form-control-sm ai-kr-name" value="${kr.KeyResultName || kr.keyResultName}" required></td>
-                                <td><input type="number" step="0.01" class="form-control form-control-sm ai-kr-target" value="${kr.TargetValue || kr.targetValue}" required></td>
-                                <td><input type="text" class="form-control form-control-sm ai-kr-unit" value="${kr.Unit || kr.unit}" list="unitList" required></td>
-                                <td>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input ai-kr-is-inverse" type="checkbox" ${isInverseChecked}>
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                    // Add datalist for units if not exist
-                    if (!document.getElementById('unitList')) {
-                        let datalistHTML = `<datalist id="unitList">`;
-                        document.querySelectorAll('.measurement-unit-select option').forEach(opt => {
-                            if(opt.value) datalistHTML += `<option value="${opt.value}">`;
-                        });
-                        datalistHTML += `</datalist>`;
-                        document.body.insertAdjacentHTML('beforeend', datalistHTML);
-                    }
-                    
-                    tbody.innerHTML = html;
+                    renderAiKrResults(data);
                 })
                 .catch(error => {
                     document.getElementById('aiLoadingIndicator').innerHTML = `<div class="alert alert-danger">${error.message}</div>`;

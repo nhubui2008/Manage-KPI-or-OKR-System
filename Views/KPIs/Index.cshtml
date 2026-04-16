@@ -603,9 +603,14 @@
                 <div id="aiSuggestOptionsStatus" class="text-muted small mb-3"></div>
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <p class="text-muted small mb-0">AI sẽ tạo bản nháp KPI. Bạn chọn “Áp dụng” rồi kiểm tra lại trước khi lưu.</p>
-                    <button type="button" class="btn btn-primary" id="aiRunKpiSuggestBtn">
-                        <i class="bi bi-magic me-1"></i> Tạo gợi ý
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-info" onclick="openAiHistoryModal('SuggestKPI', null, function(data){ renderKpiSuggestions(data.suggestions ? data.suggestions : data); })">
+                            <i class="bi bi-clock-history"></i> Lịch sử
+                        </button>
+                        <button type="button" class="btn btn-primary" id="aiRunKpiSuggestBtn">
+                            <i class="bi bi-magic me-1"></i> Tạo gợi ý
+                        </button>
+                    </div>
                 </div>
                 <div id="aiKpiSuggestResults" class="d-grid gap-2"></div>
             </div>

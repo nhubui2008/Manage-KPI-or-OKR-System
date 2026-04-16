@@ -670,19 +670,22 @@ html.sidebar-expanded .main-content {
 
 .notification-count-pill {
     position: absolute;
-    top: -7px;
-    right: -8px;
-    min-width: 22px;
-    height: 22px;
-    padding: 0 7px;
+    top: -6px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
     border-radius: 999px;
     background: linear-gradient(135deg, #d93025, #ea4335);
     color: #ffffff;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 800;
-    line-height: 22px;
+    line-height: 18px;
+    text-align: center;
     border: 2px solid #ffffff;
-    box-shadow: 0 10px 20px rgba(217, 48, 37, 0.28);
+    box-shadow: 0 2px 6px rgba(217, 48, 37, 0.35);
+    pointer-events: none;
+    white-space: nowrap;
 }
 
 .notification-menu {

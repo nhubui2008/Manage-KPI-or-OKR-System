@@ -656,8 +656,9 @@
                 }
             }
 
+            // Luôn ẩn dot – chỉ dùng pill số
             if (dot) {
-                dot.classList.toggle('d-none', unreadCount === 0);
+                dot.classList.add('d-none');
             }
 
             if (pill) {

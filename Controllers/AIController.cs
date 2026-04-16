@@ -2,8 +2,11 @@ using System.Text;
 using System.Text.Json;
 using Manage_KPI_or_OKR_System.Models.AI;
 using Manage_KPI_or_OKR_System.Services;
+using Manage_KPI_or_OKR_System.Models;
+using Manage_KPI_or_OKR_System.Models.AI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -13,6 +16,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly IAIDataService _dataService;
         private readonly IAIAlertService _alertService;
         private readonly IGeminiService _geminiService;
+        private readonly Manage_KPI_or_OKR_System.Data.MiniERPDbContext _context;
         private readonly ILogger<AIController> _logger;
         private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
         {
@@ -23,11 +27,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
             IAIDataService dataService,
             IAIAlertService alertService,
             IGeminiService geminiService,
+            Manage_KPI_or_OKR_System.Data.MiniERPDbContext context,
             ILogger<AIController> logger)
         {
             _dataService = dataService;
             _alertService = alertService;
             _geminiService = geminiService;
+            _context = context;
             _logger = logger;
         }
 
@@ -98,6 +104,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     return StatusCode(502, new SuggestKpiResponse { Success = false, Warnings = { "Gemini chua tra ve danh sach KPI hop le." } });
                 }
 
+                await SaveAIHistoryAsync("SuggestKPI", null, prompt, text);
+
                 return Ok(new SuggestKpiResponse { Suggestions = suggestions });
             }
             catch (Exception ex)
@@ -143,6 +151,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     new GeminiGenerationOptions { Temperature = 0.3 },
                     cancellationToken);
 
+                await SaveAIHistoryAsync("AnalyzePerformance", request.PeriodId, context, text);
+
                 return Ok(new AITextResponse { Text = text });
             }
             catch (Exception ex)
@@ -167,6 +177,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     reviewContext.ContextText,
                     new GeminiGenerationOptions { Temperature = 0.35 },
                     cancellationToken);
+
+                await SaveAIHistoryAsync("GenerateReview", request.EvaluationResultId, reviewContext.ContextText, text);
 
                 return Ok(new AITextResponse { Text = text });
             }
@@ -251,6 +263,32 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return result;
         }
 
+        private async Task SaveAIHistoryAsync(string feature, int? targetId, string prompt, string response)
+        {
+            try
+            {
+                var suIdClaim = User.Claims.FirstOrDefault(c => c.Type == "SystemUserId");
+                if (suIdClaim != null && int.TryParse(suIdClaim.Value, out int suId))
+                {
+                    var hist = new AIGenerationHistory
+                    {
+                        FeatureName = feature,
+                        TargetId = targetId,
+                        Prompt = prompt,
+                        Response = response,
+                        SystemUserId = suId,
+                        CreatedAt = DateTime.Now
+                    };
+                    _context.AIGenerationHistories.Add(hist);
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to save AI generation history.");
+            }
+        }
+
         private IActionResult HandleAIException(Exception ex, string featureName)
         {
             if (ex is GeminiConfigurationException or GeminiRateLimitException)
@@ -265,6 +303,93 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             _logger.LogError(ex, "Failed to execute {FeatureName}", featureName);
             return StatusCode(500, new AITextResponse { Success = false, Warnings = { $"Khong the thuc hien {featureName}. Vui long thu lai sau." } });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> History(string featureName, int? targetId)
+        {
+            var systemUserIdClaim = User.Claims.FirstOrDefault(c => c.Type == "SystemUserId");
+            if (systemUserIdClaim == null || !int.TryParse(systemUserIdClaim.Value, out int systemUserId))
+            {
+                return Unauthorized();
+            }
+
+            var query = _context.AIGenerationHistories.AsQueryable()
+                                .Where(h => h.FeatureName == featureName);
+
+            if (targetId.HasValue)
+            {
+                query = query.Where(h => h.TargetId == targetId.Value);
+            }
+
+            if (User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Director") || User.IsInRole("HR"))
+            {
+                // Full access to see all history
+            }
+            else if (User.IsInRole("Manager") || User.IsInRole("manager"))
+            {
+                var currentEmployee = await _context.Employees
+                    .FirstOrDefaultAsync(e => e.SystemUserId == systemUserId);
+
+                if (currentEmployee != null)
+                {
+                    var managedDeptIds = await _context.Departments
+                        .Where(d => d.ManagerId == currentEmployee.Id && d.IsActive == true)
+                        .Select(d => d.Id).ToListAsync();
+
+                    var employeeIdsInDepts = await _context.EmployeeAssignments
+                        .Where(ea => ea.DepartmentId.HasValue && managedDeptIds.Contains(ea.DepartmentId.Value) && ea.IsActive == true)
+                        .Select(ea => ea.EmployeeId)
+                        .Where(eId => eId.HasValue)
+                        .Select(eId => eId!.Value)
+                        .Distinct()
+                        .ToListAsync();
+
+                    var systemUserIdsInDepts = await _context.Employees
+                        .Where(e => employeeIdsInDepts.Contains(e.Id) && e.SystemUserId.HasValue)
+                        .Select(e => e.SystemUserId!.Value)
+                        .ToListAsync();
+                    
+                    systemUserIdsInDepts.Add(systemUserId);
+
+                    query = query.Where(h => systemUserIdsInDepts.Contains(h.SystemUserId));
+                }
+            }
+            else
+            {
+                // Employee, Sales - Only see their own history
+                query = query.Where(h => h.SystemUserId == systemUserId);
+            }
+
+            var historyRaw = await query.OrderByDescending(h => h.CreatedAt)
+                                     .Select(h => new
+                                     {
+                                        h.Id,
+                                        h.FeatureName,
+                                        h.TargetId,
+                                        h.CreatedAt,
+                                        h.Response,
+                                        h.SystemUserId,
+                                        Username = h.SystemUser != null ? h.SystemUser.Username : "N/A"
+                                     })
+                                     .ToListAsync();
+
+            var sysUserIds = historyRaw.Select(h => h.SystemUserId).Distinct().ToList();
+            var employeeDict = await _context.Employees
+                .Where(e => e.SystemUserId.HasValue && sysUserIds.Contains(e.SystemUserId.Value))
+                .ToDictionaryAsync(e => e.SystemUserId!.Value, e => e.FullName);
+
+            var history = historyRaw.Select(h => new
+            {
+                h.Id,
+                h.FeatureName,
+                h.TargetId,
+                h.CreatedAt,
+                h.Response,
+                CreatorName = employeeDict.ContainsKey(h.SystemUserId) ? employeeDict[h.SystemUserId] : h.Username
+            });
+
+            return Ok(new { success = true, history });
         }
     }
 }

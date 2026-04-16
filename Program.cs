@@ -30,6 +30,7 @@ builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 builder.Services.AddScoped<IAIDataService, AIDataService>();
 builder.Services.AddScoped<IAIAlertService, AIAlertService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddHostedService<Manage_KPI_or_OKR_System.Services.AIHistoryCleanupService>();
 
 // Đăng ký Data Protection & EncryptionHelper
 builder.Services.AddDataProtection();
