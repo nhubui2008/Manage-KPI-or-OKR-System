@@ -3,7 +3,47 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - VietMach KPI/OKR System</title>
+    <title>@SeoHelper.GetTitle(ViewContext)</title>
+    
+    <!-- Primary Meta Tags -->
+    <meta name="title" content="@SeoHelper.GetTitle(ViewContext)" />
+    <meta name="description" content="@SeoHelper.GetDescription(ViewContext)" />
+    <meta name="keywords" content="@SeoHelper.GetKeywords(ViewContext)" />
+    <meta name="author" content="VietMach" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="@SeoHelper.GetCanonicalUrl(ViewContext)" />
+
+    <!-- Open Graph / Facebook / Zalo -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="@SeoHelper.GetCanonicalUrl(ViewContext)" />
+    <meta property="og:title" content="@SeoHelper.GetTitle(ViewContext)" />
+    <meta property="og:description" content="@SeoHelper.GetDescription(ViewContext)" />
+    <meta property="og:image" content="@SeoHelper.GetCanonicalUrl(ViewContext, "")/images/seo-banner.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="@SeoHelper.GetCanonicalUrl(ViewContext)" />
+    <meta property="twitter:title" content="@SeoHelper.GetTitle(ViewContext)" />
+    <meta property="twitter:description" content="@SeoHelper.GetDescription(ViewContext)" />
+    <meta property="twitter:image" content="@SeoHelper.GetCanonicalUrl(ViewContext, "")/images/seo-banner.png" />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "SoftwareApplication",
+      "name": "VietMach KPI/OKR System",
+      "operatingSystem": "Web-based",
+      "applicationCategory": "BusinessApplication",
+      "offers": {
+        "@@type": "Offer",
+        "price": "0",
+        "priceCurrency": "VND"
+      },
+      "description": "Hệ thống quản lý KPI/OKR hiện đại tích hợp AI"
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">

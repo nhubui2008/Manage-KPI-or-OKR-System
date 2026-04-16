@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /Auth/
+Disallow: /AuditLogs/
+Disallow: /api/
+Disallow: /SystemUsers/
+Disallow: /Roles/
+
+Sitemap: https://vietmach-kpi.com/sitemap.xml
