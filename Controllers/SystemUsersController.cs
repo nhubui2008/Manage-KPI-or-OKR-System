@@ -73,7 +73,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (int.TryParse(currentUserIdStr, out int currentUserId) && currentUserId == userId)
             {
-                TempData["ErrorMessage"] = "Bạn không thể tự khóa tài khoản đang đăng nhập.";
+                TempData["ToastErrorMessage"] = "Bạn không thể tự khóa tài khoản đang đăng nhập.";
                 return RedirectToAction(nameof(Index));
             }
 

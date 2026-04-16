@@ -91,33 +91,6 @@
 
                         // Helper: kiểm tra user có permission không
                         bool HasPerm(string code) => isAdmin || userPermissions.Contains(code);
-                        
-                        List<Manage_KPI_or_OKR_System.Models.SystemAlert> userAlerts = new List<Manage_KPI_or_OKR_System.Models.SystemAlert>();
-                        List<Manage_KPI_or_OKR_System.Models.SystemAlert> normalAlerts = new List<Manage_KPI_or_OKR_System.Models.SystemAlert>();
-                        List<Manage_KPI_or_OKR_System.Models.SystemAlert> aiAlerts = new List<Manage_KPI_or_OKR_System.Models.SystemAlert>();
-                        int unreadAlerts = 0;
-                        int unreadAiAlerts = 0;
-                        if (User.Identity != null && User.Identity.IsAuthenticated)
-                        {
-                            var currentUserIdValue = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                            if (dbContext != null && int.TryParse(currentUserIdValue, out var currentSystemUserId))
-                            {
-                                var currentEmployee = dbContext.Employees.FirstOrDefault(e => e.SystemUserId == currentSystemUserId && e.IsActive == true);
-                                if (currentEmployee != null)
-                                {
-                                    userAlerts = dbContext.SystemAlerts
-                                        .Where(a => a.ReceiverId == currentEmployee.Id && (a.ExpiresAt == null || a.ExpiresAt > DateTime.Now))
-                                        .OrderByDescending(a => a.CreateDate)
-                                        .Take(10)
-                                        .ToList();
-
-                                    normalAlerts = userAlerts.Where(a => a.AlertType != "AI Insight").Take(5).ToList();
-                                    aiAlerts = userAlerts.Where(a => a.AlertType == "AI Insight").Take(5).ToList();
-                                    unreadAlerts = dbContext.SystemAlerts.Count(a => a.ReceiverId == currentEmployee.Id && a.IsRead == false && a.AlertType != "AI Insight" && (a.ExpiresAt == null || a.ExpiresAt > DateTime.Now));
-                                    unreadAiAlerts = dbContext.SystemAlerts.Count(a => a.ReceiverId == currentEmployee.Id && a.IsRead == false && a.AlertType == "AI Insight" && (a.ExpiresAt == null || a.ExpiresAt > DateTime.Now));
-                                }
-                            }
-                        }
                     }
 
                     <div class="sidebar-group">
@@ -312,89 +285,114 @@
                     </div>
 
                     <div class="header-right">
-                        <div class="dropdown">
-                            <button class="header-icon-btn" title="Thông báo hệ thống" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                <i class="bi bi-bell"></i>
-                                @if(unreadAlerts + unreadAiAlerts > 0)
-                                {
-                                    <span class="badge-dot"></span>
-                                }
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-0" style="width: 360px; border-radius: 12px; overflow: hidden; margin-top: 10px;">
-                                <li class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold fs-6">Thông báo</span>
-                                    @if(unreadAlerts + unreadAiAlerts > 0) { <span class="badge bg-danger rounded-pill">@(unreadAlerts + unreadAiAlerts) mới</span> }
-                                </li>
-                                <li class="px-3 pt-2">
-                                    <ul class="nav nav-pills nav-fill gap-2 small" id="notificationTabs" role="tablist">
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link active py-1" data-bs-toggle="pill" data-bs-target="#systemAlertsPane" type="button" role="tab">Hệ thống</button>
-                                        </li>
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link py-1" data-bs-toggle="pill" data-bs-target="#aiAlertsPane" type="button" role="tab">
-                                                AI Insights
-                                                @if (unreadAiAlerts > 0) { <span class="badge bg-danger ms-1">@unreadAiAlerts</span> }
-                                            </button>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li>
-                                    <div class="tab-content" style="max-height: 360px; overflow-y: auto;">
-                                        <div class="tab-pane fade show active" id="systemAlertsPane" role="tabpanel">
-                                            @if (normalAlerts.Any())
-                                            {
-                                                foreach (var alert in normalAlerts)
-                                                {
-                                                    <div class="border-bottom list-group-item-action p-3" style="cursor: pointer; background-color: @(alert.IsRead == true ? "transparent" : "#f0f7ff")">
-                                                        <div class="d-flex w-100 justify-content-between">
-                                                            <h6 class="mb-1 text-primary fw-bold" style="font-size: 0.85rem;"><i class="bi bi-info-circle me-1"></i> @alert.AlertType</h6>
-                                                            <small class="text-muted" style="font-size: 0.7rem;">@alert.CreateDate?.ToString("dd/MM HH:mm")</small>
-                                                        </div>
-                                                        <p class="mb-1 text-dark" style="font-size: 0.8rem;">@alert.Content</p>
-                                                    </div>
-                                                }
-                                            }
-                                            else
-                                            {
-                                                <div class="p-4 text-center text-muted">
-                                                    <i class="bi bi-bell-slash fs-4 d-block mb-2 opacity-50"></i>
-                                                    <span class="small">Không có thông báo hệ thống</span>
-                                                </div>
-                                            }
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            <div class="dropdown notification-dropdown"
+                                 data-notification-center
+                                 data-notification-endpoint="/Notifications/Center"
+                                 data-notification-read-endpoint="/Notifications/MarkAsRead"
+                                 data-notification-read-all-endpoint="/Notifications/MarkAllAsRead"
+                                 data-notification-ai-refresh-endpoint="/AI/RefreshSmartAlerts">
+                                <button class="header-icon-btn notification-bell-btn" title="Trung tâm thông báo" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                    <i class="bi bi-bell"></i>
+                                    <span class="badge-dot d-none" data-notification-dot></span>
+                                    <span class="notification-count-pill d-none" data-notification-pill></span>
+                                </button>
+
+                                <div class="dropdown-menu dropdown-menu-end shadow border-0 py-0 notification-menu">
+                                    <div class="notification-menu__header">
+                                        <div class="notification-menu__intro">
+                                            <div class="notification-menu__eyebrow">
+                                                <span class="notification-menu__eyebrow-icon">
+                                                    <i class="bi bi-broadcast-pin"></i>
+                                                </span>
+                                                Notification Center
+                                            </div>
+                                            <div class="notification-menu__title-row">
+                                                <div class="notification-menu__title">Thông báo đẩy</div>
+                                                <span class="notification-menu__live-pill">
+                                                    <span class="notification-menu__live-dot"></span>
+                                                    Live
+                                                </span>
+                                            </div>
+                                            <div class="notification-menu__subtitle" data-notification-subtitle>Đang đồng bộ thông báo...</div>
                                         </div>
+                                        <button type="button" class="btn btn-sm btn-link notification-menu__action d-none" data-notification-mark-all>
+                                            Đánh dấu tab đã đọc
+                                        </button>
+                                    </div>
+
+                                    <div class="notification-menu__metrics">
+                                        <div class="notification-metric notification-metric--all">
+                                            <span class="notification-metric__label">Tổng mới</span>
+                                            <span class="notification-metric__value" data-notification-metric="all">0</span>
+                                        </div>
+                                        <div class="notification-metric notification-metric--system">
+                                            <span class="notification-metric__label">Hệ thống</span>
+                                            <span class="notification-metric__value" data-notification-metric="system">0</span>
+                                        </div>
+                                        <div class="notification-metric notification-metric--ai">
+                                            <span class="notification-metric__label">AI insights</span>
+                                            <span class="notification-metric__value" data-notification-metric="ai">0</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="notification-menu__tabs">
+                                        <ul class="nav nav-pills nav-fill gap-2 small" id="notificationTabs" role="tablist">
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link active py-1" data-bs-toggle="pill" data-bs-target="#systemAlertsPane" type="button" role="tab" data-notification-tab="system">
+                                                    Hệ thống
+                                                    <span class="badge bg-primary-subtle text-primary ms-1 d-none" data-notification-tab-badge="system"></span>
+                                                </button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link py-1" data-bs-toggle="pill" data-bs-target="#aiAlertsPane" type="button" role="tab" data-notification-tab="ai">
+                                                    AI Insights
+                                                    <span class="badge bg-warning-subtle text-warning-emphasis ms-1 d-none" data-notification-tab-badge="ai"></span>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="tab-content notification-menu__content">
+                                        <div class="tab-pane fade show active" id="systemAlertsPane" role="tabpanel">
+                                            <div class="notification-list" data-notification-list="system">
+                                                <div class="notification-loading">
+                                                    <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                                                    <span>Đang tải thông báo hệ thống...</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="tab-pane fade" id="aiAlertsPane" role="tabpanel">
-                                            <div class="p-2 border-bottom bg-light d-flex justify-content-between align-items-center">
-                                                <span class="small text-muted">Cảnh báo từ dữ liệu KPI/OKR</span>
-                                                <button type="button" class="btn btn-sm btn-outline-primary py-0" id="refreshAiAlertsBtn">
+                                            <div class="notification-pane__toolbar">
+                                                <span class="notification-pane__hint">Cảnh báo tự động từ dữ liệu KPI/OKR</span>
+                                                <button type="button" class="notification-refresh-btn" data-notification-refresh-ai>
                                                     <i class="bi bi-arrow-repeat"></i> Làm mới
                                                 </button>
                                             </div>
-                                            @if (aiAlerts.Any())
-                                            {
-                                                foreach (var alert in aiAlerts)
-                                                {
-                                                    var severityClass = alert.Severity == "high" ? "danger" : alert.Severity == "medium" ? "warning" : "info";
-                                                    <div class="border-bottom list-group-item-action p-3" style="cursor: pointer; background-color: @(alert.IsRead == true ? "transparent" : "#fff8e6")">
-                                                        <div class="d-flex w-100 justify-content-between">
-                                                            <h6 class="mb-1 text-@severityClass fw-bold" style="font-size: 0.85rem;"><i class="bi bi-stars me-1"></i> AI Insight</h6>
-                                                            <small class="text-muted" style="font-size: 0.7rem;">@alert.CreateDate?.ToString("dd/MM HH:mm")</small>
-                                                        </div>
-                                                        <p class="mb-1 text-dark" style="font-size: 0.8rem;">@alert.Content</p>
-                                                    </div>
-                                                }
-                                            }
-                                            else
-                                            {
-                                                <div class="p-4 text-center text-muted">
-                                                    <i class="bi bi-stars fs-4 d-block mb-2 opacity-50"></i>
-                                                    <span class="small">Chưa có AI Insight. Bấm làm mới để phân tích.</span>
+                                            <div class="notification-list" data-notification-list="ai">
+                                                <div class="notification-loading">
+                                                    <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                                                    <span>Đang tải AI insights...</span>
                                                 </div>
-                                            }
+                                            </div>
                                         </div>
                                     </div>
-                                </li>
-                            </ul>
-                        </div>
+
+                                    <div class="notification-menu__footer">
+                                        <div class="notification-menu__footer-note">
+                                            <i class="bi bi-hand-index-thumb"></i>
+                                            <span>Chạm vào từng mục để đánh dấu đã đọc</span>
+                                        </div>
+                                        <button type="button" class="notification-menu__reload" data-notification-reload>
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                            Tải lại
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                         
                         @if (User.Identity == null || !User.Identity.IsAuthenticated)
                         {
@@ -423,6 +421,46 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @if (TempData["ToastErrorMessage"] != null || TempData["ToastSuccessMessage"] != null || TempData["ToastWarningMessage"] != null || TempData["ToastInfoMessage"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const toastQueue = [
+                    {
+                        message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastErrorMessage"])),
+                        tone: 'error',
+                        eyebrow: 'Tài khoản hệ thống',
+                        title: 'Không thể thực hiện'
+                    },
+                    {
+                        message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastSuccessMessage"])),
+                        tone: 'success',
+                        eyebrow: 'Hệ thống',
+                        title: 'Thành công'
+                    },
+                    {
+                        message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastWarningMessage"])),
+                        tone: 'warning',
+                        eyebrow: 'Lưu ý',
+                        title: 'Cần chú ý'
+                    },
+                    {
+                        message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastInfoMessage"])),
+                        tone: 'info',
+                        eyebrow: 'Thông báo',
+                        title: 'Thông báo'
+                    }
+                ].filter(item => item.message);
+
+                toastQueue.forEach(item => {
+                    if (typeof window.showAppToast === 'function') {
+                        window.showAppToast(item);
+                    }
+                });
+            });
+        </script>
+    }
     
     @if (TempData["RestoreEntityName"] != null)
     {
@@ -469,36 +507,6 @@
     @if (User.Identity != null && User.Identity.IsAuthenticated && ViewData["IsLoginPage"] is not true)
     {
         <script>
-            document.getElementById('refreshAiAlertsBtn')?.addEventListener('click', async function(event) {
-                event.preventDefault();
-                event.stopPropagation();
-                const btn = this;
-                const originalHtml = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-                try {
-                    const response = await fetch('/AI/RefreshSmartAlerts', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...window.antiForgeryHeaders()
-                        },
-                        body: JSON.stringify({})
-                    });
-                    const data = await response.json();
-                    if (!response.ok || data.success === false) {
-                        Swal.fire('AI Insights', data.warnings?.[0] || 'Không thể làm mới AI Insights.', 'warning');
-                        return;
-                    }
-                    window.location.reload();
-                } catch {
-                    Swal.fire('AI Insights', 'Không thể kết nối AI. Vui lòng thử lại sau.', 'error');
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = originalHtml;
-                }
-            });
-
             // ==========================================
             // SESSION TIMEOUT - Phát hiện không hoạt động
             // ==========================================

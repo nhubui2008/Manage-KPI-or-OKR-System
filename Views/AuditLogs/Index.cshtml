@@ -65,10 +65,10 @@
                                 <input type="date" name="endDate" value="@endDate" class="form-control" />
                             </div>
                             <div class="col-md-4 d-flex gap-2">
-                                <button type="submit" class="btn-primary-custom flex-grow-1 d-flex align-items-center justify-content-center shadow-none">
+                                <button type="submit" class="btn-primary-custom auditlog-filter-btn flex-grow-1 d-flex align-items-center justify-content-center shadow-none">
                                     <i class="bi bi-filter me-2"></i> Lọc dữ liệu
                                 </button>
-                                <a asp-action="Index" class="btn btn-outline-secondary d-flex align-items-center px-3" title="Làm mới">
+                                <a asp-action="Index" class="btn btn-outline-secondary auditlog-refresh-btn d-flex align-items-center justify-content-center px-3" title="Làm mới">
                                     <i class="bi bi-arrow-clockwise"></i>
                                 </a>
                             </div>
@@ -118,7 +118,7 @@
                                                 </div>
                                             </td>
                                             <td class="text-end pe-4">
-                                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" 
+                                                <button type="button" class="btn btn-sm btn-outline-primary auditlog-detail-btn rounded-pill px-3" 
                                                         onclick="showLogDetails('@log.Id', '@log.ActionType', '@log.ImpactedTable', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(log.OldData))', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(log.NewData))')">
                                                     Chi tiết
                                                 </button>
@@ -128,9 +128,9 @@
                                 }
                                 else
                                 {
-                                    <tr>
+                                    <tr class="auditlog-empty-row">
                                         <td colspan="6" class="text-center text-muted py-5">
-                                            <i class="bi bi-inbox display-4 text-light mb-3 d-block"></i>
+                                            <i class="bi bi-inbox auditlog-empty-icon mb-3 d-block"></i>
                                             <p class="mb-0">Không tìm thấy nhật ký phù hợp trong khoảng thời gian này.</p>
                                         </td>
                                     </tr>
@@ -224,7 +224,7 @@
                 <div class="mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <label class="small text-muted fw-bold text-uppercase">Dữ liệu Thay đổi</label>
-                        <button type="button" class="btn btn-sm btn-outline-secondary border-0" onclick="copyLogData()">
+                        <button type="button" class="btn btn-sm btn-outline-secondary auditlog-copy-btn border-0" onclick="copyLogData()">
                             <i class="bi bi-clipboard me-1"></i> Sao chép
                         </button>
                     </div>
@@ -252,11 +252,35 @@
         white-space: pre-wrap;
         word-break: break-all;
     }
+
     .page-link:hover {
         background-color: #f8f9fa;
     }
+
     .bg-warning.text-dark {
         background-color: #ffc107 !important;
+    }
+
+    .auditlog-filter-btn i,
+    .auditlog-refresh-btn i,
+    .auditlog-detail-btn i,
+    .auditlog-copy-btn i {
+        color: currentColor !important;
+        opacity: 1 !important;
+    }
+
+    .auditlog-refresh-btn {
+        min-width: 48px;
+    }
+
+    .auditlog-empty-row:hover > td {
+        background-color: transparent !important;
+    }
+
+    .auditlog-empty-icon {
+        font-size: 3rem;
+        color: #9aa8b8;
+        opacity: 0.55;
     }
 </style>
 

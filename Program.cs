@@ -29,6 +29,7 @@ builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IOKRProgressService
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 builder.Services.AddScoped<IAIDataService, AIDataService>();
 builder.Services.AddScoped<IAIAlertService, AIAlertService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // Đăng ký Data Protection & EncryptionHelper
 builder.Services.AddDataProtection();
