@@ -1,14 +1,435 @@
 @{
-    ViewData["Title"] = "Trang chủ - Quản trị Hiệu suất Thông minh";
-    ViewData["Description"] = "Chào mừng bạn đến với VietMach - Hệ thống quản lý KPI và OKR tiên tiến nhất, hỗ trợ định hướng chiến lược doanh nghiệp và tối ưu hóa hiệu quả làm việc nhân viên bằng AI.";
-    ViewData["Keywords"] = "Quản lý KPI, Hệ thống OKR, Quản trị doanh nghiệp, Hiệu suất nhân viên, AI Business, VietMach System";
+    ViewData["Title"] = "VietMach - Hệ thống Quản trị KPI/OKR Thông minh";
+    ViewData["IsLandingPage"] = true;
+    ViewData["Description"] = "VietMach cung cấp giải pháp quản trị mục tiêu OKR và đo lường KPI hiện đại tích hợp AI Gemini. Đơn giản, hiệu quả và đột phá cho doanh nghiệp.";
 }
 
-<div class="text-center py-5">
-    <h1 class="display-4 fw-bold">Chào mừng tới VietMach KPI/OKR System</h1>
-    <p class="lead">Nền tảng quản trị hiệu suất đột phá, tích hợp trí tuệ nhân tạo.</p>
-    <div class="mt-4">
-        <a href="/Auth/Login" class="btn btn-primary btn-lg px-4 me-md-2" style="border-radius: 12px; font-weight: 600;">Bắt đầu ngay</a>
-    </div></div>
+<style>
+    :root {
+        --primary: #1a73e8;
+        --primary-dark: #1557b0;
+        --secondary: #6c757d;
+        --accent: #4285f4;
+        --background: #f8f9fa;
+        --text: #202124;
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.3);
+    }
 
+    body {
+        font-family: 'Inter', sans-serif;
+        color: var(--text);
+        background-color: #fdfdfd;
+        overflow-x: hidden;
+    }
+
+    .landing-wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Navbar */
+    .landing-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 10%;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.8);
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        font-size: 1.4rem;
+        color: var(--primary);
+    }
+
+    .nav-brand i { font-size: 1.8rem; }
+
+    .nav-links {
+        display: flex;
+        gap: 2.5rem;
+        align-items: center;
+    }
+
+    .nav-link {
+        text-decoration: none;
+        color: var(--text);
+        font-weight: 500;
+        font-size: 0.95rem;
+        transition: color 0.2s;
+        opacity: 0.8;
+    }
+
+    .nav-link:hover { color: var(--primary); opacity: 1; }
+
+    .nav-cta {
+        background: var(--primary);
+        color: white !important;
+        padding: 0.6rem 1.5rem;
+        border-radius: 50px;
+        font-weight: 600;
+    }
+
+    /* Hero Section */
+    .hero {
+        padding: 8rem 10% 6rem;
+        text-align: center;
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .hero-badge {
+        display: inline-block;
+        background: #e8f0fe;
+        color: var(--primary);
+        padding: 0.5rem 1.2rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(26, 115, 232, 0.1);
+    }
+
+    .hero h1 {
+        font-size: 4rem;
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 1.5rem;
+        letter-spacing: -0.02em;
+        background: linear-gradient(135deg, #202124 0%, #1a73e8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+        font-size: 1.25rem;
+        color: #5f6368;
+        max-width: 700px;
+        margin: 0 auto 2.5rem;
+        line-height: 1.6;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .btn-main {
+        padding: 1rem 2.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary-gradient {
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        color: white;
+        box-shadow: 0 10px 20px rgba(26, 115, 232, 0.2);
+    }
+
+    .btn-primary-gradient:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 30px rgba(26, 115, 232, 0.3);
+        opacity: 0.95;
+    }
+
+    .btn-secondary-outline {
+        border: 2px solid #e0e0e0;
+        color: var(--text);
+    }
+
+    .btn-secondary-outline:hover {
+        background: #f8f9fa;
+        border-color: #d0d0d0;
+    }
+
+    /* Features Section */
+    .features {
+        padding: 6rem 10%;
+        background: #fff;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+
+    .section-header h2 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .feature-card {
+        padding: 2.5rem;
+        border-radius: 24px;
+        background: var(--background);
+        border: 1px solid #f1f1f1;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-10px);
+        background: #fff;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+        border-color: var(--primary);
+    }
+
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        color: var(--primary);
+        font-size: 1.8rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.04);
+    }
+
+    .feature-card h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .feature-card p {
+        color: #5f6368;
+        line-height: 1.6;
+        font-size: 0.95rem;
+    }
+
+    /* AI Section */
+    .ai-highlight {
+        padding: 6rem 10%;
+        background: #f0f7ff;
+        border-radius: 40px;
+        margin: 2rem 5%;
+        display: flex;
+        align-items: center;
+        gap: 4rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .ai-content {
+        flex: 1;
+        z-index: 1;
+    }
+
+    .ai-content h2 {
+        font-size: 2.8rem;
+        font-weight: 800;
+        margin-bottom: 1.5rem;
+        color: #1557b0;
+    }
+
+    .ai-tag {
+        background: #fff;
+        color: #1a73e8;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+        display: inline-block;
+        border: 1px solid #d2e3fc;
+    }
+
+    .ai-image {
+        flex: 1;
+        background: var(--glass-bg);
+        padding: 20px;
+        border-radius: 24px;
+        border: 1px solid var(--glass-border);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 30px 60px rgba(26, 115, 232, 0.1);
+    }
+
+    .ai-image img {
+        width: 100%;
+        border-radius: 16px;
+    }
+
+    /* Footer */
+    .landing-footer {
+        padding: 4rem 10% 2rem;
+        background: #fff;
+        border-top: 1px solid #f1f1f1;
+        margin-top: auto;
+    }
+
+    .footer-content {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 3rem;
+    }
+
+    .footer-brand {
+        max-width: 300px;
+    }
+
+    .footer-links {
+        display: flex;
+        gap: 4rem;
+    }
+
+    .footer-col h4 {
+        margin-bottom: 1.5rem;
+        font-weight: 700;
+    }
+
+    .footer-col ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .footer-col ul li {
+        margin-bottom: 0.8rem;
+    }
+
+    .footer-col ul li a {
+        text-decoration: none;
+        color: #5f6368;
+        transition: color 0.2s;
+    }
+
+    .footer-bottom {
+        text-align: center;
+        padding-top: 2rem;
+        border-top: 1px solid #f1f1f1;
+        color: #9aa0a6;
+        font-size: 0.9rem;
+    }
+
+    @@media (max-width: 991px) {
+        .hero h1 { font-size: 3rem; }
+        .nav-links { display: none; }
+        .ai-highlight { flex-direction: column; text-align: center; }
+        .footer-content { flex-direction: column; gap: 3rem; }
+    }
+</style>
+
+<div class="landing-wrapper">
+    <nav class="landing-nav">
+        <a href="/" class="nav-brand">
+            <i class="bi bi-hexagon-fill"></i> VietMach
+        </a>
+        <div class="nav-links">
+            <a href="#features" class="nav-link">Tính năng</a>
+            <a href="#ai" class="nav-link">AI Core</a>
+            <a href="#about" class="nav-link">Về chúng tôi</a>
+            <a href="/Auth/Login" class="nav-link nav-cta">Đăng nhập</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="hero-badge">Mới: Tích hợp mô hình Gemini 2.5 Flash</div>
+            <h1>Nâng tầm doanh nghiệp với Quản trị Hiệu suất AI</h1>
+            <p>Hệ thống toàn diện giúp thiết lập OKR chiến lược, đo lường KPI thời gian thực và tự động phân tích hiệu suất bằng trí tuệ nhân tạo.</p>
+            <div class="hero-actions">
+                <a href="/Auth/Login" class="btn-main btn-primary-gradient">Bắt đầu trải nghiệm</a>
+                <a href="#features" class="btn-main btn-secondary-outline">Khám phá tính năng</a>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="section-header">
+                <h2>Giải pháp toàn diện cho mọi quy mô</h2>
+                <p class="text-muted">Được thiết kế để tối ưu hóa sự tập trung và thúc đẩy kết quả.</p>
+            </div>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-compass"></i></div>
+                    <h3>Chiến lược OKR</h3>
+                    <p>Xác định tầm nhìn, sứ mệnh và các mục tiêu then chốt. Liên kết mục tiêu cá nhân với tầm nhìn công ty.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-speedometer2"></i></div>
+                    <h3>Đo lường KPI</h3>
+                    <p>Thiết lập chỉ số hiệu suất định lượng. Theo dõi tiến độ check-in hàng tuần với quy trình duyệt tự động.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-cpu"></i></div>
+                    <h3>AI Insights</h3>
+                    <p>Tự động phát hiện rủi ro, gợi ý hành động và sinh báo cáo đánh giá thông minh từ dữ liệu thực tế.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="ai" class="ai-highlight">
+            <div class="ai-content">
+                <span class="ai-tag">Powered by Google Gemini</span>
+                <h2>Quản trị dựa trên dữ liệu, thấu hiểu bằng AI</h2>
+                <p class="lead" style="color: #475467">Hệ thống của chúng tôi không chỉ lưu trữ dữ liệu. AI Gemini phân tích hàng ngàn điểm dữ liệu KPI để đưa ra các cảnh báo sớm và gợi ý chiến lược giúp doanh nghiệp về đích đúng hạn.</p>
+                <ul class="mt-4" style="list-style: none; padding: 0;">
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> Tự động sinh nhận xét đánh giá nhân sự</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> Dự báo rủi ro trượt mục tiêu</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i> Gợi ý KPI tối ưu theo vai trò</li>
+                </ul>
+            </div>
+            <div class="ai-image">
+                <img src="/images/seo-banner.png" alt="AI Performance Analysis">
+            </div>
+        </section>
+    </main>
+
+    <footer id="about" class="landing-footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="nav-brand mb-3">
+                    <i class="bi bi-hexagon-fill"></i> VietMach
+                </div>
+                <p class="text-muted">Chúng tôi giúp doanh nghiệp Việt chuyển đổi số trong quản trị nhân sự và hiệu suất lao động.</p>
+            </div>
+            <div class="footer-links">
+                <div class="footer-col">
+                    <h4>Sản phẩm</h4>
+                    <ul>
+                        <li><a href="#">Quản lý OKR</a></li>
+                        <li><a href="#">Hệ thống KPI</a></li>
+                        <li><a href="#">AI Chatbot</a></li>
+                        <li><a href="#">Chi phí</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Công ty</h4>
+                    <ul>
+                        <li><a href="#">Về chúng tôi</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Khách hàng</a></li>
+                        <li><a href="#">Liên hệ</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 VietMach ERP System. Bảo lưu mọi quyền.
+        </div>
+    </footer>
 </div>
