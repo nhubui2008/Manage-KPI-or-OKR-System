@@ -119,7 +119,11 @@
                                             </td>
                                             <td class="text-end pe-4">
                                                 <button type="button" class="btn btn-sm btn-outline-primary auditlog-detail-btn rounded-pill px-3" 
-                                                        onclick="showLogDetails('@log.Id', '@log.ActionType', '@log.ImpactedTable', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(log.OldData))', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(log.NewData))')">
+                                                        data-id="@log.Id"
+                                                        data-action="@log.ActionType"
+                                                        data-table="@log.ImpactedTable"
+                                                        data-old="@log.OldData"
+                                                        data-new="@log.NewData">
                                                     Chi tiết
                                                 </button>
                                             </td>
@@ -286,6 +290,18 @@
 
 @section Scripts {
     <script>
+        $(document).ready(function () {
+            $('.auditlog-detail-btn').on('click', function () {
+                var id = $(this).data('id');
+                var action = $(this).data('action');
+                var table = $(this).data('table');
+                var oldData = $(this).attr('data-old');
+                var newData = $(this).attr('data-new');
+                
+                showLogDetails(id, action, table, oldData, newData);
+            });
+        });
+
         function showLogDetails(id, action, table, oldData, newData) {
             $('#modalAction').text(translateAction(action));
             $('#modalAction').attr('class', 'badge ' + getActionBadgeClass(action));

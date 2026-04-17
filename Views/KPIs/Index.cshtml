@@ -108,13 +108,6 @@
         }
 </div>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success shadow-sm border-0 mb-4" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
-    </div>
-}
-
 <div class="row g-4 mb-4">
     <div class="col-md-3">
         <div class="stat-card p-3 border-start border-4 border-primary shadow-sm bg-white rounded-3">
@@ -814,7 +807,7 @@
 
             if (!response.ok || data.success === false) {
                 setAiSuggestStatus('');
-                Swal.fire('Không thể tải dữ liệu', data.warnings?.[0] || 'Không thể lọc danh sách cho AI gợi ý KPI.', 'warning');
+                window.showAppToast({ tone: 'warning', eyebrow: 'AI Gợi ý KPI', title: 'Không thể tải dữ liệu', message: data.warnings?.[0] || 'Không thể lọc danh sách cho AI gợi ý KPI.' });
                 return;
             }
 
@@ -857,7 +850,7 @@
         } catch {
             if (currentRequestId !== aiSuggestState.requestId) return;
             setAiSuggestStatus('');
-            Swal.fire('Lỗi', 'Không thể tải danh sách cho AI gợi ý KPI.', 'error');
+            window.showAppToast({ tone: 'error', eyebrow: 'Kết nối AI', title: 'Lỗi kết nối', message: 'Không thể tải danh sách cho AI gợi ý KPI.' });
         }
     }
 
@@ -914,14 +907,14 @@
             const data = await response.json();
             if (!response.ok || data.success === false) {
                 results.innerHTML = '';
-                Swal.fire('AI chưa sẵn sàng', data.warnings?.[0] || 'Không thể tạo gợi ý KPI.', 'warning');
+                window.showAppToast({ tone: 'warning', eyebrow: 'AI Gợi ý KPI', title: 'AI chưa sẵn sàng', message: data.warnings?.[0] || 'Không thể tạo gợi ý KPI.' });
                 return;
             }
 
             renderKpiSuggestions(data.suggestions || []);
         } catch {
             results.innerHTML = '';
-            Swal.fire('Lỗi', 'Không thể kết nối AI. Vui lòng thử lại sau.', 'error');
+            window.showAppToast({ tone: 'error', eyebrow: 'Kết nối AI', title: 'Lỗi kết nối', message: 'Không thể kết nối AI. Vui lòng thử lại sau.' });
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalHtml;

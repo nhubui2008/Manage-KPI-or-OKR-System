@@ -31,8 +31,6 @@
         _ => "bg-secondary bg-opacity-10 text-secondary border-secondary"
     };
 }
-@if (TempData["SuccessMessage"] != null)
-{<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>}
 
 <div class="container-fluid px-0">
     
@@ -214,12 +212,12 @@
             const data = await response.json();
             if (!response.ok || data.success === false) {
                 const message = data.warnings?.[0] || 'Không thể sinh nhận xét AI.';
-                Swal.fire('AI chưa sẵn sàng', message, 'warning');
+                window.showAppToast({ tone: 'warning', eyebrow: 'AI Nhận xét', title: 'AI chưa sẵn sàng', message });
                 return;
             }
             document.getElementById('editReviewComment').value = data.text || '';
         } catch {
-            Swal.fire('Lỗi', 'Không thể kết nối AI. Vui lòng thử lại sau.', 'error');
+            window.showAppToast({ tone: 'error', eyebrow: 'Kết nối AI', title: 'Lỗi kết nối', message: 'Không thể kết nối AI. Vui lòng thử lại sau.' });
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalHtml;

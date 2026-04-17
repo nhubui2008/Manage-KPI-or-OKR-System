@@ -220,23 +220,6 @@
 
 <div class="container-fluid px-0">
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="rq-alert success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill rq-alert-icon"></i>
-            <span>@TempData["SuccessMessage"]</span>
-            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
-        </div>
-    }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="rq-alert danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle-fill rq-alert-icon"></i>
-            <span>@TempData["ErrorMessage"]</span>
-            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
-        </div>
-    }
-
     <!-- Page Header -->
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>

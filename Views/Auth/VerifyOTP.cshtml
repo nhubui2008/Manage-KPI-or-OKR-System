@@ -30,13 +30,6 @@
             <p class="gentle-subtitle mt-2">Mã 6 chữ số đã được gửi đến email của bạn</p>
         </div>
 
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="gentle-success active">
-                <p class="success-desc">@TempData["SuccessMessage"]</p>
-            </div>
-        }
-
         @if (ViewBag.Error != null)
         {
             <span class="gentle-error" style="display: block; margin-bottom: 16px;">@ViewBag.Error</span>

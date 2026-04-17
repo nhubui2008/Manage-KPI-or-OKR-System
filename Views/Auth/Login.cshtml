@@ -42,25 +42,6 @@
             <h1 class="comfort-title">Đăng nhập</h1>
             <p class="gentle-subtitle">Hệ thống Quản lý KPI & OKR</p>
         </div>
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="gentle-success active" id="successMessage">
-                <div class="success-bloom">
-                    <div class="bloom-rings">
-                        <div class="bloom-ring ring-1"></div>
-                        <div class="bloom-ring ring-2"></div>
-                        <div class="bloom-ring ring-3"></div>
-                    </div>
-                    <div class="success-icon">
-                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                            <path d="M8 14l5 5 11-11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                </div>
-                <h3 class="success-title">Welcome!</h3>
-                <p class="success-desc">@TempData["SuccessMessage"]</p>
-            </div>
-        }
         @if (ViewBag.Error != null)
         {
             <span class="gentle-error">@ViewBag.Error</span>

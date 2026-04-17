@@ -468,33 +468,33 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
-    @if (TempData["ToastErrorMessage"] != null || TempData["ToastSuccessMessage"] != null || TempData["ToastWarningMessage"] != null || TempData["ToastInfoMessage"] != null)
+    @if (TempData["ToastErrorMessage"] != null || TempData["ToastSuccessMessage"] != null || TempData["ToastWarningMessage"] != null || TempData["ToastInfoMessage"] != null || TempData["SuccessMessage"] != null || TempData["ErrorMessage"] != null)
     {
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const toastQueue = [
                     {
-                        message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastErrorMessage"])),
+                        message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastErrorMessage"] ?? TempData["ErrorMessage"])),
                         tone: 'error',
                         eyebrow: 'Tài khoản hệ thống',
                         title: 'Không thể thực hiện'
                     },
                     {
-                        message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastSuccessMessage"])),
+                        message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastSuccessMessage"] ?? TempData["SuccessMessage"])),
                         tone: 'success',
-                        eyebrow: 'Hệ thống',
+                        eyebrow: 'Hoàn tất',
                         title: 'Thành công'
                     },
                     {
                         message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastWarningMessage"])),
                         tone: 'warning',
-                        eyebrow: 'Lưu ý',
+                        eyebrow: 'Cảnh báo',
                         title: 'Cần chú ý'
                     },
                     {
                         message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastInfoMessage"])),
                         tone: 'info',
-                        eyebrow: 'Thông báo',
+                        eyebrow: 'Thông báo hệ thống',
                         title: 'Thông báo'
                     }
                 ].filter(item => item.message);

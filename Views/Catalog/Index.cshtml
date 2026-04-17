@@ -629,7 +629,7 @@
         const id = document.getElementById('simpleModalId').value;
         const fieldName = document.getElementById('simpleModalFieldName').value;
         const fieldValue = document.getElementById('simpleModalFieldValue').value.trim();
-        if (!fieldValue) { Swal.fire('Lỗi', 'Vui lòng nhập giá trị.', 'warning'); return; }
+        if (!fieldValue) { window.showAppToast({ tone: 'warning', eyebrow: 'Quản lý danh mục', title: 'Thiếu dữ liệu', message: 'Vui lòng nhập giá trị.' }); return; }
 
         const isEdit = id !== '';
         const url = `/Catalog/${isEdit ? 'Edit' : 'Create'}${entityType}`;
@@ -642,13 +642,13 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    Swal.fire({ icon: 'success', title: 'Thành công!', text: data.message, timer: 1500, showConfirmButton: false });
+                    window.showAppToast({ tone: 'success', eyebrow: 'Quản lý danh mục', title: 'Thành công', message: data.message });
                     setTimeout(() => location.reload(), 1500);
                 } else {
-                    Swal.fire('Lỗi', data.message, 'error');
+                    window.showAppToast({ tone: 'error', eyebrow: 'Quản lý danh mục', title: 'Không thể lưu', message: data.message });
                 }
             })
-            .catch(() => Swal.fire('Lỗi', 'Đã xảy ra lỗi kết nối.', 'error'));
+            .catch(() => window.showAppToast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
     }
 
     // =========================================
@@ -673,13 +673,13 @@
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
-                            Swal.fire({ icon: 'success', title: 'Đã xóa!', text: data.message, timer: 1500, showConfirmButton: false });
+                            window.showAppToast({ tone: 'success', eyebrow: 'Quản lý danh mục', title: 'Đã xóa', message: data.message });
                             setTimeout(() => location.reload(), 1500);
                         } else {
-                            Swal.fire('Lỗi', data.message, 'error');
+                            window.showAppToast({ tone: 'error', eyebrow: 'Quản lý danh mục', title: 'Không thể xóa', message: data.message });
                         }
                     })
-                    .catch(() => Swal.fire('Lỗi', 'Đã xảy ra lỗi kết nối.', 'error'));
+                    .catch(() => window.showAppToast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
             }
         });
     }
@@ -710,7 +710,7 @@
     function submitGradingRank() {
         const id = document.getElementById('grankId').value;
         const rankCode = document.getElementById('grankCode').value.trim();
-        if (!rankCode) { Swal.fire('Lỗi', 'Mã hạng không được để trống.', 'warning'); return; }
+        if (!rankCode) { window.showAppToast({ tone: 'warning', eyebrow: 'Bậc Xếp hạng', title: 'Thiếu dữ liệu', message: 'Mã hạng không được để trống.' }); return; }
 
         const isEdit = id !== '';
         const formData = new FormData();
@@ -724,11 +724,11 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    Swal.fire({ icon: 'success', title: 'Thành công!', text: data.message, timer: 1500, showConfirmButton: false });
+                    window.showAppToast({ tone: 'success', eyebrow: 'Bậc Xếp hạng', title: 'Thành công', message: data.message });
                     setTimeout(() => location.reload(), 1500);
-                } else { Swal.fire('Lỗi', data.message, 'error'); }
+                } else { window.showAppToast({ tone: 'error', eyebrow: 'Bậc Xếp hạng', title: 'Lỗi', message: data.message }); }
             })
-            .catch(() => Swal.fire('Lỗi', 'Đã xảy ra lỗi kết nối.', 'error'));
+            .catch(() => window.showAppToast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
     }
 
     // =========================================
@@ -756,7 +756,7 @@
         const id = document.getElementById('statusId').value;
         const statusType = document.getElementById('statusType').value.trim();
         const statusName = document.getElementById('statusName').value.trim();
-        if (!statusType || !statusName) { Swal.fire('Lỗi', 'Vui lòng điền đầy đủ thông tin.', 'warning'); return; }
+        if (!statusType || !statusName) { window.showAppToast({ tone: 'warning', eyebrow: 'Trạng thái', title: 'Thiếu dữ liệu', message: 'Vui lòng điền đầy đủ thông tin.' }); return; }
 
         const isEdit = id !== '';
         const formData = new FormData();
@@ -769,11 +769,11 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    Swal.fire({ icon: 'success', title: 'Thành công!', text: data.message, timer: 1500, showConfirmButton: false });
+                    window.showAppToast({ tone: 'success', eyebrow: 'Trạng thái', title: 'Thành công', message: data.message });
                     setTimeout(() => location.reload(), 1500);
-                } else { Swal.fire('Lỗi', data.message, 'error'); }
+                } else { window.showAppToast({ tone: 'error', eyebrow: 'Trạng thái', title: 'Lỗi', message: data.message }); }
             })
-            .catch(() => Swal.fire('Lỗi', 'Đã xảy ra lỗi kết nối.', 'error'));
+            .catch(() => window.showAppToast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
     }
 
     // Catalog now keeps KPI/OKR/HR shared data only.
@@ -804,7 +804,7 @@
     function submitSystemParameter() {
         const id = document.getElementById('sysParamId').value;
         const parameterCode = document.getElementById('sysParamCode').value.trim();
-        if (!parameterCode) { Swal.fire('Lỗi', 'Mã tham số không được để trống.', 'warning'); return; }
+        if (!parameterCode) { window.showAppToast({ tone: 'warning', eyebrow: 'Tham số Hệ thống', title: 'Thiếu dữ liệu', message: 'Mã tham số không được để trống.' }); return; }
 
         const isEdit = id !== '';
         const formData = new FormData();
@@ -818,11 +818,11 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    Swal.fire({ icon: 'success', title: 'Thành công!', text: data.message, timer: 1500, showConfirmButton: false });
+                    window.showAppToast({ tone: 'success', eyebrow: 'Tham số Hệ thống', title: 'Thành công', message: data.message });
                     setTimeout(() => location.reload(), 1500);
-                } else { Swal.fire('Lỗi', data.message, 'error'); }
+                } else { window.showAppToast({ tone: 'error', eyebrow: 'Tham số Hệ thống', title: 'Lỗi', message: data.message }); }
             })
-            .catch(() => Swal.fire('Lỗi', 'Đã xảy ra lỗi kết nối.', 'error'));
+            .catch(() => window.showAppToast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
     }
 </script>
 }
