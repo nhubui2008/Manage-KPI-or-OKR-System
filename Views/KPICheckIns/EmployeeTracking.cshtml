@@ -10,6 +10,155 @@
     bool canReviewCheckIns = ViewBag.CanReviewCheckIns == true;
 }
 
+<style>
+    /* ===== CARD LAYOUT STYLES ===== */
+
+    /* Avatar chip */
+    .emp-avatar {
+        width: 40px; height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #1a73e8, #4285f4);
+        color: #fff;
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(26, 115, 232, 0.25);
+    }
+
+    /* Progress bar */
+    .ci-progress-track {
+        height: 6px; border-radius: 999px;
+        background: #e9ecef; overflow: hidden;
+        margin-top: 5px;
+    }
+    .ci-progress-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+
+    /* Status Badges */
+    .badge-on-track {
+        background: #d1fae5; color: #065f46;
+        border: 1px solid #a7f3d0;
+        border-radius: 999px; padding: 3px 10px;
+        font-size: 0.7rem; font-weight: 700;
+        letter-spacing: 0.03em; display: inline-block;
+    }
+    .badge-at-risk {
+        background: #fef3c7; color: #b45309;
+        border: 1px solid #fde68a;
+        border-radius: 999px; padding: 3px 10px;
+        font-size: 0.7rem; font-weight: 700;
+        letter-spacing: 0.03em; display: inline-block;
+    }
+    .badge-late {
+        background: #fee2e2; color: #b91c1c;
+        border: 1px solid #fecaca;
+        border-radius: 999px; padding: 3px 10px;
+        font-size: 0.7rem; font-weight: 700;
+        letter-spacing: 0.03em; display: inline-block;
+    }
+    .badge-default {
+        background: #f1f5f9; color: #475569;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px; padding: 3px 10px;
+        font-size: 0.7rem; font-weight: 700;
+        letter-spacing: 0.03em; display: inline-block;
+    }
+
+    /* ===== CHECK-IN CARD ===== */
+    .ci-card {
+        background: #fff;
+        border: 1px solid #e8edf4;
+        border-radius: 14px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 8px rgba(26,60,110,0.04), 0 1px 2px rgba(0,0,0,0.04);
+        transition: box-shadow 0.2s ease, transform 0.15s ease;
+        overflow: hidden;
+    }
+    .ci-card:hover {
+        box-shadow: 0 8px 24px rgba(26,60,110,0.10), 0 2px 6px rgba(0,0,0,0.06);
+        transform: translateY(-1px);
+    }
+    .ci-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: 16px 20px 12px;
+        border-bottom: 1px solid #f0f4f8;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .ci-card-header-left {
+        display: flex; align-items: center; gap: 12px;
+        flex: 1; min-width: 0;
+    }
+    .ci-card-header-right {
+        display: flex; align-items: center; gap: 8px;
+        flex-shrink: 0; flex-wrap: wrap;
+        text-align: right;
+    }
+    .ci-emp-name {
+        font-size: 0.9rem; font-weight: 700; color: #1a2940;
+        line-height: 1.2; margin-bottom: 2px;
+    }
+    .ci-date-label {
+        font-size: 0.76rem; color: #6b7c93;
+    }
+
+    /* Card body grid */
+    .ci-card-body {
+        padding: 14px 20px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px 20px;
+        align-items: start;
+    }
+    @@media (max-width: 992px) {
+        .ci-card-body { grid-template-columns: 1fr 1fr; }
+    }
+    @@media (max-width: 576px) {
+        .ci-card-body { grid-template-columns: 1fr; }
+    }
+
+    .ci-info-block { }
+    .ci-info-label {
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em;
+        text-transform: uppercase; color: #8fa0b8; margin-bottom: 4px;
+    }
+    .ci-info-value {
+        font-size: 0.85rem; font-weight: 600; color: #1a2940;
+        display: flex; align-items: center; gap: 5px;
+        flex-wrap: wrap;
+    }
+
+    /* Progress block */
+    .ci-progress-block {
+        grid-column: 1 / -1;
+    }
+    @@media (max-width: 576px) {
+        .ci-progress-block { grid-column: 1; }
+    }
+
+    /* Target vs Current block styling */
+    .ci-target-block {
+        display: flex; align-items: flex-end; gap: 8px;
+    }
+    .ci-target-value { font-size: 1.15rem; font-weight: 800; color: #1a73e8; line-height: 1; }
+    .ci-target-label { font-size: 0.75rem; color: #6b7c93; font-weight: 500; margin-bottom: 2px; }
+
+    /* Empty state */
+    .rq-empty { padding: 40px 24px; text-align: center; }
+    .rq-empty-icon {
+        width: 70px; height: 70px;
+        background: linear-gradient(135deg, #e8f0fe, #c5d8fb);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 2rem; color: #1a73e8;
+    }
+    .rq-empty-title { font-size: 1.05rem; font-weight: 700; color: #1a2940; margin-bottom: 6px; }
+    .rq-empty-sub   { font-size: 0.85rem; color: #6b7c93; }
+</style>
+
 <div class="container-fluid px-0">
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -105,88 +254,128 @@
                 <div class="card-header-custom border-bottom p-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-speedometer2 me-2"></i>KPI và check-in mới nhất</h5>
                 </div>
-                <div class="card-body-custom p-0">
-                    <div class="table-responsive">
-                        <table class="data-table w-100 mb-0">
-                            <thead>
-                                <tr>
-                                    @if (isViewingAll)
-                                    {
-                                        <th class="ps-4">Nhân viên</th>
-                                    }
-                                    <th class="@(isViewingAll ? string.Empty : "ps-4")">KPI</th>
-                                    <th>Chỉ tiêu</th>
-                                    <th>Thực tế mới nhất</th>
-                                     <th>Tiến độ</th>
-                                     <th>Deadline</th>
-                                     <th>Ngày check-in</th>
-                                    <th>Xác nhận</th>
-                                    <th class="pe-4">Ghi chú</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (Model.Any())
-                                {
-                                    foreach (var row in Model)
-                                    {
-                                        var progress = row.LatestProgress ?? 0;
-                                        var progressWidth = Math.Min(100, progress);
-                                        var reviewBadge = row.ReviewStatus == "Đã xác nhận" ? "bg-success bg-opacity-10 text-success border-success" :
-                                                          row.ReviewStatus == "Chờ quản lý xác nhận" ? "bg-warning bg-opacity-10 text-warning border-warning" :
-                                                          row.ReviewStatus == "Bị từ chối" ? "bg-danger bg-opacity-10 text-danger border-danger" :
-                                                          "bg-secondary bg-opacity-10 text-secondary border-secondary";
-                                        <tr>
-                                            @if (isViewingAll)
-                                            {
-                                                <td class="ps-4">
-                                                    <div class="fw-bold text-dark">@row.EmployeeName</div>
-                                                    <div class="text-muted small">@row.DepartmentNames</div>
-                                                </td>
-                                            }
-                                            <td class="@(isViewingAll ? string.Empty : "ps-4")">
-                                                <div class="fw-bold text-dark">@row.KpiName</div>
-                                                <div class="text-muted small">KPI #@row.KpiId</div>
-                                            </td>
-                                            <td>@String.Format("{0:N0}", row.TargetValue) @row.Unit</td>
-                                            <td class="fw-bold">@(row.LatestAchievedValue.HasValue ? String.Format("{0:N2}", row.LatestAchievedValue) : "--") @row.Unit</td>
-                                            <td style="min-width: 170px;">
-                                                <div class="d-flex justify-content-between small mb-1">
-                                                    <span class="@ProgressHelper.GetProgressTextColorClass(progress) fw-bold">@progress.ToString("0.##")%</span>
-                                                    <span class="text-muted">@row.CheckInStatus</span>
-                                                </div>
-                                                <div class="progress" style="height: 6px;">
-                                                    <div class="progress-bar @ProgressHelper.GetProgressColorClass(progress)" style="width: @progressWidth%;"></div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="fw-semibold @(row.IsLate ? "text-danger" : "text-success")" style="font-size: 0.82rem;">
-                                                    @(row.LatestDeadlineAt?.ToString("dd/MM/yyyy HH:mm") ?? "--")
-                                                </div>
-                                                @if (row.ExpectedValueAtDeadline.HasValue)
-                                                {
-                                                    <div class="text-muted" style="font-size: 0.72rem;">Cần đạt: @String.Format("{0:N0}", row.ExpectedValueAtDeadline) @row.Unit</div>
-                                                }
-                                            </td>
-                                            <td class="text-muted">@row.LatestCheckInDate?.ToString("dd/MM/yyyy HH:mm")</td>
-                                            <td><span class="badge border rounded-pill px-3 py-2 @reviewBadge">@row.ReviewStatus</span></td>
-                                            <td class="pe-4 text-muted small" style="max-width: 260px;">@(string.IsNullOrWhiteSpace(row.Note) ? "--" : row.Note)</td>
-                                        </tr>
-                                    }
-                                }
-                                else
-                                {
-                                    <tr>
-                                        <td colspan="@(isViewingAll ? 9 : 8)" class="text-center text-muted py-5">
-                                            <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
-                                            @(isViewingAll
-                                                ? "Chưa có KPI được phân bổ hoặc chưa có dữ liệu theo dõi trong phạm vi hiện tại"
-                                                : "Nhân viên này chưa có KPI được phân bổ hoặc chưa có dữ liệu theo dõi")
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="card-body-custom p-3 bg-light bg-opacity-50">
+                    @if (Model.Any())
+                    {
+                        foreach (var row in Model)
+                        {
+                            var progress = row.LatestProgress ?? 0;
+                            var progressWidth = Math.Min(100, progress);
+                            var colorClass = ProgressHelper.GetProgressTextColorClass(progress);
+                            var barColor = progress >= 80 ? "#10b981" : progress >= 50 ? "#f59e0b" : "#ef4444";
+                            
+                            var reviewBadgeClass = row.ReviewStatus == "Đã xác nhận" ? "badge-on-track" :
+                                                   row.ReviewStatus == "Bị từ chối" ? "badge-late" :
+                                                   row.ReviewStatus == "Chờ quản lý xác nhận" ? "badge-at-risk" :
+                                                   "badge-default";
+                            
+                            var statusBadgeClass = row.CheckInStatus == "Đúng tiến độ" ? "badge-on-track" :
+                                                   row.CheckInStatus == "Trễ tiến độ" ? "badge-late" :
+                                                   row.CheckInStatus == "Có rủi ro" ? "badge-at-risk" :
+                                                   "badge-default";
+                                                   
+                            var kpiStatusBadgeClass = row.IsLate ? "badge-late" : "badge-on-track";
+                            var kpiStatusText = row.IsLate ? "Quá hạn" : "Đang tiến hành";
+                            
+                            var empName = row.EmployeeName ?? "Chưa gán";
+                            var initials = string.Join("", empName.Split(' ').Select(n => n.Length > 0 ? n[0].ToString() : "")).ToUpper();
+                            if (initials.Length > 2) initials = initials.Substring(0, 2);
+
+                            <div class="ci-card">
+                                <!-- Card Header -->
+                                <div class="ci-card-header">
+                                    <div class="ci-card-header-left">
+                                        <div class="emp-avatar">@initials</div>
+                                        <div style="min-width:0;">
+                                            <div class="ci-emp-name">@empName</div>
+                                            <div class="ci-date-label">
+                                                <i class="bi bi-diagram-3 me-1"></i>@row.DepartmentNames
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="ci-card-header-right">
+                                        <span class="@statusBadgeClass">@row.CheckInStatus</span>
+                                        <span class="@reviewBadgeClass">@row.ReviewStatus</span>
+                                    </div>
+                                </div>
+
+                                <!-- Card Body -->
+                                <div class="ci-card-body">
+                                    <!-- KPI Name -->
+                                    <div class="ci-info-block">
+                                        <div class="ci-info-label"><i class="bi bi-speedometer2 me-1"></i>KPI Mục tiêu</div>
+                                        <div class="ci-info-value">
+                                            <span class="text-dark fw-bold">@row.KpiName</span>
+                                            <span class="text-muted ms-1" style="font-size:0.75rem;">(#@row.KpiId)</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Latest Achieved / Target -->
+                                    <div class="ci-info-block">
+                                        <div class="ci-info-label"><i class="bi bi-graph-up-arrow me-1"></i>Chỉ tiêu / Thực tế</div>
+                                        <div class="ci-target-block">
+                                            <div class="ci-target-value">@(row.LatestAchievedValue.HasValue ? String.Format("{0:N2}", row.LatestAchievedValue) : "0")</div>
+                                            <div class="ci-target-label">/ @String.Format("{0:N0}", row.TargetValue) @row.Unit</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Progress Block -->
+                                    <div class="ci-info-block">
+                                        <div class="ci-info-label"><i class="bi bi-bar-chart me-1"></i>Tiến độ tổng hợp</div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="@colorClass fw-bold" style="font-size:0.85rem; min-width:42px;">@progress.ToString("0.##")%</span>
+                                            <div class="ci-progress-track flex-grow-1">
+                                                <div class="ci-progress-fill" style="width:@progressWidth%; background:@barColor;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Latest Check-in Info -->
+                                    <div class="ci-info-block">
+                                        <div class="ci-info-label"><i class="bi bi-calendar-check me-1"></i>Check-in gần nhất</div>
+                                        <div class="ci-info-value" style="font-size:0.8rem;">
+                                            @(row.LatestCheckInDate?.ToString("dd/MM/yyyy HH:mm") ?? "--")
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Deadline Info -->
+                                    <div class="ci-info-block">
+                                        <div class="ci-info-label"><i class="bi bi-alarm me-1"></i>Deadline tới</div>
+                                        <div class="ci-info-value">
+                                            <span class="@(row.IsLate ? "text-danger" : "text-success") fw-bold" style="font-size:0.8rem;">
+                                                @(row.LatestDeadlineAt?.ToString("dd/MM/yyyy HH:mm") ?? "--")
+                                            </span>
+                                        </div>
+                                        @if (row.ExpectedValueAtDeadline.HasValue)
+                                        {
+                                            <div class="text-muted mt-1" style="font-size: 0.72rem;">Cần đạt: @String.Format("{0:N0}", row.ExpectedValueAtDeadline) @row.Unit</div>
+                                        }
+                                    </div>
+
+                                    <!-- Notes -->
+                                    <div class="ci-info-block">
+                                        <div class="ci-info-label"><i class="bi bi-chat-left-text me-1"></i>Ghi chú Check-in</div>
+                                        <div class="ci-info-value" style="font-size:0.8rem; font-weight: 500;">
+                                            @(string.IsNullOrWhiteSpace(row.Note) ? "--" : row.Note)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="rq-empty">
+                            <div class="rq-empty-icon">
+                                <i class="bi bi-inbox"></i>
+                            </div>
+                            <div class="rq-empty-title">
+                                @(isViewingAll
+                                    ? "Chưa có KPI được phân bổ hoặc chưa có dữ liệu theo dõi trong phạm vi hiện tại"
+                                    : "Nhân viên này chưa có KPI được phân bổ hoặc chưa có dữ liệu theo dõi")
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
