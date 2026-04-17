@@ -16,6 +16,7 @@ Dự án được xây dựng theo mô hình ASP.NET Core MVC, sử dụng Entit
 - [Cấu hình môi trường](#cấu-hình-môi-trường)
 - [Database, migration và seed data](#database-migration-và-seed-data)
 - [Dữ liệu và luồng test theo phân quyền](#dữ-liệu-và-luồng-test-theo-phân-quyền)
+- [Luồng demo nhanh](#luồng-demo-nhanh)
 - [Triển khai IIS](#triển-khai-iis)
 - [Ghi chú bảo mật](#ghi-chú-bảo-mật)
 
@@ -431,6 +432,20 @@ Chỉ chạy script này trên database dev/test:
 ```powershell
 sqlcmd -S <server> -d <database> -U <user> -P <password> -i testdata_role_flows.sql
 ```
+
+## Luồng demo nhanh
+
+Để demo dự án theo kịch bản ngắn gọn, có sẵn tài liệu:
+
+- Demo system flow: [`docs/DEMO_SYSTEM_FLOW.md`](docs/DEMO_SYSTEM_FLOW.md)
+- Role test flow chi tiết: [`ROLE_TEST_FLOWS.md`](ROLE_TEST_FLOWS.md)
+
+Luồng demo ngắn đề xuất:
+
+1. Đăng nhập `test_director` để mở `/Dashboard` và `/OKRs`.
+2. Chuyển sang `test_employee` để tạo check-in tại `/KPICheckIns/Create`.
+3. Chuyển sang `test_manager` để duyệt ở `/KPICheckIns/ReviewQueue`.
+4. Mở `/EvaluationResults` hoặc `/EvaluationReports` để chốt câu chuyện nghiệp vụ.
 
 ## Triển khai IIS
 
