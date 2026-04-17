@@ -16,12 +16,12 @@
             {
                 var icon = depth == 0 ? "bi-folder-fill text-warning" : "bi-files text-secondary";
                 var count = counts.ContainsKey(child.Id) ? counts[child.Id] : 0;
-                <div class="org-tree-item d-flex justify-content-between align-items-center mb-2 py-1 px-2 rounded" 
+                <div class="org-tree-item border rounded-3 p-2 mb-2 d-flex justify-content-between align-items-center shadow-sm bg-white" 
                      data-dept-id="@child.Id" 
                      onclick="loadDepartmentDetail(@child.Id)"
-                     style="margin-left: -5px; cursor: pointer; transition: all 0.2s ease;">
-                    <span class="d-flex align-items-center gap-2"><i class="bi @icon"></i> @child.DepartmentName</span>
-                    <span class="badge bg-secondary rounded-pill">@count</span>
+                     style="cursor: pointer; transition: all 0.2s ease;">
+                    <span class="d-flex align-items-center gap-2 fw-semibold text-dark" style="font-size: 0.85rem;"><i class="bi @icon fs-6 text-opacity-75"></i> @child.DepartmentName</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill">@count NV</span>
                 </div>
                 
                 // Gọi đệ quy trực tiếp, không dùng await
@@ -52,15 +52,17 @@
 <div class="row justify-content-center w-100 m-0">
         <div class="col-12 px-0">
             <div class="row g-4 w-100">
-    <div class="col-lg-4">
+    <div class="col-lg-3">
         <div class="content-card h-100">
             <div class="card-header-custom border-bottom">
                 <h5 class="mb-0 fw-bold"><i class="bi bi-diagram-3 me-2"></i> Cây tổ chức</h5>
             </div>
             <div class="card-body-custom pt-3">
-                <div class="org-tree-item org-tree-company d-flex align-items-center gap-2 mb-3 px-2 py-2 rounded active" 
+                <div class="org-tree-item org-tree-company border rounded-3 p-2 mb-3 d-flex align-items-center gap-2 shadow-sm bg-white active" 
                      onclick="showTableView()" style="cursor: pointer; transition: all 0.2s ease;">
-                    <i class="bi bi-building text-primary fs-5"></i>
+                    <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #1a73e8, #4285f4); color: white;">
+                        <i class="bi bi-building fs-6"></i>
+                    </div>
                     <span class="fw-bold text-dark">Tổ Chức / Công Ty</span>
                 </div>
                 
@@ -81,7 +83,7 @@
         </div>
     </div>
 
-    <div class="col-lg-8">
+    <div class="col-lg-9">
         <div class="content-card h-100">
             <div class="card-body-custom" id="detail-panel">
                 <!-- Default: Hiển thị bảng danh sách phòng ban -->
@@ -142,82 +144,86 @@
                     </div>
                 </form>
 
-                <div class="table-responsive w-100">
-                    <table class="data-table w-100">
-                        <thead>
-                            <tr>
-                                <th>Mã PB</th>
-                                <th>Tên phòng ban</th>
-                                <th>Trưởng phòng</th>
-                                <th>Số lượng NV</th>
-                                <th>Trạng thái</th>
-                                <th class="text-end">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model != null && Model.Any())
-                            {
-                                foreach (var dept in Model)
-                                {
-                                    var managerName = dept.ManagerId.HasValue && employees.ContainsKey(dept.ManagerId.Value) 
-                                                      ? employees[dept.ManagerId.Value] : "Chưa cập nhật";
-                                    var count = employeeCounts.ContainsKey(dept.Id) ? employeeCounts[dept.Id] : 0;
-                                    var statusClass = dept.IsActive == true ? "active" : "inactive";
-                                    var statusDot = dept.IsActive == true ? "" : "text-danger bg-danger";
-                                    var statusText = dept.IsActive == true ? "Hoạt động" : "Ngừng HĐ";
-                                    var avatarLetter = managerName != "Chưa cập nhật" ? managerName[0].ToString().ToUpper() : "?";
+                <div class="row g-3">
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var dept in Model)
+                        {
+                            var managerName = dept.ManagerId.HasValue && employees.ContainsKey(dept.ManagerId.Value) 
+                                              ? employees[dept.ManagerId.Value] : "Chưa cập nhật";
+                            var count = employeeCounts.ContainsKey(dept.Id) ? employeeCounts[dept.Id] : 0;
+                            var statusBadgeClass = dept.IsActive == true ? "badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill" : "badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2 rounded-pill";
+                            var statusText = dept.IsActive == true ? "Hoạt động" : "Ngừng HĐ";
+                            var avatarLetter = managerName != "Chưa cập nhật" ? managerName[0].ToString().ToUpper() : "?";
 
-                                    <tr>
-                                        <td class="fw-semibold text-muted">@dept.DepartmentCode</td>
-                                        <td class="fw-bold text-dark">@dept.DepartmentName</td>
-                                        <td>
-                                            @if (managerName != "Chưa cập nhật")
-                                            {
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <div class="user-avatar bg-secondary text-white fw-bold d-flex justify-content-center align-items-center" style="width: 24px; height: 24px; font-size: 0.7rem;">
-                                                        @avatarLetter
-                                                    </div>
-                                                    <span>@managerName</span>
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted fst-italic">@managerName</span>
-                                            }
-                                        </td>
-                                        <td><span class="badge bg-light text-dark border">@count</span></td>
-                                        <td><span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span></td>
-                                        <td>
-                                            <div class="action-btns justify-content-end">
-                                            <a asp-action="Details" asp-route-id="@dept.Id" class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
-                                            <a asp-action="Edit" asp-route-id="@dept.Id" class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
-                                            @if (dept.IsActive == true)
-                                            {
-                                                <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0" style="display:inline;">
-                                                    <button type="submit" class="action-btn danger" title="Ngưng hoạt động" onclick="return confirm('Bạn có chắc muốn ngưng hoạt động phòng ban @dept.DepartmentName?');">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </form>
-                                            }
-                                            else
-                                            {
-                                                <form asp-action="Restore" asp-route-id="@dept.Id" method="post" class="m-0" style="display:inline;">
-                                                    <button type="submit" class="action-btn success" title="Kích hoạt lại"><i class="bi bi-arrow-clockwise"></i></button>
-                                                </form>
-                                            }
+                            <div class="col-12">
+                                <div class="bg-white border rounded-3 p-3 position-relative shadow-sm d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3" style="transition: all 0.2s ease;">
+                                    <!-- Dept Info -->
+                                    <div class="d-flex align-items-center gap-3" style="flex: 2; min-width: 250px;">
+                                        <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; background: linear-gradient(135deg, #f9ab00, #fbbc04); color: white; font-size: 1.4rem;">
+                                            <i class="bi bi-folder-fill"></i>
+                                        </div>
+                                        <div style="min-width: 0;">
+                                            <h6 class="mb-1 fw-bold text-dark text-truncate" title="@dept.DepartmentName">@dept.DepartmentName</h6>
+                                            <div class="text-muted small"><i class="bi bi-hash"></i> @dept.DepartmentCode</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Manager Info -->
+                                    <div class="d-flex align-items-center gap-2" style="flex: 1.5; min-width: 180px;">
+                                        <div class="text-muted small fw-semibold me-1 d-none d-md-block">Quản lý:</div>
+                                        @if (managerName != "Chưa cập nhật")
+                                        {
+                                            <div class="bg-secondary text-white fw-bold d-flex justify-content-center align-items-center rounded-circle flex-shrink-0" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                                                @avatarLetter
+                                            </div>
+                                            <span class="fw-bold fs-6 text-dark text-truncate" title="@managerName">@managerName</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic small">@managerName</span>
+                                        }
+                                    </div>
+                                    
+                                    <!-- Employee Count & Status -->
+                                    <div class="d-flex align-items-center gap-4" style="flex: 1; min-width: 150px;">
+                                        <div class="d-flex align-items-center gap-2" title="Nhân sự">
+                                            <i class="bi bi-people text-muted fs-5"></i>
+                                            <span class="fw-bold fs-6 text-primary">@count</span>
+                                        </div>
+                                        <span class="@statusBadgeClass" style="font-size: 0.75rem; white-space: nowrap;">@statusText</span>
+                                    </div>
+
+                                    <!-- Actions -->
+                                    <div class="d-flex gap-2 justify-content-md-end mt-2 mt-md-0" style="flex: 1; min-width: 120px;">
+                                        <a asp-action="Details" asp-route-id="@dept.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
+                                        <a asp-action="Edit" asp-route-id="@dept.Id" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-semibold" title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
+                                        @if (dept.IsActive == true)
+                                        {
+                                            <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0" style="display:inline;">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold" title="Ngưng hoạt động" onclick="return confirm('Bạn có chắc muốn ngưng hoạt động phòng ban @dept.DepartmentName?');">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <form asp-action="Restore" asp-route-id="@dept.Id" method="post" class="m-0" style="display:inline;">
+                                                <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" title="Kích hoạt lại"><i class="bi bi-arrow-clockwise"></i></button>
+                                            </form>
+                                        }
+                                    </div>
                                 </div>
-                            </td>
-                        </tr>
-                                }
-                            }
-                            else
-                            {
-                                <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">Chưa có phòng ban nào trong hệ thống.</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-12 text-center py-5 text-muted">
+                            <i class="bi bi-diagram-3 fs-1 opacity-50 mb-3 d-block"></i>
+                            <p>Chưa có phòng ban nào trong hệ thống.</p>
+                        </div>
+                    }
                 </div>
                 </div>
             </div>
