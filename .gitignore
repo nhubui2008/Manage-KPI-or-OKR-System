@@ -70,6 +70,8 @@ $RECYCLE.BIN/
 appsettings.*.json
 !appsettings.json
 !appsettings.Development.json
+!appsettings.Production.json
+App_Data/DataProtection-Keys/
 *.pfx
 *.key
 

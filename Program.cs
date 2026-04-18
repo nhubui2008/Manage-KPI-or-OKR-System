@@ -1,10 +1,14 @@
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using DotNetEnv;
 using OfficeOpenXml;
+using System.Net;
 
 // EPPlus yêu cầu cấu hình LicenseContext để hoạt động trong môi trường non-commercial
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -32,17 +36,60 @@ builder.Services.AddScoped<IAIAlertService, AIAlertService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHostedService<Manage_KPI_or_OKR_System.Services.AIHistoryCleanupService>();
 
-// Đăng ký Data Protection & EncryptionHelper
-builder.Services.AddDataProtection();
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+var dataProtectionKeysDirectory = string.IsNullOrWhiteSpace(dataProtectionKeysPath)
+    ? Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtection-Keys")
+    : Path.IsPathRooted(dataProtectionKeysPath)
+        ? dataProtectionKeysPath
+        : Path.Combine(builder.Environment.ContentRootPath, dataProtectionKeysPath);
+
+Directory.CreateDirectory(dataProtectionKeysDirectory);
+
+// Persist Data Protection keys so auth cookies survive IIS/Plesk app pool recycles.
+builder.Services.AddDataProtection()
+    .SetApplicationName("Manage-KPI-or-OKR-System")
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysDirectory));
 builder.Services.AddSingleton<EncryptionHelper>();
 
-builder.Services.AddAuthentication("Cookies")
-    .AddCookie("Cookies", options =>
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    var knownProxies = builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? Array.Empty<string>();
+    if (knownProxies.Length > 0)
+    {
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+
+        foreach (var proxy in knownProxies)
+        {
+            if (IPAddress.TryParse(proxy, out var ipAddress))
+            {
+                options.KnownProxies.Add(ipAddress);
+            }
+        }
+    }
+
+    if (builder.Configuration.GetValue<bool>("ForwardedHeaders:TrustAllProxies"))
+    {
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    }
+});
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
         options.LoginPath = "/Auth/Login";
         options.LogoutPath = "/Auth/Logout";
         options.AccessDeniedPath = "/Auth/AccessDenied";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        options.Cookie.Name = ".ManageKpiOkr.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.SameAsRequest
+            : CookieSecurePolicy.Always;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
     })
     .AddGoogle(options =>
@@ -74,6 +121,11 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
+if (builder.Configuration.GetValue<bool>("ForwardedHeaders:Enabled"))
+{
+    app.UseForwardedHeaders();
+}
+
 app.UseExceptionHandler("/Home/Error");
 
 if (!app.Environment.IsDevelopment())
