@@ -32,10 +32,10 @@
     <!-- Filter Bar -->
     <div class="content-card mb-4 shadow-sm border-0">
         <div class="card-body-custom">
-            <form method="get" class="row g-3">
+            <form asp-action="Index" asp-controller="EvaluationReports" method="get" class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Phòng ban</label>
-                    <select name="departmentId" class="form-select">
+                    <select name="departmentId" class="form-select no-select2">
                         @foreach(var d in departments){
                             <option value="@d.Id" selected="@(ViewBag.CurrentDeptId == d.Id ? "selected" : null)">@d.DepartmentName</option>
                         }
@@ -43,7 +43,7 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Chu kỳ (Quý/Năm)</label>
-                    <select name="cycle" class="form-select">
+                    <select name="cycle" class="form-select no-select2">
                         @if (ViewBag.Cycles != null)
                         {
                             foreach (var c in (List<string>)ViewBag.Cycles)
@@ -54,7 +54,7 @@
                     </select>
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary-custom w-100">Lọc dữ liệu</button>
+                    <button type="submit" class="btn-primary-custom w-100">Lọc dữ liệu</button>
                 </div>
             </form>
         </div>

@@ -36,6 +36,7 @@
         id = k.Id,
         name = k.KPIName ?? $"KPI #{k.Id}"
     }));
+    var progressSnapshotsJson = ViewBag.ProgressSnapshotsJson as string ?? "{}";
 }
 
 <div class="page-content">
@@ -214,6 +215,22 @@
                             </div>
                         </div>
 
+                        <div class="bg-white bg-opacity-10 p-3 rounded-4 mb-4 border border-white border-opacity-20 shadow-sm" id="completedProgressContext">
+                            <div class="small opacity-75 text-uppercase fw-bold mb-2" style="font-size: 0.7rem;">KPI đã thực hiện</div>
+                            <div class="d-flex justify-content-between gap-3 small mb-2">
+                                <span class="opacity-75">Cá nhân</span>
+                                <strong id="previousEmployeeAchieved">--</strong>
+                            </div>
+                            <div class="d-flex justify-content-between gap-3 small mb-2">
+                                <span class="opacity-75" id="departmentProgressLabel">Phòng ban</span>
+                                <strong id="departmentAchievedDisplay">--</strong>
+                            </div>
+                            <div class="progress" style="height: 7px; background: rgba(255,255,255,0.15); border-radius: 20px;">
+                                <div id="previousProgressBar" class="progress-bar bg-info transition-all" style="width: 0%; border-radius: 20px;"></div>
+                            </div>
+                            <div class="small opacity-75 mt-2" id="previousProgressCaption">Chưa có check-in đã xác nhận.</div>
+                        </div>
+
                         <div class="bg-white bg-opacity-10 p-3 rounded-4 mb-4 border border-white border-opacity-20 shadow-sm">
                             <div class="small opacity-75 text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Deadline check-in kỳ này</div>
                             <div class="h5 mb-1 fw-bold" id="deadlineDisplay">--</div>
@@ -223,7 +240,7 @@
                          
                         <div class="mb-4">
                             <div class="d-flex justify-content-between align-items-end mb-2">
-                                <span class="small fw-bold opacity-75 text-uppercase">Tiến độ ước tính</span>
+                                <span class="small fw-bold opacity-75 text-uppercase" id="progressScopeLabel">Tiến độ ước tính</span>
                                 <h2 class="mb-0 fw-800" id="progressPercentage">0%</h2>
                             </div>
                             <div class="progress" style="height: 12px; background: rgba(255,255,255,0.15); border-radius: 20px;">
@@ -312,6 +329,7 @@
         const assignmentWeights = @Html.Raw(assignmentWeightsJson);
         const employeeKpiIds = @Html.Raw(employeeKpiIdsJson);
         const allKpiOptions = @Html.Raw(kpiOptionsJson);
+        const progressSnapshots = @Html.Raw(progressSnapshotsJson);
         const kpiSelect = document.getElementById('kpiSelect');
         const employeeSelect = document.getElementById('employeeSelect');
         const achievedInput = document.getElementById('achievedInput');
@@ -319,10 +337,16 @@
         const unitDisplay = document.getElementById('unitDisplay');
         const modeDisplay = document.getElementById('modeDisplay');
         const progressPercentage = document.getElementById('progressPercentage');
+        const progressScopeLabel = document.getElementById('progressScopeLabel');
         const liveProgressBar = document.getElementById('liveProgressBar');
         const deadlineDisplay = document.getElementById('deadlineDisplay');
         const deadlineTargetDisplay = document.getElementById('deadlineTargetDisplay');
         const reminderDisplay = document.getElementById('reminderDisplay');
+        const previousEmployeeAchieved = document.getElementById('previousEmployeeAchieved');
+        const departmentAchievedDisplay = document.getElementById('departmentAchievedDisplay');
+        const departmentProgressLabel = document.getElementById('departmentProgressLabel');
+        const previousProgressBar = document.getElementById('previousProgressBar');
+        const previousProgressCaption = document.getElementById('previousProgressCaption');
 
         function resolveCurrentDeadline(data) {
             const now = new Date();
@@ -356,6 +380,25 @@
             const totalDays = Math.max(1, Math.floor((endDate - startDate) / 86400000) + 1);
             const elapsedDays = Math.min(totalDays, Math.max(1, Math.floor((dueDate - startDate) / 86400000) + 1));
             return individualTarget * (elapsedDays / totalDays);
+        }
+
+        function calculateProgressValue(value, target, isInverse) {
+            if (!target) {
+                return isInverse ? (value === 0 ? 100 : 0) : (value > 0 ? 100 : 0);
+            }
+
+            if (isInverse) {
+                if (value <= target) return 100;
+                const excess = value - target;
+                return Math.max(0, 100 - ((excess / target) * 100));
+            }
+
+            return (value / target) * 100;
+        }
+
+        function formatMetric(value, unit) {
+            const numeric = Number(value || 0);
+            return new Intl.NumberFormat('vi-VN').format(numeric) + (unit ? ` ${unit}` : '');
         }
 
         function filterKpisByEmployee() {
@@ -396,6 +439,13 @@
                 const individualTarget = target * (weight / 100);
                 const unit = data.unit || 'đơn vị';
                 const isInverse = data.isInverse;
+                const snapshot = progressSnapshots[employeeId]?.[kpiId] || {};
+                const latestAchieved = Number(snapshot.latestAchievedValue || 0);
+                const latestProgress = Number(snapshot.latestProgressPercentage || 0);
+                const departmentAchieved = Number(snapshot.departmentAchievedValue || 0);
+                const departmentProgress = Number(snapshot.departmentProgressPercentage || 0);
+                const isDepartmentScope = snapshot.isDepartmentAssigned === true;
+                const projectedDepartmentAchieved = Math.max(0, departmentAchieved - latestAchieved + value);
                 const deadline = resolveCurrentDeadline(data);
                 const expectedAtDeadline = calculateExpectedAtDeadline(individualTarget, data, deadline);
                 const unitConfig = window.applyMeasurementUnitConfigToInputs
@@ -411,21 +461,26 @@
                 deadlineDisplay.textContent = deadline.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 deadlineTargetDisplay.textContent = new Intl.NumberFormat('vi-VN').format(expectedAtDeadline) + ' ' + unit;
                 reminderDisplay.textContent = (data.reminderBeforeHours || 24) + ' giờ trước deadline';
+                previousEmployeeAchieved.textContent = formatMetric(latestAchieved, unit);
+                departmentAchievedDisplay.textContent = snapshot.isDepartmentAssigned
+                    ? formatMetric(departmentAchieved, unit)
+                    : 'Không phân bổ phòng ban';
+                departmentProgressLabel.textContent = snapshot.departmentName
+                    ? `Phòng ban (${snapshot.departmentName})`
+                    : 'Phòng ban';
 
-                let progress = 0;
-                if (individualTarget > 0) {
-                    if (isInverse) {
-                        if (value <= individualTarget) {
-                            progress = 100;
-                        } else {
-                            const excess = value - individualTarget;
-                            const penalty = (excess / individualTarget) * 100;
-                            progress = Math.max(0, 100 - penalty);
-                        }
-                    } else {
-                        progress = (value / individualTarget) * 100;
-                    }
-                }
+                const previousProgress = isDepartmentScope ? departmentProgress : latestProgress;
+                previousProgressBar.style.width = Math.min(100, previousProgress) + '%';
+                previousProgressCaption.textContent = previousProgress > 0
+                    ? `Đã ghi nhận ${Math.round(previousProgress * 100) / 100}% trước lần check-in này.`
+                    : 'Chưa có check-in đã xác nhận.';
+
+                const progressTarget = isDepartmentScope ? target : individualTarget;
+                const progressValue = isDepartmentScope ? projectedDepartmentAchieved : value;
+                const progress = calculateProgressValue(progressValue, progressTarget, isInverse);
+                progressScopeLabel.textContent = isDepartmentScope
+                    ? 'Tiến độ phòng ban sau check-in'
+                    : 'Tiến độ cá nhân sau check-in';
 
                 const displayProgress = Math.min(200, Math.round(progress * 100) / 100);
                 progressPercentage.textContent = displayProgress + '%';
@@ -447,11 +502,17 @@
                 deadlineDisplay.textContent = "--";
                 deadlineTargetDisplay.textContent = "--";
                 reminderDisplay.textContent = "--";
+                previousEmployeeAchieved.textContent = "--";
+                departmentAchievedDisplay.textContent = "--";
+                departmentProgressLabel.textContent = "Phòng ban";
+                previousProgressBar.style.width = "0%";
+                previousProgressCaption.textContent = "Chưa có check-in đã xác nhận.";
                 if (window.applyMeasurementUnitConfigToInputs) {
                     window.applyMeasurementUnitConfigToInputs('', [achievedInput]);
                 }
                 document.getElementById('achievedUnitSuffix').textContent = "đơn vị";
                 modeDisplay.textContent = "--";
+                progressScopeLabel.textContent = "Tiến độ ước tính";
                 progressPercentage.textContent = "0%";
                 liveProgressBar.style.width = "0%";
                 liveProgressBar.className = "progress-bar bg-white transition-all shadow-sm";

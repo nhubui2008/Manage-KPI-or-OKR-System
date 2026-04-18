@@ -187,6 +187,36 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
         }
 
+        [HttpPost]
+        public async Task<IActionResult> SuggestCustomerSegments([FromBody] SuggestCustomerSegmentsRequest request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var context = await _dataService.BuildCustomerSegmentContextAsync(User, request);
+                var prompt = context + "\nHay goi y 3-5 tep khach hang uu tien. Chi tra ve JSON array hop le voi field: segmentName, employeeFit, productOrService, region, customerLifecycle, potentialScore, potentialRationale, revenueBasis, recommendedAction, dataGaps.";
+                var text = await _geminiService.GenerateTextAsync(
+                    "Ban la AI tu van ban hang B2B/B2C cho he thong KPI/OKR. Chi dua vao du lieu noi bo duoc cap, khong bia ten khach hang cu the. Diem tiem nang la so nguyen 0-100. Viet tieng Viet ngan gon, uu tien hanh dong giup dat KPI doanh thu.",
+                    prompt,
+                    new GeminiGenerationOptions { Temperature = 0.35, ResponseMimeType = "application/json" },
+                    cancellationToken);
+
+                var segments = ParseSuggestedCustomerSegments(text);
+                if (!segments.Any())
+                {
+                    return StatusCode(502, new SuggestCustomerSegmentsResponse { Success = false, Warnings = { "Gemini chua tra ve danh sach tep khach hang hop le." } });
+                }
+
+                await SaveAIHistoryAsync("SuggestCustomerSegments", request.EmployeeId ?? request.DepartmentId ?? request.PeriodId, prompt, text);
+
+                return Ok(new SuggestCustomerSegmentsResponse { Segments = segments });
+            }
+            catch (Exception ex)
+            {
+                var result = HandleAIException(ex, "goi y tep khach hang AI");
+                return result;
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> SmartAlerts()
         {
@@ -226,6 +256,36 @@ namespace Manage_KPI_or_OKR_System.Controllers
             catch (JsonException)
             {
                 return new List<SuggestedKpi>();
+            }
+        }
+
+        private List<SuggestedCustomerSegment> ParseSuggestedCustomerSegments(string text)
+        {
+            var json = ExtractJsonArray(text);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return new List<SuggestedCustomerSegment>();
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<List<SuggestedCustomerSegment>>(json, _jsonOptions)?
+                    .Where(s => !string.IsNullOrWhiteSpace(s.SegmentName))
+                    .Select(s =>
+                    {
+                        if (s.PotentialScore.HasValue)
+                        {
+                            s.PotentialScore = Math.Clamp(s.PotentialScore.Value, 0, 100);
+                        }
+
+                        return s;
+                    })
+                    .Take(5)
+                    .ToList() ?? new List<SuggestedCustomerSegment>();
+            }
+            catch (JsonException)
+            {
+                return new List<SuggestedCustomerSegment>();
             }
         }
 

@@ -1,6 +1,7 @@
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using DotNetEnv;
 using OfficeOpenXml;
 using System.Net;
+using System.Security.Claims;
 
 // EPPlus yêu cầu cấu hình LicenseContext để hoạt động trong môi trường non-commercial
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -37,6 +39,10 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHostedService<Manage_KPI_or_OKR_System.Services.AIHistoryCleanupService>();
 
 var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    dataProtectionKeysPath = Environment.ExpandEnvironmentVariables(dataProtectionKeysPath);
+}
 var dataProtectionKeysDirectory = string.IsNullOrWhiteSpace(dataProtectionKeysPath)
     ? Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtection-Keys")
     : Path.IsPathRooted(dataProtectionKeysPath)
@@ -53,7 +59,9 @@ builder.Services.AddSingleton<EncryptionHelper>();
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
+        | ForwardedHeaders.XForwardedProto
+        | ForwardedHeaders.XForwardedHost;
 
     var knownProxies = builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? Array.Empty<string>();
     if (knownProxies.Length > 0)
@@ -74,6 +82,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
+        options.ForwardLimit = null;
     }
 });
 
@@ -91,6 +100,55 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             : CookieSecurePolicy.Always;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
+        options.Events = new CookieAuthenticationEvents
+        {
+            OnRedirectToLogin = context =>
+            {
+                if (ShouldReturnAuthStatusCode(context.Request))
+                {
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return Task.CompletedTask;
+                }
+
+                context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            },
+            OnRedirectToAccessDenied = context =>
+            {
+                if (ShouldReturnAuthStatusCode(context.Request))
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    return Task.CompletedTask;
+                }
+
+                context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            },
+            OnValidatePrincipal = context =>
+            {
+                if (context.Principal == null)
+                {
+                    return Task.CompletedTask;
+                }
+
+                var removedPermissionClaims = false;
+                foreach (var identity in context.Principal.Identities.OfType<ClaimsIdentity>())
+                {
+                    foreach (var claim in identity.FindAll(PermissionClaimsTransformation.PermissionClaimType).ToList())
+                    {
+                        identity.RemoveClaim(claim);
+                        removedPermissionClaims = true;
+                    }
+                }
+
+                if (removedPermissionClaims)
+                {
+                    context.ShouldRenew = true;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     })
     .AddGoogle(options =>
     {
@@ -100,6 +158,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddDbContext<MiniERPDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<IClaimsTransformation, PermissionClaimsTransformation>();
 
 var app = builder.Build();
 
@@ -147,3 +206,27 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 app.Run();
+
+static bool ShouldReturnAuthStatusCode(HttpRequest request)
+{
+    if (request.Headers.XRequestedWith == "XMLHttpRequest")
+    {
+        return true;
+    }
+
+    var path = request.Path;
+    if (path.StartsWithSegments("/AI")
+        || path.StartsWithSegments("/Notifications")
+        || path.StartsWithSegments("/Search")
+        || path.StartsWithSegments("/Auth/KeepAlive"))
+    {
+        return true;
+    }
+
+    if (request.Headers.Accept.Any(value => value != null && value.Contains("application/json", StringComparison.OrdinalIgnoreCase)))
+    {
+        return true;
+    }
+
+    return request.HasJsonContentType();
+}

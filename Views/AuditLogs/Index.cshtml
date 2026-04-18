@@ -2,7 +2,10 @@
 @{
     ViewData["Title"] = "Nhật ký Hệ thống (Audit Logs)";
     var users = ViewBag.Users as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var userRoleIds = ViewBag.UserRoleIds as Dictionary<int, int?> ?? new Dictionary<int, int?>();
+    var roles = ViewBag.Roles as Dictionary<int, string> ?? new Dictionary<int, string>();
     var currentFilter = ViewData["CurrentFilter"] as string;
+    int? currentRoleId = ViewData["CurrentRoleId"] is int selectedRoleId ? selectedRoleId : null;
     var startDate = ViewData["StartDate"] as string;
     var endDate = ViewData["EndDate"] as string;
 
@@ -11,8 +14,15 @@
         return action switch
         {
             "CREATE" => "bg-success",
+            "CREATE_APPROVED" => "bg-success",
             "UPDATE" => "bg-warning text-dark",
             "DELETE" => "bg-danger",
+            "APPROVE" => "bg-success",
+            "REJECT" => "bg-danger",
+            "COMMENT" => "bg-info",
+            "SUBMIT_REVIEW" => "bg-primary",
+            "DIRECTOR_APPROVE" => "bg-success",
+            "DIRECTOR_REJECT" => "bg-danger",
             _ => "bg-secondary"
         };
     }
@@ -22,8 +32,15 @@
         return action switch
         {
             "CREATE" => "Tạo mới",
+            "CREATE_APPROVED" => "Tạo & duyệt",
             "UPDATE" => "Cập nhật",
             "DELETE" => "Xóa",
+            "APPROVE" => "Duyệt",
+            "REJECT" => "Từ chối",
+            "COMMENT" => "Bình luận",
+            "SUBMIT_REVIEW" => "Gửi duyệt",
+            "DIRECTOR_APPROVE" => "GĐ duyệt",
+            "DIRECTOR_REJECT" => "GĐ từ chối",
             _ => action ?? "N/A"
         };
     }
@@ -49,12 +66,22 @@
                     <!-- ADVANCED SEARCH FORM -->
                     <form asp-action="Index" method="get" class="mb-4">
                         <div class="row g-3 align-items-end">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label small fw-bold text-muted">Tìm kiếm từ khóa</label>
                                 <div class="position-relative">
                                     <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                                    <input type="text" name="searchString" value="@currentFilter" class="form-control ps-5" placeholder="Tên người dùng, hành động, bảng..." />
+                                    <input type="text" name="searchString" value="@currentFilter" class="form-control ps-5" placeholder="Tên user, role, hành động..." />
                                 </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-muted">Role thao tác</label>
+                                <select name="roleId" class="form-select no-select2">
+                                    <option value="">Tất cả role</option>
+                                    @foreach (var role in roles)
+                                    {
+                                        <option value="@role.Key" selected="@(currentRoleId == role.Key ? "selected" : null)">@role.Value</option>
+                                    }
+                                </select>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Từ ngày</label>
@@ -64,7 +91,7 @@
                                 <label class="form-label small fw-bold text-muted">Đến ngày</label>
                                 <input type="date" name="endDate" value="@endDate" class="form-control" />
                             </div>
-                            <div class="col-md-4 d-flex gap-2">
+                            <div class="col-md-3 d-flex gap-2">
                                 <button type="submit" class="btn-primary-custom auditlog-filter-btn flex-grow-1 d-flex align-items-center justify-content-center shadow-none">
                                     <i class="bi bi-filter me-2"></i> Lọc dữ liệu
                                 </button>
@@ -80,10 +107,11 @@
                             <thead class="bg-light">
                                 <tr>
                                     <th class="ps-4" style="width:18%;">Thời gian</th>
-                                    <th style="width:15%;">Tài khoản</th>
-                                    <th style="width:12%;">Hành động</th>
-                                    <th style="width:15%;">Bảng tác động</th>
-                                    <th style="width:30%;">Tóm tắt thay đổi</th>
+                                    <th style="width:14%;">Tài khoản</th>
+                                    <th style="width:12%;">Role</th>
+                                    <th style="width:11%;">Hành động</th>
+                                    <th style="width:14%;">Bảng tác động</th>
+                                    <th style="width:25%;">Tóm tắt thay đổi</th>
                                     <th class="text-end pe-4" style="width:10%;">Hành động</th>
                                 </tr>
                             </thead>
@@ -93,6 +121,14 @@
                                     @foreach (var log in Model)
                                     {
                                         var userName = log.SystemUserId.HasValue && users.ContainsKey(log.SystemUserId.Value) ? users[log.SystemUserId.Value] : "System";
+                                        var roleName = "System";
+                                        if (log.SystemUserId.HasValue &&
+                                            userRoleIds.TryGetValue(log.SystemUserId.Value, out var logRoleId) &&
+                                            logRoleId.HasValue &&
+                                            roles.ContainsKey(logRoleId.Value))
+                                        {
+                                            roleName = roles[logRoleId.Value];
+                                        }
                                         <tr>
                                             <td class="ps-4">
                                                 <div class="text-dark fw-medium">@(log.LogTime?.ToString("dd/MM/yyyy") ?? "")</div>
@@ -105,6 +141,9 @@
                                                     </div>
                                                     <span class="fw-medium text-dark">@userName</span>
                                                 </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border rounded-pill px-3">@roleName</span>
                                             </td>
                                             <td>
                                                 <span class="badge @GetActionClass(log.ActionType ?? "") px-2 py-1">
@@ -133,7 +172,7 @@
                                 else
                                 {
                                     <tr class="auditlog-empty-row">
-                                        <td colspan="6" class="text-center text-muted py-5">
+                                        <td colspan="7" class="text-center text-muted py-5">
                                             <i class="bi bi-inbox auditlog-empty-icon mb-3 d-block"></i>
                                             <p class="mb-0">Không tìm thấy nhật ký phù hợp trong khoảng thời gian này.</p>
                                         </td>
@@ -156,6 +195,7 @@
                                         <a class="page-link border-0 rounded-circle shadow-none text-dark" asp-action="Index" 
                                            asp-route-pageNumber="@(Model.PageIndex - 1)" 
                                            asp-route-searchString="@currentFilter"
+                                           asp-route-roleId="@currentRoleId"
                                            asp-route-startDate="@startDate"
                                            asp-route-endDate="@endDate">
                                             <i class="bi bi-chevron-left"></i>
@@ -170,6 +210,7 @@
                                                 <a class="page-link border-0 rounded-circle shadow-none @(i == Model.PageIndex ? "" : "text-dark")" asp-action="Index" 
                                                    asp-route-pageNumber="@i" 
                                                    asp-route-searchString="@currentFilter"
+                                                   asp-route-roleId="@currentRoleId"
                                                    asp-route-startDate="@startDate"
                                                    asp-route-endDate="@endDate">@i</a>
                                             </li>
@@ -184,6 +225,7 @@
                                         <a class="page-link border-0 rounded-circle shadow-none text-dark" asp-action="Index" 
                                            asp-route-pageNumber="@(Model.PageIndex + 1)" 
                                            asp-route-searchString="@currentFilter"
+                                           asp-route-roleId="@currentRoleId"
                                            asp-route-startDate="@startDate"
                                            asp-route-endDate="@endDate">
                                             <i class="bi bi-chevron-right"></i>
@@ -339,8 +381,15 @@
         function translateAction(action) {
             switch(action) {
                 case "CREATE": return "Tạo mới";
+                case "CREATE_APPROVED": return "Tạo & duyệt";
                 case "UPDATE": return "Cập nhật";
                 case "DELETE": return "Xóa";
+                case "APPROVE": return "Duyệt";
+                case "REJECT": return "Từ chối";
+                case "COMMENT": return "Bình luận";
+                case "SUBMIT_REVIEW": return "Gửi duyệt";
+                case "DIRECTOR_APPROVE": return "GĐ duyệt";
+                case "DIRECTOR_REJECT": return "GĐ từ chối";
                 default: return action;
             }
         }
@@ -348,8 +397,15 @@
         function getActionBadgeClass(action) {
             switch(action) {
                 case "CREATE": return "bg-success";
+                case "CREATE_APPROVED": return "bg-success";
                 case "UPDATE": return "bg-warning text-dark";
                 case "DELETE": return "bg-danger";
+                case "APPROVE": return "bg-success";
+                case "REJECT": return "bg-danger";
+                case "COMMENT": return "bg-info";
+                case "SUBMIT_REVIEW": return "bg-primary";
+                case "DIRECTOR_APPROVE": return "bg-success";
+                case "DIRECTOR_REJECT": return "bg-danger";
                 default: return "bg-secondary";
             }
         }

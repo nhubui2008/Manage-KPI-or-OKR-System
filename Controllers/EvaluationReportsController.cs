@@ -23,13 +23,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HasPermission("EVALREPORTS_VIEW")]
-        public async Task<IActionResult> Index(int? departmentId, string cycle)
+        public async Task<IActionResult> Index(int? departmentId, string? cycle)
         {
+            var departments = await _context.Departments
+                .Where(d => d.IsActive == true)
+                .OrderBy(d => d.DepartmentName)
+                .ToListAsync();
+
             // Default to Sales if not specified (per user request example)
             if (!departmentId.HasValue)
             {
-                var salesDept = await _context.Departments.FirstOrDefaultAsync(d => d.DepartmentName != null && d.DepartmentName.Contains("Sale"));
-                departmentId = salesDept?.Id ?? 0;
+                var salesDept = departments.FirstOrDefault(d => d.DepartmentName != null && d.DepartmentName.Contains("Sale"));
+                departmentId = salesDept?.Id ?? departments.FirstOrDefault()?.Id ?? 0;
+            }
+            else if (departments.Any() && !departments.Any(d => d.Id == departmentId.Value))
+            {
+                departmentId = departments.First().Id;
             }
 
             if (string.IsNullOrEmpty(cycle))
@@ -69,13 +78,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .ToDictionaryAsync(e => e.Id);
 
             var failReasons = await _context.FailReasons.ToDictionaryAsync(r => r.Id, r => r.ReasonName);
-            var departments = await _context.Departments.ToListAsync();
             var currentDept = await _context.Departments.FindAsync(departmentId);
 
             var cycles = await _context.OKRs
                 .Where(o => !string.IsNullOrEmpty(o.Cycle))
                 .Select(o => o.Cycle!)
                 .Distinct()
+                .OrderByDescending(c => c)
                 .ToListAsync();
             
             if (!cycles.Any()) cycles = new List<string> { $"Q1-{DateTime.Now.Year}" };
@@ -128,7 +137,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
         [HttpGet]
         [HasPermission("EVALREPORTS_VIEW")]
-        public async Task<IActionResult> ExportExcel(int? departmentId, string cycle)
+        public async Task<IActionResult> ExportExcel(int? departmentId, string? cycle)
         {
             if (!departmentId.HasValue)
             {

@@ -190,47 +190,48 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
                 return Forbid();
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var existing = await _context.EvaluationResults.FindAsync(model.Id);
-                if (existing == null) return NotFound();
-
-                // Lưu dữ liệu cũ để ghi Log
-                var oldEmployee = await _context.Employees.FindAsync(existing.EmployeeId);
-                var oldPeriod = await _context.EvaluationPeriods.FindAsync(existing.PeriodId);
-                string oldInfo = $"Cũ: {oldEmployee?.FullName} - {oldPeriod?.PeriodName} - Điểm: {existing.TotalScore?.ToString("0.#")} ({existing.Classification})";
-
-                existing.EmployeeId = model.EmployeeId;
-                existing.PeriodId = model.PeriodId;
-                existing.TotalScore = model.TotalScore;
-                existing.RankId = model.RankId;
-                existing.Classification = model.Classification;
-                existing.ReviewComment = model.ReviewComment;
-
-                _context.Update(existing);
-                await _context.SaveChangesAsync();
-
-                // Ghi nhật ký hệ thống (Audit Log)
-                var newEmployee = await _context.Employees.FindAsync(model.EmployeeId);
-                var newPeriod = await _context.EvaluationPeriods.FindAsync(model.PeriodId);
-                string newInfo = $"Mới: {newEmployee?.FullName} - {newPeriod?.PeriodName} - Điểm: {model.TotalScore?.ToString("0.#")} ({model.Classification})";
-                await LogAuditAsync("UPDATE", oldInfo, newInfo);
-
-                TempData["SuccessMessage"] = $"Đã cập nhật kết quả đánh giá thành công! Tổng điểm: {(model.TotalScore % 1 == 0 ? model.TotalScore?.ToString("0") : model.TotalScore?.ToString("0.#"))}đ";
+                TempData["ErrorMessage"] = "Dữ liệu sửa kết quả đánh giá không hợp lệ. Vui lòng kiểm tra lại điểm, nhân viên và kỳ đánh giá.";
                 return RedirectToAction(nameof(Index));
             }
-            
-            // If validation fails, reload dropdowns and returning view
-            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
-            ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
-            var allRanks = await _context.GradingRanks.ToListAsync();
-            ViewBag.AllRanks = allRanks;
-            ViewBag.Classifications = allRanks.Where(r => !string.IsNullOrEmpty(r.Description))
-                                              .Select(r => r.Description)
-                                              .Distinct()
-                                              .ToList();
 
-            return View(model);
+            var existing = await _context.EvaluationResults.FindAsync(model.Id);
+            if (existing == null) return NotFound();
+
+            var isDuplicate = await _context.EvaluationResults
+                .AnyAsync(r => r.Id != model.Id &&
+                               r.EmployeeId == model.EmployeeId &&
+                               r.PeriodId == model.PeriodId);
+            if (isDuplicate)
+            {
+                TempData["ErrorMessage"] = "Kết quả đánh giá cho nhân viên này trong kỳ này đã tồn tại.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Lưu dữ liệu cũ để ghi Log
+            var oldEmployee = await _context.Employees.FindAsync(existing.EmployeeId);
+            var oldPeriod = await _context.EvaluationPeriods.FindAsync(existing.PeriodId);
+            string oldInfo = $"Cũ: {oldEmployee?.FullName} - {oldPeriod?.PeriodName} - Điểm: {existing.TotalScore?.ToString("0.#")} ({existing.Classification})";
+
+            existing.EmployeeId = model.EmployeeId;
+            existing.PeriodId = model.PeriodId;
+            existing.TotalScore = model.TotalScore;
+            existing.RankId = model.RankId;
+            existing.Classification = model.Classification;
+            existing.ReviewComment = model.ReviewComment;
+
+            _context.Update(existing);
+            await _context.SaveChangesAsync();
+
+            // Ghi nhật ký hệ thống (Audit Log)
+            var newEmployee = await _context.Employees.FindAsync(model.EmployeeId);
+            var newPeriod = await _context.EvaluationPeriods.FindAsync(model.PeriodId);
+            string newInfo = $"Mới: {newEmployee?.FullName} - {newPeriod?.PeriodName} - Điểm: {model.TotalScore?.ToString("0.#")} ({model.Classification})";
+            await LogAuditAsync("UPDATE", oldInfo, newInfo);
+
+            TempData["SuccessMessage"] = $"Đã cập nhật kết quả đánh giá thành công! Tổng điểm: {(model.TotalScore % 1 == 0 ? model.TotalScore?.ToString("0") : model.TotalScore?.ToString("0.#"))}đ";
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]

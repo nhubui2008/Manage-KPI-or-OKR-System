@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System;
 using System.Security.Claims;
 using System.Globalization;
+using System.Text.Json;
 
 
 namespace Manage_KPI_or_OKR_System.Controllers
@@ -28,6 +29,23 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private const string CheckInStatusDone = "Hoàn thành";
 
         private readonly MiniERPDbContext _context;
+
+        private sealed class KpiCheckInProgressSnapshot
+        {
+            public decimal LatestAchievedValue { get; set; }
+            public decimal LatestProgressPercentage { get; set; }
+            public DateTime? LatestCheckInDate { get; set; }
+            public decimal DepartmentAchievedValue { get; set; }
+            public decimal DepartmentProgressPercentage { get; set; }
+            public string DepartmentName { get; set; } = string.Empty;
+            public bool IsDepartmentAssigned { get; set; }
+        }
+
+        private sealed class EmployeeDepartmentPair
+        {
+            public int EmployeeId { get; set; }
+            public int DepartmentId { get; set; }
+        }
 
         public KPICheckInsController(MiniERPDbContext context)
         {
@@ -444,6 +462,169 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     g => g.ToDictionary(a => a.KPIId, a => (a.Weight ?? 1m) * 100));
 
             ViewBag.EmployeeKPIIds = await BuildEmployeeKpiMapAsync((List<Employee>)ViewBag.AllEmployees, kpis);
+            var progressSnapshots = await BuildCheckInProgressSnapshotsAsync((List<Employee>)ViewBag.AllEmployees, kpis, kpiDetails);
+            ViewBag.ProgressSnapshotsJson = JsonSerializer.Serialize(progressSnapshots, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+        }
+
+        private async Task<Dictionary<int, Dictionary<int, KpiCheckInProgressSnapshot>>> BuildCheckInProgressSnapshotsAsync(
+            List<Employee> employees,
+            List<KPI> kpis,
+            Dictionary<int, KPIDetail> kpiDetails)
+        {
+            var result = employees.ToDictionary(
+                e => e.Id,
+                _ => kpis.ToDictionary(k => k.Id, _ => new KpiCheckInProgressSnapshot()));
+
+            var employeeIds = employees.Select(e => e.Id).Distinct().ToList();
+            var kpiIds = kpis.Select(k => k.Id).Distinct().ToList();
+            if (!employeeIds.Any() || !kpiIds.Any())
+            {
+                return result;
+            }
+
+            var employeeDepartmentPairs = await _context.EmployeeAssignments
+                .Where(a => a.EmployeeId.HasValue &&
+                            employeeIds.Contains(a.EmployeeId.Value) &&
+                            a.DepartmentId.HasValue &&
+                            a.IsActive == true)
+                .Select(a => new EmployeeDepartmentPair { EmployeeId = a.EmployeeId!.Value, DepartmentId = a.DepartmentId!.Value })
+                .ToListAsync();
+
+            var departmentIds = employeeDepartmentPairs
+                .Select(a => a.DepartmentId)
+                .Distinct()
+                .ToList();
+
+            var departmentNames = departmentIds.Any()
+                ? await _context.Departments
+                    .Where(d => departmentIds.Contains(d.Id))
+                    .ToDictionaryAsync(d => d.Id, d => d.DepartmentName ?? $"Phòng ban #{d.Id}")
+                : new Dictionary<int, string>();
+
+            var departmentAssignments = departmentIds.Any()
+                ? await _context.KPI_Department_Assignments
+                    .Where(a => departmentIds.Contains(a.DepartmentId) && kpiIds.Contains(a.KPIId))
+                    .ToListAsync()
+                : new List<KPI_Department_Assignment>();
+
+            var kpiIdsByDepartment = departmentAssignments
+                .GroupBy(a => a.DepartmentId)
+                .ToDictionary(g => g.Key, g => g.Select(a => a.KPIId).Distinct().ToHashSet());
+
+            var activeDepartmentMembers = new List<EmployeeDepartmentPair>();
+            if (departmentIds.Any())
+            {
+                activeDepartmentMembers = await _context.EmployeeAssignments
+                    .Where(a => a.EmployeeId.HasValue &&
+                                a.DepartmentId.HasValue &&
+                                departmentIds.Contains(a.DepartmentId.Value) &&
+                                a.IsActive == true)
+                    .Select(a => new EmployeeDepartmentPair { EmployeeId = a.EmployeeId!.Value, DepartmentId = a.DepartmentId!.Value })
+                    .ToListAsync();
+            }
+
+            var relevantEmployeeIds = employeeIds
+                .Concat(activeDepartmentMembers.Select(a => a.EmployeeId))
+                .Distinct()
+                .ToList();
+
+            var latestCheckIns = await _context.KPICheckIns
+                .Where(c => c.EmployeeId.HasValue &&
+                            c.KPIId.HasValue &&
+                            relevantEmployeeIds.Contains(c.EmployeeId.Value) &&
+                            kpiIds.Contains(c.KPIId.Value) &&
+                            (c.ReviewStatus == ReviewStatusApproved || c.ReviewStatus == null))
+                .OrderByDescending(c => c.CheckInDate)
+                .Select(c => new { c.Id, EmployeeId = c.EmployeeId!.Value, KPIId = c.KPIId!.Value, c.CheckInDate })
+                .ToListAsync();
+
+            var latestByEmployeeKpi = latestCheckIns
+                .GroupBy(c => (c.EmployeeId, c.KPIId))
+                .ToDictionary(g => g.Key, g => g.First());
+
+            var latestCheckInIds = latestByEmployeeKpi.Values.Select(c => c.Id).ToList();
+            var checkInDetails = latestCheckInIds.Any()
+                ? await _context.CheckInDetails
+                    .Where(d => d.CheckInId.HasValue && latestCheckInIds.Contains(d.CheckInId.Value))
+                    .ToDictionaryAsync(d => d.CheckInId!.Value)
+                : new Dictionary<int, CheckInDetail>();
+
+            var departmentsByEmployee = employeeDepartmentPairs
+                .GroupBy(a => a.EmployeeId)
+                .ToDictionary(g => g.Key, g => g.Select(a => a.DepartmentId).Distinct().ToList());
+
+            var membersByDepartment = activeDepartmentMembers
+                .GroupBy(a => a.DepartmentId)
+                .ToDictionary(g => g.Key, g => g.Select(a => a.EmployeeId).Distinct().ToList());
+
+            foreach (var employee in employees)
+            {
+                departmentsByEmployee.TryGetValue(employee.Id, out var employeeDepartmentIds);
+                employeeDepartmentIds ??= new List<int>();
+
+                foreach (var kpi in kpis)
+                {
+                    if (!result.TryGetValue(employee.Id, out var employeeSnapshots) ||
+                        !employeeSnapshots.TryGetValue(kpi.Id, out var snapshot))
+                    {
+                        continue;
+                    }
+
+                    if (latestByEmployeeKpi.TryGetValue((employee.Id, kpi.Id), out var latestIndividual) &&
+                        checkInDetails.TryGetValue(latestIndividual.Id, out var latestIndividualDetail))
+                    {
+                        snapshot.LatestAchievedValue = latestIndividualDetail.AchievedValue ?? 0m;
+                        snapshot.LatestProgressPercentage = latestIndividualDetail.ProgressPercentage ?? 0m;
+                        snapshot.LatestCheckInDate = latestIndividual.CheckInDate;
+                    }
+
+                    var assignedDepartmentIds = employeeDepartmentIds
+                        .Where(deptId => kpiIdsByDepartment.TryGetValue(deptId, out var deptKpis) && deptKpis.Contains(kpi.Id))
+                        .Distinct()
+                        .ToList();
+
+                    if (!assignedDepartmentIds.Any())
+                    {
+                        continue;
+                    }
+
+                    snapshot.IsDepartmentAssigned = true;
+                    snapshot.DepartmentName = string.Join(", ", assignedDepartmentIds
+                        .Select(id => departmentNames.GetValueOrDefault(id, $"Phòng ban #{id}"))
+                        .Where(name => !string.IsNullOrWhiteSpace(name)));
+
+                    var departmentMemberIds = assignedDepartmentIds
+                        .SelectMany(deptId => membersByDepartment.GetValueOrDefault(deptId, new List<int>()))
+                        .Distinct()
+                        .ToList();
+
+                    decimal departmentAchieved = 0m;
+                    foreach (var memberId in departmentMemberIds)
+                    {
+                        if (!latestByEmployeeKpi.TryGetValue((memberId, kpi.Id), out var latestMember) ||
+                            !checkInDetails.TryGetValue(latestMember.Id, out var latestMemberDetail))
+                        {
+                            continue;
+                        }
+
+                        departmentAchieved += latestMemberDetail.AchievedValue ?? 0m;
+                    }
+
+                    snapshot.DepartmentAchievedValue = departmentAchieved;
+                    if (kpiDetails.TryGetValue(kpi.Id, out var detail))
+                    {
+                        snapshot.DepartmentProgressPercentage = ProgressHelper.CalculateProgress(
+                            departmentAchieved,
+                            detail.TargetValue ?? 0m,
+                            detail.IsInverse);
+                    }
+                }
+            }
+
+            return result;
         }
 
         private async Task<Dictionary<int, List<int>>> BuildEmployeeKpiMapAsync(List<Employee> employees, List<KPI> kpis)
@@ -694,6 +875,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     ScheduleProgressPercentage = Math.Round(scheduleProgress, 2)
                 };
                 _context.CheckInDetails.Add(detail);
+                AddAuditLog(
+                    model.ReviewStatus == ReviewStatusApproved ? "CREATE_APPROVED" : "CREATE",
+                    "KPICheckIns",
+                    null,
+                    $"Check-in #{model.Id} KPI #{model.KPIId} nhân viên #{model.EmployeeId}; giá trị {achievedValue:0.##}; tiến độ {progress:0.##}%; trạng thái duyệt {model.ReviewStatus}");
 
                 if (model.ReviewStatus != ReviewStatusApproved)
                 {
@@ -914,6 +1100,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 checkIn.ReviewedAt = DateTime.Now;
                 checkIn.ReviewComment = reviewComment?.Trim();
                 checkIn.ReviewScore = score;
+                AddAuditLog(
+                    isApproved ? "APPROVE" : "REJECT",
+                    "KPICheckIns",
+                    $"Check-in #{checkIn.Id}: {currentReviewStatus}",
+                    $"Check-in #{checkIn.Id}: {checkIn.ReviewStatus}; điểm review {(score.HasValue ? score.Value.ToString("0.##") : "không nhập")}");
 
                 if (!string.IsNullOrWhiteSpace(checkIn.ReviewComment) || score.HasValue)
                 {
@@ -1002,10 +1193,30 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 Content = content.Trim(),
                 CommentTime = DateTime.Now
             });
+            AddAuditLog("COMMENT", "KPICheckIns", null, $"Bình luận check-in #{checkInId} KPI #{kpiId}");
 
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã thêm bình luận/đánh giá cho KPI.";
             return RedirectBack(returnUrl);
+        }
+
+        private void AddAuditLog(string actionType, string impactedTable, string? oldData, string? newData)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out var userId))
+            {
+                return;
+            }
+
+            _context.AuditLogs.Add(new AuditLog
+            {
+                SystemUserId = userId,
+                ActionType = actionType,
+                ImpactedTable = impactedTable,
+                OldData = oldData,
+                NewData = newData,
+                LogTime = DateTime.Now
+            });
         }
 
         private async Task ApplyApprovedCheckInImpactAsync(KPICheckIn checkIn, CheckInDetail detail, KPI kpi, KPIDetail? kpiDetail)

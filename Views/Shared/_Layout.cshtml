@@ -52,7 +52,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Manage_KPI_or_OKR_System.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Manage-KPI-or-OKR-System.styles.css" asp-append-version="true" />
     
     <!-- Restore sidebar state immediately to prevent layout shift -->
     <script>
@@ -96,14 +96,12 @@
                         // TÁCH RÕ RÀNG CÁC QUYỀN ĐỂ FRONTEND DỄ KIỂM SOÁT
                         bool isAdmin = User.IsInRole("Admin") || User.IsInRole("Administrator");
                         
-                        // === KIỂM TRA PERMISSION TỪ DATABASE ===
-                        var userRoles = User.Claims
-                            .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
-                            .Select(c => c.Value).ToList();
+                        // Permission claims are loaded per request by PermissionClaimsTransformation.
+                        var userPermissions = User.Claims
+                            .Where(c => c.Type == Manage_KPI_or_OKR_System.Services.PermissionClaimsTransformation.PermissionClaimType)
+                            .Select(c => c.Value)
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                        var userPermissions = new HashSet<string>();
-                        var dbContext = Context.RequestServices.GetService(typeof(Manage_KPI_or_OKR_System.Data.MiniERPDbContext)) as Manage_KPI_or_OKR_System.Data.MiniERPDbContext;
-                        
                         if (isAdmin)
                         {
                             // Admin có toàn quyền
@@ -113,20 +111,6 @@
                                 "BONUSRULES_VIEW", "EMPLOYEES_VIEW", "DEPARTMENTS_VIEW",
                                 "POSITIONS_VIEW", "SYSUSERS_VIEW", "ROLES_VIEW", "AUDITLOGS_VIEW"
                             };
-                        }
-                        else if (userRoles.Any())
-                        {
-                            if (dbContext != null)
-                            {
-                                userPermissions = new HashSet<string>(
-                                    dbContext.Role_Permissions
-                                        .Join(dbContext.Permissions, rp => rp.PermissionId, p => p.Id, (rp, p) => new { rp, p })
-                                        .Join(dbContext.Roles, x => x.rp.RoleId, r => r.Id, (x, r) => new { x.p.PermissionCode, r.RoleName })
-                                        .Where(x => x.RoleName != null && userRoles.Contains(x.RoleName) && x.PermissionCode != null)
-                                        .Select(x => x.PermissionCode!)
-                                        .ToList()
-                                );
-                            }
                         }
 
                         // Helper: kiểm tra user có permission không
@@ -559,19 +543,47 @@
             (function() {
                 const IDLE_LIMIT = 25 * 60 * 1000;    // 25 phút không hoạt động → cảnh báo
                 const COUNTDOWN_SECS = 300;            // 5 phút đếm ngược trước khi logout
+                const KEEP_ALIVE_INTERVAL = 5 * 60 * 1000;
                 let idleTimer = null;
                 let countdownTimer = null;
                 let warningShown = false;
+                let continuedByActivity = false;
+                let lastKeepAliveAt = 0;
+
+                function touchServerSession(force) {
+                    const now = Date.now();
+                    if (!force && now - lastKeepAliveAt < KEEP_ALIVE_INTERVAL) return;
+                    lastKeepAliveAt = now;
+
+                    fetch('/Auth/KeepAlive', {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    }).then(function(response) {
+                        if (response.status === 401 || response.redirected) {
+                            window.location.href = '/Auth/Login';
+                        }
+                    }).catch(function() {
+                        // Không chuyển trang khi mạng chập chờn; request thật kế tiếp sẽ tự kiểm tra cookie.
+                    });
+                }
 
                 function resetIdleTimer() {
-                    if (warningShown) return; // Đang hiện cảnh báo thì không reset
+                    if (warningShown) {
+                        continuedByActivity = true;
+                        Swal.close();
+                        return;
+                    }
                     clearTimeout(idleTimer);
                     idleTimer = setTimeout(showWarning, IDLE_LIMIT);
+                    touchServerSession(false);
                 }
 
                 function showWarning() {
                     if (warningShown) return;
                     warningShown = true;
+                    continuedByActivity = false;
 
                     let remaining = COUNTDOWN_SECS;
 
@@ -602,9 +614,15 @@
                     }).then(function(result) {
                         clearInterval(countdownTimer);
                         warningShown = false;
+                        if (continuedByActivity) {
+                            continuedByActivity = false;
+                            touchServerSession(true);
+                            resetIdleTimer();
+                            return;
+                        }
+
                         if (result.isConfirmed) {
-                            // Gọi 1 request nhẹ để reset SlidingExpiration server-side
-                            fetch('/', { method: 'GET', credentials: 'same-origin' });
+                            touchServerSession(true);
                             resetIdleTimer();
                         } else {
                             window.location.href = '/Auth/Logout';
@@ -618,6 +636,7 @@
                 });
 
                 // Bắt đầu đếm
+                touchServerSession(true);
                 resetIdleTimer();
             })();
         </script>

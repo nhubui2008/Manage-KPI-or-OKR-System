@@ -76,7 +76,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var roleName = "User";
-            var permissions = new List<string>();
 
             if (user.RoleId.HasValue)
             {
@@ -84,12 +83,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 if (role != null)
                 {
                     roleName = role.RoleName ?? "User";
-                    permissions = await _context.Role_Permissions
-                        .Where(rp => rp.RoleId == role.Id)
-                        .Join(_context.Permissions, rp => rp.PermissionId, p => p.Id, (rp, p) => p.PermissionCode)
-                        .Where(code => !string.IsNullOrEmpty(code))
-                        .Select(code => code!)
-                        .ToListAsync();
                 }
             }
 
@@ -99,12 +92,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 new Claim(ClaimTypes.Name, user.Username ?? "Unknown"),
                 new Claim(ClaimTypes.Role, roleName)
             };
-
-            // Add permission claims
-            foreach (var permission in permissions)
-            {
-                claims.Add(new Claim("Permission", permission));
-            }
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
@@ -177,6 +164,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Login");
+        }
+
+        [HttpGet]
+        [Authorize]
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult KeepAlive()
+        {
+            return Ok(new
+            {
+                success = true,
+                serverTime = DateTimeOffset.UtcNow
+            });
         }
 
         // ==========================================
@@ -506,18 +505,10 @@ public async Task<IActionResult> GoogleResponse()
 
     // 3. Đăng nhập vào hệ thống MiniERP qua Cookie
     var roleName = "User";
-    var permissions = new List<string>();
     if (user.RoleId.HasValue)
     {
         var role = await _context.Roles.FindAsync(user.RoleId);
         if (role != null) roleName = role.RoleName ?? "User";
-
-        permissions = await _context.Role_Permissions
-            .Where(rp => rp.RoleId == user.RoleId.Value)
-            .Join(_context.Permissions, rp => rp.PermissionId, p => p.Id, (rp, p) => p.PermissionCode)
-            .Where(code => !string.IsNullOrEmpty(code))
-            .Select(code => code!)
-            .ToListAsync();
     }
 
     var claims = new List<Claim>
@@ -527,8 +518,6 @@ public async Task<IActionResult> GoogleResponse()
         new Claim(ClaimTypes.Role, roleName),
         new Claim(ClaimTypes.Email, email)
     };
-
-    foreach (var p in permissions) claims.Add(new Claim("Permission", p));
 
     var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
     var principal = new ClaimsPrincipal(identity);

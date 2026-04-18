@@ -86,6 +86,34 @@ namespace Manage_KPI_or_OKR_System.Models.AI
         public int EvaluationResultId { get; set; }
     }
 
+    public class SuggestCustomerSegmentsRequest
+    {
+        public int? PeriodId { get; set; }
+        public int? EmployeeId { get; set; }
+        public int? DepartmentId { get; set; }
+    }
+
+    public class SuggestedCustomerSegment
+    {
+        public string? SegmentName { get; set; }
+        public string? EmployeeFit { get; set; }
+        public string? ProductOrService { get; set; }
+        public string? Region { get; set; }
+        public string? CustomerLifecycle { get; set; }
+        public int? PotentialScore { get; set; }
+        public string? PotentialRationale { get; set; }
+        public string? RevenueBasis { get; set; }
+        public string? RecommendedAction { get; set; }
+        public string? DataGaps { get; set; }
+    }
+
+    public class SuggestCustomerSegmentsResponse
+    {
+        public bool Success { get; set; } = true;
+        public List<SuggestedCustomerSegment> Segments { get; set; } = new();
+        public List<string> Warnings { get; set; } = new();
+    }
+
     public class SmartAlertDto
     {
         public int? Id { get; set; }

@@ -979,10 +979,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function closeMobileSidebar() {
+        sidebar?.classList.remove('show');
+        overlay?.classList.remove('show');
+    }
+
     if (overlay) {
         overlay.addEventListener('click', function () {
-            sidebar.classList.remove('show');
-            overlay.classList.remove('show');
+            closeMobileSidebar();
         });
     }
 
@@ -1039,8 +1043,7 @@ document.addEventListener('DOMContentLoaded', function () {
     sidebarLinks.forEach(function (link) {
         link.addEventListener('click', function () {
             if (window.innerWidth < 992) {
-                sidebar.classList.remove('show');
-                overlay.classList.remove('show');
+                closeMobileSidebar();
             }
         });
     });
@@ -1049,8 +1052,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('resize', function () {
         // Chỉ đóng 'show' (phiên bản mobile overlay) khi quay lại màn hình lớn
         if (window.innerWidth >= 992) {
-            sidebar.classList.remove('show');
-            overlay.classList.remove('show');
+            closeMobileSidebar();
         }
     });
 

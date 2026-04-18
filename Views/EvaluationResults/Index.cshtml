@@ -1,4 +1,5 @@
 @model List<Manage_KPI_or_OKR_System.Models.EvaluationResult>
+@using System.Globalization
 @{
     ViewData["Title"] = "Kết quả Đánh giá";
     var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
@@ -66,9 +67,8 @@
                                     var periodName = r.PeriodId.HasValue && periods.ContainsKey(r.PeriodId.Value) ? periods[r.PeriodId.Value] : "N/A";
                                     var rankCode = r.RankId.HasValue && ranks.ContainsKey(r.RankId.Value) ? ranks[r.RankId.Value] : "N/A";
                                     var scoreColor = r.TotalScore >= 90 ? "success" : r.TotalScore >= 70 ? "primary" : r.TotalScore >= 50 ? "warning" : "danger";
-                                    var safeClassification = System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(r.Classification ?? "");
-                                    var safeReviewComment = System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(r.ReviewComment ?? "");
                                     var submitterName = r.SubmittedById.HasValue && workflowEmployees.ContainsKey(r.SubmittedById.Value) ? workflowEmployees[r.SubmittedById.Value] : "";
+                                    var scoreForEdit = r.TotalScore?.ToString("0.##", CultureInfo.InvariantCulture) ?? "0";
                                     <tr>
                                         <td><div class="d-flex align-items-center gap-2"><div class="user-avatar" style="width:28px;height:28px;font-size:0.7rem;">@(empName.Length > 0 ? empName[0].ToString() : "?")</div><span class="fw-medium text-dark">@empName</span></div></td>
                                         <td class="text-muted">@periodName</td>
@@ -91,7 +91,18 @@
                                         <td><div class="action-btns justify-content-end">
                                             @if (canManage)
                                             {
-                                                <button type="button" class="action-btn" title="Sửa" onclick="editResult('@r.Id', '@r.EmployeeId', '@r.PeriodId', '@(r.TotalScore?.ToString() ?? "0")', '@r.RankId', '@safeClassification', '@safeReviewComment')"><i class="bi bi-pencil-square"></i></button>
+                                                <button type="button"
+                                                        class="action-btn js-edit-result"
+                                                        title="Sửa"
+                                                        data-id="@r.Id"
+                                                        data-employee-id="@r.EmployeeId"
+                                                        data-period-id="@r.PeriodId"
+                                                        data-score="@scoreForEdit"
+                                                        data-rank-id="@r.RankId"
+                                                        data-classification="@(r.Classification ?? "")"
+                                                        data-review-comment="@(r.ReviewComment ?? "")">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </button>
                                                 <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa kết quả này?')"><i class="bi bi-trash"></i></button></form>
                                             }
                                             @if (canSubmitEvaluation && (string.IsNullOrWhiteSpace(r.SubmissionStatus) || r.SubmissionStatus == "Draft" || r.SubmissionStatus == "Rejected"))
@@ -177,19 +188,38 @@
 </div>
 
 <script>
+    function normalizeDecimalValue(value) {
+        return String(value ?? '').replace(',', '.');
+    }
+
     function editResult(id, empId, periodId, score, rankId, classification, reviewComment) {
+        const normalizedScore = normalizeDecimalValue(score || '0');
         document.getElementById('editId').value = id;
         document.getElementById('editEmployeeId').value = empId;
         document.getElementById('editPeriodId').value = periodId;
-        document.getElementById('editTotalScore').value = score;
+        document.getElementById('editTotalScore').value = normalizedScore;
         document.getElementById('editRankId').value = rankId;
         document.getElementById('editClassification').value = classification || "Trung bình";
         document.getElementById('editReviewComment').value = reviewComment || "";
-        document.getElementById('editModalScoreHeader').innerText = parseFloat(score);
+        document.getElementById('editModalScoreHeader').innerText = Number.parseFloat(normalizedScore || '0').toLocaleString('vi-VN');
         
         var editModal = new bootstrap.Modal(document.getElementById('editModal'));
         editModal.show();
     }
+
+    document.querySelectorAll('.js-edit-result').forEach(button => {
+        button.addEventListener('click', function () {
+            editResult(
+                this.dataset.id,
+                this.dataset.employeeId,
+                this.dataset.periodId,
+                this.dataset.score,
+                this.dataset.rankId,
+                this.dataset.classification,
+                this.dataset.reviewComment
+            );
+        });
+    });
 
     document.getElementById('aiGenerateReviewBtn')?.addEventListener('click', async function () {
         const resultId = parseInt(document.getElementById('editId').value || '0', 10);

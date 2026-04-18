@@ -13,6 +13,7 @@ namespace Manage_KPI_or_OKR_System.Services
         Task<SuggestKpiOptionsResponse> GetKpiSuggestionOptionsAsync(ClaimsPrincipal user, SuggestKpiOptionsRequest request);
         Task<string> BuildKpiSuggestionContextAsync(ClaimsPrincipal user, SuggestKpiRequest request);
         Task<string> BuildPerformanceContextAsync(ClaimsPrincipal user, AnalyzePerformanceRequest request);
+        Task<string> BuildCustomerSegmentContextAsync(ClaimsPrincipal user, SuggestCustomerSegmentsRequest request);
         Task<AIReviewContext> BuildReviewContextAsync(ClaimsPrincipal user, int evaluationResultId);
         Task<IReadOnlyList<AIRiskCandidate>> GetRiskCandidatesAsync(ClaimsPrincipal user, int? periodId);
         Task<IReadOnlyList<SmartAlertDto>> GetVisibleSmartAlertsAsync(ClaimsPrincipal user);
