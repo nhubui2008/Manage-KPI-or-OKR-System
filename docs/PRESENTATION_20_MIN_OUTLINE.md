@@ -10,14 +10,14 @@
 
 **Thanh vien theo vai tro thuyet trinh:**
 
-| Vai tro | Noi dung phu trach |
-| --- | --- |
-| PO | Bai toan, khach hang, muc tieu, y tuong, pham vi, backlog |
-| SM | Scrum, Trello/Git, sprint backlog, giam sat tien do, Definition of Done |
-| Luong he thong | Use case, workflow, UI flow, mo hinh phan ra chuc nang |
-| Frontend | Phong cach thiet ke, giao dien, trai nghiem nguoi dung |
-| Backend | Kien truc ky thuat, ERD, database, phan quyen, service, AI |
-| Tester | Test plan, test case, dam bao chat luong, tieu chi nghiem thu |
+| Vai tro        | Noi dung phu trach                                                      |
+| -------------- | ----------------------------------------------------------------------- |
+| PO             | Bai toan, khach hang, muc tieu, y tuong, pham vi, backlog               |
+| SM             | Scrum, Trello/Git, sprint backlog, giam sat tien do, Definition of Done |
+| Luong he thong | Use case, workflow, UI flow, mo hinh phan ra chuc nang                  |
+| Frontend       | Phong cach thiet ke, giao dien, trai nghiem nguoi dung                  |
+| Backend        | Kien truc ky thuat, ERD, database, phan quyen, service, AI              |
+| Tester         | Test plan, test case, dam bao chat luong, tieu chi nghiem thu           |
 
 **Thoi luong:** 20 phut
 
@@ -27,15 +27,15 @@
 
 ## 2. Bang Phan Chia Thoi Gian
 
-| Phan | Nguoi trinh bay | Thoi luong | Muc tieu |
-| --- | --- | ---: | --- |
-| 1 | PO | 3 phut | Gioi thieu bai toan, khach hang, muc tieu va pham vi |
-| 2 | SM | 3 phut | Trinh bay cach nhom quan ly cong viec va kiem soat sprint |
-| 3 | Luong he thong | 4 phut | Giai thich luong nghiep vu, use case, workflow, UI flow |
-| 4 | Frontend | 3 phut | Trinh bay giao dien, phong cach thiet ke va UX |
-| 5 | Backend | 4 phut | Trinh bay kien truc, database, service, bao mat va AI |
-| 6 | Tester | 3 phut | Trinh bay test plan, test case va dam bao chat luong |
-| **Tong** | **6 nguoi** | **20 phut** | **Hoan chinh bai thuyet trinh** |
+| Phan           | Nguoi trinh bay   |        Thoi luong | Muc tieu                                                  |
+| -------------- | ----------------- | ----------------: | --------------------------------------------------------- |
+| 1              | PO                |            3 phut | Gioi thieu bai toan, khach hang, muc tieu va pham vi      |
+| 2              | SM                |            3 phut | Trinh bay cach nhom quan ly cong viec va kiem soat sprint |
+| 3              | Luong he thong    |            4 phut | Giai thich luong nghiep vu, use case, workflow, UI flow   |
+| 4              | Frontend          |            3 phut | Trinh bay giao dien, phong cach thiet ke va UX            |
+| 5              | Backend           |            4 phut | Trinh bay kien truc, database, service, bao mat va AI     |
+| 6              | Tester            |            3 phut | Trinh bay test plan, test case va dam bao chat luong      |
+| **Tong** | **6 nguoi** | **20 phut** | **Hoan chinh bai thuyet trinh**                     |
 
 ---
 
@@ -738,4 +738,3 @@ External Services:
 - Tester chuan bi 5-8 test case quan trong nhat.
 - Ca nhom tap chuyen tiep giua cac vai tro de bai noi khong bi dut mach.
 - Tong thoi gian tap thu nen nam trong khoang 18-20 phut.
-
