@@ -3150,6 +3150,127 @@ select.form-select.w-auto {
     white-space: nowrap;
 }
 
+.print-director-summary {
+    display: none;
+}
+
+/* Clean browser print / Save as PDF output */
+@media print {
+    @page {
+        margin: 14mm;
+    }
+
+    html,
+    body {
+        width: auto !important;
+        min-height: auto !important;
+        background: #ffffff !important;
+        color: #111827 !important;
+        font-size: 12px;
+    }
+
+    .no-print,
+    .sidebar,
+    .sidebar-overlay,
+    .top-header,
+    .app-footer,
+    .ai-chat-widget,
+    .app-blob-container,
+    .modal,
+    .modal-backdrop,
+    .swal2-container,
+    .toast-container,
+    .dropdown-menu,
+    .select2-container {
+        display: none !important;
+    }
+
+    .app-wrapper,
+    .main-content {
+        display: block !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    .page-content {
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    .page-header {
+        margin-bottom: 16px !important;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #d1d5db;
+        page-break-after: avoid;
+    }
+
+    .page-header h1 {
+        font-size: 20px !important;
+    }
+
+    .content-card {
+        border: 1px solid #d1d5db !important;
+        box-shadow: none !important;
+        transform: none !important;
+        background: #ffffff !important;
+    }
+
+    .content-card:hover {
+        border-color: #d1d5db !important;
+        box-shadow: none !important;
+        transform: none !important;
+    }
+
+    .card-header-custom,
+    .card-body-custom {
+        padding: 14px !important;
+    }
+
+    .table-responsive {
+        overflow: visible !important;
+    }
+
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+
+    tr,
+    img,
+    .badge,
+    .progress {
+        page-break-inside: avoid;
+    }
+
+    .data-table th,
+    .data-table td {
+        border: 1px solid #d1d5db !important;
+        padding: 8px !important;
+        color: #111827 !important;
+    }
+
+    .director-summary-input {
+        display: none !important;
+    }
+
+    .print-director-summary {
+        display: block !important;
+        min-height: 80px;
+        white-space: pre-wrap;
+        color: #111827;
+    }
+
+    a {
+        color: inherit !important;
+    }
+}
+
 @media (max-width: 575.98px) {
     .page-filter-select,
     .page-filter-select + .select2-container {

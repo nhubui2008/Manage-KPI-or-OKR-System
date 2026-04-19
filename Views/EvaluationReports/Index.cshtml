@@ -9,7 +9,7 @@
     var departments = (ViewBag.Departments as List<Manage_KPI_or_OKR_System.Models.Department>) ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
 }
 
-<div class="container-fluid px-0">
+<div class="container-fluid px-0 evaluation-report-page">
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 font-weight-bold mb-1">Báo cáo Phân bổ & Đánh giá Chỉ tiêu</h1>
@@ -21,7 +21,7 @@
                 <span class="text-muted small">Chu kỳ: @ViewBag.CurrentCycle</span>
             </div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 no-print">
             <button class="btn btn-outline-custom" onclick="window.print()"><i class="bi bi-printer me-1"></i> In báo cáo</button>
             <a asp-action="ExportExcel" asp-route-departmentId="@ViewBag.CurrentDeptId" asp-route-cycle="@ViewBag.CurrentCycle" class="btn-primary-custom text-decoration-none">
                 <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel
@@ -30,7 +30,7 @@
     </div>
 
     <!-- Filter Bar -->
-    <div class="content-card mb-4 shadow-sm border-0">
+    <div class="content-card mb-4 shadow-sm border-0 no-print">
         <div class="card-body-custom">
             <form asp-action="Index" asp-controller="EvaluationReports" method="get" class="row g-3">
                 <div class="col-md-3">
@@ -125,8 +125,9 @@
             <div class="content-card">
                 <div class="card-header-custom"><i class="bi bi-chat-left-text me-2"></i>Tổng hợp của Giám đốc</div>
                 <div class="card-body-custom">
-                    <textarea id="directorSummaryText" class="form-control" rows="4" placeholder="Nhập nhận định chung về tình hình thực hiện OKR/KPI của Sale Q1...">@ViewBag.DirectorSummary</textarea>
-                    <div class="d-flex justify-content-end mt-3">
+                    <textarea id="directorSummaryText" class="form-control director-summary-input" rows="4" placeholder="Nhập nhận định chung về tình hình thực hiện OKR/KPI của Sale Q1...">@ViewBag.DirectorSummary</textarea>
+                    <div class="print-director-summary">@(!string.IsNullOrWhiteSpace(ViewBag.DirectorSummary as string) ? ViewBag.DirectorSummary : "Chưa có nhận xét.")</div>
+                    <div class="d-flex justify-content-end mt-3 no-print">
                         <button id="btnSaveSummary" class="btn-primary-custom"><i class="bi bi-save me-1"></i> Lưu nhận xét</button>
                     </div>
                 </div>
@@ -139,7 +140,7 @@
                     <ul class="list-unstyled mb-0">
                         <li class="mb-2"><span class="badge bg-danger rounded-pill me-2">!</span>Sự cố cúp điện 2h (Tháng 2) - Ảnh hưởng 15% năng suất KPI sản xuất.</li>
                         <li class="mb-2"><span class="badge bg-warning rounded-pill me-2">!</span>Biến động tỷ giá - Ảnh hưởng chỉ tiêu chi phí/lợi nhuận.</li>
-                        <li onclick="addIncident()" style="cursor: pointer;" class="text-primary hover-opacity"><i class="bi bi-plus-circle me-2"></i> Thêm sự cố vận hành năm nay</li>
+                        <li onclick="addIncident()" style="cursor: pointer;" class="text-primary hover-opacity no-print"><i class="bi bi-plus-circle me-2"></i> Thêm sự cố vận hành năm nay</li>
                     </ul>
                 </div>
             </div>
@@ -149,6 +150,19 @@
 
 @section Scripts {
     <script>
+        const directorSummaryInput = document.getElementById('directorSummaryText');
+        const directorPrintSummary = document.querySelector('.print-director-summary');
+
+        function syncDirectorSummaryForPrint() {
+            if (!directorSummaryInput || !directorPrintSummary) return;
+            const content = directorSummaryInput.value.trim();
+            directorPrintSummary.textContent = content || 'Chưa có nhận xét.';
+        }
+
+        directorSummaryInput?.addEventListener('input', syncDirectorSummaryForPrint);
+        window.addEventListener('beforeprint', syncDirectorSummaryForPrint);
+        syncDirectorSummaryForPrint();
+
         function addIncident() {
             Swal.fire({
                 title: 'Thêm sự cố vận hành',
