@@ -1,0 +1,1978 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VietMach KPI/OKR System - 20 phút</title>
+    <style>
+        :root {
+            --ink: #17212f;
+            --muted: #5b6678;
+            --line: #d7dde8;
+            --paper: #f7fafc;
+            --white: #ffffff;
+            --teal: #0f766e;
+            --green: #2f855a;
+            --coral: #c2410c;
+            --amber: #b7791f;
+            --indigo: #4c51bf;
+            --rose: #b83280;
+            --cyan: #0e7490;
+            --shadow: 0 22px 55px rgba(23, 33, 47, 0.14);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: #111827;
+            color: var(--ink);
+            font-family: Arial, "Helvetica Neue", sans-serif;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #viewport {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #deck {
+            position: relative;
+            width: 1920px;
+            height: 1080px;
+            transform-origin: center center;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: none;
+            width: 1920px;
+            height: 1080px;
+            padding: 70px 84px 78px;
+            overflow: hidden;
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.94), rgba(247,250,252,0.98)),
+                radial-gradient(circle at 12% 18%, rgba(15,118,110,0.12), transparent 34%),
+                radial-gradient(circle at 88% 14%, rgba(194,65,12,0.10), transparent 30%),
+                var(--paper);
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .slide::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border: 18px solid rgba(23, 33, 47, 0.05);
+            pointer-events: none;
+        }
+
+        .slide-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 42px;
+            margin-bottom: 32px;
+        }
+
+        .eyebrow {
+            margin: 0 0 12px;
+            color: var(--teal);
+            font-size: 26px;
+            line-height: 1.15;
+            font-weight: 800;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin-top: 0;
+        }
+
+        h1 {
+            max-width: 1280px;
+            margin-bottom: 24px;
+            font-size: 78px;
+            line-height: 1.04;
+            letter-spacing: 0;
+        }
+
+        h2 {
+            max-width: 1280px;
+            margin: 0;
+            font-size: 56px;
+            line-height: 1.08;
+            letter-spacing: 0;
+        }
+
+        h3 {
+            margin-bottom: 18px;
+            font-size: 30px;
+            line-height: 1.18;
+        }
+
+        p,
+        li,
+        td,
+        th {
+            font-size: 25px;
+            line-height: 1.34;
+        }
+
+        strong {
+            font-weight: 800;
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 0 0 12px;
+        }
+
+        .meta {
+            min-width: 335px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 16px 18px;
+            background: rgba(255, 255, 255, 0.78);
+            box-shadow: 0 10px 24px rgba(23, 33, 47, 0.08);
+        }
+
+        .meta div:first-child {
+            margin-bottom: 6px;
+            font-size: 23px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .meta div:last-child {
+            font-size: 28px;
+            line-height: 1.15;
+            font-weight: 800;
+            color: var(--ink);
+        }
+
+        .slide-number {
+            position: absolute;
+            right: 84px;
+            bottom: 42px;
+            color: var(--muted);
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .source-note {
+            position: absolute;
+            left: 84px;
+            bottom: 42px;
+            color: var(--muted);
+            font-size: 20px;
+        }
+
+        .cover {
+            padding: 86px 96px 76px;
+            color: #10202b;
+            background:
+                linear-gradient(90deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.92) 47%, rgba(255,255,255,0.72) 100%),
+                url("../wwwroot/images/seo-banner.png") center right / cover no-repeat,
+                var(--paper);
+        }
+
+        .cover-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 72px;
+            height: 100%;
+            align-items: center;
+        }
+
+        .cover h1 {
+            font-size: 92px;
+            max-width: 1050px;
+        }
+
+        .cover-subtitle {
+            max-width: 930px;
+            margin-bottom: 42px;
+            font-size: 34px;
+            line-height: 1.32;
+            color: #39485a;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.84);
+            font-size: 23px;
+            font-weight: 800;
+            color: var(--ink);
+        }
+
+        .hero-panel {
+            border: 1px solid rgba(23, 33, 47, 0.12);
+            border-radius: 8px;
+            padding: 28px;
+            background: rgba(255, 255, 255, 0.83);
+            box-shadow: var(--shadow);
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .metric {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 22px;
+            background: var(--white);
+        }
+
+        .metric b {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 38px;
+            color: var(--teal);
+        }
+
+        .metric span {
+            color: var(--muted);
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .section-slide {
+            display: none;
+            color: #ffffff;
+            background:
+                linear-gradient(135deg, rgba(15, 118, 110, 0.98), rgba(23, 33, 47, 0.98) 58%, rgba(194, 65, 12, 0.95));
+        }
+
+        .section-slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .section-slide .eyebrow,
+        .section-slide .source-note,
+        .section-slide .slide-number {
+            color: rgba(255, 255, 255, 0.78);
+        }
+
+        .section-slide h1 {
+            max-width: 1220px;
+            font-size: 86px;
+        }
+
+        .section-slide p {
+            max-width: 1160px;
+            font-size: 34px;
+            color: rgba(255, 255, 255, 0.88);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 22px;
+        }
+
+        .grid-5 {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 18px;
+        }
+
+        .span-2 {
+            grid-column: span 2;
+        }
+
+        .card,
+        .lane,
+        .node,
+        .table-wrap,
+        .screen,
+        .erd-box,
+        .usecase-box {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.88);
+            box-shadow: 0 12px 26px rgba(23, 33, 47, 0.08);
+        }
+
+        .card {
+            padding: 24px;
+        }
+
+        .card.compact {
+            padding: 19px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            font-size: 30px;
+            font-weight: 850;
+            color: var(--ink);
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 850;
+            background: var(--teal);
+        }
+
+        .tag.green { background: var(--green); }
+        .tag.coral { background: var(--coral); }
+        .tag.amber { background: var(--amber); }
+        .tag.indigo { background: var(--indigo); }
+        .tag.rose { background: var(--rose); }
+        .tag.cyan { background: var(--cyan); }
+
+        .small {
+            font-size: 21px;
+            line-height: 1.3;
+        }
+
+        .tiny {
+            font-size: 18px;
+            line-height: 1.25;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .lead {
+            max-width: 1420px;
+            font-size: 33px;
+            color: #3d4a5a;
+            line-height: 1.28;
+        }
+
+        .callout {
+            border-left: 8px solid var(--teal);
+            border-radius: 8px;
+            padding: 22px 26px;
+            background: rgba(15, 118, 110, 0.09);
+            font-size: 26px;
+            line-height: 1.34;
+        }
+
+        .table-wrap {
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 17px 18px;
+            text-align: left;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+        }
+
+        th {
+            color: #ffffff;
+            background: var(--teal);
+            font-size: 23px;
+        }
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .timebar {
+            display: grid;
+            grid-template-columns: 3fr 3fr 4fr 3fr 4fr 3fr;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        .time-segment {
+            min-height: 118px;
+            border-radius: 8px;
+            padding: 18px;
+            color: #ffffff;
+            background: var(--teal);
+        }
+
+        .time-segment:nth-child(2) { background: var(--amber); }
+        .time-segment:nth-child(3) { background: var(--indigo); }
+        .time-segment:nth-child(4) { background: var(--green); }
+        .time-segment:nth-child(5) { background: var(--coral); }
+        .time-segment:nth-child(6) { background: var(--rose); }
+
+        .time-segment b {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 30px;
+        }
+
+        .time-segment span {
+            font-size: 21px;
+            line-height: 1.25;
+        }
+
+        .flow-row {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: 1fr;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .flow-row.two-line {
+            grid-auto-flow: unset;
+            grid-template-columns: repeat(5, 1fr);
+        }
+
+        .node {
+            position: relative;
+            min-height: 118px;
+            padding: 21px 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .node b {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 25px;
+            line-height: 1.12;
+        }
+
+        .node span {
+            font-size: 19px;
+            color: var(--muted);
+            line-height: 1.25;
+        }
+
+        .node.accent {
+            border-color: rgba(15, 118, 110, 0.35);
+            background: rgba(15, 118, 110, 0.08);
+        }
+
+        .node.warn {
+            border-color: rgba(194, 65, 12, 0.32);
+            background: rgba(194, 65, 12, 0.08);
+        }
+
+        .node.ok {
+            border-color: rgba(47, 133, 90, 0.34);
+            background: rgba(47, 133, 90, 0.08);
+        }
+
+        .arrow-note {
+            align-self: center;
+            color: var(--muted);
+            font-size: 28px;
+            font-weight: 800;
+        }
+
+        .split-flow {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+            align-items: stretch;
+        }
+
+        .flow-stack {
+            display: grid;
+            gap: 14px;
+        }
+
+        .lane {
+            padding: 18px;
+        }
+
+        .lane h3 {
+            margin-bottom: 14px;
+            font-size: 28px;
+        }
+
+        .lane-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .lane-item {
+            border-left: 6px solid var(--teal);
+            border-radius: 8px;
+            padding: 14px 16px;
+            background: #ffffff;
+            font-size: 21px;
+            line-height: 1.25;
+            font-weight: 700;
+        }
+
+        .lane:nth-child(2) .lane-item { border-left-color: var(--amber); }
+        .lane:nth-child(3) .lane-item { border-left-color: var(--indigo); }
+        .lane:nth-child(4) .lane-item { border-left-color: var(--green); }
+
+        .actor-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+
+        .actor {
+            border-radius: 8px;
+            padding: 18px;
+            color: #ffffff;
+            min-height: 132px;
+        }
+
+        .actor:nth-child(1) { background: var(--teal); }
+        .actor:nth-child(2) { background: var(--indigo); }
+        .actor:nth-child(3) { background: var(--coral); }
+        .actor:nth-child(4) { background: var(--green); }
+        .actor:nth-child(5) { background: var(--rose); }
+
+        .actor b {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+
+        .actor span {
+            font-size: 19px;
+            line-height: 1.22;
+        }
+
+        .usecase-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+
+        .usecase-box {
+            min-height: 120px;
+            padding: 17px;
+            font-size: 21px;
+            line-height: 1.26;
+            font-weight: 750;
+        }
+
+        .decomp {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .module-box {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 18px;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .module-box b {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 25px;
+        }
+
+        .module-box span {
+            display: block;
+            color: var(--muted);
+            font-size: 19px;
+            line-height: 1.24;
+        }
+
+        .architecture {
+            display: grid;
+            grid-template-columns: 1.1fr 0.85fr 1.1fr;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .arch-column {
+            display: grid;
+            gap: 16px;
+        }
+
+        .arch-center {
+            border-radius: 8px;
+            padding: 28px;
+            color: #ffffff;
+            background: var(--teal);
+            box-shadow: var(--shadow);
+        }
+
+        .arch-center h3 {
+            font-size: 36px;
+        }
+
+        .arch-center p {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.88);
+        }
+
+        .layer-stack {
+            display: grid;
+            gap: 12px;
+        }
+
+        .layer {
+            display: grid;
+            grid-template-columns: 310px 1fr;
+            align-items: center;
+            min-height: 86px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #ffffff;
+            overflow: hidden;
+        }
+
+        .layer b {
+            height: 100%;
+            padding: 22px 24px;
+            color: #ffffff;
+            font-size: 24px;
+            background: var(--teal);
+        }
+
+        .layer:nth-child(2) b { background: var(--indigo); }
+        .layer:nth-child(3) b { background: var(--coral); }
+        .layer:nth-child(4) b { background: var(--green); }
+        .layer:nth-child(5) b { background: var(--amber); }
+        .layer:nth-child(6) b { background: var(--rose); }
+
+        .layer span {
+            padding: 0 22px;
+            font-size: 23px;
+            color: var(--ink);
+        }
+
+        .erd-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+
+        .erd-box {
+            min-height: 178px;
+            padding: 18px;
+        }
+
+        .erd-box b {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 25px;
+        }
+
+        .erd-box ul {
+            padding-left: 22px;
+        }
+
+        .erd-box li {
+            margin-bottom: 6px;
+            font-size: 19px;
+            line-height: 1.18;
+        }
+
+        .relation-strip {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-top: 18px;
+        }
+
+        .relation {
+            border-radius: 8px;
+            padding: 14px 18px;
+            color: #ffffff;
+            background: var(--teal);
+            font-size: 20px;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .relation:nth-child(2) { background: var(--coral); }
+        .relation:nth-child(3) { background: var(--indigo); }
+
+        .screen-grid {
+            display: grid;
+            grid-template-columns: 1.05fr 1fr 1fr;
+            gap: 22px;
+        }
+
+        .screen {
+            overflow: hidden;
+            min-height: 590px;
+            background: #ffffff;
+        }
+
+        .screen-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 54px;
+            padding: 0 16px;
+            color: #ffffff;
+            background: #263241;
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+        .screen-body {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            min-height: 536px;
+        }
+
+        .mini-sidebar {
+            padding: 18px 12px;
+            background: #edf2f7;
+        }
+
+        .mini-nav {
+            height: 32px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            background: #cbd5e0;
+        }
+
+        .mini-nav.active {
+            background: var(--teal);
+        }
+
+        .mini-main {
+            padding: 18px;
+        }
+
+        .mini-title {
+            height: 36px;
+            width: 62%;
+            margin-bottom: 18px;
+            border-radius: 8px;
+            background: #dbe4ee;
+        }
+
+        .mini-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .mini-card {
+            height: 92px;
+            border-radius: 8px;
+            background: rgba(15, 118, 110, 0.16);
+        }
+
+        .mini-table {
+            display: grid;
+            gap: 9px;
+        }
+
+        .mini-row {
+            height: 34px;
+            border-radius: 8px;
+            background: #eef3f8;
+        }
+
+        .screen-caption {
+            padding: 16px 18px;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--ink);
+        }
+
+        .qa-matrix {
+            display: grid;
+            grid-template-columns: 0.9fr 1.1fr 1fr;
+            gap: 22px;
+        }
+
+        .checklist {
+            display: grid;
+            gap: 13px;
+        }
+
+        .check {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 14px 16px;
+            background: #ffffff;
+            font-size: 22px;
+            line-height: 1.25;
+        }
+
+        .check::before {
+            content: "OK";
+            flex: 0 0 auto;
+            border-radius: 8px;
+            padding: 5px 8px;
+            color: #ffffff;
+            background: var(--green);
+            font-size: 15px;
+            font-weight: 850;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 14px;
+        }
+
+        .demo-step {
+            min-height: 350px;
+            border-radius: 8px;
+            padding: 18px;
+            color: #ffffff;
+            background: var(--teal);
+        }
+
+        .demo-step:nth-child(2) { background: var(--amber); }
+        .demo-step:nth-child(3) { background: var(--indigo); }
+        .demo-step:nth-child(4) { background: var(--green); }
+        .demo-step:nth-child(5) { background: var(--coral); }
+        .demo-step:nth-child(6) { background: var(--rose); }
+
+        .demo-step b {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 26px;
+            line-height: 1.1;
+        }
+
+        .demo-step span,
+        .demo-step li {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 18px;
+            line-height: 1.23;
+        }
+
+        .demo-step ul {
+            padding-left: 19px;
+        }
+
+        .closing-grid {
+            display: grid;
+            grid-template-columns: 1fr 0.8fr;
+            gap: 42px;
+            align-items: center;
+            height: calc(100% - 110px);
+        }
+
+        .big-quote {
+            border-left: 10px solid var(--teal);
+            border-radius: 8px;
+            padding: 30px 34px;
+            background: #ffffff;
+            box-shadow: var(--shadow);
+            font-size: 42px;
+            line-height: 1.2;
+            font-weight: 850;
+        }
+
+        .controls {
+            position: fixed;
+            left: 50%;
+            bottom: 16px;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(-50%);
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+
+        .controls button {
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #ffffff;
+            background: rgba(17, 24, 39, 0.72);
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .counter {
+            min-width: 120px;
+            border-radius: 8px;
+            padding: 10px 14px;
+            text-align: center;
+            background: rgba(17, 24, 39, 0.72);
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .progress {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            z-index: 19;
+            width: 100vw;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .progress span {
+            display: block;
+            width: 0;
+            height: 100%;
+            background: #2dd4bf;
+            transition: width 0.2s ease;
+        }
+
+        @media print {
+            html,
+            body {
+                width: auto;
+                height: auto;
+                overflow: visible;
+                background: #ffffff;
+            }
+
+            body {
+                display: block;
+            }
+
+            #viewport {
+                display: block;
+                width: auto;
+                height: auto;
+                overflow: visible;
+            }
+
+            #deck {
+                width: auto;
+                height: auto;
+                transform: none !important;
+            }
+
+            .slide,
+            .slide.active,
+            .section-slide,
+            .section-slide.active {
+                position: relative;
+                display: block !important;
+                width: 1920px;
+                height: 1080px;
+                page-break-after: always;
+                break-after: page;
+            }
+
+            .controls,
+            .progress {
+                display: none !important;
+            }
+
+            @page {
+                size: 16in 9in;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="viewport">
+        <main id="deck">
+            <section class="slide cover active">
+                <div class="cover-grid">
+                    <div>
+                        <p class="eyebrow">Bài thuyết trình dự án</p>
+                        <h1>VietMach KPI/OKR System</h1>
+                        <p class="cover-subtitle">Hệ thống web nội bộ giúp doanh nghiệp quản lý trọn vòng đời KPI/OKR: chiến lược, thực thi, phê duyệt, đánh giá, báo cáo và AI Insights.</p>
+                        <div class="pill-row">
+                            <span class="pill">16:9</span>
+                            <span class="pill">1920 x 1080</span>
+                            <span class="pill">20 phút gồm demo</span>
+                            <span class="pill">6 thành viên</span>
+                        </div>
+                    </div>
+                    <div class="hero-panel">
+                        <div class="metric-grid">
+                            <div class="metric"><b>6</b><span>vai trò trình bày</span></div>
+                            <div class="metric"><b>27</b><span>slide không cuộn</span></div>
+                            <div class="metric"><b>14'</b><span>phân tích sản phẩm và kỹ thuật</span></div>
+                            <div class="metric"><b>6'</b><span>demo chia đều cho nhóm</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="source-note">Nguồn: PRESENTATION_FULL_MARKDOWN, PRESENTATION_20_MIN_OUTLINE, DEMO_FLOW_6_MEMBERS</div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Tổng quan nhóm</p>
+                        <h2>Phân chia rõ phần cho 6 người trong tổng 20 phút</h2>
+                    </div>
+                    <div class="meta"><div>Người nói</div><div>PO mở đầu</div></div>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Thành viên</th>
+                                <th>Vai trò</th>
+                                <th>Thời lượng</th>
+                                <th>Phần phụ trách</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Thành viên 1</td><td>PO</td><td>3 phút</td><td>Bài toán, khách hàng, mục tiêu, phạm vi, mở demo dashboard/OKR</td></tr>
+                            <tr><td>Thành viên 2</td><td>SM</td><td>3 phút</td><td>Scrum, Trello, Git, sprint backlog, dữ liệu nền demo</td></tr>
+                            <tr><td>Thành viên 3</td><td>Luồng hệ thống</td><td>4 phút</td><td>Use case, workflow, UI flow, phân rã chức năng, KPI assignment</td></tr>
+                            <tr><td>Thành viên 4</td><td>Frontend</td><td>3 phút</td><td>Phong cách thiết kế, giao diện, UX, employee check-in</td></tr>
+                            <tr><td>Thành viên 5</td><td>Backend</td><td>4 phút</td><td>Kiến trúc, ERD, phân quyền, service, duyệt check-in</td></tr>
+                            <tr><td>Thành viên 6</td><td>Tester</td><td>3 phút</td><td>Test plan, test case, report, phân quyền và kết luận</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="timebar">
+                    <div class="time-segment"><b>PO 3'</b><span>2' trình bày + 1' demo</span></div>
+                    <div class="time-segment"><b>SM 3'</b><span>2' trình bày + 1' demo</span></div>
+                    <div class="time-segment"><b>Flow 4'</b><span>3' trình bày + 1' demo</span></div>
+                    <div class="time-segment"><b>FE 3'</b><span>2' trình bày + 1' demo</span></div>
+                    <div class="time-segment"><b>BE 4'</b><span>3' trình bày + 1' demo</span></div>
+                    <div class="time-segment"><b>QA 3'</b><span>2' trình bày + 1' demo</span></div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide section-slide">
+                <p class="eyebrow">Phần 1</p>
+                <h1>Giới thiệu dự án</h1>
+                <p>Thành viên, khách hàng, môi trường áp dụng, quy mô, thực trạng, giải pháp, mục tiêu và cách nhóm quản lý backlog.</p>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">PO - Khách hàng và thực trạng</p>
+                        <h2>Thu thập ý kiến khách hàng: nhu cầu đến từ nhiều vai trò</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>0.8 phút</div></div>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title"><span class="tag">1</span>Khách hàng mục tiêu</div>
+                        <ul>
+                            <li>Doanh nghiệp có nhiều phòng ban và nhiều cấp quản lý.</li>
+                            <li>HR cần dữ liệu để đánh giá, xếp loại và tính thưởng.</li>
+                            <li>Director, Manager, Employee cần cùng nhìn một luồng KPI/OKR nhưng khác phạm vi quyền.</li>
+                            <li>Doanh nghiệp muốn vận hành theo kỳ tháng, quý hoặc năm.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag coral">2</span>Nhu cầu chính thu thập được</div>
+                        <ul>
+                            <li>Gắn mục tiêu chiến lược với KPI hằng ngày.</li>
+                            <li>Cho nhân viên check-in tiến độ minh bạch.</li>
+                            <li>Quản lý duyệt trước khi dữ liệu được tính điểm.</li>
+                            <li>Có dashboard, report, ranking, expected bonus và AI Insights.</li>
+                            <li>Phân quyền rõ theo vai trò và phạm vi dữ liệu.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="callout" style="margin-top: 28px;">Vấn đề lớn nhất: dữ liệu KPI/OKR thường nằm rải rác trong Excel, file riêng, chat và email, làm cho việc kiểm soát tiến độ và truy vết phê duyệt thiếu minh bạch.</div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">PO - Từ vấn đề đến giải pháp</p>
+                        <h2>Sơ đồ thực trạng, cách giải quyết, mục tiêu và tầm nhìn</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>0.8 phút</div></div>
+                </div>
+                <div class="split-flow">
+                    <div class="flow-stack">
+                        <div class="node warn"><b>Thực trạng</b><span>KPI quản lý thủ công, dữ liệu phân tán, thiếu lịch sử duyệt.</span></div>
+                        <div class="arrow-note">↓</div>
+                        <div class="node warn"><b>Rủi ro</b><span>Tính điểm sai, người dùng lẫn phạm vi, quản lý không thấy tiến độ kịp thời.</span></div>
+                        <div class="arrow-note">↓</div>
+                        <div class="node accent"><b>Giải pháp trung tâm</b><span>VietMach gom OKR, KPI, check-in, approval, evaluation và report trong một hệ thống.</span></div>
+                    </div>
+                    <div class="flow-stack">
+                        <div class="node ok"><b>Mục tiêu</b><span>Số hóa quy trình quản trị hiệu suất từ chiến lược đến đánh giá cuối kỳ.</span></div>
+                        <div class="node ok"><b>Ý tưởng</b><span>Mọi KPI có chủ sở hữu, kỳ đánh giá, trọng số, trạng thái và lịch sử phê duyệt.</span></div>
+                        <div class="node ok"><b>Tầm nhìn</b><span>Dữ liệu tập trung, minh bạch, có phân quyền và có thể mở rộng cho nhiều phòng ban.</span></div>
+                        <div class="node ok"><b>Giá trị</b><span>Dashboard, báo cáo Excel và AI giúp ra quyết định dựa trên dữ liệu.</span></div>
+                    </div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">PO - Môi trường, lĩnh vực và quy mô</p>
+                        <h2>Không chỉ nhập KPI, hệ thống bao phủ cả vòng đời quản trị hiệu suất</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>0.7 phút</div></div>
+                </div>
+                <div class="grid-3">
+                    <div class="card">
+                        <div class="card-title"><span class="tag">A</span>Môi trường áp dụng</div>
+                        <ul>
+                            <li>Web nội bộ doanh nghiệp.</li>
+                            <li>Vận hành bởi Admin, Director, Manager, HR, Employee/Sales.</li>
+                            <li>Triển khai được trên IIS, dùng SQL Server và seed data demo.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag green">B</span>Lĩnh vực áp dụng</div>
+                        <ul>
+                            <li>Quản trị mục tiêu OKR.</li>
+                            <li>Đo lường hiệu suất KPI.</li>
+                            <li>Đánh giá nhân sự, xếp hạng và thưởng.</li>
+                            <li>Báo cáo quản trị và phân tích dữ liệu.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag coral">C</span>Quy mô dự án</div>
+                        <ul>
+                            <li>Auth, role, permission, nhân sự.</li>
+                            <li>Mission/Vision, OKR, KPI, check-in.</li>
+                            <li>Evaluation, report, export Excel, notification, audit log, AI.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="flow-row" style="margin-top: 28px;">
+                    <div class="node accent"><b>Chiến lược</b><span>Mission/Vision, OKR, Key Result</span></div>
+                    <div class="node accent"><b>Thực thi</b><span>KPI, KPI Detail, Assignment</span></div>
+                    <div class="node accent"><b>Kiểm soát</b><span>Check-in, ReviewQueue, History</span></div>
+                    <div class="node accent"><b>Đánh giá</b><span>Score, Rank, Bonus, Evaluation</span></div>
+                    <div class="node accent"><b>Ra quyết định</b><span>Dashboard, Report, AI Insights</span></div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">PO - Đặc tả phạm vi</p>
+                        <h2>Chức năng chính, phụ và yêu cầu phi chức năng</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>0.7 phút</div></div>
+                </div>
+                <div class="grid-3">
+                    <div class="card">
+                        <div class="card-title"><span class="tag">01</span>Chức năng chính</div>
+                        <ul>
+                            <li>Quản lý Mission/Vision, OKR, Key Result.</li>
+                            <li>Tạo, duyệt, phân bổ KPI theo kỳ đánh giá.</li>
+                            <li>Employee check-in KPI và Manager/Director/HR/Admin duyệt.</li>
+                            <li>Tự động tính điểm, rank, expected bonus và Evaluation Result.</li>
+                            <li>Dashboard, report, export Excel, AI Insights.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag amber">02</span>Chức năng phụ</div>
+                        <ul>
+                            <li>Quản lý tài khoản, role, permission.</li>
+                            <li>Quản lý phòng ban, chức vụ, nhân viên.</li>
+                            <li>OTP email, Google OAuth, avatar.</li>
+                            <li>Notification, audit log, smart alerts.</li>
+                            <li>Catalog trạng thái, KPI type, KPI property.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag green">03</span>Phi chức năng</div>
+                        <ul>
+                            <li>Bảo mật theo role/permission và kiểm tra ở backend.</li>
+                            <li>Dữ liệu tập trung, dễ truy xuất, có lịch sử.</li>
+                            <li>Giao diện dễ dùng, rõ trạng thái nghiệp vụ.</li>
+                            <li>Cấu hình theo environment, chạy ổn định trên IIS.</li>
+                            <li>Không làm hỏng luồng cũ khi mở rộng module.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">SM - Quản lý backlog và giám sát</p>
+                        <h2>Scrum, Trello, Git và sprint backlog giúp kiểm soát tiến độ</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>1.0 phút</div></div>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title"><span class="tag amber">S</span>Backlog theo module</div>
+                        <div class="flow-row two-line">
+                            <div class="node"><b>Auth</b><span>Login, role, permission</span></div>
+                            <div class="node"><b>HR</b><span>Employee, department, position</span></div>
+                            <div class="node"><b>OKR</b><span>Mission, objective, key result</span></div>
+                            <div class="node"><b>KPI</b><span>Create, approve, assignment</span></div>
+                            <div class="node"><b>Check-in</b><span>Submit, review, history</span></div>
+                            <div class="node"><b>Evaluation</b><span>Score, rank, bonus</span></div>
+                            <div class="node"><b>Report</b><span>Dashboard, Excel</span></div>
+                            <div class="node"><b>AI</b><span>Chat, suggest, alerts</span></div>
+                            <div class="node"><b>QA</b><span>Test plan, test case</span></div>
+                            <div class="node"><b>Deploy</b><span>IIS, config, data</span></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag coral">T</span>Sơ đồ Trello + Git</div>
+                        <div class="flow-stack">
+                            <div class="node accent"><b>Backlog</b><span>User story theo nghiệp vụ</span></div>
+                            <div class="node accent"><b>To Do</b><span>Chọn vào sprint backlog</span></div>
+                            <div class="node warn"><b>In Progress</b><span>Dev commit theo tính năng trên Git</span></div>
+                            <div class="node warn"><b>Review</b><span>Kiểm tra thay đổi trước khi hợp nhất</span></div>
+                            <div class="node ok"><b>Testing</b><span>Tester chạy test case theo role/workflow</span></div>
+                            <div class="node ok"><b>Done</b><span>Đạt Definition of Done</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="callout" style="margin-top: 24px;">Giám sát: daily update ngắn, kiểm tra Trello, kiểm tra commit Git, demo nhanh sau khi hoàn thành module.</div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide section-slide">
+                <p class="eyebrow">Phần 2</p>
+                <h1>Phân tích chuyên sâu dự án</h1>
+                <p>Use case, workflow, UI flow, mô hình phân rã chức năng, kiến trúc kỹ thuật, ERD, phân tầng, UI, Definition of Done và đảm bảo chất lượng.</p>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Luồng hệ thống - Use case</p>
+                        <h2>Sơ đồ tác nhân và các use case chính</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>1.0 phút</div></div>
+                </div>
+                <div class="actor-grid">
+                    <div class="actor"><b>Admin</b><span>Role, permission, user, catalog, audit log</span></div>
+                    <div class="actor"><b>Director</b><span>OKR chiến lược, dashboard toàn công ty, duyệt đánh giá cuối</span></div>
+                    <div class="actor"><b>Manager</b><span>Tạo KPI, phân bổ KPI, duyệt check-in, gửi evaluation</span></div>
+                    <div class="actor"><b>HR</b><span>Nhân sự, kỳ đánh giá, bonus rule, báo cáo</span></div>
+                    <div class="actor"><b>Employee</b><span>Xem KPI được giao, check-in tiến độ, xem kết quả cá nhân</span></div>
+                </div>
+                <div class="usecase-grid">
+                    <div class="usecase-box">Đăng nhập, đổi mật khẩu, Google OAuth, OTP email</div>
+                    <div class="usecase-box">Quản lý role, permission, user, audit log</div>
+                    <div class="usecase-box">Quản lý nhân viên, phòng ban, chức vụ, kỳ đánh giá</div>
+                    <div class="usecase-box">Tạo Mission/Vision, OKR, Key Result</div>
+                    <div class="usecase-box">Tạo, duyệt, phân bổ KPI theo người/phòng ban</div>
+                    <div class="usecase-box">Check-in KPI, ghi chú, lịch sử trạng thái</div>
+                    <div class="usecase-box">Duyệt check-in, tính điểm, rank, expected bonus</div>
+                    <div class="usecase-box">Evaluation Result, ReviewBoard, Director approval</div>
+                    <div class="usecase-box">Dashboard, Evaluation Reports, export Excel</div>
+                    <div class="usecase-box">AI Chat, Suggest KPI, Analyze Performance</div>
+                    <div class="usecase-box">Smart Alerts theo phạm vi quyền</div>
+                    <div class="usecase-box">AccessDenied khi thiếu permission</div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Luồng hệ thống - Workflow 1</p>
+                        <h2>Từ chiến lược doanh nghiệp đến KPI được phân bổ</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>0.8 phút</div></div>
+                </div>
+                <div class="flow-row">
+                    <div class="node accent"><b>Mission / Vision</b><span>Định hướng dài hạn và tầm nhìn doanh nghiệp</span></div>
+                    <div class="node accent"><b>OKR</b><span>Mục tiêu theo chu kỳ, cấp công ty hoặc bộ phận</span></div>
+                    <div class="node accent"><b>Key Result</b><span>Kết quả đo lường được, làm cầu nối sang KPI</span></div>
+                    <div class="node accent"><b>KPI</b><span>Chỉ tiêu cụ thể theo kỳ đánh giá</span></div>
+                    <div class="node warn"><b>KPI Approval</b><span>KPI cần được duyệt trước khi vận hành chính thức</span></div>
+                    <div class="node ok"><b>Assignment</b><span>Phân bổ cho phòng ban hoặc nhân viên kèm trọng số</span></div>
+                </div>
+                <div class="grid-3" style="margin-top: 36px;">
+                    <div class="card compact">
+                        <div class="card-title"><span class="tag">01</span>Liên kết chiến lược</div>
+                        <p class="small">Mỗi KPI có thể gắn OKR hoặc Key Result để đảm bảo công việc hằng ngày đi theo mục tiêu lớn.</p>
+                    </div>
+                    <div class="card compact">
+                        <div class="card-title"><span class="tag amber">02</span>Kiểm soát trạng thái</div>
+                        <p class="small">KPI có trạng thái như Draft, Pending, Approved, Rejected để tránh dùng dữ liệu chưa hợp lệ.</p>
+                    </div>
+                    <div class="card compact">
+                        <div class="card-title"><span class="tag green">03</span>Cơ sở tính điểm</div>
+                        <p class="small">Assignment và trọng số là dữ liệu đầu vào cho Evaluation Result, rank và expected bonus.</p>
+                    </div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Luồng hệ thống - Workflow 2</p>
+                        <h2>Từ Employee check-in đến dashboard, report và AI</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>1.0 phút</div></div>
+                </div>
+                <div class="flow-row two-line">
+                    <div class="node accent"><b>Employee check-in</b><span>Nhập achieved value và note</span></div>
+                    <div class="node warn"><b>Pending</b><span>Chưa tính vào điểm chính thức</span></div>
+                    <div class="node warn"><b>ReviewQueue</b><span>Manager/Director/HR/Admin kiểm tra</span></div>
+                    <div class="node ok"><b>Approved</b><span>Chấp nhận dữ liệu check-in</span></div>
+                    <div class="node warn"><b>Rejected</b><span>Không tính điểm, giữ lịch sử</span></div>
+                    <div class="node ok"><b>Update KPI progress</b><span>Cập nhật tiến độ KPI</span></div>
+                    <div class="node ok"><b>Score + Rank</b><span>Tổng điểm theo trọng số, map GradingRank</span></div>
+                    <div class="node ok"><b>Expected Bonus</b><span>Tính thưởng dự kiến theo rule</span></div>
+                    <div class="node ok"><b>Evaluation Result</b><span>Tạo/cập nhật kết quả đánh giá</span></div>
+                    <div class="node accent"><b>Report / AI</b><span>Dashboard, Excel, Smart Alerts</span></div>
+                </div>
+                <div class="callout" style="margin-top: 32px;">Điểm then chốt: check-in chỉ ảnh hưởng kết quả khi được duyệt. Evaluation còn có vòng <strong>PendingDirectorReview</strong> để Director chốt dữ liệu cuối kỳ.</div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Luồng hệ thống - UI Flow</p>
+                        <h2>Mỗi vai trò có đường đi riêng trong giao diện</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>0.8 phút</div></div>
+                </div>
+                <div class="grid-4">
+                    <div class="lane">
+                        <h3>Director</h3>
+                        <div class="lane-list">
+                            <div class="lane-item">Login</div>
+                            <div class="lane-item">Dashboard toàn công ty</div>
+                            <div class="lane-item">OKRs</div>
+                            <div class="lane-item">EvaluationReports</div>
+                            <div class="lane-item">ReviewBoard</div>
+                        </div>
+                    </div>
+                    <div class="lane">
+                        <h3>Manager</h3>
+                        <div class="lane-list">
+                            <div class="lane-item">Login</div>
+                            <div class="lane-item">KPIs</div>
+                            <div class="lane-item">AllocatePersonnel</div>
+                            <div class="lane-item">ReviewQueue</div>
+                            <div class="lane-item">EvaluationResults</div>
+                        </div>
+                    </div>
+                    <div class="lane">
+                        <h3>Employee</h3>
+                        <div class="lane-list">
+                            <div class="lane-item">Login</div>
+                            <div class="lane-item">Dashboard cá nhân</div>
+                            <div class="lane-item">KPI được giao</div>
+                            <div class="lane-item">KPICheckIns/Create</div>
+                            <div class="lane-item">Kết quả cá nhân</div>
+                        </div>
+                    </div>
+                    <div class="lane">
+                        <h3>HR/Admin</h3>
+                        <div class="lane-list">
+                            <div class="lane-item">Employees</div>
+                            <div class="lane-item">Departments</div>
+                            <div class="lane-item">EvaluationPeriods</div>
+                            <div class="lane-item">BonusRules</div>
+                            <div class="lane-item">Roles / SystemUsers</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="callout" style="margin-top: 30px;">Sidebar hiển thị theo permission, còn backend vẫn chặn trực tiếp bằng authorization khi người dùng gọi URL không hợp lệ.</div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Luồng hệ thống - Phân rã chức năng</p>
+                        <h2>Mô hình phân rã chức năng theo cụm nghiệp vụ</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>0.7 phút</div></div>
+                </div>
+                <div class="decomp">
+                    <div class="module-box"><b>1. Nền tảng</b><span>Role, Permission, SystemUser, Employee, Department, Position, Status</span></div>
+                    <div class="module-box"><b>2. Chiến lược</b><span>MissionVision, OKR, OKRType, OKRKeyResult, OKR allocation</span></div>
+                    <div class="module-box"><b>3. KPI Setup</b><span>EvaluationPeriod, KPIType, KPIProperty, KPI, KPIDetail, KPI assignment</span></div>
+                    <div class="module-box"><b>4. Thực thi</b><span>KPICheckIn, CheckInDetail, CheckInStatus, HistoryLog, GoalComment</span></div>
+                    <div class="module-box"><b>5. Đánh giá</b><span>EvaluationResult, GradingRank, BonusRule, RealtimeExpectedBonus</span></div>
+                    <div class="module-box"><b>6. Báo cáo</b><span>Dashboard, EvaluationReports, HRExportReport, Excel export</span></div>
+                    <div class="module-box"><b>7. AI</b><span>AI Chat, Suggest KPI, Analyze Performance, Smart Alerts, AIGenerationHistory</span></div>
+                    <div class="module-box"><b>8. Kiểm soát</b><span>AuditLog, Notification, AccessDenied, Data Protection</span></div>
+                    <div class="module-box"><b>9. Demo data</b><span>seeddata.sql, testdata_role_flows.sql, tài khoản theo vai trò</span></div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Backend - Kiến trúc kỹ thuật</p>
+                        <h2>Kiến trúc tổng quan của hệ thống</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>1.0 phút</div></div>
+                </div>
+                <div class="architecture">
+                    <div class="arch-column">
+                        <div class="node accent"><b>Browser</b><span>Người dùng thao tác qua Razor Views, form, table, chart, sidebar</span></div>
+                        <div class="node accent"><b>Authentication</b><span>Cookie Auth, Google OAuth, OTP email, Data Protection keys</span></div>
+                        <div class="node accent"><b>Authorization</b><span>[Authorize], [HasPermission], role/permission claims</span></div>
+                    </div>
+                    <div class="arch-center">
+                        <h3>ASP.NET Core MVC</h3>
+                        <p>Controllers xử lý request, Services/Helpers tách logic nghiệp vụ, EF Core làm việc với SQL Server.</p>
+                    </div>
+                    <div class="arch-column">
+                        <div class="node ok"><b>MiniERPDbContext</b><span>DbSet theo module: foundation, OKR, KPI, check-in, evaluation, system/AI</span></div>
+                        <div class="node ok"><b>External Services</b><span>Gemini API, SMTP Email, Google OAuth, EPPlus export Excel</span></div>
+                        <div class="node ok"><b>Reports & AI</b><span>Dashboard, EvaluationReports, SmartAlerts, AI history</span></div>
+                    </div>
+                </div>
+                <div class="grid-4" style="margin-top: 32px;">
+                    <div class="card compact"><h3>.NET 10</h3><p class="small">ASP.NET Core MVC</p></div>
+                    <div class="card compact"><h3>EF Core 10</h3><p class="small">ORM + migration</p></div>
+                    <div class="card compact"><h3>SQL Server</h3><p class="small">Database chính</p></div>
+                    <div class="card compact"><h3>Gemini API</h3><p class="small">AI hỗ trợ phân tích</p></div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Backend - Cấu trúc phân tầng</p>
+                        <h2>Sơ đồ cấu trúc phân tầng và request lifecycle</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>0.9 phút</div></div>
+                </div>
+                <div class="grid-2">
+                    <div class="layer-stack">
+                        <div class="layer"><b>Presentation</b><span>Razor Views, Bootstrap, jQuery, Select2, Chart.js, SweetAlert2</span></div>
+                        <div class="layer"><b>Controller</b><span>Auth, Dashboard, OKRs, KPIs, KPICheckIns, EvaluationResults, AI</span></div>
+                        <div class="layer"><b>Service/Helper</b><span>EmailService, GeminiService, AIDataService, NotificationService, ProgressHelper</span></div>
+                        <div class="layer"><b>Data Access</b><span>Entity Framework Core, MiniERPDbContext, Fluent API relationships</span></div>
+                        <div class="layer"><b>Database</b><span>SQL Server, seed data, test data, migration</span></div>
+                        <div class="layer"><b>External</b><span>Gemini API, SMTP Email, Google OAuth, Excel export</span></div>
+                    </div>
+                    <div class="flow-stack">
+                        <div class="node accent"><b>1. Browser request</b><span>Người dùng gửi form hoặc mở route</span></div>
+                        <div class="node accent"><b>2. Middleware</b><span>Routing, Authentication, Authorization, Antiforgery</span></div>
+                        <div class="node warn"><b>3. Controller</b><span>Kiểm tra permission và điều phối nghiệp vụ</span></div>
+                        <div class="node warn"><b>4. Service / Helper</b><span>Xử lý tính điểm, AI, email, notification, progress</span></div>
+                        <div class="node ok"><b>5. DbContext</b><span>Truy vấn SQL Server qua EF Core</span></div>
+                        <div class="node ok"><b>6. Razor View</b><span>Render giao diện hoặc trả dữ liệu về browser</span></div>
+                    </div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Backend - ERD 1</p>
+                        <h2>ERD rút gọn: Foundation, HR và phân quyền</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>0.9 phút</div></div>
+                </div>
+                <div class="erd-grid">
+                    <div class="erd-box"><b>Role</b><ul><li>Id</li><li>RoleName</li><li>Description</li><li>CreatedById</li></ul></div>
+                    <div class="erd-box"><b>Permission</b><ul><li>Id</li><li>PermissionCode</li><li>PermissionName</li><li>Module</li></ul></div>
+                    <div class="erd-box"><b>Role_Permission</b><ul><li>RoleId</li><li>PermissionId</li><li>Composite key</li></ul></div>
+                    <div class="erd-box"><b>SystemUser</b><ul><li>Id</li><li>Username</li><li>Email</li><li>RoleId</li></ul></div>
+                    <div class="erd-box"><b>Employee</b><ul><li>Id</li><li>EmployeeCode</li><li>SystemUserId</li><li>CreatedById</li></ul></div>
+                    <div class="erd-box"><b>Department</b><ul><li>Id</li><li>DepartmentCode</li><li>ParentDepartmentId</li><li>ManagerId</li></ul></div>
+                    <div class="erd-box"><b>Position</b><ul><li>Id</li><li>PositionCode</li><li>PositionName</li></ul></div>
+                    <div class="erd-box"><b>EmployeeAssignment</b><ul><li>EmployeeId</li><li>DepartmentId</li><li>PositionId</li></ul></div>
+                </div>
+                <div class="relation-strip">
+                    <div class="relation">Role 1 - n SystemUser</div>
+                    <div class="relation">Role n - n Permission</div>
+                    <div class="relation">SystemUser 1 - 1 Employee</div>
+                </div>
+                <div class="callout" style="margin-top: 24px;">Phân quyền được nạp thành claims theo request, nên frontend có thể ẩn menu còn backend vẫn kiểm tra permission ở controller.</div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Backend - ERD 2</p>
+                        <h2>ERD rút gọn: OKR, KPI, check-in, evaluation và AI</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>1.0 phút</div></div>
+                </div>
+                <div class="erd-grid">
+                    <div class="erd-box"><b>MissionVision</b><ul><li>Id</li><li>Mission</li><li>Vision</li><li>CreatedById</li></ul></div>
+                    <div class="erd-box"><b>OKR</b><ul><li>Id</li><li>ObjectiveName</li><li>OKRTypeId</li><li>StatusId</li></ul></div>
+                    <div class="erd-box"><b>OKRKeyResult</b><ul><li>Id</li><li>OKRId</li><li>TargetValue</li><li>Progress</li></ul></div>
+                    <div class="erd-box"><b>KPI</b><ul><li>Id</li><li>KPIName</li><li>PeriodId</li><li>OKRId</li><li>StatusId</li></ul></div>
+                    <div class="erd-box"><b>KPIDetail</b><ul><li>KPIId</li><li>TargetValue</li><li>MeasurementUnit</li><li>Weight</li></ul></div>
+                    <div class="erd-box"><b>KPICheckIn</b><ul><li>KPIId</li><li>EmployeeId</li><li>StatusId</li><li>ReviewedById</li></ul></div>
+                    <div class="erd-box"><b>CheckInDetail</b><ul><li>CheckInId</li><li>AchievedValue</li><li>ProgressPercentage</li><li>Note</li></ul></div>
+                    <div class="erd-box"><b>EvaluationResult</b><ul><li>EmployeeId</li><li>PeriodId</li><li>TotalScore</li><li>RankId</li></ul></div>
+                    <div class="erd-box"><b>GradingRank</b><ul><li>RankName</li><li>MinScore</li><li>MaxScore</li></ul></div>
+                    <div class="erd-box"><b>BonusRule</b><ul><li>RankId</li><li>Formula</li><li>Multiplier</li></ul></div>
+                    <div class="erd-box"><b>SystemAlert</b><ul><li>ReceiverId</li><li>PeriodId</li><li>SourceType</li><li>Content</li></ul></div>
+                    <div class="erd-box"><b>AIGenerationHistory</b><ul><li>Feature</li><li>Prompt</li><li>Response</li><li>CreatedAt</li></ul></div>
+                </div>
+                <div class="relation-strip">
+                    <div class="relation">OKR 1 - n KeyResult - n KPI</div>
+                    <div class="relation">KPI 1 - n CheckIn - n Detail</div>
+                    <div class="relation">Employee + Period - EvaluationResult - Rank/Bonus</div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Frontend - Phong cách thiết kế</p>
+                        <h2>Enterprise dashboard: rõ trạng thái, dễ thao tác, phù hợp hệ thống nội bộ</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>0.8 phút</div></div>
+                </div>
+                <div class="grid-4">
+                    <div class="card">
+                        <div class="card-title"><span class="tag green">01</span>Bố cục</div>
+                        <ul>
+                            <li>Sidebar theo permission.</li>
+                            <li>Header, dashboard cards.</li>
+                            <li>Table, form, modal, alert.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag">02</span>Dữ liệu</div>
+                        <ul>
+                            <li>Bảng danh sách OKR/KPI/check-in.</li>
+                            <li>Biểu đồ KPI/OKR/check-in.</li>
+                            <li>Report và export Excel.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag coral">03</span>Trạng thái</div>
+                        <ul>
+                            <li>Draft, Pending, Approved.</li>
+                            <li>Rejected, PendingDirectorReview.</li>
+                            <li>AccessDenied khi thiếu quyền.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag indigo">04</span>Thư viện</div>
+                        <ul>
+                            <li>Razor Views, Bootstrap.</li>
+                            <li>jQuery, Select2.</li>
+                            <li>Chart.js, SweetAlert2.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="grid-3" style="margin-top: 28px;">
+                    <div class="card compact"><h3>Nguyên tắc 1</h3><p class="small">Menu chỉ hiện module đúng quyền, tránh thao tác nhầm.</p></div>
+                    <div class="card compact"><h3>Nguyên tắc 2</h3><p class="small">Mọi form quan trọng có validation để giảm lỗi dữ liệu.</p></div>
+                    <div class="card compact"><h3>Nguyên tắc 3</h3><p class="small">Người dùng luôn biết dữ liệu đang ở bước nào của workflow.</p></div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Frontend - Giao diện hệ thống</p>
+                        <h2>Các màn hình chính gắn trực tiếp với workflow KPI/OKR</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>0.9 phút</div></div>
+                </div>
+                <div class="screen-grid">
+                    <div class="screen">
+                        <div class="screen-top"><span>Dashboard</span><span>Director / Manager</span></div>
+                        <div class="screen-body">
+                            <div class="mini-sidebar"><div class="mini-nav active"></div><div class="mini-nav"></div><div class="mini-nav"></div><div class="mini-nav"></div><div class="mini-nav"></div></div>
+                            <div class="mini-main">
+                                <div class="mini-title"></div>
+                                <div class="mini-cards"><div class="mini-card"></div><div class="mini-card"></div><div class="mini-card"></div></div>
+                                <div class="mini-table"><div class="mini-row"></div><div class="mini-row"></div><div class="mini-row"></div><div class="mini-row"></div><div class="mini-row"></div></div>
+                            </div>
+                        </div>
+                        <div class="screen-caption">Tổng quan KPI/OKR/check-in theo kỳ đánh giá</div>
+                    </div>
+                    <div class="screen">
+                        <div class="screen-top"><span>KPI & Check-in</span><span>Manager / Employee</span></div>
+                        <div class="screen-body">
+                            <div class="mini-sidebar"><div class="mini-nav"></div><div class="mini-nav active"></div><div class="mini-nav"></div><div class="mini-nav"></div></div>
+                            <div class="mini-main">
+                                <div class="mini-title" style="width: 74%;"></div>
+                                <div class="mini-table"><div class="mini-row"></div><div class="mini-row"></div><div class="mini-row"></div><div class="mini-row"></div><div class="mini-row"></div><div class="mini-row"></div><div class="mini-row"></div></div>
+                            </div>
+                        </div>
+                        <div class="screen-caption">Tạo KPI, phân bổ KPI, Employee gửi check-in Pending</div>
+                    </div>
+                    <div class="screen">
+                        <div class="screen-top"><span>Evaluation Reports</span><span>HR / Director</span></div>
+                        <div class="screen-body">
+                            <div class="mini-sidebar"><div class="mini-nav"></div><div class="mini-nav"></div><div class="mini-nav active"></div><div class="mini-nav"></div></div>
+                            <div class="mini-main">
+                                <div class="mini-title" style="width: 68%;"></div>
+                                <div class="mini-cards"><div class="mini-card" style="background: rgba(194,65,12,0.15);"></div><div class="mini-card" style="background: rgba(76,81,191,0.15);"></div><div class="mini-card" style="background: rgba(47,133,90,0.15);"></div></div>
+                                <div class="mini-table"><div class="mini-row"></div><div class="mini-row"></div><div class="mini-row"></div><div class="mini-row"></div></div>
+                            </div>
+                        </div>
+                        <div class="screen-caption">Rank, expected bonus, export Excel, AI Insights</div>
+                    </div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">SM + Tester - Tiêu chuẩn hoàn thành</p>
+                        <h2>Definition of Done cho từng task và từng module</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>0.7 phút</div></div>
+                </div>
+                <div class="grid-2">
+                    <div class="checklist">
+                        <div class="check">Tính năng chạy được trên local hoặc môi trường demo.</div>
+                        <div class="check">Đúng nghiệp vụ đã mô tả trong backlog và sprint backlog.</div>
+                        <div class="check">Đúng phân quyền theo vai trò: Admin, Director, Manager, HR, Employee.</div>
+                        <div class="check">Có validation dữ liệu đầu vào ở form quan trọng.</div>
+                        <div class="check">Giao diện không vỡ layout, không che nội dung chính.</div>
+                    </div>
+                    <div class="checklist">
+                        <div class="check">Tester đã chạy các test case chính theo workflow.</div>
+                        <div class="check">Không làm hỏng luồng đang có như login, KPI, check-in, evaluation.</div>
+                        <div class="check">Có commit rõ nội dung thay đổi trên Git.</div>
+                        <div class="check">Các lỗi nghiêm trọng về tính điểm và phân quyền phải được sửa trước khi Done.</div>
+                        <div class="check">Dữ liệu demo vẫn dùng được cho phần thuyết trình và demo.</div>
+                    </div>
+                </div>
+                <div class="callout" style="margin-top: 30px;">Trong hệ thống đánh giá nhân sự, lỗi nhỏ ở phân quyền hoặc công thức điểm có thể làm sai kết quả cuối kỳ, nên Done không chỉ là code xong.</div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Tester - Đảm bảo chất lượng</p>
+                        <h2>Test plan và test case theo rủi ro chính</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>1.1 phút</div></div>
+                </div>
+                <div class="qa-matrix">
+                    <div class="card">
+                        <div class="card-title"><span class="tag rose">P</span>Test plan</div>
+                        <ul>
+                            <li>Functional test theo module: Auth, Employees, OKRs, KPIs, KPICheckIns, EvaluationResults, Reports.</li>
+                            <li>Role/permission test theo từng vai trò.</li>
+                            <li>Workflow test end-to-end.</li>
+                            <li>UI/UX test, report/export test, AI fallback test.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag coral">R</span>Rủi ro ưu tiên</div>
+                        <ul>
+                            <li>Sai nghiệp vụ: check-in bị tính khi chưa duyệt.</li>
+                            <li>Sai phân quyền: Employee thấy module quản trị hoặc dữ liệu người khác.</li>
+                            <li>Sai tính toán: total score, grading rank, expected bonus.</li>
+                            <li>Sai báo cáo: export Excel không đúng kỳ đánh giá.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag green">C</span>Test case mẫu</div>
+                        <ul>
+                            <li>Employee login chỉ thấy KPI được giao.</li>
+                            <li>Employee tạo check-in thì trạng thái là Pending.</li>
+                            <li>Manager duyệt check-in nhân viên trong phòng ban.</li>
+                            <li>Manager không tự duyệt check-in của chính mình.</li>
+                            <li>Approved check-in cập nhật score, rank, bonus.</li>
+                            <li>Director duyệt EvaluationResult ở PendingDirectorReview.</li>
+                            <li>Không có permission thì chuyển AccessDenied.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide section-slide">
+                <p class="eyebrow">Phần 3</p>
+                <h1>Demo chia đều cho 6 người</h1>
+                <p>Giữ demo trong 6 phút: mỗi thành viên khoảng 1 phút, nối thành một luồng Director → HR/Admin → Manager → Employee → Manager → Tester.</p>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Demo - Tổng quan luồng</p>
+                        <h2>Sơ đồ demo 6 bước, mỗi thành viên 1 phút</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>6 phút</div></div>
+                </div>
+                <div class="demo-grid">
+                    <div class="demo-step"><b>1. PO</b><span>Tài khoản `test_director`</span><ul><li>/Dashboard</li><li>/OKRs</li><li>/EvaluationReports</li></ul><span>Chứng minh góc nhìn chiến lược.</span></div>
+                    <div class="demo-step"><b>2. SM</b><span>Tài khoản `test_hr` hoặc `test_admin`</span><ul><li>/Employees</li><li>/Departments</li><li>/EvaluationPeriods</li></ul><span>Chuẩn bị dữ liệu nền.</span></div>
+                    <div class="demo-step"><b>3. Flow</b><span>Tài khoản `test_manager`</span><ul><li>/KPIs</li><li>/KPIs/AllocatePersonnel</li><li>/OKRs</li></ul><span>Liên kết OKR → KPI → assignment.</span></div>
+                    <div class="demo-step"><b>4. Frontend</b><span>Tài khoản `test_employee`</span><ul><li>/Dashboard</li><li>/KPIs</li><li>/KPICheckIns/Create</li></ul><span>Employee gửi check-in Pending.</span></div>
+                    <div class="demo-step"><b>5. Backend</b><span>Tài khoản `test_manager`</span><ul><li>/KPICheckIns/ReviewQueue</li><li>/EvaluationResults</li></ul><span>Duyệt và tự động tính điểm.</span></div>
+                    <div class="demo-step"><b>6. Tester</b><span>Tài khoản `test_director` hoặc `test_employee`</span><ul><li>/EvaluationReports</li><li>/Roles</li><li>/AI/SmartAlerts</li></ul><span>Kiểm tra report, phân quyền, fallback.</span></div>
+                </div>
+                <div class="callout" style="margin-top: 30px;">Dữ liệu nên dùng: kỳ `TST-Q2-2026`, phòng ban `TST-SALES`, OKR `TST - Tăng trưởng doanh thu Q2-2026`, KPI `TST - Doanh số cá nhân Q2`, mật khẩu chung `Test@123`.</div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Demo - Thành viên 1, 2, 3</p>
+                        <h2>Ba bước đầu: chiến lược, dữ liệu nền, KPI assignment</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>3 phút</div></div>
+                </div>
+                <div class="grid-3">
+                    <div class="card">
+                        <div class="card-title"><span class="tag">1</span>PO - Director</div>
+                        <ul>
+                            <li>Đăng nhập `test_director`.</li>
+                            <li>Mở `/Dashboard`, nhắc kỳ `TST-Q2-2026`.</li>
+                            <li>Mở `/OKRs`, chỉ OKR chiến lược.</li>
+                            <li>Mở `/EvaluationReports` để cho thấy báo cáo tổng hợp.</li>
+                        </ul>
+                        <p class="small muted">Câu nhớ: Director nhìn bức tranh toàn công ty qua Dashboard và OKR.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag amber">2</span>SM - HR/Admin</div>
+                        <ul>
+                            <li>Mở `/Employees`, nhắc Director, Manager, Employee demo.</li>
+                            <li>Mở `/Departments`, nhắc `TST-SALES`.</li>
+                            <li>Mở `/EvaluationPeriods`, nhắc `TST-Q2-2026`.</li>
+                            <li>Nếu kịp, mở `/BonusRules`.</li>
+                        </ul>
+                        <p class="small muted">Câu nhớ: Muốn chạy KPI/OKR phải có dữ liệu nền.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag indigo">3</span>Flow - Manager</div>
+                        <ul>
+                            <li>Mở `/KPIs` bằng `test_manager`.</li>
+                            <li>Tìm KPI `TST - Doanh số cá nhân Q2`.</li>
+                            <li>Chỉ kỳ đánh giá, trạng thái, liên kết OKR/Key Result.</li>
+                            <li>Mở `/KPIs/AllocatePersonnel` để nói về trọng số.</li>
+                        </ul>
+                        <p class="small muted">Câu nhớ: Manager biến mục tiêu thành KPI và phân bổ cho người thực hiện.</p>
+                    </div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Demo - Thành viên 4, 5, 6</p>
+                        <h2>Ba bước cuối: check-in, duyệt, báo cáo và phân quyền</h2>
+                    </div>
+                    <div class="meta"><div>Thời lượng</div><div>3 phút</div></div>
+                </div>
+                <div class="grid-3">
+                    <div class="card">
+                        <div class="card-title"><span class="tag green">4</span>Frontend - Employee</div>
+                        <ul>
+                            <li>Đăng nhập `test_employee`.</li>
+                            <li>Mở `/Dashboard` và `/KPIs` để thấy dữ liệu cá nhân.</li>
+                            <li>Mở `/KPICheckIns/Create`.</li>
+                            <li>Nhập AchievedValue 80 và note demo.</li>
+                            <li>Submit, nhấn mạnh trạng thái Pending.</li>
+                        </ul>
+                        <p class="small muted">Câu nhớ: Employee gửi check-in nhưng chưa được tính điểm ngay.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag coral">5</span>Backend - Manager</div>
+                        <ul>
+                            <li>Mở `/KPICheckIns/ReviewQueue`.</li>
+                            <li>Dùng check-in vừa tạo hoặc `TST_PENDING_EMPLOYEE_FLOW`.</li>
+                            <li>Approve, nhập ReviewScore 80 nếu cần.</li>
+                            <li>Mở `/EvaluationResults` để chỉ dữ liệu được cập nhật.</li>
+                        </ul>
+                        <p class="small muted">Câu nhớ: Approve thì hệ thống tự tính score, rank, bonus, evaluation.</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag rose">6</span>Tester - Report/Permission</div>
+                        <ul>
+                            <li>Mở `/EvaluationReports`, chọn kỳ `TST-Q2-2026`.</li>
+                            <li>Mở `/EvaluationResults/ReviewBoard` nếu có dữ liệu chờ duyệt.</li>
+                            <li>Dùng Employee thử vào `/Roles` hoặc `/SystemUsers`.</li>
+                            <li>Nếu AI thiếu key, nói nghiệp vụ chính vẫn chạy và AI có fallback.</li>
+                        </ul>
+                        <p class="small muted">Câu nhớ: Report đúng và phân quyền đúng là bằng chứng chất lượng.</p>
+                    </div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+
+            <section class="slide">
+                <div class="slide-header">
+                    <div>
+                        <p class="eyebrow">Kết luận</p>
+                        <h2>VietMach KPI/OKR System quản lý trọn vòng đời hiệu suất</h2>
+                    </div>
+                    <div class="meta"><div>Người nói</div><div>Tester chốt</div></div>
+                </div>
+                <div class="closing-grid">
+                    <div>
+                        <div class="big-quote">Từ chiến lược đến KPI, từ check-in đến phê duyệt, từ điểm số đến báo cáo, mọi bước đều có dữ liệu, phân quyền và khả năng truy vết.</div>
+                        <div class="grid-3" style="margin-top: 34px;">
+                            <div class="card compact"><h3>Minh bạch</h3><p class="small">Lịch sử check-in, trạng thái duyệt, báo cáo theo kỳ.</p></div>
+                            <div class="card compact"><h3>Kiểm soát</h3><p class="small">Role/permission ở cả giao diện và backend.</p></div>
+                            <div class="card compact"><h3>Mở rộng</h3><p class="small">Module hóa theo foundation, OKR, KPI, evaluation, AI.</p></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title"><span class="tag green">✓</span>Thông điệp cuối</div>
+                        <ul>
+                            <li>Doanh nghiệp không còn quản lý KPI/OKR bằng file rời rạc.</li>
+                            <li>Nhân viên check-in có kiểm soát, không tự động làm sai điểm.</li>
+                            <li>Manager, Director và HR có dashboard/report để ra quyết định.</li>
+                            <li>AI đóng vai trò hỗ trợ phân tích, gợi ý và cảnh báo thông minh.</li>
+                            <li>Cảm ơn thầy cô và các bạn đã lắng nghe.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-number"></div>
+            </section>
+        </main>
+    </div>
+
+    <div class="controls" aria-hidden="true">
+        <button type="button" id="prevBtn">Trước</button>
+        <div class="counter" id="counter">1 / 27</div>
+        <button type="button" id="nextBtn">Sau</button>
+    </div>
+    <div class="progress" aria-hidden="true"><span id="progressFill"></span></div>
+
+    <script>
+        const deck = document.getElementById("deck");
+        const slides = Array.from(document.querySelectorAll(".slide"));
+        const counter = document.getElementById("counter");
+        const progressFill = document.getElementById("progressFill");
+        let current = 0;
+
+        function scaleDeck() {
+            const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+            deck.style.transform = `scale(${scale})`;
+        }
+
+        function showSlide(index) {
+            current = Math.max(0, Math.min(index, slides.length - 1));
+            slides.forEach((slide, i) => slide.classList.toggle("active", i === current));
+            counter.textContent = `${current + 1} / ${slides.length}`;
+            progressFill.style.width = `${((current + 1) / slides.length) * 100}%`;
+            history.replaceState(null, "", `#${current + 1}`);
+        }
+
+        function nextSlide() {
+            showSlide(current + 1);
+        }
+
+        function prevSlide() {
+            showSlide(current - 1);
+        }
+
+        document.getElementById("nextBtn").addEventListener("click", nextSlide);
+        document.getElementById("prevBtn").addEventListener("click", prevSlide);
+
+        window.addEventListener("resize", scaleDeck);
+        window.addEventListener("keydown", (event) => {
+            const key = event.key;
+            if (key === "ArrowRight" || key === "PageDown" || key === " ") {
+                event.preventDefault();
+                nextSlide();
+            }
+            if (key === "ArrowLeft" || key === "PageUp") {
+                event.preventDefault();
+                prevSlide();
+            }
+            if (key === "Home") {
+                event.preventDefault();
+                showSlide(0);
+            }
+            if (key === "End") {
+                event.preventDefault();
+                showSlide(slides.length - 1);
+            }
+        });
+
+        slides.forEach((slide, index) => {
+            const num = slide.querySelector(".slide-number");
+            if (num) num.textContent = `${index + 1} / ${slides.length}`;
+        });
+
+        const hashIndex = Number(window.location.hash.replace("#", "")) - 1;
+        scaleDeck();
+        showSlide(Number.isFinite(hashIndex) && hashIndex >= 0 ? hashIndex : 0);
+    </script>
+</body>
+</html>
