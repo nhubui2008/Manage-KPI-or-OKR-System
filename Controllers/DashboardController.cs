@@ -22,6 +22,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
         }
 
+        [HasPermission("DASHBOARD_VIEW")]
         public async Task<IActionResult> Index(int? periodId)
         {
             // ========================================
@@ -86,6 +87,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // Phân quyền dữ liệu theo Role
             bool isEmployeeRole = User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales");
+            bool isManagerScoped = AccessScopeHelper.IsManagerScoped(User);
+            var scopedEmployeeIds = new List<int>();
+            var scopedDepartmentIds = new List<int>();
 
             if (isEmployeeRole)
             {
@@ -112,8 +116,67 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     checkInQuery = checkInQuery.Where(c => false);
                 }
             }
+            else if (isManagerScoped)
+            {
+                if (employee != null)
+                {
+                    scopedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, employee);
+                    scopedEmployeeIds = await AccessScopeHelper.GetEmployeeIdsInDepartmentsAsync(_context, scopedDepartmentIds);
 
-            ViewBag.TotalEmployees = isEmployeeRole && employee != null ? 1 : await _context.Employees.CountAsync(e => e.IsActive == true);
+                    var managedKpiIds = scopedEmployeeIds.Any()
+                        ? await _context.KPI_Employee_Assignments
+                            .Where(a => scopedEmployeeIds.Contains(a.EmployeeId) && (a.Status == null || a.Status == "Active"))
+                            .Select(a => a.KPIId)
+                            .ToListAsync()
+                        : new List<int>();
+
+                    if (scopedDepartmentIds.Any())
+                    {
+                        var departmentKpiIds = await _context.KPI_Department_Assignments
+                            .Where(a => scopedDepartmentIds.Contains(a.DepartmentId))
+                            .Select(a => a.KPIId)
+                            .ToListAsync();
+                        managedKpiIds.AddRange(departmentKpiIds);
+                    }
+
+                    managedKpiIds = managedKpiIds.Distinct().ToList();
+                    kpiQuery = kpiQuery.Where(k => managedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id || k.CreatedById == employee.Id);
+
+                    var managedOkrIds = scopedEmployeeIds.Any()
+                        ? await _context.OKR_Employee_Allocations
+                            .Where(a => scopedEmployeeIds.Contains(a.EmployeeId))
+                            .Select(a => a.OKRId)
+                            .ToListAsync()
+                        : new List<int>();
+
+                    if (scopedDepartmentIds.Any())
+                    {
+                        var departmentOkrIds = await _context.OKR_Department_Allocations
+                            .Where(a => scopedDepartmentIds.Contains(a.DepartmentId))
+                            .Select(a => a.OKRId)
+                            .ToListAsync();
+                        managedOkrIds.AddRange(departmentOkrIds);
+                    }
+
+                    managedOkrIds = managedOkrIds.Distinct().ToList();
+                    okrQuery = okrQuery.Where(o => managedOkrIds.Contains(o.Id) || o.CreatedById == employee.Id);
+                    checkInQuery = scopedEmployeeIds.Any()
+                        ? checkInQuery.Where(c => c.EmployeeId.HasValue && scopedEmployeeIds.Contains(c.EmployeeId.Value))
+                        : checkInQuery.Where(c => false);
+                }
+                else
+                {
+                    kpiQuery = kpiQuery.Where(k => false);
+                    okrQuery = okrQuery.Where(o => false);
+                    checkInQuery = checkInQuery.Where(c => false);
+                }
+            }
+
+            ViewBag.TotalEmployees = isEmployeeRole && employee != null
+                ? 1
+                : isManagerScoped
+                    ? scopedEmployeeIds.Count
+                    : await _context.Employees.CountAsync(e => e.IsActive == true);
             ViewBag.TotalOKRs = await okrQuery.CountAsync();
             var totalKpis = await kpiQuery.CountAsync();
             ViewBag.TotalKPIs = totalKpis;
@@ -176,7 +239,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // ========================================
             // 6. DEPARTMENTS DATA
             // ========================================
-            var departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
+            var departments = await _context.Departments
+                .Where(d => d.IsActive == true &&
+                            (!isManagerScoped || scopedDepartmentIds.Contains(d.Id)))
+                .ToListAsync();
             ViewBag.TotalDepartments = isEmployeeRole && employee != null
                 ? await _context.EmployeeAssignments
                     .Where(ea => ea.EmployeeId == employee.Id && ea.IsActive == true && ea.DepartmentId.HasValue)
@@ -192,7 +258,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .Select(ea => ea.PositionId)
                     .Distinct()
                     .CountAsync()
-                : await _context.Positions.CountAsync(p => p.IsActive == true);
+                : isManagerScoped
+                    ? await _context.EmployeeAssignments
+                        .Where(ea => ea.IsActive == true &&
+                                     ea.EmployeeId.HasValue &&
+                                     scopedEmployeeIds.Contains(ea.EmployeeId.Value) &&
+                                     ea.PositionId.HasValue)
+                        .Select(ea => ea.PositionId)
+                        .Distinct()
+                        .CountAsync()
+                    : await _context.Positions.CountAsync(p => p.IsActive == true);
 
             // ========================================
             // 7. BIỂU ĐỒ OKR STATUS DISTRIBUTION
@@ -223,6 +298,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                         && (!startDate.HasValue || ci.CheckInDate >= startDate.Value)
                                        && (!endDate.HasValue || ci.CheckInDate <= endDate.Value)
                                        && (!isEmployeeRole || ci.EmployeeId == scopedEmployeeId)
+                                       && (!isManagerScoped || (ci.EmployeeId.HasValue && scopedEmployeeIds.Contains(ci.EmployeeId.Value)))
                                  group cd by d.DepartmentName into g
                                  select new {
                                      DeptName = g.Key,
@@ -261,6 +337,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 {
                     monthCheckInQuery = employee != null
                         ? monthCheckInQuery.Where(c => c.EmployeeId == employee.Id)
+                        : monthCheckInQuery.Where(c => false);
+                }
+                else if (isManagerScoped)
+                {
+                    monthCheckInQuery = scopedEmployeeIds.Any()
+                        ? monthCheckInQuery.Where(c => c.EmployeeId.HasValue && scopedEmployeeIds.Contains(c.EmployeeId.Value))
                         : monthCheckInQuery.Where(c => false);
                 }
 
@@ -314,6 +396,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 topCheckInQuery = employee != null
                     ? topCheckInQuery.Where(c => c.EmployeeId == employee.Id)
+                    : topCheckInQuery.Where(c => false);
+            }
+            else if (isManagerScoped)
+            {
+                topCheckInQuery = scopedEmployeeIds.Any()
+                    ? topCheckInQuery.Where(c => c.EmployeeId.HasValue && scopedEmployeeIds.Contains(c.EmployeeId.Value))
                     : topCheckInQuery.Where(c => false);
             }
 

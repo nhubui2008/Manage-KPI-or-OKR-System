@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -21,6 +22,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpGet]
+        [HasPermission("EMPLOYEES_VIEW", "KPIS_VIEW", "OKRS_VIEW", "DEPARTMENTS_VIEW")]
         public async Task<IActionResult> QuickSearch(string term)
         {
             if (string.IsNullOrWhiteSpace(term) || term.Length < 2)
@@ -32,13 +34,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var results = new List<SearchResult>();
             bool isRestrictedRole = User.IsInRole("Employee") || User.IsInRole("employee") ||
                                     User.IsInRole("Sales") || User.IsInRole("sales");
+            bool isManagerScoped = AccessScopeHelper.IsManagerScoped(User);
             Employee? currentEmployee = null;
-            if (isRestrictedRole)
+            var scopedEmployeeIds = new List<int>();
+            var scopedDepartmentIds = new List<int>();
+            if (isRestrictedRole || isManagerScoped)
             {
-                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (int.TryParse(userIdStr, out int userId))
+                currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
+                if (isManagerScoped && currentEmployee != null)
                 {
-                    currentEmployee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId && e.IsActive == true);
+                    scopedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, currentEmployee);
+                    scopedEmployeeIds = await AccessScopeHelper.GetEmployeeIdsInDepartmentsAsync(_context, scopedDepartmentIds);
                 }
             }
 
@@ -48,6 +54,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 employeeQuery = currentEmployee != null
                     ? employeeQuery.Where(e => e.Id == currentEmployee.Id)
+                    : employeeQuery.Where(e => false);
+            }
+            else if (isManagerScoped)
+            {
+                employeeQuery = scopedEmployeeIds.Any()
+                    ? employeeQuery.Where(e => scopedEmployeeIds.Contains(e.Id))
                     : employeeQuery.Where(e => false);
             }
 
@@ -83,6 +95,34 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     kpiQuery = kpiQuery.Where(k => false);
                 }
             }
+            else if (isManagerScoped)
+            {
+                if (currentEmployee != null)
+                {
+                    var allocatedKpiIds = scopedEmployeeIds.Any()
+                        ? await _context.KPI_Employee_Assignments
+                            .Where(a => scopedEmployeeIds.Contains(a.EmployeeId) && (a.Status == null || a.Status == "Active"))
+                            .Select(a => a.KPIId)
+                            .ToListAsync()
+                        : new List<int>();
+
+                    if (scopedDepartmentIds.Any())
+                    {
+                        var departmentKpiIds = await _context.KPI_Department_Assignments
+                            .Where(a => scopedDepartmentIds.Contains(a.DepartmentId))
+                            .Select(a => a.KPIId)
+                            .ToListAsync();
+                        allocatedKpiIds.AddRange(departmentKpiIds);
+                    }
+
+                    allocatedKpiIds = allocatedKpiIds.Distinct().ToList();
+                    kpiQuery = kpiQuery.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == currentEmployee.Id || k.CreatedById == currentEmployee.Id);
+                }
+                else
+                {
+                    kpiQuery = kpiQuery.Where(k => false);
+                }
+            }
 
             var kpis = await kpiQuery
                 .Where(k => k.KPIName != null && k.KPIName.ToLower().Contains(term))
@@ -108,6 +148,34 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         .Where(a => a.EmployeeId == currentEmployee.Id)
                         .Select(a => a.OKRId)
                         .ToListAsync();
+                    okrQuery = okrQuery.Where(o => allocatedOkrIds.Contains(o.Id) || o.CreatedById == currentEmployee.Id);
+                }
+                else
+                {
+                    okrQuery = okrQuery.Where(o => false);
+                }
+            }
+            else if (isManagerScoped)
+            {
+                if (currentEmployee != null)
+                {
+                    var allocatedOkrIds = scopedEmployeeIds.Any()
+                        ? await _context.OKR_Employee_Allocations
+                            .Where(a => scopedEmployeeIds.Contains(a.EmployeeId))
+                            .Select(a => a.OKRId)
+                            .ToListAsync()
+                        : new List<int>();
+
+                    if (scopedDepartmentIds.Any())
+                    {
+                        var departmentOkrIds = await _context.OKR_Department_Allocations
+                            .Where(a => scopedDepartmentIds.Contains(a.DepartmentId))
+                            .Select(a => a.OKRId)
+                            .ToListAsync();
+                        allocatedOkrIds.AddRange(departmentOkrIds);
+                    }
+
+                    allocatedOkrIds = allocatedOkrIds.Distinct().ToList();
                     okrQuery = okrQuery.Where(o => allocatedOkrIds.Contains(o.Id) || o.CreatedById == currentEmployee.Id);
                 }
                 else
@@ -147,6 +215,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 {
                     departmentQuery = departmentQuery.Where(d => false);
                 }
+            }
+            else if (isManagerScoped)
+            {
+                departmentQuery = scopedDepartmentIds.Any()
+                    ? departmentQuery.Where(d => scopedDepartmentIds.Contains(d.Id))
+                    : departmentQuery.Where(d => false);
             }
 
             var departments = await departmentQuery

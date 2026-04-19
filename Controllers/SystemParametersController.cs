@@ -3,6 +3,7 @@ using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -43,10 +44,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (p == null) return NotFound();
 
             p.Value = value;
-            var systemUserIdClaim = User.Claims.FirstOrDefault(c => c.Type == "SystemUserId");
-            if (systemUserIdClaim != null && int.TryParse(systemUserIdClaim.Value, out int systemUserId))
+            var systemUserIdValue = User.FindFirstValue("SystemUserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(systemUserIdValue, out int systemUserId))
             {
-                p.UpdatedById = systemUserId;
+                var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId && e.IsActive == true);
+                p.UpdatedById = employee?.Id;
             }
 
             await _context.SaveChangesAsync();

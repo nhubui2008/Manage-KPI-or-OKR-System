@@ -913,7 +913,8 @@
             fetch('/OKRs/AddMultipleKeyResults', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    ...(window.antiForgeryHeaders ? window.antiForgeryHeaders() : {})
                 },
                 body: JSON.stringify(payload)
             })

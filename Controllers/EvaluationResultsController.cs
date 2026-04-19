@@ -42,12 +42,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     }
                 }
             }
+            else if (AccessScopeHelper.IsManagerScoped(User))
+            {
+                var manager = await GetCurrentEmployeeAsync();
+                var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, manager);
+                var managedEmployeeIds = await AccessScopeHelper.GetEmployeeIdsInDepartmentsAsync(_context, managedDepartmentIds);
+                resultsQuery = managedEmployeeIds.Any()
+                    ? resultsQuery.Where(r => r.EmployeeId.HasValue && managedEmployeeIds.Contains(r.EmployeeId.Value))
+                    : resultsQuery.Where(r => false);
+            }
 
             var results = await resultsQuery.ToListAsync();
 
-            var employees = await _context.Employees.ToDictionaryAsync(e => e.Id, e => e.FullName);
-            var periods = await _context.EvaluationPeriods.ToDictionaryAsync(p => p.Id, p => p.PeriodName);
-            var ranks = await _context.GradingRanks.ToDictionaryAsync(r => r.Id, r => r.RankCode);
+            var employees = await _context.Employees.ToDictionaryAsync(e => e.Id, e => e.FullName ?? "N/A");
+            var periods = await _context.EvaluationPeriods.ToDictionaryAsync(p => p.Id, p => p.PeriodName ?? "N/A");
+            var ranks = await _context.GradingRanks.ToDictionaryAsync(r => r.Id, r => r.RankCode ?? "N/A");
             var submitterIds = results
                 .Where(r => r.SubmittedById.HasValue)
                 .Select(r => r.SubmittedById!.Value)
@@ -55,14 +64,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Distinct()
                 .ToList();
             var workflowEmployees = submitterIds.Any()
-                ? await _context.Employees.Where(e => submitterIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName)
+                ? await _context.Employees.Where(e => submitterIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName ?? "N/A")
                 : new Dictionary<int, string>();
 
             ViewBag.Employees = employees;
             ViewBag.Periods = periods;
             ViewBag.Ranks = ranks;
             ViewBag.WorkflowEmployees = workflowEmployees;
-            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.AllEmployees = await GetEvaluationAssignableEmployeesAsync();
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
             var allRanks = await _context.GradingRanks.ToListAsync();
             ViewBag.AllRanks = allRanks;
@@ -111,18 +120,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Distinct()
                 .ToList();
             var employees = employeeIds.Any()
-                ? await _context.Employees.Where(e => employeeIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName)
+                ? await _context.Employees.Where(e => employeeIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName ?? "N/A")
                 : new Dictionary<int, string>();
 
             var periodIds = results.Where(r => r.PeriodId.HasValue).Select(r => r.PeriodId!.Value).Distinct().ToList();
             var periods = periodIds.Any()
-                ? await _context.EvaluationPeriods.Where(p => periodIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.PeriodName)
-                : new Dictionary<int, string?>();
+                ? await _context.EvaluationPeriods.Where(p => periodIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.PeriodName ?? "N/A")
+                : new Dictionary<int, string>();
 
             var rankIds = results.Where(r => r.RankId.HasValue).Select(r => r.RankId!.Value).Distinct().ToList();
             var ranks = rankIds.Any()
-                ? await _context.GradingRanks.Where(r => rankIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id, r => r.RankCode)
-                : new Dictionary<int, string?>();
+                ? await _context.GradingRanks.Where(r => rankIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id, r => r.RankCode ?? "N/A")
+                : new Dictionary<int, string>();
 
             ViewBag.Employees = employees;
             ViewBag.Periods = periods;
@@ -139,7 +148,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
                 return Forbid();
 
-            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
+            ViewBag.AllEmployees = await GetEvaluationAssignableEmployeesAsync();
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
             var allRanks = await _context.GradingRanks.ToListAsync();
             ViewBag.AllRanks = allRanks;
@@ -159,6 +168,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (ModelState.IsValid)
             {
+                if (!await CanCurrentUserAccessEvaluationEmployeeAsync(model.EmployeeId))
+                {
+                    return Forbid();
+                }
+
                 var isDuplicate = await _context.EvaluationResults
                     .AnyAsync(r => r.EmployeeId == model.EmployeeId && r.PeriodId == model.PeriodId);
                 if (isDuplicate)
@@ -198,6 +212,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var existing = await _context.EvaluationResults.FindAsync(model.Id);
             if (existing == null) return NotFound();
+            if (!await CanCurrentUserAccessEvaluationEmployeeAsync(model.EmployeeId) ||
+                !await CanCurrentUserAccessEvaluationEmployeeAsync(existing.EmployeeId))
+            {
+                return Forbid();
+            }
 
             var isDuplicate = await _context.EvaluationResults
                 .AnyAsync(r => r.Id != model.Id &&
@@ -317,6 +336,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var result = await _context.EvaluationResults.FindAsync(id);
             if (result != null)
             {
+                if (!await CanCurrentUserAccessEvaluationEmployeeAsync(result.EmployeeId))
+                {
+                    return Forbid();
+                }
+
                 var employee = await _context.Employees.FindAsync(result.EmployeeId);
                 var period = await _context.EvaluationPeriods.FindAsync(result.PeriodId);
                 string auditInfo = $"Xóa kết quả đánh giá: {employee?.FullName} - {period?.PeriodName} - Điểm: {result.TotalScore?.ToString("0.#")} ({result.Classification})";
@@ -370,6 +394,37 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 a.DepartmentId.HasValue &&
                 managedDeptIds.Contains(a.DepartmentId.Value) &&
                 a.IsActive == true);
+        }
+
+        private async Task<List<Employee>> GetEvaluationAssignableEmployeesAsync()
+        {
+            var query = _context.Employees.Where(e => e.IsActive == true);
+            if (AccessScopeHelper.IsManagerScoped(User))
+            {
+                var manager = await GetCurrentEmployeeAsync();
+                var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, manager);
+                var managedEmployeeIds = await AccessScopeHelper.GetEmployeeIdsInDepartmentsAsync(_context, managedDepartmentIds);
+                query = managedEmployeeIds.Any()
+                    ? query.Where(e => managedEmployeeIds.Contains(e.Id))
+                    : query.Where(e => false);
+            }
+
+            return await query.OrderBy(e => e.FullName).ToListAsync();
+        }
+
+        private async Task<bool> CanCurrentUserAccessEvaluationEmployeeAsync(int? employeeId)
+        {
+            if (!employeeId.HasValue)
+            {
+                return false;
+            }
+
+            if (!AccessScopeHelper.IsManagerScoped(User))
+            {
+                return true;
+            }
+
+            return await AccessScopeHelper.CanManageEmployeeAsync(_context, User, employeeId.Value);
         }
 
         private bool CanReviewEvaluation(Employee? reviewer)

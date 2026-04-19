@@ -62,6 +62,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
         | ForwardedHeaders.XForwardedProto
         | ForwardedHeaders.XForwardedHost;
+    options.ForwardLimit = builder.Configuration.GetValue<int?>("ForwardedHeaders:ForwardLimit") ?? 1;
 
     var knownProxies = builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? Array.Empty<string>();
     if (knownProxies.Length > 0)
@@ -74,11 +75,20 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
             if (IPAddress.TryParse(proxy, out var ipAddress))
             {
                 options.KnownProxies.Add(ipAddress);
+                continue;
             }
+
+            throw new InvalidOperationException($"Invalid ForwardedHeaders:KnownProxies value: '{proxy}'. Use a valid IP address.");
         }
     }
 
-    if (builder.Configuration.GetValue<bool>("ForwardedHeaders:TrustAllProxies"))
+    var trustAllProxies = builder.Configuration.GetValue<bool>("ForwardedHeaders:TrustAllProxies");
+    if (trustAllProxies && !builder.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException("ForwardedHeaders:TrustAllProxies is only allowed in Development. Configure ForwardedHeaders:KnownProxies for production.");
+    }
+
+    if (trustAllProxies)
     {
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
@@ -156,26 +166,37 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ClientSecret = builder.Configuration["GOOGLE_CLIENT_SECRET"] ?? string.Empty;
     });
 
+var defaultConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(defaultConnectionString))
+{
+    throw new InvalidOperationException("Missing database connection string. Set ConnectionStrings__DefaultConnection in the environment, .env, user-secrets, or the hosting provider secret store.");
+}
+
 builder.Services.AddDbContext<MiniERPDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(defaultConnectionString));
 builder.Services.AddScoped<IClaimsTransformation, PermissionClaimsTransformation>();
 
 var app = builder.Build();
 
-// Tự chạy migration khi app khởi động
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
+var runMigrationsOnStartup = builder.Configuration.GetValue<bool?>("Database:RunMigrationsOnStartup")
+    ?? app.Environment.IsDevelopment();
 
-    try
+if (runMigrationsOnStartup)
+{
+    using (var scope = app.Services.CreateScope())
     {
-        var dbContext = services.GetRequiredService<MiniERPDbContext>();
-        dbContext.Database.Migrate();
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("Database migration failed: " + ex);
-        throw;
+        var services = scope.ServiceProvider;
+
+        try
+        {
+            var dbContext = services.GetRequiredService<MiniERPDbContext>();
+            dbContext.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Database migration failed: " + ex);
+            throw;
+        }
     }
 }
 

@@ -179,11 +179,13 @@ namespace Manage_KPI_or_OKR_System.Services
                 return;
             }
 
+            var executableKpiStatusIds = await _context.GetExecutableKpiStatusIdsAsync();
             var kpis = await _context.KPIs
                 .AsNoTracking()
                 .Where(k => kpiIds.Contains(k.Id) &&
                             k.IsActive == true &&
-                            (k.StatusId == null || (k.StatusId != 0 && k.StatusId != 2)))
+                            k.StatusId.HasValue &&
+                            executableKpiStatusIds.Contains(k.StatusId.Value))
                 .ToListAsync(cancellationToken);
             if (!kpis.Any())
             {

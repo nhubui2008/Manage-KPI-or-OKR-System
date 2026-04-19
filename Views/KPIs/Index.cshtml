@@ -1,4 +1,5 @@
 @model IEnumerable<Manage_KPI_or_OKR_System.Models.KPI>
+@using Manage_KPI_or_OKR_System.Helpers
 @{
     ViewData["Title"] = "Danh mục KPI";
 
@@ -17,6 +18,9 @@
     var okrNamesDict = ViewBag.OKRNames as Dictionary<int, string> ?? new Dictionary<int, string>();
     var okrKeyResultNamesDict = ViewBag.OKRKeyResultNames as Dictionary<int, string> ?? new Dictionary<int, string>();
     var latestProgress = ViewBag.LatestProgress as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
+    var kpiStatuses = ViewBag.KPIStatuses as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var executableKpiStatusIds = (ViewBag.ExecutableKpiStatusIds as List<int> ?? new List<int>()).ToHashSet();
+    var pendingKpiStatusId = ViewBag.PendingKpiStatusId as int?;
     var allocatedKpiCount = Model?.Count(k => assignments.ContainsKey(k.Id) || departmentAssignments.ContainsKey(k.Id)) ?? 0;
     var measurementUnits = new[] {
         new { Value = "%", Text = "% - Tỷ lệ phần trăm" },
@@ -35,44 +39,55 @@
         new { Value = "Công việc", Text = "Công việc" }
     };
 
-    // Helper: Map StatusId to display info
+    string GetBaseStatusName(int? statusId) => WorkflowStatusHelper.ResolveKpiStatusName(statusId, kpiStatuses);
+
+    // Helper: Map workflow status to display info
     string GetStatusName(int? statusId, decimal? progress) {
-        return statusId switch {
-            0 or null => "Chờ duyệt",
-            1 => progress.HasValue ? $"Đã duyệt ({progress:F0}%)" : "Đã duyệt",
-            2 => "Từ chối",
-            3 => $"Đang thực hiện ({progress ?? 0:F0}%)",
-            4 => $"Hoàn thành ({progress ?? 100:F0}%)",
-            5 => $"Gần đạt ({progress ?? 0:F0}%)",
-            6 => $"Không đạt ({progress ?? 0:F0}%)",
-            _ => "Không xác định"
-        };
+        var statusName = GetBaseStatusName(statusId);
+        var showProgress = progress.HasValue && (
+            statusName == WorkflowStatusHelper.KpiInProgress ||
+            statusName == WorkflowStatusHelper.KpiNearTarget ||
+            statusName == WorkflowStatusHelper.KpiCompleted ||
+            statusName == WorkflowStatusHelper.KpiMissed);
+        return showProgress ? $"{statusName} ({progress:F0}%)" : statusName;
     }
 
     string GetStatusClass(int? statusId) {
-        return statusId switch {
-            0 or null => "bg-warning-subtle text-warning-emphasis",
-            1 => "bg-info-subtle text-info-emphasis",
-            2 => "bg-danger-subtle text-danger-emphasis",
-            3 => "bg-primary-subtle text-primary-emphasis",
-            4 => "bg-success-subtle text-success-emphasis",
-            5 => "bg-success bg-opacity-10 text-success",
-            6 => "bg-danger bg-opacity-10 text-danger",
+        return GetBaseStatusName(statusId) switch {
+            WorkflowStatusHelper.KpiDraft => "bg-secondary-subtle text-secondary-emphasis",
+            WorkflowStatusHelper.KpiPendingApproval => "bg-warning-subtle text-warning-emphasis",
+            WorkflowStatusHelper.KpiInProgress => "bg-primary-subtle text-primary-emphasis",
+            WorkflowStatusHelper.KpiNearTarget => "bg-info-subtle text-info-emphasis",
+            WorkflowStatusHelper.KpiCompleted => "bg-success-subtle text-success-emphasis",
+            WorkflowStatusHelper.KpiMissed => "bg-danger bg-opacity-10 text-danger",
+            WorkflowStatusHelper.KpiRejected => "bg-danger-subtle text-danger-emphasis",
+            WorkflowStatusHelper.KpiCanceled => "bg-dark-subtle text-dark-emphasis",
             _ => "bg-secondary-subtle text-secondary-emphasis"
         };
     }
 
     string GetStatusIcon(int? statusId) {
-        return statusId switch {
-            0 or null => "bi-clock-fill",
-            1 => "bi-check-circle-fill",
-            2 => "bi-x-circle-fill",
-            3 => "bi-arrow-repeat",
-            4 => "bi-trophy-fill",
-            5 => "bi-arrow-up-circle-fill",
-            6 => "bi-exclamation-triangle-fill",
+        return GetBaseStatusName(statusId) switch {
+            WorkflowStatusHelper.KpiDraft => "bi-file-earmark-text",
+            WorkflowStatusHelper.KpiPendingApproval => "bi-clock-fill",
+            WorkflowStatusHelper.KpiInProgress => "bi-arrow-repeat",
+            WorkflowStatusHelper.KpiNearTarget => "bi-graph-up-arrow",
+            WorkflowStatusHelper.KpiCompleted => "bi-trophy-fill",
+            WorkflowStatusHelper.KpiMissed => "bi-exclamation-triangle-fill",
+            WorkflowStatusHelper.KpiRejected => "bi-x-circle-fill",
+            WorkflowStatusHelper.KpiCanceled => "bi-slash-circle-fill",
             _ => "bi-question-circle"
         };
+    }
+
+    bool CanCheckIn(int? statusId) => statusId.HasValue && executableKpiStatusIds.Contains(statusId.Value);
+    bool IsPendingKpi(int? statusId) => !statusId.HasValue || statusId == 0 || (pendingKpiStatusId.HasValue && statusId == pendingKpiStatusId.Value);
+    bool ShouldShowProgress(int? statusId) {
+        var name = GetBaseStatusName(statusId);
+        return name == WorkflowStatusHelper.KpiInProgress ||
+               name == WorkflowStatusHelper.KpiNearTarget ||
+               name == WorkflowStatusHelper.KpiCompleted ||
+               name == WorkflowStatusHelper.KpiMissed;
     }
 
     string GetProgressColor(decimal progress) {
@@ -313,7 +328,7 @@
                                             <i class="bi @statusIcon me-1"></i>
                                             @statusName
                                         </span>
-                                        @if (kpiProgress.HasValue && kpi.StatusId >= 3)
+                                        @if (kpiProgress.HasValue && ShouldShowProgress(kpi.StatusId))
                                         {
                                             <div class="progress" style="height: 5px; border-radius: 3px; width: 100%;">
                                                 <div class="progress-bar bg-@GetProgressColor(kpiProgress.Value)"
@@ -333,7 +348,7 @@
                                             <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 animate__animated animate__fadeIn animate__faster" style="z-index: 1060; min-width: 180px;">
                                                  <li><a class="dropdown-item py-2" asp-action="Details" asp-route-id="@kpi.Id"><i class="bi bi-info-circle text-primary me-2"></i> Chi tiết</a></li>
 
-                                                 @if (kpi.StatusId == 1 || kpi.StatusId >= 3)
+                                                 @if (CanCheckIn(kpi.StatusId))
                                                  {
                                                      <li><a class="dropdown-item py-2 text-success fw-bold" asp-controller="KPICheckIns" asp-action="Create" asp-route-kpiId="@kpi.Id"><i class="bi bi-calendar-check me-2"></i> Thực hiện Check-in</a></li>
                                                  }
@@ -344,7 +359,7 @@
                                                      <li><a class="dropdown-item py-2" asp-action="AllocatePersonnel" asp-route-id="@kpi.Id" data-legacy-onclick="openAssignPersonnelModal(@kpi.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kpi.KPIName ?? ""))', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assignedEmployees).Replace("\"", "&quot;")))"><i class="bi bi-people text-info-emphasis me-2"></i> Phân bổ phòng ban/nhân sự</a></li>
                                                  }
 
-                                                 @if ((User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager")) && (kpi.StatusId == 0 || kpi.StatusId == null))
+                                                 @if ((User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager")) && IsPendingKpi(kpi.StatusId))
                                                  {
                                                      <li><hr class="dropdown-divider"></li>
                                                      <li>

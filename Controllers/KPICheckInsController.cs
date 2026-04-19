@@ -59,8 +59,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
             var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
 
+            var executableKpiStatusIds = await _context.GetExecutableKpiStatusIdsAsync();
             var checkInQuery = _context.KPICheckIns.AsQueryable();
-            var kpiQuery = _context.KPIs.Where(k => k.IsActive == true && (k.StatusId == null || (k.StatusId != 0 && k.StatusId != 2)));
+            var kpiQuery = _context.KPIs.Where(k => k.IsActive == true &&
+                                                    k.StatusId.HasValue &&
+                                                    executableKpiStatusIds.Contains(k.StatusId.Value));
             var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
 
             // Phân quyền: Employee, Sales chỉ thấy dữ liệu của chính mình
@@ -99,6 +102,41 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 else
                 {
                     // Nếu không tìm thấy thông tin Employee tương ứng, không cho thấy gì
+                    checkInQuery = checkInQuery.Where(c => false);
+                    kpiQuery = kpiQuery.Where(k => false);
+                    employeeQuery = employeeQuery.Where(e => false);
+                }
+            }
+            else if (AccessScopeHelper.IsManagerScoped(User))
+            {
+                if (employee != null)
+                {
+                    var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, employee);
+                    var managedEmployeeIds = await AccessScopeHelper.GetEmployeeIdsInDepartmentsAsync(_context, managedDepartmentIds);
+                    var employeeAllocatedKpiIds = managedEmployeeIds.Any()
+                        ? await _context.KPI_Employee_Assignments
+                            .Where(a => managedEmployeeIds.Contains(a.EmployeeId) && (a.Status == null || a.Status == "Active"))
+                            .Select(a => a.KPIId)
+                            .ToListAsync()
+                        : new List<int>();
+                    var departmentAllocatedKpiIds = managedDepartmentIds.Any()
+                        ? await _context.KPI_Department_Assignments
+                            .Where(a => managedDepartmentIds.Contains(a.DepartmentId))
+                            .Select(a => a.KPIId)
+                            .ToListAsync()
+                        : new List<int>();
+                    var managedKpiIds = employeeAllocatedKpiIds.Concat(departmentAllocatedKpiIds).Distinct().ToList();
+
+                    checkInQuery = managedEmployeeIds.Any()
+                        ? checkInQuery.Where(c => c.EmployeeId.HasValue && managedEmployeeIds.Contains(c.EmployeeId.Value))
+                        : checkInQuery.Where(c => false);
+                    kpiQuery = kpiQuery.Where(k => managedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id || k.CreatedById == employee.Id);
+                    employeeQuery = managedEmployeeIds.Any()
+                        ? employeeQuery.Where(e => managedEmployeeIds.Contains(e.Id))
+                        : employeeQuery.Where(e => false);
+                }
+                else
+                {
                     checkInQuery = checkInQuery.Where(c => false);
                     kpiQuery = kpiQuery.Where(k => false);
                     employeeQuery = employeeQuery.Where(e => false);
@@ -332,7 +370,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
             var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
 
-            var kpiQuery = _context.KPIs.Where(k => k.IsActive == true && (k.StatusId == null || (k.StatusId != 0 && k.StatusId != 2)));
+            var executableKpiStatusIds = await _context.GetExecutableKpiStatusIdsAsync();
+            var kpiQuery = _context.KPIs.Where(k => k.IsActive == true &&
+                                                    k.StatusId.HasValue &&
+                                                    executableKpiStatusIds.Contains(k.StatusId.Value));
             var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
 
             bool isManager = User.IsInRole("Manager");
@@ -345,11 +386,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 if (employee != null)
                 {
-                    List<int> targetEmployeeIds = new List<int> { employee.Id };
-                    var targetDepartmentIds = await _context.EmployeeAssignments
-                        .Where(ea => ea.EmployeeId == employee.Id && ea.IsActive == true && ea.DepartmentId.HasValue)
-                        .Select(ea => ea.DepartmentId!.Value)
-                        .ToListAsync();
+                    List<int> targetEmployeeIds = new List<int>();
+                    List<int> targetDepartmentIds = new List<int>();
 
                     if (isManager)
                     {
@@ -383,6 +421,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             .ToListAsync();
 
                         targetDepartmentIds.AddRange(allDepartmentIds);
+                    }
+                    else
+                    {
+                        targetEmployeeIds.Add(employee.Id);
+                        var employeeDepartmentIds = await _context.EmployeeAssignments
+                            .Where(ea => ea.EmployeeId == employee.Id && ea.IsActive == true && ea.DepartmentId.HasValue)
+                            .Select(ea => ea.DepartmentId!.Value)
+                            .ToListAsync();
+                        targetDepartmentIds.AddRange(employeeDepartmentIds);
                     }
 
                     targetEmployeeIds = targetEmployeeIds.Distinct().ToList();
@@ -794,13 +841,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     ModelState.AddModelError(nameof(model.KPIId), "Nhân viên này chưa được phân bổ KPI được chọn.");
                 }
 
-                if (kpi.StatusId == 0)
+                var executableKpiStatusIds = await _context.GetExecutableKpiStatusIdsAsync();
+                if (!WorkflowStatusHelper.IsExecutableKpiStatus(kpi.StatusId, executableKpiStatusIds))
                 {
-                    ModelState.AddModelError(nameof(model.KPIId), "KPI đang chờ duyệt nên chưa thể check-in.");
-                }
-                else if (kpi.StatusId == 2)
-                {
-                    ModelState.AddModelError(nameof(model.KPIId), "KPI đã bị từ chối nên không thể check-in.");
+                    var kpiStatuses = await _context.GetKpiStatusNamesAsync();
+                    var currentStatus = WorkflowStatusHelper.ResolveKpiStatusName(kpi.StatusId, kpiStatuses);
+                    ModelState.AddModelError(nameof(model.KPIId), $"KPI đang ở trạng thái \"{currentStatus}\" nên chưa thể check-in. Chỉ KPI đang thực hiện hoặc gần đạt mới được cập nhật tiến độ.");
                 }
             }
 
@@ -904,12 +950,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         ? ProgressHelper.CalculateProgress(achievedValue, passThreshold, kpiDetail.IsInverse)
                         : progress;
 
-                    validatedKpi.StatusId = ResolveOverallKpiStatusId(progress, passProgress, kpiPeriod);
+                    validatedKpi.StatusId = await ResolveOverallKpiStatusIdAsync(progress, passProgress, kpiPeriod);
                 }
                 else
                 {
                     // Không có KPIDetail → mặc định "Đang thực hiện"
-                    validatedKpi.StatusId = 3;
+                    validatedKpi.StatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiInProgress);
                 }
 
                 // 4. TÍNH TỔNG ĐIỂM (TotalScore) THEO TRỌNG SỐ CÁC KPI TRONG CÙNG KỲ
@@ -1234,11 +1280,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var period = kpi.PeriodId.HasValue
                     ? await _context.EvaluationPeriods.FirstOrDefaultAsync(p => p.Id == kpi.PeriodId.Value)
                     : null;
-                kpi.StatusId = ResolveOverallKpiStatusId(progress, passProgress, period);
+                kpi.StatusId = await ResolveOverallKpiStatusIdAsync(progress, passProgress, period);
             }
             else
             {
-                kpi.StatusId = 3;
+                kpi.StatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiInProgress);
             }
 
             if (!checkIn.EmployeeId.HasValue)
@@ -1685,20 +1731,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return statusByName.GetValueOrDefault(CheckInStatusOnTrack, 1);
         }
 
-        private static int ResolveOverallKpiStatusId(decimal totalProgress, decimal passProgress, EvaluationPeriod? period)
+        private async Task<int?> ResolveOverallKpiStatusIdAsync(decimal totalProgress, decimal passProgress, EvaluationPeriod? period)
         {
             if (totalProgress >= 100m)
             {
-                return 4;
+                return await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiCompleted);
             }
 
             if (passProgress >= 100m || totalProgress >= 70m)
             {
-                return 5;
+                return await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiNearTarget);
             }
 
             var periodEnded = period?.EndDate.HasValue == true && DateTime.Now.Date > period.EndDate.Value.Date;
-            return periodEnded ? 6 : 3;
+            return await _context.GetKpiStatusIdAsync(periodEnded
+                ? WorkflowStatusHelper.KpiMissed
+                : WorkflowStatusHelper.KpiInProgress);
         }
 
         private static bool TryParseOptionalScore(string? rawScore, out decimal? score, out string? error)

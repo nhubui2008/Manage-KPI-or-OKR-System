@@ -33,9 +33,16 @@
             : null
     }));
 
-    int inTimeCount = Model.Count(c => c.StatusId == 1 || c.StatusId == null);
-    int riskCount = Model.Count(c => c.StatusId == 2);
-    int lateCount = Model.Count(c => c.StatusId == 3);
+    string CheckInStatusName(int? statusId) =>
+        statusId.HasValue && statusesDict.ContainsKey(statusId.Value)
+            ? statusesDict[statusId.Value]
+            : "Chờ cập nhật";
+    bool IsCheckInStatus(Manage_KPI_or_OKR_System.Models.KPICheckIn checkIn, string statusName) =>
+        string.Equals(CheckInStatusName(checkIn.StatusId), statusName, StringComparison.OrdinalIgnoreCase);
+
+    int inTimeCount = Model.Count(c => IsCheckInStatus(c, "Đúng tiến độ") || IsCheckInStatus(c, "Vượt tiến độ") || IsCheckInStatus(c, "Hoàn thành"));
+    int riskCount = Model.Count(c => IsCheckInStatus(c, "Gặp trở ngại"));
+    int lateCount = Model.Count(c => IsCheckInStatus(c, "Chậm tiến độ"));
     int totalCount = Model.Count();
     
     int inTimePct = totalCount > 0 ? (inTimeCount * 100) / totalCount : 0;
@@ -476,10 +483,20 @@
                             var reviewStatus = string.IsNullOrWhiteSpace(ci.ReviewStatus) ? "Approved" : ci.ReviewStatus;
                             var reviewer = (ci.ReviewedById.HasValue && employeesDict.ContainsKey(ci.ReviewedById.Value)) ? employeesDict[ci.ReviewedById.Value] : null;
 
-                            string badgeClass = ci.StatusId == 2 ? "badge-at-risk" : (ci.StatusId == 3 ? "badge-late" : "badge-on-track");
-                            string badgeText = ci.StatusId == 2 ? "At Risk" : (ci.StatusId == 3 ? "Late" : "On Track");
-                            if (progressVal < 40 && (ci.StatusId == 1 || ci.StatusId == null)) { badgeText = "Late"; badgeClass = "badge-late"; }
-                            else if (progressVal >= 95 && ci.StatusId != 1) { badgeText = "On Track"; badgeClass = "badge-on-track"; }
+                            var checkInStatusName = CheckInStatusName(ci.StatusId);
+                            string badgeClass = checkInStatusName == "Gặp trở ngại" ? "badge-at-risk" :
+                                                (checkInStatusName == "Chậm tiến độ" ? "badge-late" : "badge-on-track");
+                            string badgeText = checkInStatusName switch
+                            {
+                                "Gặp trở ngại" => "Gặp trở ngại",
+                                "Chậm tiến độ" => "Chậm tiến độ",
+                                "Vượt tiến độ" => "Vượt tiến độ",
+                                "Hoàn thành" => "Hoàn thành",
+                                "Đúng tiến độ" => "Đúng tiến độ",
+                                _ => "Chờ cập nhật"
+                            };
+                            if (progressVal < 40 && checkInStatusName == "Đúng tiến độ") { badgeText = "Cần chú ý"; badgeClass = "badge-late"; }
+                            else if (progressVal >= 95 && checkInStatusName != "Hoàn thành") { badgeText = "Đúng tiến độ"; badgeClass = "badge-on-track"; }
 
                             var comments = commentsByCheckIn.ContainsKey(ci.Id) ? commentsByCheckIn[ci.Id] : new List<Manage_KPI_or_OKR_System.Models.GoalComment>();
 

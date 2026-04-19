@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Security.Claims;
 using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Models.AI;
 using Manage_KPI_or_OKR_System.Services;
@@ -326,8 +327,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             try
             {
-                var suIdClaim = User.Claims.FirstOrDefault(c => c.Type == "SystemUserId");
-                if (suIdClaim != null && int.TryParse(suIdClaim.Value, out int suId))
+                var suIdValue = User.FindFirstValue("SystemUserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(suIdValue, out int suId))
                 {
                     var hist = new AIGenerationHistory
                     {
@@ -367,8 +368,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpGet]
         public async Task<IActionResult> History(string featureName, int? targetId)
         {
-            var systemUserIdClaim = User.Claims.FirstOrDefault(c => c.Type == "SystemUserId");
-            if (systemUserIdClaim == null || !int.TryParse(systemUserIdClaim.Value, out int systemUserId))
+            var systemUserIdValue = User.FindFirstValue("SystemUserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(systemUserIdValue, out int systemUserId))
             {
                 return Unauthorized();
             }

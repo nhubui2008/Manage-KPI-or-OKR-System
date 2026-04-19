@@ -35,6 +35,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewData["CurrentFilter"] = searchString;
             ViewData["PeriodId"] = periodId;
 
+            var executableKpiStatusIds = await _context.GetExecutableKpiStatusIdsAsync();
+            var hiddenOwnKpiStatusIds = await _context.GetStatusIdsAsync(
+                WorkflowStatusHelper.StatusTypeKpi,
+                new[] { WorkflowStatusHelper.KpiRejected, WorkflowStatusHelper.KpiCanceled });
+
             var query = _context.KPIs.Where(k => k.IsActive == true);
 
             // Filter by Search String
@@ -66,11 +71,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     currentEmployee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
                     if (currentEmployee != null)
                     {
-                        List<int> targetEmployeeIds = new List<int> { currentEmployee.Id };
-                        var targetDepartmentIds = await _context.EmployeeAssignments
-                            .Where(ea => ea.EmployeeId == currentEmployee.Id && ea.IsActive == true && ea.DepartmentId.HasValue)
-                            .Select(ea => ea.DepartmentId!.Value)
-                            .ToListAsync();
+                        List<int> targetEmployeeIds = new List<int>();
+                        List<int> targetDepartmentIds = new List<int>();
 
                         if (isManager)
                         {
@@ -105,6 +107,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                             targetDepartmentIds.AddRange(allDepartmentIds);
                         }
+                        else
+                        {
+                            targetEmployeeIds.Add(currentEmployee.Id);
+                            var employeeDepartmentIds = await _context.EmployeeAssignments
+                                .Where(ea => ea.EmployeeId == currentEmployee.Id && ea.IsActive == true && ea.DepartmentId.HasValue)
+                                .Select(ea => ea.DepartmentId!.Value)
+                                .ToListAsync();
+                            targetDepartmentIds.AddRange(employeeDepartmentIds);
+                        }
 
                         targetEmployeeIds = targetEmployeeIds.Distinct().ToList();
                         targetDepartmentIds = targetDepartmentIds.Distinct().ToList();
@@ -126,10 +137,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             .Distinct()
                             .ToList();
 
-                        // Hiển thị KPI nếu: (Được phân bổ VÀ đã duyệt/đang thực hiện) HOẶC (Là người tạo VÀ chưa bị từ chối)
+                        // Hiển thị KPI nếu thuộc phạm vi và đang có thể thực thi, hoặc KPI do chính người dùng tạo chưa bị đóng/từ chối.
                         query = query.Where(k =>
-                            (allocatedKpiIds.Contains(k.Id) && k.StatusId != 0 && k.StatusId != 2) ||
-                            (k.AssignerId == currentEmployee.Id && k.StatusId != 2)
+                            (allocatedKpiIds.Contains(k.Id) && k.StatusId.HasValue && executableKpiStatusIds.Contains(k.StatusId.Value)) ||
+                            (k.AssignerId == currentEmployee.Id && (!k.StatusId.HasValue || !hiddenOwnKpiStatusIds.Contains(k.StatusId.Value)))
                         );
                     }
                     else
@@ -187,6 +198,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Periods = periods;
             ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
             ViewBag.KPITypes = await _context.KPITypes.OrderBy(t => t.Id).ToListAsync();
+            ViewBag.KPIStatuses = await _context.GetKpiStatusNamesAsync();
+            ViewBag.ExecutableKpiStatusIds = executableKpiStatusIds;
+            ViewBag.PendingKpiStatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiPendingApproval);
             await PopulateOkrLinkViewBagAsync();
 
             // Lấy tiến độ mới nhất cho mỗi KPI (từ check-in gần nhất)
@@ -251,34 +265,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.LinkedOKRName = linkedOkr?.ObjectiveName;
             ViewBag.LinkedKeyResultName = linkedKeyResult?.KeyResultName;
 
-            // Security check for restricted roles
-            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+            // Scope check: Manager chỉ xem KPI trong phòng ban mình quản lý; Employee/Sales chỉ xem KPI liên quan đến chính mình.
+            if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, kpi))
             {
-                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (int.TryParse(userIdStr, out int userId))
-                {
-                    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
-                    if (employee != null)
-                    {
-                        var isAssigned = await _context.KPI_Employee_Assignments
-                            .AnyAsync(a => a.KPIId == id && a.EmployeeId == employee.Id && (a.Status == null || a.Status == "Active"));
-
-                        var employeeDepartmentIds = await _context.EmployeeAssignments
-                            .Where(a => a.EmployeeId == employee.Id && a.IsActive == true && a.DepartmentId.HasValue)
-                            .Select(a => a.DepartmentId!.Value)
-                            .ToListAsync();
-
-                        var isDepartmentAssigned = employeeDepartmentIds.Any() && await _context.KPI_Department_Assignments
-                            .AnyAsync(a => a.KPIId == id && employeeDepartmentIds.Contains(a.DepartmentId));
-
-                        if (!isAssigned && !isDepartmentAssigned && kpi.AssignerId != employee.Id) return Forbid();
-                    }
-                    else
-                    {
-                        return Forbid();
-                    }
-                }
+                return Forbid();
             }
 
             var detail = await _context.KPIDetails.FirstOrDefaultAsync(d => d.KPIId == id);
@@ -342,6 +332,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.DepartmentAssignments = assignedDepartments;
             ViewBag.RecentCheckIns = recentCheckIns;
             ViewBag.CheckInStatuses = checkInStatuses;
+            ViewBag.KPIStatuses = await _context.GetKpiStatusNamesAsync();
+            ViewBag.ExecutableKpiStatusIds = await _context.GetExecutableKpiStatusIdsAsync();
 
             // Calculate group progress: sum of latest achieved value of each assigned employee
             decimal totalGroupAchieved = 0;
@@ -407,8 +399,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             NormalizeDecimalFormValue("detail.FailThreshold", value => detail.FailThreshold = value);
             NormalizeCheckInScheduleDetail(detail);
 
-            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+            if (AccessScopeHelper.IsEmployeeOrSales(User))
                 return Forbid();
 
             if (id != kpi.Id) return NotFound();
@@ -417,6 +408,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 var existingKpi = await _context.KPIs.FindAsync(id);
                 if (existingKpi == null) return NotFound();
+                if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, existingKpi))
+                {
+                    return Forbid();
+                }
 
                 // Update base KPI
                 existingKpi.KPIName = kpi.KPIName;
@@ -481,7 +476,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 kpi.CreatedAt = DateTime.Now;
                 kpi.IsActive = true;
-                kpi.StatusId = null; // Mặc định: Chờ duyệt
+                kpi.StatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiPendingApproval);
 
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(userIdStr, out int userId))
@@ -520,6 +515,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             var kpi = await _context.KPIs.FirstOrDefaultAsync(k => k.Id == id && k.IsActive == true);
             if (kpi == null) return NotFound();
+            if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, kpi))
+            {
+                return Forbid();
+            }
 
             var detail = await _context.KPIDetails.FirstOrDefaultAsync(d => d.KPIId == id);
             var assignments = await _context.KPI_Employee_Assignments
@@ -530,9 +529,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Select(a => a.DepartmentId)
                 .ToListAsync();
 
+            var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
+            var departmentQuery = _context.Departments.Where(d => d.IsActive == true);
+            if (AccessScopeHelper.IsManagerScoped(User))
+            {
+                var manager = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
+                var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, manager);
+                var managedEmployeeIds = await AccessScopeHelper.GetEmployeeIdsInDepartmentsAsync(_context, managedDepartmentIds);
+                employeeQuery = employeeQuery.Where(e => managedEmployeeIds.Contains(e.Id));
+                departmentQuery = departmentQuery.Where(d => managedDepartmentIds.Contains(d.Id));
+            }
+
             // Fetch employees grouped by department
             var groupedEmployees = await (from e in _context.Employees
-                                        where e.IsActive == true
+                                        where employeeQuery.Select(x => x.Id).Contains(e.Id)
                                         join ea in _context.EmployeeAssignments.Where(a => a.IsActive == true) on e.Id equals ea.EmployeeId into eas
                                         from ea in eas.DefaultIfEmpty()
                                         join d in _context.Departments on ea.DepartmentId equals d.Id into ds
@@ -551,8 +561,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.KPIDetail = detail;
             ViewBag.Assignments = assignments.ToDictionary(a => a.EmployeeId, a => (a.Weight ?? 1m) * 100);
             ViewBag.DepartmentAssignments = departmentAssignments.ToHashSet();
-            ViewBag.Departments = await _context.Departments
-                .Where(d => d.IsActive == true)
+            ViewBag.Departments = await departmentQuery
                 .OrderBy(d => d.DepartmentName)
                 .ToListAsync();
             ViewBag.GroupedEmployees = groupedData;
@@ -575,6 +584,26 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var kpi = await _context.KPIs.FindAsync(kpiId);
             if (kpi == null) return NotFound();
+            if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, kpi))
+            {
+                return Forbid();
+            }
+
+            if (AccessScopeHelper.IsManagerScoped(User))
+            {
+                var manager = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
+                var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, manager);
+                var managedEmployeeIds = await AccessScopeHelper.GetEmployeeIdsInDepartmentsAsync(_context, managedDepartmentIds);
+                var requestedDepartmentIds = departmentIds?.Distinct().ToList() ?? new List<int>();
+                var requestedEmployeeIds = employeeIds?.Distinct().ToList() ?? new List<int>();
+
+                if (requestedDepartmentIds.Any(id => !managedDepartmentIds.Contains(id)) ||
+                    requestedEmployeeIds.Any(id => !managedEmployeeIds.Contains(id)))
+                {
+                    TempData["ErrorMessage"] = "Manager chỉ được phân bổ KPI cho phòng ban hoặc nhân viên mình quản lý.";
+                    return RedirectBack(returnUrl, kpiId);
+                }
+            }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -775,7 +804,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var kpi = await _context.KPIs.FindAsync(id);
             if (kpi != null)
             {
-                kpi.StatusId = 1; // Đã duyệt
+                if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, kpi))
+                {
+                    return Forbid();
+                }
+
+                kpi.StatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiInProgress);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = $"Đã phê duyệt KPI: {kpi.KPIName}!";
             }
@@ -789,7 +823,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var kpi = await _context.KPIs.FindAsync(id);
             if (kpi != null)
             {
-                kpi.StatusId = 2; // Từ chối
+                if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, kpi))
+                {
+                    return Forbid();
+                }
+
+                kpi.StatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiRejected);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = $"Đã từ chối KPI: {kpi.KPIName}!";
             }
@@ -807,6 +846,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var kpi = await _context.KPIs.FindAsync(id);
             if (kpi != null)
             {
+                if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, kpi))
+                {
+                    return Forbid();
+                }
+
                 kpi.IsActive = false;
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã xóa (vô hiệu hóa) KPI!";
@@ -928,6 +972,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.OKRKeyResults = keyResults;
             ViewBag.OKRNames = okrs.ToDictionary(o => o.Id, o => o.ObjectiveName ?? "N/A");
             ViewBag.OKRKeyResultNames = keyResults.ToDictionary(kr => kr.Id, kr => kr.KeyResultName ?? "N/A");
+        }
+
+        private IActionResult RedirectBack(string? returnUrl, int kpiId)
+        {
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return LocalRedirect(returnUrl);
+            }
+
+            return RedirectToAction(nameof(Details), new { id = kpiId });
         }
     }
 }

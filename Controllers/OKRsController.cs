@@ -353,11 +353,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 });
             }
 
+            var existingEmployees = await _context.OKR_Employee_Allocations
+                .Where(e => e.OKRId == model.Id)
+                .ToListAsync();
             if (employeeId.HasValue)
             {
-                var employeeAllocationExists = await _context.OKR_Employee_Allocations
-                    .AnyAsync(e => e.OKRId == model.Id && e.EmployeeId == employeeId.Value);
-                if (!employeeAllocationExists)
+                _context.OKR_Employee_Allocations.RemoveRange(existingEmployees.Where(e => e.EmployeeId != employeeId.Value));
+                if (!existingEmployees.Any(e => e.EmployeeId == employeeId.Value))
                 {
                     _context.OKR_Employee_Allocations.Add(new OKR_Employee_Allocation
                     {
@@ -366,6 +368,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         AllocatedValue = 0
                     });
                 }
+            }
+            else
+            {
+                _context.OKR_Employee_Allocations.RemoveRange(existingEmployees);
             }
 
             await _context.SaveChangesAsync();
@@ -443,8 +449,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
 
                 // Luu vao lich su (AIGenerationHistories)
-                var suIdClaim = User.Claims.FirstOrDefault(c => c.Type == "SystemUserId");
-                if (suIdClaim != null && int.TryParse(suIdClaim.Value, out int suId))
+                var suIdValue = User.FindFirstValue("SystemUserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(suIdValue, out int suId))
                 {
                     _context.AIGenerationHistories.Add(new AIGenerationHistory
                     {
@@ -467,7 +473,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        [IgnoreAntiforgeryToken]
         [HasPermission("OKRS_CREATE")]
         public async Task<IActionResult> AddMultipleKeyResults([FromBody] List<OKRKeyResult> keyResults)
         {
@@ -707,11 +712,77 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpGet("Tree")]
         public async Task<IActionResult> GetTree()
         {
-            var missions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
-            var okrs = await _context.OKRs.Where(o => o.IsActive == true).Include(o => o.KeyResults).ToListAsync();
-            var missionMappings = await _context.OKR_Mission_Mappings.ToListAsync();
-            var deptAllocations = await _context.OKR_Department_Allocations.ToListAsync();
-            var depts = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
+            var okrQuery = _context.OKRs.Where(o => o.IsActive == true).Include(o => o.KeyResults).AsQueryable();
+            var currentEmployee = await GetCurrentEmployeeAsync();
+
+            if (IsManagerScopedRole())
+            {
+                if (currentEmployee == null)
+                {
+                    okrQuery = okrQuery.Where(o => false);
+                }
+                else
+                {
+                    var managedDepartmentIds = await GetManagedDepartmentIdsAsync(currentEmployee);
+                    var managedEmployeeIds = await GetEmployeeIdsInDepartmentsAsync(managedDepartmentIds);
+                    var managerDepartmentOkrIds = managedDepartmentIds.Any()
+                        ? await _context.OKR_Department_Allocations
+                            .AsNoTracking()
+                            .Where(a => managedDepartmentIds.Contains(a.DepartmentId))
+                            .Select(a => a.OKRId)
+                            .ToListAsync()
+                        : new List<int>();
+                    var managerEmployeeOkrIds = managedEmployeeIds.Any()
+                        ? await _context.OKR_Employee_Allocations
+                            .AsNoTracking()
+                            .Where(a => managedEmployeeIds.Contains(a.EmployeeId))
+                            .Select(a => a.OKRId)
+                            .ToListAsync()
+                        : new List<int>();
+                    var managerVisibleOkrIds = managerDepartmentOkrIds.Concat(managerEmployeeOkrIds).Distinct().ToList();
+                    okrQuery = okrQuery.Where(o => managerVisibleOkrIds.Contains(o.Id) || o.CreatedById == currentEmployee.Id);
+                }
+            }
+            else if (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                     User.IsInRole("Sales") || User.IsInRole("sales"))
+            {
+                if (currentEmployee == null)
+                {
+                    okrQuery = okrQuery.Where(o => false);
+                }
+                else
+                {
+                    var allocatedOkrIds = await _context.OKR_Employee_Allocations
+                        .AsNoTracking()
+                        .Where(a => a.EmployeeId == currentEmployee.Id)
+                        .Select(a => a.OKRId)
+                        .ToListAsync();
+                    var departmentIds = await _context.EmployeeAssignments
+                        .AsNoTracking()
+                        .Where(a => a.EmployeeId == currentEmployee.Id && a.IsActive == true && a.DepartmentId.HasValue)
+                        .Select(a => a.DepartmentId!.Value)
+                        .ToListAsync();
+                    var departmentOkrIds = departmentIds.Any()
+                        ? await _context.OKR_Department_Allocations
+                            .AsNoTracking()
+                            .Where(a => departmentIds.Contains(a.DepartmentId))
+                            .Select(a => a.OKRId)
+                            .ToListAsync()
+                        : new List<int>();
+                    var employeeVisibleOkrIds = allocatedOkrIds.Concat(departmentOkrIds).Distinct().ToList();
+                    okrQuery = okrQuery.Where(o => employeeVisibleOkrIds.Contains(o.Id) || o.CreatedById == currentEmployee.Id);
+                }
+            }
+
+            var okrs = await okrQuery.ToListAsync();
+            var visibleTreeOkrIds = okrs.Select(o => o.Id).ToList();
+            var missionMappings = await _context.OKR_Mission_Mappings
+                .Where(m => visibleTreeOkrIds.Contains(m.OKRId))
+                .ToListAsync();
+            var missionIds = missionMappings.Select(m => m.MissionId).Distinct().ToList();
+            var missions = await _context.MissionVisions
+                .Where(m => m.IsActive == true && missionIds.Contains(m.Id))
+                .ToListAsync();
 
             var tree = new List<object>();
 

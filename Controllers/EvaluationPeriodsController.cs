@@ -21,7 +21,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .OrderByDescending(p => p.StartDate)
                 .ToListAsync();
 
-            var statuses = await _context.Statuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
+            var statuses = await _context.Statuses
+                .Where(s => s.StatusType == WorkflowStatusHelper.StatusTypeEvaluationPeriod)
+                .ToDictionaryAsync(s => s.Id, s => s.StatusName);
             ViewBag.Statuses = statuses;
             ViewBag.CanCreatePeriod = await PermissionLookupHelper.HasPermissionAsync(_context, User, "EVALPERIODS_CREATE");
             ViewBag.CanEditPeriod = await PermissionLookupHelper.HasPermissionAsync(_context, User, "EVALPERIODS_EDIT");
@@ -42,7 +44,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("EVALPERIODS_CREATE")]
         public async Task<IActionResult> Create()
         {
-            var statuses = await _context.Statuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
+            var statuses = await _context.Statuses
+                .Where(s => s.StatusType == WorkflowStatusHelper.StatusTypeEvaluationPeriod)
+                .ToDictionaryAsync(s => s.Id, s => s.StatusName);
             ViewBag.Statuses = statuses;
             return View();
         }
@@ -68,7 +72,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return RedirectToAction(nameof(Index));
             }
             
-            var statuses = await _context.Statuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
+            var statuses = await _context.Statuses
+                .Where(s => s.StatusType == WorkflowStatusHelper.StatusTypeEvaluationPeriod)
+                .ToDictionaryAsync(s => s.Id, s => s.StatusName);
             ViewBag.Statuses = statuses;
             return View(model);
         }

@@ -448,6 +448,30 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
 
             var employees = new List<Employee>();
             var errors = new List<string>();
+            var reservedEmployeeCodes = new HashSet<string>(
+                await _context.Employees
+                    .Where(e => e.EmployeeCode != null)
+                    .Select(e => e.EmployeeCode!)
+                    .ToListAsync(),
+                StringComparer.OrdinalIgnoreCase);
+            var nextEmployeeNumber = reservedEmployeeCodes
+                .Where(code => code.StartsWith("EMP", StringComparison.OrdinalIgnoreCase) && code.Length > 3)
+                .Select(code => int.TryParse(code.Substring(3), out var number) ? number : 0)
+                .DefaultIfEmpty(0)
+                .Max() + 1;
+
+            string GenerateReservedEmployeeCode()
+            {
+                string code;
+                do
+                {
+                    code = $"EMP{nextEmployeeNumber:D3}";
+                    nextEmployeeNumber++;
+                }
+                while (!reservedEmployeeCodes.Add(code));
+
+                return code;
+            }
 
             try
             {
@@ -496,21 +520,18 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
                                     continue;
                                 }
 
-                                // Kiểm tra trùng lặp mã nhân viên
+                                // Kiểm tra trùng lặp mã nhân viên trong DB và trong chính file import
                                 if (!string.IsNullOrEmpty(employee.EmployeeCode))
                                 {
-                                    var existingEmployee = await _context.Employees
-                                        .FirstOrDefaultAsync(e => e.EmployeeCode == employee.EmployeeCode);
-                                    if (existingEmployee != null)
+                                    if (!reservedEmployeeCodes.Add(employee.EmployeeCode))
                                     {
-                                        errors.Add($"Dòng {row}: Mã nhân viên '{employee.EmployeeCode}' đã tồn tại!");
+                                        errors.Add($"Dòng {row}: Mã nhân viên '{employee.EmployeeCode}' đã tồn tại hoặc bị lặp trong file import!");
                                         continue;
                                     }
                                 }
                                 else
                                 {
-                                    // Tự động sinh mã nếu không có
-                                    employee.EmployeeCode = await _codeGenerator.GenerateEmployeeCodeAsync();
+                                    employee.EmployeeCode = GenerateReservedEmployeeCode();
                                 }
 
                                 employees.Add(employee);

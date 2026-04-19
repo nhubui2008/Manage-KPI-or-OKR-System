@@ -89,6 +89,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim("SystemUserId", user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username ?? "Unknown"),
                 new Claim(ClaimTypes.Role, roleName)
             };
@@ -514,6 +515,7 @@ public async Task<IActionResult> GoogleResponse()
     var claims = new List<Claim>
     {
         new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+        new Claim("SystemUserId", user.Id.ToString()),
         new Claim(ClaimTypes.Name, user.Username ?? "Unknown"),
         new Claim(ClaimTypes.Role, roleName),
         new Claim(ClaimTypes.Email, email)
