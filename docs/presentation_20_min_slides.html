@@ -364,6 +364,7 @@
       border-collapse: collapse;
       margin: 6px 0;
       font-size: 0.78rem;
+      flex: 0 0 auto;
     }
 
     th,
@@ -378,6 +379,35 @@
       background: var(--soft-teal);
       color: #15443f;
       font-weight: 800;
+    }
+
+    .talk-note {
+      margin: 0;
+      padding: 7px 10px;
+      border-left: 4px solid var(--coral);
+      border-radius: var(--radius);
+      background: var(--soft-coral);
+      color: #4a2719;
+      font-size: 0.72rem;
+      line-height: 1.28;
+      flex: 0 0 auto;
+    }
+
+    .talk-note strong {
+      color: #7c2d12;
+      font-weight: 850;
+    }
+
+    .talk-note.conclusion {
+      border-left-color: var(--teal);
+      background: var(--soft-teal);
+      color: #164e48;
+      font-size: 0.76rem;
+      font-weight: 650;
+    }
+
+    .talk-note.conclusion strong {
+      color: var(--teal);
     }
 
     .toolbar {
@@ -413,6 +443,17 @@
     .toolbar a:hover {
       background: var(--soft-green);
       border-color: #a9d8b4;
+    }
+
+    .toolbar .present-button {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #ffffff;
+    }
+
+    .toolbar .present-button:hover {
+      background: #115e59;
+      border-color: #115e59;
     }
 
     .counter {
@@ -470,6 +511,66 @@
 
     .deck.nav-hidden .nav-toggle {
       bottom: 16px;
+    }
+
+    .deck.presentation-mode .nav-toggle {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .speaker-panel {
+      position: fixed;
+      z-index: 50;
+      right: 18px;
+      bottom: 84px;
+      width: min(460px, calc(100vw - 36px));
+      max-height: min(58vh, 520px);
+      overflow: auto;
+      border: 1px solid rgba(15, 118, 110, 0.28);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 16px 44px rgba(24, 35, 31, 0.18);
+      padding: 14px;
+    }
+
+    .speaker-panel[hidden] {
+      display: none;
+    }
+
+    .speaker-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .speaker-panel-title {
+      color: var(--teal);
+      font-weight: 850;
+      font-size: 0.9rem;
+    }
+
+    .speaker-panel button {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 750;
+      padding: 6px 9px;
+    }
+
+    .speaker-panel p {
+      margin: 0;
+      color: var(--ink);
+      font-size: 0.9rem;
+      line-height: 1.48;
+      white-space: pre-line;
+    }
+
+    .deck.nav-hidden .speaker-panel {
+      bottom: 18px;
     }
 
     .accent-teal {
@@ -634,7 +735,8 @@
         display: none;
       }
 
-      .nav-toggle {
+      .nav-toggle,
+      .speaker-panel {
         display: none;
       }
     }
@@ -670,6 +772,8 @@ flowchart LR
     E --> F["Tester<br/>Chất lượng"]
               </pre>
             </div>
+            <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Mở đầu bằng tên đề tài, nhấn mạnh hệ thống số hóa
+              trọn vòng đời KPI/OKR và giới thiệu 6 vai trò trình bày.</p>
           </div>
         </div>
       </section>
@@ -713,6 +817,8 @@ flowchart LR
     F --> K["Phân quyền theo vai trò"]
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Nêu vấn đề Excel/file rời, dữ liệu phân tán và lý do
+            doanh nghiệp cần một hệ thống tập trung, minh bạch.</p>
         </div>
       </section>
 
@@ -757,6 +863,8 @@ flowchart LR
     F --> G["Dashboard / Report / AI Insights"]
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Nhấn mạnh hệ thống phù hợp doanh nghiệp nhiều phòng
+            ban, nhiều vai trò và vận hành theo kỳ đánh giá.</p>
         </div>
       </section>
 
@@ -790,13 +898,15 @@ flowchart LR
             <pre class="mermaid">
 flowchart LR
     Root["VietMach KPI/OKR"]
-    Root --> A["Nền tảng<br/>User, Role/Permission, Department, Employee"]
-    Root --> B["OKR<br/>Mission/Vision, OKR, Key Result"]
-    Root --> C["KPI<br/>Assignment, Check-in, Review"]
-    Root --> D["Evaluation<br/>Score, Rank, Bonus"]
-    Root --> E["Report/AI<br/>Dashboard, Excel, Smart Alerts"]
+    Root --> A["Nền tảng\nUser, Role/Permission, Department, Employee"]
+    Root --> B["OKR\nMission/Vision, OKR, Key Result"]
+    Root --> C["KPI\nAssignment, Check-in, Review"]
+    Root --> D["Evaluation\nScore, Rank, Bonus"]
+    Root --> E["Report/AI\nDashboard, Excel, Smart Alerts"]
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Tóm tắt chức năng theo nhóm: nền tảng, OKR, KPI,
+            check-in, đánh giá, báo cáo và AI.</p>
         </div>
       </section>
 
@@ -840,6 +950,8 @@ flowchart LR
     I --> A
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> SM trình bày cách nhóm chia sprint, phát triển, review
+            và chỉ đóng task khi đạt Definition of Done.</p>
         </div>
       </section>
 
@@ -878,14 +990,16 @@ flowchart LR
           <div class="diagram">
             <pre class="mermaid">
 flowchart LR
-    A["Backlog<br/>Yêu cầu chưa làm"] --> B["To Do<br/>Chọn cho sprint"]
-    B --> C["In Progress<br/>Đang phát triển"]
-    C --> D["Review<br/>Chờ review"]
-    D --> E["Testing<br/>Tester kiểm tra"]
-    E --> F["Done<br/>Hoàn thành"]
+    A["Backlog\nYêu cầu chưa làm"] --> B["To Do\nChọn cho sprint"]
+    B --> C["In Progress\nĐang phát triển"]
+    C --> D["Review\nChờ review"]
+    D --> E["Testing\nTester kiểm tra"]
+    E --> F["Done\nHoàn thành"]
     E -- "Có lỗi" --> C
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Giải thích Trello giúp theo dõi trạng thái task, Git
+            giúp kiểm soát lịch sử code và phối hợp nhóm.</p>
         </div>
       </section>
 
@@ -928,6 +1042,8 @@ flowchart LR
     E -- "Có" --> F["Done"]
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Nhấn mạnh tiêu chuẩn hoàn thành gồm chạy được, đúng
+            nghiệp vụ, đúng phân quyền, có validation và test pass.</p>
         </div>
       </section>
 
@@ -994,6 +1110,8 @@ flowchart LR
     Employee --> ReportAI
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Đi từ tác nhân sang module để thấy mỗi vai trò chỉ
+            truy cập đúng nhóm chức năng được phân quyền.</p>
         </div>
       </section>
 
@@ -1022,6 +1140,8 @@ flowchart LR
     G --> H
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Đây là luồng chính: chiến lược tạo OKR/KPI, nhân viên
+            check-in, quản lý duyệt, hệ thống tính điểm và xuất báo cáo.</p>
         </div>
       </section>
 
@@ -1040,6 +1160,8 @@ flowchart LR
     Dashboard --> Admin["Admin<br/>Roles / Users / Catalog / AuditLogs"]
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Mỗi vai trò bắt đầu từ Dashboard nhưng đi tới các
+            màn hình khác nhau theo quyền và nhiệm vụ nghiệp vụ.</p>
         </div>
       </section>
 
@@ -1064,6 +1186,8 @@ flowchart LR
     DA --> DB["SQL Server"]
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Tách hai góc nhìn: nhóm chức năng nghiệp vụ và cấu
+            trúc kỹ thuật từ giao diện xuống cơ sở dữ liệu.</p>
         </div>
       </section>
 
@@ -1106,6 +1230,8 @@ flowchart LR
     D --> J["AI Chat Widget"]
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Nhấn mạnh phong cách enterprise: rõ dữ liệu, dễ thao
+            tác, menu theo permission và phản hồi trạng thái bằng alert.</p>
         </div>
       </section>
 
@@ -1138,6 +1264,8 @@ flowchart LR
               </pre>
             </div>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Trình bày theo hành trình người dùng từ đăng nhập,
+            xem dashboard, quản lý KPI/OKR, check-in, review đến báo cáo.</p>
         </div>
       </section>
 
@@ -1179,6 +1307,8 @@ stateDiagram-v2
     Ignored --> [*]
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Giải thích các trạng thái giúp người dùng biết dữ
+            liệu đang chờ duyệt, đã duyệt, bị từ chối hay đã tính điểm.</p>
         </div>
       </section>
 
@@ -1220,6 +1350,8 @@ flowchart LR
     Services --> External["Gemini API / SMTP"]
             </pre>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Backend đi từ Browser vào MVC Controller, xử lý qua
+            service, lưu bằng EF Core/SQL Server và tích hợp Gemini/SMTP.</p>
         </div>
       </section>
 
@@ -1260,6 +1392,8 @@ flowchart LR
               </pre>
             </div>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Dữ liệu xoay quanh user/employee, OKR/KPI, check-in,
+            evaluation; AI chỉ dùng dữ liệu đã lọc theo quyền.</p>
         </div>
       </section>
 
@@ -1291,6 +1425,8 @@ flowchart LR
               </pre>
             </div>
           </div>
+          <p class="talk-note"><strong>Gợi ý thuyết trình:</strong> Tester nhấn mạnh kiểm thử theo vai trò, phân quyền,
+            workflow end-to-end, báo cáo/export và fallback AI.</p>
         </div>
       </section>
 
@@ -1344,6 +1480,9 @@ flowchart LR
     G --> H["Dashboard / Report / AI"]
             </pre>
           </div>
+          <p class="talk-note conclusion"><strong>Kết luận:</strong> VietMach KPI/OKR System số hóa toàn bộ chu trình từ
+            chiến lược, thực thi, phê duyệt, đánh giá đến báo cáo và AI Insights; sau phần này chuyển sang demo theo 6
+            vai trò.</p>
         </div>
       </section>
     </div>
@@ -1355,9 +1494,18 @@ flowchart LR
       <div class="progress" aria-hidden="true">
         <div class="progress-fill" id="progressFill"></div>
       </div>
+      <button id="scriptToggle" type="button" aria-pressed="false">Lời thoại</button>
+      <button class="present-button" id="present" type="button">Trình chiếu</button>
       <button id="print" type="button">In/PDF</button>
     </nav>
     <button class="nav-toggle" id="navToggle" type="button" aria-pressed="false">Ẩn thanh</button>
+    <aside class="speaker-panel" id="speakerPanel" hidden aria-live="polite">
+      <div class="speaker-panel-header">
+        <strong class="speaker-panel-title" id="speakerTitle">Lời thoại</strong>
+        <button id="closeScript" type="button">Đóng</button>
+      </div>
+      <p id="speakerText"></p>
+    </aside>
   </main>
 
   <script type="module">
@@ -1365,11 +1513,38 @@ flowchart LR
     const slides = Array.from(document.querySelectorAll(".slide"));
     const prevButton = document.getElementById("prev");
     const nextButton = document.getElementById("next");
+    const scriptToggleButton = document.getElementById("scriptToggle");
+    const presentButton = document.getElementById("present");
     const printButton = document.getElementById("print");
     const navToggle = document.getElementById("navToggle");
     const counter = document.getElementById("counter");
     const progressFill = document.getElementById("progressFill");
+    const speakerPanel = document.getElementById("speakerPanel");
+    const speakerTitle = document.getElementById("speakerTitle");
+    const speakerText = document.getElementById("speakerText");
+    const closeScriptButton = document.getElementById("closeScript");
     let current = 0;
+    let navHiddenBeforePresentation = false;
+    const speakerScripts = [
+      `Xin chào thầy cô và các bạn. Nhóm em xin trình bày đề tài VietMach KPI/OKR System, một hệ thống web hỗ trợ doanh nghiệp quản lý mục tiêu, KPI, check-in, phê duyệt, đánh giá, báo cáo và AI Insights. Bài trình bày được chia cho 6 vai trò: PO, SM, luồng hệ thống, frontend, backend và tester.`,
+      `Ở phần bài toán, chúng em xuất phát từ nhu cầu thực tế của doanh nghiệp: cần theo dõi mục tiêu và KPI theo kỳ, cần nhân viên cập nhật tiến độ minh bạch và cần quản lý duyệt dữ liệu trước khi tính điểm. Nếu làm bằng Excel hoặc file riêng lẻ, dữ liệu dễ rời rạc, khó truy vết và thiếu minh bạch khi đánh giá cuối kỳ. Vì vậy hệ thống được xây dựng để tập trung hóa dữ liệu và chuẩn hóa quy trình.`,
+      `Hệ thống được áp dụng trong môi trường web nội bộ doanh nghiệp, nơi có nhiều phòng ban và nhiều vai trò như Admin, Director, Manager, HR và Employee/Sales. Quy mô dự án bao gồm dữ liệu nhân sự, OKR, KPI, check-in, evaluation, report và AI. Tầm nhìn của hệ thống là kết nối mục tiêu chiến lược với hành động hằng kỳ của nhân viên.`,
+      `Về chức năng, hệ thống được chia thành các nhóm chính. Nhóm nền tảng quản lý người dùng, vai trò, quyền, phòng ban và nhân viên. Nhóm nghiệp vụ quản lý Mission/Vision, OKR, Key Result, KPI, phân bổ KPI, check-in, duyệt, đánh giá, xếp loại, thưởng dự kiến, báo cáo và AI Insights.`,
+      `Về quy trình làm việc, nhóm sử dụng Scrum để chia nhỏ yêu cầu thành các sprint. PO chịu trách nhiệm xác định yêu cầu và ưu tiên backlog, SM theo dõi tiến độ và tháo gỡ vướng mắc, các thành viên frontend/backend phát triển tính năng, tester kiểm tra nghiệp vụ và phân quyền. Một task chỉ được xem là hoàn thành khi đạt Definition of Done.`,
+      `Backlog được quản lý theo các nhóm nghiệp vụ như Auth, HR, OKR, KPI, Check-in, Evaluation, Report và AI. Trong sprint backlog, mỗi user story được tách thành các task nhỏ cho frontend, backend và tester. Trello giúp nhóm theo dõi trạng thái công việc, còn Git giúp quản lý lịch sử thay đổi và phối hợp khi nhiều người cùng phát triển.`,
+      `Definition of Done là tiêu chuẩn để đảm bảo chất lượng trước khi đóng task. Một chức năng cần chạy được trên local, đúng nghiệp vụ, đúng phân quyền, có validation, giao diện không vỡ layout và test case chính phải pass. Nếu chưa đạt một tiêu chí, task sẽ quay lại vòng phát triển hoặc sửa lỗi.`,
+      `Ở góc nhìn use case, hệ thống có các tác nhân chính gồm Admin, Director, Manager, HR và Employee/Sales. Mỗi vai trò được gắn với một nhóm chức năng khác nhau, ví dụ Admin quản trị nền tảng, Director theo dõi chiến lược và báo cáo, Manager quản lý KPI và review, Employee thực hiện check-in. Điều này thể hiện rõ yêu cầu phân quyền theo vai trò.`,
+      `Đây là workflow nghiệp vụ quan trọng nhất của hệ thống. Từ Mission/Vision, doanh nghiệp tạo OKR và Key Result, sau đó chuyển thành KPI theo kỳ. KPI được duyệt rồi phân bổ cho phòng ban hoặc nhân viên; nhân viên check-in tiến độ, quản lý review, hệ thống tính score, rank, bonus và tạo EvaluationResult để Director duyệt trước khi lên báo cáo.`,
+      `Về UI flow, tất cả người dùng bắt đầu từ màn hình đăng nhập và đi vào Dashboard. Từ Dashboard, mỗi vai trò sẽ nhìn thấy các màn hình phù hợp với quyền của mình. Director tập trung vào OKR, report và review board; Manager xử lý KPI, phân bổ và review queue; Employee check-in KPI; HR quản lý nhân sự và kỳ đánh giá; Admin quản trị hệ thống.`,
+      `Nếu phân rã hệ thống, có thể nhìn theo hai góc độ. Góc độ nghiệp vụ gồm Foundation, Organization, Strategy, KPI, Execution, Evaluation, Report và AI. Góc độ kỹ thuật gồm Presentation Layer, Controller Layer, Service/Helper Layer, EF Core/DbContext và SQL Server.`,
+      `Ở frontend, nhóm chọn phong cách enterprise dashboard để phù hợp với hệ thống quản trị hiệu suất. Giao diện ưu tiên sự rõ ràng, dữ liệu dễ đọc, thao tác nhanh và menu thay đổi theo permission. Các thành phần chính gồm sidebar, header, dashboard cards, charts, bảng dữ liệu, form, modal, alert và AI chat widget.`,
+      `Các màn hình chính được thiết kế theo đúng hành trình nghiệp vụ. Người dùng đăng nhập, xem dashboard, quản lý OKR và KPI, phân bổ KPI, thực hiện check-in, vào ReviewQueue để duyệt, sau đó xem Evaluation và Reports. Luồng này giúp khi demo có thể đi từ mục tiêu chiến lược đến báo cáo cuối kỳ một cách tự nhiên.`,
+      `Về UX và trạng thái, hệ thống sử dụng các trạng thái như Pending, Approved, Rejected, Draft và PendingDirectorReview để người dùng biết dữ liệu đang ở bước nào. Ví dụ check-in sau khi nhân viên gửi sẽ ở trạng thái Pending, khi quản lý duyệt mới chuyển sang Approved và được tính vào điểm chính thức. Các lỗi về validation hoặc thiếu quyền sẽ được phản hồi rõ ràng.`,
+      `Ở backend, hệ thống được xây dựng bằng ASP.NET Core MVC, Entity Framework Core và SQL Server. Request từ Browser đi vào Controller, sau đó Controller gọi View, Service hoặc MiniERPDbContext tùy nghiệp vụ. Các service như Email, Notification, OKRProgress và AI hỗ trợ xử lý tác vụ phụ, đồng thời hệ thống có tích hợp Gemini API và SMTP.`,
+      `Về dữ liệu, hệ thống xoay quanh các nhóm bảng quan trọng: Role/Permission/SystemUser để phân quyền, Employee/Department để quản lý tổ chức, OKR/Key Result/KPI để quản lý mục tiêu, KPI Check-in để cập nhật tiến độ, Evaluation Result và Expected Bonus để đánh giá cuối kỳ. Với AI, dữ liệu được lọc theo quyền trước khi gửi sang Gemini để bảo đảm an toàn thông tin.`,
+      `Ở phần kiểm thử, tester không chỉ kiểm tra từng màn hình riêng lẻ mà kiểm tra theo luồng end-to-end. Nhóm test đăng nhập từng role, tạo hoặc mở OKR/KPI, phân bổ KPI, cho nhân viên check-in, để Manager duyệt, kiểm tra score/rank/bonus, Director review và cuối cùng xem dashboard, report, export. Ngoài ra còn kiểm thử phân quyền, UI và fallback khi AI lỗi.`,
+      `Kết luận, VietMach KPI/OKR System không chỉ là nơi nhập KPI mà là một hệ thống quản lý trọn vòng đời từ chiến lược, thực thi, phê duyệt, đánh giá đến báo cáo và AI Insights. Hệ thống giúp doanh nghiệp minh bạch hóa quá trình quản trị hiệu suất, giảm phụ thuộc vào Excel và hỗ trợ ra quyết định bằng dữ liệu. Sau phần trình bày, nhóm sẽ chuyển sang demo theo 6 vai trò đã phân chia.`
+    ];
 
     function readStoredNavState() {
       try {
@@ -1395,6 +1570,70 @@ flowchart LR
       window.dispatchEvent(new Event("resize"));
     }
 
+    function updateSpeakerScript() {
+      const title = slides[current].dataset.title || "Slide";
+      speakerTitle.textContent = `Lời thoại slide ${current + 1}: ${title}`;
+      speakerText.textContent = speakerScripts[current] || "Chưa có lời thoại cho slide này.";
+    }
+
+    function setScriptOpen(open) {
+      speakerPanel.hidden = !open;
+      scriptToggleButton.setAttribute("aria-pressed", String(open));
+      if (open) {
+        updateSpeakerScript();
+      }
+    }
+
+    function isFullscreenActive() {
+      return document.fullscreenElement === deck;
+    }
+
+    function updatePresentationButton() {
+      const active = isFullscreenActive();
+      deck.classList.toggle("presentation-mode", active);
+      presentButton.textContent = active ? "Thoát trình chiếu" : "Trình chiếu";
+      presentButton.setAttribute("aria-pressed", String(active));
+      window.dispatchEvent(new Event("resize"));
+    }
+
+    async function startPresentation() {
+      navHiddenBeforePresentation = deck.classList.contains("nav-hidden");
+      setScriptOpen(false);
+      try {
+        if (deck.requestFullscreen) {
+          await deck.requestFullscreen();
+          setNavHidden(true);
+        } else {
+          setNavHidden(true);
+          deck.classList.add("presentation-mode");
+        }
+        updatePresentationButton();
+      } catch {
+        setNavHidden(navHiddenBeforePresentation);
+        updatePresentationButton();
+      }
+    }
+
+    async function stopPresentation() {
+      try {
+        if (document.fullscreenElement && document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      } finally {
+        deck.classList.remove("presentation-mode");
+        setNavHidden(navHiddenBeforePresentation);
+        updatePresentationButton();
+      }
+    }
+
+    function togglePresentation() {
+      if (isFullscreenActive()) {
+        stopPresentation();
+      } else {
+        startPresentation();
+      }
+    }
+
     function showSlide(index) {
       current = Math.max(0, Math.min(index, slides.length - 1));
       slides.forEach((slide, i) => {
@@ -1406,20 +1645,42 @@ flowchart LR
       nextButton.disabled = current === slides.length - 1;
       const title = slides[current].dataset.title || "Slide";
       document.title = `${current + 1}/${slides.length} - ${title} - VietMach KPI/OKR`;
+      if (!speakerPanel.hidden) {
+        updateSpeakerScript();
+      }
       window.dispatchEvent(new Event("resize"));
     }
 
     prevButton.addEventListener("click", () => showSlide(current - 1));
     nextButton.addEventListener("click", () => showSlide(current + 1));
+    scriptToggleButton.addEventListener("click", () => setScriptOpen(speakerPanel.hidden));
+    closeScriptButton.addEventListener("click", () => setScriptOpen(false));
+    presentButton.addEventListener("click", togglePresentation);
     printButton.addEventListener("click", () => window.print());
     navToggle.addEventListener("click", () => {
       setNavHidden(!deck.classList.contains("nav-hidden"));
+    });
+    document.addEventListener("fullscreenchange", () => {
+      if (!isFullscreenActive()) {
+        setNavHidden(navHiddenBeforePresentation);
+      }
+      updatePresentationButton();
     });
 
     document.addEventListener("keydown", (event) => {
       if (event.key.toLowerCase() === "h") {
         event.preventDefault();
         setNavHidden(!deck.classList.contains("nav-hidden"));
+        return;
+      }
+      if (event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        setScriptOpen(speakerPanel.hidden);
+        return;
+      }
+      if (event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        togglePresentation();
         return;
       }
       if (event.key === "ArrowRight" || event.key === "PageDown" || event.key === " ") {
