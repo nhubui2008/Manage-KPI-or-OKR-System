@@ -415,6 +415,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 // Update base KPI
                 existingKpi.KPIName = kpi.KPIName;
+                existingKpi.Description = kpi.Description;
                 existingKpi.KPITypeId = kpi.KPITypeId;
                 existingKpi.PeriodId = kpi.PeriodId;
                 existingKpi.PropertyId = kpi.PropertyId;
@@ -431,6 +432,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     existingDetail.FailThreshold = detail.FailThreshold;
                     existingDetail.MeasurementUnit = detail.MeasurementUnit;
                     existingDetail.IsInverse = detail.IsInverse;
+                    existingDetail.DeadlineDate = detail.DeadlineDate;
                     existingDetail.CheckInFrequencyDays = detail.CheckInFrequencyDays;
                     existingDetail.CheckInDeadlineTime = detail.CheckInDeadlineTime;
                     existingDetail.ReminderBeforeHours = detail.ReminderBeforeHours;
@@ -452,26 +454,56 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        [HttpGet]
+        [HasPermission("KPIS_CREATE")]
+        public async Task<IActionResult> Create()
+        {
+            if (AccessScopeHelper.IsEmployeeOrSales(User))
+                return Forbid();
+
+            await PopulateCreateKpiViewBagAsync();
+            return View(new KPI());
+        }
+
         [HttpPost]
         [HasPermission("KPIS_CREATE")]
-        public async Task<IActionResult> Create(KPI kpi, KPIDetail detail)
+        public async Task<IActionResult> Create(KPI kpi, KPIDetail detail, List<int>? employeeIds, List<int>? departmentIds, List<string>? weights)
         {
             NormalizeDecimalFormValue("detail.TargetValue", value => detail.TargetValue = value);
             NormalizeDecimalFormValue("detail.PassThreshold", value => detail.PassThreshold = value);
             NormalizeDecimalFormValue("detail.FailThreshold", value => detail.FailThreshold = value);
             NormalizeCheckInScheduleDetail(detail);
 
-            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+            if (AccessScopeHelper.IsEmployeeOrSales(User))
                 return Forbid();
 
             if (!ModelState.IsValid)
             {
                 var errors = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
                 TempData["ErrorMessage"] = "Dữ liệu không hợp lệ: " + errors;
-                return RedirectToAction(nameof(Index));
+                await PopulateCreateKpiViewBagAsync();
+                return View(kpi);
             }
 
+            var requestedEmployeeIds = employeeIds?.Distinct().ToList() ?? new List<int>();
+            var requestedDepartmentIds = departmentIds?.Distinct().ToList() ?? new List<int>();
+
+            if (AccessScopeHelper.IsManagerScoped(User))
+            {
+                var manager = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
+                var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, manager);
+                var managedEmployeeIds = await AccessScopeHelper.GetEmployeeIdsInDepartmentsAsync(_context, managedDepartmentIds);
+
+                if (requestedDepartmentIds.Any(id => !managedDepartmentIds.Contains(id)) ||
+                    requestedEmployeeIds.Any(id => !managedEmployeeIds.Contains(id)))
+                {
+                    TempData["ErrorMessage"] = "Manager chỉ được phân bổ KPI cho phòng ban hoặc nhân viên mình quản lý.";
+                    await PopulateCreateKpiViewBagAsync();
+                    return View(kpi);
+                }
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 kpi.CreatedAt = DateTime.Now;
@@ -498,10 +530,71 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.KPIDetails.Add(detail);
                 await _context.SaveChangesAsync();
 
+                if (requestedDepartmentIds.Any())
+                {
+                    var validDepartmentIds = await _context.Departments
+                        .Where(d => d.IsActive == true && requestedDepartmentIds.Contains(d.Id))
+                        .Select(d => d.Id)
+                        .ToListAsync();
+
+                    foreach (var departmentId in validDepartmentIds.Distinct())
+                    {
+                        _context.KPI_Department_Assignments.Add(new KPI_Department_Assignment
+                        {
+                            KPIId = kpi.Id,
+                            DepartmentId = departmentId
+                        });
+                    }
+                }
+
+                if (requestedEmployeeIds.Any())
+                {
+                    var validEmployeeIds = await _context.Employees
+                        .Where(e => e.IsActive == true && requestedEmployeeIds.Contains(e.Id))
+                        .Select(e => e.Id)
+                        .ToListAsync();
+                    var validEmployeeIdSet = validEmployeeIds.ToHashSet();
+                    var defaultWeight = requestedEmployeeIds.Count > 0
+                        ? Math.Round(100m / requestedEmployeeIds.Count, 2)
+                        : 100m;
+
+                    for (int i = 0; i < requestedEmployeeIds.Count; i++)
+                    {
+                        var employeeId = requestedEmployeeIds[i];
+                        if (!validEmployeeIdSet.Contains(employeeId))
+                        {
+                            continue;
+                        }
+
+                        var weightPercent = defaultWeight;
+                        if (weights != null && i < weights.Count && !string.IsNullOrWhiteSpace(weights[i]))
+                        {
+                            var normalizedWeight = weights[i].Replace(",", ".");
+                            if (decimal.TryParse(normalizedWeight, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedWeight))
+                            {
+                                weightPercent = parsedWeight;
+                            }
+                        }
+
+                        var weight = Math.Clamp(weightPercent, 0.01m, 100m) / 100m;
+                        _context.KPI_Employee_Assignments.Add(new KPI_Employee_Assignment
+                        {
+                            KPIId = kpi.Id,
+                            EmployeeId = employeeId,
+                            Weight = weight,
+                            Status = "Active"
+                        });
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
                 TempData["SuccessMessage"] = "Đã tạo KPI mới thành công và đang chờ duyệt!";
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 var innerMsg = ex.InnerException != null ? " - Chi tiết: " + ex.InnerException.Message : "";
                 TempData["ErrorMessage"] = "Đã xảy ra lỗi hệ thống: " + ex.Message + innerMsg;
             }
@@ -856,6 +949,31 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 TempData["SuccessMessage"] = "Đã xóa (vô hiệu hóa) KPI!";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task PopulateCreateKpiViewBagAsync()
+        {
+            var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
+            var departmentQuery = _context.Departments.Where(d => d.IsActive == true);
+
+            if (AccessScopeHelper.IsManagerScoped(User))
+            {
+                var manager = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
+                var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, manager);
+                var managedEmployeeIds = await AccessScopeHelper.GetEmployeeIdsInDepartmentsAsync(_context, managedDepartmentIds);
+
+                employeeQuery = employeeQuery.Where(e => managedEmployeeIds.Contains(e.Id));
+                departmentQuery = departmentQuery.Where(d => managedDepartmentIds.Contains(d.Id));
+            }
+
+            ViewBag.Periods = await _context.EvaluationPeriods
+                .Where(p => p.IsActive == true)
+                .OrderByDescending(p => p.StartDate)
+                .ToDictionaryAsync(p => p.Id, p => p.PeriodName ?? "N/A");
+            ViewBag.KPITypes = await _context.KPITypes.OrderBy(t => t.Id).ToListAsync();
+            ViewBag.AllEmployees = await employeeQuery.OrderBy(e => e.FullName).ToListAsync();
+            ViewBag.AllDepartments = await departmentQuery.OrderBy(d => d.DepartmentName).ToListAsync();
+            await PopulateOkrLinkViewBagAsync();
         }
 
         private void NormalizeDecimalFormValue(string key, Action<decimal> assignValue)

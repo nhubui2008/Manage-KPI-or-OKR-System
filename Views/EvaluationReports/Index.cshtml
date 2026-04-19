@@ -7,13 +7,15 @@
     var employees = (ViewBag.Employees as Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>) ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>();
     var failReasons = (ViewBag.FailReasons as Dictionary<int, string>) ?? new Dictionary<int, string>();
     var departments = (ViewBag.Departments as List<Manage_KPI_or_OKR_System.Models.Department>) ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
+    var incidents = (ViewBag.Incidents as List<Manage_KPI_or_OKR_System.Models.EvaluationReportIncident>) ?? new List<Manage_KPI_or_OKR_System.Models.EvaluationReportIncident>();
 }
 
 <div class="container-fluid px-0 evaluation-report-page">
+    <div class="d-none">@Html.AntiForgeryToken()</div>
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 font-weight-bold mb-1">Báo cáo Phân bổ & Đánh giá Chỉ tiêu</h1>
-            <div class="page-breadcrumb">
+            <div class="page-breadcrumb no-print">
                 <a href="/">Trang chủ</a>
                 <i class="bi bi-chevron-right separator"></i>
                 <span class="text-primary fw-medium">@ViewBag.CurrentDeptName</span>
@@ -137,12 +139,55 @@
             <div class="content-card h-100">
                 <div class="card-header-custom"><i class="bi bi-exclamation-triangle me-2"></i>Các rủi ro vận hành (P.S.)</div>
                 <div class="card-body-custom">
-                    <ul class="list-unstyled mb-0">
-                        <li class="mb-2"><span class="badge bg-danger rounded-pill me-2">!</span>Sự cố cúp điện 2h (Tháng 2) - Ảnh hưởng 15% năng suất KPI sản xuất.</li>
-                        <li class="mb-2"><span class="badge bg-warning rounded-pill me-2">!</span>Biến động tỷ giá - Ảnh hưởng chỉ tiêu chi phí/lợi nhuận.</li>
-                        <li onclick="addIncident()" style="cursor: pointer;" class="text-primary hover-opacity no-print"><i class="bi bi-plus-circle me-2"></i> Thêm sự cố vận hành năm nay</li>
+                    <ul class="list-unstyled mb-0" id="incidentList">
+                        @if (incidents.Any())
+                        {
+                            foreach (var incident in incidents)
+                            {
+                                var badgeClass = incident.Severity == "Critical" ? "bg-danger" : "bg-warning text-dark";
+                                var severityText = incident.Severity == "Critical" ? "Nghiêm trọng" : "Cảnh báo";
+                                <li class="mb-2">
+                                    <span class="badge @badgeClass rounded-pill me-2">!</span>
+                                    <span class="fw-semibold">@severityText:</span> @incident.Content
+                                    <span class="text-muted small">(@incident.CreatedAt.ToString("dd/MM/yyyy HH:mm"))</span>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            <li class="text-muted mb-2" id="emptyIncidentText">Chưa có sự cố vận hành nào được ghi nhận.</li>
+                        }
+                        <li style="cursor: pointer;" class="text-primary hover-opacity no-print" data-bs-toggle="modal" data-bs-target="#incidentModal"><i class="bi bi-plus-circle me-2"></i> Thêm sự cố vận hành năm nay</li>
                     </ul>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="incidentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Thêm sự cố vận hành</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Mức độ</label>
+                    <select id="incidentSeverity" class="form-select">
+                        <option value="Warning">Cảnh báo (vàng)</option>
+                        <option value="Critical">Nghiêm trọng (đỏ)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label fw-semibold">Nội dung sự cố</label>
+                    <textarea id="incidentContent" class="form-control" rows="4" maxlength="1000" placeholder="Nhập chi tiết sự cố và mức độ ảnh hưởng..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn-primary-custom" id="btnSaveIncident"><i class="bi bi-save me-1"></i> Lưu sự cố</button>
             </div>
         </div>
     </div>
@@ -162,21 +207,6 @@
         directorSummaryInput?.addEventListener('input', syncDirectorSummaryForPrint);
         window.addEventListener('beforeprint', syncDirectorSummaryForPrint);
         syncDirectorSummaryForPrint();
-
-        function addIncident() {
-            Swal.fire({
-                title: 'Thêm sự cố vận hành',
-                input: 'textarea',
-                inputPlaceholder: 'Nhập chi tiết sự cố và mức độ ảnh hưởng...',
-                showCancelButton: true,
-                confirmButtonText: 'Lưu',
-                cancelButtonText: 'Hủy'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.showAppToast({ tone: 'success', eyebrow: 'Báo cáo Giám đốc', title: 'Đã lưu sự cố', message: 'Sự cố đã được ghi nhận thành công.' });
-                }
-            });
-        }
 
         document.getElementById('btnSaveSummary')?.addEventListener('click', async function() {
             const btn = this;
@@ -228,5 +258,69 @@
                 btn.innerHTML = originalContent;
             }
         });
+
+        document.getElementById('btnSaveIncident')?.addEventListener('click', async function () {
+            const btn = this;
+            const severity = document.getElementById('incidentSeverity')?.value || 'Warning';
+            const contentInput = document.getElementById('incidentContent');
+            const content = contentInput?.value.trim() || '';
+
+            if (!content) {
+                window.showAppToast({ tone: 'warning', eyebrow: 'Sự cố vận hành', title: 'Thiếu nội dung', message: 'Vui lòng nhập nội dung sự cố.' });
+                return;
+            }
+
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang lưu...';
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append('departmentId', '@ViewBag.CurrentDeptId');
+                formData.append('cycle', '@ViewBag.CurrentCycle');
+                formData.append('severity', severity);
+                formData.append('content', content);
+                const antiForgeryToken = window.getAntiForgeryToken?.();
+                if (antiForgeryToken) {
+                    formData.append('__RequestVerificationToken', antiForgeryToken);
+                }
+
+                const response = await fetch('/EvaluationReports/AddIncident', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || 'Không thể lưu sự cố.');
+                }
+
+                appendIncident(result.incident);
+                contentInput.value = '';
+                bootstrap.Modal.getInstance(document.getElementById('incidentModal'))?.hide();
+                window.showAppToast({ tone: 'success', eyebrow: 'Sự cố vận hành', title: 'Đã lưu sự cố', message: result.message });
+            } catch (error) {
+                window.showAppToast({ tone: 'error', eyebrow: 'Sự cố vận hành', title: 'Lỗi khi lưu', message: error?.message || 'Không thể kết nối máy chủ.' });
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        });
+
+        function appendIncident(incident) {
+            const list = document.getElementById('incidentList');
+            if (!list || !incident) return;
+            document.getElementById('emptyIncidentText')?.remove();
+
+            const addButton = list.querySelector('[data-bs-target="#incidentModal"]');
+            const li = document.createElement('li');
+            li.className = 'mb-2';
+            const isCritical = incident.severity === 'Critical';
+            const severityText = isCritical ? 'Nghiêm trọng' : 'Cảnh báo';
+            const badgeClass = isCritical ? 'bg-danger' : 'bg-warning text-dark';
+            const safeContent = window.escapeHtml ? window.escapeHtml(incident.content) : incident.content;
+            li.innerHTML = `<span class="badge ${badgeClass} rounded-pill me-2">!</span><span class="fw-semibold">${severityText}:</span> ${safeContent} <span class="text-muted small">(${incident.createdAt})</span>`;
+            list.insertBefore(li, addButton);
+        }
     </script>
 }

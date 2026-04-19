@@ -56,6 +56,7 @@ namespace Manage_KPI_or_OKR_System.Data
         public DbSet<RealtimeExpectedBonus> RealtimeExpectedBonuses { get; set; }
         public DbSet<HRExportReport> HRExportReports { get; set; }
         public DbSet<EvaluationReportSummary> EvaluationReportSummaries { get; set; }
+        public DbSet<EvaluationReportIncident> EvaluationReportIncidents { get; set; }
 
         // SYSTEM
         public DbSet<SystemAlert> SystemAlerts { get; set; }
@@ -186,6 +187,7 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<RealtimeExpectedBonus>().HasOne<Employee>().WithMany().HasForeignKey(rb => rb.EmployeeId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<RealtimeExpectedBonus>().HasOne<EvaluationPeriod>().WithMany().HasForeignKey(rb => rb.PeriodId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<HRExportReport>().HasOne<EvaluationPeriod>().WithMany().HasForeignKey(hr => hr.PeriodId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<EvaluationReportIncident>().HasOne<Department>().WithMany().HasForeignKey(i => i.DepartmentId).OnDelete(DeleteBehavior.NoAction);
 
             // === G. SYSTEM ===
             modelBuilder.Entity<SystemAlert>().HasOne<Employee>().WithMany().HasForeignKey(sa => sa.ReceiverId).OnDelete(DeleteBehavior.NoAction);

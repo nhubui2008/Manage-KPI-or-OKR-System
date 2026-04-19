@@ -39,9 +39,10 @@ namespace Manage_KPI_or_OKR_System.Helpers
             }
 
             var nextDate = deadlineDate.AddDays(frequencyDays);
-            if (period?.EndDate.HasValue == true && nextDate > period.EndDate.Value.Date)
+            var endDate = GetEffectiveEndDate(detail, period);
+            if (endDate.HasValue && nextDate > endDate.Value)
             {
-                nextDate = period.EndDate.Value.Date;
+                nextDate = endDate.Value;
             }
 
             return nextDate.Add(GetDeadlineTime(detail));
@@ -61,13 +62,14 @@ namespace Manage_KPI_or_OKR_System.Helpers
                 return 0m;
             }
 
-            if (period?.StartDate == null || period.EndDate == null)
+            var effectiveEndDate = GetEffectiveEndDate(detail, period);
+            if (period?.StartDate == null || effectiveEndDate == null)
             {
                 return individualTarget;
             }
 
             var startDate = period.StartDate.Value.Date;
-            var endDate = period.EndDate.Value.Date;
+            var endDate = effectiveEndDate.Value;
             if (endDate < startDate)
             {
                 return individualTarget;
@@ -94,7 +96,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
         {
             var frequencyDays = GetFrequencyDays(detail);
             var startDate = period?.StartDate?.Date ?? date;
-            var endDate = period?.EndDate?.Date;
+            var endDate = GetEffectiveEndDate(detail, period);
 
             if (date < startDate)
             {
@@ -116,6 +118,21 @@ namespace Manage_KPI_or_OKR_System.Helpers
             }
 
             return slotDate;
+        }
+
+        private static DateTime? GetEffectiveEndDate(KPIDetail? detail, EvaluationPeriod? period)
+        {
+            var periodEndDate = period?.EndDate?.Date;
+            var detailDeadlineDate = detail?.DeadlineDate?.Date;
+
+            if (periodEndDate.HasValue && detailDeadlineDate.HasValue)
+            {
+                return detailDeadlineDate.Value < periodEndDate.Value
+                    ? detailDeadlineDate.Value
+                    : periodEndDate.Value;
+            }
+
+            return detailDeadlineDate ?? periodEndDate;
         }
     }
 }

@@ -103,6 +103,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var summary = await _context.EvaluationReportSummaries
                 .FirstOrDefaultAsync(s => s.DepartmentId == departmentId && s.Cycle == cycle);
             ViewBag.DirectorSummary = summary?.Content ?? "";
+            ViewBag.Incidents = await _context.EvaluationReportIncidents
+                .Where(i => i.DepartmentId == departmentId && i.Cycle == cycle)
+                .OrderByDescending(i => i.CreatedAt)
+                .ToListAsync();
 
             return View(allocations);
         }
@@ -135,6 +139,46 @@ namespace Manage_KPI_or_OKR_System.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { success = true, message = "Lưu nhận xét thành công!" });
         }
+
+        [HttpPost]
+        [HasPermission("EVALREPORTS_EDIT")]
+        public async Task<IActionResult> AddIncident(int departmentId, string cycle, string severity, string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return BadRequest(new { success = false, message = "Vui lòng nhập nội dung sự cố." });
+            }
+
+            var normalizedSeverity = string.Equals(severity, "Critical", StringComparison.OrdinalIgnoreCase)
+                ? "Critical"
+                : "Warning";
+
+            var incident = new EvaluationReportIncident
+            {
+                DepartmentId = departmentId,
+                Cycle = cycle,
+                Severity = normalizedSeverity,
+                Content = content.Trim(),
+                CreatedAt = DateTime.Now
+            };
+
+            _context.EvaluationReportIncidents.Add(incident);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Sự cố vận hành đã được ghi nhận.",
+                incident = new
+                {
+                    incident.Id,
+                    incident.Severity,
+                    incident.Content,
+                    createdAt = incident.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                }
+            });
+        }
+
         [HttpGet]
         [HasPermission("EVALREPORTS_VIEW")]
         public async Task<IActionResult> ExportExcel(int? departmentId, string? cycle)

@@ -189,6 +189,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .Where(p => periodIds.Contains(p.Id))
                     .ToDictionaryAsync(p => p.Id)
                 : new Dictionary<int, EvaluationPeriod>();
+            var visibleEmployeeIds = allEmployees.Select(e => e.Id).ToList();
+            var assignmentWeights = await _context.KPI_Employee_Assignments
+                .Where(a => visibleEmployeeIds.Contains(a.EmployeeId) &&
+                            allKpiIds.Contains(a.KPIId) &&
+                            (a.Status == null || a.Status == "Active"))
+                .ToListAsync();
+            ViewBag.AssignmentWeights = assignmentWeights
+                .GroupBy(a => a.EmployeeId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.ToDictionary(a => a.KPIId, a => (a.Weight ?? 1m) * 100));
             ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
             ViewBag.FailReasons = await _context.FailReasons.ToListAsync();
             ViewBag.CanReviewCheckIns = User.IsInRole("Admin") || User.IsInRole("Administrator") ||
@@ -1599,6 +1610,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var period = kpi.PeriodId.HasValue && periods.ContainsKey(kpi.PeriodId.Value)
                     ? periods[kpi.PeriodId.Value]
                     : null;
+                var individualTarget = KpiCheckInScheduleHelper.CalculateIndividualTarget(kpiDetail, assignmentWeight);
                 var deadlineAt = checkIn?.DeadlineAt ?? (kpiDetail != null
                     ? KpiCheckInScheduleHelper.ResolveDeadlineForCheckIn(DateTime.Now, kpiDetail, period)
                     : (DateTime?)null);
@@ -1614,7 +1626,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 {
                     KpiId = kpi.Id,
                     KpiName = kpi.KPIName ?? $"KPI #{kpi.Id}",
-                    TargetValue = kpiDetail?.TargetValue ?? 0,
+                    TargetValue = individualTarget,
                     Unit = kpiDetail?.MeasurementUnit ?? string.Empty,
                     LatestAchievedValue = detail?.AchievedValue,
                     LatestProgress = detail?.ProgressPercentage,

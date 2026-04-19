@@ -30,6 +30,7 @@
     };
     var currentMeasurementUnit = detail?.MeasurementUnit ?? "";
     var currentDeadlineTime = (detail?.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0)).ToString(@"hh\:mm");
+    var currentDeadlineDate = detail?.DeadlineDate?.ToString("yyyy-MM-dd") ?? "";
     var hasCustomMeasurementUnit = !string.IsNullOrWhiteSpace(currentMeasurementUnit)
         && !measurementUnits.Any(u => string.Equals(u.Value, currentMeasurementUnit, StringComparison.OrdinalIgnoreCase));
 
@@ -85,6 +86,10 @@
                         <div class="col-md-6">
                             <label class="text-muted small text-uppercase fw-bold mb-1">Tên chỉ tiêu</label>
                             <p class="fs-5 fw-medium text-dark">@Model.KPIName</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase fw-bold mb-1">Mô tả KPI</label>
+                            <p class="fs-6 text-dark mb-0">@(string.IsNullOrWhiteSpace(Model.Description) ? "Chưa có mô tả" : Model.Description)</p>
                         </div>
                         <div class="col-md-3">
                             <label class="text-muted small text-uppercase fw-bold mb-1">Chu kỳ</label>
@@ -485,6 +490,10 @@
                             <label class="form-label fw-semibold">Tên KPI <span class="text-danger">*</span></label>
                             <input type="text" name="kpi.KPIName" value="@Model.KPIName" class="form-control" required>
                         </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Mô tả KPI</label>
+                            <textarea name="kpi.Description" class="form-control" rows="3" maxlength="1000" placeholder="Mô tả phạm vi, cách tính hoặc lưu ý để tránh hiểu sai KPI">@Model.Description</textarea>
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Phân loại KPI <span class="text-danger">*</span></label>
                             <select name="kpi.KPITypeId" class="form-select" required>
@@ -624,6 +633,10 @@
                                 <input type="number" min="1" step="1" name="detail.CheckInFrequencyDays" value="@(detail?.CheckInFrequencyDays ?? 1)" class="form-control">
                                 <span class="input-group-text">ngày/lần</span>
                             </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Ngày deadline</label>
+                            <input type="date" name="detail.DeadlineDate" value="@currentDeadlineDate" class="form-control">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Giờ deadline</label>

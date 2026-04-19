@@ -181,6 +181,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
+                if (!await ApplyRankFromScoreAsync(model))
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+
                 model.SubmissionStatus ??= SubmissionDraft;
                 _context.EvaluationResults.Add(model);
                 await _context.SaveChangesAsync();
@@ -236,8 +241,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             existing.EmployeeId = model.EmployeeId;
             existing.PeriodId = model.PeriodId;
             existing.TotalScore = model.TotalScore;
-            existing.RankId = model.RankId;
-            existing.Classification = model.Classification;
+            if (!await ApplyRankFromScoreAsync(existing))
+            {
+                return RedirectToAction(nameof(Index));
+            }
             existing.ReviewComment = model.ReviewComment;
 
             _context.Update(existing);
@@ -246,7 +253,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // Ghi nhật ký hệ thống (Audit Log)
             var newEmployee = await _context.Employees.FindAsync(model.EmployeeId);
             var newPeriod = await _context.EvaluationPeriods.FindAsync(model.PeriodId);
-            string newInfo = $"Mới: {newEmployee?.FullName} - {newPeriod?.PeriodName} - Điểm: {model.TotalScore?.ToString("0.#")} ({model.Classification})";
+            string newInfo = $"Mới: {newEmployee?.FullName} - {newPeriod?.PeriodName} - Điểm: {existing.TotalScore?.ToString("0.#")} ({existing.Classification})";
             await LogAuditAsync("UPDATE", oldInfo, newInfo);
 
             TempData["SuccessMessage"] = $"Đã cập nhật kết quả đánh giá thành công! Tổng điểm: {(model.TotalScore % 1 == 0 ? model.TotalScore?.ToString("0") : model.TotalScore?.ToString("0.#"))}đ";
@@ -410,6 +417,36 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             return await query.OrderBy(e => e.FullName).ToListAsync();
+        }
+
+        private async Task<bool> ApplyRankFromScoreAsync(EvaluationResult result)
+        {
+            if (!result.TotalScore.HasValue)
+            {
+                TempData["ErrorMessage"] = "Vui lòng nhập tổng điểm trước khi lưu kết quả đánh giá.";
+                return false;
+            }
+
+            if (result.TotalScore.Value < 0 || result.TotalScore.Value > 100)
+            {
+                TempData["ErrorMessage"] = "Tổng điểm phải nằm trong khoảng 0 đến 100.";
+                return false;
+            }
+
+            var rank = await _context.GradingRanks
+                .Where(r => r.MinScore.HasValue && r.MinScore <= result.TotalScore.Value)
+                .OrderByDescending(r => r.MinScore)
+                .FirstOrDefaultAsync();
+
+            if (rank == null)
+            {
+                TempData["ErrorMessage"] = "Chưa cấu hình bảng xếp hạng phù hợp với tổng điểm này.";
+                return false;
+            }
+
+            result.RankId = rank.Id;
+            result.Classification = rank.Description;
+            return true;
         }
 
         private async Task<bool> CanCurrentUserAccessEvaluationEmployeeAsync(int? employeeId)

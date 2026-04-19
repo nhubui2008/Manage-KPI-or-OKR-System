@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System;
+using System.Globalization;
 using System.Security.Claims;
 using Manage_KPI_or_OKR_System.Services;
 
@@ -39,7 +40,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!string.IsNullOrEmpty(searchString))
             {
                 searchString = searchString.Trim();
-                query = query.Where(o => o.ObjectiveName != null && o.ObjectiveName.Contains(searchString));
+                var searchYear = TryParseSearchYear(searchString);
+                var searchMonthYear = TryParseSearchMonthYear(searchString);
+                var searchDate = TryParseSearchDate(searchString);
+
+                query = query.Where(o =>
+                    (o.ObjectiveName != null && o.ObjectiveName.Contains(searchString)) ||
+                    (o.Cycle != null && o.Cycle.Contains(searchString)) ||
+                    (searchYear.HasValue && o.CreatedAt.HasValue && o.CreatedAt.Value.Year == searchYear.Value) ||
+                    (searchMonthYear.HasValue && o.CreatedAt.HasValue &&
+                        o.CreatedAt.Value.Year == searchMonthYear.Value.Year &&
+                        o.CreatedAt.Value.Month == searchMonthYear.Value.Month) ||
+                    (searchDate.HasValue && o.CreatedAt.HasValue &&
+                        o.CreatedAt.Value.Date == searchDate.Value.Date));
             }
 
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -1190,6 +1203,29 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 TempData["SuccessMessage"] = "Đã vô hiệu hóa OKR!";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        private static int? TryParseSearchYear(string value)
+        {
+            return int.TryParse(value, out var year) && year >= 1900 && year <= 9999
+                ? year
+                : null;
+        }
+
+        private static DateTime? TryParseSearchMonthYear(string value)
+        {
+            var formats = new[] { "M/yyyy", "MM/yyyy", "M-yyyy", "MM-yyyy" };
+            return DateTime.TryParseExact(value, formats, CultureInfo.GetCultureInfo("vi-VN"), DateTimeStyles.None, out var parsed)
+                ? parsed
+                : null;
+        }
+
+        private static DateTime? TryParseSearchDate(string value)
+        {
+            var formats = new[] { "d/M/yyyy", "dd/MM/yyyy", "d-M-yyyy", "dd-MM-yyyy", "yyyy-MM-dd" };
+            return DateTime.TryParseExact(value, formats, CultureInfo.GetCultureInfo("vi-VN"), DateTimeStyles.None, out var parsed)
+                ? parsed
+                : null;
         }
     }
 }

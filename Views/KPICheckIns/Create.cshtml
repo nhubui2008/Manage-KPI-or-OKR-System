@@ -21,6 +21,7 @@
         unit = kvp.Value.MeasurementUnit,
         isInverse = kvp.Value.IsInverse,
         frequencyDays = kvp.Value.CheckInFrequencyDays ?? 1,
+        deadlineDate = kvp.Value.DeadlineDate,
         deadlineTime = (kvp.Value.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0)).ToString(@"hh\:mm"),
         reminderBeforeHours = kvp.Value.ReminderBeforeHours ?? 24,
         periodStart = kpisById.ContainsKey(kvp.Key) && kpisById[kvp.Key].PeriodId.HasValue && kpiPeriods.ContainsKey(kpisById[kvp.Key].PeriodId!.Value)
@@ -353,6 +354,7 @@
             const frequencyDays = Math.max(1, parseInt(data.frequencyDays || 1, 10));
             const periodStart = data.periodStart ? new Date(data.periodStart) : new Date(now);
             const periodEnd = data.periodEnd ? new Date(data.periodEnd) : null;
+            const configuredDeadline = data.deadlineDate ? new Date(data.deadlineDate) : null;
             const baseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const startDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
             let targetDate = baseDate < startDate ? startDate : baseDate;
@@ -360,6 +362,10 @@
             if (periodEnd) {
                 const endDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
                 if (targetDate > endDate) targetDate = endDate;
+            }
+            if (configuredDeadline) {
+                const deadlineDate = new Date(configuredDeadline.getFullYear(), configuredDeadline.getMonth(), configuredDeadline.getDate());
+                if (targetDate > deadlineDate) targetDate = deadlineDate;
             }
 
             const offsetDays = Math.max(0, Math.floor((targetDate - startDate) / 86400000));
@@ -375,7 +381,12 @@
             const periodStart = new Date(data.periodStart);
             const periodEnd = new Date(data.periodEnd);
             const startDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
-            const endDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
+            let endDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
+            if (data.deadlineDate) {
+                const configuredDeadline = new Date(data.deadlineDate);
+                const deadlineDate = new Date(configuredDeadline.getFullYear(), configuredDeadline.getMonth(), configuredDeadline.getDate());
+                if (deadlineDate < endDate) endDate = deadlineDate;
+            }
             const dueDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
             const totalDays = Math.max(1, Math.floor((endDate - startDate) / 86400000) + 1);
             const elapsedDays = Math.min(totalDays, Math.max(1, Math.floor((dueDate - startDate) / 86400000) + 1));
@@ -452,14 +463,14 @@
                     ? window.applyMeasurementUnitConfigToInputs(unit, [achievedInput])
                     : { suffix: unit };
 
-                targetDisplay.textContent = new Intl.NumberFormat().format(target);
-                document.getElementById('individualTargetDisplay').textContent = new Intl.NumberFormat().format(individualTarget);
+                targetDisplay.textContent = formatMetric(target, unit);
+                document.getElementById('individualTargetDisplay').textContent = formatMetric(individualTarget, unit) + ' / 100%';
                 document.getElementById('weightLabel').textContent = weight + '%';
                 unitDisplay.textContent = unit;
                 document.getElementById('achievedUnitSuffix').textContent = unitConfig.suffix || unit;
                 modeDisplay.textContent = isInverse ? "Càng thấp càng tốt" : "Càng cao càng tốt";
                 deadlineDisplay.textContent = deadline.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                deadlineTargetDisplay.textContent = new Intl.NumberFormat('vi-VN').format(expectedAtDeadline) + ' ' + unit;
+                deadlineTargetDisplay.textContent = new Intl.NumberFormat('vi-VN').format(expectedAtDeadline) + ' ' + unit + ' / 100% chỉ tiêu cá nhân';
                 reminderDisplay.textContent = (data.reminderBeforeHours || 24) + ' giờ trước deadline';
                 previousEmployeeAchieved.textContent = formatMetric(latestAchieved, unit);
                 departmentAchievedDisplay.textContent = snapshot.isDepartmentAssigned

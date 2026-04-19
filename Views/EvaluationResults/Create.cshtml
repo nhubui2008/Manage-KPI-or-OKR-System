@@ -5,7 +5,16 @@
     var allEmployees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
     var allPeriods = ViewBag.AllPeriods as List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod> ?? new List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod>();
     var allRanks = ViewBag.AllRanks as List<Manage_KPI_or_OKR_System.Models.GradingRank> ?? new List<Manage_KPI_or_OKR_System.Models.GradingRank>();
-    var classificationsList = ViewBag.Classifications as List<string> ?? new List<string> { "Xuất sắc", "Giỏi", "Khá", "Trung bình", "Yếu" };
+    var rankScaleJson = System.Text.Json.JsonSerializer.Serialize(allRanks
+        .Where(r => r.MinScore.HasValue)
+        .OrderByDescending(r => r.MinScore)
+        .Select(r => new
+        {
+            id = r.Id,
+            rankCode = r.RankCode ?? "N/A",
+            description = r.Description ?? "Chưa phân loại",
+            minScore = r.MinScore ?? 0
+        }));
 }
 
 <div class="page-content">
@@ -107,13 +116,7 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Xếp hạng</label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-trophy"></i>
-                                        <select asp-for="RankId" class="form-select shadow-sm">
-                                            <option value="">-- Chọn hạng --</option>
-                                            @foreach (var rk in allRanks)
-                                            {
-                                                <option value="@rk.Id">@rk.RankCode - @rk.Description</option>
-                                            }
-                                        </select>
+                                        <input type="text" id="rankDisplay" class="form-control shadow-sm bg-light" value="Tự động theo tổng điểm" readonly />
                                     </div>
                                 </div>
                             </div>
@@ -123,13 +126,7 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Phân loại</label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-bar-chart-steps"></i>
-                                        <select asp-for="Classification" class="form-select shadow-sm">
-                                            <option value="">-- Chọn phân loại --</option>
-                                            @foreach (var cls in classificationsList)
-                                            {
-                                                <option value="@cls">@cls</option>
-                                            }
-                                        </select>
+                                        <input type="text" id="classificationDisplay" class="form-control shadow-sm bg-light" value="Tự động theo tổng điểm" readonly />
                                     </div>
                                 </div>
                             </div>
@@ -215,18 +212,24 @@
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <script>
+        const evaluationRankScale = @Html.Raw(rankScaleJson);
         const scoreInput = document.getElementById('TotalScore');
-        const rankSelect = document.getElementById('RankId');
-        const classSelect = document.getElementById('Classification');
+        const rankDisplay = document.getElementById('rankDisplay');
+        const classificationDisplay = document.getElementById('classificationDisplay');
+        function resolveRank(score) {
+            const numericScore = Number.parseFloat(String(score ?? '').replace(',', '.'));
+            if (Number.isNaN(numericScore)) return null;
+            return evaluationRankScale.find(rank => numericScore >= Number(rank.minScore));
+        }
         function updatePreview() {
             document.getElementById('previewScore').textContent = scoreInput.value ? scoreInput.value + ' đ' : '--';
-            const rankOpt = rankSelect.options[rankSelect.selectedIndex];
-            document.getElementById('previewRank').textContent = rankOpt && rankOpt.value ? rankOpt.text : '--';
-            document.getElementById('previewClass').textContent = classSelect.value || '--';
+            const rank = resolveRank(scoreInput.value);
+            rankDisplay.value = rank ? rank.rankCode : 'Chưa có hạng phù hợp';
+            classificationDisplay.value = rank ? rank.description : 'Chưa phân loại';
+            document.getElementById('previewRank').textContent = rank ? rank.rankCode : '--';
+            document.getElementById('previewClass').textContent = rank ? rank.description : '--';
         }
         scoreInput.addEventListener('input', updatePreview);
-        rankSelect.addEventListener('change', updatePreview);
-        classSelect.addEventListener('change', updatePreview);
         window.addEventListener('DOMContentLoaded', updatePreview);
     </script>
 }

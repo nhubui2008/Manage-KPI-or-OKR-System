@@ -9,6 +9,8 @@ namespace Manage_KPI_or_OKR_System.Models
         public int? PeriodId { get; set; }
         [StringLength(255)]
         public string? KPIName { get; set; }
+        [StringLength(1000)]
+        public string? Description { get; set; }
         public int? PropertyId { get; set; }
         public int? KPITypeId { get; set; }
         public int? OKRId { get; set; }

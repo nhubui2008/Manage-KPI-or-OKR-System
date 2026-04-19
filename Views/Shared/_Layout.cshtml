@@ -277,6 +277,9 @@
                 {
                     var userName = User.Identity.Name;
                     var userRole = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
+                    var settingsUrl = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("HR")
+                        ? "/SystemParameters"
+                        : "/Auth/MyProfile";
                     <div class="sidebar-footer dropup">
                         <div class="sidebar-user" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
                             <div class="user-avatar">
@@ -291,7 +294,7 @@
                         
                         <ul class="dropdown-menu shadow-sm border-0 mb-2" style="min-width: 220px; border-radius: 12px; background: #fff;">
                             <li><a class="dropdown-item py-2 fw-medium" href="/Auth/MyProfile"><i class="bi bi-person me-2 text-muted"></i> Hồ sơ cá nhân</a></li>
-                            <li><a class="dropdown-item py-2 fw-medium" href="#"><i class="bi bi-gear me-2 text-muted"></i> Cài đặt</a></li>
+                            <li><a class="dropdown-item py-2 fw-medium" href="@settingsUrl"><i class="bi bi-gear me-2 text-muted"></i> Cài đặt</a></li>
                             <li><a class="dropdown-item py-2 fw-medium" href="/Auth/ChangePassword"><i class="bi bi-shield-lock me-2 text-muted"></i> Đổi mật khẩu</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item py-2 text-danger fw-medium" href="/Auth/Logout"><i class="bi bi-box-arrow-right me-2 text-danger"></i> Đăng xuất</a></li>

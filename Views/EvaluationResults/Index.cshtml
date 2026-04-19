@@ -10,6 +10,16 @@
     var allPeriods = ViewBag.AllPeriods as List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod> ?? new List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod>();
     var allRanks = ViewBag.AllRanks as List<Manage_KPI_or_OKR_System.Models.GradingRank> ?? new List<Manage_KPI_or_OKR_System.Models.GradingRank>();
     var classificationsList = ViewBag.Classifications as List<string> ?? new List<string> { "Xuất sắc", "Giỏi", "Khá", "Trung bình", "Yếu" };
+    var rankScaleJson = System.Text.Json.JsonSerializer.Serialize(allRanks
+        .Where(r => r.MinScore.HasValue)
+        .OrderByDescending(r => r.MinScore)
+        .Select(r => new
+        {
+            id = r.Id,
+            rankCode = r.RankCode ?? "N/A",
+            description = r.Description ?? "Chưa phân loại",
+            minScore = r.MinScore ?? 0
+        }));
     
     bool canManage = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR");
     bool canSubmitEvaluation = ViewBag.CanSubmitEvaluation == true;
@@ -135,16 +145,9 @@
                         <option value="">-- Chọn nhân viên --</option>@foreach (var e in allEmployees){<option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>}</select></div>
                     <div class="mb-3"><label class="form-label fw-semibold">Kỳ đánh giá</label><select name="PeriodId" class="form-select" required>
                         <option value="">-- Chọn kỳ --</option>@foreach (var p in allPeriods){<option value="@p.Id">@p.PeriodName</option>}</select></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Tổng điểm</label><input type="number" name="TotalScore" class="form-control" step="0.01" min="0" max="100" required /></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng</label><select name="RankId" class="form-select">
-                        <option value="">-- Chọn hạng --</option>@foreach (var rk in allRanks){<option value="@rk.Id">@rk.RankCode - @rk.Description</option>}</select></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Phân loại</label><select name="Classification" class="form-select">
-                        <option value="">-- Chọn phân loại --</option>
-                        @foreach (var cls in classificationsList)
-                        {
-                            <option value="@cls">@cls</option>
-                        }
-                        </select></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Tổng điểm</label><input type="number" name="TotalScore" id="createTotalScore" class="form-control js-score-input" step="0.01" min="0" max="100" required data-rank-output="createRankDisplay" data-classification-output="createClassificationDisplay" /></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng</label><input type="text" id="createRankDisplay" class="form-control bg-light" value="Tự động theo tổng điểm" readonly /></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Phân loại</label><input type="text" id="createClassificationDisplay" class="form-control bg-light" value="Tự động theo tổng điểm" readonly /></div>
                     <div class="mb-3"><label class="form-label fw-semibold">Nhận xét đánh giá</label><textarea name="ReviewComment" class="form-control" rows="4" maxlength="2000" placeholder="Nhập nhận xét hoặc để trống để bổ sung sau"></textarea></div>
                 </div>
                 <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn-primary-custom d-flex align-items-center">Lưu kết quả</button></div></form>
@@ -161,16 +164,9 @@
                         <option value="">-- Chọn nhân viên --</option>@foreach (var e in allEmployees){<option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>}</select></div>
                     <div class="mb-3"><label class="form-label fw-semibold">Kỳ đánh giá</label><select name="PeriodId" id="editPeriodId" class="form-select" required>
                         <option value="">-- Chọn kỳ --</option>@foreach (var p in allPeriods){<option value="@p.Id">@p.PeriodName</option>}</select></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Tổng điểm</label><input type="number" name="TotalScore" id="editTotalScore" class="form-control" step="0.01" min="0" max="100" required /></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng</label><select name="RankId" id="editRankId" class="form-select">
-                        <option value="">-- Chọn hạng --</option>@foreach (var rk in allRanks){<option value="@rk.Id">@rk.RankCode - @rk.Description</option>}</select></div>
-                    <div class="mb-3"><label class="form-label fw-semibold">Phân loại</label><select name="Classification" id="editClassification" class="form-select">
-                        <option value="">-- Chọn phân loại --</option>
-                        @foreach (var cls in classificationsList)
-                        {
-                            <option value="@cls">@cls</option>
-                        }
-                        </select></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Tổng điểm</label><input type="number" name="TotalScore" id="editTotalScore" class="form-control js-score-input" step="0.01" min="0" max="100" required data-rank-output="editRankDisplay" data-classification-output="editClassificationDisplay" /></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Xếp hạng</label><input type="text" id="editRankDisplay" class="form-control bg-light" value="Tự động theo tổng điểm" readonly /></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Phân loại</label><input type="text" id="editClassificationDisplay" class="form-control bg-light" value="Tự động theo tổng điểm" readonly /></div>
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <label class="form-label fw-semibold mb-0">Nhận xét đánh giá</label>
@@ -188,8 +184,30 @@
 </div>
 
 <script>
+    const evaluationRankScale = @Html.Raw(rankScaleJson);
+
     function normalizeDecimalValue(value) {
         return String(value ?? '').replace(',', '.');
+    }
+
+    function resolveRank(score) {
+        const numericScore = Number.parseFloat(normalizeDecimalValue(score));
+        if (Number.isNaN(numericScore)) return null;
+        return evaluationRankScale.find(rank => numericScore >= Number(rank.minScore));
+    }
+
+    function updateRankOutputs(scoreInput) {
+        const rankOutput = document.getElementById(scoreInput.dataset.rankOutput);
+        const classificationOutput = document.getElementById(scoreInput.dataset.classificationOutput);
+        const rank = resolveRank(scoreInput.value);
+        if (rank) {
+            if (rankOutput) rankOutput.value = rank.rankCode;
+            if (classificationOutput) classificationOutput.value = rank.description;
+            return;
+        }
+
+        if (rankOutput) rankOutput.value = 'Chưa có hạng phù hợp';
+        if (classificationOutput) classificationOutput.value = 'Chưa phân loại';
     }
 
     function editResult(id, empId, periodId, score, rankId, classification, reviewComment) {
@@ -198,8 +216,7 @@
         document.getElementById('editEmployeeId').value = empId;
         document.getElementById('editPeriodId').value = periodId;
         document.getElementById('editTotalScore').value = normalizedScore;
-        document.getElementById('editRankId').value = rankId;
-        document.getElementById('editClassification').value = classification || "Trung bình";
+        updateRankOutputs(document.getElementById('editTotalScore'));
         document.getElementById('editReviewComment').value = reviewComment || "";
         document.getElementById('editModalScoreHeader').innerText = Number.parseFloat(normalizedScore || '0').toLocaleString('vi-VN');
         
@@ -219,6 +236,19 @@
                 this.dataset.reviewComment
             );
         });
+    });
+
+    document.querySelectorAll('.js-score-input').forEach(input => {
+        input.addEventListener('input', function () {
+            updateRankOutputs(this);
+            if (this.id === 'editTotalScore') {
+                const numericScore = Number.parseFloat(normalizeDecimalValue(this.value || '0'));
+                document.getElementById('editModalScoreHeader').innerText = Number.isNaN(numericScore)
+                    ? '0'
+                    : numericScore.toLocaleString('vi-VN');
+            }
+        });
+        updateRankOutputs(input);
     });
 
     document.getElementById('aiGenerateReviewBtn')?.addEventListener('click', async function () {

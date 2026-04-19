@@ -1157,14 +1157,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 2. Header Notification Bell is handled by Bootstrap dropdown in _Layout.
 
-    // 3. Settings dropdown item (Cài đặt)
-    const settingsLink = document.querySelector('.dropdown-item[href="#"]');
-    if (settingsLink && settingsLink.textContent.includes('Cài đặt')) {
-        settingsLink.addEventListener('click', function (e) {
+    // 3. Generic coming-soon dropdown items.
+    document.querySelectorAll('.dropdown-item[data-coming-soon]').forEach(function (link) {
+        link.addEventListener('click', function (e) {
             e.preventDefault();
-            showComingSoonToast('Cài đặt tài khoản');
+            showComingSoonToast(link.textContent.trim());
         });
-    }
+    });
 
     // 4. Sidebar links to non-existent pages (/Shop, /MyOrders)
     document.querySelectorAll('.sidebar-link[href="/Shop"], .sidebar-link[href="/MyOrders"]').forEach(function (link) {
