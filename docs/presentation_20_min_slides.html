@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="vi">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -50,24 +51,44 @@
       height: 100vh;
       width: 100vw;
       overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 20px 92px;
       background:
         linear-gradient(180deg, rgba(230, 245, 242, 0.7), rgba(247, 250, 248, 0.3) 42%, rgba(255, 247, 219, 0.32)),
         var(--bg);
     }
 
     .slides {
-      height: 90%;
-      width: 90%;
+      position: relative;
+      width: min(calc(100vw - 40px), calc((100vh - 122px) * 16 / 9));
+      max-height: calc(100vh - 122px);
+      aspect-ratio: 16 / 9;
+      background: #ffffff;
+      border-radius: var(--radius);
+      box-shadow: 0 18px 60px rgba(24, 35, 31, 0.18);
+      overflow: hidden;
+      transition: width 0.22s ease, max-height 0.22s ease;
+    }
+
+    .deck.nav-hidden {
+      padding-bottom: 20px;
+    }
+
+    .deck.nav-hidden .slides {
+      width: min(calc(100vw - 40px), calc((100vh - 40px) * 16 / 9));
+      max-height: calc(100vh - 40px);
     }
 
     .slide {
       display: block;
       position: absolute;
       inset: 0;
-      height: 100vh;
-      width: 100vw;
-      padding: 72px 84px 78px;
-      overflow: auto;
+      height: 100%;
+      width: 100%;
+      padding: 3.8% 4.6%;
+      overflow: hidden;
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
@@ -82,15 +103,21 @@
     }
 
     .slide-inner {
-      max-width: 1280px;
-      min-height: calc(100vh - 150px);
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      min-height: 0;
       margin: 0 auto;
       background: rgba(255, 255, 255, 0.92);
       border: 1px solid var(--line);
       box-shadow: var(--shadow);
       border-radius: var(--radius);
-      padding: 38px 42px;
+      padding: 3% 3.4%;
       position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
     .title-slide {
@@ -98,7 +125,8 @@
     }
 
     .title-slide .slide-inner {
-      min-height: 100vh;
+      height: 100%;
+      min-height: 0;
       max-width: none;
       border: 0;
       border-radius: 0;
@@ -106,6 +134,7 @@
       padding: 0;
       overflow: hidden;
       background: #0b1f1d;
+      display: block;
     }
 
     .title-art {
@@ -120,11 +149,11 @@
     .title-content {
       position: relative;
       z-index: 1;
-      min-height: 100vh;
+      min-height: 100%;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 88px 96px;
+      padding: 7% 8%;
       color: #ffffff;
       max-width: 920px;
     }
@@ -146,20 +175,22 @@
     h3,
     p {
       margin-top: 0;
+      overflow-wrap: anywhere;
     }
 
     h1 {
-      font-size: 3.4rem;
+      font-size: clamp(2.3rem, 4vw, 3.2rem);
       line-height: 1.05;
-      margin-bottom: 20px;
+      margin-bottom: 14px;
       font-weight: 850;
     }
 
     h2 {
-      font-size: 2.2rem;
+      font-size: clamp(1.35rem, 2.45vw, 2rem);
       line-height: 1.14;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       color: var(--ink);
+      flex: 0 0 auto;
     }
 
     .title-slide h1 {
@@ -206,27 +237,42 @@
 
     .grid {
       display: grid;
-      gap: 18px;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .slide-inner > .grid.fit-grid,
+    .slide-inner > .grid:has(.diagram) {
+      flex: 1 1 auto;
+      min-height: 0;
     }
 
     .grid.two {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 
     .grid.three {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid.fit-grid .diagram,
+    .grid:has(.diagram) .diagram {
+      height: 100%;
+      margin-top: 0;
     }
 
     .panel {
       border: 1px solid var(--line);
       border-radius: var(--radius);
       background: #ffffff;
-      padding: 18px;
+      padding: 12px;
+      min-height: 0;
+      min-width: 0;
     }
 
     .panel h3 {
-      margin: 0 0 10px;
-      font-size: 1.05rem;
+      margin: 0 0 6px;
+      font-size: 0.95rem;
       color: var(--teal);
     }
 
@@ -237,41 +283,45 @@
     }
 
     li {
-      margin: 7px 0;
-      line-height: 1.42;
+      margin: 4px 0;
+      line-height: 1.34;
+      font-size: 0.88rem;
+      overflow-wrap: anywhere;
     }
 
     .big-list li {
-      font-size: 1.04rem;
-      margin: 9px 0;
+      font-size: 0.92rem;
+      margin: 5px 0;
     }
 
     .diagram {
-      margin-top: 18px;
-      padding: 40px 18px 18px;
+      margin-top: 6px;
+      padding: 24px 10px 10px;
       border: 1px solid rgba(15, 118, 110, 0.3);
       border-radius: var(--radius);
-      background:
-        linear-gradient(rgba(15, 118, 110, 0.055) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(15, 118, 110, 0.055) 1px, transparent 1px),
-        linear-gradient(180deg, #ffffff 0%, #f7fffc 58%, #fffaf0 100%);
-      background-size: 22px 22px, 22px 22px, auto;
-      overflow: auto;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fffc 62%, #fffaf0 100%);
+      overflow: hidden;
       position: relative;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 24px rgba(15, 118, 110, 0.08);
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .diagram::before {
       content: "Sơ đồ";
       position: absolute;
-      top: 10px;
-      left: 14px;
-      padding: 5px 9px;
+      top: 7px;
+      left: 10px;
+      padding: 3px 7px;
       border: 1px solid rgba(15, 118, 110, 0.22);
       border-radius: var(--radius);
       background: rgba(230, 245, 242, 0.92);
       color: #14534d;
-      font-size: 0.75rem;
+      font-size: 0.62rem;
       font-weight: 850;
       letter-spacing: 0.02em;
       text-transform: uppercase;
@@ -290,28 +340,36 @@
 
     .mermaid {
       text-align: center;
-      min-width: 680px;
+      min-width: 0;
+      width: 100%;
+      height: 100%;
       color: var(--ink);
-      padding: 6px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .mermaid svg {
       max-width: 100%;
-      height: auto;
+      max-height: 100%;
+      width: auto !important;
+      height: auto !important;
       filter: drop-shadow(0 8px 14px rgba(24, 35, 31, 0.08));
     }
 
     table {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
-      margin: 14px 0;
-      font-size: 0.96rem;
+      margin: 6px 0;
+      font-size: 0.78rem;
     }
 
     th,
     td {
       border: 1px solid var(--line);
-      padding: 10px 12px;
+      padding: 5px 7px;
       text-align: left;
       vertical-align: top;
     }
@@ -320,20 +378,6 @@
       background: var(--soft-teal);
       color: #15443f;
       font-weight: 800;
-    }
-
-    .speaker-note {
-      margin-top: 18px;
-      padding: 16px 18px;
-      border-left: 5px solid var(--coral);
-      background: var(--soft-coral);
-      border-radius: var(--radius);
-      color: #4a2719;
-      line-height: 1.55;
-    }
-
-    .speaker-note strong {
-      color: #7c2d12;
     }
 
     .toolbar {
@@ -441,54 +485,47 @@
     }
 
     .compact .slide-inner {
-      padding-top: 30px;
-      padding-bottom: 30px;
+      padding-top: 2.3%;
+      padding-bottom: 2.3%;
     }
 
     @media (max-width: 900px) {
-      body {
-        overflow: auto;
+      .deck {
+        padding: 8px 8px 70px;
       }
 
-      .deck,
+      .deck.nav-hidden {
+        padding-bottom: 8px;
+      }
+
+      .slides {
+        width: min(calc(100vw - 16px), calc((100vh - 78px) * 16 / 9));
+        max-height: calc(100vh - 78px);
+      }
+
+      .deck.nav-hidden .slides {
+        width: min(calc(100vw - 16px), calc((100vh - 16px) * 16 / 9));
+        max-height: calc(100vh - 16px);
+      }
+
       .slide {
-        height: auto;
-        min-height: 100vh;
-      }
-
-      .slide {
-        position: static;
-        display: none;
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        padding: 18px 14px 92px;
-      }
-
-      .slide.active {
-        display: block;
+        padding: 3% 3.5%;
       }
 
       .slide-inner {
-        min-height: auto;
-        padding: 24px;
+        padding: 2.4% 2.8%;
       }
 
       .title-content {
-        padding: 68px 28px;
+        padding: 6% 7%;
       }
 
       h1 {
-        font-size: 2.4rem;
+        font-size: clamp(1.8rem, 5.6vw, 2.4rem);
       }
 
       h2 {
-        font-size: 1.7rem;
-      }
-
-      .grid.two,
-      .grid.three {
-        grid-template-columns: 1fr;
+        font-size: clamp(1.25rem, 3.8vw, 1.7rem);
       }
 
       .toolbar {
@@ -496,44 +533,85 @@
         right: 8px;
         flex-wrap: wrap;
       }
-
-      .hint {
-        display: none;
-      }
     }
 
     @media print {
+      @page {
+        size: 16in 9in;
+        margin: 0;
+      }
+
+      html,
       body {
+        width: 16in;
+        min-height: auto;
+      }
+
+      body {
+        overflow: visible;
+        background: #ffffff;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .deck {
+        display: block;
+        width: 16in;
+        height: auto;
+        padding: 0;
         overflow: visible;
         background: #ffffff;
       }
 
-      .deck,
-      .slides,
-      .slide {
+      .slides {
+        position: static;
+        width: 16in;
         height: auto;
-        width: auto;
+        max-height: none;
+        aspect-ratio: auto;
+        border-radius: 0;
+        box-shadow: none;
         overflow: visible;
-        background: #ffffff;
       }
 
       .slide {
         display: block !important;
-        position: static;
+        position: relative;
+        inset: auto;
+        width: 16in;
+        height: 9in;
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
+        overflow: hidden;
         page-break-after: always;
-        padding: 0;
+        break-after: page;
+        padding: 0.38in 0.46in;
+        background: #ffffff;
       }
 
       .slide-inner,
       .title-slide .slide-inner {
-        min-height: auto;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
         box-shadow: none;
         border: 1px solid #dddddd;
         border-radius: 0;
-        padding: 28px;
+        padding: 0.26in 0.3in;
+        overflow: hidden;
+      }
+
+      .title-slide {
+        padding: 0;
+      }
+
+      .title-slide .slide-inner {
+        padding: 0;
+      }
+
+      .compact .slide-inner {
+        padding: 0.26in 0.3in;
       }
 
       .title-art {
@@ -562,6 +640,7 @@
     }
   </style>
 </head>
+
 <body>
   <main class="deck" aria-label="Bài thuyết trình VietMach KPI OKR System">
     <div class="slides">
@@ -571,7 +650,8 @@
           <div class="title-content">
             <p class="eyebrow">Bài thuyết trình 20 phút</p>
             <h1>VietMach KPI/OKR System</h1>
-            <p class="subtitle">Hệ thống quản lý KPI/OKR cho doanh nghiệp, hỗ trợ mục tiêu chiến lược, giao KPI, check-in, phê duyệt, đánh giá, báo cáo và AI Insights.</p>
+            <p class="subtitle">Hệ thống quản lý KPI/OKR cho doanh nghiệp, hỗ trợ mục tiêu chiến lược, giao KPI,
+              check-in, phê duyệt, đánh giá, báo cáo và AI Insights.</p>
             <div class="meta">
               <span class="pill">PO</span>
               <span class="pill">SM</span>
@@ -580,7 +660,16 @@
               <span class="pill">Backend</span>
               <span class="pill">Tester</span>
             </div>
-
+            <div class="diagram" style="background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.22);">
+              <pre class="mermaid">
+flowchart LR
+    A["PO<br/>Bài toán"] --> B["SM<br/>Quy trình"]
+    B --> C["Luồng hệ thống<br/>Nghiệp vụ"]
+    C --> D["Frontend<br/>Giao diện"]
+    D --> E["Backend<br/>Kỹ thuật"]
+    E --> F["Tester<br/>Chất lượng"]
+              </pre>
+            </div>
           </div>
         </div>
       </section>
@@ -612,23 +701,18 @@
           </div>
           <div class="diagram">
             <pre class="mermaid">
-flowchart TD
-    A["Thực trạng"] --> B["KPI/OKR quản lý bằng Excel"]
-    A --> C["Dữ liệu rời rạc"]
-    A --> D["Khó kiểm soát tiến độ"]
-    A --> E["Đánh giá thiếu minh bạch"]
-    B --> F["VietMach KPI/OKR System"]
-    C --> F
-    D --> F
-    E --> F
-    F --> G["Tập trung dữ liệu"]
-    F --> H["Check-in và duyệt"]
-    F --> I["Tính điểm/rank/bonus"]
-    F --> J["Dashboard và báo cáo"]
+flowchart LR
+    B["Excel / file rời"] --> F["VietMach KPI/OKR System"]
+    C["Dữ liệu phân tán"] --> F
+    D["Khó theo dõi tiến độ"] --> F
+    E["Đánh giá thiếu minh bạch"] --> F
+    F --> G["Dữ liệu tập trung"]
+    F --> H["Check-in + duyệt"]
+    F --> I["Score / rank / bonus"]
+    F --> J["Dashboard / report"]
     F --> K["Phân quyền theo vai trò"]
             </pre>
           </div>
-          <p class="speaker-note"><strong>Lời thoại:</strong> Nhiều doanh nghiệp vẫn quản lý KPI bằng Excel hoặc các file riêng lẻ. Hệ thống giải quyết bằng cách tập trung dữ liệu, cho phép check-in có kiểm duyệt, tự động tính điểm và cung cấp dashboard, báo cáo theo từng vai trò.</p>
         </div>
       </section>
 
@@ -664,16 +748,15 @@ flowchart TD
           </div>
           <div class="diagram">
             <pre class="mermaid">
-flowchart TD
-    A["Tầm nhìn doanh nghiệp"] --> B["Mission / Vision"]
+flowchart LR
+    A["Tầm nhìn"] --> B["Mission / Vision"]
     B --> C["OKR cấp công ty / phòng ban"]
-    C --> D["KPI theo kỳ đánh giá"]
-    D --> E["Check-in hằng kỳ"]
-    E --> F["Đánh giá nhân sự"]
+    C --> D["KPI theo kỳ"]
+    D --> E["Check-in"]
+    E --> F["Evaluation"]
     F --> G["Dashboard / Report / AI Insights"]
             </pre>
           </div>
-          <p class="speaker-note"><strong>Lời thoại:</strong> Hệ thống phù hợp với doanh nghiệp nhiều phòng ban, nhiều cấp quản lý. Tầm nhìn của hệ thống là biến KPI/OKR thành quy trình số hóa liên tục, từ chiến lược đến thực thi và báo cáo.</p>
         </div>
       </section>
 
@@ -705,7 +788,7 @@ flowchart TD
           </div>
           <div class="diagram">
             <pre class="mermaid">
-flowchart TD
+flowchart LR
     Root["VietMach KPI/OKR"]
     Root --> A["Nền tảng<br/>User, Role/Permission, Department, Employee"]
     Root --> B["OKR<br/>Mission/Vision, OKR, Key Result"]
@@ -757,7 +840,6 @@ flowchart LR
     I --> A
             </pre>
           </div>
-          <p class="speaker-note"><strong>Lời thoại:</strong> Nhóm dùng Scrum để chia nhỏ công việc theo sprint. Sau khi phát triển, tính năng được review, test và chỉ hoàn thành khi đạt Definition of Done.</p>
         </div>
       </section>
 
@@ -834,7 +916,7 @@ flowchart LR
           </div>
           <div class="diagram">
             <pre class="mermaid">
-flowchart TD
+flowchart LR
     A["Task hoàn thành code"] --> B{"Chạy được?"}
     B -- "Không" --> A
     B -- "Có" --> C{"Đúng nghiệp vụ?"}
@@ -878,39 +960,38 @@ flowchart TD
           <div class="diagram">
             <pre class="mermaid">
 flowchart LR
-    Admin((Admin))
-    Director((Director))
-    Manager((Manager))
-    HR((HR))
-    Employee((Employee/Sales))
-    UC1["Auth"]
-    UC2["Role/User/Employee"]
-    UC3["Mission/OKR/KR"]
-    UC4["KPI/Assignment"]
-    UC5["Check-in"]
-    UC6["Review/Evaluation"]
-    UC7["Dashboard/Report"]
-    UC8["AI Insights"]
-    Admin --> UC1
-    Admin --> UC2
-    Admin --> UC3
-    Admin --> UC4
-    Admin --> UC5
-    Admin --> UC6
-    Admin --> UC7
-    Admin --> UC8
-    Director --> UC3
-    Director --> UC4
-    Director --> UC6
-    Director --> UC7
-    Manager --> UC4
-    Manager --> UC5
-    Manager --> UC6
-    HR --> UC2
-    HR --> UC6
-    HR --> UC7
-    Employee --> UC5
-    Employee --> UC7
+    subgraph Roles["Vai trò"]
+      Admin((Admin))
+      Director((Director))
+      Manager((Manager))
+      HR((HR))
+      Employee((Employee/Sales))
+    end
+    subgraph Modules["Nhóm chức năng"]
+      Foundation["Auth / User / Permission"]
+      Strategy["Mission / OKR / KR"]
+      KPI["KPI / Assignment"]
+      Execution["Check-in / Review"]
+      Evaluation["Evaluation / Bonus"]
+      ReportAI["Dashboard / Report / AI"]
+    end
+    Admin --> Foundation
+    Admin --> Strategy
+    Admin --> KPI
+    Admin --> Execution
+    Admin --> Evaluation
+    Admin --> ReportAI
+    Director --> Strategy
+    Director --> Evaluation
+    Director --> ReportAI
+    Manager --> KPI
+    Manager --> Execution
+    Manager --> Evaluation
+    HR --> Foundation
+    HR --> Evaluation
+    HR --> ReportAI
+    Employee --> Execution
+    Employee --> ReportAI
             </pre>
           </div>
         </div>
@@ -922,29 +1003,25 @@ flowchart LR
           <h2>Workflow Nghiệp Vụ End-To-End</h2>
           <div class="diagram">
             <pre class="mermaid">
-flowchart TD
-    A["Mission / Vision"] --> B["OKR"]
-    B --> C["Key Result"]
-    C --> D["KPI theo kỳ đánh giá"]
-    D --> E{"KPI được duyệt?"}
-    E -- "Rejected" --> E1["Không cho check-in KPI này"]
-    E -- "Approved" --> F["Phân bổ KPI<br/>phòng ban / nhân viên / trọng số"]
-    F --> G["Employee/Sales check-in"]
-    G --> H{"Check-in được duyệt?"}
-    H -- "Rejected" --> I["Không tính điểm chính thức"]
-    H -- "Approved" --> J["Cập nhật tiến độ KPI"]
-    J --> K["Tính total score"]
-    K --> L["Map Grading Rank"]
-    L --> M["Tính Expected Bonus"]
-    L --> N["Tạo/Cập nhật EvaluationResult"]
-    N --> O["Manager/Admin gửi Director review"]
-    O --> P{"Director/Admin quyết định"}
-    P -- "Rejected" --> Q["Trả về rà soát"]
-    Q --> O
-    P -- "Approved" --> R["Dashboard / Reports / AI Insights"]
+flowchart LR
+    subgraph S["Chiến lược"]
+      A["Mission / Vision"] --> B["OKR + Key Result"] --> C["KPI theo kỳ"]
+    end
+    subgraph E["Thực thi"]
+      D{"Duyệt KPI?"} -- "Có" --> F["Phân bổ KPI"] --> G["Employee check-in"]
+      D -- "Không" --> X["Dừng check-in"]
+    end
+    subgraph R["Đánh giá"]
+      H{"Review?"} -- "Approved" --> I["Score / Rank / Bonus"] --> J["EvaluationResult"]
+      H -- "Rejected" --> Y["Không tính điểm"]
+      J --> K{"Director review"}
+      K -- "Approved" --> L["Dashboard / Report / AI"]
+      K -- "Rejected" --> J
+    end
+    C --> D
+    G --> H
             </pre>
           </div>
-          <p class="speaker-note"><strong>Lời thoại:</strong> Đây là luồng quan trọng nhất: Mission/Vision -> OKR -> Key Result -> KPI -> phân bổ -> check-in -> review -> tính điểm/rank/bonus -> EvaluationResult -> Director review -> report/AI.</p>
         </div>
       </section>
 
@@ -954,35 +1031,15 @@ flowchart TD
           <h2>UI Flow Theo Vai Trò</h2>
           <div class="diagram">
             <pre class="mermaid">
-flowchart TD
-    Login["/Auth/Login"] --> Role{"Vai trò"}
-    Role --> Director["Director"]
-    Director --> D1["/Dashboard"]
-    D1 --> D2["/OKRs"]
-    D2 --> D3["/EvaluationReports"]
-    D3 --> D4["/EvaluationResults/ReviewBoard"]
-    Role --> Manager["Manager"]
-    Manager --> M1["/KPIs"]
-    M1 --> M2["/KPIs/AllocatePersonnel"]
-    M2 --> M3["/KPICheckIns/ReviewQueue"]
-    M3 --> M4["/EvaluationResults"]
-    Role --> Employee["Employee/Sales"]
-    Employee --> E1["/Dashboard"]
-    E1 --> E2["/KPIs"]
-    E2 --> E3["/KPICheckIns/Create"]
-    Role --> HR["HR"]
-    HR --> H1["/Employees"]
-    H1 --> H2["/EvaluationPeriods"]
-    H2 --> H3["/BonusRules"]
-    H3 --> H4["/EvaluationReports"]
-    Role --> Admin["Admin"]
-    Admin --> A1["/Roles"]
-    A1 --> A2["/SystemUsers"]
-    A2 --> A3["/Catalog"]
-    A3 --> A4["/AuditLogs"]
+flowchart LR
+    Login["/Auth/Login"] --> Dashboard["/Dashboard"]
+    Dashboard --> Director["Director<br/>OKRs / Reports / ReviewBoard"]
+    Dashboard --> Manager["Manager<br/>KPIs / Allocate / ReviewQueue"]
+    Dashboard --> Employee["Employee<br/>KPIs / Check-in"]
+    Dashboard --> HR["HR<br/>Employees / Periods / BonusRules"]
+    Dashboard --> Admin["Admin<br/>Roles / Users / Catalog / AuditLogs"]
             </pre>
           </div>
-          <p class="speaker-note"><strong>Lời thoại:</strong> Mỗi vai trò có đường đi khác nhau. Director đi từ dashboard đến OKR và report, Manager xử lý KPI và ReviewQueue, Employee check-in KPI, HR quản lý nền tảng nhân sự, Admin quản trị hệ thống.</p>
         </div>
       </section>
 
@@ -992,7 +1049,7 @@ flowchart TD
           <h2>Phân Rã Chức Năng Và Cấu Trúc Phân Tầng</h2>
           <div class="diagram">
             <pre class="mermaid">
-flowchart TD
+flowchart LR
     Root["VietMach KPI/OKR System"]
     Root --> F["Foundation<br/>Auth, Role, Permission, User"]
     Root --> O["Organization<br/>Department, Position, Employee"]
@@ -1001,13 +1058,12 @@ flowchart TD
     Root --> C["Execution<br/>Check-in, ReviewQueue"]
     Root --> E["Evaluation<br/>Score, Rank, Bonus"]
     Root --> R["Report & AI<br/>Dashboard, Excel, Gemini"]
-    P["Presentation Layer"] --> CL["Controller Layer"]
-    CL --> SV["Service/Helper Layer"]
-    SV --> DA["EF Core / DbContext"]
+    P["Presentation"] --> CL["Controller"]
+    CL --> SV["Service / Helper"]
+    SV --> DA["EF Core"]
     DA --> DB["SQL Server"]
             </pre>
           </div>
-          <p class="speaker-note"><strong>Lời thoại:</strong> Hệ thống có thể nhìn theo nhóm chức năng hoặc theo tầng kỹ thuật: giao diện, controller, service/helper, EF Core và SQL Server.</p>
         </div>
       </section>
 
@@ -1037,7 +1093,7 @@ flowchart TD
           </div>
           <div class="diagram">
             <pre class="mermaid">
-flowchart TD
+flowchart LR
     A["App Layout"]
     A --> B["Sidebar<br/>menu theo permission"]
     A --> C["Header<br/>user + notification"]
@@ -1072,19 +1128,16 @@ flowchart TD
               <pre class="mermaid">
 flowchart LR
     A["Login"] --> B["Dashboard"]
-    B --> C["OKRs"]
-    B --> D["KPIs"]
-    D --> E["KPI Details"]
-    E --> F["Allocate"]
-    D --> G["Check-in"]
-    G --> H["ReviewQueue"]
-    H --> I["Evaluation"]
-    I --> J["Reports"]
-    J --> K["Excel"]
+    B --> C["OKR / Key Result"]
+    B --> D["KPI / KPI Details"]
+    D --> E["Allocate KPI"]
+    E --> F["Check-in"]
+    F --> G["ReviewQueue"]
+    G --> H["Evaluation"]
+    H --> I["Reports / Excel"]
               </pre>
             </div>
           </div>
-          <p class="speaker-note"><strong>Lời thoại:</strong> Các màn hình được thiết kế theo luồng nghiệp vụ: dashboard để xem tổng quan, OKR để xem mục tiêu, KPI để quản lý chỉ tiêu, check-in để cập nhật tiến độ và report để tổng hợp kết quả.</p>
         </div>
       </section>
 
@@ -1116,6 +1169,7 @@ flowchart LR
           <div class="diagram">
             <pre class="mermaid">
 stateDiagram-v2
+    direction LR
     [*] --> Pending: Employee gửi check-in
     Pending --> Approved: Người có quyền duyệt
     Pending --> Rejected: Từ chối
@@ -1157,15 +1211,13 @@ stateDiagram-v2
             <pre class="mermaid">
 flowchart LR
     User["Browser"] --> App["ASP.NET Core MVC"]
-    App --> Middleware["Middleware<br/>HTTPS, Routing, Auth, Antiforgery"]
-    Middleware --> Controllers["Controllers<br/>Auth, Dashboard, OKR, KPI, Check-in, Evaluation, AI"]
+    App --> Controllers["Controllers<br/>Auth, Dashboard, OKR, KPI, Evaluation, AI"]
     Controllers --> Views["Razor Views"]
-    Controllers --> Services["Services<br/>Email, Gemini, AIData, Notification, OKRProgress"]
-    Controllers --> DbContext["MiniERPDbContext"]
-    Services --> DbContext
-    DbContext --> SQL["SQL Server"]
-    Services --> Gemini["Gemini API"]
-    Services --> SMTP["SMTP Email"]
+    Controllers --> Services["Services<br/>Email, Notification, OKRProgress, AI"]
+    Controllers --> Data["MiniERPDbContext<br/>EF Core"]
+    Services --> Data
+    Data --> SQL["SQL Server"]
+    Services --> External["Gemini API / SMTP"]
             </pre>
           </div>
         </div>
@@ -1175,57 +1227,38 @@ flowchart LR
         <div class="slide-inner">
           <p class="eyebrow">Slide 16 · Backend · 2 phút</p>
           <h2>ERD, Phân Quyền Và AI</h2>
-          <div class="diagram">
-            <pre class="mermaid">
-erDiagram
-    ROLE ||--o{ SYSTEM_USER : has
-    ROLE ||--o{ ROLE_PERMISSION : grants
-    PERMISSION ||--o{ ROLE_PERMISSION : included_in
-    SYSTEM_USER ||--|| EMPLOYEE : maps_to
-    DEPARTMENT ||--o{ EMPLOYEE_ASSIGNMENT : contains
-    POSITION ||--o{ EMPLOYEE_ASSIGNMENT : assigned_as
-    EMPLOYEE ||--o{ EMPLOYEE_ASSIGNMENT : works_in
-    MISSION_VISION ||--o{ OKR_MISSION_MAPPING : links
-    OKR ||--o{ OKR_MISSION_MAPPING : maps_to
-    OKR ||--o{ OKR_KEY_RESULT : contains
-    OKR ||--o{ OKR_DEPARTMENT_ALLOCATION : allocated_to
-    OKR ||--o{ OKR_EMPLOYEE_ALLOCATION : assigned_to
-    EVALUATION_PERIOD ||--o{ KPI : contains
-    OKR ||--o{ KPI : aligns_with
-    OKR_KEY_RESULT ||--o{ KPI : supports
-    KPI ||--o{ KPI_DETAIL : has
-    KPI ||--o{ KPI_EMPLOYEE_ASSIGNMENT : assigned_to
-    EMPLOYEE ||--o{ KPI_EMPLOYEE_ASSIGNMENT : receives
-    KPI ||--o{ KPI_CHECK_IN : checked_in
-    EMPLOYEE ||--o{ KPI_CHECK_IN : submits
-    CHECK_IN_STATUS ||--o{ KPI_CHECK_IN : status
-    KPI_CHECK_IN ||--o{ CHECK_IN_DETAIL : has
-    KPI_CHECK_IN ||--o{ CHECK_IN_HISTORY_LOG : logs
-    EMPLOYEE ||--o{ EVALUATION_RESULT : evaluated
-    EVALUATION_PERIOD ||--o{ EVALUATION_RESULT : period
-    GRADING_RANK ||--o{ EVALUATION_RESULT : ranks
-    GRADING_RANK ||--o{ BONUS_RULE : maps_bonus
-    EMPLOYEE ||--o{ REALTIME_EXPECTED_BONUS : earns
-            </pre>
-          </div>
-          <div class="diagram">
-            <pre class="mermaid">
-flowchart TD
+          <div class="grid two fit-grid">
+            <div class="diagram">
+              <pre class="mermaid">
+flowchart LR
+    A["Role / Permission"] --> B["SystemUser"]
+    B --> C["Employee"]
+    D["Department"] --> C
+    E["OKR"] --> F["Key Result"]
+    F --> G["KPI"]
+    H["Evaluation Period"] --> G
+    G --> I["KPI Assignment"]
+    G --> J["KPI Check-in"]
+    C --> J
+    C --> K["Evaluation Result"]
+    L["Grading Rank"] --> K
+    K --> M["Expected Bonus"]
+              </pre>
+            </div>
+            <div class="diagram">
+              <pre class="mermaid">
+flowchart LR
     A["User đăng nhập"] --> B["Cookie Authentication"]
-    B --> C["Claims: UserId, Role, Email"]
-    C --> D["PermissionClaimsTransformation"]
-    D --> E["Role_Permission trong DB"]
-    E --> F["Permission claims"]
-    F --> G{"Action có HasPermission?"}
-    G -- "Không" --> H["Cho xử lý nếu đã đăng nhập"]
-    G -- "Có" --> I{"Có permission?"}
-    I -- "Có" --> J["Xử lý request"]
-    I -- "Không" --> K["Forbid / AccessDenied"]
-    J --> L["AIDataService gom dữ liệu theo quyền"]
-    L --> M["GeminiService"]
-    M --> N["Gemini API"]
-    M --> O["Fallback nếu lỗi"]
-            </pre>
+    B --> C["Role + Permission claims"]
+    C --> D{"HasPermission?"}
+    D -- "Không" --> E["AccessDenied"]
+    D -- "Có" --> F["Controller xử lý"]
+    F --> G["AIDataService<br/>lọc dữ liệu theo quyền"]
+    G --> H["GeminiService"]
+    H --> I["Gemini API"]
+    H --> J["Fallback khi lỗi"]
+              </pre>
+            </div>
           </div>
         </div>
       </section>
@@ -1237,32 +1270,27 @@ flowchart TD
           <div class="grid two">
             <div class="diagram">
               <pre class="mermaid">
-flowchart TD
-    A["Test Strategy"]
-    A --> B["Functional Test"]
-    A --> C["Role/Permission Test"]
-    A --> D["Workflow Test"]
-    A --> E["UI/UX Test"]
-    A --> F["Report/Export Test"]
-    A --> G["AI/Fallback Test"]
-    A --> H["Regression Test"]
+flowchart LR
+    A["Test Strategy"] --> B["Functional<br/>Workflow"]
+    A --> C["Role / Permission"]
+    A --> D["UI / UX"]
+    A --> E["Report / Export"]
+    A --> F["AI fallback<br/>Regression"]
               </pre>
             </div>
             <div class="diagram">
               <pre class="mermaid">
 flowchart LR
     A["Seed/Test data"] --> B["Đăng nhập từng role"]
-    B --> C["Mở OKR/KPI"]
-    C --> D["Phân bổ KPI"]
-    D --> E["Employee check-in"]
-    E --> F["Manager duyệt"]
-    F --> G["Kiểm tra score/rank/bonus"]
-    G --> H["Director review"]
-    H --> I["Dashboard/report/export"]
+    B --> C["OKR / KPI setup"]
+    C --> D["Phân bổ + check-in"]
+    D --> E["Manager review"]
+    E --> F["Score / rank / bonus"]
+    F --> G["Director review"]
+    G --> H["Dashboard / report / export"]
               </pre>
             </div>
           </div>
-          <p class="speaker-note"><strong>Lời thoại:</strong> Kiểm thử tập trung vào sai nghiệp vụ, sai phân quyền và sai tính toán. Nhóm test theo luồng end-to-end từ mục tiêu, KPI, check-in, duyệt, tính điểm, Director review đến báo cáo.</p>
         </div>
       </section>
 
@@ -1278,12 +1306,30 @@ flowchart LR
               </tr>
             </thead>
             <tbody>
-              <tr><td>Employee đăng nhập</td><td>Chỉ thấy dữ liệu cá nhân/KPI được giao</td></tr>
-              <tr><td>Employee tạo check-in</td><td>Trạng thái là Pending</td></tr>
-              <tr><td>Manager duyệt check-in</td><td>Check-in Approved, cập nhật score/rank/bonus</td></tr>
-              <tr><td>Director duyệt EvaluationResult</td><td>Trạng thái chuyển Approved</td></tr>
-              <tr><td>Role thiếu quyền truy cập module</td><td>Bị chặn hoặc vào AccessDenied</td></tr>
-              <tr><td>AI thiếu API key</td><td>Có fallback, không ảnh hưởng luồng chính</td></tr>
+              <tr>
+                <td>Employee đăng nhập</td>
+                <td>Chỉ thấy dữ liệu cá nhân/KPI được giao</td>
+              </tr>
+              <tr>
+                <td>Employee tạo check-in</td>
+                <td>Trạng thái là Pending</td>
+              </tr>
+              <tr>
+                <td>Manager duyệt check-in</td>
+                <td>Check-in Approved, cập nhật score/rank/bonus</td>
+              </tr>
+              <tr>
+                <td>Director duyệt EvaluationResult</td>
+                <td>Trạng thái chuyển Approved</td>
+              </tr>
+              <tr>
+                <td>Role thiếu quyền truy cập module</td>
+                <td>Bị chặn hoặc vào AccessDenied</td>
+              </tr>
+              <tr>
+                <td>AI thiếu API key</td>
+                <td>Có fallback, không ảnh hưởng luồng chính</td>
+              </tr>
             </tbody>
           </table>
           <div class="diagram">
@@ -1298,7 +1344,6 @@ flowchart LR
     G --> H["Dashboard / Report / AI"]
             </pre>
           </div>
-          <p class="speaker-note"><strong>Kết luận:</strong> VietMach KPI/OKR System không chỉ là nơi nhập KPI, mà là hệ thống quản lý trọn vòng đời từ chiến lược, thực thi, phê duyệt, đánh giá đến báo cáo và AI Insights.</p>
         </div>
       </section>
     </div>
@@ -1307,8 +1352,9 @@ flowchart LR
       <button id="prev" type="button">Trước</button>
       <button id="next" type="button">Tiếp</button>
       <span class="counter" id="counter">1 / 18</span>
-      <div class="progress" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
-      <span class="hint">Dùng phím mũi tên, Home/End. Nhấn H để ẩn/hiện thanh.</span>
+      <div class="progress" aria-hidden="true">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
       <button id="print" type="button">In/PDF</button>
     </nav>
     <button class="nav-toggle" id="navToggle" type="button" aria-pressed="false">Ẩn thanh</button>
@@ -1346,6 +1392,7 @@ flowchart LR
       navToggle.textContent = hidden ? "Hiện thanh" : "Ẩn thanh";
       navToggle.setAttribute("aria-pressed", String(hidden));
       writeStoredNavState(hidden);
+      window.dispatchEvent(new Event("resize"));
     }
 
     function showSlide(index) {
@@ -1408,7 +1455,9 @@ flowchart LR
         theme: "base",
         flowchart: {
           htmlLabels: true,
-          useMaxWidth: true
+          useMaxWidth: true,
+          nodeSpacing: 28,
+          rankSpacing: 34
         },
         er: {
           useMaxWidth: true
@@ -1442,6 +1491,7 @@ flowchart LR
           labelTextColor: "#18231f",
           relationLabelColor: "#18231f",
           relationLabelBackground: "#ffffff",
+          fontSize: "15px",
           fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
         },
         themeCSS: `
@@ -1527,4 +1577,5 @@ flowchart LR
     }
   </script>
 </body>
+
 </html>
