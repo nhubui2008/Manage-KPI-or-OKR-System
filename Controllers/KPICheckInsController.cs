@@ -202,9 +202,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     g => g.ToDictionary(a => a.KPIId, a => (a.Weight ?? 1m) * 100));
             ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
             ViewBag.FailReasons = await _context.FailReasons.ToListAsync();
-            ViewBag.CanReviewCheckIns = User.IsInRole("Admin") || User.IsInRole("Administrator") ||
-                User.IsInRole("Manager") || User.IsInRole("Director") ||
-                User.IsInRole("HR") || User.IsInRole("Human Resources");
+            ViewBag.CanReviewCheckIns = await CanCurrentUserReviewCheckInsAsync();
             ViewBag.ReturnUrl = Request.Path + Request.QueryString;
 
             return View(checkIns);
@@ -326,9 +324,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             ViewBag.Employees = employees;
             ViewBag.SelectedEmployee = selectedEmployee;
-            ViewBag.CanReviewCheckIns = User.IsInRole("Admin") || User.IsInRole("Administrator") ||
-                User.IsInRole("Manager") || User.IsInRole("Director") ||
-                User.IsInRole("HR") || User.IsInRole("Human Resources");
+            ViewBag.CanReviewCheckIns = await CanCurrentUserReviewCheckInsAsync();
 
             return View(rows);
         }
@@ -486,6 +482,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.AllKPIs = await kpiQuery.ToListAsync();
             ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
             ViewBag.FailReasons = await _context.FailReasons.ToListAsync();
+            ViewBag.CanAutoApproveCheckIn = await CanCurrentUserReviewCheckInsAsync();
 
             // Fetch KPI details for real-time progress calculation in JS
             var kpis = (List<Manage_KPI_or_OKR_System.Models.KPI>)ViewBag.AllKPIs;
@@ -881,9 +878,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var submittedAt = DateTime.Now;
                 model.CheckInDate = submittedAt;
                 model.SubmittedById = currentEmployee?.Id;
-                var isReviewerSubmitting = User.IsInRole("Admin") || User.IsInRole("Administrator") ||
-                                           User.IsInRole("Manager") || User.IsInRole("Director") ||
-                                           User.IsInRole("HR") || User.IsInRole("Human Resources");
+                var isReviewerSubmitting = await CanCurrentUserReviewCheckInsAsync() &&
+                                           await CanReviewCheckInAsync(model, currentEmployee);
                 model.ReviewStatus = isReviewerSubmitting ? ReviewStatusApproved : ReviewStatusPending;
                 if (isReviewerSubmitting)
                 {
@@ -1650,6 +1646,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     Note = detail?.Note
                 };
             }).ToList();
+        }
+
+        private async Task<bool> CanCurrentUserReviewCheckInsAsync()
+        {
+            if (PermissionLookupHelper.IsAdmin(User))
+            {
+                return true;
+            }
+
+            return await PermissionLookupHelper.HasPermissionAsync(_context, User, "KPICHECKINS_REVIEW") ||
+                   await PermissionLookupHelper.HasPermissionAsync(_context, User, "CHECKINS_EDIT");
         }
 
         private async Task<bool> CanAccessCheckInAsync(KPICheckIn checkIn, Employee? currentEmployee)

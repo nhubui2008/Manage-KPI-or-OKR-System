@@ -162,7 +162,7 @@
                             @if (HasPerm("KPICHECKINS_VIEW"))
                             {
                                 <a href="/KPICheckIns" class="sidebar-link">
-                                    <i class="bi bi-check2-square"></i> <span>Cập nhật tiến độ KPI</span>
+                                    <i class="bi bi-check2-square"></i> <span>@(HasPerm("KPICHECKINS_REVIEW") ? "Ghi nhận tiến độ KPI" : "Cập nhật tiến độ KPI")</span>
                                 </a>
                                 <a href="/KPICheckIns/EmployeeTracking" class="sidebar-link">
                                     <i class="bi bi-person-lines-fill"></i> <span>Theo dõi KPI nhân viên</span>

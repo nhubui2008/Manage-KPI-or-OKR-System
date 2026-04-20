@@ -2,7 +2,6 @@
 @using System.Text.Json
 
 @{
-    ViewData["Title"] = "Thực hiện Check-in KPI";
     Layout = "~/Views/Shared/_Layout.cshtml";
     
     var employees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
@@ -38,18 +37,22 @@
         name = k.KPIName ?? $"KPI #{k.Id}"
     }));
     var progressSnapshotsJson = ViewBag.ProgressSnapshotsJson as string ?? "{}";
+    bool canAutoApproveCheckIn = ViewBag.CanAutoApproveCheckIn == true;
+    string progressPageTitle = canAutoApproveCheckIn ? "Ghi nhận tiến độ KPI" : "Cập nhật tiến độ KPI";
+    string progressActionLabel = canAutoApproveCheckIn ? "Ghi nhận tiến độ" : "Gửi check-in";
+    ViewData["Title"] = progressPageTitle;
 }
 
 <div class="page-content">
     <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
         <div>
-            <h1 class="mb-2 fw-800">Thực hiện Check-in KPI</h1>
+            <h1 class="mb-2 fw-800">@progressPageTitle</h1>
             <div class="page-breadcrumb">
                 <a href="/">Trang chủ</a>
                 <span class="separator">/</span>
-                <a asp-action="Index">Lịch sử Check-in</a>
+                <a asp-action="Index">Lịch sử tiến độ</a>
                 <span class="separator">/</span>
-                <span class="text-muted">Thực hiện mới</span>
+                <span class="text-muted">@(canAutoApproveCheckIn ? "Ghi nhận mới" : "Cập nhật mới")</span>
             </div>
         </div>
         <div>
@@ -181,7 +184,7 @@
                                 <i class="bi bi-x-lg me-2"></i> Hủy thao tác
                             </a>
                             <button type="submit" class="btn-primary-custom" style="padding: 12px 40px; border-radius: 12px;">
-                                <i class="bi bi-check-lg fs-5 me-2"></i> Hoàn tất Check-in
+                                <i class="bi bi-check-lg fs-5 me-2"></i> @progressActionLabel
                             </button>
                         </div>
                     </form>

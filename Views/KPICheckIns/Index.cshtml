@@ -2,14 +2,15 @@
 @using Manage_KPI_or_OKR_System.Helpers
 @using System.Text.Json
 @{
-    ViewData["Title"] = "Lịch sử Check-in KPI";
-    
     var detailsDict = ViewBag.Details as Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail>();
     var employeesDict = ViewBag.Employees as Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>();
     var kpisDict = ViewBag.KPIs as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI>();
     var statusesDict = ViewBag.CheckInStatuses as Dictionary<int, string> ?? new Dictionary<int, string>();
     var commentsByCheckIn = ViewBag.CheckInComments as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.GoalComment>> ?? new Dictionary<int, List<Manage_KPI_or_OKR_System.Models.GoalComment>>();
     bool canReviewCheckIns = ViewBag.CanReviewCheckIns == true;
+    string progressPageTitle = canReviewCheckIns ? "Ghi nhận tiến độ KPI" : "Cập nhật tiến độ KPI";
+    string progressActionLabel = canReviewCheckIns ? "Ghi nhận tiến độ" : "Cập nhật tiến độ";
+    ViewData["Title"] = progressPageTitle;
     string returnUrl = ViewBag.ReturnUrl as string ?? "/KPICheckIns";
     var failReasonsDict = (ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>()).ToDictionary(r => r.Id, r => r.ReasonName ?? "Chưa rõ");
     var kpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
@@ -327,13 +328,6 @@
         margin-bottom: 8px;
     }
 
-    /* Review panel in card footer */
-    .ci-review-panel {
-        border-top: 1px dashed #e1e8f0;
-        padding: 14px 20px;
-        background: linear-gradient(135deg, #f8fafd, #eef3fd);
-    }
-
     /* Empty state */
     .rq-empty { padding: 72px 24px; text-align: center; }
     .rq-empty-icon {
@@ -365,18 +359,18 @@
 
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 font-weight-bold mb-1">Check-in KPI</h1>
+            <h1 class="h3 font-weight-bold mb-1">@progressPageTitle</h1>
             <div class="page-breadcrumb">
                 <a href="/">Trang chủ</a>
                 <i class="bi bi-chevron-right separator"></i>
                 <a href="/KPIs">KPI</a>
                 <i class="bi bi-chevron-right separator"></i>
-                <span>Check-in</span>
+                <span>@progressPageTitle</span>
             </div>
         </div>
         <div class="d-flex justify-content-end gap-2">
             <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
-                <i class="bi bi-calendar-check text-white me-1"></i> Thực hiện Check-in
+                <i class="bi bi-calendar-check text-white me-1"></i> @progressActionLabel
             </a>
         </div>
     </div>
@@ -607,36 +601,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Review Form (nếu Pending và có quyền) -->
-                                @if (canReviewCheckIns && reviewStatus == "Pending")
-                                {
-                                    <div class="ci-review-panel">
-                                        <div class="ci-info-label mb-2"><i class="bi bi-pencil-square me-1"></i>Xử lý xác nhận</div>
-                                        <form asp-action="Review" method="post" class="ci-review-form">
-                                            <input type="hidden" name="id" value="@ci.Id" />
-                                            <input type="hidden" name="returnUrl" value="@returnUrl" />
-                                            <div class="row g-2 align-items-end">
-                                                <div class="col-md-3">
-                                                    <input type="number" min="0" max="100" step="0.01" name="reviewScore"
-                                                           class="form-control form-control-sm" placeholder="Điểm 0–100" />
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <textarea name="reviewComment" class="form-control form-control-sm"
-                                                              rows="2" placeholder="Nhận xét của quản lý..."></textarea>
-                                                </div>
-                                                <div class="col-md-4 d-flex gap-2 justify-content-end">
-                                                    <button type="submit" name="decision" value="Approved" class="rq-btn-approve">
-                                                        <i class="bi bi-check2-circle me-1"></i>Xác nhận
-                                                    </button>
-                                                    <button type="submit" name="decision" value="Rejected" class="rq-btn-reject">
-                                                        <i class="bi bi-x-circle me-1"></i>Từ chối
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                }
-
                                 <!-- Comment Section -->
                                 <div class="ci-comment-section">
                                     <button class="ci-comment-toggle" type="button"
@@ -702,7 +666,7 @@
                                 <i class="bi bi-journal-x"></i>
                             </div>
                             <div class="rq-empty-title">Chưa có bản ghi Check-in nào</div>
-                            <div class="rq-empty-sub">Hãy bắt đầu thực hiện check-in để cập nhật tiến độ KPI.</div>
+                            <div class="rq-empty-sub">Hãy bắt đầu ghi nhận dữ liệu để theo dõi tiến độ KPI.</div>
                         </div>
                     }
                 </div>
@@ -723,7 +687,7 @@
             <div class="modal-header-soft primary">
                 <h5 class="modal-title-custom">
                     <i class="bi bi-calendar-check-fill text-white shadow-sm" style="background: linear-gradient(135deg, #1a73e8, #4285f4); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 12px;"></i>
-                    Thực hiện Check-in KPI
+                    @progressPageTitle
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -829,7 +793,7 @@
 
                     <div class="d-flex justify-content-end gap-3 mt-4">
                         <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Hủy bỏ</button>
-                        <button type="submit" class="btn-primary-custom px-4">Xác nhận Check-in</button>
+                        <button type="submit" class="btn-primary-custom px-4">@progressActionLabel</button>
                     </div>
                 </div>
             </form>
