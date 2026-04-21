@@ -8,8 +8,10 @@
 -- BƯỚC 0: XÓA DỮ LIỆU CŨ (theo thứ tự phụ thuộc FK)
 -- ============================================================
 DELETE FROM [AuditLogs];
+DELETE FROM [AIGenerationHistories];
 DELETE FROM [SystemAlerts];
 DELETE FROM [EvaluationReportSummaries];
+DELETE FROM [EvaluationReportIncidents];
 DELETE FROM [HRExportReports];
 DELETE FROM [RealtimeExpectedBonuses];
 DELETE FROM [BonusRules];
@@ -31,6 +33,7 @@ DELETE FROM [OKR_Department_Allocations];
 DELETE FROM [OKR_Mission_Mappings];
 DELETE FROM [OKRKeyResults];
 DELETE FROM [OKRs];
+DELETE FROM [MissionVisions];
 DELETE FROM [EmployeeAssignments];
 DELETE FROM [Employees];
 DELETE FROM [SystemUsers];
@@ -39,7 +42,6 @@ DELETE FROM [Permissions];
 DELETE FROM [Roles];
 DELETE FROM [Departments];
 DELETE FROM [Positions];
-DELETE FROM [MissionVisions];
 DELETE FROM [EvaluationPeriods];
 DELETE FROM [GradingRanks];
 DELETE FROM [SystemParameters];
@@ -485,8 +487,539 @@ INSERT INTO [KPI_Employee_Assignments] ([KPIId], [EmployeeId]) VALUES (1, 5), (2
 GO
 
 -- ============================================================
+-- MODULE 16: LARGE-SCALE DEMO DATA (240 MEMBERS, DEPARTMENTS, PROJECT KPIS)
+-- Keeps foundation seed data above, then replaces the compact demo org
+-- with deterministic set-based data for realistic dev/test scenarios.
+-- ============================================================
+DELETE FROM [SystemAlerts];
+DELETE FROM [EvaluationReportSummaries];
+DELETE FROM [EvaluationReportIncidents];
+DELETE FROM [HRExportReports];
+DELETE FROM [RealtimeExpectedBonuses];
+DELETE FROM [KPIAdjustmentHistories];
+DELETE FROM [EvaluationResults];
+DELETE FROM [KPI_Result_Comparisons];
+DELETE FROM [OneOnOneMeetings];
+DELETE FROM [GoalComments];
+DELETE FROM [CheckInHistoryLogs];
+DELETE FROM [CheckInDetails];
+DELETE FROM [KPICheckIns];
+DELETE FROM [KPI_Employee_Assignments];
+DELETE FROM [KPI_Department_Assignments];
+DELETE FROM [KPIDetails];
+DELETE FROM [AdhocTasks];
+DELETE FROM [KPIs];
+DELETE FROM [OKR_Employee_Allocations];
+DELETE FROM [OKR_Department_Allocations];
+DELETE FROM [OKR_Mission_Mappings];
+DELETE FROM [OKRKeyResults];
+DELETE FROM [OKRs];
+DELETE FROM [EmployeeAssignments];
+DELETE FROM [Departments];
+UPDATE [MissionVisions] SET [CreatedById] = NULL WHERE [CreatedById] IS NOT NULL;
+DELETE FROM [Employees];
+DELETE FROM [SystemUsers];
+DELETE FROM [Positions];
+GO
+
+-- Organization catalog: broader role ladder for a 240-member company.
+SET IDENTITY_INSERT [Positions] ON;
+INSERT INTO [Positions] ([Id], [PositionCode], [PositionName], [RankLevel], [IsActive])
+VALUES
+    (1,  N'GD',      N'Giám đốc',                 1, 1),
+    (2,  N'PGD',     N'Phó Giám đốc',             2, 1),
+    (3,  N'TP',      N'Trưởng phòng',             3, 1),
+    (4,  N'PP',      N'Phó phòng',                4, 1),
+    (5,  N'TN',      N'Trưởng nhóm',              5, 1),
+    (6,  N'NV',      N'Nhân viên',                6, 1),
+    (7,  N'TTS',     N'Thực tập sinh',            7, 1),
+    (8,  N'PM',      N'Quản lý dự án',            4, 1),
+    (9,  N'BA',      N'Chuyên viên phân tích',    5, 1),
+    (10, N'DEV',     N'Kỹ sư phần mềm',           6, 1),
+    (11, N'QA',      N'Kỹ sư kiểm thử',           6, 1),
+    (12, N'DATA',    N'Chuyên viên dữ liệu',      6, 1);
+SET IDENTITY_INSERT [Positions] OFF;
+GO
+
+SET IDENTITY_INSERT [Departments] ON;
+INSERT INTO [Departments] ([Id], [DepartmentCode], [DepartmentName], [ParentDepartmentId], [ManagerId], [IsActive], [CreatedAt], [CreatedById])
+VALUES
+    (1,  N'BOD',   N'Ban Giám Đốc',                  NULL, NULL, 1, GETDATE(), NULL),
+    (2,  N'HR',    N'Phòng Nhân Sự',                 1,    NULL, 1, GETDATE(), NULL),
+    (3,  N'IT',    N'Phòng Công Nghệ',               1,    NULL, 1, GETDATE(), NULL),
+    (4,  N'SALES', N'Phòng Kinh Doanh',              1,    NULL, 1, GETDATE(), NULL),
+    (5,  N'FIN',   N'Phòng Tài Chính - Kế Toán',     1,    NULL, 1, GETDATE(), NULL),
+    (6,  N'MKT',   N'Phòng Marketing',               1,    NULL, 1, GETDATE(), NULL),
+    (7,  N'OPS',   N'Phòng Vận Hành',                1,    NULL, 1, GETDATE(), NULL),
+    (8,  N'CS',    N'Phòng Chăm Sóc Khách Hàng',     1,    NULL, 1, GETDATE(), NULL),
+    (9,  N'PROD',  N'Phòng Sản Phẩm',                1,    NULL, 1, GETDATE(), NULL),
+    (10, N'DATA',  N'Phòng Dữ Liệu',                 1,    NULL, 1, GETDATE(), NULL),
+    (11, N'QA',    N'Phòng Đảm Bảo Chất Lượng',      1,    NULL, 1, GETDATE(), NULL),
+    (12, N'PMO',   N'Văn Phòng Quản Lý Dự Án',       1,    NULL, 1, GETDATE(), NULL);
+SET IDENTITY_INSERT [Departments] OFF;
+GO
+
+-- 240 deterministic accounts. IDs 1-5 intentionally preserve demo logins.
+SET IDENTITY_INSERT [SystemUsers] ON;
+;WITH Numbers AS
+(
+    SELECT 1 AS Id
+    UNION ALL
+    SELECT Id + 1 FROM Numbers WHERE Id < 240
+)
+INSERT INTO [SystemUsers] ([Id], [Username], [Email], [PasswordHash], [LastPasswordChange], [RoleId], [IsActive], [CreatedAt], [CreatedById])
+SELECT
+    Id,
+    CASE Id
+        WHEN 1 THEN N'admin'
+        WHEN 2 THEN N'director'
+        WHEN 3 THEN N'manager'
+        WHEN 4 THEN N'hr'
+        WHEN 5 THEN N'employee'
+        ELSE CONCAT(N'user', RIGHT('000' + CAST(Id AS varchar(3)), 3))
+    END AS Username,
+    CASE Id
+        WHEN 1 THEN N'admin@company.com'
+        WHEN 2 THEN N'director@company.com'
+        WHEN 3 THEN N'manager@company.com'
+        WHEN 4 THEN N'hr@company.com'
+        WHEN 5 THEN N'employee@company.com'
+        ELSE CONCAT(N'user', RIGHT('000' + CAST(Id AS varchar(3)), 3), N'@company.com')
+    END AS Email,
+    N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3',
+    GETDATE(),
+    CASE
+        WHEN Id = 1 THEN 1
+        WHEN Id = 2 THEN 2
+        WHEN Id BETWEEN 3 AND 14 THEN 3
+        WHEN Id BETWEEN 15 AND 20 THEN 4
+        ELSE 5
+    END AS RoleId,
+    1,
+    GETDATE(),
+    NULL
+FROM Numbers
+OPTION (MAXRECURSION 0);
+SET IDENTITY_INSERT [SystemUsers] OFF;
+GO
+
+SET IDENTITY_INSERT [Employees] ON;
+;WITH Numbers AS
+(
+    SELECT 1 AS Id
+    UNION ALL
+    SELECT Id + 1 FROM Numbers WHERE Id < 240
+)
+INSERT INTO [Employees] ([Id], [EmployeeCode], [FullName], [DateOfBirth], [Phone], [Email], [TaxCode], [JoinDate], [SystemUserId], [IsActive], [StrategicGoalId], [CreatedAt], [CreatedById])
+SELECT
+    Id,
+    CONCAT(N'NV', RIGHT('000' + CAST(Id AS varchar(3)), 3)),
+    CASE
+        WHEN Id = 1 THEN N'Nguyễn Văn An'
+        WHEN Id = 2 THEN N'Trần Thị Bình'
+        WHEN Id = 3 THEN N'Lê Minh Cường'
+        WHEN Id = 4 THEN N'Phạm Thị Dung'
+        WHEN Id = 5 THEN N'Hoàng Văn Em'
+        WHEN Id BETWEEN 6 AND 14 THEN CONCAT(N'Trưởng phòng ', RIGHT('000' + CAST(Id AS varchar(3)), 3))
+        WHEN Id BETWEEN 15 AND 20 THEN CONCAT(N'Chuyên viên Nhân sự ', RIGHT('000' + CAST(Id AS varchar(3)), 3))
+        ELSE CONCAT(N'Nhân viên ', RIGHT('000' + CAST(Id AS varchar(3)), 3))
+    END AS FullName,
+    DATEADD(DAY, (Id * 29) % 5200, CAST('1982-01-01' AS date)),
+    CONCAT(N'0901', RIGHT('000000' + CAST(Id AS varchar(6)), 6)),
+    CASE Id
+        WHEN 1 THEN N'admin@company.com'
+        WHEN 2 THEN N'director@company.com'
+        WHEN 3 THEN N'manager@company.com'
+        WHEN 4 THEN N'hr@company.com'
+        WHEN 5 THEN N'employee@company.com'
+        ELSE CONCAT(N'user', RIGHT('000' + CAST(Id AS varchar(3)), 3), N'@company.com')
+    END AS Email,
+    CONCAT(N'0100', RIGHT('000000' + CAST(Id AS varchar(6)), 6)),
+    DATEADD(DAY, (Id * 17) % 1600, CAST('2020-01-01' AS date)),
+    Id,
+    1,
+    NULL,
+    GETDATE(),
+    NULL
+FROM Numbers
+OPTION (MAXRECURSION 0);
+SET IDENTITY_INSERT [Employees] OFF;
+GO
+
+UPDATE [MissionVisions] SET [CreatedById] = 2 WHERE [CreatedById] IS NULL;
+GO
+
+UPDATE [Departments]
+SET [ManagerId] = CASE [Id]
+    WHEN 1 THEN 2
+    WHEN 2 THEN 4
+    WHEN 3 THEN 3
+    WHEN 4 THEN 6
+    WHEN 5 THEN 7
+    WHEN 6 THEN 8
+    WHEN 7 THEN 9
+    WHEN 8 THEN 10
+    WHEN 9 THEN 11
+    WHEN 10 THEN 12
+    WHEN 11 THEN 13
+    WHEN 12 THEN 14
+END
+WHERE [Id] BETWEEN 1 AND 12;
+GO
+
+SET IDENTITY_INSERT [EmployeeAssignments] ON;
+;WITH Numbers AS
+(
+    SELECT 1 AS Id
+    UNION ALL
+    SELECT Id + 1 FROM Numbers WHERE Id < 240
+)
+INSERT INTO [EmployeeAssignments] ([Id], [EmployeeId], [PositionId], [DepartmentId], [EffectiveDate], [IsActive])
+SELECT
+    n.Id,
+    n.Id,
+    CASE
+        WHEN n.Id IN (1, 2) THEN 1
+        WHEN n.Id BETWEEN 3 AND 14 THEN 3
+        WHEN d.DepartmentId = 10 THEN 12
+        WHEN d.DepartmentId = 11 THEN 11
+        WHEN d.DepartmentId = 3 THEN 10
+        WHEN d.DepartmentId IN (9, 12) AND n.Id % 5 = 0 THEN 8
+        WHEN n.Id % 19 = 0 THEN 5
+        WHEN n.Id % 13 = 0 THEN 4
+        ELSE 6
+    END AS PositionId,
+    d.DepartmentId,
+    DATEADD(DAY, (n.Id * 17) % 1600, CAST('2020-01-01' AS date)),
+    1
+FROM Numbers n
+CROSS APPLY
+(
+    SELECT CASE
+        WHEN n.Id IN (1, 2) THEN 1
+        WHEN n.Id = 4 OR n.Id BETWEEN 15 AND 20 THEN 2
+        WHEN n.Id IN (3, 5) THEN 3
+        WHEN n.Id BETWEEN 6 AND 14 THEN n.Id - 2
+        ELSE ((n.Id - 21) % 10) + 3
+    END AS DepartmentId
+) d
+OPTION (MAXRECURSION 0);
+SET IDENTITY_INSERT [EmployeeAssignments] OFF;
+GO
+
+-- 36 OKRs: 3 strategic/project objectives for each department.
+DECLARE @DeptProjects TABLE
+(
+    DepartmentId INT PRIMARY KEY,
+    DepartmentName NVARCHAR(100),
+    ProjectAlias NVARCHAR(100),
+    ManagerId INT
+);
+
+INSERT INTO @DeptProjects ([DepartmentId], [DepartmentName], [ProjectAlias], [ManagerId])
+VALUES
+    (1,  N'Ban Giám Đốc',                 N'Strategy Office',     2),
+    (2,  N'Phòng Nhân Sự',                N'Talent Platform',     4),
+    (3,  N'Phòng Công Nghệ',              N'CRM Core',            3),
+    (4,  N'Phòng Kinh Doanh',             N'Revenue Pipeline',    6),
+    (5,  N'Phòng Tài Chính - Kế Toán',    N'E-Invoice',           7),
+    (6,  N'Phòng Marketing',              N'Growth Hub',          8),
+    (7,  N'Phòng Vận Hành',               N'SCM Optimization',    9),
+    (8,  N'Phòng Chăm Sóc Khách Hàng',    N'Customer 360',        10),
+    (9,  N'Phòng Sản Phẩm',               N'Mobile App',          11),
+    (10, N'Phòng Dữ Liệu',                N'Data Warehouse',      12),
+    (11, N'Phòng Đảm Bảo Chất Lượng',     N'Automation Lab',      13),
+    (12, N'Văn Phòng Quản Lý Dự Án',      N'Portfolio Office',    14);
+
+SET IDENTITY_INSERT [OKRs] ON;
+INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById])
+SELECT
+    (d.DepartmentId - 1) * 3 + t.TemplateId AS Id,
+    CASE t.TemplateId
+        WHEN 1 THEN CONCAT(N'Dự án ', d.ProjectAlias, N' đạt mốc chiến lược Q2-2026')
+        WHEN 2 THEN CONCAT(N'Nâng cao hiệu quả vận hành ', d.DepartmentName)
+        ELSE CONCAT(N'Chuyển đổi số và tự động hóa ', d.ProjectAlias)
+    END AS ObjectiveName,
+    CASE WHEN d.DepartmentId = 1 THEN 1 ELSE 2 END AS OKRTypeId,
+    N'Q2-2026',
+    2,
+    1,
+    GETDATE(),
+    d.ManagerId
+FROM @DeptProjects d
+CROSS JOIN (VALUES (1), (2), (3)) AS t(TemplateId);
+SET IDENTITY_INSERT [OKRs] OFF;
+
+SET IDENTITY_INSERT [OKRKeyResults] ON;
+INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus])
+SELECT
+    (o.OkrId - 1) * 3 + kr.KrIndex AS Id,
+    o.OkrId,
+    CASE kr.KrIndex
+        WHEN 1 THEN CONCAT(N'Hoàn thành các mốc nghiệm thu của ', o.ProjectAlias)
+        WHEN 2 THEN CONCAT(N'Đạt chất lượng bàn giao cho ', o.ProjectAlias)
+        ELSE CONCAT(N'Giảm rủi ro tồn đọng trong ', o.ProjectAlias)
+    END AS KeyResultName,
+    CASE kr.KrIndex
+        WHEN 1 THEN 100.00
+        WHEN 2 THEN 95.00
+        ELSE CAST(10 + (o.DepartmentId % 6) AS decimal(18,2))
+    END AS TargetValue,
+    CASE kr.KrIndex
+        WHEN 1 THEN CAST(45 + (o.DepartmentId * 3) % 40 AS decimal(18,2))
+        WHEN 2 THEN CAST(60 + (o.DepartmentId * 2) % 30 AS decimal(18,2))
+        ELSE CAST(4 + (o.DepartmentId % 7) AS decimal(18,2))
+    END AS CurrentValue,
+    CASE kr.KrIndex
+        WHEN 1 THEN N'%'
+        WHEN 2 THEN N'%'
+        ELSE N'Ticket'
+    END AS Unit,
+    CASE WHEN kr.KrIndex = 3 THEN 1 ELSE 0 END AS IsInverse,
+    NULL,
+    N'Đang thực hiện'
+FROM
+(
+    SELECT
+        (d.DepartmentId - 1) * 3 + t.TemplateId AS OkrId,
+        d.DepartmentId,
+        d.ProjectAlias
+    FROM @DeptProjects d
+    CROSS JOIN (VALUES (1), (2), (3)) AS t(TemplateId)
+) o
+CROSS JOIN (VALUES (1), (2), (3)) AS kr(KrIndex);
+SET IDENTITY_INSERT [OKRKeyResults] OFF;
+
+INSERT INTO [OKR_Mission_Mappings] ([OKRId], [MissionId])
+SELECT
+    (d.DepartmentId - 1) * 3 + t.TemplateId,
+    CASE WHEN t.TemplateId = 1 THEN 1 ELSE 2 END
+FROM @DeptProjects d
+CROSS JOIN (VALUES (1), (2), (3)) AS t(TemplateId);
+
+INSERT INTO [OKR_Department_Allocations] ([OKRId], [DepartmentId])
+SELECT
+    (d.DepartmentId - 1) * 3 + t.TemplateId,
+    d.DepartmentId
+FROM @DeptProjects d
+CROSS JOIN (VALUES (1), (2), (3)) AS t(TemplateId);
+
+INSERT INTO [OKR_Employee_Allocations] ([OKRId], [EmployeeId], [AllocatedValue])
+SELECT
+    (d.DepartmentId - 1) * 3 + t.TemplateId AS OKRId,
+    picked.EmployeeId,
+    CAST(CASE picked.AllocationRank WHEN 1 THEN 50.00 WHEN 2 THEN 30.00 ELSE 20.00 END AS decimal(18,2))
+FROM @DeptProjects d
+CROSS JOIN (VALUES (1), (2), (3)) AS t(TemplateId)
+CROSS APPLY
+(
+    SELECT
+        x.EmployeeId,
+        ROW_NUMBER() OVER (ORDER BY x.EmployeeId) AS AllocationRank
+    FROM
+    (
+        SELECT TOP (3) ea.EmployeeId
+        FROM [EmployeeAssignments] ea
+        WHERE ea.DepartmentId = d.DepartmentId AND ea.IsActive = 1
+        ORDER BY ea.EmployeeId
+    ) x
+) picked;
+GO
+
+-- 84 KPIs: 7 KPI templates for each department/project.
+DECLARE @DeptProjects TABLE
+(
+    DepartmentId INT PRIMARY KEY,
+    DepartmentName NVARCHAR(100),
+    ProjectAlias NVARCHAR(100),
+    ManagerId INT
+);
+
+DECLARE @KpiTemplates TABLE
+(
+    TemplateId INT PRIMARY KEY,
+    TemplateName NVARCHAR(160),
+    MeasurementUnit NVARCHAR(50),
+    PropertyId INT,
+    KPITypeId INT,
+    IsInverse BIT,
+    BaseTarget DECIMAL(18,2),
+    FrequencyDays INT
+);
+
+INSERT INTO @DeptProjects ([DepartmentId], [DepartmentName], [ProjectAlias], [ManagerId])
+VALUES
+    (1,  N'Ban Giám Đốc',                 N'Strategy Office',     2),
+    (2,  N'Phòng Nhân Sự',                N'Talent Platform',     4),
+    (3,  N'Phòng Công Nghệ',              N'CRM Core',            3),
+    (4,  N'Phòng Kinh Doanh',             N'Revenue Pipeline',    6),
+    (5,  N'Phòng Tài Chính - Kế Toán',    N'E-Invoice',           7),
+    (6,  N'Phòng Marketing',              N'Growth Hub',          8),
+    (7,  N'Phòng Vận Hành',               N'SCM Optimization',    9),
+    (8,  N'Phòng Chăm Sóc Khách Hàng',    N'Customer 360',        10),
+    (9,  N'Phòng Sản Phẩm',               N'Mobile App',          11),
+    (10, N'Phòng Dữ Liệu',                N'Data Warehouse',      12),
+    (11, N'Phòng Đảm Bảo Chất Lượng',     N'Automation Lab',      13),
+    (12, N'Văn Phòng Quản Lý Dự Án',      N'Portfolio Office',    14);
+
+INSERT INTO @KpiTemplates ([TemplateId], [TemplateName], [MeasurementUnit], [PropertyId], [KPITypeId], [IsInverse], [BaseTarget], [FrequencyDays])
+VALUES
+    (1, N'Giá trị bàn giao',                  N'Triệu đồng', 1, 1, 0, 1000.00, 7),
+    (2, N'Tỷ lệ hoàn thành đúng hạn',         N'%',          4, 1, 0, 100.00,  7),
+    (3, N'Chất lượng nghiệm thu',             N'%',          2, 1, 0, 95.00,   7),
+    (4, N'Số hạng mục dự án hoàn thành',      N'Dự án',      4, 1, 0, 4.00,    14),
+    (5, N'Ticket tồn đọng nghiêm trọng',      N'Ticket',     3, 1, 1, 20.00,   7),
+    (6, N'Mức độ hài lòng khách hàng/nội bộ', N'%',          2, 2, 0, 92.00,   14),
+    (7, N'Tự động hóa và cải tiến quy trình', N'%',          5, 3, 0, 80.00,   14);
+
+SET IDENTITY_INSERT [KPIs] ON;
+INSERT INTO [KPIs] ([Id], [PeriodId], [KPIName], [Description], [PropertyId], [KPITypeId], [OKRId], [OKRKeyResultId], [AssignerId], [StatusId], [IsActive], [CreatedAt], [CreatedById])
+SELECT
+    (d.DepartmentId - 1) * 7 + t.TemplateId AS Id,
+    2,
+    CONCAT(N'Dự án ', d.ProjectAlias, N' - ', t.TemplateName),
+    CONCAT(N'KPI quy mô lớn cho ', d.DepartmentName, N', phục vụ demo phân bổ nhân sự, phòng ban và dự án.'),
+    t.PropertyId,
+    t.KPITypeId,
+    link.LinkedOkrId,
+    link.LinkedKrId,
+    d.ManagerId,
+    7,
+    1,
+    GETDATE(),
+    d.ManagerId
+FROM @DeptProjects d
+CROSS JOIN @KpiTemplates t
+CROSS APPLY
+(
+    SELECT ((t.TemplateId - 1) % 3) + 1 AS OkrSlot
+) slot
+CROSS APPLY
+(
+    SELECT
+        (d.DepartmentId - 1) * 3 + slot.OkrSlot AS LinkedOkrId,
+        (((d.DepartmentId - 1) * 3 + slot.OkrSlot - 1) * 3) + slot.OkrSlot AS LinkedKrId
+) link;
+SET IDENTITY_INSERT [KPIs] OFF;
+
+SET IDENTITY_INSERT [KPIDetails] ON;
+INSERT INTO [KPIDetails] ([Id], [KPIId], [TargetValue], [PassThreshold], [FailThreshold], [MeasurementUnit], [IsInverse], [DeadlineDate], [CheckInFrequencyDays], [CheckInDeadlineTime], [ReminderBeforeHours])
+SELECT
+    (d.DepartmentId - 1) * 7 + t.TemplateId AS Id,
+    (d.DepartmentId - 1) * 7 + t.TemplateId AS KPIId,
+    target.TargetValue,
+    CASE WHEN t.IsInverse = 1 THEN target.TargetValue ELSE ROUND(target.TargetValue * 0.80, 2) END AS PassThreshold,
+    CASE WHEN t.IsInverse = 1 THEN ROUND(target.TargetValue * 2.00, 2) ELSE ROUND(target.TargetValue * 0.60, 2) END AS FailThreshold,
+    t.MeasurementUnit,
+    t.IsInverse,
+    CAST('2026-06-30' AS date),
+    t.FrequencyDays,
+    CAST('10:00:00' AS time),
+    24
+FROM @DeptProjects d
+CROSS JOIN @KpiTemplates t
+CROSS APPLY
+(
+    SELECT CAST(CASE
+        WHEN t.TemplateId = 1 THEN
+            CASE
+                WHEN d.DepartmentId = 1 THEN 20000.00
+                WHEN d.DepartmentId = 4 THEN 5000.00
+                ELSE 800.00 + (d.DepartmentId * 120.00)
+            END
+        WHEN t.TemplateId = 4 THEN 3.00 + (d.DepartmentId % 5)
+        WHEN t.TemplateId = 5 THEN 15.00 + (d.DepartmentId % 8)
+        ELSE t.BaseTarget
+    END AS decimal(18,2)) AS TargetValue
+) target;
+SET IDENTITY_INSERT [KPIDetails] OFF;
+
+INSERT INTO [KPI_Department_Assignments] ([KPIId], [DepartmentId])
+SELECT
+    (d.DepartmentId - 1) * 7 + t.TemplateId,
+    d.DepartmentId
+FROM @DeptProjects d
+CROSS JOIN @KpiTemplates t;
+
+;WITH ActiveAssignments AS
+(
+    SELECT [EmployeeId], [DepartmentId]
+    FROM [EmployeeAssignments]
+    WHERE [IsActive] = 1
+),
+EmployeeKpis AS
+(
+    SELECT
+        ((DepartmentId - 1) * 7) + (((EmployeeId - 1) % 7) + 1) AS KPIId,
+        EmployeeId,
+        CAST(0.60 AS decimal(5,2)) AS Weight
+    FROM ActiveAssignments
+    UNION ALL
+    SELECT
+        ((DepartmentId - 1) * 7) + (((EmployeeId + 2) % 7) + 1) AS KPIId,
+        EmployeeId,
+        CAST(0.40 AS decimal(5,2)) AS Weight
+    FROM ActiveAssignments
+)
+INSERT INTO [KPI_Employee_Assignments] ([KPIId], [EmployeeId], [Weight], [Status])
+SELECT KPIId, EmployeeId, Weight, N'Active'
+FROM EmployeeKpis;
+GO
+
+-- Guardrails: fail fast if the large-scale seed did not materialize.
+DECLARE @UserCount INT = (SELECT COUNT(*) FROM [SystemUsers]);
+DECLARE @EmployeeCount INT = (SELECT COUNT(*) FROM [Employees]);
+DECLARE @DepartmentCount INT = (SELECT COUNT(*) FROM [Departments]);
+DECLARE @AssignmentCount INT = (SELECT COUNT(*) FROM [EmployeeAssignments] WHERE [IsActive] = 1);
+DECLARE @OkrCount INT = (SELECT COUNT(*) FROM [OKRs]);
+DECLARE @KpiCount INT = (SELECT COUNT(*) FROM [KPIs]);
+DECLARE @KpiEmployeeAssignmentCount INT = (SELECT COUNT(*) FROM [KPI_Employee_Assignments]);
+
+IF @UserCount <> 240
+    THROW 51000, N'Seed validation failed: SystemUsers must equal 240.', 1;
+
+IF @EmployeeCount <> 240
+    THROW 51001, N'Seed validation failed: Employees must equal 240.', 1;
+
+IF @DepartmentCount < 12
+    THROW 51002, N'Seed validation failed: Departments must be at least 12.', 1;
+
+IF @AssignmentCount <> 240
+    THROW 51003, N'Seed validation failed: active EmployeeAssignments must equal 240.', 1;
+
+IF EXISTS (SELECT 1 FROM [Departments] WHERE [IsActive] = 1 AND [ManagerId] IS NULL)
+    THROW 51004, N'Seed validation failed: every active department must have a manager.', 1;
+
+IF @OkrCount < 30
+    THROW 51005, N'Seed validation failed: OKRs must be at least 30.', 1;
+
+IF @KpiCount < 70
+    THROW 51006, N'Seed validation failed: KPIs must be at least 70.', 1;
+
+PRINT N'';
+PRINT N'=== LARGE-SCALE SEED SUMMARY ===';
+PRINT CONCAT(N'SystemUsers: ', @UserCount);
+PRINT CONCAT(N'Employees: ', @EmployeeCount);
+PRINT CONCAT(N'Departments: ', @DepartmentCount);
+PRINT CONCAT(N'EmployeeAssignments: ', @AssignmentCount);
+PRINT CONCAT(N'OKRs: ', @OkrCount);
+PRINT CONCAT(N'KPIs: ', @KpiCount);
+PRINT CONCAT(N'KPI employee assignments: ', @KpiEmployeeAssignmentCount);
+GO
+
+-- ============================================================
 -- HOÀN TẤT
 -- ============================================================
+IF (SELECT COUNT(*) FROM [SystemUsers]) <> 240
+    OR (SELECT COUNT(*) FROM [Employees]) <> 240
+    OR (SELECT COUNT(*) FROM [Departments]) < 12
+    OR (SELECT COUNT(*) FROM [EmployeeAssignments] WHERE [IsActive] = 1) <> 240
+    OR (SELECT COUNT(*) FROM [OKRs]) < 30
+    OR (SELECT COUNT(*) FROM [KPIs]) < 70
+BEGIN
+    THROW 51007, N'Seed data was not completed. Check the earlier SQL error before this final block.', 1;
+END
+
 PRINT N'';
 PRINT N'=== SEED DATA HOÀN TẤT ===';
 PRINT N'';
