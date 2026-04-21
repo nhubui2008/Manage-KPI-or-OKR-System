@@ -28,11 +28,12 @@ namespace Manage_KPI_or_OKR_System.Helpers
                 return false;
             }
 
-            if ((userRoles.Contains("HR") || userRoles.Contains("Human Resources")) &&
-                (permissionCode == "EMPLOYEES_VIEW" || permissionCode == "EVALPERIODS_VIEW"))
+            if (PermissionAuthorizationHelper.HasRoleDefaultPermission(userRoles, new[] { permissionCode }))
             {
                 return true;
             }
+
+            var requestedPermissions = PermissionAuthorizationHelper.ExpandRequestedPermissions(new[] { permissionCode });
 
             return await context.Role_Permissions
                 .Join(context.Permissions,
@@ -45,7 +46,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
                     (combined, r) => new { combined.p, r })
                 .AnyAsync(x => x.r.RoleName != null &&
                                userRoles.Contains(x.r.RoleName) &&
-                               x.p.PermissionCode == permissionCode);
+                               requestedPermissions.Contains(x.p.PermissionCode));
         }
     }
 }

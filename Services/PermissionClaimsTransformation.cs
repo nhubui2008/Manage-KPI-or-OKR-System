@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,6 +51,15 @@ namespace Manage_KPI_or_OKR_System.Services
                 .Distinct()
                 .ToListAsync();
 
+            var expandedPermissions = PermissionAuthorizationHelper
+                .ExpandGrantedPermissions(permissions)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var defaultPermission in PermissionAuthorizationHelper.GetDefaultPermissionsForRoles(roleNames))
+            {
+                expandedPermissions.Add(defaultPermission);
+            }
+
             var transformedPrincipal = new ClaimsPrincipal(
                 principal.Identities.Select(existingIdentity => new ClaimsIdentity(existingIdentity)));
             var transformedIdentity = transformedPrincipal.Identities.FirstOrDefault(i => i.IsAuthenticated);
@@ -58,7 +68,7 @@ namespace Manage_KPI_or_OKR_System.Services
                 return principal;
             }
 
-            foreach (var permission in permissions)
+            foreach (var permission in expandedPermissions)
             {
                 if (!transformedIdentity.HasClaim(PermissionClaimType, permission))
                 {

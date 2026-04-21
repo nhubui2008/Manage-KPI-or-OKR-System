@@ -167,7 +167,11 @@ VALUES
     (53, N'KPICHECKINS_REVIEW', N'Quản lý xác nhận và đánh giá check-in KPI'),
     (54, N'EVALRESULTS_REVIEW', N'Giám đốc duyệt đánh giá và kết quả'),
     (55, N'EVALREPORTS_VIEW', N'Xem báo cáo đánh giá'),
-    (56, N'EVALREPORTS_EDIT', N'Chỉnh sửa báo cáo đánh giá');
+    (56, N'EVALREPORTS_EDIT', N'Chỉnh sửa báo cáo đánh giá'),
+    (57, N'BONUSRULES_VIEW', N'Xem quy tắc thưởng'),
+    (58, N'BONUSRULES_CREATE', N'Tạo quy tắc thưởng'),
+    (59, N'BONUSRULES_EDIT', N'Chỉnh sửa quy tắc thưởng'),
+    (60, N'BONUSRULES_DELETE', N'Xóa quy tắc thưởng');
 SET IDENTITY_INSERT [Permissions] OFF;
 GO
 
@@ -175,7 +179,7 @@ GO
 -- MODULE 3: ROLE_PERMISSIONS (Phân quyền chi tiết)
 -- ============================================================
 
--- === ADMIN: TOÀN QUYỀN (tất cả 56 permissions) ===
+-- === ADMIN: TOÀN QUYỀN (tất cả 60 permissions) ===
 INSERT INTO [Role_Permissions] ([RoleId], [PermissionId])
 SELECT 1, Id FROM [Permissions];
 GO
@@ -194,6 +198,7 @@ VALUES
     (2, 41), (2, 42), (2, 43), (2, 54),  -- Evaluation: Full+Review
     (2, 55), (2, 56),                    -- Evaluation Reports: View+Edit
     (2, 44), (2, 45),                    -- Bonus: View+Edit
+    (2, 57), (2, 58), (2, 59), (2, 60),  -- BonusRules: Full
     (2, 46), (2, 47),                    -- Reports: Full
     (2, 48),                             -- Dashboard
     (2, 49),                             -- AuditLogs
@@ -214,6 +219,7 @@ VALUES
     (3, 41), (3, 42), (3, 43),   -- Evaluation: Full
     (3, 55),                     -- Evaluation Reports: View
     (3, 44),                     -- Bonus: View
+    (3, 57),                     -- BonusRules: View
     (3, 46), (3, 47),            -- Reports: View+Export
     (3, 48),                     -- Dashboard
     (3, 50);                     -- Catalog: View
@@ -234,6 +240,7 @@ VALUES
     (4, 41), (4, 42),                    -- Evaluation: View+Create
     (4, 55), (4, 56),                    -- Evaluation Reports: View+Edit
     (4, 44), (4, 45),                    -- Bonus: View+Edit
+    (4, 57), (4, 58), (4, 59), (4, 60),  -- BonusRules: Full
     (4, 46), (4, 47),                    -- Reports: Full
     (4, 48),                             -- Dashboard
     (4, 50), (4, 51);                    -- Catalog: Full
