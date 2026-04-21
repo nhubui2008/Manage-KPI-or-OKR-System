@@ -63,9 +63,9 @@
     </div>
 
     <!-- Report Table -->
-    <div class="content-card shadow-sm border-0">
+    <div class="content-card evaluation-report-table-card shadow-sm border-0">
         <div class="table-responsive">
-            <table class="data-table w-100">
+            <table class="data-table evaluation-report-table w-100">
                 <thead class="bg-light">
                     <tr>
                         <th>Bộ phận / Mục tiêu</th>
@@ -102,15 +102,15 @@
                                     <td class="text-end">@String.Format("{0:N0}", alloc.AllocatedValue) @kr.Unit</td>
                                     <td class="text-end fw-bold">@String.Format("{0:N1}", kr.CurrentValue) @kr.Unit</td>
                                     <td class="text-center">
-                                        <div class="d-flex align-items-center gap-2 justify-content-center">
-                                            <span class="fw-bold @statusColor">@((int)progress)%</span>
-                                            <div class="progress" style="width: 50px; height: 5px;">
+                                        <div class="report-progress d-flex align-items-center gap-2 justify-content-center">
+                                            <span class="report-progress-value fw-bold @statusColor">@((int)progress)%</span>
+                                            <div class="progress">
                                                 <div class="progress-bar @statusBgColor" style="width: @((int)progressWidth)%"></div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="text-center"><span class="badge @statusBgColor bg-opacity-10 @statusColor px-3">@status</span></td>
-                                    <td class="text-muted small">@(kr.FailReasonId.HasValue && failReasons.ContainsKey(kr.FailReasonId.Value) ? failReasons[kr.FailReasonId.Value] : (progress < 100 ? "Chưa rõ lý do / Đang cập nhật" : "-"))</td>
+                                    <td class="text-center"><span class="badge report-status-badge @statusBgColor @statusColor px-3">@status</span></td>
+                                    <td class="report-reason small">@(kr.FailReasonId.HasValue && failReasons.ContainsKey(kr.FailReasonId.Value) ? failReasons[kr.FailReasonId.Value] : (progress < 100 ? "Chưa rõ lý do / Đang cập nhật" : "-"))</td>
                                 </tr>
                                 first = false;
                             }

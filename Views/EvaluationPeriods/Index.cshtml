@@ -9,6 +9,31 @@
     var canDeletePeriod = ViewBag.CanDeletePeriod is bool canDeleteFromDb ? canDeleteFromDb : isAdminRole || User.HasClaim("Permission", "EVALPERIODS_DELETE");
 }
 
+@functions {
+    private static string NormalizePeriodTypeForView(string? periodType)
+    {
+        var value = periodType?.Trim().ToUpperInvariant();
+        return value switch
+        {
+            "MONTH" or "THANG" or "THÁNG" or "HANG THANG" or "HÀNG THÁNG" => "MONTH",
+            "QUARTER" or "QUY" or "QUÝ" or "HANG QUY" or "HÀNG QUÝ" => "QUARTER",
+            "YEAR" or "NAM" or "NĂM" or "HANG NAM" or "HÀNG NĂM" => "YEAR",
+            _ => value ?? string.Empty
+        };
+    }
+
+    private static string GetPeriodTypeLabel(string? periodType)
+    {
+        return NormalizePeriodTypeForView(periodType) switch
+        {
+            "MONTH" => "Hàng tháng",
+            "QUARTER" => "Hàng quý",
+            "YEAR" => "Hàng năm",
+            _ => string.IsNullOrWhiteSpace(periodType) ? "N/A" : periodType
+        };
+    }
+}
+
 <div class="container-fluid px-0">
     
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
@@ -53,12 +78,14 @@
                         {
                             var statusName = p.StatusId.HasValue && statuses.ContainsKey(p.StatusId.Value) ? statuses[p.StatusId.Value] : "N/A";
                             var kpiCount = kpiCounts.ContainsKey(p.Id) ? kpiCounts[p.Id] : 0;
-                            var badgeClass = p.PeriodType == "QUARTER" ? "bg-info bg-opacity-10 text-info border border-info border-opacity-25" : p.PeriodType == "YEAR" ? "bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" : "bg-light text-dark border";
+                            var normalizedPeriodType = NormalizePeriodTypeForView(p.PeriodType);
+                            var periodTypeLabel = GetPeriodTypeLabel(p.PeriodType);
+                            var badgeClass = normalizedPeriodType == "QUARTER" ? "bg-info bg-opacity-10 text-info border border-info border-opacity-25" : normalizedPeriodType == "YEAR" ? "bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" : "bg-light text-dark border";
                             <tr>
                                 <td class="fw-bold">
                                     <span class="text-primary-custom"><i class="bi bi-calendar-check me-2"></i>@p.PeriodName</span>
                                 </td>
-                                <td><span class="badge @badgeClass">@(p.PeriodType ?? "N/A")</span></td>
+                                <td><span class="badge @badgeClass">@periodTypeLabel</span></td>
                                 <td class="text-muted">@(p.StartDate?.ToString("dd/MM/yyyy") ?? "") - @(p.EndDate?.ToString("dd/MM/yyyy") ?? "")</td>
                                 <td>@kpiCount KPI</td>
                                 <td>
@@ -74,7 +101,7 @@
                                         @if (canEditPeriod)
                                         {
                                             <button type="button" class="action-btn" title="Sửa" 
-                                                    onclick="openEditModal(@p.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(p.PeriodName ?? ""))', '@p.PeriodType', '@p.StartDate?.ToString("yyyy-MM-dd")', '@p.EndDate?.ToString("yyyy-MM-dd")', @(p.StatusId ?? 0))">
+                                                    onclick="openEditModal(@p.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(p.PeriodName ?? ""))', '@normalizedPeriodType', '@p.StartDate?.ToString("yyyy-MM-dd")', '@p.EndDate?.ToString("yyyy-MM-dd")', @(p.StatusId ?? 0))">
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
                                         }
@@ -121,7 +148,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Loại kỳ</label>
-                        <select id="editPeriodType" name="PeriodType" class="periodType form-select">
+                        <select id="editPeriodType" name="PeriodType" class="periodType form-select no-select2">
                             <option value="MONTH">Hàng tháng</option>
                             <option value="QUARTER">Hàng quý</option>
                             <option value="YEAR">Hàng năm</option>
@@ -139,7 +166,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Trạng thái</label>
-                        <select id="editStatusId" name="StatusId" class="form-select">
+                        <select id="editStatusId" name="StatusId" class="form-select no-select2">
                             @foreach (var s in statuses)
                             {<option value="@s.Key">@s.Value</option>}
                         </select>
@@ -155,10 +182,18 @@
 </div>
 
 <script>
+    function normalizePeriodType(type) {
+        const value = (type || '').trim().toUpperCase();
+        if (['MONTH', 'THANG', 'THÁNG', 'HANG THANG', 'HÀNG THÁNG'].includes(value)) return 'MONTH';
+        if (['QUARTER', 'QUY', 'QUÝ', 'HANG QUY', 'HÀNG QUÝ'].includes(value)) return 'QUARTER';
+        if (['YEAR', 'NAM', 'NĂM', 'HANG NAM', 'HÀNG NĂM'].includes(value)) return 'YEAR';
+        return value;
+    }
+
     function openEditModal(id, name, type, start, end, statusId) {
         document.getElementById('editId').value = id;
         document.getElementById('editPeriodName').value = name;
-        document.getElementById('editPeriodType').value = type;
+        document.getElementById('editPeriodType').value = normalizePeriodType(type);
         document.getElementById('editStartDate').value = start;
         document.getElementById('editEndDate').value = end;
         document.getElementById('editStatusId').value = statusId;

@@ -193,12 +193,6 @@
   }
   .member-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: none; }
   .member-photo img.loaded { display: block; }
-  .member-photo-placeholder {
-    display: flex; flex-direction: column; align-items: center;
-    gap: 3px; color: var(--blue); opacity: .55;
-  }
-  .member-photo-placeholder svg { width: 28px; height: 28px; }
-  .member-photo-placeholder span { font-size: 9px; letter-spacing: .5px; }
   .member-name { font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.3; }
   .member-role-badge {
     padding: 4px 12px; border-radius: 100px;
@@ -245,6 +239,292 @@
   .pbar-wrap { height: 8px; background: var(--blue-lt); border-radius: 4px; overflow: hidden; }
   .pbar { height: 100%; border-radius: 4px; background: linear-gradient(90deg,var(--blue-mid),var(--accent)); }
   .progress-item .pct { font-size: 11px; font-weight: 700; color: var(--blue); text-align: right; }
+
+  /* ─── FRONTEND INTERFACE DIAGRAM ─── */
+  .fe-diagram-layout {
+    display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(240px, .85fr);
+    gap: 18px; flex: 1; min-height: 0; align-items: stretch;
+  }
+  .interface-diagram {
+    background: linear-gradient(135deg, #ffffff 0%, #f1f6ff 100%);
+    border: 1px solid var(--border); border-radius: 18px;
+    padding: 12px; box-shadow: 0 10px 28px rgba(26,86,219,.08);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .diagram-browser-bar {
+    height: 28px; border-radius: 12px 12px 8px 8px;
+    background: #0f172a; display: flex; align-items: center;
+    justify-content: space-between; padding: 0 12px; color: rgba(255,255,255,.68);
+    font-size: 10px; letter-spacing: .2px;
+  }
+  .browser-dots { display: flex; gap: 5px; }
+  .browser-dots span { width: 7px; height: 7px; border-radius: 50%; display: block; }
+  .app-wireframe {
+    flex: 1; min-height: 0; margin-top: 10px;
+    display: grid; grid-template-columns: 120px 1fr;
+    border: 1px solid #d8e3f4; border-radius: 14px; overflow: hidden;
+    background: #fff;
+  }
+  .mock-sidebar {
+    background: linear-gradient(180deg,#172554,#1d4ed8);
+    color: #fff; padding: 12px 10px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .mock-brand { font-size: 12px; font-weight: 800; letter-spacing: .3px; margin-bottom: 4px; }
+  .mock-menu-item {
+    height: 24px; border-radius: 8px; padding: 0 8px;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.1); font-size: 9.5px; color: rgba(255,255,255,.76);
+  }
+  .mock-menu-item.active { background: #fff; color: var(--blue); font-weight: 700; }
+  .menu-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .85; }
+  .mock-main { padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .mock-topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .mock-title { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .mock-title strong { font-size: 13px; color: var(--text); line-height: 1.1; }
+  .mock-title span { width: 150px; max-width: 100%; height: 6px; border-radius: 99px; background: #dbeafe; }
+  .mock-role {
+    padding: 4px 10px; border-radius: 99px; background: #fff7ed; color: #c2410c;
+    font-size: 9px; font-weight: 700; white-space: nowrap;
+  }
+  .mock-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mock-stat {
+    border: 1px solid #e5edf8; border-radius: 10px; padding: 8px;
+    background: #f8fbff; min-width: 0;
+  }
+  .mock-stat b { display: block; font-size: 15px; line-height: 1; color: var(--text); margin-bottom: 5px; }
+  .mock-stat span { display: block; font-size: 8.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mock-board { display: grid; grid-template-columns: 1fr 1.05fr; gap: 9px; flex: 1; min-height: 0; }
+  .mock-panel {
+    border: 1px solid #e5edf8; border-radius: 12px; background: #fff;
+    padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 700; color: var(--text); }
+  .mini-chip { padding: 2px 7px; border-radius: 99px; background: #dcfce7; color: #15803d; font-size: 8px; font-weight: 700; }
+  .mock-bars { display: flex; align-items: end; gap: 7px; height: 72px; padding-top: 8px; }
+  .mock-bars span {
+    flex: 1; min-width: 12px; border-radius: 7px 7px 3px 3px;
+    background: linear-gradient(180deg,var(--blue-mid),#93c5fd);
+  }
+  .mock-table { display: flex; flex-direction: column; gap: 6px; }
+  .mock-row { display: grid; grid-template-columns: 1fr 48px 54px; align-items: center; gap: 8px; }
+  .row-line { height: 7px; border-radius: 99px; background: #e2e8f0; }
+  .row-status { height: 16px; border-radius: 99px; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .status-ok { background: #dcfce7; color: #15803d; }
+  .status-wait { background: #fef9c3; color: #a16207; }
+  .status-no { background: #fee2e2; color: #b91c1c; }
+  .mock-flow { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .mock-flow-step {
+    position: relative; min-height: 42px; border: 1px solid #dbeafe; border-radius: 10px;
+    background: #eff6ff; padding: 7px 8px; font-size: 9px; font-weight: 700; color: #1d4ed8;
+    display: flex; flex-direction: column; justify-content: center; gap: 3px;
+  }
+  .mock-flow-step span { font-size: 8px; font-weight: 600; color: var(--muted); line-height: 1.25; }
+  .mock-flow-step:not(:last-child)::after {
+    content: '→'; position: absolute; right: -8px; top: 50%; transform: translateY(-50%);
+    color: var(--blue-mid); font-size: 12px; font-weight: 800; z-index: 2;
+  }
+  .interface-notes {
+    display: grid; grid-template-columns: 1fr; gap: 10px; min-height: 0;
+  }
+  .interface-note {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 12px 14px; box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .interface-note-title { font-size: 12px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+  .interface-note-body { font-size: 11px; color: var(--muted); line-height: 1.45; }
+  .status-strip { display: flex; flex-wrap: wrap; gap: 5px; }
+  .status-strip span {
+    padding: 3px 8px; border-radius: 100px; font-size: 10px; font-weight: 700;
+  }
+
+  /* ─── SYSTEM FLOW & BACKEND DIAGRAMS ─── */
+  .flow-diagram-layout {
+    display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(250px, .65fr);
+    gap: 16px; flex: 1; min-height: 0; align-items: stretch;
+  }
+  .flow-map,
+  .backend-arch-card,
+  .diagram-side-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f6faff 100%);
+    border: 1px solid var(--border); border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(15,23,42,.06);
+  }
+  .flow-map { padding: 14px; display: flex; flex-direction: column; gap: 9px; min-height: 0; }
+  .diagram-kicker {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    font-size: 10px; font-weight: 800; letter-spacing: .9px; text-transform: uppercase; color: var(--muted);
+  }
+  .diagram-kicker span:last-child {
+    padding: 3px 9px; border-radius: 99px; background: #ecfdf5; color: #047857;
+    letter-spacing: .3px; text-transform: none;
+  }
+  .flow-lane {
+    display: grid; grid-template-columns: 86px repeat(4, minmax(0, 1fr));
+    gap: 8px; align-items: stretch; min-height: 58px;
+  }
+  .lane-label {
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 8px; color: #fff; font-size: 10px; font-weight: 800; line-height: 1.2;
+  }
+  .flow-node {
+    position: relative; border: 1px solid #dbe7f8; border-radius: 12px; background: #fff;
+    padding: 8px 9px; display: flex; flex-direction: column; justify-content: center; gap: 3px;
+    min-width: 0;
+  }
+  .flow-node strong { font-size: 10.5px; color: var(--text); line-height: 1.15; }
+  .flow-node span { font-size: 8.5px; color: var(--muted); line-height: 1.25; }
+  .flow-node.has-arrow::after {
+    content: '→'; position: absolute; right: -9px; top: 50%; transform: translateY(-50%);
+    color: #94a3b8; font-size: 12px; font-weight: 900; z-index: 2;
+  }
+  .flow-node.blue { border-color: #bfdbfe; background: #eff6ff; }
+  .flow-node.green { border-color: #bbf7d0; background: #f0fdf4; }
+  .flow-node.orange { border-color: #fed7aa; background: #fff7ed; }
+  .flow-node.purple { border-color: #e9d5ff; background: #faf5ff; }
+  .flow-side { display: grid; gap: 10px; min-height: 0; }
+  .flow-mini-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 11px 13px; box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .flow-mini-card h4 { font-size: 11.5px; color: var(--text); margin-bottom: 6px; }
+  .flow-mini-card p { font-size: 10.5px; color: var(--muted); line-height: 1.45; }
+  .mini-metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .mini-metric {
+    border-radius: 11px; padding: 8px 6px; text-align: center; background: #f8fafc; border: 1px solid #e2e8f0;
+  }
+  .mini-metric b { display: block; font-size: 14px; color: var(--blue); line-height: 1; margin-bottom: 3px; }
+  .mini-metric span { font-size: 8px; color: var(--muted); line-height: 1.2; }
+
+  .backend-diagram-layout {
+    display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, .8fr);
+    gap: 16px; flex: 1; align-items: stretch; min-height: 0;
+  }
+  .backend-arch-card { padding: 14px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  .backend-flow-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  .backend-layer {
+    position: relative; border: 1px solid #dbe7f8; border-radius: 14px; background: #fff;
+    padding: 11px 10px; min-height: 82px; display: flex; flex-direction: column; justify-content: center; gap: 6px;
+  }
+  .backend-layer:not(:last-child)::after {
+    content: '→'; position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+    color: #94a3b8; font-size: 13px; font-weight: 900; z-index: 2;
+  }
+  .layer-icon {
+    width: 26px; height: 26px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 12px; font-weight: 900;
+  }
+  .backend-layer strong { font-size: 11px; color: var(--text); line-height: 1.15; }
+  .backend-layer span { font-size: 8.5px; color: var(--muted); line-height: 1.25; }
+  .backend-services { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .backend-service {
+    border: 1px dashed #cbd5e1; border-radius: 12px; background: #f8fafc;
+    padding: 9px 10px; font-size: 9.5px; color: var(--muted); line-height: 1.35;
+  }
+  .backend-service b { display: block; color: var(--text); font-size: 10.5px; margin-bottom: 2px; }
+  .backend-side-stack { display: grid; gap: 12px; min-height: 0; }
+  .diagram-side-card { padding: 13px 14px; }
+  .permission-flow {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: 8px;
+  }
+  .permission-step {
+    position: relative; border-radius: 11px; background: #eef2ff; border: 1px solid #c7d2fe;
+    color: #3730a3; padding: 8px 7px; font-size: 9px; font-weight: 800; text-align: center; line-height: 1.25;
+  }
+  .permission-step:not(:last-child)::after {
+    content: '→'; position: absolute; right: -8px; top: 50%; transform: translateY(-50%);
+    color: #6366f1; z-index: 2;
+  }
+  .domain-map { display: grid; gap: 7px; margin-top: 8px; }
+  .domain-row {
+    display: grid; grid-template-columns: 82px 1fr; gap: 8px; align-items: center;
+    border: 1px solid #e2e8f0; border-radius: 11px; background: #fff; padding: 7px 8px;
+  }
+  .domain-name { font-size: 9.5px; font-weight: 900; line-height: 1.2; }
+  .domain-chain { font-size: 9.5px; color: var(--muted); line-height: 1.35; }
+
+  /* ─── PRODUCT OWNER AGILE DIAGRAMS ─── */
+  .po-vision-layout,
+  .po-backlog-layout {
+    display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr);
+    gap: 16px; flex: 1; min-height: 0; align-items: stretch;
+  }
+  .po-diagram-card,
+  .po-side-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f5f9ff 100%);
+    border: 1px solid var(--border); border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(26,86,219,.07);
+  }
+  .po-diagram-card { padding: 15px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  .po-side-stack { display: grid; gap: 10px; min-height: 0; }
+  .po-side-card { padding: 12px 14px; }
+  .po-side-card h4 { font-size: 12px; color: var(--text); margin-bottom: 6px; }
+  .po-side-card p,
+  .po-side-card li { font-size: 10.5px; color: var(--muted); line-height: 1.45; }
+  .po-side-card ul { list-style: none; display: grid; gap: 5px; }
+  .po-stakeholder-map {
+    flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(62px, 1fr)); gap: 10px;
+  }
+  .po-center {
+    grid-column: 2; grid-row: 2; border-radius: 18px;
+    background: linear-gradient(135deg, var(--blue), #3b82f6);
+    color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 12px; box-shadow: 0 12px 28px rgba(26,86,219,.25);
+  }
+  .po-center strong { font-size: 25px; line-height: 1; margin-bottom: 5px; }
+  .po-center span { font-size: 10px; line-height: 1.25; opacity: .9; }
+  .stake-node {
+    position: relative; border: 1px solid #dbe7f8; border-radius: 14px; background: #fff;
+    padding: 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0;
+  }
+  .stake-node::after {
+    content: ''; position: absolute; inset: auto; width: 18px; height: 2px;
+    background: #bfdbfe; opacity: .95;
+  }
+  .stake-node.to-right::after { right: -18px; top: 50%; }
+  .stake-node.to-left::after { left: -18px; top: 50%; }
+  .stake-node.to-down::after { left: 50%; bottom: -10px; width: 2px; height: 10px; }
+  .stake-node.to-up::after { left: 50%; top: -10px; width: 2px; height: 10px; }
+  .stake-node strong { font-size: 11px; color: var(--text); line-height: 1.15; }
+  .stake-node span { font-size: 8.8px; color: var(--muted); line-height: 1.3; }
+  .stake-node.blue { background:#eff6ff; border-color:#bfdbfe; }
+  .stake-node.purple { background:#faf5ff; border-color:#e9d5ff; }
+  .stake-node.green { background:#f0fdf4; border-color:#bbf7d0; }
+  .stake-node.orange { background:#fff7ed; border-color:#fed7aa; }
+  .po-artifact-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+  .po-artifact {
+    border-radius: 12px; border: 1px solid #dbeafe; background: #eff6ff;
+    padding: 8px 9px; color: #1d4ed8; font-size: 10px; font-weight: 800; line-height: 1.25;
+  }
+  .po-artifact span { display: block; color: var(--muted); font-size: 8.5px; font-weight: 600; margin-top: 2px; }
+  .backlog-funnel {
+    flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 9px; align-items: stretch;
+  }
+  .backlog-step {
+    position: relative; border-radius: 14px; border: 1px solid #dbe7f8;
+    background: #fff; padding: 10px 8px; display: flex; flex-direction: column; gap: 6px; justify-content: center;
+  }
+  .backlog-step:not(:last-child)::after {
+    content: '→'; position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+    color: #94a3b8; font-size: 13px; font-weight: 900; z-index: 2;
+  }
+  .backlog-step b { font-size: 10.5px; color: var(--text); line-height: 1.15; }
+  .backlog-step span { font-size: 8.5px; color: var(--muted); line-height: 1.28; }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    background: var(--blue-lt); color: var(--blue); font-size: 10px; font-weight: 900;
+  }
+  .priority-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .priority-box {
+    border-radius: 13px; border: 1px solid var(--border); background: #fff; padding: 9px 10px;
+  }
+  .priority-box strong { display: block; font-size: 11px; margin-bottom: 4px; }
+  .priority-box span { display: block; font-size: 8.8px; color: var(--muted); line-height: 1.35; }
+  .ac-card {
+    border: 1px dashed #93c5fd; background: #eff6ff; border-radius: 14px; padding: 10px 12px;
+    font-size: 10.5px; color: #1e3a8a; line-height: 1.55;
+  }
 
   /* ─── NAV BUTTONS ─── */
   #nav {
@@ -404,10 +684,7 @@
       <!-- PO -->
       <div class="member-card">
         <div class="member-photo">
-          <div class="member-photo-placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            <span>Ảnh</span>
-          </div>
+          <img class="loaded" src="img/quan.jpg" alt="Phạm Trần Anh Quân">
         </div>
         <div class="member-name">Phạm Trần Anh Quân</div>
         <div class="member-role-badge" style="background:var(--tag-po);color:var(--tag-po-c);">Product Owner</div>
@@ -417,10 +694,7 @@
       <!-- SM -->
       <div class="member-card">
         <div class="member-photo">
-          <div class="member-photo-placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            <span>Ảnh</span>
-          </div>
+          <img class="loaded" src="img/hugn.jpg" alt="Phạm Tuấn Hưng">
         </div>
         <div class="member-name">Phạm Tuấn Hưng</div>
         <div class="member-role-badge" style="background:var(--tag-sm);color:var(--tag-sm-c);">Scrum Master</div>
@@ -430,10 +704,7 @@
       <!-- Dev Connect / Luồng -->
       <div class="member-card">
         <div class="member-photo">
-          <div class="member-photo-placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            <span>Ảnh</span>
-          </div>
+          <img class="loaded" src="img/hoang.jpg" alt="Nguyễn Việt Hoàng">
         </div>
         <div class="member-name">Nguyễn Việt Hoàng</div>
         <div class="member-role-badge" style="background:var(--tag-flow);color:var(--tag-flow-c);">Dev – Luồng HT</div>
@@ -443,10 +714,7 @@
       <!-- FrontEnd -->
       <div class="member-card">
         <div class="member-photo">
-          <div class="member-photo-placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            <span>Ảnh</span>
-          </div>
+          <img class="loaded" src="img/nhu2.png" alt="Bùi Nguyễn Anh Như">
         </div>
         <div class="member-name">Bùi Nguyễn Anh Như</div>
         <div class="member-role-badge" style="background:var(--tag-fe);color:var(--tag-fe-c);">Dev – FrontEnd</div>
@@ -456,10 +724,7 @@
       <!-- BackEnd -->
       <div class="member-card">
         <div class="member-photo">
-          <div class="member-photo-placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            <span>Ảnh</span>
-          </div>
+          <img class="loaded" src="img/an.jpg" alt="Phạm Trần An An">
         </div>
         <div class="member-name">Phạm Trần An An</div>
         <div class="member-role-badge" style="background:var(--tag-be);color:var(--tag-be-c);">Dev – BackEnd</div>
@@ -469,10 +734,7 @@
       <!-- Tester -->
       <div class="member-card">
         <div class="member-photo">
-          <div class="member-photo-placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            <span>Ảnh</span>
-          </div>
+          <img class="loaded" src="img/khang.jpg" alt="Trần Thiên Khang">
         </div>
         <div class="member-name">Trần Thiên Khang</div>
         <div class="member-role-badge" style="background:var(--tag-test);color:var(--tag-test-c);">Tester</div>
@@ -483,7 +745,7 @@
   </div>
 </div>
 
-<!-- ════════════════════ SLIDE 3 – PO BÀI TOÁN ════════════════════ -->
+<!-- ════════════════════ SLIDE 3 – PO THU NHẬN YÊU CẦU ════════════════════ -->
 <div class="slide" data-role="po">
   <div class="sidebar">
     <div class="sidebar-logo">Viet<span>Mach</span></div>
@@ -498,49 +760,59 @@
   </div>
   <div class="main">
     <span class="role-tag tag-po">🎯 PO – Phạm Trần Anh Quân</span>
-    <div class="slide-title">Bài Toán & <span class="accent">Thực Trạng</span></div>
-    <div class="slide-subtitle">Tại sao doanh nghiệp cần hệ thống KPI/OKR tập trung?</div>
-    <div class="two-col" style="flex:1;">
-      <div>
-        <div class="section-head">⚠️ Vấn đề hiện tại</div>
-        <ul class="fancy-list">
-          <li><div class="bullet">1</div><span>Quản lý KPI/OKR bằng Excel – rời rạc, khó kiểm soát</span></li>
-          <li><div class="bullet">2</div><span>Mục tiêu chiến lược và KPI hàng ngày không liên kết</span></li>
-          <li><div class="bullet">3</div><span>Nhân viên check-in nhưng quản lý khó kiểm chứng</span></li>
-          <li><div class="bullet">4</div><span>Tính điểm, xếp loại & thưởng dễ sai lệch thủ công</span></li>
-          <li><div class="bullet">5</div><span>Không có lịch sử duyệt để truy vết trách nhiệm</span></li>
-        </ul>
+    <div class="slide-title">Thu Nhận <span class="accent">Yêu Cầu Khách Hàng</span></div>
+    <div class="slide-subtitle">PO là cầu nối giữa khách hàng, người dùng nghiệp vụ và đội phát triển để biến nhu cầu thành yêu cầu rõ ràng, đo được</div>
+    <div class="po-vision-layout">
+      <div class="po-diagram-card">
+        <div class="diagram-kicker"><span>Sơ đồ nguồn yêu cầu</span><span>Customer → Backlog</span></div>
+        <div class="po-stakeholder-map">
+          <div class="stake-node blue to-right"><strong>Khách hàng / Director</strong><span>Mục tiêu kinh doanh, báo cáo điều hành, KPI/OKR chiến lược</span></div>
+          <div class="stake-node purple to-down"><strong>HR</strong><span>Quy định kỳ đánh giá, rank, bonus, quy trình nhân sự</span></div>
+          <div class="stake-node green to-left"><strong>Manager</strong><span>Nhu cầu giao KPI, duyệt check-in, theo dõi tiến độ</span></div>
+          <div class="stake-node orange to-right"><strong>Employee</strong><span>Điểm đau khi nhận KPI, check-in, xem kết quả cá nhân</span></div>
+          <div class="po-center"><strong>PO</strong><span>Interview<br>Analyze<br>Validate</span></div>
+          <div class="stake-node blue to-left"><strong>Admin</strong><span>Quản lý user, role, permission, dữ liệu nền</span></div>
+          <div class="stake-node green to-right"><strong>Quy trình hiện tại</strong><span>Excel, biểu mẫu, cách duyệt thủ công, điểm nghẽn</span></div>
+          <div class="stake-node purple to-up"><strong>Dev / Tester</strong><span>Ràng buộc kỹ thuật, dữ liệu mẫu, tiêu chí kiểm thử</span></div>
+          <div class="stake-node orange to-left"><strong>Prototype Feedback</strong><span>Xác nhận màn hình, luồng thao tác, thuật ngữ nghiệp vụ</span></div>
+        </div>
+        <div class="highlight-box" style="padding:12px 14px;">
+          <div class="h-label">Đầu ra sau thu nhận yêu cầu</div>
+          Danh sách pain point, user story, acceptance criteria, mức ưu tiên và phạm vi MVP cho hệ thống KPI/OKR.
+        </div>
       </div>
-      <div>
-        <div class="section-head">✅ Giải pháp VietMach</div>
-        <div class="card-grid" style="gap:10px;">
-          <div class="card" style="padding:14px 16px;">
-            <div class="card-icon">🎯</div>
-            <div class="card-title">OKR → KPI liên kết</div>
-            <div class="card-body">Từ Mission/Vision xuống tận KPI từng nhân viên</div>
+      <div class="po-side-stack">
+        <div class="po-side-card">
+          <h4>Quy trình thu nhận yêu cầu</h4>
+          <ul>
+            <li>✓ Xác định stakeholder và mục tiêu kinh doanh cần đạt</li>
+            <li>✓ Phỏng vấn khách hàng, HR, Manager, Employee để tìm pain point</li>
+            <li>✓ Quan sát quy trình Excel/thủ công đang dùng để phát hiện rủi ro</li>
+            <li>✓ Chuẩn hóa yêu cầu thành user story và acceptance criteria</li>
+            <li>✓ Xác nhận lại với khách hàng trước khi đưa vào backlog</li>
+          </ul>
+        </div>
+        <div class="po-side-card">
+          <h4>Kỹ thuật PO sử dụng</h4>
+          <div class="po-artifact-grid">
+            <div class="po-artifact">Interview<span>Hỏi nhu cầu & vấn đề</span></div>
+            <div class="po-artifact">Workshop<span>Thống nhất luồng nghiệp vụ</span></div>
+            <div class="po-artifact">Observation<span>Quan sát cách làm hiện tại</span></div>
+            <div class="po-artifact">Document Review<span>Excel, biểu mẫu, quy định</span></div>
+            <div class="po-artifact">Prototype Review<span>Nhận phản hồi giao diện</span></div>
+            <div class="po-artifact">Backlog Refinement<span>Làm rõ trước sprint</span></div>
           </div>
-          <div class="card" style="padding:14px 16px;">
-            <div class="card-icon">✅</div>
-            <div class="card-title">Check-in & Duyệt</div>
-            <div class="card-body">Workflow minh bạch, có phê duyệt từng bước</div>
-          </div>
-          <div class="card" style="padding:14px 16px;">
-            <div class="card-icon">🤖</div>
-            <div class="card-title">AI Insights</div>
-            <div class="card-body">Gợi ý phân tích, cảnh báo smart từ Gemini AI</div>
-          </div>
-          <div class="card" style="padding:14px 16px;">
-            <div class="card-icon">📊</div>
-            <div class="card-title">Dashboard & Báo cáo</div>
-            <div class="card-body">Xuất Excel, xếp hạng & thưởng dự kiến tự động</div>
-          </div>
+        </div>
+        <div class="po-side-card">
+          <h4>Yêu cầu được phân loại</h4>
+          <p>Functional: OKR, KPI, check-in, duyệt, report. Non-functional: phân quyền, bảo mật, dễ dùng, truy vết. Constraint: thời gian sprint, dữ liệu mẫu, phạm vi MVP.</p>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════ SLIDE 4 – PO PHẠM VI ════════════════════ -->
+<!-- ════════════════════ SLIDE 4 – PO QUẢN LÝ DỰ ÁN ════════════════════ -->
 <div class="slide" data-role="po">
   <div class="sidebar">
     <div class="sidebar-logo">Viet<span>Mach</span></div>
@@ -555,38 +827,72 @@
   </div>
   <div class="main">
     <span class="role-tag tag-po">🎯 PO – Phạm Trần Anh Quân</span>
-    <div class="slide-title">Demo <span class="accent">Tính Năng</span></div>
-    <div class="slide-subtitle">Ưu tiên demo theo 3 lớp: luồng chính · nâng cao · điểm nổi bật</div>
-    <div class="three-col" style="flex:1;align-items:start;">
-      <div>
-        <div class="section-head">⚙️ 1. Luồng chính bắt buộc</div>
-        <ul class="fancy-list">
-          <li><div class="bullet" style="background:#dbeafe;color:#1d4ed8;">1</div><span>Director xem Dashboard và OKR chiến lược</span></li>
-          <li><div class="bullet" style="background:#dbeafe;color:#1d4ed8;">2</div><span>Manager quản lý KPI, giao KPI kèm trọng số</span></li>
-          <li><div class="bullet" style="background:#dbeafe;color:#1d4ed8;">3</div><span>Employee check-in KPI ở trạng thái Pending</span></li>
-          <li><div class="bullet" style="background:#dbeafe;color:#1d4ed8;">4</div><span>Manager duyệt check-in, hệ thống tự tính điểm</span></li>
-          <li><div class="bullet" style="background:#dbeafe;color:#1d4ed8;">5</div><span>Evaluation Reports cập nhật score, rank, bonus</span></li>
-        </ul>
+    <div class="slide-title">PO Trong <span class="accent">Quản Lý Dự Án Agile</span></div>
+    <div class="slide-subtitle">PO quản lý phạm vi, ưu tiên, thay đổi và nghiệm thu để dự án đi đúng giá trị khách hàng qua từng sprint</div>
+    <div class="po-backlog-layout">
+      <div class="po-diagram-card">
+        <div class="diagram-kicker"><span>Vòng quản lý dự án của PO</span><span>Scope + Value + Acceptance</span></div>
+        <div class="backlog-funnel">
+          <div class="backlog-step" style="background:#eff6ff;border-color:#bfdbfe;">
+            <div class="step-num">1</div>
+            <b>Requirement Intake</b>
+            <span>Nhận yêu cầu, pain point, thay đổi từ khách hàng</span>
+          </div>
+          <div class="backlog-step" style="background:#faf5ff;border-color:#e9d5ff;">
+            <div class="step-num" style="background:#f3e8ff;color:#7c3aed;">2</div>
+            <b>Scope & Priority</b>
+            <span>Chọn MVP, sắp xếp Must / Should / Could</span>
+          </div>
+          <div class="backlog-step" style="background:#f0fdf4;border-color:#bbf7d0;">
+            <div class="step-num" style="background:#dcfce7;color:#15803d;">3</div>
+            <b>Sprint Planning</b>
+            <span>Chốt sprint goal, story ready, phụ thuộc</span>
+          </div>
+          <div class="backlog-step" style="background:#fff7ed;border-color:#fed7aa;">
+            <div class="step-num" style="background:#ffedd5;color:#c2410c;">4</div>
+            <b>Track Progress</b>
+            <span>Theo dõi Trello, blocker, scope drift</span>
+          </div>
+          <div class="backlog-step" style="background:#fefce8;border-color:#fde68a;">
+            <div class="step-num" style="background:#fef9c3;color:#a16207;">5</div>
+            <b>Review & Accept</b>
+            <span>Demo increment, nghiệm thu theo AC</span>
+          </div>
+          <div class="backlog-step" style="background:#ecfdf5;border-color:#86efac;">
+            <div class="step-num" style="background:#dcfce7;color:#047857;">6</div>
+            <b>Change Control</b>
+            <span>Ghi nhận phản hồi, cập nhật backlog</span>
+          </div>
+        </div>
+        <div class="ac-card">
+          <b>Nguyên tắc quản lý:</b><br>
+          PO không chỉ “nhận yêu cầu” mà phải kiểm soát phạm vi, ưu tiên giá trị cao nhất, giảm rủi ro thay đổi và nghiệm thu đúng tiêu chí đã thống nhất.
+        </div>
       </div>
-      <div>
-        <div class="section-head">🚀 2. Chức năng nâng cao</div>
-        <ul class="fancy-list">
-          <li><div class="bullet" style="background:#f3e8ff;color:#7c3aed;">●</div><span>Phân quyền theo Director, Manager, HR, Employee, Admin</span></li>
-          <li><div class="bullet" style="background:#f3e8ff;color:#7c3aed;">●</div><span>ReviewQueue và vòng PendingDirectorReview</span></li>
-          <li><div class="bullet" style="background:#f3e8ff;color:#7c3aed;">●</div><span>Export Excel báo cáo theo kỳ đánh giá</span></li>
-          <li><div class="bullet" style="background:#f3e8ff;color:#7c3aed;">●</div><span>Notification, trạng thái nghiệp vụ, audit log</span></li>
-          <li><div class="bullet" style="background:#f3e8ff;color:#7c3aed;">●</div><span>OTP email, Google OAuth, avatar nếu còn thời gian</span></li>
-        </ul>
-      </div>
-      <div>
-        <div class="section-head">✨ 3. Điểm nổi bật chốt demo</div>
-        <ul class="fancy-list">
-          <li><div class="bullet" style="background:#dcfce7;color:#15803d;">★</div><span>Không tính điểm khi check-in chưa được duyệt</span></li>
-          <li><div class="bullet" style="background:#dcfce7;color:#15803d;">★</div><span>Tự động tạo/cập nhật EvaluationResult</span></li>
-          <li><div class="bullet" style="background:#dcfce7;color:#15803d;">★</div><span>Expected Bonus phản ánh kết quả theo rank</span></li>
-          <li><div class="bullet" style="background:#dcfce7;color:#15803d;">★</div><span>AI Insights và Smart Alerts hỗ trợ ra quyết định</span></li>
-          <li><div class="bullet" style="background:#dcfce7;color:#15803d;">★</div><span>Dữ liệu tập trung, có kiểm soát theo vai trò</span></li>
-        </ul>
+      <div class="po-side-stack">
+        <div class="po-side-card">
+          <h4>PO quản lý 4 trục dự án</h4>
+          <div class="priority-grid">
+            <div class="priority-box" style="border-color:#bfdbfe;background:#eff6ff;"><strong style="color:#1d4ed8;">Scope</strong><span>MVP, backlog, thay đổi yêu cầu, tránh mở rộng ngoài sprint</span></div>
+            <div class="priority-box" style="border-color:#bbf7d0;background:#f0fdf4;"><strong style="color:#15803d;">Time</strong><span>Sprint goal, thứ tự demo, mốc review và release</span></div>
+            <div class="priority-box" style="border-color:#e9d5ff;background:#faf5ff;"><strong style="color:#7c3aed;">Quality</strong><span>Acceptance criteria, DoR, DoD, test case chính</span></div>
+            <div class="priority-box" style="border-color:#fed7aa;background:#fff7ed;"><strong style="color:#c2410c;">Risk</strong><span>Thiếu dữ liệu, hiểu sai nghiệp vụ, phụ thuộc kỹ thuật</span></div>
+          </div>
+        </div>
+        <div class="po-side-card">
+          <h4>Công cụ quản lý dự án</h4>
+          <ul>
+            <li>✓ Product Backlog: lưu toàn bộ yêu cầu đã phân tích</li>
+            <li>✓ Sprint Backlog/Trello: theo dõi task, trạng thái, owner</li>
+            <li>✓ Sprint Goal: mục tiêu sprint để không lệch hướng</li>
+            <li>✓ DoR/DoD: tiêu chuẩn sẵn sàng và hoàn thành</li>
+            <li>✓ Change Log/Risk Log: ghi nhận thay đổi và rủi ro</li>
+          </ul>
+        </div>
+        <div class="po-side-card">
+          <h4>Phạm vi PO chốt cho MVP</h4>
+          <p>Ưu tiên luồng có giá trị cao nhất: Director tạo OKR, Manager tạo/giao KPI, Employee check-in, Manager duyệt, hệ thống tính kết quả và báo cáo.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -657,81 +963,36 @@
       </div>
     </div>
 
-    <!-- BOTTOM ROW: Image placeholders -->
+    <!-- BOTTOM ROW: Scrum evidence images -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1;min-height:0;">
 
-      <!-- Trello placeholder -->
-      <div class="img-drop-zone" id="trello-zone" onclick="document.getElementById('trello-input').click()"
-        style="border:2px dashed #a5b4fc;border-radius:16px;background:linear-gradient(135deg,#f5f3ff,#ede9fe);
-               display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
-               cursor:pointer;transition:all .2s;overflow:hidden;position:relative;">
-        <input type="file" id="trello-input" accept="image/*" style="display:none" onchange="loadImg('trello-input','trello-zone','trello-img')">
-        <div id="trello-placeholder-content" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.4"><rect x="3" y="3" width="7" height="13" rx="2"/><rect x="14" y="3" width="7" height="9" rx="2"/><path d="M3 19h18"/></svg>
-          <div style="font-size:13px;font-weight:700;color:#6d28d9;">Trello Board</div>
-          <div style="font-size:11px;color:#7c3aed;opacity:.7;">Nhấp để chèn ảnh chụp màn hình</div>
-          <div style="font-size:10px;color:#a78bfa;padding:3px 12px;border-radius:100px;border:1px solid #c4b5fd;">PNG / JPG</div>
+      <!-- Trello board -->
+      <div style="border:1px solid #c4b5fd;border-radius:16px;background:linear-gradient(135deg,#f5f3ff,#ede9fe);
+                  display:flex;flex-direction:column;overflow:hidden;position:relative;box-shadow:0 6px 18px rgba(124,58,237,.1);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(124,58,237,.18);">
+          <div style="font-size:12px;font-weight:800;color:#6d28d9;">Trello Board</div>
+          <div style="font-size:9px;font-weight:700;color:#7c3aed;background:#ede9fe;border:1px solid #c4b5fd;border-radius:100px;padding:2px 8px;">Sprint Tracking</div>
         </div>
-        <img id="trello-img" style="display:none;width:100%;height:100%;object-fit:contain;position:absolute;inset:0;border-radius:14px;">
+        <div style="flex:1;min-height:0;background:#fff;display:flex;align-items:center;justify-content:center;padding:8px;">
+          <img src="img/trello.png" alt="Trello board của nhóm" style="width:100%;height:100%;object-fit:contain;border-radius:10px;">
+        </div>
       </div>
 
-      <!-- Sprint Backlog placeholder -->
-      <div class="img-drop-zone" id="sprint-zone" onclick="document.getElementById('sprint-input').click()"
-        style="border:2px dashed #6ee7b7;border-radius:16px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);
-               display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
-               cursor:pointer;transition:all .2s;overflow:hidden;position:relative;">
-        <input type="file" id="sprint-input" accept="image/*" style="display:none" onchange="loadImg('sprint-input','sprint-zone','sprint-img')">
-        <div id="sprint-placeholder-content" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="1.4"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
-          <div style="font-size:13px;font-weight:700;color:#047857;">Sprint Backlog</div>
-          <div style="font-size:11px;color:#059669;opacity:.7;">Nhấp để chèn ảnh sprint backlog</div>
-          <div style="font-size:10px;color:#6ee7b7;padding:3px 12px;border-radius:100px;border:1px solid #6ee7b7;">PNG / JPG</div>
+      <!-- Sprint Backlog -->
+      <div style="border:1px solid #86efac;border-radius:16px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);
+                  display:flex;flex-direction:column;overflow:hidden;position:relative;box-shadow:0 6px 18px rgba(5,150,105,.1);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(5,150,105,.18);">
+          <div style="font-size:12px;font-weight:800;color:#047857;">Sprint Backlog</div>
+          <div style="font-size:9px;font-weight:700;color:#059669;background:#dcfce7;border:1px solid #86efac;border-radius:100px;padding:2px 8px;">Task Planning</div>
         </div>
-        <img id="sprint-img" style="display:none;width:100%;height:100%;object-fit:contain;position:absolute;inset:0;border-radius:14px;">
+        <div style="flex:1;min-height:0;background:#fff;display:flex;align-items:center;justify-content:center;padding:8px;">
+          <img src="img/sprintbacklog.png" alt="Sprint backlog của nhóm" style="width:100%;height:100%;object-fit:contain;border-radius:10px;">
+        </div>
       </div>
 
     </div>
   </div>
 </div>
-
-<script>
-function loadImg(inputId, zoneId, imgId) {
-  const input = document.getElementById(inputId);
-  const zone  = document.getElementById(zoneId);
-  const img   = document.getElementById(imgId);
-  if (!input.files || !input.files[0]) return;
-  const url = URL.createObjectURL(input.files[0]);
-  img.src = url;
-  img.style.display = 'block';
-  // hide placeholder text
-  const ph = zoneId === 'trello-zone' ? 'trello-placeholder-content' : 'sprint-placeholder-content';
-  document.getElementById(ph).style.display = 'none';
-  zone.style.border = '2px solid transparent';
-  zone.style.cursor = 'default';
-  zone.onclick = null;
-}
-// Drag-and-drop support
-['trello-zone','sprint-zone'].forEach(zId => {
-  const zone = document.getElementById(zId);
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.opacity='.75'; });
-  zone.addEventListener('dragleave', () => { zone.style.opacity='1'; });
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.style.opacity='1';
-    const file = e.dataTransfer.files[0];
-    if (!file || !file.type.startsWith('image/')) return;
-    const isTrello = zId === 'trello-zone';
-    const imgId = isTrello ? 'trello-img' : 'sprint-img';
-    const phId  = isTrello ? 'trello-placeholder-content' : 'sprint-placeholder-content';
-    const img = document.getElementById(imgId);
-    img.src = URL.createObjectURL(file);
-    img.style.display = 'block';
-    document.getElementById(phId).style.display = 'none';
-    zone.style.border = '2px solid transparent';
-    zone.style.cursor = 'default';
-    zone.onclick = null;
-  });
-});
-</script>
 
 <!-- ════════════════════ SLIDE 6 – LUỒNG HỆ THỐNG ════════════════════ -->
 <div class="slide" data-role="flow">
@@ -750,42 +1011,56 @@ function loadImg(inputId, zoneId, imgId) {
     <span class="role-tag tag-flow">🔀 Luồng HT – Nguyễn Việt Hoàng</span>
     <div class="slide-title">Kịch Bản <span class="accent">Demo Tối Ưu</span></div>
     <div class="slide-subtitle">Bấm ít màn hình, chứng minh rõ giá trị: chiến lược → thực thi → duyệt → kết quả</div>
-    <div class="section-head">📍 Luồng demo chính: 8–10 phút</div>
-    <div class="workflow" style="overflow-x:auto; gap:4px; padding:12px 0 16px;">
-      <div class="wf-step"><div class="wf-box" style="border-color:#1a56db;color:#1a56db;font-size:10px;">Director<br/>Dashboard</div></div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step"><div class="wf-box" style="font-size:10px;">OKR<br/>chiến lược</div></div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step"><div class="wf-box" style="font-size:10px;">Manager<br/>KPI</div></div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step"><div class="wf-box" style="font-size:10px;">Giao KPI<br/>trọng số</div></div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step"><div class="wf-box" style="border-color:#059669;color:#059669;font-size:10px;">Check-in</div></div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step"><div class="wf-box" style="font-size:10px;">Approve<br/>ReviewQueue</div></div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step"><div class="wf-box" style="font-size:10px;">Score<br/>Rank<br/>Bonus</div></div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step"><div class="wf-box" style="border-color:#9333ea;color:#9333ea;font-size:10px;">Report<br/>AI</div></div>
-    </div>
-    <div class="two-col" style="flex:1;align-items:start;margin-top:4px;">
-      <div>
-        <div class="section-head">🎯 Phải demo rõ</div>
-        <ul class="fancy-list">
-          <li><div class="bullet" style="background:#dbeafe;color:#1d4ed8;font-size:9px;">1</div><span style="font-size:12px;">KPI/OKR không rời rạc: có liên kết từ mục tiêu đến KPI</span></li>
-          <li><div class="bullet" style="background:#f3e8ff;color:#7c3aed;font-size:9px;">2</div><span style="font-size:12px;">Employee check-in chỉ tạo Pending, chưa được tính điểm</span></li>
-          <li><div class="bullet" style="background:#dcfce7;color:#15803d;font-size:9px;">3</div><span style="font-size:12px;">Manager approve thì hệ thống tự tính score, rank, bonus</span></li>
-          <li><div class="bullet" style="background:#fef9c3;color:#854d0e;font-size:9px;">4</div><span style="font-size:12px;">Report/Dashboard phản ánh kết quả sau xử lý</span></li>
-        </ul>
+    <div class="flow-diagram-layout">
+      <div class="flow-map">
+        <div class="diagram-kicker"><span>Luồng nghiệp vụ E2E</span><span>8-10 phút demo</span></div>
+        <div class="flow-lane">
+          <div class="lane-label" style="background:#1a56db;">Director</div>
+          <div class="flow-node blue has-arrow"><strong>Dashboard</strong><span>Nắm tình hình toàn công ty</span></div>
+          <div class="flow-node blue has-arrow"><strong>Mission / Vision</strong><span>Định hướng chiến lược</span></div>
+          <div class="flow-node blue has-arrow"><strong>OKR chiến lược</strong><span>Mục tiêu & Key Result</span></div>
+          <div class="flow-node blue"><strong>Report + AI</strong><span>Phân tích, cảnh báo, xuất Excel</span></div>
+        </div>
+        <div class="flow-lane">
+          <div class="lane-label" style="background:#7c3aed;">Manager</div>
+          <div class="flow-node purple has-arrow"><strong>Nhận OKR</strong><span>Liên kết mục tiêu bộ phận</span></div>
+          <div class="flow-node purple has-arrow"><strong>Tạo KPI</strong><span>Chỉ tiêu, trọng số, kỳ đánh giá</span></div>
+          <div class="flow-node purple has-arrow"><strong>Giao KPI</strong><span>Gán nhân sự phụ trách</span></div>
+          <div class="flow-node purple"><strong>ReviewQueue</strong><span>Duyệt hoặc từ chối check-in</span></div>
+        </div>
+        <div class="flow-lane">
+          <div class="lane-label" style="background:#059669;">Employee</div>
+          <div class="flow-node green has-arrow"><strong>Xem KPI</strong><span>Chỉ thấy KPI của mình</span></div>
+          <div class="flow-node green has-arrow"><strong>Check-in</strong><span>Nhập actual value & ghi chú</span></div>
+          <div class="flow-node green has-arrow"><strong>Pending</strong><span>Chờ quản lý xác nhận</span></div>
+          <div class="flow-node green"><strong>Kết quả</strong><span>Điểm được cập nhật sau duyệt</span></div>
+        </div>
+        <div class="flow-lane">
+          <div class="lane-label" style="background:#9333ea;">System</div>
+          <div class="flow-node orange has-arrow"><strong>Permission</strong><span>Chặn menu, action, dữ liệu</span></div>
+          <div class="flow-node orange has-arrow"><strong>Workflow</strong><span>Draft / Pending / Approved</span></div>
+          <div class="flow-node orange has-arrow"><strong>Score Engine</strong><span>Tính score, rank, bonus</span></div>
+          <div class="flow-node orange"><strong>Audit Log</strong><span>Lưu dấu và đồng bộ dashboard</span></div>
+        </div>
       </div>
-      <div>
-        <div class="section-head">🚀 Nâng cao & nổi bật</div>
-        <ul class="fancy-list">
-          <li><div class="bullet">AI</div><span style="font-size:12px;"><b>AI Insights:</b> hỏi nhanh tình hình KPI/OKR, có fallback khi thiếu key</span></li>
-          <li><div class="bullet">SEC</div><span style="font-size:12px;"><b>Phân quyền:</b> Employee không vào được Roles/SystemUsers</span></li>
-          <li><div class="bullet">XL</div><span style="font-size:12px;"><b>Export:</b> báo cáo Excel theo kỳ đánh giá</span></li>
-          <li><div class="bullet">LOG</div><span style="font-size:12px;"><b>Audit:</b> lưu dấu các thao tác quan trọng</span></li>
-        </ul>
+      <div class="flow-side">
+        <div class="flow-mini-card">
+          <h4>Điểm nhấn khi demo</h4>
+          <p>KPI/OKR không rời rạc: mỗi KPI đi từ mục tiêu chiến lược xuống người thực hiện và quay lại báo cáo.</p>
+        </div>
+        <div class="mini-metric-row">
+          <div class="mini-metric"><b>1</b><span>OKR làm gốc</span></div>
+          <div class="mini-metric"><b>2</b><span>KPI được giao</span></div>
+          <div class="mini-metric"><b>3</b><span>Duyệt mới tính</span></div>
+        </div>
+        <div class="flow-mini-card">
+          <h4>Trạng thái cốt lõi</h4>
+          <p>Employee check-in tạo Pending, Manager approve thì hệ thống mới cập nhật score, rank và bonus.</p>
+        </div>
+        <div class="flow-mini-card">
+          <h4>Nâng cao & nổi bật</h4>
+          <p>AI Insights, phân quyền theo vai trò, Export Excel và AuditLog đều bám vào luồng chính.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -808,42 +1083,89 @@ function loadImg(inputId, zoneId, imgId) {
     <span class="role-tag tag-fe">🎨 FrontEnd – Bùi Nguyễn Anh Như</span>
     <div class="slide-title">Giao Diện & <span class="accent">Trải Nghiệm</span></div>
     <div class="slide-subtitle">Enterprise Dashboard · Tông xanh chuyên nghiệp · Responsive theo vai trò</div>
-    <div class="two-col" style="flex:1;">
-      <div style="display:flex;flex-direction:column;gap:14px;">
-        <div class="section-head">📱 Màn hình chính</div>
-        <div class="card-grid" style="grid-template-columns:1fr 1fr;gap:10px;">
-          <div class="card" style="padding:12px;"><div class="card-title">Dashboard</div><div class="card-body">Card & biểu đồ KPI/OKR theo kỳ</div></div>
-          <div class="card" style="padding:12px;"><div class="card-title">OKR & KPI</div><div class="card-body">Bảng dữ liệu, form tạo/sửa/duyệt</div></div>
-          <div class="card" style="padding:12px;"><div class="card-title">Check-in</div><div class="card-body">Form nhập giá trị thực đạt & ghi chú</div></div>
-          <div class="card" style="padding:12px;"><div class="card-title">ReviewQueue</div><div class="card-body">Danh sách check-in Pending chờ duyệt</div></div>
+    <div class="fe-diagram-layout">
+      <div class="interface-diagram">
+        <div class="diagram-browser-bar">
+          <div class="browser-dots"><span style="background:#ef4444;"></span><span style="background:#f59e0b;"></span><span style="background:#22c55e;"></span></div>
+          <span>vietmach.local/dashboard</span>
         </div>
-        <div class="section-head">🔖 Trạng thái nghiệp vụ</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <span style="padding:3px 10px;border-radius:100px;background:#fef9c3;color:#a16207;font-size:11px;font-weight:600;">Pending</span>
-          <span style="padding:3px 10px;border-radius:100px;background:#dcfce7;color:#15803d;font-size:11px;font-weight:600;">Approved</span>
-          <span style="padding:3px 10px;border-radius:100px;background:#fee2e2;color:#b91c1c;font-size:11px;font-weight:600;">Rejected</span>
-          <span style="padding:3px 10px;border-radius:100px;background:#e0f2fe;color:#0369a1;font-size:11px;font-weight:600;">Draft</span>
-          <span style="padding:3px 10px;border-radius:100px;background:#f3e8ff;color:#7c3aed;font-size:11px;font-weight:600;">PendingDirector</span>
+        <div class="app-wireframe">
+          <div class="mock-sidebar">
+            <div class="mock-brand">VietMach</div>
+            <div class="mock-menu-item active"><span class="menu-dot"></span>Dashboard</div>
+            <div class="mock-menu-item"><span class="menu-dot"></span>OKR</div>
+            <div class="mock-menu-item"><span class="menu-dot"></span>KPI</div>
+            <div class="mock-menu-item"><span class="menu-dot"></span>Check-in</div>
+            <div class="mock-menu-item"><span class="menu-dot"></span>Review</div>
+            <div class="mock-menu-item"><span class="menu-dot"></span>Reports</div>
+            <div class="mock-menu-item"><span class="menu-dot"></span>AI Insights</div>
+          </div>
+          <div class="mock-main">
+            <div class="mock-topbar">
+              <div class="mock-title"><strong>Dashboard KPI/OKR</strong><span></span></div>
+              <div class="mock-role">Manager View</div>
+            </div>
+            <div class="mock-stats">
+              <div class="mock-stat"><b>82%</b><span>KPI hoàn thành</span></div>
+              <div class="mock-stat"><b>14</b><span>Check-in chờ duyệt</span></div>
+              <div class="mock-stat"><b>4</b><span>Cảnh báo AI</span></div>
+            </div>
+            <div class="mock-board">
+              <div class="mock-panel">
+                <div class="panel-head"><span>Tiến độ theo kỳ</span><span class="mini-chip">Live</span></div>
+                <div class="mock-bars"><span style="height:42%;"></span><span style="height:68%;"></span><span style="height:56%;"></span><span style="height:84%;"></span><span style="height:72%;"></span></div>
+              </div>
+              <div class="mock-panel">
+                <div class="panel-head"><span>Review Queue</span><span class="mini-chip">14</span></div>
+                <div class="mock-table">
+                  <div class="mock-row"><div class="row-line" style="width:88%;"></div><div class="row-line"></div><div class="row-status status-wait">Pending</div></div>
+                  <div class="mock-row"><div class="row-line" style="width:72%;"></div><div class="row-line"></div><div class="row-status status-ok">Approved</div></div>
+                  <div class="mock-row"><div class="row-line" style="width:94%;"></div><div class="row-line"></div><div class="row-status status-no">Rejected</div></div>
+                </div>
+              </div>
+              <div class="mock-flow">
+                <div class="mock-flow-step">OKR<span>Mục tiêu chiến lược</span></div>
+                <div class="mock-flow-step">KPI<span>Chỉ tiêu đo lường</span></div>
+                <div class="mock-flow-step">Check-in<span>Cập nhật thực đạt</span></div>
+                <div class="mock-flow-step">Duyệt<span>Tính điểm & báo cáo</span></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:14px;">
-        <div class="section-head">🛠️ Công nghệ Frontend</div>
-        <div class="tech-badges">
-          <div class="tech-badge">ASP.NET Core MVC</div>
-          <div class="tech-badge">Razor Views</div>
-          <div class="tech-badge orange">Bootstrap</div>
-          <div class="tech-badge yellow">jQuery</div>
-          <div class="tech-badge green">Chart.js</div>
-          <div class="tech-badge purple">Select2</div>
-          <div class="tech-badge">SweetAlert2</div>
+      <div class="interface-notes">
+        <div class="interface-note">
+          <div class="interface-note-title">1. Sidebar theo vai trò</div>
+          <div class="interface-note-body">Menu tự ẩn/hiện theo permission: Director, Manager, HR, Employee, Admin.</div>
         </div>
-        <div class="section-head" style="margin-top:4px;">🧭 Sidebar thông minh</div>
-        <ul class="fancy-list">
-          <li><div class="bullet">✓</div><span style="font-size:12px;">Ẩn/hiện menu theo permission của từng vai trò</span></li>
-          <li><div class="bullet">✓</div><span style="font-size:12px;">Trang AccessDenied khi không đủ quyền</span></li>
-          <li><div class="bullet">✓</div><span style="font-size:12px;">Alert, notification, form validation đầy đủ</span></li>
-          <li><div class="bullet">✓</div><span style="font-size:12px;">Responsive cho mọi màn hình doanh nghiệp</span></li>
-        </ul>
+        <div class="interface-note">
+          <div class="interface-note-title">2. Dashboard trung tâm</div>
+          <div class="interface-note-body">Card tổng quan, biểu đồ Chart.js, bảng KPI/OKR và hàng đợi duyệt cùng nằm trong một màn hình.</div>
+        </div>
+        <div class="interface-note">
+          <div class="interface-note-title">3. Luồng thao tác rõ ràng</div>
+          <div class="interface-note-body">OKR → KPI → Check-in → ReviewQueue → Report, giúp người dùng hiểu trạng thái công việc ngay khi đăng nhập.</div>
+        </div>
+        <div class="interface-note">
+          <div class="interface-note-title">Trạng thái nghiệp vụ</div>
+          <div class="status-strip">
+            <span style="background:#fef9c3;color:#a16207;">Pending</span>
+            <span style="background:#dcfce7;color:#15803d;">Approved</span>
+            <span style="background:#fee2e2;color:#b91c1c;">Rejected</span>
+            <span style="background:#e0f2fe;color:#0369a1;">Draft</span>
+            <span style="background:#f3e8ff;color:#7c3aed;">PendingDirector</span>
+          </div>
+        </div>
+        <div class="interface-note">
+          <div class="interface-note-title">Công nghệ giao diện</div>
+          <div class="tech-badges" style="margin-top:0;gap:5px;">
+            <div class="tech-badge">Razor</div>
+            <div class="tech-badge orange">Bootstrap</div>
+            <div class="tech-badge green">Chart.js</div>
+            <div class="tech-badge purple">Select2</div>
+            <div class="tech-badge yellow">SweetAlert2</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -866,45 +1188,75 @@ function loadImg(inputId, zoneId, imgId) {
     <span class="role-tag tag-be">⚙️ BackEnd – Phạm Trần An An</span>
     <div class="slide-title">Kiến Trúc & <span class="accent">Kỹ Thuật</span></div>
     <div class="slide-subtitle">ASP.NET Core · EF Core · SQL Server · Gemini AI · Cookie Auth</div>
-    <div class="two-col" style="flex:1;align-items:start;">
-      <div style="display:flex;flex-direction:column;gap:14px;">
-        <div class="section-head">🏗️ Kiến trúc Request Flow</div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;">
-          <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;">
-            <div style="display:flex;align-items:center;gap:8px;"><span style="width:20px;height:20px;border-radius:50%;background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">1</span><span>Browser gửi request</span></div>
-            <div style="margin-left:10px;border-left:2px dashed var(--border);padding-left:14px;display:flex;flex-direction:column;gap:5px;color:var(--muted);">
-              <span>→ Middleware: HTTPS, Auth, Antiforgery</span>
-              <span>→ Controller (routing theo action)</span>
-              <span>→ Service / Helper xử lý nghiệp vụ</span>
-              <span>→ EF Core → SQL Server</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;"><span style="width:20px;height:20px;border-radius:50%;background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">2</span><span>Razor Views render giao diện trả về</span></div>
+    <div class="backend-diagram-layout">
+      <div class="backend-arch-card">
+        <div class="diagram-kicker"><span>Request / Response Architecture</span><span>ASP.NET Core MVC</span></div>
+        <div class="backend-flow-row">
+          <div class="backend-layer">
+            <div class="layer-icon" style="background:#1a56db;">UI</div>
+            <strong>Browser + Razor</strong>
+            <span>Dashboard, form, table, alert</span>
+          </div>
+          <div class="backend-layer">
+            <div class="layer-icon" style="background:#0f766e;">MW</div>
+            <strong>Middleware</strong>
+            <span>HTTPS, Cookie Auth, Antiforgery</span>
+          </div>
+          <div class="backend-layer">
+            <div class="layer-icon" style="background:#7c3aed;">C</div>
+            <strong>Controllers</strong>
+            <span>Routing theo module/action</span>
+          </div>
+          <div class="backend-layer">
+            <div class="layer-icon" style="background:#c2410c;">S</div>
+            <strong>Services</strong>
+            <span>Workflow, scoring, alert, export</span>
+          </div>
+          <div class="backend-layer">
+            <div class="layer-icon" style="background:#059669;">DB</div>
+            <strong>EF Core + SQL</strong>
+            <span>DbContext, transaction, query</span>
           </div>
         </div>
-        <div class="section-head">🔒 Bảo mật & phân quyền</div>
-        <div class="highlight-box" style="padding:14px 16px;">
-          <div class="h-label">Cơ chế</div>
-          <code style="font-size:11px;line-height:1.8;">[Authorize] → bắt buộc đăng nhập<br>[HasPermission("CODE")] → chặn theo quyền<br>Permission gán qua Role_Permission table</code>
+        <div class="backend-services">
+          <div class="backend-service"><b>GeminiService</b>AI Insights, cảnh báo hiệu suất, fallback khi thiếu API key.</div>
+          <div class="backend-service"><b>Email / OTP</b>Xác thực, quên mật khẩu, thông báo nghiệp vụ.</div>
+          <div class="backend-service"><b>EPPlus Excel</b>Xuất báo cáo theo kỳ đánh giá và kết quả KPI.</div>
+        </div>
+        <div class="highlight-box" style="padding:12px 14px;">
+          <div class="h-label">Chu trình trả về</div>
+          Controller nhận request → service xử lý nghiệp vụ → EF Core đọc/ghi SQL Server → Razor render giao diện cập nhật.
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:14px;">
-        <div class="section-head">🗃️ ERD rút gọn</div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;font-size:11px;line-height:1.9;color:var(--muted);font-family:monospace;">
-          <span style="color:var(--blue);font-weight:700;">Foundation:</span> Role, Permission, SystemUser, Employee, Department<br>
-          <span style="color:#7c3aed;font-weight:700;">OKR:</span> MissionVision → OKR → KeyResult<br>
-          <span style="color:#059669;font-weight:700;">KPI:</span> EvalPeriod → KPI → KPIDetail → Assignment<br>
-          <span style="color:#c2410c;font-weight:700;">CheckIn:</span> KPICheckIn → CheckInDetail → History<br>
-          <span style="color:#ca8a04;font-weight:700;">Eval:</span> EvaluationResult → GradingRank → BonusRule<br>
-          <span style="color:var(--muted);font-weight:700;">Other:</span> AuditLog, SystemAlert, AIHistory
+      <div class="backend-side-stack">
+        <div class="diagram-side-card">
+          <div class="section-head" style="margin-bottom:6px;">🔒 Permission Flow</div>
+          <div class="permission-flow">
+            <div class="permission-step">Cookie<br>Login</div>
+            <div class="permission-step">[Authorize]</div>
+            <div class="permission-step">HasPermission</div>
+            <div class="permission-step">Role_Permission</div>
+          </div>
         </div>
-        <div class="section-head">🤖 AI & Services</div>
-        <div class="tech-badges">
-          <div class="tech-badge purple">Gemini API</div>
-          <div class="tech-badge">GeminiService</div>
-          <div class="tech-badge green">AIAlertService</div>
-          <div class="tech-badge orange">EmailService / OTP</div>
-          <div class="tech-badge">EPPlus Excel</div>
-          <div class="tech-badge yellow">Google OAuth</div>
+        <div class="diagram-side-card">
+          <div class="section-head" style="margin-bottom:6px;">🗃️ Data Model Map</div>
+          <div class="domain-map">
+            <div class="domain-row"><div class="domain-name" style="color:#1d4ed8;">Foundation</div><div class="domain-chain">Role → Permission → User → Employee → Department</div></div>
+            <div class="domain-row"><div class="domain-name" style="color:#7c3aed;">OKR</div><div class="domain-chain">MissionVision → OKR → KeyResult</div></div>
+            <div class="domain-row"><div class="domain-name" style="color:#059669;">KPI</div><div class="domain-chain">EvalPeriod → KPI → KPIDetail → Assignment</div></div>
+            <div class="domain-row"><div class="domain-name" style="color:#c2410c;">Check-in</div><div class="domain-chain">KPICheckIn → Detail → History → EvaluationResult</div></div>
+            <div class="domain-row"><div class="domain-name" style="color:#ca8a04;">Report</div><div class="domain-chain">Rank → BonusRule → AuditLog → AIHistory</div></div>
+          </div>
+        </div>
+        <div class="diagram-side-card">
+          <div class="section-head" style="margin-bottom:6px;">🤖 Services & Integrations</div>
+          <div class="tech-badges" style="margin-top:0;gap:6px;">
+            <div class="tech-badge purple">Gemini API</div>
+            <div class="tech-badge green">AIAlertService</div>
+            <div class="tech-badge orange">EmailService</div>
+            <div class="tech-badge">EPPlus</div>
+            <div class="tech-badge yellow">Google OAuth</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1030,8 +1382,8 @@ function loadImg(inputId, zoneId, imgId) {
 const SLIDES_DATA = [
   { idx:0, label:'Trang bìa',   role:'title', color:'#1a56db' },
   { idx:1, label:'Nhóm thực hiện', role:'team', color:'#1a56db' },
-  { idx:2, label:'PO – Bài toán', role:'po',  color:'#1a56db' },
-  { idx:3, label:'PO – Tính năng', role:'po', color:'#1a56db' },
+  { idx:2, label:'PO – Yêu cầu', role:'po',  color:'#1a56db' },
+  { idx:3, label:'PO – Quản lý DA', role:'po', color:'#1a56db' },
   { idx:4, label:'SM – Scrum',    role:'sm',  color:'#7c3aed' },
   { idx:5, label:'Luồng HT',      role:'flow',color:'#059669' },
   { idx:6, label:'Frontend UX',   role:'fe',  color:'#c2410c' },

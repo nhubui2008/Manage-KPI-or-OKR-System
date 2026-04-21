@@ -47,7 +47,8 @@
     }
 }
 
-<div class="page-header mb-4 align-items-end">
+<div class="dashboard-page">
+<div class="page-header dashboard-header mb-4 align-items-end">
     <div>
         <h1 class="h3 font-weight-bold mb-1">Tổng quan hệ thống</h1>
         <div class="page-breadcrumb text-muted" style="font-size: 0.85rem;">
@@ -57,7 +58,7 @@
         </div>
     </div>
     <div class="ms-auto">
-        <form method="get" asp-action="Index" class="d-flex flex-wrap align-items-center gap-2 bg-white p-1 rounded shadow-sm border">
+        <form method="get" asp-action="Index" class="dashboard-period-filter d-flex flex-wrap align-items-center gap-2 bg-white p-1 rounded shadow-sm border">
             <span class="ps-2 text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; white-space: nowrap;">Kỳ báo cáo:</span>
             <select name="periodId" class="form-select form-select-sm border-0 fw-bold text-primary page-filter-select" style="outline: none; box-shadow: none;" onchange="this.form.submit()">
                 <option value="" selected="@(selectedPeriod == null ? "selected" : null)">-- Tất cả --</option>
@@ -83,7 +84,7 @@
 @* ============ STAT CARDS ============ *@
 <div class="row g-4 mb-4">
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-primary border-4">
+        <div class="stat-card dashboard-stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-primary border-4">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Tỉ lệ KPI đạt</div>
@@ -103,7 +104,7 @@
     </div>
 
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-success border-4">
+        <div class="stat-card dashboard-stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-success border-4">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Tiến độ OKR Công Ty</div>
@@ -123,7 +124,7 @@
     </div>
 
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-info border-4">
+        <div class="stat-card dashboard-stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-info border-4">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Tổng Nhân Viên</div>
@@ -140,7 +141,7 @@
     </div>
 
     <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-warning border-4">
+        <div class="stat-card dashboard-stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-warning border-4">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Lượt Check-in</div>
@@ -301,7 +302,7 @@
             <div class="card-header bg-white py-3">
                 <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-lightning-charge-fill text-warning"></i> Truy cập nhanh</h5>
             </div>
-            <div class="card-body pt-3">
+            <div class="card-body pt-3 dashboard-quick-links">
                 <div class="row g-2">
                     <div class="col-6"><a href="/Employees" class="btn btn-outline-primary w-100 py-2"><i class="bi bi-people me-2"></i>Nhân sự</a></div>
                     <div class="col-6"><a href="/KPIs" class="btn btn-outline-success w-100 py-2"><i class="bi bi-speedometer2 me-2"></i>Quản lý KPI</a></div>
@@ -441,6 +442,8 @@
     </div>
 </div>
 }
+
+</div>
 
 @section Scripts {
     <script>

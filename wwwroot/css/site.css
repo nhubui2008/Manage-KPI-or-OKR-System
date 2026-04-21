@@ -3177,6 +3177,284 @@ select.form-select.w-auto {
     white-space: nowrap;
 }
 
+/* ============================================================
+   DASHBOARD REFINEMENT
+   Dense, scan-friendly KPI/OKR overview.
+   ============================================================ */
+.dashboard-page {
+    color: var(--text-primary);
+}
+
+.dashboard-page .dashboard-header {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    padding: 20px 22px;
+    background: #ffffff;
+    border: 1px solid #dde7f3;
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(26, 43, 70, 0.06);
+}
+
+.dashboard-page .dashboard-header h1 {
+    font-size: 1.45rem;
+    letter-spacing: 0;
+}
+
+.dashboard-page .dashboard-period-filter {
+    border-color: #d9e4f2 !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+}
+
+.dashboard-page .dashboard-period-filter .form-select {
+    color: var(--primary-dark);
+    font-weight: 700;
+}
+
+.dashboard-page .dashboard-stat-card {
+    min-height: 138px;
+    border-color: #dce6f2 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 6px 18px rgba(26, 43, 70, 0.06) !important;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.dashboard-page .dashboard-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(26, 43, 70, 0.1) !important;
+    border-color: #b8c9df !important;
+}
+
+.dashboard-page .stat-card .stat-icon {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 0;
+    border-radius: 8px !important;
+}
+
+.dashboard-page .stat-card .stat-label {
+    color: #536173 !important;
+    letter-spacing: 0.04em;
+}
+
+.dashboard-page .stat-card .stat-value {
+    font-size: 1.8rem;
+    letter-spacing: 0;
+}
+
+.dashboard-page .card {
+    border: 1px solid #dce6f2 !important;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(26, 43, 70, 0.06) !important;
+    overflow: hidden;
+}
+
+.dashboard-page .card-header {
+    background: #fbfdff !important;
+    border-bottom: 1px solid #e3ebf5;
+    padding: 14px 18px !important;
+}
+
+.dashboard-page .card-header h5 {
+    color: #1f2f46;
+    letter-spacing: 0;
+}
+
+.dashboard-page .card-body {
+    color: var(--text-secondary);
+}
+
+.dashboard-page .dashboard-quick-links .btn {
+    min-height: 44px;
+    border-radius: 8px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.dashboard-page .dashboard-quick-links .btn i {
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.dashboard-page .list-group-item {
+    transition: background-color 0.16s ease;
+}
+
+.dashboard-page .list-group-item:hover {
+    background: #f7faff;
+}
+
+.dashboard-page .table th {
+    color: #2b3d55;
+}
+
+.dashboard-page .table td {
+    color: var(--text-secondary);
+}
+
+.dashboard-page .progress {
+    background-color: #e8eef6 !important;
+}
+
+/* ============================================================
+   DIRECTOR EVALUATION REPORT READABILITY
+   Fixes low-contrast status text and improves table scanning.
+   ============================================================ */
+.evaluation-report-page .content-card {
+    border-radius: 8px;
+    border-color: #dce6f2 !important;
+    box-shadow: 0 8px 22px rgba(26, 43, 70, 0.07) !important;
+}
+
+.evaluation-report-page .evaluation-report-table-card {
+    overflow: hidden;
+}
+
+.evaluation-report-page .table-responsive {
+    max-height: calc(100vh - 240px);
+    overflow: auto;
+}
+
+.evaluation-report-page .evaluation-report-table {
+    min-width: 1120px;
+}
+
+.evaluation-report-page .data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #f5f8fc;
+    color: #0d3b7a;
+    padding: 14px 16px;
+    border-bottom: 2px solid #1a73e8;
+}
+
+.evaluation-report-page .data-table tbody td {
+    padding: 14px 16px;
+    color: #243244;
+    background: #ffffff;
+}
+
+.evaluation-report-page .data-table tbody tr:nth-child(even) td {
+    background: #fbfdff;
+}
+
+.evaluation-report-page .data-table tbody tr:hover td {
+    background: #eef5ff;
+}
+
+.evaluation-report-page .report-progress {
+    min-width: 124px;
+}
+
+.evaluation-report-page .report-progress .progress {
+    width: 58px;
+    height: 6px !important;
+    background: #e7edf5 !important;
+}
+
+.evaluation-report-page .report-progress-value {
+    min-width: 44px;
+    text-align: right;
+}
+
+.evaluation-report-page .report-progress-value.text-success,
+.evaluation-report-page .report-status-badge.text-success {
+    color: #0b6f3a !important;
+}
+
+.evaluation-report-page .report-progress-value.text-primary,
+.evaluation-report-page .report-status-badge.text-primary {
+    color: #1557b0 !important;
+}
+
+.evaluation-report-page .report-progress-value.text-warning,
+.evaluation-report-page .report-status-badge.text-warning {
+    color: #7a4f00 !important;
+}
+
+.evaluation-report-page .report-progress-value.text-danger,
+.evaluation-report-page .report-status-badge.text-danger {
+    color: #a50e0e !important;
+}
+
+.evaluation-report-page .report-status-badge {
+    min-width: 104px;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-weight: 800;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.evaluation-report-page .report-status-badge.bg-soft-success {
+    background: #e6f4ea !important;
+    border-color: rgba(15, 157, 88, 0.28);
+}
+
+.evaluation-report-page .report-status-badge.bg-soft-primary {
+    background: #e8f0fe !important;
+    border-color: rgba(26, 115, 232, 0.28);
+}
+
+.evaluation-report-page .report-status-badge.bg-soft-warning {
+    background: #fff4d6 !important;
+    border-color: rgba(242, 153, 0, 0.32);
+}
+
+.evaluation-report-page .report-status-badge.bg-soft-danger {
+    background: #fce8e6 !important;
+    border-color: rgba(217, 48, 37, 0.28);
+}
+
+.evaluation-report-page .report-reason {
+    color: #4b5563 !important;
+    line-height: 1.45;
+    min-width: 180px;
+}
+
+.evaluation-report-page .director-summary-input {
+    color: #1f2937;
+    border-color: #d7e1ee;
+    border-radius: 8px;
+}
+
+.evaluation-report-page .director-summary-input:focus {
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-page .dashboard-header {
+        padding: 16px;
+    }
+
+    .dashboard-page .dashboard-period-filter,
+    .dashboard-page .dashboard-period-filter .page-filter-select {
+        width: 100%;
+    }
+
+    .dashboard-page .dashboard-quick-links .btn {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .evaluation-report-page .page-header {
+        align-items: flex-start !important;
+        gap: 14px;
+    }
+
+    .evaluation-report-page .table-responsive {
+        max-height: none;
+    }
+}
+
 .print-director-summary {
     display: none;
 }

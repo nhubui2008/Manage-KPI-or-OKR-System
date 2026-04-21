@@ -55,6 +55,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("EVALPERIODS_CREATE")]
         public async Task<IActionResult> Create(EvaluationPeriod model)
         {
+            model.PeriodType = NormalizePeriodType(model.PeriodType);
+
             if (ModelState.IsValid)
             {
                 var error = await ValidatePeriodAsync(model);
@@ -83,6 +85,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("EVALPERIODS_EDIT")]
         public async Task<IActionResult> Edit(EvaluationPeriod model)
         {
+            model.PeriodType = NormalizePeriodType(model.PeriodType);
+
             if (ModelState.IsValid)
             {
                 var existing = await _context.EvaluationPeriods.FindAsync(model.Id);
@@ -106,6 +110,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 TempData["SuccessMessage"] = "Đã cập nhật kỳ đánh giá thành công!";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        private static string? NormalizePeriodType(string? periodType)
+        {
+            var value = periodType?.Trim().ToUpperInvariant();
+            return value switch
+            {
+                "MONTH" or "THANG" or "THÁNG" or "HANG THANG" or "HÀNG THÁNG" => "MONTH",
+                "QUARTER" or "QUY" or "QUÝ" or "HANG QUY" or "HÀNG QUÝ" => "QUARTER",
+                "YEAR" or "NAM" or "NĂM" or "HANG NAM" or "HÀNG NĂM" => "YEAR",
+                _ => string.IsNullOrWhiteSpace(value) ? null : value
+            };
         }
 
         private async Task<string?> ValidatePeriodAsync(EvaluationPeriod model, int? excludeId = null)
