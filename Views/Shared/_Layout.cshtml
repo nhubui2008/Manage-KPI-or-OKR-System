@@ -115,6 +115,7 @@
 
                         // Helper: kiểm tra user có permission không
                         bool HasPerm(string code) => isAdmin || userPermissions.Contains(code);
+                        bool canViewEvaluationReports = HasPerm("EVALREPORTS_VIEW") || HasPerm("REPORTS_VIEW");
                     }
 
                     <div class="sidebar-group">
@@ -177,7 +178,7 @@
                         </div>
                     }
 
-                    @if (HasPerm("EVALRESULTS_VIEW") || HasPerm("EVALRESULTS_REVIEW") || HasPerm("EVALREPORTS_VIEW") || HasPerm("BONUSRULES_VIEW"))
+                    @if (HasPerm("EVALRESULTS_VIEW") || HasPerm("EVALRESULTS_REVIEW") || canViewEvaluationReports || HasPerm("BONUSRULES_VIEW"))
                     {
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Đánh giá & Thưởng</div>
@@ -193,7 +194,7 @@
                                     <i class="bi bi-clipboard-check-fill"></i> <span>Duyệt đánh giá & kết quả</span>
                                 </a>
                             }
-                            @if (HasPerm("EVALREPORTS_VIEW"))
+                            @if (canViewEvaluationReports)
                             {
                                 <a href="/EvaluationReports" class="sidebar-link">
                                     <i class="bi bi-file-earmark-bar-graph-fill text-info"></i> <span>Báo cáo Đánh giá (V.Director)</span>

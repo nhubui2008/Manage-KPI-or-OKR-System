@@ -22,7 +22,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
         }
 
-        [HasPermission("EVALREPORTS_VIEW")]
+        [HasPermission("EVALREPORTS_VIEW", "REPORTS_VIEW")]
         public async Task<IActionResult> Index(int? departmentId, string? cycle)
         {
             var departments = await _context.Departments
@@ -180,7 +180,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpGet]
-        [HasPermission("EVALREPORTS_VIEW")]
+        [HasPermission("EVALREPORTS_VIEW", "REPORTS_VIEW")]
         public async Task<IActionResult> ExportExcel(int? departmentId, string? cycle)
         {
             if (!departmentId.HasValue)

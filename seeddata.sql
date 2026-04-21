@@ -35,16 +35,22 @@ DELETE FROM [OKRKeyResults];
 DELETE FROM [OKRs];
 DELETE FROM [MissionVisions];
 DELETE FROM [EmployeeAssignments];
+DELETE FROM [Role_Permissions];
+DELETE FROM [SystemParameters];
+
+UPDATE [Roles] SET [CreatedById] = NULL WHERE [CreatedById] IS NOT NULL;
+UPDATE [SystemUsers] SET [CreatedById] = NULL WHERE [CreatedById] IS NOT NULL;
+UPDATE [Departments] SET [ManagerId] = NULL, [CreatedById] = NULL WHERE [ManagerId] IS NOT NULL OR [CreatedById] IS NOT NULL;
+UPDATE [Employees] SET [CreatedById] = NULL WHERE [CreatedById] IS NOT NULL;
+
+DELETE FROM [Departments];
 DELETE FROM [Employees];
 DELETE FROM [SystemUsers];
-DELETE FROM [Role_Permissions];
 DELETE FROM [Permissions];
 DELETE FROM [Roles];
-DELETE FROM [Departments];
 DELETE FROM [Positions];
 DELETE FROM [EvaluationPeriods];
 DELETE FROM [GradingRanks];
-DELETE FROM [SystemParameters];
 DELETE FROM [Statuses];
 DELETE FROM [OKRTypes];
 DELETE FROM [KPITypes];
@@ -159,7 +165,9 @@ VALUES
     -- Nhân viên tự cập nhật tiến độ
     (52, N'EMPLOYEE_UPDATE_KPI_PROGRESS', N'Nhân viên cập nhật tiến độ KPI/OKR'),
     (53, N'KPICHECKINS_REVIEW', N'Quản lý xác nhận và đánh giá check-in KPI'),
-    (54, N'EVALRESULTS_REVIEW', N'Giám đốc duyệt đánh giá và kết quả');
+    (54, N'EVALRESULTS_REVIEW', N'Giám đốc duyệt đánh giá và kết quả'),
+    (55, N'EVALREPORTS_VIEW', N'Xem báo cáo đánh giá'),
+    (56, N'EVALREPORTS_EDIT', N'Chỉnh sửa báo cáo đánh giá');
 SET IDENTITY_INSERT [Permissions] OFF;
 GO
 
@@ -167,7 +175,7 @@ GO
 -- MODULE 3: ROLE_PERMISSIONS (Phân quyền chi tiết)
 -- ============================================================
 
--- === ADMIN: TOÀN QUYỀN (tất cả 54 permissions) ===
+-- === ADMIN: TOÀN QUYỀN (tất cả 56 permissions) ===
 INSERT INTO [Role_Permissions] ([RoleId], [PermissionId])
 SELECT 1, Id FROM [Permissions];
 GO
@@ -184,6 +192,7 @@ VALUES
     (2, 33), (2, 34), (2, 35),           -- EvalPeriod: View+Create+Edit
     (2, 37), (2, 39), (2, 53),           -- CheckIn: View+Edit+Review
     (2, 41), (2, 42), (2, 43), (2, 54),  -- Evaluation: Full+Review
+    (2, 55), (2, 56),                    -- Evaluation Reports: View+Edit
     (2, 44), (2, 45),                    -- Bonus: View+Edit
     (2, 46), (2, 47),                    -- Reports: Full
     (2, 48),                             -- Dashboard
@@ -203,6 +212,7 @@ VALUES
     (3, 33), (3, 34), (3, 35),   -- EvalPeriod: View+Create+Edit
     (3, 37), (3, 38), (3, 39), (3, 53),  -- CheckIn: View+Create+Edit+Review
     (3, 41), (3, 42), (3, 43),   -- Evaluation: Full
+    (3, 55),                     -- Evaluation Reports: View
     (3, 44),                     -- Bonus: View
     (3, 46), (3, 47),            -- Reports: View+Export
     (3, 48),                     -- Dashboard
@@ -222,6 +232,7 @@ VALUES
     (4, 33), (4, 34), (4, 35), (4, 36),  -- EvalPeriod: Full
     (4, 37),                             -- CheckIn: View
     (4, 41), (4, 42),                    -- Evaluation: View+Create
+    (4, 55), (4, 56),                    -- Evaluation Reports: View+Edit
     (4, 44), (4, 45),                    -- Bonus: View+Edit
     (4, 46), (4, 47),                    -- Reports: Full
     (4, 48),                             -- Dashboard
@@ -966,6 +977,215 @@ SELECT KPIId, EmployeeId, Weight, N'Active'
 FROM EmployeeKpis;
 GO
 
+-- KPI check-in demo: partial, approved progress for in-progress KPI scenarios.
+-- These rows make dashboards, KPI lists and detail pages show work that is
+-- clearly underway but not completed yet.
+DECLARE @DemoKpiCheckIns TABLE
+(
+    DemoId INT PRIMARY KEY,
+    KPIId INT NOT NULL,
+    EmployeeId INT NOT NULL,
+    ReviewerId INT NULL,
+    SlotIndex INT NOT NULL,
+    CheckInDate DATETIME2 NOT NULL,
+    DeadlineAt DATETIME2 NOT NULL,
+    TargetValue DECIMAL(18,2) NOT NULL,
+    ContributorCount INT NOT NULL,
+    ProgressRatio DECIMAL(9,4) NOT NULL,
+    ExpectedRatio DECIMAL(9,4) NOT NULL
+);
+
+;WITH RankedAssignments AS
+(
+    SELECT
+        a.KPIId,
+        a.EmployeeId,
+        k.AssignerId AS ReviewerId,
+        COALESCE(kd.TargetValue, 0) AS TargetValue,
+        ROW_NUMBER() OVER
+        (
+            PARTITION BY a.KPIId
+            ORDER BY
+                CASE WHEN a.EmployeeId IN (3, 4, 5) THEN 0 ELSE 1 END,
+                a.EmployeeId
+        ) AS AssignmentRank
+    FROM [KPI_Employee_Assignments] a
+    INNER JOIN [KPIs] k ON k.Id = a.KPIId
+    INNER JOIN [KPIDetails] kd ON kd.KPIId = k.Id
+    WHERE (a.Status IS NULL OR a.Status = N'Active')
+      AND k.StatusId = 7
+      AND k.IsActive = 1
+      AND COALESCE(kd.IsInverse, 0) = 0
+      AND COALESCE(kd.TargetValue, 0) > 0
+),
+SelectedAssignments AS
+(
+    SELECT
+        KPIId,
+        EmployeeId,
+        ReviewerId,
+        TargetValue
+    FROM RankedAssignments
+    WHERE AssignmentRank <= 2
+),
+ContributorCounts AS
+(
+    SELECT
+        KPIId,
+        COUNT(*) AS ContributorCount
+    FROM SelectedAssignments
+    GROUP BY KPIId
+),
+DemoRows AS
+(
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY sa.KPIId, sa.EmployeeId, slot.SlotIndex) AS DemoId,
+        sa.KPIId,
+        sa.EmployeeId,
+        sa.ReviewerId,
+        slot.SlotIndex,
+        DATEADD(
+            MINUTE,
+            sa.EmployeeId % 35,
+            CASE slot.SlotIndex
+                WHEN 1 THEN CAST('2026-04-08T09:15:00' AS DATETIME2)
+                ELSE CAST('2026-04-21T09:15:00' AS DATETIME2)
+            END
+        ) AS CheckInDate,
+        CASE slot.SlotIndex
+            WHEN 1 THEN CAST('2026-04-08T10:00:00' AS DATETIME2)
+            ELSE CAST('2026-04-21T10:00:00' AS DATETIME2)
+        END AS DeadlineAt,
+        sa.TargetValue,
+        cc.ContributorCount,
+        CAST(CASE slot.SlotIndex
+            WHEN 1 THEN 0.08 + ((sa.KPIId + sa.EmployeeId) % 6) * 0.03
+            ELSE 0.18 + ((sa.KPIId + sa.EmployeeId) % 10) * 0.06
+        END AS DECIMAL(9,4)) AS ProgressRatio,
+        CAST(CASE slot.SlotIndex
+            WHEN 1 THEN 0.20
+            ELSE 0.45
+        END AS DECIMAL(9,4)) AS ExpectedRatio
+    FROM SelectedAssignments sa
+    INNER JOIN ContributorCounts cc ON cc.KPIId = sa.KPIId
+    CROSS JOIN (VALUES (1), (2)) AS slot(SlotIndex)
+)
+INSERT INTO @DemoKpiCheckIns
+(
+    DemoId,
+    KPIId,
+    EmployeeId,
+    ReviewerId,
+    SlotIndex,
+    CheckInDate,
+    DeadlineAt,
+    TargetValue,
+    ContributorCount,
+    ProgressRatio,
+    ExpectedRatio
+)
+SELECT
+    DemoId,
+    KPIId,
+    EmployeeId,
+    ReviewerId,
+    SlotIndex,
+    CheckInDate,
+    DeadlineAt,
+    TargetValue,
+    ContributorCount,
+    ProgressRatio,
+    ExpectedRatio
+FROM DemoRows;
+
+SET IDENTITY_INSERT [KPICheckIns] ON;
+INSERT INTO [KPICheckIns]
+(
+    [Id],
+    [EmployeeId],
+    [KPIId],
+    [SubmittedById],
+    [CheckInDate],
+    [DeadlineAt],
+    [IsLate],
+    [StatusId],
+    [FailReasonId],
+    [ReviewStatus],
+    [ReviewedById],
+    [ReviewedAt],
+    [ReviewComment],
+    [ReviewScore]
+)
+SELECT
+    DemoId,
+    EmployeeId,
+    KPIId,
+    EmployeeId,
+    CheckInDate,
+    DeadlineAt,
+    CASE WHEN ProgressRatio < ExpectedRatio THEN 1 ELSE 0 END,
+    CASE
+        WHEN ProgressRatio >= 0.70 THEN 3
+        WHEN ProgressRatio >= ExpectedRatio THEN 1
+        WHEN ProgressRatio < 0.25 THEN 4
+        ELSE 2
+    END,
+    CASE
+        WHEN ProgressRatio < 0.25 THEN 1
+        WHEN ProgressRatio < ExpectedRatio THEN 3
+        ELSE NULL
+    END,
+    N'Approved',
+    ReviewerId,
+    DATEADD(HOUR, 2, CheckInDate),
+    CASE
+        WHEN ProgressRatio >= ExpectedRatio THEN N'Dữ liệu demo: tiến độ đang đi đúng hướng, tiếp tục bám mốc Q2.'
+        ELSE N'Dữ liệu demo: KPI đang thực hiện dở, cần tăng tốc trong các lần check-in tiếp theo.'
+    END,
+    CAST(ProgressRatio * 100 AS DECIMAL(5,2))
+FROM @DemoKpiCheckIns;
+SET IDENTITY_INSERT [KPICheckIns] OFF;
+
+SET IDENTITY_INSERT [CheckInDetails] ON;
+INSERT INTO [CheckInDetails]
+(
+    [Id],
+    [CheckInId],
+    [AchievedValue],
+    [ProgressPercentage],
+    [ExpectedValueAtDeadline],
+    [ScheduleProgressPercentage],
+    [Note]
+)
+SELECT
+    DemoId,
+    DemoId,
+    ROUND((TargetValue * ProgressRatio) / ContributorCount, 2),
+    CAST(ProgressRatio * 100 AS DECIMAL(18,2)),
+    ROUND((TargetValue * ExpectedRatio) / ContributorCount, 2),
+    CAST(ROUND((ProgressRatio / ExpectedRatio) * 100, 2) AS DECIMAL(18,2)),
+    CASE SlotIndex
+        WHEN 1 THEN N'Check-in demo đầu kỳ: đã bắt đầu triển khai, còn nhiều hạng mục đang mở.'
+        ELSE N'Check-in demo giữa kỳ: KPI đang làm dở, có số liệu tiến độ nhưng chưa đạt mục tiêu.'
+    END
+FROM @DemoKpiCheckIns;
+SET IDENTITY_INSERT [CheckInDetails] OFF;
+
+SET IDENTITY_INSERT [CheckInHistoryLogs] ON;
+INSERT INTO [CheckInHistoryLogs] ([Id], [CheckInId], [SnapshotData], [LogTime])
+SELECT
+    DemoId,
+    DemoId,
+    CONCAT(
+        N'Demo partial KPI progress | KPI #', KPIId,
+        N' | Employee #', EmployeeId,
+        N' | Progress ', CAST(CAST(ProgressRatio * 100 AS DECIMAL(5,2)) AS NVARCHAR(20)), N'%'
+    ),
+    DATEADD(MINUTE, 5, CheckInDate)
+FROM @DemoKpiCheckIns;
+SET IDENTITY_INSERT [CheckInHistoryLogs] OFF;
+GO
+
 -- Guardrails: fail fast if the large-scale seed did not materialize.
 DECLARE @UserCount INT = (SELECT COUNT(*) FROM [SystemUsers]);
 DECLARE @EmployeeCount INT = (SELECT COUNT(*) FROM [Employees]);
@@ -974,6 +1194,7 @@ DECLARE @AssignmentCount INT = (SELECT COUNT(*) FROM [EmployeeAssignments] WHERE
 DECLARE @OkrCount INT = (SELECT COUNT(*) FROM [OKRs]);
 DECLARE @KpiCount INT = (SELECT COUNT(*) FROM [KPIs]);
 DECLARE @KpiEmployeeAssignmentCount INT = (SELECT COUNT(*) FROM [KPI_Employee_Assignments]);
+DECLARE @KpiCheckInCount INT = (SELECT COUNT(*) FROM [KPICheckIns]);
 
 IF @UserCount <> 240
     THROW 51000, N'Seed validation failed: SystemUsers must equal 240.', 1;
@@ -996,6 +1217,9 @@ IF @OkrCount < 30
 IF @KpiCount < 70
     THROW 51006, N'Seed validation failed: KPIs must be at least 70.', 1;
 
+IF @KpiCheckInCount < 150
+    THROW 51008, N'Seed validation failed: KPI demo check-ins must be at least 150.', 1;
+
 PRINT N'';
 PRINT N'=== LARGE-SCALE SEED SUMMARY ===';
 PRINT CONCAT(N'SystemUsers: ', @UserCount);
@@ -1005,6 +1229,7 @@ PRINT CONCAT(N'EmployeeAssignments: ', @AssignmentCount);
 PRINT CONCAT(N'OKRs: ', @OkrCount);
 PRINT CONCAT(N'KPIs: ', @KpiCount);
 PRINT CONCAT(N'KPI employee assignments: ', @KpiEmployeeAssignmentCount);
+PRINT CONCAT(N'KPI partial check-ins: ', @KpiCheckInCount);
 GO
 
 -- ============================================================
@@ -1016,6 +1241,7 @@ IF (SELECT COUNT(*) FROM [SystemUsers]) <> 240
     OR (SELECT COUNT(*) FROM [EmployeeAssignments] WHERE [IsActive] = 1) <> 240
     OR (SELECT COUNT(*) FROM [OKRs]) < 30
     OR (SELECT COUNT(*) FROM [KPIs]) < 70
+    OR (SELECT COUNT(*) FROM [KPICheckIns]) < 150
 BEGIN
     THROW 51007, N'Seed data was not completed. Check the earlier SQL error before this final block.', 1;
 END

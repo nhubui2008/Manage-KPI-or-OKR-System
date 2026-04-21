@@ -1457,13 +1457,12 @@ function updateTimers() {
   const rem = Math.max(0, DURATION_SEC - elapsed);
   const pct = (elapsed / DURATION_SEC) * 100;
   const barW = Math.max(0, 100 - pct);
-  ['','2','3','4','5','6','7','8','9','10'].forEach(sfx => {
-    const v = document.getElementById('timer-val'+sfx);
-    const b = document.getElementById('timer-bar'+sfx);
-    if (v) v.textContent = formatTime(rem);
-    if (b) b.style.width = barW + '%';
-    if (v && rem < 60) v.style.color = '#ef4444';
-    else if (v) v.style.color = '#fff';
+  document.querySelectorAll('.timer-val').forEach(v => {
+    v.textContent = formatTime(rem);
+    v.style.color = rem < 60 ? '#ef4444' : '#fff';
+  });
+  document.querySelectorAll('.timer-bar').forEach(b => {
+    b.style.width = barW + '%';
   });
 }
 
