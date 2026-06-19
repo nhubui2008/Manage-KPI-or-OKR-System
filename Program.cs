@@ -23,10 +23,11 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+    options.Filters.Add(new Manage_KPI_or_OKR_System.Filters.ForcePasswordChangeFilter());
 });
 
 // Đăng ký EmailService
-builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.EmailService>();
+builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IEmailService, Manage_KPI_or_OKR_System.Services.EmailService>();
 
 // Register OKRProgressService
 builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IOKRProgressService, Manage_KPI_or_OKR_System.Services.OKRProgressService>();

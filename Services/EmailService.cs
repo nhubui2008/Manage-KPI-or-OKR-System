@@ -1,45 +1,62 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Manage_KPI_or_OKR_System.Services
 {
-    public class EmailService
+    public class EmailService : IEmailService
     {
         private readonly IConfiguration _config;
+        private readonly ILogger<EmailService> _logger;
 
-        // ĐÃ SỬA: Xóa EncryptionHelper khỏi constructor
-        public EmailService(IConfiguration config)
+        public EmailService(IConfiguration config, ILogger<EmailService> logger)
         {
             _config = config;
+            _logger = logger;
         }
 
-        public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage)
+        public async Task SendEmailAsync(string toEmail, string subject, string body)
         {
-            var smtpServer = _config["SmtpSettings:Server"];
-            var smtpPort = int.Parse(_config["SmtpSettings:Port"] ?? "587");
-            var senderEmail = _config["SmtpSettings:SenderEmail"];
-            var senderName = _config["SmtpSettings:SenderName"];
-
-            // ĐÃ SỬA: Lấy trực tiếp mật khẩu từ file .env (không cần giải mã)
-            var password = _config["SmtpSettings:Password"];
-
-            using (var client = new SmtpClient(smtpServer, smtpPort))
+            try
             {
-                client.UseDefaultCredentials = false;
-                client.Credentials = new NetworkCredential(senderEmail, password);
-                client.EnableSsl = true;
+                var smtpServer = _config["SmtpSettings:Server"];
+                var smtpPort = _config.GetValue<int>("SmtpSettings:Port", 587);
+                var senderName = _config["SmtpSettings:SenderName"];
+                var senderEmail = _config["SmtpSettings:SenderEmail"];
+                var senderPassword = _config["SmtpSettings:Password"];
 
-                var mailMessage = new MailMessage 
+                if (string.IsNullOrEmpty(senderEmail) || string.IsNullOrEmpty(senderPassword))
                 {
-                    From = new MailAddress(senderEmail!, senderName),
+                    _logger.LogWarning("SMTP credentials not configured. Simulating email send.");
+                    _logger.LogInformation($"[SIMULATED EMAIL] To: {toEmail}\nSubject: {subject}\nBody: {body}");
+                    // Just simulation if no credentials are provided.
+                    return;
+                }
+
+                using var client = new SmtpClient(smtpServer, smtpPort)
+                {
+                    UseDefaultCredentials = false,
+                    Credentials = new NetworkCredential(senderEmail, senderPassword),
+                    EnableSsl = true,
+                };
+
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(senderEmail, senderName),
                     Subject = subject,
-                    Body = htmlMessage,
+                    Body = body,
                     IsBodyHtml = true
                 };
+
                 mailMessage.To.Add(toEmail);
 
                 await client.SendMailAsync(mailMessage);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi gửi email.");
+                throw new Exception($"Lỗi SMTP: {ex.Message} - Vui lòng kiểm tra lại Email và App Password!");
             }
         }
     }

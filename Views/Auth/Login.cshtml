@@ -74,7 +74,7 @@
                 </button>
             </div>
         </div>
-        <form asp-controller="Auth" asp-action="Login" method="post" class="comfort-form" id="loginForm" novalidate>
+        <form asp-controller="Auth" asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post" class="comfort-form" id="loginForm" novalidate>
             <div class="soft-field">
                 <div class="field-container">
                     @if (ViewBag.IsRelogin != null && ViewBag.IsRelogin)

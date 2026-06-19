@@ -1,0 +1,100 @@
+@model IEnumerable<Manage_KPI_or_OKR_System.Models.PurchaseRegistration>
+@{
+    ViewData["Title"] = "Lịch sử đăng ký mua";
+    ViewData["IsLandingPage"] = true; // No system dashboard for this standalone page
+}
+
+@await Html.PartialAsync("_LandingHeader")
+
+<div style="background-color: #f8f9fa; min-height: 100vh; padding: 2rem 0; padding-top: 100px;">
+    <div class="container">
+        <!-- Breadcrumb / Back Navigation -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb" style="background: transparent; padding: 0;">
+                <li class="breadcrumb-item"><a href="/" style="text-decoration: none; color: var(--primary); font-weight: 500;"><i class="bi bi-house-door"></i> Trang chủ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Lịch sử đăng ký</li>
+            </ol>
+        </nav>
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 py-4 px-4 d-flex align-items-center gap-3">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(79,70,229,0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div>
+                    <h2 class="h4 mb-1 fw-bold text-dark">Lịch sử đăng ký và mua gói</h2>
+                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Danh sách các gói dịch vụ bạn đã đăng ký từ trước đến nay.</p>
+                </div>
+            </div>
+            
+            <div class="card-body p-0">
+                @if (Model != null && Model.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.95rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" class="ps-4 border-0 text-secondary fw-semibold">Thời gian</th>
+                                    <th scope="col" class="border-0 text-secondary fw-semibold">Email tài khoản</th>
+                                    <th scope="col" class="border-0 text-secondary fw-semibold">Tên gói dịch vụ</th>
+                                    <th scope="col" class="border-0 text-secondary fw-semibold">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="fw-medium text-dark">@item.CreatedAt.ToString("dd/MM/yyyy")</div>
+                                            <div class="text-muted small">@item.CreatedAt.ToString("HH:mm")</div>
+                                        </td>
+                                        <td>
+                                            <span class="text-dark">@item.Email</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-box-seam text-primary"></i>
+                                                <span class="fw-semibold text-primary">@item.SelectedPlan</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge rounded-pill bg-success text-white px-3 py-2">Thành công</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" alt="No data" style="width: 120px; opacity: 0.5; margin-bottom: 1.5rem;" />
+                        <h5 class="text-muted fw-normal mb-3">Bạn chưa đăng ký gói dịch vụ nào.</h5>
+                        <a href="/#pricing" class="btn btn-primary px-4 py-2" style="border-radius: 50px; font-weight: 500;">
+                            Xem Bảng giá
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary: #4f46e5;
+    }
+    body {
+        background-color: #f8f9fa;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(79,70,229,0.02);
+    }
+    .table td, .table th {
+        padding: 1rem 0.5rem;
+        vertical-align: middle;
+    }
+</style>
+
+@await Html.PartialAsync("_LandingFooter")

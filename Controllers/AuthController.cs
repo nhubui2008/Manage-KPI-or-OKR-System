@@ -19,17 +19,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
     public class AuthController : Controller
     {
         private readonly MiniERPDbContext _context;
-        private readonly EmailService _emailService;
+        private readonly IEmailService _emailService;
 
-        public AuthController(MiniERPDbContext context, EmailService emailService)
+        public AuthController(MiniERPDbContext context, IEmailService emailService)
         {
             _context = context;
             _emailService = emailService;
         }
 
-        public IActionResult Login()
+        public IActionResult Login(string returnUrl = null)
         {
             ViewData["IsLoginPage"] = true;
+            ViewBag.ReturnUrl = returnUrl;
             if (TempData["ErrorMessage"] != null)
             {
                 ViewBag.Error = TempData["ErrorMessage"];
@@ -44,7 +45,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login(string username, string password, bool remember = false)
+        public async Task<IActionResult> Login(string username, string password, bool remember = false, string returnUrl = null)
         {
             ViewData["IsLoginPage"] = true;
 
@@ -55,6 +56,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 {
                     ViewBag.Error = "Bạn không thể đổi tên đăng nhập. Vui lòng đăng xuất trước khi đăng nhập tài khoản khác.";
                     ViewBag.Username = User.Identity.Name;
+                    ViewBag.ReturnUrl = returnUrl;
                     return View();
                 }
             }
@@ -63,6 +65,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 ViewBag.Username = username;
                 ViewBag.Error = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.";
+                ViewBag.ReturnUrl = returnUrl;
                 return View();
             }
 
@@ -72,6 +75,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (user == null || user.PasswordHash == null || !PasswordHelper.VerifyPassword(password, user.PasswordHash))
             {
                 ViewBag.Error = "Tên đăng nhập hoặc mật khẩu không chính xác.";
+                ViewBag.Username = username;
+                ViewBag.ReturnUrl = returnUrl;
+                return View();
+            }
+
+            if (user.TrialEndTime.HasValue && DateTime.Now > user.TrialEndTime.Value)
+            {
+                ViewBag.Error = "Tài khoản dùng thử của bạn đã hết hạn (30 phút).";
+                ViewBag.Username = username;
+                ViewBag.ReturnUrl = returnUrl;
                 return View();
             }
 
@@ -94,6 +107,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 new Claim(ClaimTypes.Role, roleName)
             };
 
+            if (user.LastPasswordChange == null)
+            {
+                claims.Add(new Claim("RequiresPasswordChange", "true"));
+            }
+
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
 
@@ -105,17 +123,52 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
 
-            return RedirectToAction("Index", "Dashboard");
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+            return RedirectToAction("Index", "Home");
         }
 
         public IActionResult Register()
         {
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                return RedirectToAction("Index", "Dashboard");
+                return RedirectToAction("Index", "Home");
             }
             ViewData["IsLoginPage"] = true;
             return View();
+        }
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> SwitchDemo(string username)
+        {
+            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == username);
+            if (user == null) return RedirectToAction("Index", "Dashboard");
+
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+            var roleName = "User";
+            if (user.RoleId.HasValue)
+            {
+                var role = await _context.Roles.FindAsync(user.RoleId.Value);
+                if (role != null) roleName = role.RoleName;
+            }
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim("SystemUserId", user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Username ?? "Unknown"),
+                new Claim(ClaimTypes.Role, roleName)
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+            return RedirectToAction("Index", "Home");
         }
 
         [HttpPost]
@@ -163,9 +216,25 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Logout()
         {
+            string redirectUrl = "/Auth/Login";
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int userId))
+                {
+                    var user = await _context.SystemUsers.FindAsync(userId);
+                    if (user != null && user.TrialEndTime.HasValue)
+                    {
+                        // Trial users get redirected back to the landing page when logging out
+                        redirectUrl = "/Home/Index";
+                    }
+                }
+            }
+
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction("Login");
+            return Redirect(redirectUrl);
         }
+
 
         [HttpGet]
         [Authorize]
@@ -241,6 +310,49 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
         }
 
+        public class ForgotPasswordAjaxDto { public string email { get; set; } }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> ForgotPasswordAjax([FromBody] ForgotPasswordAjaxDto model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.email))
+                return Json(new { success = false, message = "Vui lòng nhập email." });
+
+            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email == model.email);
+            if (user == null)
+                return Json(new { success = false, message = "Không tìm thấy tài khoản với email này." });
+
+            Random rnd = new Random();
+            string resetCode = rnd.Next(100000, 999999).ToString();
+
+            // Cache the code. In a real app we'd use MemoryCache or DB, but here TempData or static dict
+            // For simplicity in this AJAX flow without session issues, we'll temporarily store it in the user record or just use memory cache.
+            // Wait, we can't easily use TempData with stateless fetch API sometimes. 
+            // Let's use HttpContext.Session if available, or just update the user record temporarily.
+            // Actually, we can just save it to TempData, but return it in response (encrypted) or rely on TempData if cookies work.
+            // Since this is a simple app, let's use TempData but make sure to Keep() it.
+            TempData["AjaxResetCode_" + model.email] = resetCode;
+
+            try
+            {
+                string subject = "Mã xác nhận khôi phục mật khẩu - VietMach System";
+                string body = $@"
+                    <h3>Chào bạn,</h3>
+                    <p>Bạn đã yêu cầu khôi phục mật khẩu cho tài khoản trên hệ thống VietMach MiniERP.</p>
+                    <p>Mã xác nhận (OTP) của bạn là: <strong style='color:#0d6efd; font-size:24px; letter-spacing: 3px;'>{resetCode}</strong></p>
+                    <p>Vui lòng nhập mã này để tạo mật khẩu mới.</p>";
+
+                await _emailService.SendEmailAsync(user.Email ?? "", subject, body);
+                return Json(new { success = true, message = "Mã OTP đã được gửi đến email!" });
+            }
+            catch
+            {
+                return Json(new { success = false, message = "Không thể gửi Email." });
+            }
+        }
+
         // ==========================================
         // BƯỚC 2: XÁC NHẬN MÃ OTP
         // ==========================================
@@ -284,6 +396,27 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             TempData["SuccessMessage"] = "Xác nhận mã thành công! Vui lòng tạo mật khẩu mới.";
             return RedirectToAction("SetNewPassword");
+        }
+
+        public class VerifyOtpAjaxDto { public string email { get; set; } public string code { get; set; } }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [IgnoreAntiforgeryToken]
+        public IActionResult VerifyOTPAjax([FromBody] VerifyOtpAjaxDto model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.email) || string.IsNullOrEmpty(model.code))
+                return Json(new { success = false, message = "Thiếu thông tin." });
+
+            string savedCode = TempData["AjaxResetCode_" + model.email] as string;
+            TempData.Keep("AjaxResetCode_" + model.email);
+
+            if (string.IsNullOrEmpty(savedCode) || model.code != savedCode)
+            {
+                return Json(new { success = false, message = "Mã xác nhận không hợp lệ hoặc đã hết hạn." });
+            }
+
+            return Json(new { success = true, message = "Xác nhận mã thành công." });
         }
 
         // ==========================================
@@ -353,12 +486,49 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return View();
         }
 
+        public class SetNewPasswordAjaxDto { public string email { get; set; } public string code { get; set; } public string newPassword { get; set; } public string confirmPassword { get; set; } }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> SetNewPasswordAjax([FromBody] SetNewPasswordAjaxDto model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.email) || string.IsNullOrEmpty(model.code) || string.IsNullOrEmpty(model.newPassword))
+                return Json(new { success = false, message = "Thiếu thông tin." });
+
+            string savedCode = TempData["AjaxResetCode_" + model.email] as string;
+
+            if (string.IsNullOrEmpty(savedCode) || model.code != savedCode)
+                return Json(new { success = false, message = "Xác thực không hợp lệ." });
+
+            if (model.newPassword != model.confirmPassword)
+                return Json(new { success = false, message = "Mật khẩu không khớp." });
+
+            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email == model.email);
+            if (user == null)
+                return Json(new { success = false, message = "Người dùng không tồn tại." });
+
+            user.PasswordHash = PasswordHelper.HashPassword(model.newPassword);
+            user.LastPasswordChange = DateTime.Now;
+            _context.SystemUsers.Update(user);
+            await _context.SaveChangesAsync();
+
+            TempData.Remove("AjaxResetCode_" + model.email);
+
+            return Json(new { success = true, message = "Khôi phục mật khẩu thành công! Vui lòng đăng nhập." });
+        }
+
         // ==========================================
         // ĐỔI MẬT KHẨU (KHI ĐANG ĐĂNG NHẬP)
         // ==========================================
         [Authorize] // Bắt buộc phải đăng nhập mới được đổi mật khẩu
-        public IActionResult ChangePassword()
+        public IActionResult ChangePassword(bool force = false)
         {
+            ViewData["IsLoginPage"] = true;
+            if (force)
+            {
+                ViewBag.Error = "Bạn bắt buộc phải đổi mật khẩu ở lần đăng nhập đầu tiên để bảo vệ tài khoản!";
+            }
             return View();
         }
 
@@ -366,6 +536,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [Authorize]
         public async Task<IActionResult> ChangePassword(string oldPassword, string newPassword, string confirmPassword)
         {
+            ViewData["IsLoginPage"] = true;
             if (string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword) || string.IsNullOrEmpty(confirmPassword))
             {
                 ViewBag.Error = "Vui lòng điền đầy đủ thông tin.";
@@ -399,9 +570,73 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context.SystemUsers.Update(user);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Đổi mật khẩu thành công!";
-            return RedirectToAction("Index", "Dashboard");
+            // Cập nhật lại Identity để xóa claim RequiresPasswordChange
+            var claims = ((ClaimsIdentity)User.Identity).Claims.ToList();
+            var requiresChangeClaim = claims.FirstOrDefault(c => c.Type == "RequiresPasswordChange");
+            if (requiresChangeClaim != null)
+            {
+                claims.Remove(requiresChangeClaim);
+            }
+            var newIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var newPrincipal = new ClaimsPrincipal(newIdentity);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, newPrincipal);
+
+            return RedirectToAction("Index", "Home");
         }
+
+        public class ChangePasswordAjaxDto
+        {
+            public string oldPassword { get; set; }
+            public string newPassword { get; set; }
+            public string confirmPassword { get; set; }
+        }
+
+        [HttpPost]
+        [Authorize]
+        [IgnoreAntiforgeryToken] // Depending on if we send the token correctly from JS
+        public async Task<IActionResult> ChangePasswordAjax([FromBody] ChangePasswordAjaxDto model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.oldPassword) || string.IsNullOrEmpty(model.newPassword) || string.IsNullOrEmpty(model.confirmPassword))
+            {
+                return Json(new { success = false, message = "Vui lòng điền đầy đủ thông tin." });
+            }
+
+            if (model.newPassword != model.confirmPassword)
+            {
+                return Json(new { success = false, message = "Mật khẩu mới không khớp." });
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out int userId)) return Json(new { success = false, message = "Lỗi xác thực người dùng." });
+
+            var user = await _context.SystemUsers.FindAsync(userId);
+            if (user == null) return Json(new { success = false, message = "Không tìm thấy người dùng." });
+
+            if (user.PasswordHash == null || !PasswordHelper.VerifyPassword(model.oldPassword, user.PasswordHash))
+            {
+                return Json(new { success = false, message = "Mật khẩu cũ không chính xác." });
+            }
+
+            user.PasswordHash = PasswordHelper.HashPassword(model.newPassword);
+            user.LastPasswordChange = DateTime.Now;
+
+            _context.SystemUsers.Update(user);
+            await _context.SaveChangesAsync();
+
+            // Xoá claim RequiresPasswordChange nếu có
+            var claims = ((ClaimsIdentity)User.Identity).Claims.ToList();
+            var requiresChangeClaim = claims.FirstOrDefault(c => c.Type == "RequiresPasswordChange");
+            if (requiresChangeClaim != null)
+            {
+                claims.Remove(requiresChangeClaim);
+                var newIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var newPrincipal = new ClaimsPrincipal(newIdentity);
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, newPrincipal);
+            }
+
+            return Json(new { success = true, message = "Đổi mật khẩu thành công!" });
+        }
+
         [AllowAnonymous]
 public IActionResult AccessDenied()
 {

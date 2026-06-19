@@ -62,6 +62,7 @@ namespace Manage_KPI_or_OKR_System.Data
         public DbSet<SystemAlert> SystemAlerts { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<AIGenerationHistory> AIGenerationHistories { get; set; }
+        public DbSet<PurchaseRegistration> PurchaseRegistrations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
