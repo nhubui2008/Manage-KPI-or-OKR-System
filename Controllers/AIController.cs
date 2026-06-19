@@ -16,6 +16,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly IAIDataService _dataService;
         private readonly IAIAlertService _alertService;
         private readonly IGeminiService _geminiService;
+        private readonly ISystemSettingsService _settingsService;
         private readonly Manage_KPI_or_OKR_System.Data.MiniERPDbContext _context;
         private readonly ILogger<AIController> _logger;
         private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
@@ -27,12 +28,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             IAIDataService dataService,
             IAIAlertService alertService,
             IGeminiService geminiService,
+            ISystemSettingsService settingsService,
             Manage_KPI_or_OKR_System.Data.MiniERPDbContext context,
             ILogger<AIController> logger)
         {
             _dataService = dataService;
             _alertService = alertService;
             _geminiService = geminiService;
+            _settingsService = settingsService;
             _context = context;
             _logger = logger;
         }
@@ -47,6 +50,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             try
             {
+                var branding = await _settingsService.GetBrandingAsync(cancellationToken);
                 var context = await _dataService.BuildChatContextAsync(User, request.PeriodId);
                 var prompt = new StringBuilder();
                 prompt.AppendLine(context);
@@ -66,7 +70,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
 
                 var text = await _geminiService.GenerateTextAsync(
-                    "Ban la VietMach AI Assistant cho he thong KPI/OKR. Tra loi bang tieng Viet, ngan gon, thuc te, chi dua vao context duoc cap. Neu thieu du lieu, noi ro thieu du lieu. Luon ton trong dung so luong muc ma nguoi dung yeu cau.",
+                    $"Ban la {branding.AiAssistantName} cho he thong {branding.ProductName}. Tra loi bang tieng Viet, ngan gon, thuc te, chi dua vao context duoc cap. Neu thieu du lieu, noi ro thieu du lieu. Luon ton trong dung so luong muc ma nguoi dung yeu cau.",
                     prompt.ToString(),
                     new GeminiGenerationOptions { Temperature = 0.35 },
                     cancellationToken);

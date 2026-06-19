@@ -4,7 +4,7 @@ body, html {
     height: 100%;
     margin: 0;
     font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
-    background: linear-gradient(135deg, #f0f4fa 0%, #e8f0fe 50%, #f5f8fc 100%);
+    background: linear-gradient(135deg, var(--body-bg, #f0f4fa) 0%, var(--primary-light, #e8f0fe) 50%, #ffffff 100%);
 }
 
 /* --- Removed Ambient Blobs (Loang màu) --- */
@@ -22,7 +22,7 @@ body, html {
 }
 
 .soft-card {
-    background: #ffffff;
+    background: var(--card-bg, #ffffff);
     border: 1px solid #e1e8f0;
     border-radius: 24px;
     box-shadow: 0 8px 32px rgba(26, 115, 232, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -44,7 +44,7 @@ body, html {
     margin-bottom: 12px;
 }
 .logo-circle {
-    background: linear-gradient(135deg, #1a73e8, #4285f4);
+    background: linear-gradient(135deg, var(--primary, #1a73e8), var(--primary-dark, #1557b0));
     border-radius: 14px;
     width: 52px;
     height: 52px;
@@ -59,6 +59,13 @@ body, html {
     color: #ffffff;
     width: 24px;
     height: 24px;
+}
+
+.login-brand-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 8px;
 }
 .gentle-glow {
     display: none;
@@ -100,9 +107,9 @@ body, html {
     transition: all 0.2s;
 }
 .field-container input:focus {
-    border-color: #1a73e8;
+    border-color: var(--primary, #1a73e8);
     background: #ffffff;
-    box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary, #1a73e8) 14%, transparent);
 }
 .field-container label {
     position: absolute;
@@ -119,7 +126,7 @@ body, html {
     top: -10px;
     left: 10px;
     font-size: 0.8rem;
-    color: #1a73e8;
+    color: var(--primary, #1a73e8);
     font-weight: 700;
     background: #ffffff;
     padding: 0 4px;
@@ -184,9 +191,9 @@ body, html {
 
 .demo-account:hover,
 .demo-account:focus {
-    border-color: #1a73e8;
+    border-color: var(--primary, #1a73e8);
     background: #eef5ff;
-    box-shadow: 0 3px 10px rgba(26, 115, 232, 0.1);
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--primary, #1a73e8) 14%, transparent);
 }
 
 .demo-account span {
@@ -230,8 +237,8 @@ body, html {
     transition: all 0.2s;
 }
 .gentle-checkbox input:checked + .checkbox-soft {
-    border-color: #1a73e8;
-    background: #1a73e8;
+    border-color: var(--primary, #1a73e8);
+    background: var(--primary, #1a73e8);
 }
 .check-circle {
     width: 12px; height: 12px;
@@ -257,14 +264,14 @@ body, html {
     font-size: 0.95rem;
 }
 .comfort-link {
-    color: #1a73e8;
+    color: var(--primary, #1a73e8);
     text-decoration: none;
     font-size: 0.95rem;
     font-weight: 600;
     transition: color 0.2s;
 }
 .comfort-link:hover {
-    color: #1557b0;
+    color: var(--primary-dark, #1557b0);
 }
 
 .comfort-button {
@@ -272,7 +279,7 @@ body, html {
     padding: 14px 0;
     border: none;
     border-radius: 12px;
-    background: linear-gradient(135deg, #1a73e8, #1557b0);
+    background: linear-gradient(135deg, var(--primary, #1a73e8), var(--primary-dark, #1557b0));
     color: #ffffff;
     font-size: 1.05rem;
     font-weight: 700;
@@ -282,7 +289,7 @@ body, html {
     box-shadow: 0 6px 18px rgba(26, 115, 232, 0.3);
 }
 .comfort-button:hover {
-    background: linear-gradient(135deg, #1557b0, #0d3b7a);
+    background: linear-gradient(135deg, var(--primary-dark, #1557b0), var(--primary, #1a73e8));
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(26, 115, 232, 0.4);
 }
@@ -310,8 +317,8 @@ body, html {
 }
 .spinner-circle {
     width: 16px; height: 16px;
-    border: 2.5px solid rgba(26, 115, 232, 0.25);
-    border-top: 2.5px solid #1a73e8;
+    border: 2.5px solid color-mix(in srgb, var(--primary, #1a73e8) 24%, transparent);
+    border-top: 2.5px solid var(--primary, #1a73e8);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -357,8 +364,8 @@ body, html {
     transition: all 0.2s;
 }
 .social-soft:hover {
-    background: #e8f0fe;
-    border-color: #1a73e8;
+    background: var(--primary-light, #e8f0fe);
+    border-color: var(--primary, #1a73e8);
 }
 .social-background {
     display: none;
@@ -377,12 +384,12 @@ body, html {
 }
 .signup-link {
     margin-left: 6px;
-    color: #1a73e8;
+    color: var(--primary, #1a73e8);
     font-weight: 700;
     text-decoration: none;
 }
 .signup-link:hover {
-    color: #1557b0;
+    color: var(--primary-dark, #1557b0);
 }
 
 .gentle-success {
@@ -407,7 +414,7 @@ body, html {
 }
 .bloom-ring {
     border-radius: 50%;
-    border: 2.5px solid rgba(26, 115, 232, 0.2);
+    border: 2.5px solid color-mix(in srgb, var(--primary, #1a73e8) 20%, transparent);
     opacity: 0.18;
     position: absolute;
 }

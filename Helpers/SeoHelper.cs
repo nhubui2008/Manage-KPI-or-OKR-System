@@ -5,7 +5,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
 {
     public static class SeoHelper
     {
-        public static string GetTitle(ViewContext viewContext, string defaultTitle = "VietMach KPI/OKR System")
+        public static string GetTitle(ViewContext viewContext, string defaultTitle = "KPI/OKR System")
         {
             var title = viewContext.ViewData["Title"] as string;
             return string.IsNullOrEmpty(title) ? defaultTitle : $"{title} - {defaultTitle}";
@@ -16,7 +16,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
             return viewContext.ViewData["Description"] as string ?? defaultDesc;
         }
 
-        public static string GetKeywords(ViewContext viewContext, string defaultKeywords = "KPI, OKR, quản lý hiệu suất, VietMach, AI Business, quản trị doanh nghiệp")
+        public static string GetKeywords(ViewContext viewContext, string defaultKeywords = "KPI, OKR, quản lý hiệu suất, AI Business, quản trị doanh nghiệp")
         {
             return viewContext.ViewData["Keywords"] as string ?? defaultKeywords;
         }

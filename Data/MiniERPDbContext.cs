@@ -38,6 +38,10 @@ namespace Manage_KPI_or_OKR_System.Data
         public DbSet<KPI_Department_Assignment> KPI_Department_Assignments { get; set; }
         public DbSet<KPI_Employee_Assignment> KPI_Employee_Assignments { get; set; }
         public DbSet<AdhocTask> AdhocTasks { get; set; }
+        public DbSet<WorkProject> WorkProjects { get; set; }
+        public DbSet<WorkProjectDepartment> WorkProjectDepartments { get; set; }
+        public DbSet<WorkItem> WorkItems { get; set; }
+        public DbSet<WorkItemComment> WorkItemComments { get; set; }
 
         // MODULE 5: CHECK-IN & EXECUTION
         public DbSet<CheckInStatus> CheckInStatuses { get; set; }
@@ -151,6 +155,20 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<KPI_Employee_Assignment>().HasOne<KPI>().WithMany().HasForeignKey(kea => kea.KPIId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<KPI_Employee_Assignment>().HasOne<Employee>().WithMany().HasForeignKey(kea => kea.EmployeeId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<AdhocTask>().HasOne<Employee>().WithMany().HasForeignKey(at => at.EmployeeId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<WorkProject>().HasIndex(p => p.ProjectCode).IsUnique();
+            modelBuilder.Entity<WorkProject>().HasOne<Employee>().WithMany().HasForeignKey(p => p.OwnerId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<WorkProject>().HasOne<Employee>().WithMany().HasForeignKey(p => p.CreatedById).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<WorkProjectDepartment>().HasOne<WorkProject>().WithMany(p => p.Departments).HasForeignKey(pd => pd.WorkProjectId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<WorkProjectDepartment>().HasOne<Department>().WithMany().HasForeignKey(pd => pd.DepartmentId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<WorkProjectDepartment>().HasIndex(pd => new { pd.WorkProjectId, pd.DepartmentId }).IsUnique();
+            modelBuilder.Entity<WorkItem>().HasOne<WorkProject>().WithMany(p => p.WorkItems).HasForeignKey(t => t.WorkProjectId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<WorkItem>().HasOne<Employee>().WithMany().HasForeignKey(t => t.AssigneeId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<WorkItem>().HasOne<Employee>().WithMany().HasForeignKey(t => t.ReporterId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<WorkItem>().HasOne<Department>().WithMany().HasForeignKey(t => t.DepartmentId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<WorkItem>().HasOne<KPI>().WithMany().HasForeignKey(t => t.KPIId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<WorkItem>().HasOne<OKRKeyResult>().WithMany().HasForeignKey(t => t.OKRKeyResultId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<WorkItemComment>().HasOne<WorkItem>().WithMany(t => t.Comments).HasForeignKey(c => c.WorkItemId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<WorkItemComment>().HasOne<Employee>().WithMany().HasForeignKey(c => c.CommenterId).OnDelete(DeleteBehavior.NoAction);
 
             // === E. EXECUTION & CHECK-IN (MODULE 5) ===
             modelBuilder.Entity<KPICheckIn>().HasOne<Employee>().WithMany().HasForeignKey(c => c.EmployeeId).OnDelete(DeleteBehavior.NoAction);

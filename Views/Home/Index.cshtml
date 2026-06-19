@@ -1,16 +1,18 @@
+@inject Manage_KPI_or_OKR_System.Services.ISystemSettingsService SystemSettingsService
 @{
-    ViewData["Title"] = "VietMach - Hệ thống Quản trị KPI/OKR Thông minh";
+    var branding = await SystemSettingsService.GetBrandingAsync();
+    ViewData["Title"] = $"{branding.ProductName} - Hệ thống Quản trị KPI/OKR Thông minh";
     ViewData["IsLandingPage"] = true;
-    ViewData["Description"] = "VietMach cung cấp giải pháp quản trị mục tiêu OKR và đo lường KPI hiện đại tích hợp AI Gemini. Đơn giản, hiệu quả và đột phá cho doanh nghiệp.";
+    ViewData["Description"] = branding.SeoDescription;
 }
 
 <style>
     :root {
-        --primary: #1a73e8;
-        --primary-dark: #1557b0;
+        --primary: @branding.PrimaryColor;
+        --primary-dark: @branding.PrimaryDarkColor;
         --secondary: #6c757d;
-        --accent: #4285f4;
-        --background: #f8f9fa;
+        --accent: @branding.PrimaryColor;
+        --background: @branding.BodyBackgroundColor;
         --text: #202124;
         --glass-bg: rgba(255, 255, 255, 0.7);
         --glass-border: rgba(255, 255, 255, 0.3);
@@ -53,6 +55,13 @@
     }
 
     .nav-brand i { font-size: 1.8rem; }
+
+    .landing-brand-logo {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        border-radius: 8px;
+    }
 
     .nav-links {
         display: flex;
@@ -337,7 +346,15 @@
 <div class="landing-wrapper">
     <nav class="landing-nav">
         <a href="/" class="nav-brand">
-            <i class="bi bi-hexagon-fill"></i> VietMach
+            @if (!string.IsNullOrWhiteSpace(branding.LogoUrl))
+            {
+                <img class="landing-brand-logo" src="@branding.LogoUrl" alt="@branding.CompanyName logo" />
+            }
+            else
+            {
+                <i class="bi bi-hexagon-fill"></i>
+            }
+            @branding.CompanyName
         </a>
         <div class="nav-links">
             <a href="#features" class="nav-link">Tính năng</a>
@@ -349,7 +366,7 @@
 
     <main>
         <section class="hero">
-            <div class="hero-badge">Mới: Tích hợp mô hình Gemini 2.5 Flash</div>
+            <div class="hero-badge">@branding.AiAssistantName</div>
             <h1>Nâng tầm doanh nghiệp với Quản trị Hiệu suất AI</h1>
             <p>Hệ thống toàn diện giúp thiết lập OKR chiến lược, đo lường KPI thời gian thực và tự động phân tích hiệu suất bằng trí tuệ nhân tạo.</p>
             <div class="hero-actions">
@@ -394,7 +411,7 @@
                 </ul>
             </div>
             <div class="ai-image">
-                <img src="/images/seo-banner.png" alt="AI Performance Analysis">
+                <img src="@branding.SeoImageUrl" alt="@branding.ProductName">
             </div>
         </section>
     </main>
@@ -403,9 +420,17 @@
         <div class="footer-content">
             <div class="footer-brand">
                 <div class="nav-brand mb-3">
-                    <i class="bi bi-hexagon-fill"></i> VietMach
+                    @if (!string.IsNullOrWhiteSpace(branding.LogoUrl))
+                    {
+                        <img class="landing-brand-logo" src="@branding.LogoUrl" alt="@branding.CompanyName logo" />
+                    }
+                    else
+                    {
+                        <i class="bi bi-hexagon-fill"></i>
+                    }
+                    @branding.CompanyName
                 </div>
-                <p class="text-muted">Chúng tôi giúp doanh nghiệp Việt chuyển đổi số trong quản trị nhân sự và hiệu suất lao động.</p>
+                <p class="text-muted">@branding.SeoDescription</p>
             </div>
             <div class="footer-links">
                 <div class="footer-col">
@@ -429,7 +454,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            &copy; 2026 VietMach ERP System. Bảo lưu mọi quyền.
+            @branding.FooterTextResolved
         </div>
     </footer>
 </div>

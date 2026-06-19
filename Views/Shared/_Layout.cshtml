@@ -1,38 +1,49 @@
+@inject Manage_KPI_or_OKR_System.Services.ISystemSettingsService SystemSettingsService
+@{
+    var appBranding = await SystemSettingsService.GetBrandingAsync();
+    var canonicalUrl = SeoHelper.GetCanonicalUrl(ViewContext, appBranding.PublicBaseUrl);
+    var seoImageUrl = appBranding.SeoImageUrl;
+    if (!string.IsNullOrWhiteSpace(seoImageUrl) && !seoImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+    {
+        seoImageUrl = $"{appBranding.PublicBaseUrl}{(seoImageUrl.StartsWith("/") ? seoImageUrl : "/" + seoImageUrl)}";
+    }
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@SeoHelper.GetTitle(ViewContext)</title>
+    <title>@SeoHelper.GetTitle(ViewContext, appBranding.ProductName)</title>
+    <link rel="icon" href="@appBranding.FaviconUrl" />
     
     <!-- Primary Meta Tags -->
-    <meta name="title" content="@SeoHelper.GetTitle(ViewContext)" />
-    <meta name="description" content="@SeoHelper.GetDescription(ViewContext)" />
-    <meta name="keywords" content="@SeoHelper.GetKeywords(ViewContext)" />
-    <meta name="author" content="VietMach" />
+    <meta name="title" content="@SeoHelper.GetTitle(ViewContext, appBranding.ProductName)" />
+    <meta name="description" content="@SeoHelper.GetDescription(ViewContext, appBranding.SeoDescription)" />
+    <meta name="keywords" content="@SeoHelper.GetKeywords(ViewContext, appBranding.SeoKeywords)" />
+    <meta name="author" content="@appBranding.Author" />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="@SeoHelper.GetCanonicalUrl(ViewContext)" />
+    <link rel="canonical" href="@canonicalUrl" />
 
     <!-- Open Graph / Facebook / Zalo -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="@SeoHelper.GetCanonicalUrl(ViewContext)" />
-    <meta property="og:title" content="@SeoHelper.GetTitle(ViewContext)" />
-    <meta property="og:description" content="@SeoHelper.GetDescription(ViewContext)" />
-    <meta property="og:image" content="@SeoHelper.GetCanonicalUrl(ViewContext, "")/images/seo-banner.png" />
+    <meta property="og:url" content="@canonicalUrl" />
+    <meta property="og:title" content="@SeoHelper.GetTitle(ViewContext, appBranding.ProductName)" />
+    <meta property="og:description" content="@SeoHelper.GetDescription(ViewContext, appBranding.SeoDescription)" />
+    <meta property="og:image" content="@seoImageUrl" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="@SeoHelper.GetCanonicalUrl(ViewContext)" />
-    <meta property="twitter:title" content="@SeoHelper.GetTitle(ViewContext)" />
-    <meta property="twitter:description" content="@SeoHelper.GetDescription(ViewContext)" />
-    <meta property="twitter:image" content="@SeoHelper.GetCanonicalUrl(ViewContext, "")/images/seo-banner.png" />
+    <meta property="twitter:url" content="@canonicalUrl" />
+    <meta property="twitter:title" content="@SeoHelper.GetTitle(ViewContext, appBranding.ProductName)" />
+    <meta property="twitter:description" content="@SeoHelper.GetDescription(ViewContext, appBranding.SeoDescription)" />
+    <meta property="twitter:image" content="@seoImageUrl" />
 
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
     {
       "@@context": "https://schema.org",
       "@@type": "SoftwareApplication",
-      "name": "VietMach KPI/OKR System",
+      "name": @Html.Raw(System.Text.Json.JsonSerializer.Serialize(appBranding.ProductName)),
       "operatingSystem": "Web-based",
       "applicationCategory": "BusinessApplication",
       "offers": {
@@ -40,7 +51,7 @@
         "price": "0",
         "priceCurrency": "VND"
       },
-      "description": "Hệ thống quản lý KPI/OKR hiện đại tích hợp AI"
+      "description": @Html.Raw(System.Text.Json.JsonSerializer.Serialize(appBranding.SeoDescription))
     }
     </script>
 
@@ -53,6 +64,24 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Manage-KPI-or-OKR-System.styles.css" asp-append-version="true" />
+    <style id="brand-theme">
+        :root {
+            --primary: @appBranding.PrimaryColor;
+            --primary-dark: @appBranding.PrimaryDarkColor;
+            --primary-darker: @appBranding.PrimaryDarkColor;
+            --primary-light: color-mix(in srgb, @appBranding.PrimaryColor 12%, #ffffff);
+            --primary-bg: color-mix(in srgb, @appBranding.PrimaryColor 8%, transparent);
+            --info: @appBranding.PrimaryColor;
+            --info-bg: color-mix(in srgb, @appBranding.PrimaryColor 12%, #ffffff);
+            --sidebar-bg: linear-gradient(180deg, @appBranding.SidebarColor 0%, color-mix(in srgb, @appBranding.SidebarColor 55%, @appBranding.SidebarGradientEnd) 50%, @appBranding.SidebarGradientEnd 100%);
+            --sidebar-bg-solid: @appBranding.SidebarColor;
+            --sidebar-text: @appBranding.SidebarTextColor;
+            --sidebar-text-active: @appBranding.SidebarTextColor;
+            --body-bg: @appBranding.BodyBackgroundColor;
+            --card-bg: @appBranding.CardBackgroundColor;
+        }
+        @Html.Raw(appBranding.CustomCss)
+    </style>
     
     <!-- Restore sidebar state immediately to prevent layout shift -->
     <script>
@@ -84,10 +113,19 @@
         <div class="app-wrapper">
             <nav id="sidebar" class="sidebar">
                 <div class="sidebar-brand">
-                    <div class="brand-icon"><i class="bi bi-hexagon-fill"></i></div>
+                    <div class="brand-icon">
+                        @if (appBranding.HasLogo)
+                        {
+                            <img class="brand-logo-img" src="@appBranding.LogoUrl" alt="@appBranding.CompanyName logo" />
+                        }
+                        else
+                        {
+                            <i class="bi bi-hexagon-fill"></i>
+                        }
+                    </div>
                     <div class="brand-info">
-                        <div class="brand-text">VietMach System</div>
-                        <div class="brand-sub">Manage KPI & OKR</div>
+                        <div class="brand-text">@appBranding.ShortName</div>
+                        <div class="brand-sub">@appBranding.Tagline</div>
                     </div>
                 </div>
 
@@ -109,7 +147,9 @@
                                 "MISSIONS_VIEW", "OKRS_VIEW", "EVALPERIODS_VIEW", "KPIS_VIEW",
                                 "KPICHECKINS_VIEW", "EVALRESULTS_VIEW", "EVALREPORTS_VIEW",
                                 "BONUSRULES_VIEW", "EMPLOYEES_VIEW", "DEPARTMENTS_VIEW",
-                                "POSITIONS_VIEW", "SYSUSERS_VIEW", "ROLES_VIEW", "AUDITLOGS_VIEW"
+                                "POSITIONS_VIEW", "SYSUSERS_VIEW", "ROLES_VIEW", "AUDITLOGS_VIEW",
+                                "WORKPROJECTS_VIEW", "WORKPROJECTS_CREATE", "WORKPROJECTS_EDIT",
+                                "WORKITEMS_CREATE", "WORKITEMS_EDIT", "WORKITEMS_COMMENT"
                             };
                         }
 
@@ -124,6 +164,16 @@
                             <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
                         </a>
                     </div>
+
+                    @if (HasPerm("WORKPROJECTS_VIEW"))
+                    {
+                        <div class="sidebar-group">
+                            <div class="sidebar-group-label">Vận hành & Cộng tác</div>
+                            <a href="/WorkProjects" class="sidebar-link">
+                                <i class="bi bi-kanban-fill"></i> <span>Công việc & Dự án</span>
+                            </a>
+                        </div>
+                    }
 
                     @if (HasPerm("MISSIONS_VIEW") || HasPerm("OKRS_VIEW"))
                     {
@@ -442,7 +492,7 @@
                 </main>
 
                 <footer class="app-footer">
-                    <div>&copy; @DateTime.Now.Year VietMach - KPI & OKR Management System. All rights reserved.</div>
+                    <div>@appBranding.FooterTextResolved</div>
                 </footer>
             </div>
         </div>
