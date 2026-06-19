@@ -1,58 +1,377 @@
-@model IEnumerable<Manage_KPI_or_OKR_System.Models.SystemParameter>
+@model Manage_KPI_or_OKR_System.Models.ViewModels.SystemSettingsViewModel
+@using Manage_KPI_or_OKR_System.Services
 @{
-    ViewData["Title"] = "Cài đặt thông số hệ thống";
+    ViewData["Title"] = "Cài đặt hệ thống";
+    var branding = Model.Branding;
 }
 
 <div class="container-fluid p-0">
     <div class="row mb-4">
         <div class="col-12 d-flex justify-content-between align-items-center mb-3">
             <div>
-                <h3 class="mb-1 fw-bold text-dark"><i class="bi bi-gear text-primary me-2"></i>Cài đặt hệ thống</h3>
-                <p class="text-muted mb-0">Thiết lập các thông số tự động của hệ thống</p>
+                <h3 class="mb-1 fw-bold text-dark"><i class="bi bi-sliders text-primary me-2"></i>Cài đặt hệ thống</h3>
+                <p class="text-muted mb-0">Tuỳ biến tên sản phẩm, logo, màu sắc, SEO, AI Assistant và các tham số vận hành</p>
             </div>
+            <form asp-action="ResetBranding" method="post" onsubmit="return confirm('Khôi phục cấu hình thương hiệu mặc định?');">
+                <button type="submit" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Khôi phục mặc định
+                </button>
+            </form>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body p-4">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Mã cấu hình</th>
-                                    <th>Mô tả</th>
-                                    <th style="width: 250px;">Giá trị</th>
-                                    <th class="text-end" style="width: 150px;">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var item in Model)
+    <form asp-action="UpdateBranding" method="post" enctype="multipart/form-data">
+        <div class="row g-4">
+            <div class="col-xl-8">
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="settings-section-icon"><i class="bi bi-brush"></i></span>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Nhận diện thương hiệu</h5>
+                                <p class="text-muted small mb-0">Các thông tin này sẽ xuất hiện ở sidebar, login, footer, email và SEO.</p>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="Branding.ProductName" class="form-label fw-semibold">Tên sản phẩm</label>
+                                <input asp-for="Branding.ProductName" class="form-control" maxlength="200" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.ShortName" class="form-label fw-semibold">Tên ngắn trên sidebar</label>
+                                <input asp-for="Branding.ShortName" class="form-control" maxlength="80" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.CompanyName" class="form-label fw-semibold">Tên doanh nghiệp</label>
+                                <input asp-for="Branding.CompanyName" class="form-control" maxlength="120" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.Tagline" class="form-label fw-semibold">Slogan</label>
+                                <input asp-for="Branding.Tagline" class="form-control" maxlength="160" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.LoginTitle" class="form-label fw-semibold">Tiêu đề đăng nhập</label>
+                                <input asp-for="Branding.LoginTitle" class="form-control" maxlength="120" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.LoginSubtitle" class="form-label fw-semibold">Mô tả đăng nhập</label>
+                                <input asp-for="Branding.LoginSubtitle" class="form-control" maxlength="180" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="settings-section-icon"><i class="bi bi-image"></i></span>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Logo và tài nguyên hiển thị</h5>
+                                <p class="text-muted small mb-0">Có thể upload file hoặc nhập URL nội bộ/public.</p>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="Branding.LogoFile" class="form-label fw-semibold">Upload logo</label>
+                                <input asp-for="Branding.LogoFile" class="form-control" type="file" accept=".png,.jpg,.jpeg,.webp,.svg" />
+                                <div class="form-text">Khuyến nghị SVG/PNG nền trong suốt, nhỏ hơn 2MB.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.FaviconFile" class="form-label fw-semibold">Upload favicon</label>
+                                <input asp-for="Branding.FaviconFile" class="form-control" type="file" accept=".ico,.png,.svg" />
+                                <div class="form-text">Dùng cho icon trình duyệt.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.LogoUrl" class="form-label fw-semibold">Logo URL hiện tại</label>
+                                <input asp-for="Branding.LogoUrl" class="form-control" maxlength="500" placeholder="/uploads/branding/logo.png" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.FaviconUrl" class="form-label fw-semibold">Favicon URL hiện tại</label>
+                                <input asp-for="Branding.FaviconUrl" class="form-control" maxlength="500" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.SeoImageUrl" class="form-label fw-semibold">Ảnh SEO/Open Graph</label>
+                                <input asp-for="Branding.SeoImageUrl" class="form-control" maxlength="500" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.PublicBaseUrl" class="form-label fw-semibold">Public Base URL</label>
+                                <input asp-for="Branding.PublicBaseUrl" class="form-control" maxlength="200" placeholder="https://domain-cua-doanh-nghiep.vn" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="settings-section-icon"><i class="bi bi-palette2"></i></span>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Theme giao diện</h5>
+                                <p class="text-muted small mb-0">Các màu này được áp dụng bằng CSS variables cho toàn hệ thống.</p>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label asp-for="Branding.PrimaryColor" class="form-label fw-semibold">Màu chủ đạo</label>
+                                <input asp-for="Branding.PrimaryColor" class="form-control form-control-color w-100" type="color" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Branding.PrimaryDarkColor" class="form-label fw-semibold">Màu chủ đạo đậm</label>
+                                <input asp-for="Branding.PrimaryDarkColor" class="form-control form-control-color w-100" type="color" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Branding.BodyBackgroundColor" class="form-label fw-semibold">Màu nền</label>
+                                <input asp-for="Branding.BodyBackgroundColor" class="form-control form-control-color w-100" type="color" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Branding.SidebarColor" class="form-label fw-semibold">Sidebar đầu</label>
+                                <input asp-for="Branding.SidebarColor" class="form-control form-control-color w-100" type="color" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Branding.SidebarGradientEnd" class="form-label fw-semibold">Sidebar cuối</label>
+                                <input asp-for="Branding.SidebarGradientEnd" class="form-control form-control-color w-100" type="color" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Branding.SidebarTextColor" class="form-label fw-semibold">Chữ sidebar</label>
+                                <input asp-for="Branding.SidebarTextColor" class="form-control form-control-color w-100" type="color" />
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Branding.CardBackgroundColor" class="form-label fw-semibold">Nền card</label>
+                                <input asp-for="Branding.CardBackgroundColor" class="form-control form-control-color w-100" type="color" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="settings-section-icon"><i class="bi bi-robot"></i></span>
+                            <div>
+                                <h5 class="mb-0 fw-bold">AI, SEO và nội dung nâng cao</h5>
+                                <p class="text-muted small mb-0">Tùy chỉnh cách hệ thống tự giới thiệu với người dùng và công cụ chia sẻ.</p>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="Branding.AiAssistantName" class="form-label fw-semibold">Tên AI Assistant</label>
+                                <input asp-for="Branding.AiAssistantName" class="form-control" maxlength="120" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.AiAssistantSubtitle" class="form-label fw-semibold">Mô tả AI Assistant</label>
+                                <input asp-for="Branding.AiAssistantSubtitle" class="form-control" maxlength="180" />
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="Branding.SeoDescription" class="form-label fw-semibold">Mô tả SEO</label>
+                                <textarea asp-for="Branding.SeoDescription" class="form-control" rows="3" maxlength="1000"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.SeoKeywords" class="form-label fw-semibold">Từ khóa SEO</label>
+                                <input asp-for="Branding.SeoKeywords" class="form-control" maxlength="400" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Branding.Author" class="form-label fw-semibold">Author</label>
+                                <input asp-for="Branding.Author" class="form-control" maxlength="120" />
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="Branding.FooterText" class="form-label fw-semibold">Footer</label>
+                                <textarea asp-for="Branding.FooterText" class="form-control" rows="2" maxlength="500"></textarea>
+                                <div class="form-text">Dùng <code>{year}</code> để tự động thay bằng năm hiện tại.</div>
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="Branding.CustomCss" class="form-label fw-semibold">CSS tuỳ chỉnh nâng cao</label>
+                                <textarea asp-for="Branding.CustomCss" class="form-control font-monospace" rows="5" maxlength="2000" placeholder=":root { --radius-lg: 10px; }"></textarea>
+                                <div class="form-text">Chỉ Admin/HR nên chỉnh phần này vì CSS sẽ áp dụng toàn hệ thống.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mb-4">
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-save me-1"></i> Lưu cấu hình giao diện
+                    </button>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card border-0 shadow-sm rounded-4 sticky-xl-top" style="top: 90px;">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-eye text-primary me-2"></i>Preview nhanh</h5>
+                        <div class="brand-preview" style="--preview-primary:@branding.PrimaryColor; --preview-sidebar:@branding.SidebarColor; --preview-sidebar-end:@branding.SidebarGradientEnd; --preview-sidebar-text:@branding.SidebarTextColor; --preview-bg:@branding.BodyBackgroundColor;">
+                            <div class="brand-preview-sidebar">
+                                <div class="brand-preview-logo">
+                                    @if (!string.IsNullOrWhiteSpace(branding.LogoUrl))
+                                    {
+                                        <img src="@branding.LogoUrl" alt="Logo preview" />
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-hexagon-fill"></i>
+                                    }
+                                </div>
+                                <div>
+                                    <div class="brand-preview-title">@branding.ShortName</div>
+                                    <div class="brand-preview-subtitle">@branding.Tagline</div>
+                                </div>
+                            </div>
+                            <div class="brand-preview-body">
+                                <div class="brand-preview-pill">@branding.CompanyName</div>
+                                <h6>@branding.ProductName</h6>
+                                <p>@branding.LoginSubtitle</p>
+                                <span>Primary</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <div class="small text-muted mb-2">Các key thương hiệu đang quản lý</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach (var item in Model.BrandingParameters)
                                 {
-                                    <tr>
-                                        <td><span class="badge bg-secondary bg-opacity-10 text-secondary">@item.ParameterCode</span></td>
-                                        <td class="text-muted">@item.Description</td>
-                                        <td>
-                                            <form asp-action="Update" method="post" id="form-@item.Id">
-                                                <input type="hidden" name="id" value="@item.Id" />
-                                                <div class="input-group">
-                                                    <input type="text" name="value" class="form-control" value="@item.Value" form="form-@item.Id" required>
-                                                </div>
-                                            </form>
-                                        </td>
-                                        <td class="text-end">
-                                            <button type="submit" form="form-@item.Id" class="btn btn-sm btn-primary rounded-pill px-3">
-                                                <i class="bi bi-save me-1"></i> Lưu
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    <span class="badge text-bg-light border">@item.ParameterCode</span>
                                 }
-                            </tbody>
-                        </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    </form>
+
+    <div class="card border-0 shadow-sm rounded-4 mt-2">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="settings-section-icon"><i class="bi bi-gear"></i></span>
+                <div>
+                    <h5 class="mb-0 fw-bold">Tham số vận hành nâng cao</h5>
+                    <p class="text-muted small mb-0">Các cấu hình kỹ thuật khác của hệ thống.</p>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã cấu hình</th>
+                            <th>Mô tả</th>
+                            <th style="width: 280px;">Giá trị</th>
+                            <th class="text-end" style="width: 130px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.OtherParameters)
+                        {
+                            <tr>
+                                <td><span class="badge bg-secondary bg-opacity-10 text-secondary">@item.ParameterCode</span></td>
+                                <td class="text-muted">@item.Description</td>
+                                <td>
+                                    <form asp-action="Update" method="post" id="form-@item.Id">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="text" name="value" class="form-control" value="@item.Value" form="form-@item.Id" required />
+                                    </form>
+                                </td>
+                                <td class="text-end">
+                                    <button type="submit" form="form-@item.Id" class="btn btn-sm btn-primary px-3">
+                                        <i class="bi bi-save me-1"></i> Lưu
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+    .settings-section-icon {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: var(--primary-light);
+        color: var(--primary);
+        flex: 0 0 auto;
+    }
+
+    .brand-preview {
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        background: var(--preview-bg);
+    }
+
+    .brand-preview-sidebar {
+        min-height: 92px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: linear-gradient(135deg, var(--preview-sidebar), var(--preview-sidebar-end));
+        color: var(--preview-sidebar-text);
+    }
+
+    .brand-preview-logo {
+        width: 42px;
+        height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.14);
+        overflow: hidden;
+        flex: 0 0 auto;
+    }
+
+    .brand-preview-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 6px;
+    }
+
+    .brand-preview-title {
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .brand-preview-subtitle {
+        opacity: 0.78;
+        font-size: 0.78rem;
+    }
+
+    .brand-preview-body {
+        padding: 18px;
+        background: var(--card-bg);
+    }
+
+    .brand-preview-body h6 {
+        margin: 8px 0 4px;
+        font-weight: 800;
+    }
+
+    .brand-preview-body p {
+        color: var(--text-muted);
+        margin-bottom: 12px;
+        font-size: 0.9rem;
+    }
+
+    .brand-preview-body span,
+    .brand-preview-pill {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--preview-primary) 12%, white);
+        color: var(--preview-primary);
+        font-size: 0.78rem;
+        font-weight: 800;
+        padding: 5px 9px;
+    }
+</style>

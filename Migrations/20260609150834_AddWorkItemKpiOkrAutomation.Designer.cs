@@ -4,6 +4,7 @@ using Manage_KPI_or_OKR_System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Manage_KPI_or_OKR_System.Migrations
 {
     [DbContext(typeof(MiniERPDbContext))]
-    partial class MiniERPDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260609150834_AddWorkItemKpiOkrAutomation")]
+    partial class AddWorkItemKpiOkrAutomation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1268,32 +1271,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.ToTable("Positions");
                 });
 
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.PurchaseRegistration", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("SelectedPlan")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("PurchaseRegistrations");
-                });
-
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.RealtimeExpectedBonus", b =>
                 {
                     b.Property<int>("Id")
@@ -1509,9 +1486,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     b.Property<int?>("RoleId")
                         .HasColumnType("int");
-
-                    b.Property<DateTime?>("TrialEndTime")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("Username")
                         .HasMaxLength(50)

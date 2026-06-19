@@ -26,6 +26,10 @@ DELETE FROM [KPICheckIns];
 DELETE FROM [KPI_Employee_Assignments];
 DELETE FROM [KPI_Department_Assignments];
 DELETE FROM [KPIDetails];
+DELETE FROM [WorkItemComments];
+DELETE FROM [WorkItems];
+DELETE FROM [WorkProjectDepartments];
+DELETE FROM [WorkProjects];
 DELETE FROM [AdhocTasks];
 DELETE FROM [KPIs];
 DELETE FROM [OKR_Employee_Allocations];
@@ -171,7 +175,16 @@ VALUES
     (57, N'BONUSRULES_VIEW', N'Xem quy tắc thưởng'),
     (58, N'BONUSRULES_CREATE', N'Tạo quy tắc thưởng'),
     (59, N'BONUSRULES_EDIT', N'Chỉnh sửa quy tắc thưởng'),
-    (60, N'BONUSRULES_DELETE', N'Xóa quy tắc thưởng');
+    (60, N'BONUSRULES_DELETE', N'Xóa quy tắc thưởng'),
+
+    -- Quản lý Công việc & Dự án
+    (61, N'WORKPROJECTS_VIEW', N'Xem công việc và dự án'),
+    (62, N'WORKPROJECTS_CREATE', N'Tạo dự án cộng tác'),
+    (63, N'WORKPROJECTS_EDIT', N'Cập nhật dự án cộng tác'),
+    (64, N'WORKPROJECTS_DELETE', N'Lưu trữ hoặc xóa dự án cộng tác'),
+    (65, N'WORKITEMS_CREATE', N'Tạo công việc Kanban'),
+    (66, N'WORKITEMS_EDIT', N'Cập nhật công việc Kanban'),
+    (67, N'WORKITEMS_COMMENT', N'Trao đổi trong công việc Kanban');
 SET IDENTITY_INSERT [Permissions] OFF;
 GO
 
@@ -199,6 +212,8 @@ VALUES
     (2, 55), (2, 56),                    -- Evaluation Reports: View+Edit
     (2, 44), (2, 45),                    -- Bonus: View+Edit
     (2, 57), (2, 58), (2, 59), (2, 60),  -- BonusRules: Full
+    (2, 61), (2, 62), (2, 63), (2, 64),  -- WorkProjects: Full
+    (2, 65), (2, 66), (2, 67),           -- WorkItems: Full
     (2, 46), (2, 47),                    -- Reports: Full
     (2, 48),                             -- Dashboard
     (2, 49),                             -- AuditLogs
@@ -220,6 +235,8 @@ VALUES
     (3, 55),                     -- Evaluation Reports: View
     (3, 44),                     -- Bonus: View
     (3, 57),                     -- BonusRules: View
+    (3, 61), (3, 62), (3, 63),   -- WorkProjects: View+Create+Edit
+    (3, 65), (3, 66), (3, 67),   -- WorkItems: Create+Edit+Comment
     (3, 46), (3, 47),            -- Reports: View+Export
     (3, 48),                     -- Dashboard
     (3, 50);                     -- Catalog: View
@@ -241,6 +258,8 @@ VALUES
     (4, 55), (4, 56),                    -- Evaluation Reports: View+Edit
     (4, 44), (4, 45),                    -- Bonus: View+Edit
     (4, 57), (4, 58), (4, 59), (4, 60),  -- BonusRules: Full
+    (4, 61), (4, 62), (4, 63),           -- WorkProjects: View+Create+Edit
+    (4, 65), (4, 66), (4, 67),           -- WorkItems: Create+Edit+Comment
     (4, 46), (4, 47),                    -- Reports: Full
     (4, 48),                             -- Dashboard
     (4, 50), (4, 51);                    -- Catalog: Full
@@ -256,7 +275,8 @@ VALUES
     (5, 37), (5, 38), (5, 39),   -- CheckIn: View+Create+Edit
     (5, 41),                     -- Evaluation: View
     (5, 48),                     -- Dashboard
-    (5, 52);                     -- Update KPI Progress
+    (5, 52),                     -- Update KPI Progress
+    (5, 61), (5, 66), (5, 67);   -- WorkProjects View + WorkItems Edit/Comment
 GO
 
 -- ============================================================

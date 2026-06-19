@@ -1,14 +1,18 @@
+@inject Manage_KPI_or_OKR_System.Services.ISystemSettingsService SystemSettingsService
+@{
+    var aiBranding = await SystemSettingsService.GetBrandingAsync();
+}
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
     <div class="ai-chat-widget" id="aiChatWidget">
-        <button type="button" class="ai-chat-toggle" id="aiChatToggle" aria-label="Mo VietMach AI Assistant">
+        <button type="button" class="ai-chat-toggle" id="aiChatToggle" aria-label="Mở @aiBranding.AiAssistantName">
             <i class="bi bi-stars"></i>
         </button>
         <section class="ai-chat-panel" id="aiChatPanel" aria-live="polite">
             <div class="ai-chat-header">
                 <div>
-                    <div class="ai-chat-title">VietMach AI Assistant</div>
-                    <div class="ai-chat-subtitle">KPI, OKR, tiến độ và gợi ý cải thiện</div>
+                    <div class="ai-chat-title">@aiBranding.AiAssistantName</div>
+                    <div class="ai-chat-subtitle">@aiBranding.AiAssistantSubtitle</div>
                 </div>
                 <button type="button" class="ai-chat-close" id="aiChatClose" aria-label="Dong AI chat">
                     <i class="bi bi-x-lg"></i>

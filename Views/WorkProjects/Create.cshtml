@@ -1,0 +1,108 @@
+@model Manage_KPI_or_OKR_System.Models.WorkProject
+@{
+    ViewData["Title"] = "Tạo dự án cộng tác";
+    var employees = ViewBag.Employees as IEnumerable<Employee> ?? Enumerable.Empty<Employee>();
+    var departments = ViewBag.Departments as IEnumerable<Department> ?? Enumerable.Empty<Department>();
+    var priorities = ViewBag.PriorityOptions as IEnumerable<string> ?? Enumerable.Empty<string>();
+    var statuses = ViewBag.ProjectStatusOptions as IEnumerable<string> ?? Enumerable.Empty<string>();
+}
+
+<div class="container-fluid p-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="mb-1 fw-bold"><i class="bi bi-plus-square text-primary me-2"></i>Tạo dự án cộng tác</h3>
+            <p class="text-muted mb-0">Thiết lập dự án Agile/Kanban và chọn các phòng ban cùng tham gia.</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Quay lại</a>
+    </div>
+
+    <form asp-action="Create" method="post" class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label asp-for="ProjectName" class="form-label fw-semibold">Tên dự án</label>
+                    <input asp-for="ProjectName" class="form-control" maxlength="200" />
+                    <span asp-validation-for="ProjectName" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="OwnerId" class="form-label fw-semibold">Người phụ trách</label>
+                    <select asp-for="OwnerId" class="form-select">
+                        <option value="">Chọn người phụ trách</option>
+                        @foreach (var employee in employees)
+                        {
+                            <option value="@employee.Id">@employee.FullName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Priority" class="form-label fw-semibold">Mức ưu tiên</label>
+                    <select asp-for="Priority" class="form-select">
+                        @foreach (var item in priorities)
+                        {
+                            <option value="@item">@PriorityLabel(item)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Status" class="form-label fw-semibold">Trạng thái</label>
+                    <select asp-for="Status" class="form-select">
+                        @foreach (var item in statuses)
+                        {
+                            <option value="@item">@ProjectStatusLabel(item)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label asp-for="StartDate" class="form-label fw-semibold">Bắt đầu</label>
+                    <input asp-for="StartDate" class="form-control" type="date" />
+                </div>
+                <div class="col-md-2">
+                    <label asp-for="DueDate" class="form-label fw-semibold">Deadline</label>
+                    <input asp-for="DueDate" class="form-control" type="date" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label fw-semibold">Mô tả</label>
+                    <textarea asp-for="Description" class="form-control" rows="4" maxlength="1000"></textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Phòng ban cộng tác</label>
+                    <select name="departmentIds" class="form-select" multiple size="6">
+                        @foreach (var department in departments)
+                        {
+                            <option value="@department.Id">@department.DepartmentName</option>
+                        }
+                    </select>
+                    <div class="form-text">Giữ Ctrl để chọn nhiều phòng ban. Các phòng ban được chọn sẽ cùng nhìn thấy không gian cộng tác của dự án.</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-white border-0 p-4 pt-0 d-flex justify-content-end gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary">Hủy</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Tạo dự án</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+
+@functions {
+    private static string PriorityLabel(string? value) => value switch
+    {
+        "Low" => "Thấp",
+        "High" => "Cao",
+        "Urgent" => "Khẩn cấp",
+        _ => "Bình thường"
+    };
+
+    private static string ProjectStatusLabel(string? value) => value switch
+    {
+        "Planning" => "Lên kế hoạch",
+        "OnHold" => "Tạm dừng",
+        "Completed" => "Hoàn thành",
+        "Archived" => "Lưu trữ",
+        _ => "Đang chạy"
+    };
+}

@@ -4,6 +4,7 @@ using Manage_KPI_or_OKR_System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Manage_KPI_or_OKR_System.Migrations
 {
     [DbContext(typeof(MiniERPDbContext))]
-    partial class MiniERPDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260609083038_AddWorkProjectKanbanModule")]
+    partial class AddWorkProjectKanbanModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1268,32 +1271,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.ToTable("Positions");
                 });
 
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.PurchaseRegistration", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("SelectedPlan")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("PurchaseRegistrations");
-                });
-
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.RealtimeExpectedBonus", b =>
                 {
                     b.Property<int>("Id")
@@ -1510,9 +1487,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("RoleId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime?>("TrialEndTime")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Username")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -1564,18 +1538,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("KPIId")
-                        .HasColumnType("int");
-
                     b.Property<string>("KanbanStatus")
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
-
-                    b.Property<decimal?>("KpiImpactWeight")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<int?>("OKRKeyResultId")
-                        .HasColumnType("int");
 
                     b.Property<string>("Priority")
                         .HasMaxLength(30)
@@ -1606,10 +1571,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasIndex("AssigneeId");
 
                     b.HasIndex("DepartmentId");
-
-                    b.HasIndex("KPIId");
-
-                    b.HasIndex("OKRKeyResultId");
 
                     b.HasIndex("ReporterId");
 
@@ -2241,16 +2202,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasOne("Manage_KPI_or_OKR_System.Models.Department", null)
                         .WithMany()
                         .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.KPI", null)
-                        .WithMany()
-                        .HasForeignKey("KPIId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.OKRKeyResult", null)
-                        .WithMany()
-                        .HasForeignKey("OKRKeyResultId")
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)

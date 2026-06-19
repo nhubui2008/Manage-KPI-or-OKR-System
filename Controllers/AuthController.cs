@@ -20,11 +20,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
     {
         private readonly MiniERPDbContext _context;
         private readonly IEmailService _emailService;
+        private readonly ISystemSettingsService _settingsService;
 
-        public AuthController(MiniERPDbContext context, IEmailService emailService)
+        public AuthController(
+            MiniERPDbContext context,
+            IEmailService emailService,
+            ISystemSettingsService settingsService)
         {
             _context = context;
             _emailService = emailService;
+            _settingsService = settingsService;
         }
 
         public IActionResult Login(string returnUrl = null)
@@ -287,14 +292,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // 3. GỬI MÃ OTP VỀ GMAIL
             try
             {
-                string subject = "Mã xác nhận khôi phục mật khẩu - VietMach System";
+                var branding = await _settingsService.GetBrandingAsync();
+                string subject = $"Mã xác nhận khôi phục mật khẩu - {branding.ProductName}";
                 string body = $@"
                     <h3>Chào {user.Username},</h3>
-                    <p>Bạn đã yêu cầu khôi phục mật khẩu cho tài khoản trên hệ thống VietMach MiniERP.</p>
+                    <p>Bạn đã yêu cầu khôi phục mật khẩu cho tài khoản trên hệ thống {branding.ProductName}.</p>
                     <p>Mã xác nhận (OTP) của bạn là: <strong style='color:#0d6efd; font-size:24px; letter-spacing: 3px;'>{resetCode}</strong></p>
                     <p>Vui lòng nhập mã này trên trang web để tạo mật khẩu mới. Nếu không phải bạn yêu cầu, vui lòng bỏ qua email này.</p>
                     <br/>
-                    <p>Trân trọng,<br/>Đội ngũ hỗ trợ hệ thống</p>";
+                    <p>Trân trọng,<br/>{branding.CompanyName}</p>";
 
                 await _emailService.SendEmailAsync(user.Email ?? "", subject, body);
 
