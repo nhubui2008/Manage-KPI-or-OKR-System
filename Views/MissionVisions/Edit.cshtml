@@ -75,7 +75,7 @@
                             </div>
                             <div class="input-wrapper shadow-sm rounded-4 overflow-hidden border">
                                 <i class="bi bi-pencil-square" style="top: 25px;"></i>
-                                <textarea asp-for="Content" id="missionContent" class="form-control border-0 px-4" rows="5" placeholder="Nhập định hướng kinh doanh cốt lõi của năm nay hoặc tầm nhìn chung..." required style="padding-top: 15px !important; padding-left: 45px !important; background: #fff;"></textarea>
+                                <textarea asp-for="Content" id="missionContent" class="form-control border-0 custom-textarea-padding" rows="5" placeholder="Nhập định hướng kinh doanh cốt lõi của năm nay hoặc tầm nhìn chung..." required></textarea>
                             </div>
                             <span asp-validation-for="Content" class="text-danger small"></span>
                             <div id="contentHint" class="form-text mt-3 text-muted">
@@ -239,6 +239,14 @@
     
     .form-icon-group .input-wrapper:focus-within i {
         color: #1a73e8;
+    }
+    
+    .custom-textarea-padding {
+        padding-top: 15px !important;
+        padding-bottom: 15px !important;
+        padding-left: 45px !important;
+        padding-right: 15px !important;
+        background: #fff !important;
     }
 
     /* === TIPS CARD (Sidebar Sync with OKR) === */

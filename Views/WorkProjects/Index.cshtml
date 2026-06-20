@@ -7,13 +7,13 @@
     var priorityOptions = ViewBag.PriorityOptions as IEnumerable<string> ?? Enumerable.Empty<string>();
 }
 
-<div class="container-fluid p-0">
-    <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+<div class="container-fluid p-0" style="overflow-x: hidden;">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
         <div>
             <h3 class="mb-1 fw-bold text-dark"><i class="bi bi-kanban-fill text-primary me-2"></i>Công việc & Dự án</h3>
             <p class="text-muted mb-0">Quản lý dự án Agile/Kanban, giao việc theo phòng ban và giữ trao đổi tập trung trong từng task.</p>
         </div>
-        <a asp-action="Create" class="btn btn-primary">
+        <a asp-action="Create" class="btn btn-primary flex-shrink-0">
             <i class="bi bi-plus-lg me-1"></i> Tạo dự án
         </a>
     </div>
@@ -21,11 +21,11 @@
     <form asp-action="Index" method="get" class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-3">
             <div class="row g-3 align-items-end">
-                <div class="col-lg-5">
+                <div class="col-12 col-md-5">
                     <label class="form-label fw-semibold">Tìm kiếm</label>
                     <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Tên, mã dự án hoặc mô tả..." />
                 </div>
-                <div class="col-md-3">
+                <div class="col-6 col-md-3">
                     <label class="form-label fw-semibold">Trạng thái</label>
                     <select name="status" class="form-select">
                         <option value="">Tất cả</option>
@@ -35,7 +35,7 @@
                         }
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-2">
                     <label class="form-label fw-semibold">Ưu tiên</label>
                     <select name="priority" class="form-select">
                         <option value="">Tất cả</option>
@@ -45,7 +45,7 @@
                         }
                     </select>
                 </div>
-                <div class="col-md-2 d-grid">
+                <div class="col-12 col-md-2 d-grid">
                     <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search me-1"></i> Lọc</button>
                 </div>
             </div>

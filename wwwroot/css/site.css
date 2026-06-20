@@ -131,6 +131,8 @@ body {
 .app-wrapper {
     display: flex;
     min-height: 100vh;
+    overflow-x: hidden;
+    width: 100%;
 }
 
 /* --- SIDEBAR --- */
@@ -411,11 +413,13 @@ html.sidebar-expanded .sidebar-user .user-info {
 /* --- MAIN CONTENT --- */
 .main-content {
     flex: 1;
+    min-width: 0;
     margin-left: var(--sidebar-width);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     transition: margin-left var(--transition-slow);
+    overflow-x: hidden;
 }
 
 html.sidebar-expanded .main-content {
@@ -1935,6 +1939,8 @@ html.sidebar-expanded .main-content {
 .page-content {
     flex: 1;
     padding: 32px;
+    overflow-x: hidden;
+    min-width: 0;
 }
 
 /* Page Header */
@@ -3596,4 +3602,85 @@ select.form-select.w-auto {
         min-width: 0;
         max-width: 100%;
     }
+}
+
+/* =========================================================
+   THÊM MỚI: Select2 Premium Customization (Fix Overflow & Styles)
+   ========================================================= */
+
+/* Main container styling to match premium form-control */
+.select2-container--default .select2-selection--single {
+    background-color: #fafcff !important;
+    border: 1.5px solid #eef2f7 !important;
+    border-radius: 12px !important;
+    height: 50px !important; /* ~ padding 12px top/bottom + line height */
+    display: flex !important;
+    align-items: center;
+    padding: 0 12px;
+    transition: all 0.3s ease;
+}
+
+/* Focus and Open states */
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single {
+    background-color: #ffffff !important;
+    border-color: #1a73e8 !important;
+    box-shadow: 0 0 0 4px rgba(0, 120, 212, 0.1) !important;
+}
+
+/* Rendered text container */
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #1e293b !important;
+    line-height: normal !important;
+    padding-left: 0 !important;
+    padding-right: 68px !important; /* Make room for X and Arrow */
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    
+    /* Text overflow handling - The core fix for the bug */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Clear button (x) absolute positioning to prevent text pushing it */
+.select2-container--default .select2-selection--single .select2-selection__clear {
+    position: absolute;
+    right: 40px; /* Positioned just before the arrow */
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0 !important;
+    padding: 0;
+    height: 20px;
+    line-height: 18px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 18px;
+    z-index: 10;
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__clear:hover {
+    color: #ef4444;
+}
+
+/* Arrow wrapper */
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 100% !important;
+    top: 0 !important;
+    right: 12px !important;
+    display: flex;
+    align-items: center;
+}
+
+/* Integration with form-icon-group (bi icon on the left) */
+.form-icon-group .input-wrapper .select2-container--default .select2-selection--single {
+    padding-left: 45px !important;
 }

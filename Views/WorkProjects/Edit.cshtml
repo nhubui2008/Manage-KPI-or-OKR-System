@@ -58,11 +58,11 @@
                 </div>
                 <div class="col-md-2">
                     <label asp-for="StartDate" class="form-label fw-semibold">Bắt đầu</label>
-                    <input asp-for="StartDate" class="form-control" type="date" />
+                    <input asp-for="StartDate" asp-format="{0:yyyy-MM-dd}" class="form-control" type="date" lang="vi" />
                 </div>
                 <div class="col-md-2">
                     <label asp-for="DueDate" class="form-label fw-semibold">Deadline</label>
-                    <input asp-for="DueDate" class="form-control" type="date" />
+                    <input asp-for="DueDate" asp-format="{0:yyyy-MM-dd}" class="form-control" type="date" lang="vi" />
                 </div>
                 <div class="col-12">
                     <label asp-for="Description" class="form-label fw-semibold">Mô tả</label>
@@ -88,6 +88,12 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Force date inputs to display in dd/mm/yyyy format
+        document.querySelectorAll('input[type="date"]').forEach(function(input) {
+            input.setAttribute('lang', 'vi');
+        });
+    </script>
 }
 
 @functions {

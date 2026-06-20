@@ -74,7 +74,7 @@
                                         <label class="form-label small text-muted text-uppercase fw-800">Loại OKR <span class="text-danger">*</span></label>
                                         <div class="input-wrapper">
                                             <i class="bi bi-tag"></i>
-                                            <select name="OKRTypeId" class="form-select shadow-sm border-0" required>
+                                            <select asp-for="OKRTypeId" class="form-select shadow-sm border-0" required>
                                                 <option value="">-- Chọn loại mục tiêu --</option>
                                                 @if (ViewBag.OKRTypes != null)
                                                 {
@@ -85,6 +85,7 @@
                                                 }
                                             </select>
                                         </div>
+                                        <span asp-validation-for="OKRTypeId" class="text-danger small mt-1 d-block text-uppercase fw-bold" style="font-size: 0.75rem;"></span>
                                     </div>
                                 </div>
 
@@ -93,7 +94,7 @@
                                         <label class="form-label small text-muted text-uppercase fw-800">Chu kỳ thực hiện <span class="text-danger">*</span></label>
                                         <div class="input-wrapper">
                                             <i class="bi bi-calendar3"></i>
-                                            <select name="Cycle" class="form-select shadow-sm border-0" required>
+                                            <select asp-for="Cycle" class="form-select shadow-sm border-0" required>
                                                 @{
                                                     var cycles = new[] { "Q1", "Q2", "Q3", "Q4", "Năm" };
                                                     var currentYear = DateTime.Now.Year;
