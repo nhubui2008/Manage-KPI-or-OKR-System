@@ -1,0 +1,160 @@
+@model List<Manage_KPI_or_OKR_System.Models.PaymentTransaction>
+@{
+    ViewData["Title"] = "Báo cáo Doanh thu (SaaS)";
+    Layout = "_SaaSAdminLayout";
+
+    decimal totalRevenue = ViewBag.TotalRevenue ?? 0;
+    decimal mrr = ViewBag.MRR ?? 0;
+    decimal arpu = ViewBag.ARPU ?? 0;
+
+    var topCustomers = Model.Where(t => t.Status == "Thành công" && t.Registration != null)
+                            .GroupBy(t => t.Registration.Email)
+                            .Select(g => new { 
+                                Email = g.Key, 
+                                CompanyName = g.Key,
+                                TotalAmount = g.Sum(x => x.Amount),
+                                PackageName = g.OrderByDescending(x => x.TransactionDate).First().Package?.PackageName ?? "Unknown"
+                            })
+                            .OrderByDescending(g => g.TotalAmount)
+                            .Take(5)
+                            .ToList();
+}
+
+<div class="dashboard-page">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1 text-primary">Báo cáo Doanh thu</h1>
+            <div class="page-breadcrumb text-muted" style="font-size: 0.85rem;">
+                <a href="/SaaSAdmin" class="text-decoration-none text-primary fw-medium">SaaS Admin</a>
+                <i class="bi bi-chevron-right separator mx-1"></i>
+                <span>Doanh thu</span>
+            </div>
+        </div>
+        <div>
+            <button class="btn btn-outline-secondary shadow-sm bg-white" onclick="alert('Tính năng chọn tháng đang phát triển')">
+                <i class="bi bi-calendar-range me-1"></i> Tất cả thời gian
+            </button>
+            <button class="btn btn-primary shadow-sm ms-2" onclick="alert('Tính năng xuất excel đang phát triển')">
+                <i class="bi bi-download me-1"></i> Xuất Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-success border-4">
+                <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">TỔNG DOANH THU</div>
+                <div class="stat-value h3 mb-0 fw-bold text-dark mt-2">@totalRevenue.ToString("N0") ₫</div>
+                <div class="mt-2 text-success fw-bold" style="font-size: 0.8rem;">
+                    Dữ liệu thực tế từ Database
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-primary border-4">
+                <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">DOANH THU MRR (THÁNG NÀY)</div>
+                <div class="stat-value h3 mb-0 fw-bold text-dark mt-2">@mrr.ToString("N0") ₫</div>
+                <div class="mt-2 text-primary fw-bold" style="font-size: 0.8rem;">
+                    Doanh thu định kỳ
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-warning border-4">
+                <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">ARPU (DOANH THU/KHÁCH)</div>
+                <div class="stat-value h3 mb-0 fw-bold text-dark mt-2">@arpu.ToString("N0") ₫</div>
+                <div class="mt-2 text-muted" style="font-size: 0.8rem;">
+                    Trung bình trên 1 khách hàng active
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Biểu đồ -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-bar-chart-line-fill text-primary"></i> Biểu đồ doanh thu thực tế</h5>
+                </div>
+                <div class="card-body p-4">
+                    @if (Model.Any())
+                    {
+                        <canvas id="revenueChart" style="height: 300px; width: 100%;"></canvas>
+                    }
+                    else
+                    {
+                        <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                            <p>Chưa có dữ liệu giao dịch để vẽ biểu đồ.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Top khách hàng -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-trophy-fill text-warning"></i> Top Khách hàng đem lại Doanh thu</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        @foreach (var c in topCustomers)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold me-3" style="width: 40px; height: 40px;">
+                                        @(c.CompanyName.Length > 1 ? c.CompanyName.Substring(0, 2).ToUpper() : "KH")
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">@c.CompanyName</div>
+                                        <div class="text-muted small">Gói @c.PackageName</div>
+                                    </div>
+                                </div>
+                                <div class="fw-bold text-success">@c.TotalAmount.ToString("N0") ₫</div>
+                            </li>
+                        }
+                        @if (!topCustomers.Any())
+                        {
+                            <li class="list-group-item p-4 text-center text-muted">
+                                Chưa có dữ liệu giao dịch thành công.
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const hasData = @(Model.Any() ? "true" : "false");
+        if (hasData) {
+            const ctxRev = document.getElementById('revenueChart').getContext('2d');
+            
+            // For now just put a simple chart since grouping dynamic C# data for chart.js requires passing serialized JSON.
+            // We'll show a flat chart for demonstration of the real backend connection.
+            new Chart(ctxRev, {
+                type: 'bar',
+                data: {
+                    labels: ['Tháng hiện tại'],
+                    datasets: [{
+                        label: 'Doanh thu (Triệu VNĐ)',
+                        data: [@(mrr / 1000000)],
+                        backgroundColor: 'rgba(26, 115, 232, 0.8)',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+    </script>
+}

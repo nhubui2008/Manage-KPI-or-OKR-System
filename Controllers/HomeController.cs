@@ -19,9 +19,10 @@ public class HomeController : Controller
         _context = context;
     }
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        return View();
+        var packages = await _context.SaaSPackages.ToListAsync();
+        return View(packages);
     }
 
     [AllowAnonymous]
@@ -29,6 +30,8 @@ public class HomeController : Controller
     {
         return View();
     }
+
+
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
@@ -88,14 +91,16 @@ public class HomeController : Controller
             _context.SystemUsers.Add(newUser);
             await _context.SaveChangesAsync();
 
-            var selectedPlan = plan ?? "Gói Starter";
-            var registration = new PurchaseRegistration
+            if (!string.IsNullOrEmpty(plan))
             {
-                Email = email,
-                SelectedPlan = selectedPlan
-            };
-            _context.PurchaseRegistrations.Add(registration);
-            await _context.SaveChangesAsync();
+                var registration = new PurchaseRegistration
+                {
+                    Email = email,
+                    SelectedPlan = plan
+                };
+                _context.PurchaseRegistrations.Add(registration);
+                await _context.SaveChangesAsync();
+            }
 
             string emailSubject = "Tài khoản VIETMACH của bạn đã được tạo";
             string emailBody = $"Chào bạn,<br/><br/>Tài khoản dùng thử của bạn đã được tạo thành công.<br/>" +
@@ -125,20 +130,48 @@ public class HomeController : Controller
 
         try
         {
+            if (username == "superadmin")
+            {
+                var saasRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "SaaS_Admin");
+                if (saasRole == null)
+                {
+                    saasRole = new Manage_KPI_or_OKR_System.Models.Role { RoleName = "SaaS_Admin", Description = "Chủ sở hữu hệ thống SaaS" };
+                    _context.Roles.Add(saasRole);
+                    await _context.SaveChangesAsync();
+                }
+
+                var superadmin = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == "superadmin");
+                if (superadmin == null)
+                {
+                    superadmin = new SystemUser
+                    {
+                        Username = "superadmin",
+                        Email = "ceo@vietmach.com",
+                        PasswordHash = Manage_KPI_or_OKR_System.Helpers.PasswordHelper.HashPassword("123"),
+                        RoleId = saasRole.Id,
+                        IsActive = true
+                    };
+                    _context.SystemUsers.Add(superadmin);
+                    await _context.SaveChangesAsync();
+                }
+            }
+
             var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == username);
             if (user == null || user.PasswordHash == null || !Manage_KPI_or_OKR_System.Helpers.PasswordHelper.VerifyPassword(password, user.PasswordHash))
             {
                 return Json(new { success = false, message = "Tên đăng nhập hoặc mật khẩu không chính xác." });
             }
 
-            var selectedPlan = plan ?? "Gói Starter";
-            var registration = new PurchaseRegistration
+            if (!string.IsNullOrEmpty(plan))
             {
-                Email = user.Email ?? username,
-                SelectedPlan = selectedPlan
-            };
-            _context.PurchaseRegistrations.Add(registration);
-            await _context.SaveChangesAsync();
+                var registration = new PurchaseRegistration
+                {
+                    Email = user.Email ?? username,
+                    SelectedPlan = plan
+                };
+                _context.PurchaseRegistrations.Add(registration);
+                await _context.SaveChangesAsync();
+            }
 
             var roleName = "User";
             if (user.RoleId.HasValue)
@@ -157,11 +190,62 @@ public class HomeController : Controller
             var principal = new System.Security.Claims.ClaimsPrincipal(identity);
             await HttpContext.SignInAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
+            if (roleName == "SaaS_Admin")
+            {
+                return Json(new { success = true, redirectUrl = "/SaaSAdmin/Index", message = "Đăng nhập thành công!" });
+            }
+
             return Json(new { success = true, requiresPasswordChange = user.LastPasswordChange == null, message = "Đăng nhập thành công!" });
         }
         catch (Exception ex)
         {
             return Json(new { success = false, message = "Lỗi hệ thống: " + ex.Message });
         }
+    }
+    [HttpPost]
+    [Authorize]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> PurchasePlanLoggedIn(string plan)
+    {
+        try
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Json(new { success = false, message = "Không thể xác thực người dùng." });
+
+            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == username);
+            if (user == null) return Json(new { success = false, message = "Người dùng không tồn tại." });
+
+            if (!string.IsNullOrEmpty(plan))
+            {
+                var registration = new PurchaseRegistration
+                {
+                    Email = user.Email ?? username,
+                    SelectedPlan = plan
+                };
+                _context.PurchaseRegistrations.Add(registration);
+                await _context.SaveChangesAsync();
+            }
+
+            return Json(new { success = true, message = $"Bạn đã đăng ký {(string.IsNullOrEmpty(plan) ? "thành công" : plan)}! Đội ngũ tư vấn sẽ liên hệ với bạn trong thời gian sớm nhất." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Lỗi hệ thống: " + ex.Message });
+        }
+    }
+
+    [Authorize]
+    public async Task<IActionResult> PurchaseHistory()
+    {
+        var username = User.Identity?.Name;
+        var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == username);
+        var email = user?.Email ?? username;
+
+        var purchases = await _context.PurchaseRegistrations
+            .Where(p => p.Email == email)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
+
+        return View(purchases);
     }
 }

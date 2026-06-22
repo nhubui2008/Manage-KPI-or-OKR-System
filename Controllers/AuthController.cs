@@ -32,13 +32,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _settingsService = settingsService;
         }
 
-        public IActionResult Login(string returnUrl = null)
+        public IActionResult Login(string returnUrl = null, string username = null)
         {
             ViewData["IsLoginPage"] = true;
             ViewBag.ReturnUrl = returnUrl;
             if (TempData["ErrorMessage"] != null)
             {
                 ViewBag.Error = TempData["ErrorMessage"];
+            }
+
+            if (!string.IsNullOrEmpty(username))
+            {
+                ViewBag.Username = username;
             }
 
             if (User.Identity != null && User.Identity.IsAuthenticated)
@@ -72,6 +77,32 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 ViewBag.Error = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.";
                 ViewBag.ReturnUrl = returnUrl;
                 return View();
+            }
+
+            if (username == "superadmin")
+            {
+                var saasRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "SaaS_Admin");
+                if (saasRole == null)
+                {
+                    saasRole = new Role { RoleName = "SaaS_Admin", Description = "Chủ sở hữu hệ thống SaaS" };
+                    _context.Roles.Add(saasRole);
+                    await _context.SaveChangesAsync();
+                }
+
+                var superadmin = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == "superadmin");
+                if (superadmin == null)
+                {
+                    superadmin = new SystemUser
+                    {
+                        Username = "superadmin",
+                        Email = "ceo@vietmach.com",
+                        PasswordHash = PasswordHelper.HashPassword("123"),
+                        RoleId = saasRole.Id,
+                        IsActive = true
+                    };
+                    _context.SystemUsers.Add(superadmin);
+                    await _context.SaveChangesAsync();
+                }
             }
 
             var user = await _context.SystemUsers
@@ -117,6 +148,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 claims.Add(new Claim("RequiresPasswordChange", "true"));
             }
 
+            if (user.TrialEndTime.HasValue)
+            {
+                claims.Add(new Claim("TrialEndTime", user.TrialEndTime.Value.ToString("O")));
+            }
+
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
 
@@ -132,14 +168,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 return Redirect(returnUrl);
             }
-            return RedirectToAction("Index", "Home");
+            if (roleName == "SaaS_Admin")
+            {
+                return RedirectToAction("Index", "SaaSAdmin");
+            }
+            return RedirectToAction("Index", "Dashboard");
         }
 
         public IActionResult Register()
         {
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction("Index", "Dashboard");
             }
             ViewData["IsLoginPage"] = true;
             return View();
@@ -173,7 +213,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Index", "Dashboard");
         }
 
         [HttpPost]
@@ -221,23 +261,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public async Task<IActionResult> Logout()
         {
-            string redirectUrl = "/Auth/Login";
-            if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (int.TryParse(userIdStr, out int userId))
-                {
-                    var user = await _context.SystemUsers.FindAsync(userId);
-                    if (user != null && user.TrialEndTime.HasValue)
-                    {
-                        // Trial users get redirected back to the landing page when logging out
-                        redirectUrl = "/Home/Index";
-                    }
-                }
-            }
-
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Redirect(redirectUrl);
+            await HttpContext.SignOutAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+            return Redirect("/Home/Index");
         }
 
 
@@ -587,7 +612,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var newPrincipal = new ClaimsPrincipal(newIdentity);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, newPrincipal);
 
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Index", "Dashboard");
         }
 
         public class ChangePasswordAjaxDto

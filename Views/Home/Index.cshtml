@@ -1,3 +1,4 @@
+@model List<Manage_KPI_or_OKR_System.Models.SaaSPackage>
 @{
     ViewData["Title"] = "VietMach - Nền tảng Quản trị Hiệu suất Toàn diện";
     ViewData["IsLandingPage"] = true;
@@ -305,24 +306,24 @@
     .sticky-block li i { color: var(--primary); font-size: 1.1rem; }
 
     .sticky-visual-side {
-        position: sticky; top: 120px; height: 75vh; min-height: 500px;
+        position: sticky; top: 120px; padding: 2rem;
         background: var(--surface-1); border-radius: var(--radius-xl);
         display: flex; align-items: center; justify-content: center; overflow: hidden;
         border: 1px solid var(--border); box-shadow: inset 0 0 40px rgba(0,0,0,0.02);
     }
     .browser-mockup {
-        width: 90%; height: 85%; background: white; border-radius: 12px;
+        width: 100%; aspect-ratio: 16/10; height: auto; background: white; border-radius: 12px;
         box-shadow: 0 24px 60px rgba(0,0,0,0.1); overflow: hidden;
         display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.05);
     }
     .browser-header {
-        height: 32px; background: #f1f5f9; display: flex; align-items: center; padding: 0 14px; gap: 8px; border-bottom: 1px solid #e2e8f0;
+        height: 32px; background: #e2e8f0; display: flex; align-items: center; padding: 0 14px; gap: 8px; border-bottom: 1px solid #cbd5e1;
     }
     .browser-dot { width: 12px; height: 12px; border-radius: 50%; }
-    .dot-red { background: #ef4444; } .dot-yellow { background: #f59e0b; } .dot-green { background: #10b981; }
+    .dot-red { background: #ff5f56; } .dot-yellow { background: #ffbd2e; } .dot-green { background: #27c93f; }
     .browser-content { flex: 1; position: relative; background: #fff; overflow: hidden; }
     .sticky-img {
-        position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center;
+        position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: left top;
         opacity: 0; transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(20px) scale(1.02);
     }
     .sticky-img.is-active { opacity: 1; transform: translateY(0) scale(1); }
@@ -640,8 +641,8 @@
             else
             {
                 <a href="/Auth/Login" class="lp-nav-link-btn">Đăng nhập Hệ thống</a>
-                <a href="javascript:void(0)" onclick="openRegModal('Gói Starter')" class="lp-cta-btn">
-                    Đăng ký Hệ thống (Test 30p) <i class="bi bi-arrow-right"></i>
+                <a href="javascript:void(0)" onclick="openRegModal('')" class="lp-cta-btn">
+                    Đăng ký Mua Hàng  <i class="bi bi-arrow-right"></i>
                 </a>
             }
         </div>
@@ -658,17 +659,26 @@
             <h1>Quản trị Hiệu suất <br><span class="gradient-text">OKR · KPI · Đánh giá</span></h1>
             <p>Nền tảng SaaS toàn diện giúp doanh nghiệp thiết lập mục tiêu chiến lược, đo lường hiệu suất, duyệt check-in, đánh giá nhân sự và tự động tính thưởng — tất cả trong một hệ thống duy nhất.</p>
             <div class="lp-hero-actions">
-                <a href="javascript:void(0)" onclick="openRegModal('Gói Starter')" class="btn-primary-lg">
-                    Bắt đầu Đăng ký Test 30p
-                </a>
-                <a href="/Auth/Login" class="btn-outline-lg">
-                    <i class="bi bi-box-arrow-in-right"></i> Đăng nhập Hệ thống
-                </a>
+                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                {
+                    <a href="/Dashboard/Index" class="btn-primary-lg">
+                        <i class="bi bi-grid-1x2-fill"></i> Truy cập Hệ thống
+                    </a>
+                }
+                else
+                {
+                    <a href="javascript:void(0)" onclick="openRegModal('')" class="btn-primary-lg">
+                        Bắt đầu Đăng ký Test 30p
+                    </a>
+                    <a href="/Auth/Login" class="btn-outline-lg">
+                        <i class="bi bi-box-arrow-in-right"></i> Đăng nhập Hệ thống
+                    </a>
+                }
             </div>
         </div>
         <div class="lp-hero-visual reveal reveal-delay-2">
             <div class="lp-hero-img-wrap">
-                <img src="/images/landing/screenshot_dashboard.png" alt="VietMach Dashboard - Tổng quan hiệu suất" />
+                <img src="/images/landing/screenshot_dashboard.png?v=4" alt="VietMach Dashboard - Tổng quan hiệu suất" />
             </div>
         </div>
     </div>
@@ -760,11 +770,11 @@
                     <div class="browser-dot dot-green"></div>
                 </div>
                 <div class="browser-content">
-                    <img src="/images/landing/screenshot_dashboard.png" class="sticky-img is-active" data-index="0" alt="Dashboard" />
-                    <img src="/images/landing/screenshot_okr.png" class="sticky-img" data-index="1" alt="OKR" />
-                    <img src="/images/landing/screenshot_checkin.png" class="sticky-img" data-index="2" alt="Check-in" />
-                    <img src="/images/landing/screenshot_evaluation.png" class="sticky-img" data-index="3" alt="Evaluation" />
-                    <img src="/images/ai_hero_light.png" class="sticky-img" data-index="4" alt="AI" />
+                    <img src="/images/landing/screenshot_dashboard.png?v=4" class="sticky-img is-active" data-index="0" alt="Dashboard" />
+                    <img src="/images/landing/screenshot_okr.png?v=4" class="sticky-img" data-index="1" alt="OKR" />
+                    <img src="/images/landing/screenshot_checkin.png?v=4" class="sticky-img" data-index="2" alt="Check-in" />
+                    <img src="/images/landing/screenshot_evaluation.png?v=4" class="sticky-img" data-index="3" alt="Evaluation" />
+                    <img src="/images/ai_hero_light.png?v=5" class="sticky-img" data-index="4" alt="AI" />
                 </div>
             </div>
         </div>
@@ -916,51 +926,55 @@
         <p class="section-desc">Lựa chọn gói sản phẩm phù hợp với quy mô và nhu cầu quản trị hiệu suất của doanh nghiệp bạn.</p>
     </div>
     <div class="lp-pricing-inner">
-        <!-- Basic Plan -->
-        <div class="pricing-card reveal">
-            <h3>Gói Starter</h3>
-            <p>Dành cho các doanh nghiệp vừa và nhỏ bắt đầu chuyển đổi số.</p>
-            <div class="pricing-price">1.5M<span> /tháng</span></div>
-            <ul class="pricing-features">
-                <li><i class="bi bi-check-circle-fill"></i> Tối đa 50 nhân sự</li>
-                <li><i class="bi bi-check-circle-fill"></i> Quản lý OKR & KPI cơ bản</li>
-                <li><i class="bi bi-check-circle-fill"></i> Báo cáo Dashboard chuẩn</li>
-                <li><i class="bi bi-dash-circle text-muted"></i> Trợ lý AI Gemini (Không hỗ trợ)</li>
-                <li><i class="bi bi-check-circle-fill"></i> Hỗ trợ qua Email</li>
-            </ul>
-            <a href="javascript:void(0)" onclick="openRegModal('Gói Starter')" class="pricing-btn outline">Mua ngay</a>
-        </div>
-
-        <!-- Pro Plan (Popular) -->
-        <div class="pricing-card popular reveal reveal-delay-1">
-            <div class="pricing-badge">Phổ biến nhất</div>
-            <h3>Gói Professional</h3>
-            <p>Đầy đủ tính năng cao cấp cho các công ty đang tăng trưởng.</p>
-            <div class="pricing-price">3.5M<span> /tháng</span></div>
-            <ul class="pricing-features">
-                <li><i class="bi bi-check-circle-fill"></i> Tối đa 200 nhân sự</li>
-                <li><i class="bi bi-check-circle-fill"></i> Tính năng Đánh giá & Tính thưởng tự động</li>
-                <li><i class="bi bi-check-circle-fill"></i> Tích hợp <strong>Trợ lý AI Gemini 2.5</strong> (Chat & Gợi ý)</li>
-                <li><i class="bi bi-check-circle-fill"></i> Báo cáo Excel chi tiết & Phân quyền mở rộng</li>
-                <li><i class="bi bi-check-circle-fill"></i> Hỗ trợ ưu tiên qua Hotline & Zalo</li>
-            </ul>
-            <a href="javascript:void(0)" onclick="openRegModal('Gói Professional')" class="pricing-btn solid">Mua ngay</a>
-        </div>
-
-        <!-- Enterprise Plan -->
-        <div class="pricing-card reveal reveal-delay-2">
-            <h3>Gói Enterprise</h3>
-            <p>Giải pháp toàn diện tùy biến theo yêu cầu của tập đoàn lớn.</p>
-            <div class="pricing-price">Thỏa thuận</div>
-            <ul class="pricing-features">
-                <li><i class="bi bi-check-circle-fill"></i> Không giới hạn nhân sự</li>
-                <li><i class="bi bi-check-circle-fill"></i> Tuỳ chỉnh luồng nghiệp vụ theo yêu cầu riêng</li>
-                <li><i class="bi bi-check-circle-fill"></i> AI Insights cao cấp, API kết nối hệ thống khác</li>
-                <li><i class="bi bi-check-circle-fill"></i> Triển khai On-Premise (Server riêng)</li>
-                <li><i class="bi bi-check-circle-fill"></i> Có quản lý tài khoản hỗ trợ riêng 24/7</li>
-            </ul>
-            <a href="mailto:sales@vietmach.com" class="pricing-btn outline">Liên hệ chuyên viên</a>
-        </div>
+        @if (Model != null && Model.Any())
+        {
+            var delay = 0;
+            foreach (var pkg in Model)
+            {
+                string priceDisplay = "Thỏa thuận";
+                if (pkg.PricePerMonth > 0)
+                {
+                    priceDisplay = pkg.PricePerMonth >= 1000000 ? (pkg.PricePerMonth / 1000000m).ToString("0.#") + "M" : (pkg.PricePerMonth / 1000m).ToString("0.#") + "k";
+                }
+                
+                <div class="pricing-card @(pkg.IsPopular ? "popular" : "") reveal reveal-delay-@delay">
+                    @if (pkg.IsPopular)
+                    {
+                        <div class="pricing-badge">Phổ biến nhất</div>
+                    }
+                    <h3>@pkg.PackageName</h3>
+                    <p>@pkg.Description</p>
+                    <div class="pricing-price">@priceDisplay<span>@(pkg.PricePerMonth > 0 ? " /tháng" : "")</span></div>
+                    
+                    <ul class="pricing-features">
+                        <li><i class="bi bi-check-circle-fill"></i> @(pkg.MaxUsers >= 9999 ? "Không giới hạn nhân sự" : $"Tối đa {pkg.MaxUsers} nhân sự")</li>
+                        <li><i class="bi bi-check-circle-fill"></i> @(pkg.HasAdvancedOKR ? "Tính năng Đánh giá & Tính thưởng tự động" : "Quản lý OKR & KPI cơ bản")</li>
+                        
+                        @if (pkg.HasAIInsight)
+                        {
+                            <li><i class="bi bi-check-circle-fill"></i> Tích hợp <strong>Trợ lý AI Gemini 2.5</strong></li>
+                        }
+                        else
+                        {
+                            <li><i class="bi bi-dash-circle text-muted"></i> Trợ lý AI Gemini (Không hỗ trợ)</li>
+                        }
+                        
+                        <li><i class="bi bi-check-circle-fill"></i> @(pkg.PricePerMonth == 0 ? "Triển khai On-Premise (Server riêng)" : "Báo cáo Dashboard chuẩn")</li>
+                        <li><i class="bi bi-check-circle-fill"></i> @(pkg.PricePerMonth == 0 ? "Có quản lý tài khoản hỗ trợ riêng 24/7" : (pkg.IsPopular ? "Hỗ trợ ưu tiên qua Hotline & Zalo" : "Hỗ trợ qua Email"))</li>
+                    </ul>
+                    
+                    @if (pkg.PricePerMonth == 0)
+                    {
+                        <a href="mailto:sales@vietmach.com" class="pricing-btn outline">Liên hệ chuyên viên</a>
+                    }
+                    else
+                    {
+                        <a href="javascript:void(0)" onclick="purchasePlan('@pkg.PackageName')" class="pricing-btn @(pkg.IsPopular ? "solid" : "outline")">Mua ngay</a>
+                    }
+                </div>
+                delay++;
+            }
+        }
     </div>
 </section>
 
@@ -985,7 +999,7 @@
         <h2>Sẵn sàng nâng tầm<br>quản trị hiệu suất?</h2>
         <p>Chọn gói sản phẩm phù hợp với doanh nghiệp của bạn và bắt đầu chuyển đổi số hệ thống quản trị ngay hôm nay.</p>
         <div style="display:flex; justify-content:center; gap: 1.2rem; flex-wrap: wrap;">
-            <a href="javascript:void(0)" onclick="openRegModal('Gói Starter')" class="btn-white-lg">
+            <a href="javascript:void(0)" onclick="openRegModal('')" class="btn-white-lg">
                 <i class="bi bi-cart3"></i> Đăng ký Test Hệ Thống
             </a>
             <a href="/Auth/Login" style="background:transparent; border:2px solid rgba(255,255,255,0.4); color:white !important; box-shadow:none;" class="btn-white-lg">
@@ -1056,7 +1070,7 @@
             <button class="reg-modal-close" onclick="closeRegModal()"><i class="bi bi-x-lg"></i></button>
             <div class="reg-form-container">
                 <h3>Xác nhận thông tin</h3>
-                <p class="reg-form-subtitle">Bạn đang chọn: <strong id="regPlanName" class="text-primary"></strong></p>
+                <p id="regSubtitleText" class="reg-form-subtitle">Bạn đang chọn: <strong id="regPlanName" class="text-primary"></strong></p>
                 
                 <div class="reg-modal-tabs" style="display:flex; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
                     <button type="button" id="tabRegister" class="reg-tab active" onclick="switchRegTab('register')" style="flex:1; padding:10px; border:none; background:none; font-weight:600; color:var(--primary); border-bottom: 2px solid var(--primary); cursor:pointer;">Khách hàng mới</button>
@@ -1430,15 +1444,77 @@
     const regForm = document.getElementById('regForm');
     const regSubmitBtn = document.getElementById('regSubmitBtn');
 
+    function purchasePlan(plan) {
+        @if (User.Identity != null && User.Identity.IsAuthenticated)
+        {
+            <text>
+            Swal.fire({
+                title: 'Xác nhận đăng ký gói',
+                text: `Bạn có chắc chắn muốn đăng ký ${plan}? Đội ngũ của chúng tôi sẽ liên hệ để hỗ trợ bạn kích hoạt gói.`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Đồng ý',
+                cancelButtonText: 'Hủy'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch('/Home/PurchasePlanLoggedIn', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams({ plan: plan })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            Swal.fire({
+                                title: 'Thành công!',
+                                text: data.message,
+                                icon: 'success',
+                                confirmButtonColor: '#2563eb'
+                            });
+                        } else {
+                            Swal.fire('Lỗi', data.message, 'error');
+                        }
+                    } catch (err) {
+                        Swal.fire('Lỗi', 'Không thể kết nối đến máy chủ.', 'error');
+                    }
+                }
+            });
+            </text>
+        }
+        else
+        {
+            <text>
+            openRegModal(plan);
+            </text>
+        }
+    }
+
     function openRegModal(plan) {
         const modal = document.getElementById('regModal');
         const planInput1 = document.getElementById('regPlanInput');
         const planInput2 = document.getElementById('loginPlanInput');
         const planName = document.getElementById('regPlanName');
+        const subtitleText = document.getElementById('regSubtitleText');
+        const regSubmitBtn = document.getElementById('regSubmitBtn');
+        const loginBuySubmitBtn = document.getElementById('loginBuySubmitBtn');
         
-        planName.textContent = plan;
-        planInput1.value = plan;
-        planInput2.value = plan;
+        if (plan) {
+            planName.textContent = plan;
+            planInput1.value = plan;
+            planInput2.value = plan;
+            if(subtitleText) subtitleText.style.display = 'block';
+            if(regSubmitBtn) regSubmitBtn.innerHTML = '<i class="bi bi-person-plus-fill"></i> Đăng ký & Mua gói';
+            if(loginBuySubmitBtn) loginBuySubmitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Đăng nhập & Mua gói';
+        } else {
+            planName.textContent = '';
+            planInput1.value = '';
+            planInput2.value = '';
+            if(subtitleText) subtitleText.style.display = 'none';
+            if(regSubmitBtn) regSubmitBtn.innerHTML = '<i class="bi bi-person-plus-fill"></i> Đăng ký Trải nghiệm';
+            if(loginBuySubmitBtn) loginBuySubmitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Đăng nhập Hệ thống';
+        }
         
         modal.classList.add('active');
         setTimeout(() => document.getElementById('regEmail').focus(), 100);
@@ -1478,7 +1554,7 @@
                 
                 if (typeof window.showAppToast === 'function') {
                     window.showAppToast({ tone: 'success', title: 'Đăng ký thành công!', message: result.message });
-                    setTimeout(() => switchRegTab('login'), 1500);
+                    setTimeout(() => window.location.href = '/Auth/Login?username=' + encodeURIComponent(email), 1500);
                 } else if (typeof Swal !== 'undefined') {
                     Swal.fire({
                         icon: 'success',
@@ -1487,11 +1563,11 @@
                         confirmButtonText: 'Đăng nhập ngay',
                         confirmButtonColor: '#4f46e5'
                     }).then(() => {
-                        switchRegTab('login');
+                        window.location.href = '/Auth/Login?username=' + encodeURIComponent(email);
                     });
                 } else {
                     alert(result.message);
-                    switchRegTab('login');
+                    window.location.href = '/Auth/Login?username=' + encodeURIComponent(email);
                 }
             } else {
                 if (typeof window.showAppToast === 'function') {
@@ -1598,10 +1674,13 @@
                 } else {
                     alert(result.message);
                 }
-                
-                // Reload to stay on the landing page (outside the system), but show the authenticated Avatar
+                // Reload to stay on the landing page or redirect if provided
                 setTimeout(() => {
-                    window.location.reload();
+                    if (result.redirectUrl) {
+                        window.location.href = result.redirectUrl;
+                    } else {
+                        window.location.reload();
+                    }
                 }, 1500);
             } else {
                 if (typeof window.showAppToast === 'function') {

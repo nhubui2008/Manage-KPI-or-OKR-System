@@ -1,5 +1,9 @@
 @model ErrorViewModel
 @{
+    var exceptionHandlerPathFeature = Context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+    var originalPath = exceptionHandlerPathFeature?.Path ?? Context.Request.Path.Value;
+    var isSaaSAdmin = originalPath?.StartsWith("/SaaSAdmin", StringComparison.OrdinalIgnoreCase) == true;
+    Layout = isSaaSAdmin ? "_SaaSAdminLayout" : "_Layout";
     ViewData["Title"] = "Lỗi Hệ thống";
 }
 

@@ -1,0 +1,134 @@
+@model List<Manage_KPI_or_OKR_System.Models.SystemParameter>
+@{
+    ViewData["Title"] = "Cài đặt Hệ thống (SaaS)";
+    Layout = "_SaaSAdminLayout";
+
+    string brandName = Model.FirstOrDefault(p => p.ParameterCode == "SaaS_BrandName")?.Value ?? "";
+    string supportEmail = Model.FirstOrDefault(p => p.ParameterCode == "SaaS_SupportEmail")?.Value ?? "";
+    string trialTime = Model.FirstOrDefault(p => p.ParameterCode == "SaaS_TrialTime")?.Value ?? "30m";
+    bool allowRegistration = (Model.FirstOrDefault(p => p.ParameterCode == "SaaS_AllowRegistration")?.Value ?? "true") == "true";
+    bool maintenanceMode = (Model.FirstOrDefault(p => p.ParameterCode == "SaaS_MaintenanceMode")?.Value ?? "false") == "true";
+}
+
+<div class="dashboard-page">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1 text-primary">Cài đặt Hệ thống SaaS</h1>
+            <div class="page-breadcrumb text-muted" style="font-size: 0.85rem;">
+                <a href="/SaaSAdmin" class="text-decoration-none text-primary fw-medium">SaaS Admin</a>
+                <i class="bi bi-chevron-right separator mx-1"></i>
+                <span>Cài đặt</span>
+            </div>
+        </div>
+        <div>
+            <button type="submit" form="settingsForm" class="btn btn-primary shadow-sm rounded-pill px-4">
+                <i class="bi bi-save me-1"></i> Lưu thay đổi
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm rounded-3 py-3 px-4 mb-4">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-md-3">
+            <div class="list-group shadow-sm" style="border-radius: 12px; overflow: hidden;">
+                <a class="list-group-item list-group-item-action active border-0 py-3" data-bs-toggle="tab" href="#general" role="tab">
+                    <i class="bi bi-gear-fill me-2"></i> Cài đặt chung
+                </a>
+                <a class="list-group-item list-group-item-action border-0 py-3" data-bs-toggle="tab" href="#email" role="tab">
+                    <i class="bi bi-envelope-paper-fill me-2"></i> Cấu hình SMTP Email
+                </a>
+                <a class="list-group-item list-group-item-action border-0 py-3 text-danger" data-bs-toggle="tab" href="#danger" role="tab">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> Danger Zone
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card shadow border-0" style="border-radius: 16px;">
+                <div class="card-body p-4 tab-content">
+                    
+                    <!-- Tab Cài đặt chung -->
+                    <div class="tab-pane fade show active" id="general" role="tabpanel">
+                        <h5 class="fw-bold text-dark mb-4 border-bottom pb-3">Cấu hình chung</h5>
+                        
+                        <form id="settingsForm" asp-action="UpdateSettings" method="post">
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium text-muted small">Tên Hệ thống (SaaS Brand Name)</label>
+                                    <input type="text" name="brandName" class="form-control" value="@brandName" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium text-muted small">Email Hỗ trợ Khách hàng</label>
+                                    <input type="email" name="supportEmail" class="form-control" value="@supportEmail" required />
+                                </div>
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium text-muted small">Thời gian Dùng thử Mặc định (Trial)</label>
+                                    <select name="trialTime" class="form-select">
+                                        <option value="30m" selected="@(trialTime == "30m")">30 Phút (Testing Mode)</option>
+                                        <option value="24h" selected="@(trialTime == "24h")">24 Giờ</option>
+                                        <option value="7d" selected="@(trialTime == "7d")">7 Ngày</option>
+                                        <option value="14d" selected="@(trialTime == "14d")">14 Ngày</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-medium text-muted small">Ngôn ngữ Mặc định</label>
+                                    <select class="form-select" disabled>
+                                        <option value="vi" selected>Tiếng Việt</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" name="allowRegistration" id="allowRegistration" @(allowRegistration ? "checked" : "")>
+                                <label class="form-check-label fw-medium" for="allowRegistration">Cho phép đăng ký mới từ Landing Page</label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" name="maintenanceMode" id="maintenanceMode" @(maintenanceMode ? "checked" : "")>
+                                <label class="form-check-label fw-medium text-danger" for="maintenanceMode">Chế độ bảo trì (Maintenance Mode)</label>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Tab Cấu hình Email -->
+                    <div class="tab-pane fade" id="email" role="tabpanel">
+                        <h5 class="fw-bold text-dark mb-4 border-bottom pb-3">Cấu hình Máy chủ Gửi Mail (SMTP)</h5>
+                        <p class="text-muted mb-4">Thiết lập thông tin SMTP để hệ thống tự động gửi email thông báo, hóa đơn đến khách hàng.</p>
+                        
+                        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center">
+                            <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                            <div>
+                                Cấu hình gửi mail toàn cục của hệ thống SaaS đang được quản lý trực tiếp bằng biến môi trường (Environment Variables) để bảo mật. Hãy liên hệ bộ phận Kỹ Thuật (DevOps) để thay đổi thông tin này.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Danger Zone -->
+                    <div class="tab-pane fade" id="danger" role="tabpanel">
+                        <h5 class="fw-bold text-danger mb-4 border-bottom pb-3">Khu vực Nguy hiểm</h5>
+                        <p class="text-muted mb-4">Các hành động dưới đây không thể hoàn tác và ảnh hưởng nghiêm trọng đến hệ thống.</p>
+                        
+                        <div class="card border-danger shadow-sm">
+                            <div class="card-body d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="fw-bold mb-1 text-danger">Xóa toàn bộ Cache & Dữ liệu tạm</h6>
+                                    <span class="text-muted small">Giải phóng bộ nhớ bằng cách xóa cache hệ thống.</span>
+                                </div>
+                                <button class="btn btn-outline-danger" onclick="alert('Tính năng đang được phát triển')">Xóa Cache</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

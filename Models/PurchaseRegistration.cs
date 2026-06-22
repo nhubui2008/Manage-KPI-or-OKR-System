@@ -15,6 +15,11 @@ namespace Manage_KPI_or_OKR_System.Models
         [StringLength(100)]
         public string SelectedPlan { get; set; }
 
+        [StringLength(50)]
+        public string Status { get; set; } = "Chờ xử lý"; // Chờ xử lý, Đã thanh toán, Đã kích hoạt, Đã hủy
+
+        public string AdminNotes { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

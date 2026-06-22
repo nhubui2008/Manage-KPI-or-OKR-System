@@ -598,6 +598,42 @@
     {
         <script>
             // ==========================================
+            // TRIAL EXPIRATION - Đá ra ngoài nếu hết 30p test
+            // ==========================================
+            @{
+                var trialEndTimeStr = User.Claims.FirstOrDefault(c => c.Type == "TrialEndTime")?.Value;
+                if (!string.IsNullOrEmpty(trialEndTimeStr) && DateTime.TryParse(trialEndTimeStr, out var trialEndTime))
+                {
+                    var msRemaining = (trialEndTime - DateTime.Now).TotalMilliseconds;
+                    if (msRemaining > 0)
+                    {
+                        <text>
+                        (function() {
+                            setTimeout(function() {
+                                Swal.fire({
+                                    title: 'Hết thời gian dùng thử',
+                                    text: 'Tài khoản dùng thử của bạn đã hết hạn (30 phút). Hệ thống sẽ tự động đăng xuất.',
+                                    icon: 'warning',
+                                    confirmButtonText: 'Đóng',
+                                    allowOutsideClick: false,
+                                    allowEscapeKey: false
+                                }).then(function() {
+                                    window.location.href = '/Auth/Logout';
+                                });
+                            }, @Math.Floor(msRemaining));
+                        })();
+                        </text>
+                    }
+                    else
+                    {
+                        <text>
+                        window.location.href = '/Auth/Logout';
+                        </text>
+                    }
+                }
+            }
+
+            // ==========================================
             // SESSION TIMEOUT - Phát hiện không hoạt động
             // ==========================================
             (function() {

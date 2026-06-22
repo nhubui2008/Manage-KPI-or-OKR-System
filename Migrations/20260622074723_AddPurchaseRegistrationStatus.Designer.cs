@@ -4,6 +4,7 @@ using Manage_KPI_or_OKR_System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Manage_KPI_or_OKR_System.Migrations
 {
     [DbContext(typeof(MiniERPDbContext))]
-    partial class MiniERPDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260622074723_AddPurchaseRegistrationStatus")]
+    partial class AddPurchaseRegistrationStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1215,45 +1218,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.ToTable("OneOnOneMeetings");
                 });
 
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.PaymentTransaction", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("PackageId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RegistrationId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("TransactionCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("TransactionDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PackageId");
-
-                    b.HasIndex("RegistrationId");
-
-                    b.ToTable("PaymentTransactions");
-                });
-
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Permission", b =>
                 {
                     b.Property<int>("Id")
@@ -1419,50 +1383,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasIndex("PermissionId");
 
                     b.ToTable("Role_Permissions");
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.SaaSPackage", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("HasAIInsight")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("HasAdvancedOKR")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsPopular")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("MaxUsers")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PackageName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<decimal>("PricePerMonth")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SaaSPackages");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Status", b =>
@@ -2251,25 +2171,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("ManagerId")
                         .OnDelete(DeleteBehavior.NoAction);
-                });
-
-            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.PaymentTransaction", b =>
-                {
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.SaaSPackage", "Package")
-                        .WithMany()
-                        .HasForeignKey("PackageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Manage_KPI_or_OKR_System.Models.PurchaseRegistration", "Registration")
-                        .WithMany()
-                        .HasForeignKey("RegistrationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Package");
-
-                    b.Navigation("Registration");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.RealtimeExpectedBonus", b =>

@@ -1,0 +1,86 @@
+@model List<Manage_KPI_or_OKR_System.Models.PaymentTransaction>
+@{
+    ViewData["Title"] = "Lịch sử thanh toán (SaaS)";
+    Layout = "_SaaSAdminLayout";
+}
+
+<div class="dashboard-page">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1 text-primary">Lịch sử Giao dịch</h1>
+            <div class="page-breadcrumb text-muted" style="font-size: 0.85rem;">
+                <a href="/SaaSAdmin" class="text-decoration-none text-primary fw-medium">SaaS Admin</a>
+                <i class="bi bi-chevron-right separator mx-1"></i>
+                <span>Thanh toán</span>
+            </div>
+        </div>
+        <div>
+            <div class="input-group shadow-sm" style="width: 300px;">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" class="form-control border-start-0" placeholder="Mã giao dịch, Email...">
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted" style="font-size: 0.85rem;">
+                        <tr>
+                            <th class="ps-4 py-3">MÃ GIAO DỊCH</th>
+                            <th>KHÁCH HÀNG</th>
+                            <th>GÓI DỊCH VỤ</th>
+                            <th>SỐ TIỀN</th>
+                            <th>THỜI GIAN</th>
+                            <th>TRẠNG THÁI</th>
+                            <th class="text-end pe-4">THAO TÁC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-medium text-dark">@t.TransactionCode</td>
+                                <td>
+                                    <div class="fw-bold">@(t.Registration?.Email ?? "N/A")</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary rounded-pill">@(t.Package?.PackageName ?? "N/A")</span>
+                                </td>
+                                <td class="fw-bold text-dark">@t.Amount.ToString("N0") ₫</td>
+                                <td class="text-muted small">@t.TransactionDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    @if (t.Status == "Thành công")
+                                    {
+                                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Thành công</span>
+                                    }
+                                    else if (t.Status == "Đang xử lý")
+                                    {
+                                        <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Đang xử lý</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Thất bại</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-light border text-primary" onclick="alert('Tính năng in hóa đơn đang phát triển')"><i class="bi bi-printer"></i> In HD</button>
+                                </td>
+                            </tr>
+                        }
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">Chưa có giao dịch thanh toán nào.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white border-top p-3 text-center text-muted small">
+            Hiển thị @Model.Count giao dịch
+        </div>
+    </div>
+</div>

@@ -1,0 +1,199 @@
+@model List<Manage_KPI_or_OKR_System.Models.SaaSPackage>
+@{
+    ViewData["Title"] = "Quản lý Gói Dịch Vụ (SaaS)";
+    Layout = "_SaaSAdminLayout";
+}
+
+<div class="dashboard-page">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1 text-primary">Quản lý Gói Dịch Vụ</h1>
+            <div class="page-breadcrumb text-muted" style="font-size: 0.85rem;">
+                <a href="/SaaSAdmin" class="text-decoration-none text-primary fw-medium">SaaS Admin</a>
+                <i class="bi bi-chevron-right separator mx-1"></i>
+                <span>Gói Dịch Vụ</span>
+            </div>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary shadow-sm rounded-pill px-4" onclick="openPackageModal()">
+                <i class="bi bi-plus-lg me-1"></i> Tạo gói mới
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4 pt-3">
+        @foreach (var pkg in Model)
+        {
+            <div class="col-md-4">
+                <div class="card h-100 border-0 @(pkg.IsPopular ? "shadow-lg mt-0" : "shadow-sm mt-3")" 
+                     style="border-radius: 20px; transition: transform 0.3s ease; @(pkg.IsPopular ? "background: linear-gradient(145deg, #ffffff, #f0f7ff); border: 2px solid #0d6efd !important;" : "")">
+                    
+                    <div class="card-body p-4 p-xl-5 text-center">
+                        @if (pkg.IsPopular)
+                        {
+                            <div class="mb-3">
+                                <span class="badge rounded-pill px-3 py-2 shadow-sm" style="font-size: 0.8rem; letter-spacing: 1px; background: linear-gradient(90deg, #0d6efd, #0dcaf0) !important; color: white;">
+                                    <i class="bi bi-star-fill text-warning me-1"></i> PHỔ BIẾN NHẤT
+                                </span>
+                            </div>
+                        }
+                        <div class="badge bg-light text-dark mb-3 rounded-pill px-3 py-2 border">@pkg.PackageName</div>
+                        
+                        @{
+                            string adminPriceDisplay = "Liên hệ";
+                            if (pkg.PricePerMonth > 0)
+                            {
+                                adminPriceDisplay = pkg.PricePerMonth >= 1000000 ? (pkg.PricePerMonth / 1000000m).ToString("0.#") + "M" : (pkg.PricePerMonth / 1000m).ToString("0.#") + "k";
+                            }
+                        }
+                        <div class="display-5 fw-bolder @(pkg.IsPopular ? "text-primary" : "text-dark") my-3" style="letter-spacing: -1px;">
+                            @adminPriceDisplay
+                            @if (pkg.PricePerMonth > 0)
+                            {
+                                <span class="fs-6 text-muted fw-normal">/tháng</span>
+                            }
+                        </div>
+                        
+                        <p class="text-muted small px-2" style="min-height: 40px;">@pkg.Description</p>
+                        
+                        <hr class="my-4 text-muted opacity-25">
+
+                        <ul class="list-unstyled text-start mb-0" style="font-size: 0.95rem;">
+                            <li class="mb-3 d-flex align-items-center">
+                                <div class="bg-success bg-opacity-10 rounded-circle p-1 me-3">
+                                    <i class="bi bi-check2 text-success" style="font-size: 1.1rem;"></i>
+                                </div>
+                                <span class="fw-medium text-dark">@(pkg.MaxUsers >= 9999 ? "Không giới hạn nhân sự" : $"Tối đa {pkg.MaxUsers} nhân sự")</span>
+                            </li>
+                            <li class="mb-3 d-flex align-items-center">
+                                <div class="bg-success bg-opacity-10 rounded-circle p-1 me-3">
+                                    <i class="bi bi-check2 text-success" style="font-size: 1.1rem;"></i>
+                                </div>
+                                <span class="text-muted">@(pkg.HasAdvancedOKR ? "Tính năng Đánh giá & Tính thưởng tự động" : "Quản lý OKR & KPI cơ bản")</span>
+                            </li>
+                            <li class="mb-3 d-flex align-items-center">
+                                @if (pkg.HasAIInsight)
+                                {
+                                    <div class="bg-success bg-opacity-10 rounded-circle p-1 me-3">
+                                        <i class="bi bi-check2 text-success" style="font-size: 1.1rem;"></i>
+                                    </div>
+                                    <span class="text-muted">Tích hợp <strong>Trợ lý AI Gemini 2.5</strong></span>
+                                }
+                                else
+                                {
+                                    <div class="bg-secondary bg-opacity-10 rounded-circle p-1 me-3">
+                                        <i class="bi bi-dash text-muted" style="font-size: 1.1rem;"></i>
+                                    </div>
+                                    <span class="text-muted opacity-50">Trợ lý AI Gemini (Không hỗ trợ)</span>
+                                }
+                            </li>
+                            <li class="mb-3 d-flex align-items-center">
+                                <div class="bg-success bg-opacity-10 rounded-circle p-1 me-3">
+                                    <i class="bi bi-check2 text-success" style="font-size: 1.1rem;"></i>
+                                </div>
+                                <span class="text-muted">@(pkg.PricePerMonth == 0 ? "Triển khai On-Premise (Server riêng)" : "Báo cáo Dashboard chuẩn")</span>
+                            </li>
+                            <li class="mb-3 d-flex align-items-center">
+                                <div class="bg-success bg-opacity-10 rounded-circle p-1 me-3">
+                                    <i class="bi bi-check2 text-success" style="font-size: 1.1rem;"></i>
+                                </div>
+                                <span class="text-muted">@(pkg.PricePerMonth == 0 ? "Có quản lý tài khoản hỗ trợ riêng 24/7" : (pkg.IsPopular ? "Hỗ trợ ưu tiên qua Hotline & Zalo" : "Hỗ trợ qua Email"))</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="card-footer bg-transparent border-0 p-4 p-xl-5 pt-0">
+                        <button class="btn @(pkg.IsPopular ? "btn-primary shadow" : "btn-light border") w-100 rounded-pill py-2 fw-bold" style="font-size: 1rem;" 
+                                onclick="openPackageModal(@pkg.Id, '@pkg.PackageName', @pkg.PricePerMonth, @pkg.MaxUsers, '@pkg.Description', @(pkg.HasAdvancedOKR ? "true" : "false"), @(pkg.HasAIInsight ? "true" : "false"), @(pkg.IsPopular ? "true" : "false"))">
+                            Chỉnh sửa gói
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Gói -->
+<div class="modal fade" id="packageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header bg-light border-0" style="border-radius: 16px 16px 0 0;">
+                <h5 class="modal-title fw-bold" id="packageModalTitle">Tạo Gói Dịch Vụ Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="packageForm" asp-action="SavePackage" method="post">
+                <div class="modal-body p-4">
+                    <input type="hidden" name="Id" id="pkgId" value="0" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-medium small">Tên gói</label>
+                        <input type="text" name="PackageName" id="pkgName" class="form-control" required />
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-medium small">Giá/Tháng (VNĐ)</label>
+                            <input type="number" name="PricePerMonth" id="pkgPrice" class="form-control" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-medium small">Tối đa nhân sự</label>
+                            <input type="number" name="MaxUsers" id="pkgUsers" class="form-control" required />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-medium small">Mô tả ngắn</label>
+                        <input type="text" name="Description" id="pkgDesc" class="form-control" required />
+                    </div>
+
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="HasAdvancedOKR" id="pkgOKR" value="true">
+                        <label class="form-check-label small" for="pkgOKR">Hỗ trợ OKR & KPI nâng cao</label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="HasAIInsight" id="pkgAI" value="true">
+                        <label class="form-check-label small" for="pkgAI">Hỗ trợ AI Insight</label>
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="IsPopular" id="pkgPopular" value="true">
+                        <label class="form-check-label small text-primary fw-bold" for="pkgPopular">Đánh dấu là gói Phổ biến nhất</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary shadow-sm rounded-pill px-4">Lưu Gói</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openPackageModal(id = 0, name = '', price = 0, maxUsers = 10, desc = '', hasOkr = false, hasAi = false, isPopular = false) {
+            document.getElementById('pkgId').value = id;
+            document.getElementById('pkgName').value = name;
+            document.getElementById('pkgPrice').value = price;
+            document.getElementById('pkgUsers').value = maxUsers;
+            document.getElementById('pkgDesc').value = desc;
+            
+            document.getElementById('pkgOKR').checked = hasOkr;
+            document.getElementById('pkgAI').checked = hasAi;
+            document.getElementById('pkgPopular').checked = isPopular;
+            
+            document.getElementById('packageModalTitle').innerText = id === 0 ? "Tạo Gói Dịch Vụ Mới" : "Chỉnh Sửa Gói Dịch Vụ";
+            
+            var modal = new bootstrap.Modal(document.getElementById('packageModal'));
+            modal.show();
+        }
+    </script>
+}
+
+<style>
+    .card:hover {
+        transform: translateY(-5px);
+    }
+</style>

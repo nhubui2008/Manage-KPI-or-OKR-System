@@ -1,0 +1,225 @@
+@using Manage_KPI_or_OKR_System.ViewModels
+@model IEnumerable<CustomerAccountViewModel>
+@{
+    ViewData["Title"] = "Quản lý Tài khoản Khách hàng";
+    Layout = "_SaaSAdminLayout";
+}
+
+<div class="container-fluid px-0">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Quản lý Tài khoản Khách hàng</h1>
+            <div class="page-breadcrumb">
+                <a href="/SaaSAdmin/Index" class="text-dark text-decoration-none opacity-75">SaaS Admin</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span class="text-dark fw-bold">Tài khoản khách hàng</span>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+            <a href="/" target="_blank" class="btn-primary-custom text-decoration-none">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Xem Landing Page
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center w-100 m-0">
+        <div class="col-12 px-0">
+            <div class="content-card w-100">
+                <div class="card-body-custom">
+                    <form asp-action="Registrations" method="get" class="toolbar">
+                        <div class="toolbar-left">
+                            <div class="toolbar-search" style="max-width: 300px;">
+                                <i class="bi bi-search"></i>
+                                <input type="text" name="searchString" class="form-control" placeholder="Tìm email, gói đăng ký..." />
+                            </div>
+                        </div>
+                        <div class="toolbar-right d-flex align-items-center gap-2">
+                            <select name="status" class="filter-select">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="trial">Đang dùng thử</option>
+                                <option value="active">Khách hàng chính thức</option>
+                                <option value="expired">Hết hạn dùng thử</option>
+                            </select>
+                            <a asp-action="Registrations" class="btn btn-sm btn-outline-secondary border-0 text-muted" title="Làm mới">
+                                <i class="bi bi-arrow-clockwise fs-5"></i>
+                            </a>
+                            <button type="submit" class="btn-primary-custom d-flex align-items-center gap-2" style="padding: 8px;">
+                                <i class="bi bi-funnel"></i> <span>Lọc</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="table-responsive w-100">
+                        <table class="data-table w-100">
+                            <thead>
+                                <tr>
+                                    <th>Khách hàng (Tenant)</th>
+                                    <th>Gói Dịch Vụ</th>
+                                    <th>Trạng Thái</th>
+                                    <th>Thời Gian Đăng Ký</th>
+                                    <th>Thời Hạn (Giờ còn lại)</th>
+                                    <th class="text-end">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model != null && Model.Any())
+                                {
+                                    foreach (var item in Model)
+                                    {
+                                        var statusClass = "";
+                                        var statusDot = "";
+                                        
+                                        if (!item.IsActive)
+                                        {
+                                            statusClass = "pending";
+                                            statusDot = "text-danger bg-danger";
+                                        }
+                                        else if (!item.TrialEndTime.HasValue)
+                                        {
+                                            statusClass = "active";
+                                            statusDot = "text-success bg-success";
+                                        }
+                                        else if (item.RemainingTrialHours > 0)
+                                        {
+                                            statusClass = "active";
+                                            statusDot = "text-warning bg-warning";
+                                        }
+                                        else
+                                        {
+                                            statusClass = "pending";
+                                            statusDot = "text-danger bg-danger";
+                                        }
+
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="user-avatar" style="width: 28px; height: 28px; font-size: 0.7rem; background-color: var(--primary);">
+                                                        @(item.Email?[0].ToString().ToUpper() ?? "U")
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold text-dark" style="font-size: 0.95rem;">@item.Email</div>
+                                                        <div class="text-muted" style="font-size: 0.75rem;">Username: @item.Username</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3">
+                                                    @item.SelectedPlan
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge @statusClass">
+                                                    <span class="status-dot @statusDot"></span> @item.StatusText
+                                                </span>
+                                            </td>
+                                            <td class="text-muted" style="font-size: 0.85rem;">
+                                                @(item.CreatedAt?.ToString("dd/MM/yyyy HH:mm"))
+                                            </td>
+                                            <td>
+                                                @if (item.TrialEndTime.HasValue)
+                                                {
+                                                    if (item.RemainingTrialHours > 0)
+                                                    {
+                                                        <div class="text-warning fw-bold"><i class="bi bi-clock-history"></i> @Math.Round(item.RemainingTrialHours, 1) giờ</div>
+                                                        <div class="text-muted" style="font-size: 0.75rem;">Hết hạn: @item.TrialEndTime.Value.ToString("dd/MM HH:mm")</div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="text-danger fw-bold"><i class="bi bi-x-circle"></i> Đã hết hạn</div>
+                                                        <div class="text-muted" style="font-size: 0.75rem;">@item.TrialEndTime.Value.ToString("dd/MM HH:mm")</div>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <div class="text-success fw-bold"><i class="bi bi-infinity"></i> Vĩnh viễn</div>
+                                                    <div class="text-muted" style="font-size: 0.75rem;">(Bản chính thức)</div>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="action-btns justify-content-end gap-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" title="Cập nhật tài khoản" onclick="openUpdateModal(@item.UserId, '@item.Email')" style="border-radius: 6px; padding: 4px 8px;">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <form asp-controller="SaaSAdmin" asp-action="UpdateAccountStatus" method="post" style="display:inline;">
+                                                        <input type="hidden" name="userId" value="@item.UserId" />
+                                                        <input type="hidden" name="actionType" value="@(item.IsActive ? "lock" : "unlock")" />
+                                                        <button type="submit" class="btn btn-sm @(item.IsActive ? "btn-outline-warning" : "btn-outline-success") shadow-sm" title="@(item.IsActive ? "Khóa tài khoản" : "Mở khóa")" style="border-radius: 6px; padding: 4px 8px;" onclick="return confirm('Bạn có chắc chắn muốn @(item.IsActive ? "KHÓA" : "MỞ KHÓA") tài khoản này?');">
+                                                            <i class="bi @(item.IsActive ? "bi-lock" : "bi-unlock")"></i>
+                                                        </button>
+                                                    </form>
+                                                    <form asp-controller="SaaSAdmin" asp-action="DeleteAccount" method="post" style="display:inline;">
+                                                        <input type="hidden" name="userId" value="@item.UserId" />
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm" title="Xóa tài khoản" style="border-radius: 6px; padding: 4px 8px;" onclick="return confirm('CẢNH BÁO: Xóa tài khoản sẽ xóa toàn bộ dữ liệu. Bạn có chắc chắn?');">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5 text-muted">
+                                            <i class="bi bi-inbox fs-1 d-block mb-3" style="opacity: 0.5;"></i>
+                                            Chưa có khách hàng nào đăng ký.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SINGLE SHARED MODAL -->
+<div class="modal fade" id="sharedUpdateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered text-start">
+        <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Cập nhật Tài khoản Khách hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-controller="SaaSAdmin" asp-action="UpdateAccountStatus" method="post">
+                <div class="modal-body py-4">
+                    <input type="hidden" name="userId" id="modalUserId" value="" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-semibold small">Email (Tài khoản)</label>
+                        <input type="text" class="form-control bg-light" id="modalUserEmail" readonly />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-semibold small">Hành động</label>
+                        <select class="form-select" name="actionType" id="modalActionSelect">
+                            <option value="none">-- Chọn hành động --</option>
+                            <option value="upgrade">Kích hoạt Gói chính thức (Bỏ giới hạn Trial)</option>
+                            <option value="extend">Gia hạn thêm 24 giờ dùng thử</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn-primary-custom px-4" style="padding: 10px 20px; font-weight: 500;">Xác nhận</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openUpdateModal(userId, email) {
+            document.getElementById('modalUserId').value = userId;
+            document.getElementById('modalUserEmail').value = email;
+            document.getElementById('modalActionSelect').value = 'none';
+            
+            var modal = new bootstrap.Modal(document.getElementById('sharedUpdateModal'));
+            modal.show();
+        }
+    </script>
+}
