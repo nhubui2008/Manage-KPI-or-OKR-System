@@ -131,28 +131,33 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> ResetPassword(int userId, string newPassword)
         {
             var user = await _context.SystemUsers.FindAsync(userId);
-            if (user != null && !string.IsNullOrEmpty(newPassword))
-            {
-                var oldLastPasswordChange = user.LastPasswordChange;
-                user.PasswordHash = PasswordHelper.HashPassword(newPassword);
-                user.LastPasswordChange = DateTime.Now;
-                await _context.SaveChangesAsync();
-                await LogSystemUserAuditAsync("UPDATE", new
-                {
-                    user.Id,
-                    user.Username,
-                    PasswordChanged = false,
-                    LastPasswordChange = oldLastPasswordChange
-                }, new
-                {
-                    user.Id,
-                    user.Username,
-                    PasswordChanged = true,
-                    user.LastPasswordChange
-                });
+            if (user == null) return NotFound();
 
-                TempData["SuccessMessage"] = $"Đã làm mới mật khẩu cho tài khoản {user.Username}.";
+            if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
+            {
+                ModelState.AddModelError("newPassword", "Mật khẩu phải có ít nhất 6 ký tự.");
+                return View(user);
             }
+
+            var oldLastPasswordChange = user.LastPasswordChange;
+            user.PasswordHash = PasswordHelper.HashPassword(newPassword);
+            user.LastPasswordChange = DateTime.Now;
+            await _context.SaveChangesAsync();
+            await LogSystemUserAuditAsync("UPDATE", new
+            {
+                user.Id,
+                user.Username,
+                PasswordChanged = false,
+                LastPasswordChange = oldLastPasswordChange
+            }, new
+            {
+                user.Id,
+                user.Username,
+                PasswordChanged = true,
+                user.LastPasswordChange
+            });
+
+            TempData["SuccessMessage"] = $"Đã làm mới mật khẩu cho tài khoản {user.Username}.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -169,6 +174,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("SYSUSERS_CREATE")]
         public async Task<IActionResult> Create(SystemUser user)
         {
+            if (string.IsNullOrEmpty(user.PasswordHash) || user.PasswordHash.Length < 6)
+            {
+                ModelState.AddModelError(nameof(user.PasswordHash), "Mật khẩu phải có ít nhất 6 ký tự.");
+            }
+
             if (ModelState.IsValid)
             {
                 bool duplicateUsername = !string.IsNullOrWhiteSpace(user.Username) &&
@@ -226,6 +236,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Edit(int id, SystemUser user, string? newPassword)
         {
             if (id != user.Id) return NotFound();
+
+            if (!string.IsNullOrEmpty(newPassword) && newPassword.Length < 6)
+            {
+                ModelState.AddModelError(nameof(newPassword), "Mật khẩu phải có ít nhất 6 ký tự.");
+            }
 
             if (ModelState.IsValid)
             {
