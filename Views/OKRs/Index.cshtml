@@ -120,6 +120,15 @@
                                                     <div class="text-muted okr-meta-text" style="font-size: 0.8rem;">
                                                         <i class="bi bi-calendar3"></i> @(okr.Cycle ?? "Chưa rõ chu kỳ")
                                                     </div>
+                                                    @if (okr.LinkedWorkProjectId.HasValue)
+                                                    {
+                                                        <a asp-controller="WorkProjects" asp-action="Details" asp-route-id="@okr.LinkedWorkProjectId"
+                                                           class="btn btn-sm btn-outline-info py-1 px-2"
+                                                           title="Xem dự án vận hành tự động sinh từ OKR này"
+                                                           onclick="event.stopPropagation();">
+                                                            <i class="bi bi-kanban me-1"></i> Dự án vận hành
+                                                        </a>
+                                                    }
                                                     
                                                     <div class="flex-grow-1" style="max-width: 400px;">
                                                         <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">

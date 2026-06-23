@@ -36,6 +36,7 @@ namespace Manage_KPI_or_OKR_System.Models
         public DateTime? UpdatedAt { get; set; }
         public int? CreatedById { get; set; }
         public bool? IsActive { get; set; } = true;
+        public int? SourceOKRId { get; set; }
 
         public virtual ICollection<WorkProjectDepartment> Departments { get; set; } = new HashSet<WorkProjectDepartment>();
         public virtual ICollection<WorkItem> WorkItems { get; set; } = new HashSet<WorkItem>();

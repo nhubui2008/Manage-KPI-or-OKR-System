@@ -19,11 +19,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
     {
         private readonly MiniERPDbContext _context;
         private readonly IGeminiService _geminiService;
+        private readonly IOKRWorkflowService _workflowService;
 
-        public OKRsController(MiniERPDbContext context, IGeminiService geminiService)
+        public OKRsController(MiniERPDbContext context, IGeminiService geminiService, IOKRWorkflowService workflowService)
         {
             _context = context;
             _geminiService = geminiService;
+            _workflowService = workflowService;
         }
 
         [HasPermission("OKRS_VIEW")]
@@ -252,7 +254,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "Đã tạo OKR mới và phân bổ thành công!";
+                // === TỰ ĐỘNG SINH DỰ ÁN VẬN HÀNH TỪ OKR ===
+                try
+                {
+                    await _workflowService.AutoCreateProjectFromOKRAsync(model.Id, model.CreatedById, departmentId);
+                }
+                catch (Exception)
+                {
+                    // Không để lỗi sinh project ảnh hưởng đến việc tạo OKR
+                }
+
+                TempData["SuccessMessage"] = "Đã tạo OKR mới, phân bổ và tự động sinh dự án vận hành thành công!";
                 return RedirectToAction(nameof(Index));
             }
             
@@ -414,6 +426,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 kr.CurrentValue = 0; // Khởi tạo tiến độ ban đầu là 0
                 _context.OKRKeyResults.Add(kr);
                 await _context.SaveChangesAsync();
+
+                // Tự động tạo task trong project liên kết
+                try
+                {
+                    await _workflowService.AutoCreateTaskFromKeyResultAsync(kr.OKRId!.Value, kr);
+                }
+                catch (Exception)
+                {
+                    // Không để lỗi sinh task ảnh hưởng
+                }
                 
                 // Lấy thông tin OKR để tính toán tiến độ mới
                 var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
@@ -514,6 +536,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
             
             await _context.SaveChangesAsync();
+
+            // Tự động tạo tasks trong project liên kết
+            try
+            {
+                foreach (var kr in keyResults)
+                {
+                    await _workflowService.AutoCreateTaskFromKeyResultAsync(okrId, kr);
+                }
+            }
+            catch (Exception)
+            {
+                // Không để lỗi sinh task ảnh hưởng
+            }
 
             var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == okrId);
             TempData["SuccessMessage"] = $"Đã thêm {keyResults.Count} KR thành công! Tiến độ mục tiêu mới cập nhật: {okr?.TotalProgress}%";
