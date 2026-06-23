@@ -10,15 +10,15 @@ namespace Manage_KPI_or_OKR_System.Models
 
         [Required]
         [StringLength(255)]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [StringLength(100)]
-        public string SelectedPlan { get; set; }
+        public string SelectedPlan { get; set; } = string.Empty;
 
         [StringLength(50)]
         public string Status { get; set; } = "Chờ xử lý"; // Chờ xử lý, Đã thanh toán, Đã kích hoạt, Đã hủy
 
-        public string AdminNotes { get; set; }
+        public string AdminNotes { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }

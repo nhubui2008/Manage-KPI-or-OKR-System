@@ -98,7 +98,7 @@
     }
 }
 
-<div class="container-fluid px-0">
+<div class="kpi-index-page container-fluid px-0">
 
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -184,8 +184,17 @@
             </div>
         </form>
 
-        <div class="table-responsive w-100">
-            <table class="data-table w-100">
+        <div class="table-responsive kpi-table-responsive w-100">
+            <table class="data-table kpi-index-table">
+                <colgroup>
+                    <col class="kpi-col-name" />
+                    <col class="kpi-col-type" />
+                    <col class="kpi-col-target" />
+                    <col class="kpi-col-period" />
+                    <col class="kpi-col-assignment" />
+                    <col class="kpi-col-status" />
+                    <col class="kpi-col-actions" />
+                </colgroup>
                 <thead>
                     <tr>
                         <th class="fw-medium">Tên KPI</th>
@@ -193,8 +202,8 @@
                         <th class="fw-medium">Chỉ tiêu (Target)</th>
                         <th class="fw-medium">Kỳ đánh giá</th>
                         <th class="fw-medium">Phân bổ cho</th>
-                        <th class="border-0 text-muted small text-uppercase fw-bold" style="width: 100px;">Trạng thái</th>
-                        <th class="border-0 text-muted small text-uppercase fw-bold" style="width: 100px;">Thao tác</th>
+                        <th class="kpi-status-col border-0 text-muted small text-uppercase fw-bold">Trạng thái</th>
+                        <th class="kpi-actions-col border-0 text-muted small text-uppercase fw-bold">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -322,9 +331,9 @@
                                         </span>
                                     }
                                 </td>
-                                <td class="align-middle">
+                                <td class="align-middle kpi-status-cell">
                                     <div class="d-flex flex-column gap-1">
-                                        <span class="badge rounded-pill @statusClass py-2 px-3 fw-medium" style="font-size: 0.72rem;">
+                                        <span class="kpi-status-badge badge rounded-pill @statusClass py-2 px-3 fw-medium">
                                             <i class="bi @statusIcon me-1"></i>
                                             @statusName
                                         </span>
@@ -339,10 +348,10 @@
                                         }
                                     </div>
                                 </td>
-                                <td class="align-middle text-end">
+                                <td class="align-middle text-end kpi-actions-cell">
                                     <div class="d-flex justify-content-end gap-2">
                                         <div class="dropdown">
-                                            <button class="btn btn-sm btn-light rounded-circle shadow-sm" style="width: 32px; height: 32px;" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <button class="btn btn-sm btn-light rounded-circle shadow-sm" style="width: 32px; height: 32px;" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
                                                 <i class="bi bi-three-dots-vertical"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 animate__animated animate__fadeIn animate__faster" style="z-index: 1060; min-width: 180px;">
@@ -689,18 +698,121 @@
     .employee-item:hover { background-color: rgba(13, 202, 240, 0.05); }
     .cursor-pointer { cursor: pointer; }
 
-    .table-responsive {
-        overflow: visible !important;
+    .kpi-index-page .card-body-custom {
+        --kpi-status-width: 170px;
+        --kpi-actions-width: 88px;
+        min-width: 0;
     }
 
-    @@media (max-width: 991.98px) {
-        .table-responsive {
-            overflow-x: auto !important;
-            padding-bottom: 100px;
+    .kpi-table-responsive {
+        max-width: 100%;
+        overflow-x: auto !important;
+        overflow-y: auto;
+        padding-bottom: 0.75rem;
+        scrollbar-gutter: stable;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(37, 99, 235, 0.55) rgba(226, 232, 240, 0.75);
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .kpi-table-responsive::-webkit-scrollbar {
+        height: 10px;
+    }
+
+    .kpi-table-responsive::-webkit-scrollbar-track {
+        background: rgba(226, 232, 240, 0.75);
+        border-radius: 999px;
+    }
+
+    .kpi-table-responsive::-webkit-scrollbar-thumb {
+        background: rgba(37, 99, 235, 0.55);
+        border-radius: 999px;
+        border: 2px solid rgba(226, 232, 240, 0.75);
+    }
+
+    .kpi-index-table {
+        width: 100%;
+        min-width: 1160px;
+        table-layout: fixed;
+    }
+
+    .kpi-index-table .kpi-col-name { width: 27%; }
+    .kpi-index-table .kpi-col-type { width: 12%; }
+    .kpi-index-table .kpi-col-target { width: 18%; }
+    .kpi-index-table .kpi-col-period { width: 13%; }
+    .kpi-index-table .kpi-col-assignment { width: 15%; }
+    .kpi-index-table .kpi-col-status { width: var(--kpi-status-width); }
+    .kpi-index-table .kpi-col-actions { width: var(--kpi-actions-width); }
+
+    .kpi-index-table th,
+    .kpi-index-table td {
+        overflow-wrap: anywhere;
+    }
+
+    .kpi-index-table .badge {
+        max-width: 100%;
+        white-space: normal;
+        line-height: 1.25;
+    }
+
+    .kpi-index-table .kpi-status-cell {
+        min-width: var(--kpi-status-width);
+    }
+
+    .kpi-status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 32px;
+        font-size: 0.72rem;
+        text-align: center;
+    }
+
+    .kpi-index-table .kpi-status-col,
+    .kpi-index-table .kpi-status-cell,
+    .kpi-index-table .kpi-actions-col,
+    .kpi-index-table .kpi-actions-cell {
+        position: sticky;
+        background: #ffffff;
+    }
+
+    .kpi-index-table .kpi-status-col,
+    .kpi-index-table .kpi-status-cell {
+        right: var(--kpi-actions-width);
+        z-index: 3;
+        box-shadow: -10px 0 18px rgba(15, 23, 42, 0.06);
+    }
+
+    .kpi-index-table .kpi-actions-col,
+    .kpi-index-table .kpi-actions-cell {
+        right: 0;
+        z-index: 4;
+    }
+
+    .kpi-index-table thead .kpi-status-col,
+    .kpi-index-table thead .kpi-actions-col {
+        background: linear-gradient(135deg, #eef3fb, #f5f8fc);
+        z-index: 5;
+    }
+
+    .kpi-actions-cell {
+        min-width: var(--kpi-actions-width);
+    }
+
+    @@media (min-width: 1440px) {
+        .kpi-index-table {
+            min-width: 100%;
         }
     }
 
-    .dropdown-menu {
+    @@media (max-width: 991.98px) {
+        .kpi-table-responsive {
+            padding-bottom: 4.5rem;
+        }
+    }
+
+    .kpi-index-page .dropdown-menu {
         z-index: 1060 !important;
     }
 </style>

@@ -2402,6 +2402,8 @@ html.sidebar-expanded .main-content {
     .sidebar { transform: translateX(-100%); }
     .sidebar.show { transform: translateX(0); }
     .sidebar-overlay.show { display: block; }
+    html.sidebar-expanded .main-content,
+    html:not(.sidebar-expanded) .main-content,
     .main-content { margin-left: 0; }
     .header-search input { width: 200px; }
     .user-info { display: none; }

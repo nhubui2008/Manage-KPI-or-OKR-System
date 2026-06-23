@@ -6,7 +6,7 @@ namespace Manage_KPI_or_OKR_System.Models
     {
         [Key]
         public int Id { get; set; }
-        [StringLength(50)]
+        [StringLength(255)]
         public string? Username { get; set; }
         [StringLength(255)]
         public string? Email { get; set; }

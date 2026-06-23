@@ -7,11 +7,13 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication;
 using Manage_KPI_or_OKR_System.Services;
+using Microsoft.Data.SqlClient;
 
 namespace Manage_KPI_or_OKR_System.Controllers;
 
 public class HomeController : Controller
 {
+    private const string PendingPurchaseRegistrationStatus = "Chờ xử lý";
     private readonly MiniERPDbContext _context;
 
     public HomeController(MiniERPDbContext context)
@@ -52,6 +54,23 @@ public class HomeController : Controller
         return Guid.NewGuid().ToString("N").Substring(0, 8) + "Aa1@";
     }
 
+    private static PurchaseRegistration CreatePendingPurchaseRegistration(string email, string plan)
+    {
+        return new PurchaseRegistration
+        {
+            Email = email,
+            SelectedPlan = plan,
+            Status = PendingPurchaseRegistrationStatus,
+            AdminNotes = string.Empty,
+            CreatedAt = DateTime.Now
+        };
+    }
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+    {
+        return ex.GetBaseException() is SqlException { Number: 2601 or 2627 };
+    }
+
     [HttpPost]
     [AllowAnonymous]
     [IgnoreAntiforgeryToken]
@@ -60,15 +79,30 @@ public class HomeController : Controller
         string plan,
         [FromServices] IEmailService emailService)
     {
-        if (string.IsNullOrEmpty(email))
+        var normalizedEmail = email?.Trim().ToLowerInvariant();
+        var selectedPlan = plan?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(normalizedEmail))
         {
             return Json(new { success = false, message = "Vui lòng nhập Email." });
         }
 
+        if (normalizedEmail.Length > 255)
+        {
+            return Json(new { success = false, message = "Email không được vượt quá 255 ký tự." });
+        }
+
+        if (selectedPlan.Length > 100)
+        {
+            return Json(new { success = false, message = "Tên gói đăng ký không hợp lệ." });
+        }
+
         try
         {
-            var existingUser = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email == email || u.Username == email);
-            if (existingUser != null)
+            var existingUser = await _context.SystemUsers.AnyAsync(u =>
+                (u.Email != null && u.Email.ToLower() == normalizedEmail) ||
+                (u.Username != null && u.Username.ToLower() == normalizedEmail));
+            if (existingUser)
             {
                 return Json(new { success = false, message = "Email này đã được đăng ký. Vui lòng chọn thẻ Đăng Nhập." });
             }
@@ -76,11 +110,12 @@ public class HomeController : Controller
             var rawPassword = GenerateSecurePassword();
             var passwordHash = Manage_KPI_or_OKR_System.Helpers.PasswordHelper.HashPassword(rawPassword);
             var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "User");
+            await using var transaction = await _context.Database.BeginTransactionAsync();
 
             var newUser = new SystemUser
             {
-                Username = email,
-                Email = email,
+                Username = normalizedEmail,
+                Email = normalizedEmail,
                 PasswordHash = passwordHash,
                 RoleId = userRole?.Id,
                 IsActive = true,
@@ -89,28 +124,31 @@ public class HomeController : Controller
             };
 
             _context.SystemUsers.Add(newUser);
-            await _context.SaveChangesAsync();
-
-            if (!string.IsNullOrEmpty(plan))
+            if (!string.IsNullOrEmpty(selectedPlan))
             {
-                var registration = new PurchaseRegistration
-                {
-                    Email = email,
-                    SelectedPlan = plan
-                };
-                _context.PurchaseRegistrations.Add(registration);
-                await _context.SaveChangesAsync();
+                _context.PurchaseRegistrations.Add(CreatePendingPurchaseRegistration(normalizedEmail, selectedPlan));
             }
+
+            await _context.SaveChangesAsync();
 
             string emailSubject = "Tài khoản VIETMACH của bạn đã được tạo";
             string emailBody = $"Chào bạn,<br/><br/>Tài khoản dùng thử của bạn đã được tạo thành công.<br/>" +
-                               $"<b>Tên đăng nhập:</b> {email}<br/>" +
+                               $"<b>Tên đăng nhập:</b> {normalizedEmail}<br/>" +
                                $"<b>Mật khẩu:</b> {rawPassword}<br/><br/>" +
                                $"Trân trọng,<br/>Đội ngũ VIETMACH.";
 
-            await emailService.SendEmailAsync(email, emailSubject, emailBody);
+            await emailService.SendEmailAsync(normalizedEmail, emailSubject, emailBody);
+            await transaction.CommitAsync();
 
             return Json(new { success = true, autoLogin = false, message = "Đăng ký dùng thử thành công! Vui lòng kiểm tra hộp thư đến (hoặc thư rác) để nhận mật khẩu đăng nhập." });
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            return Json(new { success = false, message = "Email này đã được đăng ký. Vui lòng chọn thẻ Đăng Nhập." });
+        }
+        catch (Exception ex) when (ex.Message.StartsWith("Lỗi SMTP:", StringComparison.OrdinalIgnoreCase))
+        {
+            return Json(new { success = false, message = "Không gửi được email chứa mật khẩu nên tài khoản chưa được tạo. Vui lòng kiểm tra cấu hình SMTP/App Password rồi thử lại." });
         }
         catch (Exception ex)
         {
@@ -130,7 +168,9 @@ public class HomeController : Controller
 
         try
         {
-            if (username == "superadmin")
+            var normalizedUsername = username.Trim().ToLowerInvariant();
+
+            if (normalizedUsername == "superadmin")
             {
                 var saasRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "SaaS_Admin");
                 if (saasRole == null)
@@ -156,7 +196,8 @@ public class HomeController : Controller
                 }
             }
 
-            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == username);
+            var user = await _context.SystemUsers.FirstOrDefaultAsync(u =>
+                u.Username != null && u.Username.ToLower() == normalizedUsername);
             if (user == null || user.PasswordHash == null || !Manage_KPI_or_OKR_System.Helpers.PasswordHelper.VerifyPassword(password, user.PasswordHash))
             {
                 return Json(new { success = false, message = "Tên đăng nhập hoặc mật khẩu không chính xác." });
@@ -164,12 +205,7 @@ public class HomeController : Controller
 
             if (!string.IsNullOrEmpty(plan))
             {
-                var registration = new PurchaseRegistration
-                {
-                    Email = user.Email ?? username,
-                    SelectedPlan = plan
-                };
-                _context.PurchaseRegistrations.Add(registration);
+                _context.PurchaseRegistrations.Add(CreatePendingPurchaseRegistration(user.Email ?? normalizedUsername, plan.Trim()));
                 await _context.SaveChangesAsync();
             }
 
@@ -177,12 +213,12 @@ public class HomeController : Controller
             if (user.RoleId.HasValue)
             {
                 var role = await _context.Roles.FindAsync(user.RoleId.Value);
-                if (role != null) roleName = role.RoleName;
+                if (role != null) roleName = role.RoleName ?? "User";
             }
 
             var claims = new System.Collections.Generic.List<System.Security.Claims.Claim>
             {
-                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username ?? normalizedUsername),
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, roleName),
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id.ToString())
             };
@@ -217,12 +253,7 @@ public class HomeController : Controller
 
             if (!string.IsNullOrEmpty(plan))
             {
-                var registration = new PurchaseRegistration
-                {
-                    Email = user.Email ?? username,
-                    SelectedPlan = plan
-                };
-                _context.PurchaseRegistrations.Add(registration);
+                _context.PurchaseRegistrations.Add(CreatePendingPurchaseRegistration(user.Email ?? username, plan.Trim()));
                 await _context.SaveChangesAsync();
             }
 

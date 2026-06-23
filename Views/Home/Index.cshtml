@@ -1446,6 +1446,12 @@
     const regPlanInput = document.getElementById('regPlanInput');
     const regForm = document.getElementById('regForm');
     const regSubmitBtn = document.getElementById('regSubmitBtn');
+    let isRegistrationSubmitting = false;
+
+    function getRegisterButtonLabel() {
+        const hasPlan = (regPlanInput?.value || '').trim().length > 0;
+        return `<i class="bi bi-person-plus-fill"></i> ${hasPlan ? 'Đăng ký & Mua gói' : 'Đăng ký Trải nghiệm'}`;
+    }
 
     function purchasePlan(plan) {
         @if (User.Identity != null && User.Identity.IsAuthenticated)
@@ -1508,15 +1514,18 @@
             planInput1.value = plan;
             planInput2.value = plan;
             if(subtitleText) subtitleText.style.display = 'block';
-            if(regSubmitBtn) regSubmitBtn.innerHTML = '<i class="bi bi-person-plus-fill"></i> Đăng ký & Mua gói';
             if(loginBuySubmitBtn) loginBuySubmitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Đăng nhập & Mua gói';
         } else {
             planName.textContent = '';
             planInput1.value = '';
             planInput2.value = '';
             if(subtitleText) subtitleText.style.display = 'none';
-            if(regSubmitBtn) regSubmitBtn.innerHTML = '<i class="bi bi-person-plus-fill"></i> Đăng ký Trải nghiệm';
             if(loginBuySubmitBtn) loginBuySubmitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Đăng nhập Hệ thống';
+        }
+        isRegistrationSubmitting = false;
+        if(regSubmitBtn) {
+            regSubmitBtn.disabled = false;
+            regSubmitBtn.innerHTML = getRegisterButtonLabel();
         }
         
         modal.classList.add('active');
@@ -1530,14 +1539,19 @@
 
     async function submitRegistration(e) {
         e.preventDefault();
+        if (isRegistrationSubmitting) return;
         
-        const email = document.getElementById('regEmail').value;
+        const emailInput = document.getElementById('regEmail');
+        const email = emailInput.value.trim();
         const plan = regPlanInput.value;
 
         if (!email) return;
 
+        isRegistrationSubmitting = true;
+        emailInput.value = email;
         regSubmitBtn.disabled = true;
         regSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
+        let registrationCompleted = false;
 
         try {
             const formData = new FormData();
@@ -1552,6 +1566,7 @@
             const result = await response.json();
 
             if (result.success) {
+                registrationCompleted = true;
                 // Pre-fill the login email
                 document.getElementById('loginUsername').value = email;
                 
@@ -1591,8 +1606,11 @@
                 alert('Có lỗi xảy ra, vui lòng thử lại sau.');
             }
         } finally {
-            regSubmitBtn.disabled = false;
-            regSubmitBtn.innerText = 'Xác nhận Đăng ký';
+            if (!registrationCompleted) {
+                isRegistrationSubmitting = false;
+                regSubmitBtn.disabled = false;
+                regSubmitBtn.innerHTML = getRegisterButtonLabel();
+            }
         }
     }
 

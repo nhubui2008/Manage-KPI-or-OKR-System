@@ -26,7 +26,7 @@ namespace Manage_KPI_or_OKR_System.Services
                 var senderEmail = _config["SmtpSettings:SenderEmail"];
                 var senderPassword = _config["SmtpSettings:Password"];
 
-                if (string.IsNullOrEmpty(senderEmail) || string.IsNullOrEmpty(senderPassword))
+                if (string.IsNullOrWhiteSpace(senderEmail) || string.IsNullOrWhiteSpace(senderPassword))
                 {
                     _logger.LogWarning("SMTP credentials not configured. Simulating email send.");
                     _logger.LogInformation($"[SIMULATED EMAIL] To: {toEmail}\nSubject: {subject}\nBody: {body}");
