@@ -595,8 +595,11 @@
                             <div style="font-size: 0.8rem; color: var(--text-tertiary);">Đăng nhập với</div>
                             <div style="font-weight: bold; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@username">@username</div>
                         </div>
-                        <a href="/Auth/Login?returnUrl=/Dashboard/Index"><i class="bi bi-grid-1x2-fill" style="color: var(--primary);"></i> Vào Hệ thống</a>
-                        <a href="/Home/PurchaseHistory"><i class="bi bi-clock-history" style="color: var(--secondary);"></i> Lịch sử mua</a>
+                        <a href="@(User.IsInRole("SaaS_Admin") ? "/SaaSAdmin/Index" : "/Dashboard/Index")"><i class="bi bi-grid-1x2-fill" style="color: var(--primary);"></i> Vào Hệ thống</a>
+                        @if (!User.IsInRole("SaaS_Admin"))
+                        {
+                            <a href="/Home/PurchaseHistory"><i class="bi bi-clock-history" style="color: var(--secondary);"></i> Lịch sử mua</a>
+                        }
                         <a href="javascript:void(0)" onclick="openChangePasswordModal()"><i class="bi bi-shield-lock" style="color: #10b981;"></i> Đổi mật khẩu</a>
                         <div style="border-top: 1px solid var(--border); margin: 0.5rem 0;"></div>
                         <a href="/Auth/Logout" style="color: #dc3545;"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>

@@ -158,7 +158,36 @@
     }
     .rq-empty-title { font-size: 1.05rem; font-weight: 700; color: #1a2940; margin-bottom: 6px; }
     .rq-empty-sub   { font-size: 0.85rem; color: #6b7c93; }
+
+    /* Loading Overlay */
+    .tracking-loader-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 9999;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(2px);
+    }
+    .tracking-loader-spinner {
+        width: 3rem; height: 3rem;
+    }
+    .tracking-loader-text {
+        margin-top: 1rem;
+        font-weight: 600;
+        color: var(--primary);
+    }
 </style>
+
+<!-- Loading Overlay UI -->
+<div id="trackingLoader" class="tracking-loader-overlay">
+    <div class="spinner-border text-primary tracking-loader-spinner" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <div class="tracking-loader-text">Đang tải dữ liệu...</div>
+</div>
 
 <div class="container-fluid px-0">
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
@@ -378,7 +407,32 @@
                         </div>
                     }
                 </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const loader = document.getElementById('trackingLoader');
+            
+            // Show loader when changing select option
+            const formSelect = document.querySelector('select[name="employeeId"]');
+            if (formSelect) {
+                formSelect.addEventListener('change', function() {
+                    loader.style.display = 'flex';
+                });
+            }
+
+            // Show loader when clicking employee links in the sidebar
+            const empLinks = document.querySelectorAll('a[href*="EmployeeTracking"]');
+            empLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    loader.style.display = 'flex';
+                });
+            });
+        });
+    </script>
+}

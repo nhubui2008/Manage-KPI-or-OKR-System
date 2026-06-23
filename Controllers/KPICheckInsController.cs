@@ -291,10 +291,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var rows = new List<EmployeeKpiTrackingRow>();
             if (selectedEmployee != null)
             {
-                rows = await BuildEmployeeKpiTrackingRowsAsync(selectedEmployee.EmployeeId);
+                rows = await BuildEmployeeKpiTrackingRowsBulkAsync(new List<int> { selectedEmployee.EmployeeId });
                 foreach (var row in rows)
                 {
-                    row.EmployeeId = selectedEmployee.EmployeeId;
                     row.EmployeeName = selectedEmployee.EmployeeName;
                     row.EmployeeCode = selectedEmployee.EmployeeCode;
                     row.DepartmentNames = selectedEmployee.DepartmentNames;
@@ -302,18 +301,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
             else
             {
-                foreach (var employee in employees)
-                {
-                    var employeeRows = await BuildEmployeeKpiTrackingRowsAsync(employee.EmployeeId);
-                    foreach (var row in employeeRows)
-                    {
-                        row.EmployeeId = employee.EmployeeId;
-                        row.EmployeeName = employee.EmployeeName;
-                        row.EmployeeCode = employee.EmployeeCode;
-                        row.DepartmentNames = employee.DepartmentNames;
-                    }
+                var allEmployeeIds = employees.Select(e => e.EmployeeId).ToList();
+                rows = await BuildEmployeeKpiTrackingRowsBulkAsync(allEmployeeIds);
 
-                    rows.AddRange(employeeRows);
+                var empDict = employees.ToDictionary(e => e.EmployeeId);
+                foreach (var row in rows)
+                {
+                    if (empDict.TryGetValue(row.EmployeeId, out var emp))
+                    {
+                        row.EmployeeName = emp.EmployeeName;
+                        row.EmployeeCode = emp.EmployeeCode;
+                        row.DepartmentNames = emp.DepartmentNames;
+                    }
                 }
 
                 rows = rows
@@ -1522,6 +1521,158 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 DepartmentNames = departmentNamesByEmployee.GetValueOrDefault(e.Id, "Chưa có phòng ban"),
                 IsDepartmentManager = managerEmployeeIds.Contains(e.Id)
             }).ToList();
+        }
+
+        private async Task<List<EmployeeKpiTrackingRow>> BuildEmployeeKpiTrackingRowsBulkAsync(List<int> employeeIds)
+        {
+            var rows = new List<EmployeeKpiTrackingRow>();
+            if (employeeIds == null || !employeeIds.Any()) return rows;
+
+            var directKpiAssignments = await _context.KPI_Employee_Assignments
+                .Where(a => employeeIds.Contains(a.EmployeeId) && (a.Status == null || a.Status == "Active"))
+                .ToListAsync();
+
+            var employeeDepartmentPairs = await _context.EmployeeAssignments
+                .Where(a => a.EmployeeId.HasValue && employeeIds.Contains(a.EmployeeId.Value) && a.IsActive == true && a.DepartmentId.HasValue)
+                .Select(a => new { EmployeeId = a.EmployeeId!.Value, DepartmentId = a.DepartmentId!.Value })
+                .ToListAsync();
+
+            var departmentIds = employeeDepartmentPairs.Select(a => a.DepartmentId).Distinct().ToList();
+
+            var departmentKpiAssignments = departmentIds.Any()
+                ? await _context.KPI_Department_Assignments
+                    .Where(a => departmentIds.Contains(a.DepartmentId))
+                    .ToListAsync()
+                : new List<KPI_Department_Assignment>();
+
+            var allAssignedKpiIds = directKpiAssignments.Select(a => a.KPIId)
+                .Concat(departmentKpiAssignments.Select(a => a.KPIId))
+                .Distinct()
+                .ToList();
+
+            var kpis = await _context.KPIs
+                .Where(k => k.IsActive == true && 
+                            (allAssignedKpiIds.Contains(k.Id) || (k.AssignerId.HasValue && employeeIds.Contains(k.AssignerId.Value))))
+                .ToListAsync();
+
+            var kpiIds = kpis.Select(k => k.Id).ToList();
+
+            var kpiDetails = kpiIds.Any()
+                ? await _context.KPIDetails
+                    .Where(d => d.KPIId.HasValue && kpiIds.Contains(d.KPIId.Value))
+                    .ToDictionaryAsync(d => d.KPIId!.Value)
+                : new Dictionary<int, KPIDetail>();
+
+            var latestCheckInsDict = new Dictionary<(int EmployeeId, int KPIId), KPICheckIn>();
+            if (kpiIds.Any() && employeeIds.Any())
+            {
+                var latestCheckInIds = await _context.KPICheckIns
+                    .Where(c => c.EmployeeId.HasValue && employeeIds.Contains(c.EmployeeId.Value) && 
+                                c.KPIId.HasValue && kpiIds.Contains(c.KPIId.Value))
+                    .GroupBy(c => new { c.EmployeeId, c.KPIId })
+                    .Select(g => g.OrderByDescending(x => x.CheckInDate).Select(x => x.Id).FirstOrDefault())
+                    .ToListAsync();
+                
+                var latestCheckInsFull = latestCheckInIds.Any() 
+                    ? await _context.KPICheckIns.Where(c => latestCheckInIds.Contains(c.Id)).ToListAsync()
+                    : new List<KPICheckIn>();
+
+                latestCheckInsDict = latestCheckInsFull
+                    .ToDictionary(c => (c.EmployeeId!.Value, c.KPIId!.Value));
+            }
+
+            var latestCheckInIdsFull = latestCheckInsDict.Values.Select(c => c.Id).ToList();
+            
+            var checkInDetails = latestCheckInIdsFull.Any()
+                ? await _context.CheckInDetails
+                    .Where(d => d.CheckInId.HasValue && latestCheckInIdsFull.Contains(d.CheckInId.Value))
+                    .ToDictionaryAsync(d => d.CheckInId!.Value)
+                : new Dictionary<int, CheckInDetail>();
+
+            var statuses = await _context.CheckInStatuses.ToDictionaryAsync(s => s.Id, s => s.StatusName ?? "Chưa rõ");
+
+            var periodIds = kpis
+                .Where(k => k.PeriodId.HasValue)
+                .Select(k => k.PeriodId!.Value)
+                .Distinct()
+                .ToList();
+            var periods = periodIds.Any()
+                ? await _context.EvaluationPeriods
+                    .Where(p => periodIds.Contains(p.Id))
+                    .ToDictionaryAsync(p => p.Id)
+                : new Dictionary<int, EvaluationPeriod>();
+
+            foreach (var empId in employeeIds)
+            {
+                var empDirectKpis = directKpiAssignments.Where(a => a.EmployeeId == empId).ToList();
+                var empDeptIds = employeeDepartmentPairs.Where(a => a.EmployeeId == empId).Select(a => a.DepartmentId).ToList();
+                var empDeptKpiIds = departmentKpiAssignments.Where(a => empDeptIds.Contains(a.DepartmentId)).Select(a => a.KPIId).ToList();
+                
+                var empAssignedKpiIds = empDirectKpis.Select(a => a.KPIId)
+                    .Concat(empDeptKpiIds)
+                    .Distinct()
+                    .ToList();
+
+                var empKpis = kpis.Where(k => empAssignedKpiIds.Contains(k.Id) || k.AssignerId == empId).OrderBy(k => k.KPIName).ToList();
+
+                var directWeightByKpiId = empDirectKpis
+                    .GroupBy(a => a.KPIId)
+                    .ToDictionary(g => g.Key, g => g.First().Weight.GetValueOrDefault(1m) <= 0 ? 1m : g.First().Weight.GetValueOrDefault(1m));
+
+                foreach (var kpi in empKpis)
+                {
+                    latestCheckInsDict.TryGetValue((empId, kpi.Id), out var checkIn);
+                    var detail = checkIn != null && checkInDetails.ContainsKey(checkIn.Id) ? checkInDetails[checkIn.Id] : null;
+                    var kpiDetail = kpiDetails.GetValueOrDefault(kpi.Id);
+                    var assignmentWeight = directWeightByKpiId.GetValueOrDefault(kpi.Id, 1m);
+                    var period = kpi.PeriodId.HasValue && periods.ContainsKey(kpi.PeriodId.Value)
+                        ? periods[kpi.PeriodId.Value]
+                        : null;
+                    
+                    var individualTarget = KpiCheckInScheduleHelper.CalculateIndividualTarget(kpiDetail, assignmentWeight);
+                    var deadlineAt = checkIn?.DeadlineAt ?? (kpiDetail != null
+                        ? KpiCheckInScheduleHelper.ResolveDeadlineForCheckIn(DateTime.Now, kpiDetail, period)
+                        : (DateTime?)null);
+                    var expectedValueAtDeadline = detail?.ExpectedValueAtDeadline ?? (kpiDetail != null && deadlineAt.HasValue
+                        ? KpiCheckInScheduleHelper.CalculateExpectedValueAtDeadline(kpiDetail, period, deadlineAt.Value, assignmentWeight)
+                        : (decimal?)null);
+                    var scheduleProgress = detail?.ScheduleProgressPercentage;
+                    var isLate = checkIn?.IsLate == true ||
+                                 (deadlineAt.HasValue && DateTime.Now > deadlineAt.Value &&
+                                  (checkIn?.CheckInDate == null || checkIn.CheckInDate.Value < deadlineAt.Value));
+
+                    rows.Add(new EmployeeKpiTrackingRow
+                    {
+                        EmployeeId = empId,
+                        KpiId = kpi.Id,
+                        KpiName = kpi.KPIName ?? $"KPI #{kpi.Id}",
+                        TargetValue = individualTarget,
+                        Unit = kpiDetail?.MeasurementUnit ?? string.Empty,
+                        LatestAchievedValue = detail?.AchievedValue,
+                        LatestProgress = detail?.ProgressPercentage,
+                        ExpectedValueAtDeadline = expectedValueAtDeadline,
+                        ScheduleProgressPercentage = scheduleProgress,
+                        LatestCheckInDate = checkIn?.CheckInDate,
+                        LatestDeadlineAt = deadlineAt,
+                        IsLate = isLate,
+                        LatestCheckInId = checkIn?.Id,
+                        ReviewStatus = checkIn?.ReviewStatus switch
+                        {
+                            ReviewStatusPending => "Chờ quản lý xác nhận",
+                            ReviewStatusRejected => "Bị từ chối",
+                            ReviewStatusApproved => "Đã xác nhận",
+                            null => "Chưa check-in",
+                            _ => checkIn.ReviewStatus ?? "Chưa check-in"
+                        },
+                        CheckInStatus = checkIn?.StatusId.HasValue == true && statuses.ContainsKey(checkIn.StatusId.Value)
+                            ? statuses[checkIn.StatusId.Value]
+                            : "Chưa cập nhật",
+                        Note = detail?.Note
+                    });
+                }
+            }
+
+            return rows;
         }
 
         private async Task<List<EmployeeKpiTrackingRow>> BuildEmployeeKpiTrackingRowsAsync(int employeeId)
