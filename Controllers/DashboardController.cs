@@ -230,8 +230,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Take(5)
                 .ToListAsync();
             
-            var empDict = await _context.Employees.ToDictionaryAsync(e => e.Id, e => e.FullName);
-            var kpiDict = await _context.KPIs.ToDictionaryAsync(k => k.Id, k => k.KPIName);
+            // Extract IDs for recent check-ins
+            var recentCheckInEmployeeIds = recentCheckIns.Where(c => c.EmployeeId.HasValue).Select(c => c.EmployeeId!.Value).Distinct().ToList();
+            var recentCheckInKpiIds = recentCheckIns.Where(c => c.KPIId.HasValue).Select(c => c.KPIId!.Value).Distinct().ToList();
+
+            var empDict = await _context.Employees
+                .Where(e => recentCheckInEmployeeIds.Contains(e.Id))
+                .ToDictionaryAsync(e => e.Id, e => e.FullName);
+            
+            var kpiDict = await _context.KPIs
+                .Where(k => recentCheckInKpiIds.Contains(k.Id))
+                .ToDictionaryAsync(k => k.Id, k => k.KPIName);
+
             ViewBag.RecentCheckIns = recentCheckIns;
             ViewBag.EmployeeNames = empDict;
             ViewBag.KPINames = kpiDict;
@@ -420,8 +430,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
             .Take(5)
             .ToListAsync();
 
+            var topEmployeeIds = topEmployees.Where(t => t.EmployeeId.HasValue).Select(t => t.EmployeeId!.Value).Distinct().ToList();
+            var topEmpDict = await _context.Employees
+                .Where(e => topEmployeeIds.Contains(e.Id))
+                .ToDictionaryAsync(e => e.Id, e => e.FullName);
+
             ViewBag.TopEmployees = topEmployees.Select(t => new {
-                Name = t.EmployeeId.HasValue && empDict.ContainsKey(t.EmployeeId.Value) ? empDict[t.EmployeeId.Value] : "N/A",
+                Name = t.EmployeeId.HasValue && topEmpDict.ContainsKey(t.EmployeeId.Value) ? topEmpDict[t.EmployeeId.Value] : "N/A",
                 AvgProgress = Math.Round(t.AvgProgress, 1),
                 t.CheckInCount
             }).ToList();

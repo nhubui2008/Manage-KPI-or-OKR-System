@@ -61,7 +61,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .ToListAsync();
 
             // Lấy danh sách nhân viên để hiển thị tên Quản lý (Manager)
-            var employees = await _context.Employees.ToDictionaryAsync(e => e.Id, e => e.FullName);
+            var managerIds = departments.Where(d => d.ManagerId.HasValue).Select(d => d.ManagerId!.Value).Distinct().ToList();
+            var employees = await _context.Employees.Where(e => managerIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName);
             
             // Đếm số lượng nhân viên đang thuộc từng phòng ban
             var employeeCounts = await _context.EmployeeAssignments
@@ -465,8 +466,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Select(g => new { DeptId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.DeptId, x => x.Count);
 
+            var managerIds = activeDepts.Where(d => d.ManagerId.HasValue).Select(d => d.ManagerId!.Value).Distinct().ToList();
             var employees = await _context.Employees
-                .Where(e => e.IsActive == true)
+                .Where(e => managerIds.Contains(e.Id))
                 .ToDictionaryAsync(e => e.Id, e => e.FullName);
 
             var deptList = activeDepts.Select(d => new

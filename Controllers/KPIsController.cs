@@ -182,11 +182,26 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 departmentAssignmentDict[assignment.KPIId].Add(assignment.DepartmentId);
             }
 
-            var employees = await _context.Employees.ToDictionaryAsync(e => e.Id, e => e.FullName);
+            var requiredEmployeeIds = kpis.Where(k => k.AssignerId.HasValue).Select(k => k.AssignerId!.Value)
+                .Concat(kpis.Where(k => k.CreatedById.HasValue).Select(k => k.CreatedById!.Value))
+                .Concat(assignments.Select(a => a.EmployeeId))
+                .Distinct()
+                .ToList();
+
+            var requiredDepartmentIds = departmentAssignments.Select(a => a.DepartmentId).Distinct().ToList();
+            var requiredPeriodIds = kpis.Where(k => k.PeriodId.HasValue).Select(k => k.PeriodId!.Value).Distinct().ToList();
+
+            var employees = await _context.Employees
+                .Where(e => requiredEmployeeIds.Contains(e.Id))
+                .ToDictionaryAsync(e => e.Id, e => e.FullName);
+            
             var departments = await _context.Departments
-                .Where(d => d.IsActive == true)
+                .Where(d => requiredDepartmentIds.Contains(d.Id))
                 .ToDictionaryAsync(d => d.Id, d => d.DepartmentName ?? "N/A");
-            var periods = await _context.EvaluationPeriods.ToDictionaryAsync(p => p.Id, p => p.PeriodName);
+            
+            var periods = await _context.EvaluationPeriods
+                .Where(p => requiredPeriodIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, p => p.PeriodName);
 
             ViewBag.KPIDetails = kpiDetails;
             ViewBag.Assignments = assignmentDict;
@@ -205,38 +220,56 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             // Lấy tiến độ mới nhất cho mỗi KPI (từ check-in gần nhất)
             var latestProgress = new Dictionary<int, decimal>();
-            foreach (var kpiId in kpiIds)
+            
+            var checkInQueryForProgress = _context.KPICheckIns
+                .Where(c => c.KPIId.HasValue && kpiIds.Contains(c.KPIId.Value) &&
+                            (c.ReviewStatus == "Approved" || c.ReviewStatus == null));
+
+            if (isRestrictedRole && currentEmployee != null)
             {
-                var latestCheckInQuery = _context.KPICheckIns
-                    .Where(c => c.KPIId == kpiId &&
-                                (c.ReviewStatus == "Approved" || c.ReviewStatus == null));
+                checkInQueryForProgress = checkInQueryForProgress.Where(c => c.EmployeeId == currentEmployee.Id);
+            }
 
-                if (isRestrictedRole && currentEmployee != null)
-                {
-                    latestCheckInQuery = latestCheckInQuery.Where(c => c.EmployeeId == currentEmployee.Id);
-                }
+            var allRelevantCheckIns = await checkInQueryForProgress
+                .OrderByDescending(c => c.CheckInDate)
+                .Select(c => new { c.Id, c.KPIId, c.EmployeeId })
+                .ToListAsync();
 
-                var latestCheckInIds = await latestCheckInQuery
-                    .OrderByDescending(c => c.CheckInDate)
+            var latestCheckInIds = allRelevantCheckIns
+                .GroupBy(c => new { c.KPIId, c.EmployeeId })
+                .Select(g => g.First().Id)
+                .ToList();
+
+            if (latestCheckInIds.Any())
+            {
+                var progressValues = await _context.CheckInDetails
+                    .Where(d => d.CheckInId.HasValue && latestCheckInIds.Contains(d.CheckInId.Value) && d.ProgressPercentage.HasValue)
+                    .Select(d => new { d.CheckInId, d.ProgressPercentage })
                     .ToListAsync();
 
-                latestCheckInIds = latestCheckInIds
-                    .GroupBy(c => c.EmployeeId)
-                    .Select(g => g.First())
-                    .ToList();
+                var progressDict = progressValues.ToDictionary(p => p.CheckInId!.Value, p => p.ProgressPercentage!.Value);
+                
+                var kpiProgressSum = new Dictionary<int, decimal>();
+                var kpiProgressCount = new Dictionary<int, int>();
 
-                var latestIds = latestCheckInIds.Select(c => c.Id).ToList();
-                if (latestIds.Any())
+                foreach (var checkIn in allRelevantCheckIns.Where(c => latestCheckInIds.Contains(c.Id)))
                 {
-                    var progressValues = await _context.CheckInDetails
-                        .Where(d => d.CheckInId.HasValue && latestIds.Contains(d.CheckInId.Value) && d.ProgressPercentage.HasValue)
-                        .Select(d => d.ProgressPercentage!.Value)
-                        .ToListAsync();
-
-                    if (progressValues.Any())
+                    if (progressDict.TryGetValue(checkIn.Id, out var progress) && checkIn.KPIId.HasValue)
                     {
-                        latestProgress[kpiId] = Math.Round(progressValues.Average(), 2);
+                        int kpiId = checkIn.KPIId.Value;
+                        if (!kpiProgressSum.ContainsKey(kpiId))
+                        {
+                            kpiProgressSum[kpiId] = 0;
+                            kpiProgressCount[kpiId] = 0;
+                        }
+                        kpiProgressSum[kpiId] += progress;
+                        kpiProgressCount[kpiId]++;
                     }
+                }
+
+                foreach (var kId in kpiProgressSum.Keys)
+                {
+                    latestProgress[kId] = Math.Round(kpiProgressSum[kId] / kpiProgressCount[kId], 2);
                 }
             }
             ViewBag.LatestProgress = latestProgress;
