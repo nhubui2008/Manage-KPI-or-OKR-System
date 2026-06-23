@@ -1590,7 +1590,7 @@
                 if (heroBtn) {
                     heroBtn.innerHTML = '<i class="bi bi-grid-1x2-fill"></i> Truy cập Hệ thống';
                     heroBtn.onclick = null;
-                    heroBtn.href = '/Auth/Login?username=' + encodeURIComponent(email) + (result.rawPassword ? '&password=' + encodeURIComponent(result.rawPassword) : '');
+                    heroBtn.href = '/Auth/Login?username=' + encodeURIComponent(email);
                 }
             } else {
                 if (typeof window.showAppToast === 'function') {

@@ -137,15 +137,37 @@ public class HomeController : Controller
             await _context.SaveChangesAsync();
 
             string emailSubject = "Tài khoản VIETMACH của bạn đã được tạo";
-            string emailBody = $"Chào bạn,<br/><br/>Tài khoản dùng thử của bạn đã được tạo thành công.<br/>" +
-                               $"<b>Tên đăng nhập:</b> {normalizedEmail}<br/>" +
-                               $"<b>Mật khẩu:</b> {rawPassword}<br/><br/>" +
-                               $"Trân trọng,<br/>Đội ngũ VIETMACH.";
+            string emailBody = $@"
+<div style=""font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);"">
+    <div style=""background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 40px 20px; text-align: center;"">
+        <h1 style=""color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;"">VIETMACH</h1>
+        <p style=""color: #bfdbfe; margin: 10px 0 0 0; font-size: 16px; font-weight: 500;"">Nền tảng Quản trị Hiệu suất Toàn diện</p>
+    </div>
+    <div style=""padding: 40px 30px;"">
+        <h2 style=""color: #0f172a; margin-top: 0; font-size: 22px; font-weight: 700;"">Chào bạn,</h2>
+        <p style=""color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;"">Chúc mừng bạn đã đăng ký thành công tài khoản trải nghiệm hệ thống VIETMACH. Dưới đây là thông tin đăng nhập an toàn của bạn:</p>
+        
+        <div style=""background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 25px; margin: 0 0 30px 0;"">
+            <p style=""margin: 0 0 15px 0; color: #334155; font-size: 15px;""><strong style=""display: inline-block; width: 130px; color: #0f172a;"">Tên đăng nhập:</strong> <span style=""color: #2563eb; font-weight: 600;"">{normalizedEmail}</span></p>
+            <p style=""margin: 0; color: #334155; font-size: 15px;""><strong style=""display: inline-block; width: 130px; color: #0f172a;"">Mật khẩu:</strong> <span style=""background-color: #e2e8f0; padding: 6px 12px; border-radius: 6px; font-family: 'Courier New', Courier, monospace; font-size: 18px; font-weight: bold; letter-spacing: 2px; color: #b91c1c;"">{rawPassword}</span></p>
+        </div>
+        
+        <p style=""color: #64748b; font-size: 15px; line-height: 1.6; margin-bottom: 10px;"">Vui lòng truy cập đường dẫn trang chủ hệ thống để tiến hành đăng nhập.</p>
+        
+        <p style=""color: #ef4444; font-size: 14px; font-weight: 500; margin-top: 25px; padding: 15px; background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px;"">
+            <b style=""color: #991b1b;"">Lưu ý quan trọng:</b> Vì lý do bảo mật, bạn nên thay đổi mật khẩu này ngay sau lần đăng nhập đầu tiên.
+        </p>
+    </div>
+    <div style=""background-color: #f1f5f9; padding: 20px; text-align: center; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;"">
+        <p style=""margin: 0; font-weight: 600;"">&copy; {DateTime.Now.Year} VietMach System. Mọi quyền được bảo lưu.</p>
+        <p style=""margin: 8px 0 0 0;"">Email hỗ trợ: support@vietmach.com | Hotline: 1900 0000</p>
+    </div>
+</div>";
 
             await emailService.SendEmailAsync(normalizedEmail, emailSubject, emailBody);
             await transaction.CommitAsync();
 
-            return Json(new { success = true, rawPassword = rawPassword, autoLogin = false, message = "Đăng ký thành công! Mật khẩu đã được cấp. Vui lòng bấm 'Truy cập Hệ thống' để đăng nhập trải nghiệm." });
+            return Json(new { success = true, autoLogin = false, message = "Đăng ký thành công! Vui lòng kiểm tra email để nhận mật khẩu đăng nhập." });
         }
         catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
         {
