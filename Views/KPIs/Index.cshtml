@@ -98,6 +98,35 @@
     }
 }
 
+@section Styles {
+    <style>
+        .kpi-table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+        
+        .kpi-index-table {
+            min-width: 1200px; /* Minimum width to prevent column squashing */
+            width: 100%;
+        }
+
+        .kpi-index-table th.kpi-actions-col,
+        .kpi-index-table td.kpi-actions-cell {
+            position: sticky;
+            right: 0;
+            background-color: #fff; /* Match row background */
+            z-index: 2; /* Ensure it stays above other elements */
+            box-shadow: -4px 0 10px rgba(0,0,0,0.05); /* Slight shadow to show it's floating */
+        }
+        
+        .kpi-index-table tbody tr:hover td.kpi-actions-cell {
+            background-color: #f8f9fa; /* Slight hover effect if the row has one */
+        }
+    </style>
+}
+
 <div class="kpi-index-page container-fluid px-0">
 
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
