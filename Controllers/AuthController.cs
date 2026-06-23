@@ -32,7 +32,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _settingsService = settingsService;
         }
 
-        public IActionResult Login(string returnUrl = null, string username = null)
+        public IActionResult Login(string returnUrl = null, string username = null, string password = null)
         {
             ViewData["IsLoginPage"] = true;
             ViewBag.ReturnUrl = returnUrl;
@@ -44,6 +44,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!string.IsNullOrEmpty(username))
             {
                 ViewBag.Username = username;
+            }
+
+            if (!string.IsNullOrEmpty(password))
+            {
+                ViewBag.Password = password;
             }
 
             if (User.Identity != null && User.Identity.IsAuthenticated)

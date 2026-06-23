@@ -664,7 +664,7 @@
             <div class="lp-hero-actions">
                 @if (User.Identity != null && User.Identity.IsAuthenticated)
                 {
-                    <a href="@(User.IsInRole("SaaS_Admin") ? "/SaaSAdmin/Index" : "/Dashboard/Index")" class="btn-primary-lg">
+                    <a href="/Auth/Login" class="btn-primary-lg">
                         <i class="bi bi-grid-1x2-fill"></i> Truy cập Hệ thống
                     </a>
                 }
@@ -1572,20 +1572,25 @@
                 
                 if (typeof window.showAppToast === 'function') {
                     window.showAppToast({ tone: 'success', title: 'Đăng ký thành công!', message: result.message });
-                    setTimeout(() => window.location.href = '/Auth/Login?username=' + encodeURIComponent(email), 1500);
                 } else if (typeof Swal !== 'undefined') {
                     Swal.fire({
                         icon: 'success',
                         title: 'Đăng ký thành công!',
                         text: result.message,
-                        confirmButtonText: 'Đăng nhập ngay',
+                        confirmButtonText: 'Đóng',
                         confirmButtonColor: '#4f46e5'
-                    }).then(() => {
-                        window.location.href = '/Auth/Login?username=' + encodeURIComponent(email);
                     });
                 } else {
                     alert(result.message);
-                    window.location.href = '/Auth/Login?username=' + encodeURIComponent(email);
+                }
+                
+                closeRegModal();
+
+                const heroBtn = document.querySelector('.lp-hero-actions .btn-primary-lg');
+                if (heroBtn) {
+                    heroBtn.innerHTML = '<i class="bi bi-grid-1x2-fill"></i> Truy cập Hệ thống';
+                    heroBtn.onclick = null;
+                    heroBtn.href = '/Auth/Login?username=' + encodeURIComponent(email) + (result.rawPassword ? '&password=' + encodeURIComponent(result.rawPassword) : '');
                 }
             } else {
                 if (typeof window.showAppToast === 'function') {

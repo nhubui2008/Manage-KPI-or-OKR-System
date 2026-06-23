@@ -110,23 +110,28 @@ public class HomeController : Controller
             var rawPassword = GenerateSecurePassword();
             var passwordHash = Manage_KPI_or_OKR_System.Helpers.PasswordHelper.HashPassword(rawPassword);
             var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "User");
+            var adminRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Admin" || r.RoleName == "Administrator");
             await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            bool isPurchase = !string.IsNullOrEmpty(selectedPlan);
 
             var newUser = new SystemUser
             {
                 Username = normalizedEmail,
                 Email = normalizedEmail,
                 PasswordHash = passwordHash,
-                RoleId = userRole?.Id,
+                RoleId = isPurchase ? adminRole?.Id : userRole?.Id,
                 IsActive = true,
                 CreatedAt = DateTime.Now,
-                TrialEndTime = DateTime.Now.AddMinutes(30)
+                TrialEndTime = isPurchase ? (DateTime?)null : DateTime.Now.AddMinutes(30)
             };
 
             _context.SystemUsers.Add(newUser);
-            if (!string.IsNullOrEmpty(selectedPlan))
+            if (isPurchase)
             {
-                _context.PurchaseRegistrations.Add(CreatePendingPurchaseRegistration(normalizedEmail, selectedPlan));
+                var reg = CreatePendingPurchaseRegistration(normalizedEmail, selectedPlan);
+                reg.Status = "Đã kích hoạt"; // Activated immediately
+                _context.PurchaseRegistrations.Add(reg);
             }
 
             await _context.SaveChangesAsync();
@@ -140,7 +145,7 @@ public class HomeController : Controller
             await emailService.SendEmailAsync(normalizedEmail, emailSubject, emailBody);
             await transaction.CommitAsync();
 
-            return Json(new { success = true, autoLogin = false, message = "Đăng ký dùng thử thành công! Vui lòng kiểm tra hộp thư đến (hoặc thư rác) để nhận mật khẩu đăng nhập." });
+            return Json(new { success = true, rawPassword = rawPassword, autoLogin = false, message = "Đăng ký thành công! Mật khẩu đã được cấp. Vui lòng bấm 'Truy cập Hệ thống' để đăng nhập trải nghiệm." });
         }
         catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
         {
@@ -205,7 +210,17 @@ public class HomeController : Controller
 
             if (!string.IsNullOrEmpty(plan))
             {
-                _context.PurchaseRegistrations.Add(CreatePendingPurchaseRegistration(user.Email ?? normalizedUsername, plan.Trim()));
+                var reg = CreatePendingPurchaseRegistration(user.Email ?? normalizedUsername, plan.Trim());
+                reg.Status = "Đã kích hoạt";
+                _context.PurchaseRegistrations.Add(reg);
+                
+                user.TrialEndTime = null;
+                var adminRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Admin" || r.RoleName == "Administrator");
+                if (adminRole != null)
+                {
+                    user.RoleId = adminRole.Id;
+                }
+                
                 await _context.SaveChangesAsync();
             }
 
@@ -253,11 +268,21 @@ public class HomeController : Controller
 
             if (!string.IsNullOrEmpty(plan))
             {
-                _context.PurchaseRegistrations.Add(CreatePendingPurchaseRegistration(user.Email ?? username, plan.Trim()));
+                var reg = CreatePendingPurchaseRegistration(user.Email ?? username, plan.Trim());
+                reg.Status = "Đã kích hoạt";
+                _context.PurchaseRegistrations.Add(reg);
+                
+                user.TrialEndTime = null;
+                var adminRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Admin" || r.RoleName == "Administrator");
+                if (adminRole != null)
+                {
+                    user.RoleId = adminRole.Id;
+                }
+                
                 await _context.SaveChangesAsync();
             }
 
-            return Json(new { success = true, message = $"Bạn đã đăng ký {(string.IsNullOrEmpty(plan) ? "thành công" : plan)}! Đội ngũ tư vấn sẽ liên hệ với bạn trong thời gian sớm nhất." });
+            return Json(new { success = true, message = $"Bạn đã nâng cấp {(string.IsNullOrEmpty(plan) ? "thành công" : plan)}! Tài khoản của bạn đã được kích hoạt vĩnh viễn với đầy đủ tính năng." });
         }
         catch (Exception ex)
         {
