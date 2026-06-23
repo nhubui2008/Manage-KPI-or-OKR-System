@@ -112,16 +112,8 @@
             width: 100%;
         }
 
-        .kpi-index-table th.kpi-actions-col,
-        .kpi-index-table td.kpi-actions-cell {
-            position: sticky;
-            right: 0;
-            background-color: #fff; /* Match row background */
-            z-index: 2; /* Ensure it stays above other elements */
-            box-shadow: -4px 0 10px rgba(0,0,0,0.05); /* Slight shadow to show it's floating */
-        }
-        
-        .kpi-index-table tbody tr:hover td.kpi-actions-cell {
+        .kpi-index-table tbody tr:hover td.kpi-actions-cell,
+        .kpi-index-table tbody tr:focus-within td.kpi-actions-cell {
             background-color: #f8f9fa; /* Slight hover effect if the row has one */
         }
     </style>
@@ -798,31 +790,9 @@
         text-align: center;
     }
 
-    .kpi-index-table .kpi-status-col,
-    .kpi-index-table .kpi-status-cell,
-    .kpi-index-table .kpi-actions-col,
-    .kpi-index-table .kpi-actions-cell {
-        position: sticky;
-        background: #ffffff;
-    }
-
-    .kpi-index-table .kpi-status-col,
-    .kpi-index-table .kpi-status-cell {
-        right: var(--kpi-actions-width);
-        z-index: 3;
-        box-shadow: -10px 0 18px rgba(15, 23, 42, 0.06);
-    }
-
-    .kpi-index-table .kpi-actions-col,
-    .kpi-index-table .kpi-actions-cell {
-        right: 0;
-        z-index: 4;
-    }
-
     .kpi-index-table thead .kpi-status-col,
     .kpi-index-table thead .kpi-actions-col {
         background: linear-gradient(135deg, #eef3fb, #f5f8fc);
-        z-index: 5;
     }
 
     .kpi-actions-cell {

@@ -111,6 +111,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         : new List<int>();
                     var managerVisibleOkrIds = managerDepartmentOkrIds
                         .Concat(managerEmployeeOkrIds)
+                        .Concat(allocatedOkrIds)
+                        .Concat(departmentOkrIds)
                         .Distinct()
                         .ToList();
 
@@ -124,9 +126,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
             }
 
-            // Filter OKRs if Sales or Employee
-            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+            // Filter OKRs if Sales or Employee (and not Manager to avoid restricting their broader scope)
+            if (!IsManagerScopedRole() && (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales")))
             {
                 if (currentEmployeeId.HasValue)
                 {

@@ -76,6 +76,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                         if (isManager)
                         {
+                            targetEmployeeIds.Add(currentEmployee.Id);
+
                             // Trưởng phòng: Xem nhân viên trong phòng ban của mình
                             var managedDeptIds = await _context.Departments
                                 .Where(d => d.ManagerId == currentEmployee.Id && d.IsActive == true)
@@ -137,9 +139,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                             .Distinct()
                             .ToList();
 
-                        // Hiển thị KPI nếu thuộc phạm vi và đang có thể thực thi, hoặc KPI do chính người dùng tạo chưa bị đóng/từ chối.
+                        var hiddenKpiStatusIds = await _context.GetStatusIdsAsync(
+                            WorkflowStatusHelper.StatusTypeKpi,
+                            new[] { WorkflowStatusHelper.KpiDraft, WorkflowStatusHelper.KpiRejected, WorkflowStatusHelper.KpiCanceled });
+
+                        // Hiển thị KPI nếu thuộc phạm vi và không bị ẩn (nháp, từ chối, hủy), hoặc KPI do chính người dùng tạo chưa bị đóng/từ chối.
                         query = query.Where(k =>
-                            (allocatedKpiIds.Contains(k.Id) && k.StatusId.HasValue && executableKpiStatusIds.Contains(k.StatusId.Value)) ||
+                            (allocatedKpiIds.Contains(k.Id) && (!k.StatusId.HasValue || !hiddenKpiStatusIds.Contains(k.StatusId.Value))) ||
                             (k.AssignerId == currentEmployee.Id && (!k.StatusId.HasValue || !hiddenOwnKpiStatusIds.Contains(k.StatusId.Value)))
                         );
                     }
