@@ -336,7 +336,8 @@ html.sidebar-expanded .sidebar-link i {
     transform: scale(1.1);
 }
 
-.sidebar-link.active {
+.sidebar-link.active,
+.sidebar-link.is-pending {
     color: #ffffff;
     background: linear-gradient(135deg, rgba(26, 115, 232, 0.3), rgba(66, 133, 244, 0.2));
     font-weight: 700;
@@ -346,9 +347,77 @@ html.sidebar-expanded .sidebar-link i {
     z-index: 1;
 }
 
-.sidebar-link.active i {
+.sidebar-link.active i,
+.sidebar-link.is-pending i {
     opacity: 1;
     color: #4285f4;
+}
+
+html.sidebar-expanded .sidebar-link.is-pending {
+    padding-right: 34px;
+}
+
+html.sidebar-expanded .sidebar-link.is-pending::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #93c5fd;
+    box-shadow: 0 0 0 4px rgba(147, 197, 253, 0.16);
+    animation: sidebarPendingPulse 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes sidebarPendingPulse {
+    from {
+        opacity: 0.45;
+        transform: scale(0.85);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.sidebar-expanded .sidebar-link.is-pending::after {
+        animation: none;
+    }
+}
+
+.instant-page-placeholder {
+    min-height: min(460px, calc(100vh - 180px));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: #1a2940;
+}
+
+.instant-page-placeholder__icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1a73e8;
+    background: rgba(26, 115, 232, 0.1);
+}
+
+.instant-page-placeholder__eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7c93;
+}
+
+.instant-page-placeholder__title {
+    margin-top: 2px;
+    font-size: 1.1rem;
+    font-weight: 800;
 }
 
 /* Submenu toggle */

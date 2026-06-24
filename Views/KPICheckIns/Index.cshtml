@@ -802,6 +802,7 @@
 </div>
 
 <script>
+    (function () {
     const quickCheckInKpiMap = @Html.Raw(kpiDataJson);
     const quickAssignmentWeights = @Html.Raw(assignmentWeightsJson);
 
@@ -880,10 +881,17 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
+    function initQuickCheckInForm() {
         document.getElementById('quickKpiSelect')?.addEventListener('change', updateQuickCheckInInput);
         document.getElementById('quickEmployeeSelect')?.addEventListener('change', updateQuickCheckInInput);
         updateQuickCheckInInput();
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initQuickCheckInForm, { once: true });
+    } else {
+        initQuickCheckInForm();
+    }
+    })();
 </script>
 </div>

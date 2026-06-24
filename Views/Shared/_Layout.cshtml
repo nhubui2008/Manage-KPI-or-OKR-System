@@ -206,16 +206,16 @@
                             }
                             @if (HasPerm("KPIS_VIEW"))
                             {
-                                <a href="/KPIs" class="sidebar-link">
+                                <a href="/KPIs" class="sidebar-link" data-instant-nav="kpi" data-instant-title="Giao & Xem KPI cá nhân">
                                     <i class="bi bi-speedometer2"></i> <span>Giao & Xem KPI cá nhân</span>
                                 </a>
                             }
                             @if (HasPerm("KPICHECKINS_VIEW"))
                             {
-                                <a href="/KPICheckIns" class="sidebar-link">
+                                <a href="/KPICheckIns" class="sidebar-link" data-instant-nav="kpi" data-instant-title="@(HasPerm("KPICHECKINS_REVIEW") ? "Ghi nhận tiến độ KPI" : "Cập nhật tiến độ KPI")">
                                     <i class="bi bi-check2-square"></i> <span>@(HasPerm("KPICHECKINS_REVIEW") ? "Ghi nhận tiến độ KPI" : "Cập nhật tiến độ KPI")</span>
                                 </a>
-                                <a href="/KPICheckIns/EmployeeTracking" class="sidebar-link">
+                                <a href="/KPICheckIns/EmployeeTracking" class="sidebar-link" data-instant-nav="kpi" data-instant-title="Theo dõi KPI nhân viên">
                                     <i class="bi bi-person-lines-fill"></i> <span>Theo dõi KPI nhân viên</span>
                                 </a>
                             }
@@ -738,7 +738,9 @@
         </script>
     }
 
-    @await RenderSectionAsync("Scripts", required: false)
+    <div data-page-scripts hidden>
+        @await RenderSectionAsync("Scripts", required: false)
+    </div>
     <partial name="_AiHistoryModal" />
 </body>
 </html>

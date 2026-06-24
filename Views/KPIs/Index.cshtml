@@ -818,6 +818,7 @@
 </style>
 
 <script>
+    (function () {
     // Empty placeholder for script segment if needed
 
     // Search functionality for employee list
@@ -1183,6 +1184,8 @@
         input.addEventListener('change', splitCreateModalWeights);
     });
     document.getElementById('splitCreateModalWeights')?.addEventListener('click', splitCreateModalWeights);
+    window.renderKpiSuggestions = renderKpiSuggestions;
+    })();
 </script>
 
 </div>

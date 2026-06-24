@@ -1007,11 +1007,319 @@ document.addEventListener('DOMContentLoaded', function () {
     let activeSidebarLink = null;
     let activeSidebarScore = -1;
 
-    sidebarLinks.forEach(function (link) {
-        const href = link.getAttribute('href');
-        if (!href || href === '#') return;
+    function getSidebarUrl(link) {
+        try {
+            return new URL(link.getAttribute('href'), window.location.origin);
+        } catch {
+            return null;
+        }
+    }
 
-        const linkPath = normalizeSidebarPath(href);
+    function expandSidebarParent(link) {
+        const submenu = link.closest('.sidebar-submenu');
+        if (!submenu) return;
+
+        submenu.classList.add('show');
+        const toggle = submenu.previousElementSibling;
+        if (toggle) {
+            toggle.setAttribute('aria-expanded', 'true');
+            toggle.classList.remove('collapsed');
+        }
+    }
+
+    function setSidebarActiveLink(link, options = {}) {
+        sidebarLinks.forEach(function (item) {
+            item.classList.remove('active', 'is-pending');
+            item.removeAttribute('aria-current');
+            item.removeAttribute('aria-busy');
+        });
+
+        link.classList.add('active');
+        if (options.pending) {
+            link.classList.add('is-pending');
+            link.setAttribute('aria-busy', 'true');
+        } else {
+            link.setAttribute('aria-current', 'page');
+        }
+
+        expandSidebarParent(link);
+    }
+
+    function isRegularSidebarNavigation(event, link) {
+        if (event.defaultPrevented || event.button !== 0) return false;
+        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return false;
+        if (link.getAttribute('data-bs-toggle') === 'collapse') return false;
+
+        const target = (link.getAttribute('target') || '').toLowerCase();
+        if (target && target !== '_self') return false;
+
+        const href = link.getAttribute('href');
+        if (!href || href === '#') return false;
+
+        const targetUrl = getSidebarUrl(link);
+        if (!targetUrl || targetUrl.origin !== window.location.origin) return false;
+
+        const isHashOnlySamePage =
+            targetUrl.pathname === window.location.pathname &&
+            targetUrl.search === window.location.search &&
+            Boolean(targetUrl.hash);
+
+        return !isHashOnlySamePage;
+    }
+
+    const pageContent = document.querySelector('.page-content');
+    const instantNavigationLinks = sidebarLinks.filter(link => link.dataset.instantNav === 'kpi');
+    const instantNavigationCache = new Map();
+    const instantNavigationRequests = new Map();
+    const instantNavigationTtlMs = 60000;
+    let instantNavigationSequence = 0;
+
+    function getInstantNavigationKey(url) {
+        return normalizeSidebarPath(url.pathname) + url.search;
+    }
+
+    function getInstantNavigationLink(url) {
+        const normalizedPath = normalizeSidebarPath(url.pathname);
+        return instantNavigationLinks.find(function (link) {
+            const linkUrl = getSidebarUrl(link);
+            return linkUrl && normalizeSidebarPath(linkUrl.pathname) === normalizedPath;
+        }) || null;
+    }
+
+    function supportsInstantNavigation() {
+        return Boolean(pageContent && window.history && typeof window.history.pushState === 'function' && window.DOMParser);
+    }
+
+    function isInstantNavigationUrl(url) {
+        return Boolean(url && url.origin === window.location.origin && getInstantNavigationLink(url));
+    }
+
+    function getFreshInstantNavigationEntry(url) {
+        const entry = instantNavigationCache.get(getInstantNavigationKey(url));
+        if (!entry) return null;
+
+        return Date.now() - entry.fetchedAt <= instantNavigationTtlMs ? entry : null;
+    }
+
+    function collectInlineScriptText(root) {
+        if (!root) return [];
+
+        return Array.from(root.querySelectorAll('script:not([src])'))
+            .map(script => script.textContent || '')
+            .filter(scriptText => scriptText.trim().length > 0);
+    }
+
+    function createInstantNavigationEntry(contentElement, scriptsRoot, title) {
+        if (!contentElement) {
+            throw new Error('Không tìm thấy vùng nội dung trang.');
+        }
+
+        const contentClone = contentElement.cloneNode(true);
+        const inlineScripts = collectInlineScriptText(contentClone)
+            .concat(collectInlineScriptText(scriptsRoot));
+
+        contentClone.querySelectorAll('script').forEach(script => script.remove());
+
+        return {
+            html: contentClone.innerHTML,
+            scripts: inlineScripts,
+            title: title || document.title,
+            fetchedAt: Date.now()
+        };
+    }
+
+    function parseInstantNavigationResponse(html) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        return createInstantNavigationEntry(
+            doc.querySelector('main.page-content'),
+            doc.querySelector('[data-page-scripts]'),
+            doc.title
+        );
+    }
+
+    function captureCurrentInstantNavigationPage() {
+        if (!supportsInstantNavigation()) return;
+
+        const currentUrl = new URL(window.location.href);
+        if (!isInstantNavigationUrl(currentUrl)) return;
+
+        try {
+            instantNavigationCache.set(
+                getInstantNavigationKey(currentUrl),
+                createInstantNavigationEntry(pageContent, document.querySelector('[data-page-scripts]'), document.title)
+            );
+        } catch (error) {
+            console.warn('Instant navigation cache skipped:', error);
+        }
+    }
+
+    async function fetchInstantNavigationPage(url, options = {}) {
+        const key = getInstantNavigationKey(url);
+        const cached = !options.force ? getFreshInstantNavigationEntry(url) : null;
+        if (cached) return cached;
+
+        if (!options.force && instantNavigationRequests.has(key)) {
+            return instantNavigationRequests.get(key);
+        }
+
+        const request = fetch(url.href, {
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-Instant-Navigation': 'true'
+            }
+        })
+            .then(async response => {
+                if (!response.ok) {
+                    throw new Error(`Không tải được trang (${response.status}).`);
+                }
+
+                const entry = parseInstantNavigationResponse(await response.text());
+                instantNavigationCache.set(key, entry);
+                return entry;
+            })
+            .finally(() => {
+                instantNavigationRequests.delete(key);
+            });
+
+        instantNavigationRequests.set(key, request);
+        return request;
+    }
+
+    function cleanupDynamicPageState() {
+        document.querySelectorAll('.modal.show').forEach(function (modal) {
+            try {
+                bootstrap.Modal.getInstance(modal)?.hide();
+            } catch {
+                modal.classList.remove('show');
+            }
+        });
+
+        document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+        document.querySelectorAll('.select2-container').forEach(container => container.remove());
+    }
+
+    function executeInstantNavigationScripts(scripts) {
+        scripts.forEach(function (scriptText) {
+            const script = document.createElement('script');
+            script.text = scriptText;
+            document.body.appendChild(script);
+            script.remove();
+        });
+    }
+
+    function refreshDynamicPageBehaviors() {
+        window.applyMeasurementUnitBehavior?.(pageContent);
+        window.refreshSelect2?.();
+        document.dispatchEvent(new CustomEvent('instant:navigation-ready', {
+            detail: { path: window.location.pathname, root: pageContent }
+        }));
+    }
+
+    function setInstantNavigationLoading(link) {
+        if (!pageContent) return;
+
+        const title = link?.dataset.instantTitle || link?.textContent?.trim() || 'Đang mở trang';
+        pageContent.innerHTML = `
+            <div class="instant-page-placeholder" role="status" aria-live="polite">
+                <div class="instant-page-placeholder__icon">
+                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                </div>
+                <div>
+                    <div class="instant-page-placeholder__eyebrow">Đang mở</div>
+                    <div class="instant-page-placeholder__title">${escapeHtml(title)}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    function applyInstantNavigationEntry(url, entry, options = {}) {
+        cleanupDynamicPageState();
+        pageContent.innerHTML = entry.html;
+
+        if (entry.title) {
+            document.title = entry.title;
+        }
+
+        if (!options.skipHistory) {
+            history.pushState({ instantNavigation: true }, entry.title || '', url.href);
+        }
+
+        const activeLink = options.link || getInstantNavigationLink(url);
+        if (activeLink) {
+            setSidebarActiveLink(activeLink);
+        }
+
+        window.scrollTo({ top: 0, left: 0 });
+        executeInstantNavigationScripts(entry.scripts);
+        refreshDynamicPageBehaviors();
+    }
+
+    async function navigateInstantly(url, link, options = {}) {
+        if (!supportsInstantNavigation() || !isInstantNavigationUrl(url)) {
+            window.location.href = url.href;
+            return;
+        }
+
+        const sequence = ++instantNavigationSequence;
+        const cached = getFreshInstantNavigationEntry(url);
+
+        if (cached) {
+            applyInstantNavigationEntry(url, cached, { ...options, link });
+            fetchInstantNavigationPage(url, { force: true }).catch(error => {
+                console.warn('Instant navigation refresh failed:', error);
+            });
+            return;
+        }
+
+        setInstantNavigationLoading(link);
+
+        try {
+            const entry = await fetchInstantNavigationPage(url);
+            if (sequence !== instantNavigationSequence) return;
+
+            applyInstantNavigationEntry(url, entry, { ...options, link });
+        } catch (error) {
+            console.warn('Instant navigation fallback:', error);
+            window.location.href = url.href;
+        }
+    }
+
+    function prefetchInstantNavigationLink(link) {
+        if (!supportsInstantNavigation()) return;
+
+        const url = getSidebarUrl(link);
+        if (!isInstantNavigationUrl(url)) return;
+
+        fetchInstantNavigationPage(url).catch(error => {
+            console.warn('Instant navigation prefetch failed:', error);
+        });
+    }
+
+    function queueInstantNavigationPrefetch() {
+        if (!instantNavigationLinks.length || !supportsInstantNavigation()) return;
+
+        const run = function () {
+            instantNavigationLinks.forEach(function (link, index) {
+                window.setTimeout(() => prefetchInstantNavigationLink(link), index * 160);
+            });
+        };
+
+        if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(run, { timeout: 1200 });
+        } else {
+            window.setTimeout(run, 350);
+        }
+    }
+
+    sidebarLinks.forEach(function (link) {
+        const linkUrl = getSidebarUrl(link);
+        if (!linkUrl || linkUrl.origin !== window.location.origin) return;
+
+        const linkPath = normalizeSidebarPath(linkUrl.pathname);
         const isExactMatch = currentPath === linkPath;
         const isNestedMatch = linkPath !== '/' && currentPath.startsWith(linkPath + '/');
 
@@ -1025,28 +1333,54 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     if (activeSidebarLink) {
-        activeSidebarLink.classList.add('active');
-
-        // Expand parent submenu if exists
-        const submenu = activeSidebarLink.closest('.sidebar-submenu');
-        if (submenu) {
-            submenu.classList.add('show');
-            const toggle = submenu.previousElementSibling;
-            if (toggle) {
-                toggle.setAttribute('aria-expanded', 'true');
-                toggle.classList.remove('collapsed');
-            }
-        }
+        setSidebarActiveLink(activeSidebarLink);
     }
 
     // --- Close sidebar on link click (mobile) ---
     sidebarLinks.forEach(function (link) {
-        link.addEventListener('click', function () {
+        link.addEventListener('click', function (event) {
+            const isRegularNavigation = isRegularSidebarNavigation(event, link);
+
+            if (isRegularNavigation) {
+                setSidebarActiveLink(link, { pending: true });
+            }
+
             if (window.innerWidth < 992) {
                 closeMobileSidebar();
             }
+
+            if (isRegularNavigation && link.dataset.instantNav === 'kpi') {
+                const targetUrl = getSidebarUrl(link);
+                if (isInstantNavigationUrl(targetUrl)) {
+                    event.preventDefault();
+                    navigateInstantly(targetUrl, link);
+                }
+            }
         });
     });
+
+    if (supportsInstantNavigation() && instantNavigationLinks.length) {
+        captureCurrentInstantNavigationPage();
+        history.replaceState({ instantNavigation: true }, document.title, window.location.href);
+        queueInstantNavigationPrefetch();
+
+        instantNavigationLinks.forEach(function (link) {
+            link.addEventListener('mouseenter', () => prefetchInstantNavigationLink(link), { once: true });
+            link.addEventListener('focus', () => prefetchInstantNavigationLink(link), { once: true });
+        });
+
+        window.addEventListener('popstate', function () {
+            const url = new URL(window.location.href);
+            const link = getInstantNavigationLink(url);
+            if (!link) {
+                window.location.reload();
+                return;
+            }
+
+            setSidebarActiveLink(link, { pending: true });
+            navigateInstantly(url, link, { skipHistory: true });
+        });
+    }
 
     // --- Handle window resize ---
     window.addEventListener('resize', function () {

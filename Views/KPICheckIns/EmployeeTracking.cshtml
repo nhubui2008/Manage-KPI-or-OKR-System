@@ -6,9 +6,11 @@
     var employees = ViewBag.Employees as List<Manage_KPI_or_OKR_System.Models.ViewModels.TrackableEmployeeOption> ?? new List<Manage_KPI_or_OKR_System.Models.ViewModels.TrackableEmployeeOption>();
     var selectedEmployee = ViewBag.SelectedEmployee as Manage_KPI_or_OKR_System.Models.ViewModels.TrackableEmployeeOption;
     var isViewingAll = selectedEmployee == null;
-    var trackedEmployeeCount = isViewingAll ? Model.Select(r => r.EmployeeId).Distinct().Count() : (selectedEmployee != null ? 1 : 0);
+    var trackedEmployeeCount = isViewingAll ? employees.Count : (selectedEmployee != null ? 1 : 0);
     bool canReviewCheckIns = ViewBag.CanReviewCheckIns == true;
     string progressActionLabel = canReviewCheckIns ? "Ghi nhận tiến độ" : "Cập nhật tiến độ";
+    var totalTrackingRows = ViewBag.TotalTrackingRows is int totalRows ? totalRows : Model.Count;
+    var isTrackingOverviewLimited = ViewBag.IsTrackingOverviewLimited == true;
 }
 
 <style>
@@ -274,7 +276,7 @@
                         }
                     </div>
                     <div class="text-end">
-                        <div class="h3 fw-bold text-primary mb-0">@Model.Count</div>
+                        <div class="h3 fw-bold text-primary mb-0">@totalTrackingRows</div>
                         <div class="text-muted small">KPI liên quan</div>
                     </div>
                 </div>
@@ -285,6 +287,12 @@
                     <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-speedometer2 me-2"></i>KPI và check-in mới nhất</h5>
                 </div>
                 <div class="card-body-custom p-3 bg-light bg-opacity-50">
+                    @if (isTrackingOverviewLimited)
+                    {
+                        <div class="alert alert-info border-0 rounded-3 small mb-3">
+                            Đang hiển thị @Model.Count KPI đầu tiên trong @totalTrackingRows KPI. Chọn một nhân viên bên trái để xem đầy đủ chi tiết.
+                        </div>
+                    }
                     @if (Model.Any())
                     {
                         foreach (var row in Model)
@@ -415,24 +423,32 @@
 
 @section Scripts {
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const loader = document.getElementById('trackingLoader');
-            
-            // Show loader when changing select option
-            const formSelect = document.querySelector('select[name="employeeId"]');
-            if (formSelect) {
-                formSelect.addEventListener('change', function() {
-                    loader.style.display = 'flex';
+        (function () {
+            function initEmployeeTrackingPage() {
+                const loader = document.getElementById('trackingLoader');
+
+                // Show loader when changing select option
+                const formSelect = document.querySelector('select[name="employeeId"]');
+                if (formSelect) {
+                    formSelect.addEventListener('change', function() {
+                        if (loader) loader.style.display = 'flex';
+                    });
+                }
+
+                // Show loader when clicking employee links in the sidebar
+                const empLinks = document.querySelectorAll('a[href*="EmployeeTracking"]');
+                empLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        if (loader) loader.style.display = 'flex';
+                    });
                 });
             }
 
-            // Show loader when clicking employee links in the sidebar
-            const empLinks = document.querySelectorAll('a[href*="EmployeeTracking"]');
-            empLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    loader.style.display = 'flex';
-                });
-            });
-        });
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initEmployeeTrackingPage, { once: true });
+            } else {
+                initEmployeeTrackingPage();
+            }
+        })();
     </script>
 }

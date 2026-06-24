@@ -27,6 +27,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private const string CheckInStatusAhead = "Vượt tiến độ";
         private const string CheckInStatusBlocked = "Gặp trở ngại";
         private const string CheckInStatusDone = "Hoàn thành";
+        private const int TrackingOverviewRowLimit = 120;
 
         private readonly MiniERPDbContext _context;
 
@@ -321,9 +322,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .ToList();
             }
 
+            var totalTrackingRows = rows.Count;
+            var isTrackingOverviewLimited = selectedEmployee == null && totalTrackingRows > TrackingOverviewRowLimit;
+            if (isTrackingOverviewLimited)
+            {
+                rows = rows.Take(TrackingOverviewRowLimit).ToList();
+            }
+
             ViewBag.Employees = employees;
             ViewBag.SelectedEmployee = selectedEmployee;
             ViewBag.CanReviewCheckIns = await CanCurrentUserReviewCheckInsAsync();
+            ViewBag.TotalTrackingRows = totalTrackingRows;
+            ViewBag.TrackingOverviewRowLimit = TrackingOverviewRowLimit;
+            ViewBag.IsTrackingOverviewLimited = isTrackingOverviewLimited;
 
             return View(rows);
         }
