@@ -32,7 +32,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _settingsService = settingsService;
         }
 
-        public IActionResult Login(string returnUrl = null, string username = null)
+        public IActionResult Login(string returnUrl = null, string username = null, string password = null)
         {
             ViewData["IsLoginPage"] = true;
             ViewBag.ReturnUrl = returnUrl;
@@ -44,6 +44,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!string.IsNullOrEmpty(username))
             {
                 ViewBag.Username = username;
+            }
+
+            if (!string.IsNullOrEmpty(password))
+            {
+                ViewBag.Password = password;
             }
 
             if (User.Identity != null && User.Identity.IsAuthenticated)
@@ -716,7 +721,10 @@ public IActionResult GoogleLogin()
 [AllowAnonymous]
 public async Task<IActionResult> GoogleResponse()
 {
-    var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+    // The Google OAuth middleware intercepts the callback at /signin-google, authenticates the user,
+    // and then signs them into the default SignInScheme (which is CookieAuthenticationDefaults.AuthenticationScheme).
+    // It then redirects here. So we must read from the Cookie scheme to get Google's claims.
+    var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
     if (!result.Succeeded || result.Principal == null)
     {

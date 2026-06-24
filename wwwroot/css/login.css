@@ -3,7 +3,7 @@
 body, html {
     height: 100%;
     margin: 0;
-    font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+    font-family: 'Be Vietnam Pro', 'Segoe UI', 'Roboto', sans-serif;
     background: linear-gradient(135deg, var(--body-bg, #f0f4fa) 0%, var(--primary-light, #e8f0fe) 50%, #ffffff 100%);
 }
 
