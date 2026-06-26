@@ -68,6 +68,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Đổi mật khẩu mới</label>
                             <input name="newPassword" type="password" class="form-control" placeholder="Nhập mật khẩu mới..." minlength="6" />
+                            @Html.ValidationMessage("newPassword", "", new { @class = "text-danger small mt-1 d-block" })
                         </div>
                     </div>
 

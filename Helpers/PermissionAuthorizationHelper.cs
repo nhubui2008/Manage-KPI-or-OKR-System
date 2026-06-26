@@ -7,7 +7,18 @@ namespace Manage_KPI_or_OKR_System.Helpers
             ["BONUSRULES_VIEW"] = new[] { "BONUS_VIEW" },
             ["BONUSRULES_CREATE"] = new[] { "BONUS_EDIT" },
             ["BONUSRULES_EDIT"] = new[] { "BONUS_EDIT" },
-            ["BONUSRULES_DELETE"] = new[] { "BONUS_EDIT" }
+            ["BONUSRULES_DELETE"] = new[] { "BONUS_EDIT" },
+
+            // Check-in permissions mapping (New -> Legacy)
+            ["KPICHECKINS_VIEW"] = new[] { "CHECKINS_VIEW" },
+            ["KPICHECKINS_CREATE"] = new[] { "CHECKINS_CREATE" },
+            ["KPICHECKINS_REVIEW"] = new[] { "CHECKINS_EDIT" },
+
+            // Evaluation permissions mapping (New -> Legacy)
+            ["EVALRESULTS_VIEW"] = new[] { "EVALUATIONS_VIEW" },
+            ["EVALRESULTS_CREATE"] = new[] { "EVALUATIONS_CREATE" },
+            ["EVALRESULTS_EDIT"] = new[] { "EVALUATIONS_EDIT" },
+            ["EVALRESULTS_DELETE"] = new[] { "EVALUATIONS_EDIT" }
         };
 
         private static readonly HashSet<string> HrDefaultPermissions = new(StringComparer.OrdinalIgnoreCase)

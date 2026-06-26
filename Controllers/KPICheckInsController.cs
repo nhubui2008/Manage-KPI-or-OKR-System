@@ -159,8 +159,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .OrderBy(c => c.CommentTime)
                 .ToListAsync();
 
-            var employees = await _context.Employees.ToDictionaryAsync(e => e.Id);
-            var kpis = await _context.KPIs.ToDictionaryAsync(k => k.Id);
+            var employeeIds = checkIns.Where(c => c.EmployeeId.HasValue).Select(c => c.EmployeeId!.Value).Distinct().ToList();
+            var kpiIds = checkIns.Where(c => c.KPIId.HasValue).Select(c => c.KPIId!.Value).Distinct().ToList();
+
+            var employees = await _context.Employees.Where(e => employeeIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id);
+            var kpis = await _context.KPIs.Where(k => kpiIds.Contains(k.Id)).ToDictionaryAsync(k => k.Id);
             var statuses = await _context.CheckInStatuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
             var allEmployees = await employeeQuery.ToListAsync();
             var allKpis = await kpiQuery.ToListAsync();
@@ -259,9 +262,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Where(d => checkInIds.Contains(d.CheckInId ?? 0))
                 .ToDictionaryAsync(d => d.CheckInId ?? 0);
 
+            var employeeIds = checkIns.Where(c => c.EmployeeId.HasValue).Select(c => c.EmployeeId!.Value).Distinct().ToList();
+            var kpiIds = checkIns.Where(c => c.KPIId.HasValue).Select(c => c.KPIId!.Value).Distinct().ToList();
+
             ViewBag.Details = details;
-            ViewBag.Employees = await _context.Employees.ToDictionaryAsync(e => e.Id);
-            ViewBag.KPIs = await _context.KPIs.ToDictionaryAsync(k => k.Id);
+            ViewBag.Employees = await _context.Employees.Where(e => employeeIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id);
+            ViewBag.KPIs = await _context.KPIs.Where(k => kpiIds.Contains(k.Id)).ToDictionaryAsync(k => k.Id);
             ViewBag.FailReasons = await _context.FailReasons.ToDictionaryAsync(r => r.Id, r => r.ReasonName ?? "Chưa rõ");
             ViewBag.ReturnUrl = Request.Path + Request.QueryString;
 

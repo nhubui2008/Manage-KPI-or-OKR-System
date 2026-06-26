@@ -113,6 +113,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         : new List<int>();
                     var managerVisibleOkrIds = managerDepartmentOkrIds
                         .Concat(managerEmployeeOkrIds)
+                        .Concat(allocatedOkrIds)
+                        .Concat(departmentOkrIds)
                         .Distinct()
                         .ToList();
 
@@ -126,9 +128,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
             }
 
-            // Filter OKRs if Sales or Employee
-            if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales"))
+            // Filter OKRs if Sales or Employee (and not Manager to avoid restricting their broader scope)
+            if (!IsManagerScopedRole() && (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                User.IsInRole("Sales") || User.IsInRole("sales")))
             {
                 if (currentEmployeeId.HasValue)
                 {
@@ -201,7 +203,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [HasPermission("OKRS_CREATE")]
-        public async Task<IActionResult> Create(OKR model, int? missionId, int? departmentId, int? employeeId)
+        public async Task<IActionResult> Create(OKR model, int? missionId, int? departmentId, int? employeeId, bool autoCreateProject = false)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
@@ -437,6 +439,30 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     // Không để lỗi sinh task ảnh hưởng
                 }
                 
+                // === TỰ ĐỘNG TẠO WORKITEM TỪ KR ===
+                var linkedProject = await _context.WorkProjects
+                    .FirstOrDefaultAsync(p => p.IsActive == true && p.LinkedOKRId == kr.OKRId);
+
+                if (linkedProject != null)
+                {
+                    var task = new WorkItem
+                    {
+                        WorkProjectId = linkedProject.Id,
+                        Title = kr.KeyResultName ?? $"KR #{kr.Id}",
+                        Description = $"Chỉ tiêu: {kr.TargetValue} {kr.Unit}",
+                        OKRKeyResultId = kr.Id,
+                        KanbanStatus = "Todo",
+                        Priority = "Normal",
+                        ProgressPercentage = 0,
+                        KpiImpactWeight = 1,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now,
+                        IsActive = true
+                    };
+                    _context.WorkItems.Add(task);
+                    await _context.SaveChangesAsync();
+                }
+
                 // Lấy thông tin OKR để tính toán tiến độ mới
                 var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
                 TempData["SuccessMessage"] = $"Đã thêm KR thành công! Tiến độ mục tiêu: {okr?.TotalProgress}%";

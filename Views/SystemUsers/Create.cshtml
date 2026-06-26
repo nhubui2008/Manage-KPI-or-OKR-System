@@ -72,8 +72,9 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Mật khẩu <span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-key"></i>
-                                        <input name="PasswordHash" type="password" class="form-control shadow-sm" placeholder="Nhập ít nhất 6 ký tự" required minlength="6" />
+                                        <input asp-for="PasswordHash" type="password" class="form-control shadow-sm" placeholder="Nhập ít nhất 6 ký tự" required minlength="6" />
                                     </div>
+                                    <span asp-validation-for="PasswordHash" class="text-danger small mt-1 d-block"></span>
                                 </div>
                             </div>
                         </div>

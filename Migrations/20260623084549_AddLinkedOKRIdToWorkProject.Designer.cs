@@ -4,6 +4,7 @@ using Manage_KPI_or_OKR_System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Manage_KPI_or_OKR_System.Migrations
 {
     [DbContext(typeof(MiniERPDbContext))]
-    partial class MiniERPDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260623084549_AddLinkedOKRIdToWorkProject")]
+    partial class AddLinkedOKRIdToWorkProject
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1043,9 +1046,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("LinkedWorkProjectId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("OKRTypeId")
                         .HasColumnType("int");
 
@@ -1795,9 +1795,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
-
-                    b.Property<int?>("SourceOKRId")
-                        .HasColumnType("int");
 
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");

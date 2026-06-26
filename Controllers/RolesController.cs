@@ -160,7 +160,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 // Vai trò (Roles)
                 "ROLES_VIEW", "ROLES_CREATE", "ROLES_EDIT", "ROLES_DELETE",
                 // Nhật ký hệ thống
-                "AUDITLOGS_VIEW"
+                "AUDITLOGS_VIEW",
+
+                // Báo cáo & Dashboard
+                "DASHBOARD_VIEW", "REPORTS_VIEW",
+                // Công việc & Dự án (Work Projects & Items)
+                "WORKPROJECTS_VIEW", "WORKPROJECTS_CREATE", "WORKPROJECTS_EDIT", "WORKPROJECTS_DELETE",
+                "WORKITEMS_CREATE", "WORKITEMS_EDIT", "WORKITEMS_COMMENT"
             };
 
 

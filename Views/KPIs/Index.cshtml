@@ -98,6 +98,27 @@
     }
 }
 
+@section Styles {
+    <style>
+        .kpi-table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+        
+        .kpi-index-table {
+            min-width: 1200px; /* Minimum width to prevent column squashing */
+            width: 100%;
+        }
+
+        .kpi-index-table tbody tr:hover td.kpi-actions-cell,
+        .kpi-index-table tbody tr:focus-within td.kpi-actions-cell {
+            background-color: #f8f9fa; /* Slight hover effect if the row has one */
+        }
+    </style>
+}
+
 <div class="kpi-index-page container-fluid px-0">
 
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
@@ -769,31 +790,9 @@
         text-align: center;
     }
 
-    .kpi-index-table .kpi-status-col,
-    .kpi-index-table .kpi-status-cell,
-    .kpi-index-table .kpi-actions-col,
-    .kpi-index-table .kpi-actions-cell {
-        position: sticky;
-        background: #ffffff;
-    }
-
-    .kpi-index-table .kpi-status-col,
-    .kpi-index-table .kpi-status-cell {
-        right: var(--kpi-actions-width);
-        z-index: 3;
-        box-shadow: -10px 0 18px rgba(15, 23, 42, 0.06);
-    }
-
-    .kpi-index-table .kpi-actions-col,
-    .kpi-index-table .kpi-actions-cell {
-        right: 0;
-        z-index: 4;
-    }
-
     .kpi-index-table thead .kpi-status-col,
     .kpi-index-table thead .kpi-actions-col {
         background: linear-gradient(135deg, #eef3fb, #f5f8fc);
-        z-index: 5;
     }
 
     .kpi-actions-cell {
