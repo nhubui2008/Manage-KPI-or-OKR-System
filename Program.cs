@@ -38,6 +38,7 @@ builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IEmailService, Mana
 
 // Register OKRProgressService
 builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IOKRProgressService, Manage_KPI_or_OKR_System.Services.OKRProgressService>();
+builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IOKRWorkflowService, Manage_KPI_or_OKR_System.Services.OKRWorkflowService>();
 
 // Register AI services
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
