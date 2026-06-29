@@ -2652,7 +2652,8 @@ html.sidebar-expanded .main-content {
     color: var(--primary);
     font-size: 1.1rem;
     opacity: 0.6;
-    z-index: 5;
+    z-index: 10;
+    pointer-events: none; /* Tránh click chặn input */
 }
 
 .form-icon-group .form-control {
