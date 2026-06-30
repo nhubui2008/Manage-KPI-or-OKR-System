@@ -91,7 +91,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-5">
+                            <div class="col-md-4">
                                 <div class="form-icon-group mb-0">
                                     <label class="form-label small text-muted text-uppercase fw-800">Ngày kết thúc <span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
@@ -102,12 +102,11 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-2">
-                                <div class="form-icon-group mb-0">
+                            <div class="col-md-3">
+                                <div class="mb-0">
                                     <label class="form-label small text-muted text-uppercase fw-800">Trạng thái <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-toggle-on"></i>
-                                        <select asp-for="StatusId" class="form-select shadow-sm">
+                                    <div class="status-select-wrapper">
+                                        <select asp-for="StatusId" class="form-select shadow-sm status-select">
                                             @foreach (var s in statuses)
                                             {
                                                 <option value="@s.Key">@s.Value</option>
@@ -187,6 +186,39 @@
     .form-select, .form-control { border: 1.5px solid #edf2f7; padding-top: 12px; padding-bottom: 12px; }
     .form-select:focus, .form-control:focus { border-color: #a3c9f9; box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.1); }
     .animate__animated { animation-duration: 0.8s; }
+
+    /* ===== Trạng thái: native select, no icon prefix ===== */
+    .status-select-wrapper { position: relative; }
+    .status-select-wrapper .select2-container { width: 100% !important; min-width: 0 !important; }
+    /* Override form-icon-group padding — không có icon bên trái */
+    .status-select-wrapper .select2-container--default .select2-selection--single .select2-selection__rendered {
+        display: block !important;
+        padding-left: 12px !important;
+        padding-right: 48px !important;  /* chỗ cho × + ▼ */
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        line-height: 42px !important;
+        box-sizing: border-box !important;
+    }
+    /* Nút × (clear) luôn cố định bên trái mũi tên */
+    .status-select-wrapper .select2-container--default .select2-selection--single .select2-selection__clear {
+        position: absolute !important;
+        right: 32px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        z-index: 10 !important;
+        font-size: 1rem !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+        padding: 2px 4px !important;
+        color: #aaa !important;
+    }
+    .status-select-wrapper .select2-container--default .select2-selection--single .select2-selection__clear:hover {
+        color: #e53935 !important;
+    }
+    /* Native select fallback (khi Select2 chưa init) */
+    .status-select { padding-left: 12px !important; }
 </style>
 
 @section Scripts {

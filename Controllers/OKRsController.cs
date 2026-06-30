@@ -19,11 +19,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
     {
         private readonly MiniERPDbContext _context;
         private readonly IGeminiService _geminiService;
+        private readonly IOKRWorkflowService _workflowService;
 
-        public OKRsController(MiniERPDbContext context, IGeminiService geminiService)
+        public OKRsController(MiniERPDbContext context, IGeminiService geminiService, IOKRWorkflowService workflowService)
         {
             _context = context;
             _geminiService = geminiService;
+            _workflowService = workflowService;
         }
 
         [HasPermission("OKRS_VIEW")]
@@ -254,46 +256,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 await _context.SaveChangesAsync();
 
-                if (autoCreateProject)
+                // === TỰ ĐỘNG SINH DỰ ÁN VẬN HÀNH TỪ OKR ===
+                try
                 {
-                    var project = new WorkProject
-                    {
-                        ProjectCode = $"PRJ-OKR-{DateTime.Now:yyMMdd}-{model.Id:D3}",
-                        ProjectName = $"Dự án: {model.ObjectiveName}",
-                        Description = $"Dự án tự động từ OKR – Chu kỳ: {model.Cycle}",
-                        Status = "Active",
-                        Priority = "Normal",
-                        OwnerId = model.CreatedById,
-                        CreatedById = model.CreatedById,
-                        ProgressPercentage = 0,
-                        StartDate = DateTime.Today,
-                        DueDate = DateTime.Today.AddMonths(3),
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now,
-                        IsActive = true,
-                        LinkedOKRId = model.Id
-                    };
-
-                    _context.WorkProjects.Add(project);
-                    await _context.SaveChangesAsync();
-
-                    if (departmentId.HasValue)
-                    {
-                        _context.WorkProjectDepartments.Add(new WorkProjectDepartment
-                        {
-                            WorkProjectId = project.Id,
-                            DepartmentId = departmentId.Value,
-                            IsActive = true
-                        });
-                        await _context.SaveChangesAsync();
-                    }
-                    TempData["SuccessMessage"] = $"Đã tạo OKR mới, phân bổ và tự động tạo dự án '{project.ProjectName}' thành công!";
+                    await _workflowService.AutoCreateProjectFromOKRAsync(model.Id, model.CreatedById, departmentId);
                 }
-                else
+                catch (Exception)
                 {
-                    TempData["SuccessMessage"] = "Đã tạo OKR mới và phân bổ thành công!";
+                    // Không để lỗi sinh project ảnh hưởng đến việc tạo OKR
                 }
 
+                TempData["SuccessMessage"] = "Đã tạo OKR mới, phân bổ và tự động sinh dự án vận hành thành công!";
                 return RedirectToAction(nameof(Index));
             }
             
@@ -455,6 +428,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 kr.CurrentValue = 0; // Khởi tạo tiến độ ban đầu là 0
                 _context.OKRKeyResults.Add(kr);
                 await _context.SaveChangesAsync();
+
+                // Tự động tạo task trong project liên kết
+                try
+                {
+                    await _workflowService.AutoCreateTaskFromKeyResultAsync(kr.OKRId!.Value, kr);
+                }
+                catch (Exception)
+                {
+                    // Không để lỗi sinh task ảnh hưởng
+                }
                 
                 // === TỰ ĐỘNG TẠO WORKITEM TỪ KR ===
                 var linkedProject = await _context.WorkProjects
@@ -580,31 +563,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             
             await _context.SaveChangesAsync();
 
-            // === TỰ ĐỘNG TẠO WORKITEM TỪ CÁC KR MỚI ===
-            var linkedProject = await _context.WorkProjects
-                .FirstOrDefaultAsync(p => p.IsActive == true && p.LinkedOKRId == okrId);
-
-            if (linkedProject != null)
+            // Tự động tạo tasks trong project liên kết
+            try
             {
-                foreach(var kr in keyResults)
+                foreach (var kr in keyResults)
                 {
-                    var task = new WorkItem
-                    {
-                        WorkProjectId = linkedProject.Id,
-                        Title = kr.KeyResultName ?? $"KR #{kr.Id}",
-                        Description = $"Chỉ tiêu: {kr.TargetValue} {kr.Unit}",
-                        OKRKeyResultId = kr.Id,
-                        KanbanStatus = "Todo",
-                        Priority = "Normal",
-                        ProgressPercentage = 0,
-                        KpiImpactWeight = 1,
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now,
-                        IsActive = true
-                    };
-                    _context.WorkItems.Add(task);
+                    await _workflowService.AutoCreateTaskFromKeyResultAsync(okrId, kr);
                 }
-                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+                // Không để lỗi sinh task ảnh hưởng
             }
 
             var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == okrId);

@@ -1562,7 +1562,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 allowClear: allowClear,
                 minimumResultsForSearch: minResultsForSearch,
                 width: '100%',
-                dropdownParent: $el.closest('.modal').length ? $el.closest('.modal') : $(document.body),
+                dropdownParent: $el.parent(),
                 language: {
                     noResults: function () { return "Không tìm thấy kết quả"; },
                     searching: function () { return "Đang tìm kiếm..."; }
