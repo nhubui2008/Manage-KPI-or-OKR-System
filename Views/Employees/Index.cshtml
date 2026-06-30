@@ -4,11 +4,39 @@
     var assignments = ViewBag.Assignments as Dictionary<int, Manage_KPI_or_OKR_System.Models.EmployeeAssignment> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.EmployeeAssignment>();
     var departments = ViewBag.Departments as Dictionary<int, string> ?? new Dictionary<int, string>();
     var positions = ViewBag.Positions as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var totalEmployees = Model?.Count() ?? 0;
+    var activeEmployees = Model?.Count(e => e.IsActive == true) ?? 0;
+    var inactiveEmployees = totalEmployees - activeEmployees;
+    var assignedEmployees = assignments.Values.Count(a => a != null && (a.DepartmentId.HasValue || a.PositionId.HasValue));
+    var currentStatus = ViewBag.CurrentStatus?.ToString();
+    var statusSummary = currentStatus == "true"
+        ? "Đang làm việc"
+        : currentStatus == "false"
+            ? "Đã nghỉ việc"
+            : "Mọi trạng thái";
+    var departmentSummary = "Tất cả phòng ban";
+    string currentDeptStr = ViewBag.CurrentDepartment?.ToString() ?? "";
+    if (int.TryParse(currentDeptStr, out int selectedDepartmentId) && departments.ContainsKey(selectedDepartmentId))
+    {
+        departmentSummary = departments[selectedDepartmentId];
+    }
 }
 
-<div class="container-fluid px-0">
+@section Styles {
+    <style>
+        .employees-page .employees-table td:nth-child(1) {
+            min-width: 240px;
+        }
+
+        .employees-page .employees-table td:nth-child(4) {
+            min-width: 230px;
+        }
+    </style>
+}
+
+<div class="container-fluid px-0 management-page employees-page">
     
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div class="page-header">
         <div>
             <h1 class="h3 font-weight-bold mb-1">Quản lý Nhân sự</h1>
             <div class="page-breadcrumb">
@@ -18,7 +46,7 @@
             </div>
         </div>
 
-        <div class="d-flex justify-content-end gap-2">
+        <div class="page-header-actions">
             @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
             {
                 <a asp-action="ExportReport" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-isActive="@ViewBag.CurrentStatus" asp-route-departmentId="@ViewBag.CurrentDepartment" class="btn-outline-custom text-success border-success d-flex align-items-center" title="Xuất báo cáo nhân sự">
@@ -34,10 +62,72 @@
         </div>
     </div>
 
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="overview-card overview-card--primary">
+                <div class="overview-card__top">
+                    <div>
+                        <div class="overview-card__label">Tổng hồ sơ</div>
+                        <div class="overview-card__value">@totalEmployees</div>
+                    </div>
+                    <div class="overview-card__icon"><i class="bi bi-people-fill"></i></div>
+                </div>
+                <div class="overview-card__hint">Toàn bộ nhân sự đang hiển thị theo bộ lọc hiện tại.</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="overview-card overview-card--success">
+                <div class="overview-card__top">
+                    <div>
+                        <div class="overview-card__label">Đang hoạt động</div>
+                        <div class="overview-card__value">@activeEmployees</div>
+                    </div>
+                    <div class="overview-card__icon"><i class="bi bi-person-check-fill"></i></div>
+                </div>
+                <div class="overview-card__hint">Nhân sự còn hiệu lực và sẵn sàng tham gia đánh giá KPI/OKR.</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="overview-card overview-card--info">
+                <div class="overview-card__top">
+                    <div>
+                        <div class="overview-card__label">Đã phân bổ</div>
+                        <div class="overview-card__value">@assignedEmployees</div>
+                    </div>
+                    <div class="overview-card__icon"><i class="bi bi-diagram-3-fill"></i></div>
+                </div>
+                <div class="overview-card__hint">Đã có gán phòng ban hoặc chức vụ trong cơ cấu tổ chức.</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="overview-card overview-card--warning">
+                <div class="overview-card__top">
+                    <div>
+                        <div class="overview-card__label">Ngừng hoạt động</div>
+                        <div class="overview-card__value">@inactiveEmployees</div>
+                    </div>
+                    <div class="overview-card__icon"><i class="bi bi-person-dash-fill"></i></div>
+                </div>
+                <div class="overview-card__hint">Hồ sơ đã nghỉ việc hoặc tạm ngừng trong hệ thống.</div>
+            </div>
+        </div>
+    </div>
+
     <div class="row justify-content-center w-100 m-0">
         <div class="col-12 px-0">
             <div class="content-card w-100">
                 <div class="card-body-custom">
+                    <div class="page-toolbar-meta mb-3">
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="soft-chip tone-primary"><i class="bi bi-building"></i>@departmentSummary</span>
+                            <span class="soft-chip tone-success"><i class="bi bi-person-badge"></i>@statusSummary</span>
+                            @if (!string.IsNullOrWhiteSpace(ViewBag.CurrentSearch as string))
+                            {
+                                <span class="soft-chip"><i class="bi bi-search"></i>@ViewBag.CurrentSearch</span>
+                            }
+                        </div>
+                        <span class="small text-muted">Tra cứu nhanh theo hồ sơ, liên hệ, phòng ban và trạng thái công tác.</span>
+                    </div>
                     
                     <form asp-action="Index" method="get" class="toolbar">
                         <div class="toolbar-left">
@@ -91,17 +181,17 @@
                             </select>
                         </div>
                         <div class="toolbar-right">
-                            <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0" title="Làm mới">
+                            <a asp-action="Index" class="btn btn-sm btn-light" title="Làm mới">
                                 <i class="bi bi-arrow-clockwise"></i>
                             </a>
-                            <button type="submit" class="btn btn-sm btn-outline-secondary border-0" title="Lọc kết quả">
-                                <i class="bi bi-funnel"></i>
+                            <button type="submit" class="btn btn-sm btn-primary" title="Lọc kết quả">
+                                <i class="bi bi-funnel"></i> Lọc
                             </button>
                         </div>
                     </form>
                     
                     <div class="table-responsive w-100">
-                        <table class="data-table w-100">
+                        <table class="data-table w-100 employees-table">
                             <thead>
                                 <tr>
                                     <th>Thông tin nhân viên</th>
@@ -133,22 +223,33 @@
                                         <tr>
                                             <td>
                                                 <div class="d-flex align-items-center gap-3">
-                                                    <div class="user-avatar">
+                                                    <div class="record-avatar">
                                                         @avatarLetter
                                                     </div>
-                                                    <div>
-                                                        <div class="fw-semibold text-dark">@emp.FullName</div>
-                                                        <div class="text-muted" style="font-size: 0.75rem;">@emp.EmployeeCode</div>
+                                                    <div class="table-meta">
+                                                        <div class="table-meta__title">@emp.FullName</div>
+                                                        <div class="table-meta__sub">Mã nhân sự: @emp.EmployeeCode</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>@deptName</td>
-                                            <td>@posName</td>
                                             <td>
-                                                <div class="text-dark" style="font-size: 0.85rem;"><i class="bi bi-envelope text-muted me-1"></i>@emp.Email</div>
-                                                <div class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-telephone text-muted me-1"></i>@emp.Phone</div>
+                                                <span class="soft-chip tone-info">@deptName</span>
                                             </td>
-                                            <td>@(emp.JoinDate?.ToString("dd/MM/yyyy"))</td>
+                                            <td>
+                                                <span class="soft-chip">@posName</span>
+                                            </td>
+                                            <td>
+                                                <div class="inline-icon-list">
+                                                    <span><i class="bi bi-envelope text-muted"></i>@emp.Email</span>
+                                                    <span><i class="bi bi-telephone text-muted"></i>@emp.Phone</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="table-meta">
+                                                    <div class="table-meta__title">@(emp.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
+                                                    <div class="table-meta__sub">Ngày bắt đầu công tác</div>
+                                                </div>
+                                            </td>
                                             <td><span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span></td>
                                             <td>
                                                 <div class="action-btns justify-content-end">
@@ -169,9 +270,12 @@
                                 else
                                 {
                                     <tr>
-                                        <td colspan="7" class="text-center py-5 text-muted">
-                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                            Không tìm thấy kết quả nào phù hợp.
+                                        <td colspan="7" class="p-0">
+                                            <div class="table-empty-state">
+                                                <i class="bi bi-people"></i>
+                                                <h5>Không tìm thấy nhân sự phù hợp</h5>
+                                                <p>Hãy thử đổi từ khóa, phòng ban hoặc trạng thái để mở rộng kết quả tìm kiếm.</p>
+                                            </div>
                                         </td>
                                     </tr>
                                 }

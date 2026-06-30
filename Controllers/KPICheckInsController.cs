@@ -275,7 +275,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HasPermission("KPICHECKINS_VIEW", "CHECKINS_VIEW", "KPIS_VIEW")]
-        public async Task<IActionResult> EmployeeTracking(int? employeeId)
+        public async Task<IActionResult> EmployeeTracking(int? employeeId, int? pageNumber)
         {
             var currentEmployee = await GetCurrentEmployeeAsync();
             var employees = await BuildTrackableEmployeesAsync(currentEmployee);
@@ -283,7 +283,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 ViewBag.Employees = employees;
                 ViewBag.SelectedEmployee = null;
-                return View(new List<EmployeeKpiTrackingRow>());
+                ViewBag.TotalKpisCount = 0;
+                return View(new PaginatedList<EmployeeKpiTrackingRow>(new List<EmployeeKpiTrackingRow>(), 0, 1, 10));
             }
 
             var selectedEmployeeId = employeeId.HasValue && employees.Any(e => e.EmployeeId == employeeId.Value)
@@ -330,8 +331,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Employees = employees;
             ViewBag.SelectedEmployee = selectedEmployee;
             ViewBag.CanReviewCheckIns = await CanCurrentUserReviewCheckInsAsync();
+            ViewBag.TotalKpisCount = rows.Count;
 
-            return View(rows);
+            // Apply pagination
+            int pageSize = 10;
+            int pageIdx = pageNumber ?? 1;
+            var paginatedRows = new PaginatedList<EmployeeKpiTrackingRow>(
+                rows.Skip((pageIdx - 1) * pageSize).Take(pageSize).ToList(),
+                rows.Count,
+                pageIdx,
+                pageSize
+            );
+
+            return View(paginatedRows);
         }
 
         [HttpGet]
