@@ -327,46 +327,46 @@ INSERT INTO [Departments] ([Id], [DepartmentCode], [DepartmentName], [ParentDepa
 VALUES
     (1, N'BOD',   N'Ban Giám Đốc',             NULL, NULL, 1, GETDATE(), NULL),
     (2, N'HR',    N'Phòng Nhân Sự',            1,    NULL, 1, GETDATE(), NULL),
-    (3, N'IT',    N'Phòng Công Nghệ',          1,    NULL, 1, GETDATE(), NULL),
-    (4, N'SALES', N'Phòng Kinh Doanh',         1,    NULL, 1, GETDATE(), NULL),
+    (3, N'PROD',  N'Nhà Máy Sản Xuất',         1,    NULL, 1, GETDATE(), NULL),
+    (4, N'SALES', N'Phòng Kinh Doanh Kênh Phân Phối', 1, NULL, 1, GETDATE(), NULL),
     (5, N'FIN',   N'Phòng Tài Chính - Kế Toán',1,   NULL, 1, GETDATE(), NULL);
 SET IDENTITY_INSERT [Departments] OFF;
 GO
 
 -- ============================================================
--- MODULE 7: SYSTEM USERS (5 tài khoản demo)
+-- MODULE 7: SYSTEM USERS (5 tài khoản mẫu)
 -- Mật khẩu mặc định: 123
 -- ============================================================
 SET IDENTITY_INSERT [SystemUsers] ON;
 INSERT INTO [SystemUsers] ([Id], [Username], [Email], [PasswordHash], [LastPasswordChange], [RoleId], [IsActive], [CreatedAt], [CreatedById])
 VALUES
-    (1, N'admin',    N'admin@company.com',    N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 1, 1, GETDATE(), NULL),
-    (2, N'director', N'director@company.com', N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 2, 1, GETDATE(), NULL),
-    (3, N'manager',  N'manager@company.com',  N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 3, 1, GETDATE(), NULL),
-    (4, N'hr',       N'hr@company.com',       N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 4, 1, GETDATE(), NULL),
-    (5, N'employee', N'employee@company.com', N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 5, 1, GETDATE(), NULL);
+    (1, N'admin',    N'admin@bizenfoods.com',    N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 1, 1, GETDATE(), NULL),
+    (2, N'director', N'director@bizenfoods.com', N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 2, 1, GETDATE(), NULL),
+    (3, N'manager',  N'manager@bizenfoods.com',  N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 3, 1, GETDATE(), NULL),
+    (4, N'hr',       N'hr@bizenfoods.com',       N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 4, 1, GETDATE(), NULL),
+    (5, N'employee', N'employee@bizenfoods.com', N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 5, 1, GETDATE(), NULL);
 SET IDENTITY_INSERT [SystemUsers] OFF;
 GO
 
 -- ============================================================
--- MODULE 8: EMPLOYEES (5 nhân viên demo)
+-- MODULE 8: EMPLOYEES (5 nhân viên mẫu)
 -- ============================================================
 SET IDENTITY_INSERT [Employees] ON;
 INSERT INTO [Employees] ([Id], [EmployeeCode], [FullName], [DateOfBirth], [Phone], [Email], [TaxCode], [JoinDate], [SystemUserId], [IsActive], [StrategicGoalId], [CreatedAt], [CreatedById])
 VALUES
-    (1, N'NV001', N'Nguyễn Văn An',      '1985-05-15', N'0901000001', N'admin@company.com',    N'0100000001', '2020-01-01', 1, 1, NULL, GETDATE(), NULL),
-    (2, N'NV002', N'Trần Thị Bình',      '1980-08-20', N'0901000002', N'director@company.com', N'0100000002', '2020-01-01', 2, 1, NULL, GETDATE(), NULL),
-    (3, N'NV003', N'Lê Minh Cường',      '1988-03-10', N'0901000003', N'manager@company.com',  N'0100000003', '2021-03-01', 3, 1, NULL, GETDATE(), NULL),
-    (4, N'NV004', N'Phạm Thị Dung',      '1990-11-25', N'0901000004', N'hr@company.com',       N'0100000004', '2021-06-01', 4, 1, NULL, GETDATE(), NULL),
-    (5, N'NV005', N'Hoàng Văn Em',       '1995-07-14', N'0901000005', N'employee@company.com', N'0100000005', '2022-01-01', 5, 1, NULL, GETDATE(), NULL);
+    (1, N'BZ001', N'Nguyễn Minh Quân', '1985-05-15', N'0901000001', N'admin@bizenfoods.com',    N'0100000001', '2020-01-01', 1, 1, NULL, GETDATE(), NULL),
+    (2, N'BZ002', N'Trần Thu Hà',      '1980-08-20', N'0901000002', N'director@bizenfoods.com', N'0100000002', '2020-01-01', 2, 1, NULL, GETDATE(), NULL),
+    (3, N'BZ003', N'Lê Hoàng Nam',     '1988-03-10', N'0901000003', N'manager@bizenfoods.com',  N'0100000003', '2021-03-01', 3, 1, NULL, GETDATE(), NULL),
+    (4, N'BZ004', N'Phạm Ngọc Mai',    '1990-11-25', N'0901000004', N'hr@bizenfoods.com',       N'0100000004', '2021-06-01', 4, 1, NULL, GETDATE(), NULL),
+    (5, N'BZ005', N'Hoàng Gia Bảo',    '1995-07-14', N'0901000005', N'employee@bizenfoods.com', N'0100000005', '2022-01-01', 5, 1, NULL, GETDATE(), NULL);
 SET IDENTITY_INSERT [Employees] OFF;
 GO
 
 -- Cập nhật Manager cho Departments
 UPDATE [Departments] SET [ManagerId] = 2 WHERE [Id] = 1;  -- Ban GĐ -> Director
 UPDATE [Departments] SET [ManagerId] = 4 WHERE [Id] = 2;  -- HR -> HR
-UPDATE [Departments] SET [ManagerId] = 3 WHERE [Id] = 3;  -- IT -> Manager
-UPDATE [Departments] SET [ManagerId] = 3 WHERE [Id] = 4;  -- Sales -> Manager
+UPDATE [Departments] SET [ManagerId] = 3 WHERE [Id] = 3;  -- Nhà máy -> Manager
+UPDATE [Departments] SET [ManagerId] = 3 WHERE [Id] = 4;  -- Kinh doanh -> Manager
 UPDATE [Departments] SET [ManagerId] = 3 WHERE [Id] = 5;  -- Finance -> Manager
 GO
 
@@ -378,9 +378,9 @@ INSERT INTO [EmployeeAssignments] ([Id], [EmployeeId], [PositionId], [Department
 VALUES
     (1, 1, 1, 1, '2020-01-01', 1),  -- Admin -> GĐ, Ban GĐ
     (2, 2, 1, 1, '2020-01-01', 1),  -- Director -> GĐ, Ban GĐ
-    (3, 3, 3, 3, '2021-03-01', 1),  -- Manager -> TP, IT
+    (3, 3, 3, 3, '2021-03-01', 1),  -- Manager -> TP, Nhà máy
     (4, 4, 5, 2, '2021-06-01', 1),  -- HR -> TN, HR
-    (5, 5, 6, 3, '2022-01-01', 1);  -- Employee -> NV, IT
+    (5, 5, 6, 3, '2022-01-01', 1);  -- Employee -> NV, Nhà máy
 SET IDENTITY_INSERT [EmployeeAssignments] OFF;
 GO
 
@@ -450,12 +450,37 @@ GO
 SET IDENTITY_INSERT [SystemParameters] ON;
 INSERT INTO [SystemParameters] ([Id], [ParameterCode], [Value], [Description], [UpdatedById])
 VALUES
-    (1, N'COMPANY_NAME',          N'Công ty Demo',    N'Tên công ty',                        NULL),
+    (1, N'COMPANY_NAME',          N'Bizen',           N'Tên công ty',                        NULL),
     (2, N'CHECKIN_FREQUENCY',     N'Weekly',          N'Tần suất check-in',                  NULL),
     (3, N'MAX_KPI_PER_EMPLOYEE',  N'10',              N'Số KPI tối đa mỗi nhân viên',        NULL),
     (4, N'MAX_OKR_PER_EMPLOYEE',  N'5',               N'Số OKR tối đa mỗi nhân viên',        NULL),
     (5, N'DEFAULT_PASS_THRESHOLD',N'60',              N'Ngưỡng đạt KPI mặc định (%)',        NULL),
-    (6, N'CHECKIN_REMINDER_BEFORE_HOURS', N'24',      N'Số giờ mặc định nhắc trước deadline check-in KPI', NULL);
+    (6, N'CHECKIN_REMINDER_BEFORE_HOURS', N'24',      N'Số giờ mặc định nhắc trước deadline check-in KPI', NULL),
+    (7, N'BRAND_PRODUCT_NAME', N'Bizen KPI/OKR System', N'Tên sản phẩm hiển thị ở title, SEO và email.', NULL),
+    (8, N'BRAND_SHORT_NAME', N'Bizen System', N'Tên ngắn hiển thị trên sidebar.', NULL),
+    (9, N'BRAND_COMPANY_NAME', N'Bizen', N'Tên doanh nghiệp sở hữu hệ thống.', NULL),
+    (10, N'BRAND_TAGLINE', N'Food operations with measurable goals', N'Slogan ngắn dưới logo sidebar.', NULL),
+    (11, N'BRAND_LOGIN_TITLE', N'Đăng nhập Bizen', N'Tiêu đề chính ở màn hình đăng nhập.', NULL),
+    (12, N'BRAND_LOGIN_SUBTITLE', N'Hệ thống quản lý KPI, OKR và công việc cho công ty thực phẩm Bizen', N'Mô tả ngắn ở màn hình đăng nhập.', NULL),
+    (13, N'BRAND_LOGO_URL', N'', N'Đường dẫn logo sidebar/login.', NULL),
+    (14, N'BRAND_FAVICON_URL', N'/favicon.ico', N'Đường dẫn favicon của trình duyệt.', NULL),
+    (15, N'BRAND_SEO_IMAGE_URL', N'/images/seo-banner.png', N'Ảnh chia sẻ SEO/Open Graph.', NULL),
+    (16, N'BRAND_PRIMARY_COLOR', N'#0f766e', N'Màu chủ đạo của Bizen.', NULL),
+    (17, N'BRAND_PRIMARY_DARK_COLOR', N'#115e59', N'Màu chủ đạo đậm.', NULL),
+    (18, N'BRAND_SIDEBAR_COLOR', N'#12312f', N'Màu đầu sidebar.', NULL),
+    (19, N'BRAND_SIDEBAR_GRADIENT_END', N'#1f5b45', N'Màu cuối sidebar.', NULL),
+    (20, N'BRAND_SIDEBAR_TEXT_COLOR', N'#ffffff', N'Màu chữ trên sidebar.', NULL),
+    (21, N'BRAND_BODY_BACKGROUND', N'#f4f7f5', N'Màu nền tổng thể.', NULL),
+    (22, N'BRAND_CARD_BACKGROUND', N'#ffffff', N'Màu nền card/table.', NULL),
+    (23, N'BRAND_FOOTER_TEXT', N'© {year} Bizen - Food KPI & OKR Management System. All rights reserved.', N'Nội dung footer.', NULL),
+    (24, N'BRAND_AI_ASSISTANT_NAME', N'Bizen AI Assistant', N'Tên trợ lý AI trong widget và prompt.', NULL),
+    (25, N'BRAND_AI_ASSISTANT_SUBTITLE', N'KPI, OKR, sản xuất, chất lượng và chuỗi cung ứng', N'Mô tả ngắn của AI widget.', NULL),
+    (26, N'BRAND_SEO_DESCRIPTION', N'Hệ thống quản lý KPI/OKR cho Bizen, hỗ trợ mục tiêu sản xuất thực phẩm, chất lượng, phân phối và chuỗi cung ứng.', N'Mô tả SEO mặc định.', NULL),
+    (27, N'BRAND_SEO_KEYWORDS', N'Bizen, thực phẩm, KPI, OKR, sản xuất, chất lượng, chuỗi cung ứng', N'Từ khóa SEO mặc định.', NULL),
+    (28, N'BRAND_AUTHOR', N'Bizen', N'Author/meta mặc định.', NULL),
+    (29, N'BRAND_PUBLIC_BASE_URL', N'https://bizenfoods.com', N'Base URL public dùng cho canonical/OG URL.', NULL),
+    (30, N'BRAND_CUSTOM_CSS', N'', N'CSS tùy chỉnh nâng cao, áp dụng toàn hệ thống.', NULL),
+    (31, N'AI_HISTORY_RETENTION_DAYS', N'30', N'Số ngày lưu lịch sử sinh bằng AI.', NULL);
 SET IDENTITY_INSERT [SystemParameters] OFF;
 GO
 
@@ -465,8 +490,8 @@ GO
 SET IDENTITY_INSERT [MissionVisions] ON;
 INSERT INTO [MissionVisions] ([Id], [TargetYear], [Content], [FinancialTarget], [IsActive], [CreatedAt], [CreatedById], [MissionVisionType])
 VALUES
-    (1, 2026, N'Trở thành doanh nghiệp hàng đầu trong lĩnh vực công nghệ tại Việt Nam', 50000000000.00, 1, GETDATE(), 2, N'YearlyGoal'),
-    (2, 2026, N'Nâng cao chất lượng dịch vụ, đạt tỷ lệ hài lòng khách hàng trên 95%',   NULL,           1, GETDATE(), 2, N'YearlyGoal');
+    (1, 2026, N'Đưa Bizen trở thành thương hiệu thực phẩm đóng gói được tin chọn tại các kênh bán lẻ trọng điểm', 50000000000.00, 1, GETDATE(), 2, N'YearlyGoal'),
+    (2, 2026, N'Chuẩn hóa chất lượng, truy xuất nguồn gốc và giao hàng đúng hạn trên toàn chuỗi cung ứng Bizen',   NULL,           1, GETDATE(), 2, N'YearlyGoal');
 SET IDENTITY_INSERT [MissionVisions] OFF;
 GO
 
@@ -476,9 +501,9 @@ GO
 SET IDENTITY_INSERT [OKRs] ON;
 INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById])
 VALUES
-    (1, N'Tăng trưởng doanh thu 30% so với năm trước',       1, N'Q2-2026', 2, 1, GETDATE(), 2),
-    (2, N'Nâng cao năng lực công nghệ và chuyển đổi số',     2, N'Q2-2026', 2, 1, GETDATE(), 3),
-    (3, N'Hoàn thành module báo cáo tự động',                3, N'Q2-2026', 2, 1, GETDATE(), 5);
+    (1, N'Tăng trưởng doanh thu thực phẩm Bizen 30% so với năm trước',       1, N'Q2-2026', 2, 1, GETDATE(), 2),
+    (2, N'Chuẩn hóa sản xuất, kiểm định chất lượng và truy xuất nguồn gốc',  2, N'Q2-2026', 2, 1, GETDATE(), 3),
+    (3, N'Hoàn thành các nhiệm vụ vận hành được giao đúng hạn',              3, N'Q2-2026', 2, 1, GETDATE(), 5);
 SET IDENTITY_INSERT [OKRs] OFF;
 GO
 
@@ -486,11 +511,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
 INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus])
 VALUES
     (1, 1, N'Doanh thu đạt 15 tỷ đồng trong Q2',            15000.00, 4500.00,  N'Triệu đồng', 0, NULL, N'Đang thực hiện'),
-    (2, 1, N'Ký kết 20 hợp đồng mới',                        20.00,    6.00,    N'Hợp đồng',   0, NULL, N'Đang thực hiện'),
-    (3, 2, N'Triển khai CI/CD cho tất cả dự án',             100.00,   60.00,   N'%',           0, NULL, N'Đang thực hiện'),
-    (4, 2, N'Uptime hệ thống đạt 99.9%',                      99.90,   99.50,   N'%',           0, NULL, N'Đang thực hiện'),
-    (5, 3, N'Phát triển 5 mẫu báo cáo tự động',               5.00,    2.00,    N'Báo cáo',    0, NULL, N'Đang thực hiện'),
-    (6, 3, N'Tích hợp với 3 nguồn dữ liệu bên ngoài',        3.00,    1.00,    N'Tích hợp',   0, NULL, N'Đang thực hiện');
+    (2, 1, N'Mở mới 20 điểm bán và nhà phân phối',             20.00,    6.00,    N'Điểm bán',   0, NULL, N'Đang thực hiện'),
+    (3, 2, N'Tỷ lệ lô sản xuất có hồ sơ truy xuất đầy đủ',    100.00,   60.00,   N'%',           0, NULL, N'Đang thực hiện'),
+    (4, 2, N'Tỷ lệ lô đạt kiểm định chất lượng lần đầu',       99.00,   94.50,   N'%',           0, NULL, N'Đang thực hiện'),
+    (5, 3, N'Hoàn thành 5 nhiệm vụ vận hành trọng điểm',        5.00,    2.00,    N'Công việc',   0, NULL, N'Đang thực hiện'),
+    (6, 3, N'Cập nhật số liệu tiến độ đúng hạn qua check-in',   3.00,    1.00,    N'Lần',         0, NULL, N'Đang thực hiện');
 SET IDENTITY_INSERT [OKRKeyResults] OFF;
 GO
 
@@ -505,9 +530,9 @@ GO
 SET IDENTITY_INSERT [KPIs] ON;
 INSERT INTO [KPIs] ([Id], [PeriodId], [KPIName], [PropertyId], [KPITypeId], [AssignerId], [StatusId], [IsActive], [CreatedAt], [CreatedById])
 VALUES
-    (1, 2, N'Doanh thu bán hàng quý 2',             1, 1, 2, 7, 1, GETDATE(), 2),
-    (2, 2, N'Tỷ lệ hoàn thành dự án đúng hạn',     4, 1, 3, 7, 1, GETDATE(), 3),
-    (3, 2, N'Tỷ lệ tuyển dụng thành công',          4, 1, 4, 7, 1, GETDATE(), 4);
+    (1, 2, N'Doanh thu thực phẩm quý 2',                    1, 1, 2, 7, 1, GETDATE(), 2),
+    (2, 2, N'Tỷ lệ lô sản xuất đạt chuẩn đúng hạn',          4, 1, 3, 7, 1, GETDATE(), 3),
+    (3, 2, N'Tỷ lệ tuyển dụng đủ nhân sự ca sản xuất',       4, 1, 4, 7, 1, GETDATE(), 4);
 SET IDENTITY_INSERT [KPIs] OFF;
 GO
 
@@ -525,8 +550,8 @@ INSERT INTO [KPI_Employee_Assignments] ([KPIId], [EmployeeId]) VALUES (1, 5), (2
 GO
 
 -- ============================================================
--- MODULE 16: LARGE-SCALE DEMO DATA (240 MEMBERS, DEPARTMENTS, PROJECT KPIS)
--- Keeps foundation seed data above, then replaces the compact demo org
+-- MODULE 16: BIZEN FOOD SEED DATA (240 MEMBERS, FOOD OPERATIONS, PROJECT KPIS)
+-- Keeps foundation seed data above, then replaces the compact sample org
 -- with deterministic set-based data for realistic dev/test scenarios.
 -- ============================================================
 DELETE FROM [SystemAlerts];
@@ -560,7 +585,7 @@ DELETE FROM [SystemUsers];
 DELETE FROM [Positions];
 GO
 
--- Organization catalog: broader role ladder for a 240-member company.
+-- Organization catalog: broader role ladder for a 240-member food company.
 SET IDENTITY_INSERT [Positions] ON;
 INSERT INTO [Positions] ([Id], [PositionCode], [PositionName], [RankLevel], [IsActive])
 VALUES
@@ -568,14 +593,14 @@ VALUES
     (2,  N'PGD',     N'Phó Giám đốc',             2, 1),
     (3,  N'TP',      N'Trưởng phòng',             3, 1),
     (4,  N'PP',      N'Phó phòng',                4, 1),
-    (5,  N'TN',      N'Trưởng nhóm',              5, 1),
+    (5,  N'TC',      N'Trưởng ca',                5, 1),
     (6,  N'NV',      N'Nhân viên',                6, 1),
     (7,  N'TTS',     N'Thực tập sinh',            7, 1),
-    (8,  N'PM',      N'Quản lý dự án',            4, 1),
-    (9,  N'BA',      N'Chuyên viên phân tích',    5, 1),
-    (10, N'DEV',     N'Kỹ sư phần mềm',           6, 1),
-    (11, N'QA',      N'Kỹ sư kiểm thử',           6, 1),
-    (12, N'DATA',    N'Chuyên viên dữ liệu',      6, 1);
+    (8,  N'QTSX',    N'Quản lý sản xuất',         4, 1),
+    (9,  N'RND',     N'Chuyên viên R&D thực phẩm',5, 1),
+    (10, N'KTSX',    N'Kỹ thuật viên sản xuất',   6, 1),
+    (11, N'QAQC',    N'Chuyên viên QA/QC',        6, 1),
+    (12, N'KHO',     N'Nhân viên kho vận',        6, 1);
 SET IDENTITY_INSERT [Positions] OFF;
 GO
 
@@ -584,59 +609,82 @@ INSERT INTO [Departments] ([Id], [DepartmentCode], [DepartmentName], [ParentDepa
 VALUES
     (1,  N'BOD',   N'Ban Giám Đốc',                  NULL, NULL, 1, GETDATE(), NULL),
     (2,  N'HR',    N'Phòng Nhân Sự',                 1,    NULL, 1, GETDATE(), NULL),
-    (3,  N'IT',    N'Phòng Công Nghệ',               1,    NULL, 1, GETDATE(), NULL),
-    (4,  N'SALES', N'Phòng Kinh Doanh',              1,    NULL, 1, GETDATE(), NULL),
+    (3,  N'PROD',  N'Nhà Máy Sản Xuất',              1,    NULL, 1, GETDATE(), NULL),
+    (4,  N'SALES', N'Phòng Kinh Doanh Kênh Phân Phối',1,   NULL, 1, GETDATE(), NULL),
     (5,  N'FIN',   N'Phòng Tài Chính - Kế Toán',     1,    NULL, 1, GETDATE(), NULL),
-    (6,  N'MKT',   N'Phòng Marketing',               1,    NULL, 1, GETDATE(), NULL),
-    (7,  N'OPS',   N'Phòng Vận Hành',                1,    NULL, 1, GETDATE(), NULL),
+    (6,  N'MKT',   N'Phòng Marketing Thương Hiệu',   1,    NULL, 1, GETDATE(), NULL),
+    (7,  N'SCM',   N'Phòng Chuỗi Cung Ứng',          1,    NULL, 1, GETDATE(), NULL),
     (8,  N'CS',    N'Phòng Chăm Sóc Khách Hàng',     1,    NULL, 1, GETDATE(), NULL),
-    (9,  N'PROD',  N'Phòng Sản Phẩm',                1,    NULL, 1, GETDATE(), NULL),
-    (10, N'DATA',  N'Phòng Dữ Liệu',                 1,    NULL, 1, GETDATE(), NULL),
-    (11, N'QA',    N'Phòng Đảm Bảo Chất Lượng',      1,    NULL, 1, GETDATE(), NULL),
+    (9,  N'RND',   N'Phòng Nghiên Cứu Phát Triển Sản Phẩm', 1, NULL, 1, GETDATE(), NULL),
+    (10, N'LOG',   N'Kho Vận Và Logistics',          1,    NULL, 1, GETDATE(), NULL),
+    (11, N'QA',    N'Phòng Quản Lý Chất Lượng',      1,    NULL, 1, GETDATE(), NULL),
     (12, N'PMO',   N'Văn Phòng Quản Lý Dự Án',       1,    NULL, 1, GETDATE(), NULL);
 SET IDENTITY_INSERT [Departments] OFF;
 GO
 
--- 240 deterministic accounts. IDs 1-5 intentionally preserve demo logins.
+-- 240 deterministic accounts. IDs 1-5 intentionally preserve sample logins.
 SET IDENTITY_INSERT [SystemUsers] ON;
 ;WITH Numbers AS
 (
     SELECT 1 AS Id
     UNION ALL
     SELECT Id + 1 FROM Numbers WHERE Id < 240
+),
+NamedUsers AS
+(
+    SELECT
+        n.Id,
+        CASE n.Id
+            WHEN 1 THEN N'admin'
+            WHEN 2 THEN N'director'
+            WHEN 3 THEN N'manager'
+            WHEN 4 THEN N'hr'
+            WHEN 5 THEN N'employee'
+            ELSE CONCAT(gn.GivenSlug, N'.', ln.LastSlug, RIGHT('000' + CAST(n.Id AS varchar(3)), 3))
+        END AS Username,
+        CASE n.Id
+            WHEN 1 THEN N'admin@bizenfoods.com'
+            WHEN 2 THEN N'director@bizenfoods.com'
+            WHEN 3 THEN N'manager@bizenfoods.com'
+            WHEN 4 THEN N'hr@bizenfoods.com'
+            WHEN 5 THEN N'employee@bizenfoods.com'
+            ELSE CONCAT(gn.GivenSlug, N'.', ln.LastSlug, RIGHT('000' + CAST(n.Id AS varchar(3)), 3), N'@bizenfoods.com')
+        END AS Email
+    FROM Numbers n
+    CROSS APPLY
+    (
+        SELECT
+            CHOOSE(((n.Id - 1) % 20) + 1, N'Nguyễn', N'Trần', N'Lê', N'Phạm', N'Hoàng', N'Huỳnh', N'Phan', N'Vũ', N'Võ', N'Đặng', N'Bùi', N'Đỗ', N'Hồ', N'Ngô', N'Dương', N'Lý', N'Mai', N'Đinh', N'Cao', N'Tạ') AS LastName,
+            CHOOSE(((n.Id - 1) % 20) + 1, N'nguyen', N'tran', N'le', N'pham', N'hoang', N'huynh', N'phan', N'vu', N'vo', N'dang', N'bui', N'do', N'ho', N'ngo', N'duong', N'ly', N'mai', N'dinh', N'cao', N'ta') AS LastSlug
+    ) ln
+    CROSS APPLY
+    (
+        SELECT
+            CHOOSE(((n.Id - 1) % 29) + 1, N'An', N'Bình', N'Châu', N'Dũng', N'Hạnh', N'Khang', N'Linh', N'Mai', N'Nam', N'Oanh', N'Phúc', N'Quỳnh', N'Sơn', N'Thảo', N'Uyên', N'Vinh', N'Yến', N'Bảo', N'Cường', N'Diễm', N'Hưng', N'Lan', N'Tùng', N'Vy', N'Khôi', N'Nhi', N'Giang', N'Trí', N'My') AS GivenName,
+            CHOOSE(((n.Id - 1) % 29) + 1, N'an', N'binh', N'chau', N'dung', N'hanh', N'khang', N'linh', N'mai', N'nam', N'oanh', N'phuc', N'quynh', N'son', N'thao', N'uyen', N'vinh', N'yen', N'bao', N'cuong', N'diem', N'hung', N'lan', N'tung', N'vy', N'khoi', N'nhi', N'giang', N'tri', N'my') AS GivenSlug
+    ) gn
 )
 INSERT INTO [SystemUsers] ([Id], [Username], [Email], [PasswordHash], [LastPasswordChange], [RoleId], [IsActive], [CreatedAt], [CreatedById])
 SELECT
     Id,
-    CASE Id
-        WHEN 1 THEN N'admin'
-        WHEN 2 THEN N'director'
-        WHEN 3 THEN N'manager'
-        WHEN 4 THEN N'hr'
-        WHEN 5 THEN N'employee'
-        ELSE CONCAT(N'user', RIGHT('000' + CAST(Id AS varchar(3)), 3))
-    END AS Username,
-    CASE Id
-        WHEN 1 THEN N'admin@company.com'
-        WHEN 2 THEN N'director@company.com'
-        WHEN 3 THEN N'manager@company.com'
-        WHEN 4 THEN N'hr@company.com'
-        WHEN 5 THEN N'employee@company.com'
-        ELSE CONCAT(N'user', RIGHT('000' + CAST(Id AS varchar(3)), 3), N'@company.com')
-    END AS Email,
+    Username,
+    Email,
     N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3',
     GETDATE(),
     CASE
         WHEN Id = 1 THEN 1
         WHEN Id = 2 THEN 2
-        WHEN Id BETWEEN 3 AND 14 THEN 3
+        WHEN Id = 3 THEN 3
+        WHEN Id = 4 THEN 4
+        WHEN Id = 5 THEN 5
+        WHEN Id BETWEEN 6 AND 14 THEN 3
         WHEN Id BETWEEN 15 AND 20 THEN 4
         ELSE 5
     END AS RoleId,
     1,
     GETDATE(),
     NULL
-FROM Numbers
+FROM NamedUsers
 OPTION (MAXRECURSION 0);
 SET IDENTITY_INSERT [SystemUsers] OFF;
 GO
@@ -647,31 +695,53 @@ SET IDENTITY_INSERT [Employees] ON;
     SELECT 1 AS Id
     UNION ALL
     SELECT Id + 1 FROM Numbers WHERE Id < 240
+),
+NamedEmployees AS
+(
+    SELECT
+        n.Id,
+        CASE
+            WHEN n.Id = 1 THEN N'Nguyễn Minh Quân'
+            WHEN n.Id = 2 THEN N'Trần Thu Hà'
+            WHEN n.Id = 3 THEN N'Lê Hoàng Nam'
+            WHEN n.Id = 4 THEN N'Phạm Ngọc Mai'
+            WHEN n.Id = 5 THEN N'Hoàng Gia Bảo'
+            ELSE CONCAT(ln.LastName, N' ', mn.MiddleName, N' ', gn.GivenName)
+        END AS FullName,
+        CASE n.Id
+            WHEN 1 THEN N'admin@bizenfoods.com'
+            WHEN 2 THEN N'director@bizenfoods.com'
+            WHEN 3 THEN N'manager@bizenfoods.com'
+            WHEN 4 THEN N'hr@bizenfoods.com'
+            WHEN 5 THEN N'employee@bizenfoods.com'
+            ELSE CONCAT(gn.GivenSlug, N'.', ln.LastSlug, RIGHT('000' + CAST(n.Id AS varchar(3)), 3), N'@bizenfoods.com')
+        END AS Email
+    FROM Numbers n
+    CROSS APPLY
+    (
+        SELECT
+            CHOOSE(((n.Id - 1) % 20) + 1, N'Nguyễn', N'Trần', N'Lê', N'Phạm', N'Hoàng', N'Huỳnh', N'Phan', N'Vũ', N'Võ', N'Đặng', N'Bùi', N'Đỗ', N'Hồ', N'Ngô', N'Dương', N'Lý', N'Mai', N'Đinh', N'Cao', N'Tạ') AS LastName,
+            CHOOSE(((n.Id - 1) % 20) + 1, N'nguyen', N'tran', N'le', N'pham', N'hoang', N'huynh', N'phan', N'vu', N'vo', N'dang', N'bui', N'do', N'ho', N'ngo', N'duong', N'ly', N'mai', N'dinh', N'cao', N'ta') AS LastSlug
+    ) ln
+    CROSS APPLY
+    (
+        SELECT CHOOSE(((n.Id - 1) % 12) + 1, N'Văn', N'Thị', N'Minh', N'Gia', N'Ngọc', N'Thanh', N'Quang', N'Thu', N'Đức', N'Hoài', N'Hải', N'Kim') AS MiddleName
+    ) mn
+    CROSS APPLY
+    (
+        SELECT
+            CHOOSE(((n.Id - 1) % 29) + 1, N'An', N'Bình', N'Châu', N'Dũng', N'Hạnh', N'Khang', N'Linh', N'Mai', N'Nam', N'Oanh', N'Phúc', N'Quỳnh', N'Sơn', N'Thảo', N'Uyên', N'Vinh', N'Yến', N'Bảo', N'Cường', N'Diễm', N'Hưng', N'Lan', N'Tùng', N'Vy', N'Khôi', N'Nhi', N'Giang', N'Trí', N'My') AS GivenName,
+            CHOOSE(((n.Id - 1) % 29) + 1, N'an', N'binh', N'chau', N'dung', N'hanh', N'khang', N'linh', N'mai', N'nam', N'oanh', N'phuc', N'quynh', N'son', N'thao', N'uyen', N'vinh', N'yen', N'bao', N'cuong', N'diem', N'hung', N'lan', N'tung', N'vy', N'khoi', N'nhi', N'giang', N'tri', N'my') AS GivenSlug
+    ) gn
 )
 INSERT INTO [Employees] ([Id], [EmployeeCode], [FullName], [DateOfBirth], [Phone], [Email], [TaxCode], [JoinDate], [SystemUserId], [IsActive], [StrategicGoalId], [CreatedAt], [CreatedById])
 SELECT
     Id,
-    CONCAT(N'NV', RIGHT('000' + CAST(Id AS varchar(3)), 3)),
-    CASE
-        WHEN Id = 1 THEN N'Nguyễn Văn An'
-        WHEN Id = 2 THEN N'Trần Thị Bình'
-        WHEN Id = 3 THEN N'Lê Minh Cường'
-        WHEN Id = 4 THEN N'Phạm Thị Dung'
-        WHEN Id = 5 THEN N'Hoàng Văn Em'
-        WHEN Id BETWEEN 6 AND 14 THEN CONCAT(N'Trưởng phòng ', RIGHT('000' + CAST(Id AS varchar(3)), 3))
-        WHEN Id BETWEEN 15 AND 20 THEN CONCAT(N'Chuyên viên Nhân sự ', RIGHT('000' + CAST(Id AS varchar(3)), 3))
-        ELSE CONCAT(N'Nhân viên ', RIGHT('000' + CAST(Id AS varchar(3)), 3))
-    END AS FullName,
+    CONCAT(N'BZ', RIGHT('000' + CAST(Id AS varchar(3)), 3)),
+    FullName,
     DATEADD(DAY, (Id * 29) % 5200, CAST('1982-01-01' AS date)),
     CONCAT(N'0901', RIGHT('000000' + CAST(Id AS varchar(6)), 6)),
-    CASE Id
-        WHEN 1 THEN N'admin@company.com'
-        WHEN 2 THEN N'director@company.com'
-        WHEN 3 THEN N'manager@company.com'
-        WHEN 4 THEN N'hr@company.com'
-        WHEN 5 THEN N'employee@company.com'
-        ELSE CONCAT(N'user', RIGHT('000' + CAST(Id AS varchar(3)), 3), N'@company.com')
-    END AS Email,
+    Email,
     CONCAT(N'0100', RIGHT('000000' + CAST(Id AS varchar(6)), 6)),
     DATEADD(DAY, (Id * 17) % 1600, CAST('2020-01-01' AS date)),
     Id,
@@ -679,7 +749,7 @@ SELECT
     NULL,
     GETDATE(),
     NULL
-FROM Numbers
+FROM NamedEmployees
 OPTION (MAXRECURSION 0);
 SET IDENTITY_INSERT [Employees] OFF;
 GO
@@ -756,27 +826,27 @@ DECLARE @DeptProjects TABLE
 
 INSERT INTO @DeptProjects ([DepartmentId], [DepartmentName], [ProjectAlias], [ManagerId])
 VALUES
-    (1,  N'Ban Giám Đốc',                 N'Strategy Office',     2),
-    (2,  N'Phòng Nhân Sự',                N'Talent Platform',     4),
-    (3,  N'Phòng Công Nghệ',              N'CRM Core',            3),
-    (4,  N'Phòng Kinh Doanh',             N'Revenue Pipeline',    6),
-    (5,  N'Phòng Tài Chính - Kế Toán',    N'E-Invoice',           7),
-    (6,  N'Phòng Marketing',              N'Growth Hub',          8),
-    (7,  N'Phòng Vận Hành',               N'SCM Optimization',    9),
-    (8,  N'Phòng Chăm Sóc Khách Hàng',    N'Customer 360',        10),
-    (9,  N'Phòng Sản Phẩm',               N'Mobile App',          11),
-    (10, N'Phòng Dữ Liệu',                N'Data Warehouse',      12),
-    (11, N'Phòng Đảm Bảo Chất Lượng',     N'Automation Lab',      13),
-    (12, N'Văn Phòng Quản Lý Dự Án',      N'Portfolio Office',    14);
+    (1,  N'Ban Giám Đốc',                 N'Bizen Strategy',      2),
+    (2,  N'Phòng Nhân Sự',                N'Talent Kitchen',      4),
+    (3,  N'Nhà Máy Sản Xuất',             N'Smart Factory',       3),
+    (4,  N'Phòng Kinh Doanh Kênh Phân Phối', N'Distributor Growth', 6),
+    (5,  N'Phòng Tài Chính - Kế Toán',    N'Cost Control',        7),
+    (6,  N'Phòng Marketing Thương Hiệu',  N'Brand Launch',        8),
+    (7,  N'Phòng Chuỗi Cung Ứng',         N'Cold Chain',          9),
+    (8,  N'Phòng Chăm Sóc Khách Hàng',    N'Customer Care',       10),
+    (9,  N'Phòng Nghiên Cứu Phát Triển Sản Phẩm', N'New SKU Lab', 11),
+    (10, N'Kho Vận Và Logistics',         N'Warehouse Flow',      12),
+    (11, N'Phòng Quản Lý Chất Lượng',     N'Food Safety',         13),
+    (12, N'Văn Phòng Quản Lý Dự Án',      N'PMO Food Ops',        14);
 
 SET IDENTITY_INSERT [OKRs] ON;
 INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById])
 SELECT
     (d.DepartmentId - 1) * 3 + t.TemplateId AS Id,
     CASE t.TemplateId
-        WHEN 1 THEN CONCAT(N'Dự án ', d.ProjectAlias, N' đạt mốc chiến lược Q2-2026')
+        WHEN 1 THEN CONCAT(N'Dự án ', d.ProjectAlias, N' đạt mốc vận hành Bizen Q2-2026')
         WHEN 2 THEN CONCAT(N'Nâng cao hiệu quả vận hành ', d.DepartmentName)
-        ELSE CONCAT(N'Chuyển đổi số và tự động hóa ', d.ProjectAlias)
+        ELSE CONCAT(N'Chuẩn hóa chất lượng, truy xuất và tự động hóa ', d.ProjectAlias)
     END AS ObjectiveName,
     CASE WHEN d.DepartmentId = 1 THEN 1 ELSE 2 END AS OKRTypeId,
     N'Q2-2026',
@@ -795,8 +865,8 @@ SELECT
     o.OkrId,
     CASE kr.KrIndex
         WHEN 1 THEN CONCAT(N'Hoàn thành các mốc nghiệm thu của ', o.ProjectAlias)
-        WHEN 2 THEN CONCAT(N'Đạt chất lượng bàn giao cho ', o.ProjectAlias)
-        ELSE CONCAT(N'Giảm rủi ro tồn đọng trong ', o.ProjectAlias)
+        WHEN 2 THEN CONCAT(N'Đạt chất lượng bàn giao và kiểm định cho ', o.ProjectAlias)
+        ELSE CONCAT(N'Giảm rủi ro chất lượng tồn đọng trong ', o.ProjectAlias)
     END AS KeyResultName,
     CASE kr.KrIndex
         WHEN 1 THEN 100.00
@@ -811,7 +881,7 @@ SELECT
     CASE kr.KrIndex
         WHEN 1 THEN N'%'
         WHEN 2 THEN N'%'
-        ELSE N'Ticket'
+        ELSE N'Sự cố'
     END AS Unit,
     CASE WHEN kr.KrIndex = 3 THEN 1 ELSE 0 END AS IsInverse,
     NULL,
@@ -887,36 +957,36 @@ DECLARE @KpiTemplates TABLE
 
 INSERT INTO @DeptProjects ([DepartmentId], [DepartmentName], [ProjectAlias], [ManagerId])
 VALUES
-    (1,  N'Ban Giám Đốc',                 N'Strategy Office',     2),
-    (2,  N'Phòng Nhân Sự',                N'Talent Platform',     4),
-    (3,  N'Phòng Công Nghệ',              N'CRM Core',            3),
-    (4,  N'Phòng Kinh Doanh',             N'Revenue Pipeline',    6),
-    (5,  N'Phòng Tài Chính - Kế Toán',    N'E-Invoice',           7),
-    (6,  N'Phòng Marketing',              N'Growth Hub',          8),
-    (7,  N'Phòng Vận Hành',               N'SCM Optimization',    9),
-    (8,  N'Phòng Chăm Sóc Khách Hàng',    N'Customer 360',        10),
-    (9,  N'Phòng Sản Phẩm',               N'Mobile App',          11),
-    (10, N'Phòng Dữ Liệu',                N'Data Warehouse',      12),
-    (11, N'Phòng Đảm Bảo Chất Lượng',     N'Automation Lab',      13),
-    (12, N'Văn Phòng Quản Lý Dự Án',      N'Portfolio Office',    14);
+    (1,  N'Ban Giám Đốc',                 N'Bizen Strategy',      2),
+    (2,  N'Phòng Nhân Sự',                N'Talent Kitchen',      4),
+    (3,  N'Nhà Máy Sản Xuất',             N'Smart Factory',       3),
+    (4,  N'Phòng Kinh Doanh Kênh Phân Phối', N'Distributor Growth', 6),
+    (5,  N'Phòng Tài Chính - Kế Toán',    N'Cost Control',        7),
+    (6,  N'Phòng Marketing Thương Hiệu',  N'Brand Launch',        8),
+    (7,  N'Phòng Chuỗi Cung Ứng',         N'Cold Chain',          9),
+    (8,  N'Phòng Chăm Sóc Khách Hàng',    N'Customer Care',       10),
+    (9,  N'Phòng Nghiên Cứu Phát Triển Sản Phẩm', N'New SKU Lab', 11),
+    (10, N'Kho Vận Và Logistics',         N'Warehouse Flow',      12),
+    (11, N'Phòng Quản Lý Chất Lượng',     N'Food Safety',         13),
+    (12, N'Văn Phòng Quản Lý Dự Án',      N'PMO Food Ops',        14);
 
 INSERT INTO @KpiTemplates ([TemplateId], [TemplateName], [MeasurementUnit], [PropertyId], [KPITypeId], [IsInverse], [BaseTarget], [FrequencyDays])
 VALUES
-    (1, N'Giá trị bàn giao',                  N'Triệu đồng', 1, 1, 0, 1000.00, 7),
-    (2, N'Tỷ lệ hoàn thành đúng hạn',         N'%',          4, 1, 0, 100.00,  7),
-    (3, N'Chất lượng nghiệm thu',             N'%',          2, 1, 0, 95.00,   7),
-    (4, N'Số hạng mục dự án hoàn thành',      N'Dự án',      4, 1, 0, 4.00,    14),
-    (5, N'Ticket tồn đọng nghiêm trọng',      N'Ticket',     3, 1, 1, 20.00,   7),
-    (6, N'Mức độ hài lòng khách hàng/nội bộ', N'%',          2, 2, 0, 92.00,   14),
-    (7, N'Tự động hóa và cải tiến quy trình', N'%',          5, 3, 0, 80.00,   14);
+    (1, N'Doanh thu hoặc giá trị sản lượng',      N'Triệu đồng', 1, 1, 0, 1000.00, 7),
+    (2, N'Tỷ lệ đơn hàng giao đúng hạn',          N'%',          4, 1, 0, 100.00,  7),
+    (3, N'Tỷ lệ lô đạt kiểm định chất lượng',     N'%',          2, 1, 0, 95.00,   7),
+    (4, N'Số hạng mục cải tiến vận hành hoàn thành', N'Hạng mục', 4, 1, 0, 4.00,  14),
+    (5, N'Sự cố an toàn thực phẩm tồn đọng',      N'Sự cố',      3, 1, 1, 20.00,   7),
+    (6, N'Mức độ hài lòng nhà phân phối/khách hàng', N'%',       2, 2, 0, 92.00,   14),
+    (7, N'Tự động hóa truy xuất nguồn gốc và quy trình', N'%',   5, 3, 0, 80.00,   14);
 
 SET IDENTITY_INSERT [KPIs] ON;
 INSERT INTO [KPIs] ([Id], [PeriodId], [KPIName], [Description], [PropertyId], [KPITypeId], [OKRId], [OKRKeyResultId], [AssignerId], [StatusId], [IsActive], [CreatedAt], [CreatedById])
 SELECT
     (d.DepartmentId - 1) * 7 + t.TemplateId AS Id,
     2,
-    CONCAT(N'Dự án ', d.ProjectAlias, N' - ', t.TemplateName),
-    CONCAT(N'KPI quy mô lớn cho ', d.DepartmentName, N', phục vụ demo phân bổ nhân sự, phòng ban và dự án.'),
+    CONCAT(N'Bizen ', d.ProjectAlias, N' - ', t.TemplateName),
+    CONCAT(N'KPI vận hành thực phẩm cho ', d.DepartmentName, N', phục vụ theo dõi sản xuất, chất lượng, phân phối và công việc.'),
     t.PropertyId,
     t.KPITypeId,
     link.LinkedOkrId,
@@ -1004,12 +1074,12 @@ SELECT KPIId, EmployeeId, Weight, N'Active'
 FROM EmployeeKpis;
 GO
 
--- KPI check-in demo: partial, approved progress for in-progress KPI scenarios.
+-- KPI check-in seed: partial, approved progress for in-progress KPI scenarios.
 -- These rows make dashboards, KPI lists and detail pages show work that is
 -- clearly underway but not completed yet.
-DECLARE @DemoKpiCheckIns TABLE
+DECLARE @BizenKpiCheckIns TABLE
 (
-    DemoId INT PRIMARY KEY,
+    RowId INT PRIMARY KEY,
     KPIId INT NOT NULL,
     EmployeeId INT NOT NULL,
     ReviewerId INT NULL,
@@ -1063,10 +1133,10 @@ ContributorCounts AS
     FROM SelectedAssignments
     GROUP BY KPIId
 ),
-DemoRows AS
+BizenRows AS
 (
     SELECT
-        ROW_NUMBER() OVER (ORDER BY sa.KPIId, sa.EmployeeId, slot.SlotIndex) AS DemoId,
+        ROW_NUMBER() OVER (ORDER BY sa.KPIId, sa.EmployeeId, slot.SlotIndex) AS RowId,
         sa.KPIId,
         sa.EmployeeId,
         sa.ReviewerId,
@@ -1097,9 +1167,9 @@ DemoRows AS
     INNER JOIN ContributorCounts cc ON cc.KPIId = sa.KPIId
     CROSS JOIN (VALUES (1), (2)) AS slot(SlotIndex)
 )
-INSERT INTO @DemoKpiCheckIns
+INSERT INTO @BizenKpiCheckIns
 (
-    DemoId,
+    RowId,
     KPIId,
     EmployeeId,
     ReviewerId,
@@ -1112,7 +1182,7 @@ INSERT INTO @DemoKpiCheckIns
     ExpectedRatio
 )
 SELECT
-    DemoId,
+    RowId,
     KPIId,
     EmployeeId,
     ReviewerId,
@@ -1123,7 +1193,7 @@ SELECT
     ContributorCount,
     ProgressRatio,
     ExpectedRatio
-FROM DemoRows;
+FROM BizenRows;
 
 SET IDENTITY_INSERT [KPICheckIns] ON;
 INSERT INTO [KPICheckIns]
@@ -1144,7 +1214,7 @@ INSERT INTO [KPICheckIns]
     [ReviewScore]
 )
 SELECT
-    DemoId,
+    RowId,
     EmployeeId,
     KPIId,
     EmployeeId,
@@ -1166,11 +1236,11 @@ SELECT
     ReviewerId,
     DATEADD(HOUR, 2, CheckInDate),
     CASE
-        WHEN ProgressRatio >= ExpectedRatio THEN N'Dữ liệu demo: tiến độ đang đi đúng hướng, tiếp tục bám mốc Q2.'
-        ELSE N'Dữ liệu demo: KPI đang thực hiện dở, cần tăng tốc trong các lần check-in tiếp theo.'
+        WHEN ProgressRatio >= ExpectedRatio THEN N'Dữ liệu Bizen: tiến độ đang đi đúng hướng, tiếp tục bám mốc Q2.'
+        ELSE N'Dữ liệu Bizen: KPI đang thực hiện dở, cần tăng tốc trong các lần check-in tiếp theo.'
     END,
     CAST(ProgressRatio * 100 AS DECIMAL(5,2))
-FROM @DemoKpiCheckIns;
+FROM @BizenKpiCheckIns;
 SET IDENTITY_INSERT [KPICheckIns] OFF;
 
 SET IDENTITY_INSERT [CheckInDetails] ON;
@@ -1185,32 +1255,134 @@ INSERT INTO [CheckInDetails]
     [Note]
 )
 SELECT
-    DemoId,
-    DemoId,
+    RowId,
+    RowId,
     ROUND((TargetValue * ProgressRatio) / ContributorCount, 2),
     CAST(ProgressRatio * 100 AS DECIMAL(18,2)),
     ROUND((TargetValue * ExpectedRatio) / ContributorCount, 2),
     CAST(ROUND((ProgressRatio / ExpectedRatio) * 100, 2) AS DECIMAL(18,2)),
     CASE SlotIndex
-        WHEN 1 THEN N'Check-in demo đầu kỳ: đã bắt đầu triển khai, còn nhiều hạng mục đang mở.'
-        ELSE N'Check-in demo giữa kỳ: KPI đang làm dở, có số liệu tiến độ nhưng chưa đạt mục tiêu.'
+        WHEN 1 THEN N'Check-in Bizen đầu kỳ: đã bắt đầu triển khai, còn nhiều hạng mục đang mở.'
+        ELSE N'Check-in Bizen giữa kỳ: KPI đang làm dở, có số liệu tiến độ nhưng chưa đạt mục tiêu.'
     END
-FROM @DemoKpiCheckIns;
+FROM @BizenKpiCheckIns;
 SET IDENTITY_INSERT [CheckInDetails] OFF;
 
 SET IDENTITY_INSERT [CheckInHistoryLogs] ON;
 INSERT INTO [CheckInHistoryLogs] ([Id], [CheckInId], [SnapshotData], [LogTime])
 SELECT
-    DemoId,
-    DemoId,
+    RowId,
+    RowId,
     CONCAT(
-        N'Demo partial KPI progress | KPI #', KPIId,
+        N'Bizen partial KPI progress | KPI #', KPIId,
         N' | Employee #', EmployeeId,
         N' | Progress ', CAST(CAST(ProgressRatio * 100 AS DECIMAL(5,2)) AS NVARCHAR(20)), N'%'
     ),
     DATEADD(MINUTE, 5, CheckInDate)
-FROM @DemoKpiCheckIns;
+FROM @BizenKpiCheckIns;
 SET IDENTITY_INSERT [CheckInHistoryLogs] OFF;
+GO
+
+-- Bizen work projects and active tasks: these make employee accounts usable
+-- for receiving, viewing, updating and commenting on real work items.
+SET IDENTITY_INSERT [WorkProjects] ON;
+INSERT INTO [WorkProjects]
+(
+    [Id],
+    [ProjectCode],
+    [ProjectName],
+    [Description],
+    [OwnerId],
+    [Priority],
+    [Status],
+    [ProgressPercentage],
+    [IsCrossDepartment],
+    [StartDate],
+    [DueDate],
+    [CreatedAt],
+    [UpdatedAt],
+    [CreatedById],
+    [IsActive],
+    [SourceOKRId],
+    [LinkedOKRId]
+)
+VALUES
+    (1, N'BZ-PROD-TRACE', N'Chuẩn hóa truy xuất nguyên liệu Q2', N'Theo dõi lô nguyên liệu, hồ sơ kiểm định và dữ liệu truy xuất cho nhà máy Bizen.', 3, N'High',   N'Active', 35.00, 1, '2026-04-01', '2026-06-30', GETDATE(), GETDATE(), 3, 1, 7, 7),
+    (2, N'BZ-DIST-GROW',  N'Mở rộng điểm bán sản phẩm Bizen',    N'Phối hợp kinh doanh, marketing và chăm sóc khách hàng để mở mới điểm bán thực phẩm đóng gói.', 6, N'High',   N'Active', 42.00, 1, '2026-04-05', '2026-06-30', GETDATE(), GETDATE(), 6, 1, 10, 10),
+    (3, N'BZ-NEW-SKU',    N'Ra mắt dòng bánh ngũ cốc Bizen',     N'R&D, QA và marketing phối hợp hoàn thiện công thức, bao bì và kế hoạch ra mắt sản phẩm mới.', 11, N'Normal', N'Active', 28.00, 1, '2026-04-10', '2026-07-15', GETDATE(), GETDATE(), 11, 1, 25, 25),
+    (4, N'BZ-COLD-CHAIN', N'Ổn định tồn kho lạnh và giao hàng',  N'Chuẩn hóa tồn kho, điều phối kho vận và giảm rủi ro giao hàng trễ cho sản phẩm cần kiểm soát nhiệt độ.', 9, N'High', N'Active', 51.00, 1, '2026-04-01', '2026-06-30', GETDATE(), GETDATE(), 9, 1, 19, 19);
+SET IDENTITY_INSERT [WorkProjects] OFF;
+GO
+
+SET IDENTITY_INSERT [WorkProjectDepartments] ON;
+INSERT INTO [WorkProjectDepartments] ([Id], [WorkProjectId], [DepartmentId], [CollaborationRole], [IsActive])
+VALUES
+    (1, 1, 3,  N'Owner',       1),
+    (2, 1, 11, N'QA/QC',       1),
+    (3, 1, 10, N'Kho vận',     1),
+    (4, 2, 4,  N'Owner',       1),
+    (5, 2, 6,  N'Marketing',   1),
+    (6, 2, 8,  N'CSKH',        1),
+    (7, 3, 9,  N'Owner',       1),
+    (8, 3, 11, N'QA/QC',       1),
+    (9, 4, 7,  N'Owner',       1),
+    (10, 4, 10, N'Kho vận',    1);
+SET IDENTITY_INSERT [WorkProjectDepartments] OFF;
+GO
+
+SET IDENTITY_INSERT [WorkItems] ON;
+INSERT INTO [WorkItems]
+(
+    [Id],
+    [WorkProjectId],
+    [Title],
+    [Description],
+    [AssigneeId],
+    [ReporterId],
+    [DepartmentId],
+    [KPIId],
+    [OKRKeyResultId],
+    [Priority],
+    [KanbanStatus],
+    [ProgressPercentage],
+    [KpiImpactWeight],
+    [StartDate],
+    [DueDate],
+    [CompletedAt],
+    [CreatedAt],
+    [UpdatedAt],
+    [IsActive]
+)
+VALUES
+    (1, 1, N'Kiểm tra hồ sơ lô nguyên liệu BZ-Q2-014', N'Đối chiếu COA, ngày nhập kho, nhà cung cấp và mã truy xuất trước khi đưa vào sản xuất.', 5, 3, 3, 15, 19, N'High',   N'InProgress', 35.00, 0.60, '2026-04-08', '2026-06-20', NULL, GETDATE(), GETDATE(), 1),
+    (2, 1, N'Cập nhật dữ liệu truy xuất cho ca sản xuất sáng', N'Nhập dữ liệu lô sản xuất, mã nguyên liệu và kết quả kiểm tra nhanh vào hồ sơ truy xuất.', 5, 3, 3, 19, 23, N'Normal', N'Todo',       0.00, 0.40, '2026-04-10', '2026-06-25', NULL, GETDATE(), GETDATE(), 1),
+    (3, 1, N'Rà soát biểu mẫu QA cho thành phẩm', N'Kiểm tra lại checklist cảm quan, chỉ tiêu vi sinh và quy trình lưu mẫu.', 13, 3, 11, 73, 93, N'High', N'Review', 78.00, 0.50, '2026-04-11', '2026-06-18', NULL, GETDATE(), GETDATE(), 1),
+    (4, 2, N'Lập danh sách 20 điểm bán ưu tiên', N'Chọn điểm bán theo khu vực, doanh số dự kiến và điều kiện bảo quản sản phẩm.', 22, 6, 4, 22, 28, N'High', N'InProgress', 50.00, 0.60, '2026-04-09', '2026-06-28', NULL, GETDATE(), GETDATE(), 1),
+    (5, 2, N'Chuẩn bị bộ tài liệu bán hàng Bizen', N'Hoàn thiện bảng giá, hình ảnh sản phẩm và quy trình đặt hàng cho nhà phân phối.', 22, 6, 4, 23, 30, N'Normal', N'Todo', 10.00, 0.40, '2026-04-12', '2026-06-26', NULL, GETDATE(), GETDATE(), 1),
+    (6, 2, N'Thu thập phản hồi nhà phân phối hiện hữu', N'Ghi nhận vấn đề về bao bì, tồn kho và tốc độ giao hàng để cải tiến Q2.', 26, 6, 8, 53, 66, N'Normal', N'InProgress', 45.00, 0.50, '2026-04-14', '2026-06-24', NULL, GETDATE(), GETDATE(), 1),
+    (7, 3, N'Chốt công thức mẫu bánh ngũ cốc ít đường', N'Hoàn thiện công thức thử nghiệm, định mức nguyên liệu và chỉ tiêu cảm quan.', 27, 11, 9, 57, 73, N'High', N'InProgress', 40.00, 0.70, '2026-04-15', '2026-07-01', NULL, GETDATE(), GETDATE(), 1),
+    (8, 3, N'Kiểm tra bao bì thử nghiệm theo tiêu chuẩn nhãn', N'Đối chiếu thành phần, cảnh báo dị ứng, hạn sử dụng và quy định nhãn hàng thực phẩm.', 29, 11, 11, 74, 93, N'Normal', N'Todo', 5.00, 0.30, '2026-04-18', '2026-07-05', NULL, GETDATE(), GETDATE(), 1),
+    (9, 4, N'Đối soát tồn kho lạnh theo ngày', N'Kiểm tra số lượng, nhiệt độ, hạn sử dụng và trạng thái xuất nhập kho.', 28, 9, 10, 64, 82, N'High', N'InProgress', 55.00, 0.60, '2026-04-06', '2026-06-22', NULL, GETDATE(), GETDATE(), 1),
+    (10, 4, N'Xử lý tuyến giao hàng có nguy cơ trễ', N'Điều phối lại phương tiện, ưu tiên đơn hàng gần hạn và cập nhật khách hàng.', 25, 9, 7, 43, 55, N'Urgent', N'Blocked', 30.00, 0.40, '2026-04-07', '2026-06-19', NULL, GETDATE(), GETDATE(), 1);
+SET IDENTITY_INSERT [WorkItems] OFF;
+GO
+
+SET IDENTITY_INSERT [WorkItemComments] ON;
+INSERT INTO [WorkItemComments] ([Id], [WorkItemId], [CommenterId], [CommentText], [CreatedAt], [IsSystem])
+VALUES
+    (1, 1, 3, N'Ưu tiên hoàn thành đối chiếu COA trước đợt sản xuất tiếp theo.', GETDATE(), 0),
+    (2, 1, 5, N'Đã nhận nhiệm vụ, đang kiểm tra hồ sơ lô nguyên liệu và mã truy xuất.', GETDATE(), 0),
+    (3, 2, 3, N'Task này dùng để kiểm tra quyền nhân viên cập nhật tiến độ công việc.', GETDATE(), 0);
+SET IDENTITY_INSERT [WorkItemComments] OFF;
+GO
+
+SET IDENTITY_INSERT [AdhocTasks] ON;
+INSERT INTO [AdhocTasks] ([Id], [EmployeeId], [TaskName], [AdditionalKPI], [AssignDate], [IsActive])
+VALUES
+    (1, 5, N'Kiểm tra nhật ký nhiệt độ kho nguyên liệu trước ca sản xuất', 1.50, GETDATE(), 1),
+    (2, 5, N'Bổ sung ảnh chứng từ cho hồ sơ truy xuất lô BZ-Q2-014', 1.00, GETDATE(), 1),
+    (3, 21, N'Xác minh tồn kho thành phẩm tại điểm bán mới', 1.00, GETDATE(), 1);
+SET IDENTITY_INSERT [AdhocTasks] OFF;
 GO
 
 -- Guardrails: fail fast if the large-scale seed did not materialize.
@@ -1222,6 +1394,18 @@ DECLARE @OkrCount INT = (SELECT COUNT(*) FROM [OKRs]);
 DECLARE @KpiCount INT = (SELECT COUNT(*) FROM [KPIs]);
 DECLARE @KpiEmployeeAssignmentCount INT = (SELECT COUNT(*) FROM [KPI_Employee_Assignments]);
 DECLARE @KpiCheckInCount INT = (SELECT COUNT(*) FROM [KPICheckIns]);
+DECLARE @WorkProjectCount INT = (SELECT COUNT(*) FROM [WorkProjects] WHERE [IsActive] = 1);
+DECLARE @WorkItemCount INT = (SELECT COUNT(*) FROM [WorkItems] WHERE [IsActive] = 1);
+DECLARE @EmployeeAssignableTaskCount INT =
+(
+    SELECT COUNT(*)
+    FROM [WorkItems] wi
+    INNER JOIN [WorkProjects] wp ON wp.[Id] = wi.[WorkProjectId]
+    WHERE wi.[AssigneeId] = 5
+      AND wi.[IsActive] = 1
+      AND wp.[IsActive] = 1
+      AND wi.[KanbanStatus] IN (N'Backlog', N'Todo', N'InProgress', N'Review', N'Blocked')
+);
 
 IF @UserCount <> 240
     THROW 51000, N'Seed validation failed: SystemUsers must equal 240.', 1;
@@ -1245,10 +1429,102 @@ IF @KpiCount < 70
     THROW 51006, N'Seed validation failed: KPIs must be at least 70.', 1;
 
 IF @KpiCheckInCount < 150
-    THROW 51008, N'Seed validation failed: KPI demo check-ins must be at least 150.', 1;
+    THROW 51008, N'Seed validation failed: Bizen KPI check-ins must be at least 150.', 1;
+
+IF @WorkProjectCount < 4
+    THROW 51009, N'Seed validation failed: Bizen active work projects must be at least 4.', 1;
+
+IF @WorkItemCount < 10
+    THROW 51010, N'Seed validation failed: Bizen active work items must be at least 10.', 1;
+
+IF @EmployeeAssignableTaskCount < 2
+    THROW 51011, N'Seed validation failed: employee account must have active assignable work items.', 1;
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM [SystemUsers] u
+    INNER JOIN [Employees] e ON e.[SystemUserId] = u.[Id]
+    INNER JOIN [EmployeeAssignments] ea ON ea.[EmployeeId] = e.[Id] AND ea.[IsActive] = 1
+    WHERE u.[Username] = N'employee'
+      AND u.[RoleId] = 5
+      AND u.[IsActive] = 1
+      AND e.[IsActive] = 1
+)
+    THROW 51012, N'Seed validation failed: employee account must be active, linked to an active employee, and assigned to a department.', 1;
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM [SystemUsers]
+    WHERE [Username] = N'admin' AND [RoleId] = 1 AND [IsActive] = 1
+)
+    OR NOT EXISTS
+(
+    SELECT 1
+    FROM [SystemUsers]
+    WHERE [Username] = N'director' AND [RoleId] = 2 AND [IsActive] = 1
+)
+    OR NOT EXISTS
+(
+    SELECT 1
+    FROM [SystemUsers]
+    WHERE [Username] = N'manager' AND [RoleId] = 3 AND [IsActive] = 1
+)
+    OR NOT EXISTS
+(
+    SELECT 1
+    FROM [SystemUsers]
+    WHERE [Username] = N'hr' AND [RoleId] = 4 AND [IsActive] = 1
+)
+    OR NOT EXISTS
+(
+    SELECT 1
+    FROM [SystemUsers]
+    WHERE [Username] = N'employee' AND [RoleId] = 5 AND [IsActive] = 1
+)
+    THROW 51015, N'Seed validation failed: named sample accounts must keep the expected roles.', 1;
+
+IF EXISTS
+(
+    SELECT 1
+    FROM [SystemUsers] u
+    LEFT JOIN [Employees] e ON e.[SystemUserId] = u.[Id] AND e.[IsActive] = 1
+    LEFT JOIN [EmployeeAssignments] ea ON ea.[EmployeeId] = e.[Id] AND ea.[IsActive] = 1
+    WHERE u.[RoleId] = 5
+      AND u.[IsActive] = 1
+      AND (e.[Id] IS NULL OR ea.[Id] IS NULL)
+)
+    THROW 51013, N'Seed validation failed: every active Employee role account must have an active employee and active department assignment.', 1;
+
+IF NOT EXISTS (SELECT 1 FROM [Role_Permissions] WHERE [RoleId] = 5 AND [PermissionId] = 61)
+    OR NOT EXISTS (SELECT 1 FROM [Role_Permissions] WHERE [RoleId] = 5 AND [PermissionId] = 66)
+    OR NOT EXISTS (SELECT 1 FROM [Role_Permissions] WHERE [RoleId] = 5 AND [PermissionId] = 67)
+    OR NOT EXISTS (SELECT 1 FROM [Role_Permissions] WHERE [RoleId] = 5 AND [PermissionId] = 52)
+    THROW 51014, N'Seed validation failed: Employee role must be able to view projects, edit/comment tasks and update KPI progress.', 1;
+
+IF EXISTS
+(
+    SELECT 1
+    FROM [SystemUsers]
+    WHERE [Username] LIKE N'user[0-9][0-9][0-9]'
+)
+    OR EXISTS
+(
+    SELECT 1
+    FROM [Employees]
+    WHERE [FullName] LIKE N'Nhân viên Bizen [0-9][0-9][0-9]'
+       OR [FullName] LIKE N'Trưởng phòng Bizen [0-9][0-9][0-9]'
+       OR [FullName] LIKE N'Chuyên viên nhân sự Bizen [0-9][0-9][0-9]'
+)
+    THROW 51016, N'Seed validation failed: generated users must have concrete person names and name-based usernames.', 1;
+
+IF (SELECT COUNT(DISTINCT [Username]) FROM [SystemUsers]) <> @UserCount
+    OR (SELECT COUNT(DISTINCT [FullName]) FROM [Employees]) <> @EmployeeCount
+    THROW 51017, N'Seed validation failed: usernames and employee full names must be unique.', 1;
 
 PRINT N'';
-PRINT N'=== LARGE-SCALE SEED SUMMARY ===';
+PRINT N'=== BIZEN SEED SUMMARY ===';
 PRINT CONCAT(N'SystemUsers: ', @UserCount);
 PRINT CONCAT(N'Employees: ', @EmployeeCount);
 PRINT CONCAT(N'Departments: ', @DepartmentCount);
@@ -1257,6 +1533,9 @@ PRINT CONCAT(N'OKRs: ', @OkrCount);
 PRINT CONCAT(N'KPIs: ', @KpiCount);
 PRINT CONCAT(N'KPI employee assignments: ', @KpiEmployeeAssignmentCount);
 PRINT CONCAT(N'KPI partial check-ins: ', @KpiCheckInCount);
+PRINT CONCAT(N'Bizen work projects: ', @WorkProjectCount);
+PRINT CONCAT(N'Bizen work items: ', @WorkItemCount);
+PRINT CONCAT(N'Employee active tasks: ', @EmployeeAssignableTaskCount);
 GO
 
 -- ============================================================
@@ -1269,17 +1548,29 @@ IF (SELECT COUNT(*) FROM [SystemUsers]) <> 240
     OR (SELECT COUNT(*) FROM [OKRs]) < 30
     OR (SELECT COUNT(*) FROM [KPIs]) < 70
     OR (SELECT COUNT(*) FROM [KPICheckIns]) < 150
+    OR (SELECT COUNT(*) FROM [WorkProjects] WHERE [IsActive] = 1) < 4
+    OR (SELECT COUNT(*) FROM [WorkItems] WHERE [IsActive] = 1) < 10
+    OR
+    (
+        SELECT COUNT(*)
+        FROM [WorkItems] wi
+        INNER JOIN [WorkProjects] wp ON wp.[Id] = wi.[WorkProjectId]
+        WHERE wi.[AssigneeId] = 5
+          AND wi.[IsActive] = 1
+          AND wp.[IsActive] = 1
+          AND wi.[KanbanStatus] IN (N'Backlog', N'Todo', N'InProgress', N'Review', N'Blocked')
+    ) < 2
 BEGIN
     THROW 51007, N'Seed data was not completed. Check the earlier SQL error before this final block.', 1;
 END
 
 PRINT N'';
-PRINT N'=== SEED DATA HOÀN TẤT ===';
+PRINT N'=== SEED DATA BIZEN HOÀN TẤT ===';
 PRINT N'';
-PRINT N'TÀI KHOẢN DEMO (mật khẩu: 123):';
+PRINT N'TÀI KHOẢN MẪU (mật khẩu: 123):';
 PRINT N'  admin     -> Admin (Toàn quyền)';
 PRINT N'  director  -> Director (Quản lý chiến lược)';
-PRINT N'  manager   -> Manager (Trưởng phòng IT)';
+PRINT N'  manager   -> Manager (Trưởng nhà máy sản xuất)';
 PRINT N'  hr        -> HR (Nhân sự)';
-PRINT N'  employee  -> Employee (Nhân viên)';
+PRINT N'  employee  -> Employee (Nhân viên sản xuất, có task active)';
 GO

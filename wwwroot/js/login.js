@@ -18,6 +18,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     demoAccountButtons.forEach(function (button) {
         button.addEventListener('click', function () {
+            // Manage active class
+            demoAccountButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
             if (usernameInput && !usernameInput.readOnly) {
                 usernameInput.value = button.dataset.username || '';
                 usernameInput.dispatchEvent(new Event('input', { bubbles: true }));

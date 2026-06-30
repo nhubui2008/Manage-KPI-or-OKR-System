@@ -333,7 +333,7 @@
                         ? "/SystemParameters"
                         : "/Auth/MyProfile";
                     <div class="sidebar-footer dropup">
-                        <div class="sidebar-user" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                        <div class="sidebar-user sidebar-user-trigger" data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="user-avatar">
                                 <span>@(userName?[0].ToString().ToUpper() ?? "U")</span>
                             </div>
@@ -341,10 +341,10 @@
                                 <div class="user-name">@userName</div>
                                 <div class="user-role">@userRole</div>
                             </div>
-                            <i class="bi bi-three-dots-vertical ms-auto user-dots" style="color: rgba(255,255,255,0.4);"></i>
+                            <i class="bi bi-three-dots-vertical ms-auto user-dots"></i>
                         </div>
                         
-                        <ul class="dropdown-menu shadow-sm border-0 mb-2" style="min-width: 220px; border-radius: 12px; background: #fff;">
+                        <ul class="dropdown-menu sidebar-user-menu shadow-sm border-0 mb-2">
                             <li><a class="dropdown-item py-2 fw-medium" href="/Auth/MyProfile"><i class="bi bi-person me-2 text-muted"></i> Hồ sơ cá nhân</a></li>
                             <li><a class="dropdown-item py-2 fw-medium" href="@settingsUrl"><i class="bi bi-gear me-2 text-muted"></i> Cài đặt</a></li>
                             <li><a class="dropdown-item py-2 fw-medium" href="/Auth/ChangePassword"><i class="bi bi-shield-lock me-2 text-muted"></i> Đổi mật khẩu</a></li>
@@ -488,7 +488,7 @@
                         @if (User.Identity == null || !User.Identity.IsAuthenticated)
                         {
                             <div class="ms-2">
-                                <a href="/Auth/Login" class="btn shadow-sm text-decoration-none" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff; border: none; border-radius: 12px; padding: 8px 22px; font-size: 0.875rem; font-weight: 600; transition: all 0.2s; box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);" onmouseover="this.style.opacity='0.9'; this.style.transform='translateY(-1px)'" onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'">Đăng Nhập</a>
+                                <a href="/Auth/Login" class="btn btn-primary-custom btn-sm header-login-btn text-decoration-none">Đăng nhập</a>
                             </div>
                         }
                     </div>

@@ -1,4 +1,4 @@
-@model List<Manage_KPI_or_OKR_System.Models.ViewModels.EmployeeKpiTrackingRow>
+@model Manage_KPI_or_OKR_System.Helpers.PaginatedList<Manage_KPI_or_OKR_System.Models.ViewModels.EmployeeKpiTrackingRow>
 @using Manage_KPI_or_OKR_System.Helpers
 @using System.Linq
 @{
@@ -181,6 +181,22 @@
         font-weight: 600;
         color: var(--primary);
     }
+
+    /* Scrollbar style for employee list sidebar */
+    #employeeListContainer::-webkit-scrollbar {
+        width: 6px;
+    }
+    #employeeListContainer::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 999px;
+    }
+    #employeeListContainer::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 999px;
+    }
+    #employeeListContainer::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
 </style>
 
 <!-- Loading Overlay UI -->
@@ -236,8 +252,15 @@
                         </select>
                     </form>
 
-                    <div class="d-flex flex-column gap-2">
-                        <a asp-action="EmployeeTracking" class="text-decoration-none p-3 rounded-3 border @(isViewingAll ? "bg-primary bg-opacity-10 border-primary" : "bg-light border-light")">
+                    <!-- Realtime Search Input -->
+                    <div class="mb-3 position-relative">
+                        <input type="text" id="employeeSearchInput" class="form-control ps-4 shadow-none" placeholder="Tìm nhanh nhân viên..." />
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted small"></i>
+                    </div>
+
+                    <!-- Scrollable Container -->
+                    <div id="employeeListContainer" class="d-flex flex-column gap-2" style="max-height: 480px; overflow-y: auto; padding-right: 4px;">
+                        <a asp-action="EmployeeTracking" class="employee-list-item text-decoration-none p-3 rounded-3 border @(isViewingAll ? "bg-primary bg-opacity-10 border-primary" : "bg-light border-light")">
                             <div class="fw-bold @(isViewingAll ? "text-primary" : "text-dark")">Tất cả</div>
                             <div class="text-muted small">@employees.Count đối tượng trong phạm vi xem</div>
                         </a>
@@ -245,7 +268,7 @@
                         @foreach (var employee in employees)
                         {
                             var active = selectedEmployee?.EmployeeId == employee.EmployeeId;
-                            <a asp-action="EmployeeTracking" asp-route-employeeId="@employee.EmployeeId" class="text-decoration-none p-3 rounded-3 border @(active ? "bg-primary bg-opacity-10 border-primary" : "bg-light border-light")">
+                            <a asp-action="EmployeeTracking" asp-route-employeeId="@employee.EmployeeId" class="employee-list-item text-decoration-none p-3 rounded-3 border @(active ? "bg-primary bg-opacity-10 border-primary" : "bg-light border-light")" data-fullname="@employee.EmployeeName.ToLower()" data-dept="@employee.DepartmentNames.ToLower()">
                                 <div class="fw-bold @(active ? "text-primary" : "text-dark")">@employee.EmployeeName</div>
                                 <div class="text-muted small">@employee.DepartmentNames</div>
                                 @if (employee.IsDepartmentManager)
@@ -400,6 +423,51 @@
                                 </div>
                             </div>
                         }
+
+                        <!-- PAGINATION -->
+                        @if (Model != null && Model.TotalPages > 1)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mt-4 px-2 no-print">
+                                <div class="text-muted small">
+                                    Hiển thị trang @Model.PageIndex trên tổng số @Model.TotalPages
+                                </div>
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination pagination-sm mb-0 gap-1">
+                                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                                            <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="EmployeeTracking"
+                                               asp-route-pageNumber="@(Model.PageIndex - 1)"
+                                               asp-route-employeeId="@(selectedEmployee?.EmployeeId)">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        </li>
+
+                                        @for (int i = 1; i <= Model.TotalPages; i++)
+                                        {
+                                            if (i == 1 || i == Model.TotalPages || (i >= Model.PageIndex - 1 && i <= Model.PageIndex + 1))
+                                            {
+                                                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                                                    <a class="page-link border-0 rounded-circle shadow-none @(i == Model.PageIndex ? "" : "text-dark")" asp-action="EmployeeTracking"
+                                                       asp-route-pageNumber="@i"
+                                                       asp-route-employeeId="@(selectedEmployee?.EmployeeId)">@i</a>
+                                                </li>
+                                            }
+                                            else if (i == Model.PageIndex - 2 || i == Model.PageIndex + 2)
+                                            {
+                                                <li class="page-item disabled"><span class="page-link border-0">...</span></li>
+                                            }
+                                        }
+
+                                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                                            <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="EmployeeTracking"
+                                               asp-route-pageNumber="@(Model.PageIndex + 1)"
+                                               asp-route-employeeId="@(selectedEmployee?.EmployeeId)">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        }
                     }
                     else
                     {
@@ -414,7 +482,6 @@
                             </div>
                         </div>
                     }
-                </div>
                 </div>
             </div>
         </div>
@@ -442,6 +509,27 @@
                         if (loader) loader.style.display = 'flex';
                     });
                 });
+
+                // Fast local search/filter for employee sidebar list
+                const searchInput = document.getElementById('employeeSearchInput');
+                const employeeItems = document.querySelectorAll('#employeeListContainer .employee-list-item');
+                if (searchInput) {
+                    searchInput.addEventListener('input', function() {
+                        const query = this.value.toLowerCase().trim();
+                        employeeItems.forEach(item => {
+                            const fullName = item.getAttribute('data-fullname');
+                            const dept = item.getAttribute('data-dept') || '';
+
+                            if (!fullName) {
+                                item.style.setProperty('display', query === '' ? 'block' : 'none', 'important');
+                                return;
+                            }
+
+                            const isMatch = fullName.includes(query) || dept.includes(query);
+                            item.style.setProperty('display', isMatch ? 'block' : 'none', 'important');
+                        });
+                    });
+                }
             }
 
             if (document.readyState === 'loading') {

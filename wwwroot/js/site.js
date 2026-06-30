@@ -1557,17 +1557,24 @@ document.addEventListener('DOMContentLoaded', function () {
             // Chỉ hiện ô tìm kiếm nếu số lượng option > 8
             const minResultsForSearch = $el.data('minimum-results-for-search') || ($el.find('option').length > 8 ? 0 : -1);
 
-            $el.select2({
+            // Tìm component modal gần nhất nếu có để gán dropdownParent nhằm tránh lỗi focus trên Modal Bootstrap
+            const modalParent = $el.closest('.modal');
+            const selectOptions = {
                 placeholder: placeholder,
                 allowClear: allowClear,
                 minimumResultsForSearch: minResultsForSearch,
                 width: '100%',
-                dropdownParent: $el.parent(),
                 language: {
                     noResults: function () { return "Không tìm thấy kết quả"; },
                     searching: function () { return "Đang tìm kiếm..."; }
                 }
-            });
+            };
+
+            if (modalParent.length > 0) {
+                selectOptions.dropdownParent = modalParent;
+            }
+
+            $el.select2(selectOptions);
 
             // Trigger change event to ensure native and jQuery listeners are notified
             $el.on('change.select2', function () {

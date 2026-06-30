@@ -32,6 +32,51 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _settingsService = settingsService;
         }
 
+        private async Task<string> SignInSystemUserAsync(
+            SystemUser user,
+            bool remember = false,
+            string? email = null)
+        {
+            var role = await AuthRoleHelper.EnsureUserHasLoginRoleAsync(_context, user);
+            var roleName = AuthRoleHelper.GetRoleNameOrDefault(role);
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim("SystemUserId", user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Username ?? "Unknown"),
+                new Claim(ClaimTypes.Role, roleName)
+            };
+
+            var resolvedEmail = email ?? user.Email;
+            if (!string.IsNullOrWhiteSpace(resolvedEmail))
+            {
+                claims.Add(new Claim(ClaimTypes.Email, resolvedEmail));
+            }
+
+            if (user.LastPasswordChange == null)
+            {
+                claims.Add(new Claim("RequiresPasswordChange", "true"));
+            }
+
+            if (user.TrialEndTime.HasValue)
+            {
+                claims.Add(new Claim("TrialEndTime", user.TrialEndTime.Value.ToString("O")));
+            }
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = remember,
+                ExpiresUtc = remember ? DateTimeOffset.UtcNow.AddDays(30) : null
+            };
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+            return roleName;
+        }
+
         public IActionResult Login(string returnUrl = null, string username = null, string password = null)
         {
             ViewData["IsLoginPage"] = true;
@@ -129,45 +174,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
-            var roleName = "User";
-
-            if (user.RoleId.HasValue)
-            {
-                var role = await _context.Roles.FindAsync(user.RoleId);
-                if (role != null)
-                {
-                    roleName = role.RoleName ?? "User";
-                }
-            }
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim("SystemUserId", user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username ?? "Unknown"),
-                new Claim(ClaimTypes.Role, roleName)
-            };
-
-            if (user.LastPasswordChange == null)
-            {
-                claims.Add(new Claim("RequiresPasswordChange", "true"));
-            }
-
-            if (user.TrialEndTime.HasValue)
-            {
-                claims.Add(new Claim("TrialEndTime", user.TrialEndTime.Value.ToString("O")));
-            }
-
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
-
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = remember,
-                ExpiresUtc = remember ? DateTimeOffset.UtcNow.AddDays(30) : null
-            };
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+            var roleName = await SignInSystemUserAsync(user, remember);
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
@@ -198,25 +205,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-            var roleName = "User";
-            if (user.RoleId.HasValue)
-            {
-                var role = await _context.Roles.FindAsync(user.RoleId.Value);
-                if (role != null) roleName = role.RoleName;
-            }
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim("SystemUserId", user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username ?? "Unknown"),
-                new Claim(ClaimTypes.Role, roleName)
-            };
-
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+            await SignInSystemUserAsync(user);
 
             return RedirectToAction("Index", "Dashboard");
         }
@@ -244,15 +233,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
-            var defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "User");
-            int? roleId = defaultRole?.Id;
+            var defaultRole = await AuthRoleHelper.EnsureDefaultSelfServiceRoleAsync(_context);
 
             var newUser = new SystemUser
             {
                 Username = username,
                 Email = email,
                 PasswordHash = PasswordHelper.HashPassword(password),
-                RoleId = roleId,
+                RoleId = defaultRole.Id,
                 IsActive = true,
                 CreatedAt = DateTime.Now
             };
@@ -693,11 +681,11 @@ public async Task<IActionResult> MyProfile()
     if (user == null) return NotFound();
 
     // 3. Lấy tên Quyền (Role)
-    var roleName = "User";
+    var roleName = AuthRoleHelper.DefaultSelfServiceRoleName;
     if (user.RoleId.HasValue)
     {
         var role = await _context.Roles.FindAsync(user.RoleId);
-        if (role != null) roleName = role.RoleName;
+        if (role != null) roleName = AuthRoleHelper.GetRoleNameOrDefault(role);
     }
     ViewBag.RoleName = roleName;
 
@@ -756,14 +744,13 @@ public async Task<IActionResult> GoogleResponse()
             defaultUsername += new Random().Next(100, 999).ToString();
         }
 
-        var defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "User");
-        int? roleId = defaultRole?.Id;
+        var defaultRole = await AuthRoleHelper.EnsureDefaultSelfServiceRoleAsync(_context);
 
         user = new SystemUser
         {
             Username = defaultUsername,
             Email = email,
-            RoleId = roleId,
+            RoleId = defaultRole.Id,
             IsActive = true,
             CreatedAt = DateTime.Now
         };
@@ -779,27 +766,7 @@ public async Task<IActionResult> GoogleResponse()
     }
 
     // 3. Đăng nhập vào hệ thống MiniERP qua Cookie
-    var roleName = "User";
-    if (user.RoleId.HasValue)
-    {
-        var role = await _context.Roles.FindAsync(user.RoleId);
-        if (role != null) roleName = role.RoleName ?? "User";
-    }
-
-    var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-        new Claim("SystemUserId", user.Id.ToString()),
-        new Claim(ClaimTypes.Name, user.Username ?? "Unknown"),
-        new Claim(ClaimTypes.Role, roleName),
-        new Claim(ClaimTypes.Email, email)
-    };
-
-    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-    var principal = new ClaimsPrincipal(identity);
-
-    // Sign path to Cookies scheme
-    await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+    await SignInSystemUserAsync(user, email: email);
 
     return RedirectToAction("Index", "Dashboard");
 }

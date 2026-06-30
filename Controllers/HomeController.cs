@@ -2,12 +2,15 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Manage_KPI_or_OKR_System.Services;
 using Microsoft.Data.SqlClient;
+using System.Security.Claims;
 
 namespace Manage_KPI_or_OKR_System.Controllers;
 
@@ -71,6 +74,41 @@ public class HomeController : Controller
         return ex.GetBaseException() is SqlException { Number: 2601 or 2627 };
     }
 
+    private async Task<string> SignInSystemUserAsync(SystemUser user, string fallbackName)
+    {
+        var role = await AuthRoleHelper.EnsureUserHasLoginRoleAsync(_context, user);
+        var roleName = AuthRoleHelper.GetRoleNameOrDefault(role);
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, user.Username ?? fallbackName),
+            new Claim(ClaimTypes.Role, roleName),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim("SystemUserId", user.Id.ToString())
+        };
+
+        if (!string.IsNullOrWhiteSpace(user.Email))
+        {
+            claims.Add(new Claim(ClaimTypes.Email, user.Email));
+        }
+
+        if (user.LastPasswordChange == null)
+        {
+            claims.Add(new Claim("RequiresPasswordChange", "true"));
+        }
+
+        if (user.TrialEndTime.HasValue)
+        {
+            claims.Add(new Claim("TrialEndTime", user.TrialEndTime.Value.ToString("O")));
+        }
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+        return roleName;
+    }
+
     [HttpPost]
     [AllowAnonymous]
     [IgnoreAntiforgeryToken]
@@ -109,7 +147,7 @@ public class HomeController : Controller
 
             var rawPassword = GenerateSecurePassword();
             var passwordHash = Manage_KPI_or_OKR_System.Helpers.PasswordHelper.HashPassword(rawPassword);
-            var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "User");
+            var userRole = await AuthRoleHelper.EnsureDefaultSelfServiceRoleAsync(_context);
             var adminRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Admin" || r.RoleName == "Administrator");
             await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -120,7 +158,7 @@ public class HomeController : Controller
                 Username = normalizedEmail,
                 Email = normalizedEmail,
                 PasswordHash = passwordHash,
-                RoleId = isPurchase ? adminRole?.Id : userRole?.Id,
+                RoleId = isPurchase ? adminRole?.Id ?? userRole.Id : userRole.Id,
                 IsActive = true,
                 CreatedAt = DateTime.Now,
                 TrialEndTime = isPurchase ? (DateTime?)null : DateTime.Now.AddMinutes(30)
@@ -246,22 +284,7 @@ public class HomeController : Controller
                 await _context.SaveChangesAsync();
             }
 
-            var roleName = "User";
-            if (user.RoleId.HasValue)
-            {
-                var role = await _context.Roles.FindAsync(user.RoleId.Value);
-                if (role != null) roleName = role.RoleName ?? "User";
-            }
-
-            var claims = new System.Collections.Generic.List<System.Security.Claims.Claim>
-            {
-                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username ?? normalizedUsername),
-                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, roleName),
-                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id.ToString())
-            };
-            var identity = new System.Security.Claims.ClaimsIdentity(claims, Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new System.Security.Claims.ClaimsPrincipal(identity);
-            await HttpContext.SignInAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme, principal);
+            var roleName = await SignInSystemUserAsync(user, normalizedUsername);
 
             if (roleName == "SaaS_Admin")
             {
@@ -302,6 +325,7 @@ public class HomeController : Controller
                 }
                 
                 await _context.SaveChangesAsync();
+                await SignInSystemUserAsync(user, username);
             }
 
             return Json(new { success = true, message = $"Bạn đã nâng cấp {(string.IsNullOrEmpty(plan) ? "thành công" : plan)}! Tài khoản của bạn đã được kích hoạt vĩnh viễn với đầy đủ tính năng." });
