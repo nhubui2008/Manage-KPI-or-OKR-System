@@ -6526,7 +6526,28 @@ body {
         width: auto;
     }
 
+
     html.settings-panel-open .settings-panel {
         transform: translateY(0) scale(1);
     }
 }
+
+/* ============================================
+   WorkProjects - Fix KPI/KeyResult select overflow
+   ============================================ */
+#addTaskCollapse .form-select {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+#addTaskCollapse .row {
+    min-width: 0;
+}
+
+#addTaskCollapse [class*="col-"] {
+    min-width: 0;
+}
+

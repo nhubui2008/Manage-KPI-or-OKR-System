@@ -81,11 +81,11 @@
                     <hr class="my-3 text-muted opacity-25">
                     <form asp-action="CreateTask" method="post" class="row g-3">
                         <input type="hidden" name="projectId" value="@project.Id" />
-                        <div class="col-lg-4">
+                        <div class="col-lg-8">
                             <label class="form-label fw-semibold small text-secondary">Tên công việc</label>
                             <input type="text" name="title" class="form-control form-control-sm" placeholder="Nhập tên công việc..." maxlength="220" required />
                         </div>
-                        <div class="col-lg-2 col-md-4">
+                        <div class="col-lg-4 col-md-12">
                             <label class="form-label fw-semibold small text-secondary">Người phụ trách</label>
                             <select name="assigneeId" class="form-select form-select-sm">
                                 <option value="">Chưa gán</option>
@@ -95,7 +95,8 @@
                                 }
                             </select>
                         </div>
-                        <div class="col-lg-2 col-md-4">
+                        
+                        <div class="col-lg-4 col-md-12">
                             <label class="form-label fw-semibold small text-secondary">Phòng ban</label>
                             <select name="departmentId" class="form-select form-select-sm">
                                 <option value="">Chưa gán</option>
@@ -105,31 +106,34 @@
                                 }
                             </select>
                         </div>
-                        <div class="col-lg-3 col-md-6">
+                        <div class="col-lg-4 col-md-6">
                             <label class="form-label fw-semibold small text-secondary">Liên kết KPI</label>
-                            <select name="kpiId" class="form-select form-select-sm">
-                                <option value="">Không liên kết KPI</option>
+                            <select name="kpiId" class="form-select form-select-sm" style="text-overflow: ellipsis; overflow: hidden; max-width: 100%;" title="">
+                                <option value="">Không liên kết</option>
                                 @foreach (var kpi in Model.KPIs)
                                 {
-                                    <option value="@kpi.Id">@KpiOptionLabel(kpi)</option>
+                                    var label = KpiOptionLabel(kpi);
+                                    <option value="@kpi.Id" title="@label">@label</option>
                                 }
                             </select>
                         </div>
-                        <div class="col-lg-3 col-md-6">
+                        <div class="col-lg-4 col-md-6">
                             <label class="form-label fw-semibold small text-secondary">Liên kết Key Result</label>
-                            <select name="okrKeyResultId" class="form-select form-select-sm">
-                                <option value="">Tự lấy từ KPI / Không liên kết</option>
+                            <select name="okrKeyResultId" class="form-select form-select-sm" style="text-overflow: ellipsis; overflow: hidden; max-width: 100%;" title="">
+                                <option value="">Tự lấy theo KPI</option>
                                 @foreach (var keyResult in Model.KeyResults)
                                 {
-                                    <option value="@keyResult.Id">@KeyResultOptionLabel(keyResult)</option>
+                                    var krLabel = KeyResultOptionLabel(keyResult);
+                                    <option value="@keyResult.Id" title="@krLabel">@krLabel</option>
                                 }
                             </select>
                         </div>
-                        <div class="col-lg-2 col-md-4">
+
+                        <div class="col-lg-3 col-md-3">
                             <label class="form-label fw-semibold small text-secondary">Trọng số KPI</label>
                             <input type="number" name="kpiImpactWeight" class="form-control form-control-sm" min="0.1" max="100" step="0.1" value="1" />
                         </div>
-                        <div class="col-lg-2 col-md-4">
+                        <div class="col-lg-3 col-md-3">
                             <label class="form-label fw-semibold small text-secondary">Ưu tiên</label>
                             <select name="priority" class="form-select form-select-sm">
                                 @foreach (var item in Model.PriorityOptions)
@@ -138,7 +142,7 @@
                                 }
                             </select>
                         </div>
-                        <div class="col-lg-2 col-md-4">
+                        <div class="col-lg-3 col-md-3">
                             <label class="form-label fw-semibold small text-secondary">Trạng thái</label>
                             <select name="kanbanStatus" class="form-select form-select-sm">
                                 @foreach (var item in Model.StatusOptions)
@@ -147,11 +151,12 @@
                                 }
                             </select>
                         </div>
-                        <div class="col-lg-2 col-md-4">
+                        <div class="col-lg-3 col-md-3">
                             <label class="form-label fw-semibold small text-secondary">Deadline</label>
                             <input type="date" name="dueDate" class="form-control form-control-sm" />
                         </div>
-                        <div class="col-lg-8">
+
+                        <div class="col-lg-10">
                             <label class="form-label fw-semibold small text-secondary">Mô tả công việc</label>
                             <input type="text" name="description" class="form-control form-control-sm" maxlength="2000" placeholder="Kết quả mong muốn, tài liệu liên quan, lưu ý phối hợp..." />
                         </div>
@@ -1008,12 +1013,14 @@
     private static string KpiOptionLabel(KPI kpi)
     {
         var name = !string.IsNullOrWhiteSpace(kpi.KPIName) ? kpi.KPIName : $"KPI #{kpi.Id}";
-        return $"{name} (#{kpi.Id})";
+        var truncated = name.Length > 25 ? name.Substring(0, 25) + "…" : name;
+        return $"{truncated} (#{kpi.Id})";
     }
 
     private static string KeyResultOptionLabel(OKRKeyResult keyResult)
     {
         var name = !string.IsNullOrWhiteSpace(keyResult.KeyResultName) ? keyResult.KeyResultName : $"KR #{keyResult.Id}";
-        return $"{name} (#{keyResult.Unit ?? "%"})";
+        var truncated = name.Length > 25 ? name.Substring(0, 25) + "…" : name;
+        return $"{truncated} (#{keyResult.Unit ?? "%"})";
     }
 }
