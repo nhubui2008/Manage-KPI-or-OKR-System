@@ -82,11 +82,11 @@
                     <form asp-action="CreateTask" method="post" class="row g-3">
                         <input type="hidden" name="projectId" value="@project.Id" />
                         <div class="col-lg-8">
-                            <label class="form-label fw-semibold small text-secondary">Tên công việc</label>
+                            <label class="form-label fw-semibold small text-secondary d-block mb-1">Tên công việc</label>
                             <input type="text" name="title" class="form-control form-control-sm" placeholder="Nhập tên công việc..." maxlength="220" required />
                         </div>
                         <div class="col-lg-4 col-md-12">
-                            <label class="form-label fw-semibold small text-secondary">Người phụ trách</label>
+                            <label class="form-label fw-semibold small text-secondary d-block mb-1">Người phụ trách</label>
                             <select name="assigneeId" class="form-select form-select-sm">
                                 <option value="">Chưa gán</option>
                                 @foreach (var employee in Model.Employees)
@@ -97,8 +97,8 @@
                         </div>
                         
                         <div class="col-lg-4 col-md-12">
-                            <label class="form-label fw-semibold small text-secondary">Phòng ban</label>
-                            <select name="departmentId" class="form-select form-select-sm">
+                            <label class="form-label fw-semibold small text-secondary d-block mb-1">Phòng ban</label>
+                            <select name="departmentId" class="form-select form-select-sm" style="width: 100%;">
                                 <option value="">Chưa gán</option>
                                 @foreach (var department in Model.Departments)
                                 {
@@ -107,7 +107,7 @@
                             </select>
                         </div>
                         <div class="col-lg-4 col-md-6">
-                            <label class="form-label fw-semibold small text-secondary">Liên kết KPI</label>
+                            <label class="form-label fw-semibold small text-secondary d-block mb-1">Liên kết KPI</label>
                             <select name="kpiId" class="form-select form-select-sm" style="text-overflow: ellipsis; overflow: hidden; max-width: 100%;" title="">
                                 <option value="">Không liên kết</option>
                                 @foreach (var kpi in Model.KPIs)
@@ -118,7 +118,7 @@
                             </select>
                         </div>
                         <div class="col-lg-4 col-md-6">
-                            <label class="form-label fw-semibold small text-secondary">Liên kết Key Result</label>
+                            <label class="form-label fw-semibold small text-secondary d-block mb-1">Liên kết Key Result</label>
                             <select name="okrKeyResultId" class="form-select form-select-sm" style="text-overflow: ellipsis; overflow: hidden; max-width: 100%;" title="">
                                 <option value="">Tự lấy theo KPI</option>
                                 @foreach (var keyResult in Model.KeyResults)
@@ -130,11 +130,11 @@
                         </div>
 
                         <div class="col-lg-3 col-md-3">
-                            <label class="form-label fw-semibold small text-secondary">Trọng số KPI</label>
+                            <label class="form-label fw-semibold small text-secondary d-block mb-1">Trọng số KPI</label>
                             <input type="number" name="kpiImpactWeight" class="form-control form-control-sm" min="0.1" max="100" step="0.1" value="1" />
                         </div>
                         <div class="col-lg-3 col-md-3">
-                            <label class="form-label fw-semibold small text-secondary">Ưu tiên</label>
+                            <label class="form-label fw-semibold small text-secondary d-block mb-1">Ưu tiên</label>
                             <select name="priority" class="form-select form-select-sm">
                                 @foreach (var item in Model.PriorityOptions)
                                 {
@@ -143,7 +143,7 @@
                             </select>
                         </div>
                         <div class="col-lg-3 col-md-3">
-                            <label class="form-label fw-semibold small text-secondary">Trạng thái</label>
+                            <label class="form-label fw-semibold small text-secondary d-block mb-1">Trạng thái</label>
                             <select name="kanbanStatus" class="form-select form-select-sm">
                                 @foreach (var item in Model.StatusOptions)
                                 {
@@ -152,12 +152,12 @@
                             </select>
                         </div>
                         <div class="col-lg-3 col-md-3">
-                            <label class="form-label fw-semibold small text-secondary">Deadline</label>
+                            <label class="form-label fw-semibold small text-secondary d-block mb-1">Deadline</label>
                             <input type="date" name="dueDate" class="form-control form-control-sm" />
                         </div>
 
                         <div class="col-lg-10">
-                            <label class="form-label fw-semibold small text-secondary">Mô tả công việc</label>
+                            <label class="form-label fw-semibold small text-secondary d-block mb-1">Mô tả công việc</label>
                             <input type="text" name="description" class="form-control form-control-sm" maxlength="2000" placeholder="Kết quả mong muốn, tài liệu liên quan, lưu ý phối hợp..." />
                         </div>
                         <div class="col-lg-2 d-grid align-self-end">
@@ -335,18 +335,18 @@
                                 <input type="hidden" name="id" value="@task.Id" />
                                 
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold text-secondary small">Tên công việc</label>
+                                    <label class="form-label fw-bold text-secondary small d-block mb-1">Tên công việc</label>
                                     <input type="text" name="title" value="@task.Title" class="form-control" maxlength="220" required />
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold text-secondary small">Mô tả công việc</label>
+                                    <label class="form-label fw-bold text-secondary small d-block mb-1">Mô tả công việc</label>
                                     <textarea name="description" class="form-control" rows="3" placeholder="Nhập mô tả kết quả mong muốn, tài liệu liên quan..." maxlength="2000">@task.Description</textarea>
                                 </div>
                                 
                                 <div class="row g-3 mb-3">
-                                    <div class="col-sm-6">
-                                        <label class="form-label fw-bold text-secondary small">Người phụ trách</label>
+                                    <div class="col-sm-4">
+                                        <label class="form-label fw-bold text-secondary small d-block mb-1">Người phụ trách</label>
                                         <select name="assigneeId" class="form-select">
                                             <option value="">Chưa gán</option>
                                             @foreach (var employee in Model.Employees)
@@ -355,8 +355,8 @@
                                             }
                                         </select>
                                     </div>
-                                    <div class="col-sm-6">
-                                        <label class="form-label fw-bold text-secondary small">Phòng ban</label>
+                                    <div class="col-sm-8">
+                                        <label class="form-label fw-bold text-secondary small d-block mb-1">Phòng ban</label>
                                         <select name="departmentId" class="form-select">
                                             <option value="">Chưa gán phòng ban</option>
                                             @foreach (var department in Model.Departments)
@@ -369,7 +369,7 @@
 
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-5">
-                                        <label class="form-label fw-bold text-secondary small">Liên kết KPI</label>
+                                        <label class="form-label fw-bold text-secondary small d-block mb-1">Liên kết KPI</label>
                                         <select name="kpiId" class="form-select">
                                             <option value="">Không liên kết KPI</option>
                                             @foreach (var kpi in Model.KPIs)
@@ -379,7 +379,7 @@
                                         </select>
                                     </div>
                                     <div class="col-md-5">
-                                        <label class="form-label fw-bold text-secondary small">Liên kết Key Result</label>
+                                        <label class="form-label fw-bold text-secondary small d-block mb-1">Liên kết Key Result</label>
                                         <select name="okrKeyResultId" class="form-select">
                                             <option value="">Tự lấy từ KPI / Không liên kết</option>
                                             @foreach (var keyResult in Model.KeyResults)
@@ -389,14 +389,14 @@
                                         </select>
                                     </div>
                                     <div class="col-md-2">
-                                        <label class="form-label fw-bold text-secondary small">Trọng số</label>
+                                        <label class="form-label fw-bold text-secondary small d-block mb-1">Trọng số</label>
                                         <input type="number" name="kpiImpactWeight" class="form-control" min="0.1" max="100" step="0.1" value="@((task.KpiImpactWeight ?? 1).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))" />
                                     </div>
                                 </div>
                                 
                                 <div class="row g-3 mb-4">
                                     <div class="col-6 col-sm-4">
-                                        <label class="form-label fw-bold text-secondary small">Độ ưu tiên</label>
+                                        <label class="form-label fw-bold text-secondary small d-block mb-1">Độ ưu tiên</label>
                                         <select name="priority" class="form-select">
                                             @foreach (var item in Model.PriorityOptions)
                                             {
@@ -405,7 +405,7 @@
                                         </select>
                                     </div>
                                     <div class="col-6 col-sm-4">
-                                        <label class="form-label fw-bold text-secondary small">Trạng thái</label>
+                                        <label class="form-label fw-bold text-secondary small d-block mb-1">Trạng thái</label>
                                         <select name="kanbanStatus" class="form-select">
                                             @foreach (var item in Model.StatusOptions)
                                             {
@@ -414,14 +414,14 @@
                                         </select>
                                     </div>
                                     <div class="col-12 col-sm-4">
-                                        <label class="form-label fw-bold text-secondary small">Tiến độ (@taskProgress.ToString("0.##")%)</label>
+                                        <label class="form-label fw-bold text-secondary small d-block mb-1">Tiến độ (@taskProgress.ToString("0.##")%)</label>
                                         <div class="d-flex align-items-center gap-2">
                                             <input type="range" name="progressPercentage" class="form-range flex-grow-1" min="0" max="100" step="5" value="@taskProgress.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" oninput="this.nextElementSibling.value = this.value + '%'" />
                                             <output class="fw-semibold text-primary small" style="min-width: 35px;">@taskProgress.ToString("0.##")%</output>
                                         </div>
                                     </div>
                                     <div class="col-md-8">
-                                        <label class="form-label fw-bold text-secondary small">Hạn chót</label>
+                                        <label class="form-label fw-bold text-secondary small d-block mb-1">Hạn chót</label>
                                         <input type="date" name="dueDate" class="form-control" value="@(task.DueDate?.ToString("yyyy-MM-dd"))" />
                                     </div>
                                     <div class="col-md-4 d-grid align-self-end">
