@@ -1,6 +1,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
     /* ===== DESIGN TOKENS ===== */
@@ -554,6 +554,95 @@
         .lp-nav-actions { gap: 1rem; }
         .lp-nav-link-btn { font-size: 0.9rem; padding: 0.5rem 1rem; }
     }
+
+    /* ClickUp-inspired navbar refresh for standalone landing pages */
+    :root {
+        --primary: #7b68ee;
+        --primary-light: #b38cff;
+        --primary-dark: #6647f0;
+        --primary-glow: rgba(123, 104, 238, 0.18);
+        --secondary: #292d34;
+        --secondary-light: #646464;
+        --accent: #0091ff;
+        --surface-0: #ffffff;
+        --surface-1: #f8f9fa;
+        --surface-2: #edf6fd;
+        --surface-3: #e8e8e8;
+        --text-primary: #090c1d;
+        --text-secondary: #292d34;
+        --text-tertiary: #646464;
+        --text-quaternary: #7c828d;
+        --border: #e8e8e8;
+        --border-hover: #d9d9d9;
+        --radius-sm: 8px;
+        --radius-md: 8px;
+        --radius-lg: 8px;
+        --radius-xl: 8px;
+        --radius-2xl: 8px;
+        --shadow-sm: rgba(0,0,0,0.1) 0 1px 3px 0, rgba(0,0,0,0.1) 0 1px 2px -1px;
+        --shadow-md: rgba(18,43,165,0.04) 0 1px 1px -0.5px, rgba(18,43,165,0.04) 0 3px 3px -1.5px, rgba(18,43,165,0.04) 0 8px 12px -6px;
+        --shadow-lg: rgba(18,43,165,0.06) 0 6px 18px -8px;
+        --shadow-xl: rgba(18,43,165,0.08) 0 12px 28px -12px;
+    }
+
+    *,
+    *::before,
+    *::after {
+        letter-spacing: 0 !important;
+    }
+
+    body,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5 {
+        font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif !important;
+    }
+
+    .landing-bg::before,
+    .hero-glow {
+        display: none !important;
+    }
+
+    .landing-bg {
+        background: #ffffff !important;
+    }
+
+    .lp-nav {
+        background: rgba(255,255,255,0.96) !important;
+        border-bottom: 1px solid var(--border) !important;
+        box-shadow: none !important;
+    }
+
+    .lp-brand i,
+    .lp-dropdown-menu i {
+        color: var(--primary) !important;
+    }
+
+    .lp-cta-btn,
+    .btn-primary-lg,
+    .pricing-btn.solid {
+        background: #202023 !important;
+        color: #ffffff !important;
+        border-color: #202023 !important;
+        box-shadow: rgba(13, 21, 48, 0.04) 0 4px 4px 0 !important;
+    }
+
+    .lp-cta-btn:hover,
+    .btn-primary-lg:hover,
+    .pricing-btn.solid:hover {
+        background: #000000 !important;
+        box-shadow: var(--shadow-sm) !important;
+    }
+
+    .lp-dropdown-menu,
+    .lp-feature-card,
+    .pricing-card {
+        border-radius: 8px !important;
+        border: 1px solid var(--border) !important;
+        box-shadow: var(--shadow-md) !important;
+    }
 </style>
 
 <!-- ===== BG ===== -->
@@ -595,8 +684,8 @@
                             <div style="font-size: 0.8rem; color: var(--text-tertiary);">Đăng nhập với</div>
                             <div style="font-weight: bold; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@username">@username</div>
                         </div>
-                        <a href="@(User.IsInRole("SaaS_Admin") ? "/SaaSAdmin/Index" : "/Dashboard/Index")"><i class="bi bi-grid-1x2-fill" style="color: var(--primary);"></i> Vào Hệ thống</a>
-                        @if (!User.IsInRole("SaaS_Admin"))
+                        <a href="/Dashboard/Index"><i class="bi bi-grid-1x2-fill" style="color: var(--primary);"></i> Vào Hệ thống</a>
+                        @if (!(User.IsInRole("Admin") || User.IsInRole("Administrator")))
                         {
                             <a href="/Home/PurchaseHistory"><i class="bi bi-clock-history" style="color: var(--secondary);"></i> Lịch sử mua</a>
                         }

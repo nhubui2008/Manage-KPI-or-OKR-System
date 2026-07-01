@@ -148,7 +148,7 @@ public class HomeController : Controller
             var rawPassword = GenerateSecurePassword();
             var passwordHash = Manage_KPI_or_OKR_System.Helpers.PasswordHelper.HashPassword(rawPassword);
             var userRole = await AuthRoleHelper.EnsureDefaultSelfServiceRoleAsync(_context);
-            var adminRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Admin" || r.RoleName == "Administrator");
+            var adminRole = await AuthRoleHelper.EnsureAdminRoleAsync(_context);
             await using var transaction = await _context.Database.BeginTransactionAsync();
 
             bool isPurchase = !string.IsNullOrEmpty(selectedPlan);
@@ -158,7 +158,7 @@ public class HomeController : Controller
                 Username = normalizedEmail,
                 Email = normalizedEmail,
                 PasswordHash = passwordHash,
-                RoleId = isPurchase ? adminRole?.Id ?? userRole.Id : userRole.Id,
+                RoleId = isPurchase ? adminRole.Id : userRole.Id,
                 IsActive = true,
                 CreatedAt = DateTime.Now,
                 TrialEndTime = isPurchase ? (DateTime?)null : DateTime.Now.AddMinutes(30)
@@ -235,32 +235,6 @@ public class HomeController : Controller
         {
             var normalizedUsername = username.Trim().ToLowerInvariant();
 
-            if (normalizedUsername == "superadmin")
-            {
-                var saasRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "SaaS_Admin");
-                if (saasRole == null)
-                {
-                    saasRole = new Manage_KPI_or_OKR_System.Models.Role { RoleName = "SaaS_Admin", Description = "Chủ sở hữu hệ thống SaaS" };
-                    _context.Roles.Add(saasRole);
-                    await _context.SaveChangesAsync();
-                }
-
-                var superadmin = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == "superadmin");
-                if (superadmin == null)
-                {
-                    superadmin = new SystemUser
-                    {
-                        Username = "superadmin",
-                        Email = "ceo@vietmach.com",
-                        PasswordHash = Manage_KPI_or_OKR_System.Helpers.PasswordHelper.HashPassword("123"),
-                        RoleId = saasRole.Id,
-                        IsActive = true
-                    };
-                    _context.SystemUsers.Add(superadmin);
-                    await _context.SaveChangesAsync();
-                }
-            }
-
             var user = await _context.SystemUsers.FirstOrDefaultAsync(u =>
                 u.Username != null && u.Username.ToLower() == normalizedUsername);
             if (user == null || user.PasswordHash == null || !Manage_KPI_or_OKR_System.Helpers.PasswordHelper.VerifyPassword(password, user.PasswordHash))
@@ -275,23 +249,21 @@ public class HomeController : Controller
                 _context.PurchaseRegistrations.Add(reg);
                 
                 user.TrialEndTime = null;
-                var adminRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Admin" || r.RoleName == "Administrator");
-                if (adminRole != null)
-                {
-                    user.RoleId = adminRole.Id;
-                }
+                var adminRole = await AuthRoleHelper.EnsureAdminRoleAsync(_context);
+                user.RoleId = adminRole.Id;
                 
                 await _context.SaveChangesAsync();
             }
 
-            var roleName = await SignInSystemUserAsync(user, normalizedUsername);
+            await SignInSystemUserAsync(user, normalizedUsername);
 
-            if (roleName == "SaaS_Admin")
+            return Json(new
             {
-                return Json(new { success = true, redirectUrl = "/SaaSAdmin/Index", message = "Đăng nhập thành công!" });
-            }
-
-            return Json(new { success = true, requiresPasswordChange = user.LastPasswordChange == null, message = "Đăng nhập thành công!" });
+                success = true,
+                redirectUrl = "/Dashboard/Index",
+                requiresPasswordChange = user.LastPasswordChange == null,
+                message = "Đăng nhập thành công!"
+            });
         }
         catch (Exception ex)
         {
@@ -318,11 +290,8 @@ public class HomeController : Controller
                 _context.PurchaseRegistrations.Add(reg);
                 
                 user.TrialEndTime = null;
-                var adminRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Admin" || r.RoleName == "Administrator");
-                if (adminRole != null)
-                {
-                    user.RoleId = adminRole.Id;
-                }
+                var adminRole = await AuthRoleHelper.EnsureAdminRoleAsync(_context);
+                user.RoleId = adminRole.Id;
                 
                 await _context.SaveChangesAsync();
                 await SignInSystemUserAsync(user, username);

@@ -129,32 +129,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
-            if (username == "superadmin")
-            {
-                var saasRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "SaaS_Admin");
-                if (saasRole == null)
-                {
-                    saasRole = new Role { RoleName = "SaaS_Admin", Description = "Chủ sở hữu hệ thống SaaS" };
-                    _context.Roles.Add(saasRole);
-                    await _context.SaveChangesAsync();
-                }
-
-                var superadmin = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == "superadmin");
-                if (superadmin == null)
-                {
-                    superadmin = new SystemUser
-                    {
-                        Username = "superadmin",
-                        Email = "ceo@vietmach.com",
-                        PasswordHash = PasswordHelper.HashPassword("123"),
-                        RoleId = saasRole.Id,
-                        IsActive = true
-                    };
-                    _context.SystemUsers.Add(superadmin);
-                    await _context.SaveChangesAsync();
-                }
-            }
-
             var user = await _context.SystemUsers
                 .FirstOrDefaultAsync(u => u.Username == username && u.IsActive == true);
 
@@ -174,16 +148,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
-            var roleName = await SignInSystemUserAsync(user, remember);
+            await SignInSystemUserAsync(user, remember);
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
             }
-            if (roleName == "SaaS_Admin")
-            {
-                return RedirectToAction("Index", "SaaSAdmin");
-            }
+
             return RedirectToAction("Index", "Dashboard");
         }
 

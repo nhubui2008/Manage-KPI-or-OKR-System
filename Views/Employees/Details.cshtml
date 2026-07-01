@@ -39,7 +39,7 @@
     
     // Status color
     string statusText = Model.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc";
-    string statusClass = Model.IsActive == true ? "status-active" : "status-inactive";
+    string statusClass = Model.IsActive == true ? "active" : "inactive";
     string statusDot = Model.IsActive == true ? "bg-success" : "bg-danger";
 }
 
@@ -75,7 +75,7 @@
             <div class="dept-banner-info">
                 <div class="d-flex align-items-center gap-3 mb-1">
                     <h2 class="dept-name m-0">@Model.FullName</h2>
-                    <span class="status-badge" style="background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.3);">
+                    <span class="status-badge @statusClass">
                         <span class="status-dot @statusDot"></span> @statusText
                     </span>
                 </div>

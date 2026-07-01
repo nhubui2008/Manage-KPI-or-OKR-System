@@ -602,12 +602,12 @@
                 datasets: [{
                     label: 'Tiến độ trung bình (%)',
                     data: mainData,
-                    borderColor: '#1a73e8',
-                    backgroundColor: 'rgba(26, 115, 232, 0.08)',
+                    borderColor: '#7b68ee',
+                    backgroundColor: 'rgba(123, 104, 238, 0.1)',
                     fill: true,
                     tension: 0.4,
                     pointRadius: 5,
-                    pointBackgroundColor: '#1a73e8',
+                    pointBackgroundColor: '#7b68ee',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2,
                     pointHoverRadius: 7
@@ -638,7 +638,7 @@
                 labels: hasOkrData ? okrLabels : ['Chưa có dữ liệu'],
                 datasets: [{
                     data: hasOkrData ? okrData : [1],
-                    backgroundColor: hasOkrData ? ['#0f9d58', '#f29900', '#1a73e8', '#d93025', '#5e35b1', '#7c4dff'] : ['#e3e8ef'],
+                    backgroundColor: hasOkrData ? ['#0f9d58', '#f29900', '#7b68ee', '#d93025', '#514b81', '#0091ff'] : ['#e8e8e8'],
                     borderWidth: 0,
                     hoverOffset: 15
                 }]
@@ -664,7 +664,7 @@
                         label: 'Hiệu suất TB (%)',
                         data: deptProgress,
                         backgroundColor: deptProgress.map(v => v >= 70 ? '#0f9d58' : v >= 40 ? '#f29900' : '#d93025'),
-                        hoverBackgroundColor: '#1557b0',
+                        hoverBackgroundColor: '#6647f0',
                         borderRadius: 8,
                         barThickness: 24
                     }]

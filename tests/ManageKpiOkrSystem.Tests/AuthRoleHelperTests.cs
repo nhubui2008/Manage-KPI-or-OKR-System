@@ -64,6 +64,51 @@ public sealed class AuthRoleHelperTests
         Assert.True(await HasDashboardPermissionAsync(context, role.Id));
     }
 
+    [Fact]
+    public async Task EnsureAdminRoleAsync_CreatesAdminRoleWithEveryPermission()
+    {
+        await using var context = CreateContext();
+        context.Permissions.AddRange(
+            new Permission { PermissionCode = "ROLES_VIEW", PermissionName = "Xem vai trò" },
+            new Permission { PermissionCode = "SYSUSERS_EDIT", PermissionName = "Sửa tài khoản" },
+            new Permission { PermissionCode = "DASHBOARD_VIEW", PermissionName = "Xem dashboard" });
+        await context.SaveChangesAsync();
+
+        var role = await AuthRoleHelper.EnsureAdminRoleAsync(context);
+
+        Assert.Equal(AuthRoleHelper.AdminRoleName, role.RoleName);
+        Assert.Equal(await context.Permissions.CountAsync(), await CountRolePermissionsAsync(context, role.Id));
+    }
+
+    [Fact]
+    public async Task EnsureUserHasLoginRoleAsync_MapsLegacySaaSAdminToAdminWithEveryPermission()
+    {
+        await using var context = CreateContext();
+        context.Permissions.AddRange(
+            new Permission { PermissionCode = "ROLES_VIEW", PermissionName = "Xem vai trò" },
+            new Permission { PermissionCode = "SYSUSERS_EDIT", PermissionName = "Sửa tài khoản" });
+
+        var legacyRole = new Role { RoleName = "SaaS_Admin", IsActive = true };
+        context.Roles.Add(legacyRole);
+        await context.SaveChangesAsync();
+
+        var user = new SystemUser
+        {
+            Username = "legacy.admin",
+            Email = "legacy.admin@example.com",
+            RoleId = legacyRole.Id,
+            IsActive = true
+        };
+        context.SystemUsers.Add(user);
+        await context.SaveChangesAsync();
+
+        var role = await AuthRoleHelper.EnsureUserHasLoginRoleAsync(context, user);
+
+        Assert.Equal(AuthRoleHelper.AdminRoleName, role.RoleName);
+        Assert.Equal(role.Id, user.RoleId);
+        Assert.Equal(await context.Permissions.CountAsync(), await CountRolePermissionsAsync(context, role.Id));
+    }
+
     private static MiniERPDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<MiniERPDbContext>()
@@ -83,5 +128,10 @@ public sealed class AuthRoleHelperTests
             .AnyAsync(x =>
                 x.rp.RoleId == roleId &&
                 x.p.PermissionCode == AuthRoleHelper.DashboardPermissionCode);
+    }
+
+    private static Task<int> CountRolePermissionsAsync(MiniERPDbContext context, int roleId)
+    {
+        return context.Role_Permissions.CountAsync(rp => rp.RoleId == roleId);
     }
 }

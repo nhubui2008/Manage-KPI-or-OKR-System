@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
-    [Authorize(Roles = "SaaS_Admin")]
+    [Authorize(Roles = "Admin,Administrator")]
     public class SaaSAdminController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -45,8 +45,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             ViewData["IsSaaSAdmin"] = true;
             
+            var adminRoleIds = await _context.Roles
+                .Where(r => r.RoleName == "Admin" || r.RoleName == "Administrator")
+                .Select(r => r.Id)
+                .ToListAsync();
+
             var customers = await _context.SystemUsers
-                .Where(u => u.Username != "superadmin" && _context.PurchaseRegistrations.Any(r => r.Email == u.Email))
+                .Where(u => (!u.RoleId.HasValue || !adminRoleIds.Contains(u.RoleId.Value)) &&
+                            _context.PurchaseRegistrations.Any(r => r.Email == u.Email))
                 .OrderByDescending(u => u.CreatedAt)
                 .Select(u => new Manage_KPI_or_OKR_System.ViewModels.CustomerAccountViewModel
                 {
@@ -230,7 +236,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             ViewData["IsSaaSAdmin"] = true;
             
-            var adminRoleIds = await _context.Roles.Where(r => r.RoleName == "SaaS_Admin" || r.RoleName == "SuperAdmin").Select(r => r.Id).ToListAsync();
+            var adminRoleIds = await _context.Roles.Where(r => r.RoleName == "Admin" || r.RoleName == "Administrator").Select(r => r.Id).ToListAsync();
             var admins = await _context.SystemUsers.Where(u => u.RoleId.HasValue && adminRoleIds.Contains(u.RoleId.Value)).ToListAsync();
             
             var logs = await _context.AuditLogs.Include(a => a.SystemUser).OrderByDescending(a => a.LogTime).Take(20).ToListAsync();

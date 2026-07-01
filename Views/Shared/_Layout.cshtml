@@ -57,7 +57,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -66,6 +66,21 @@
     <link rel="stylesheet" href="~/Manage-KPI-or-OKR-System.styles.css" asp-append-version="true" />
     <style id="brand-theme">
         :root {
+            --color-brand-violet: #7b68ee;
+            --color-signal-blue: #0091ff;
+            --color-ultra-violet: #6647f0;
+            --color-muted-violet: #514b81;
+            --color-midnight-ink: #090c1d;
+            --color-charcoal: #292d34;
+            --color-carbon: #202023;
+            --color-slate: #646464;
+            --color-steel: #7c828d;
+            --color-mist: #d9d9d9;
+            --color-cloud: #e8e8e8;
+            --color-paper: #f8f9fa;
+            --color-frost: #edf6fd;
+            --font-plus-jakarta-sans: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-inter: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             --primary: @appBranding.PrimaryColor;
             --primary-dark: @appBranding.PrimaryDarkColor;
             --primary-darker: @appBranding.PrimaryDarkColor;
@@ -87,7 +102,8 @@
     <script>
         (function() {
             const sidebarState = localStorage.getItem('sidebarState');
-            if (sidebarState === 'expanded' || sidebarState === null) {
+            const desktopDefault = window.matchMedia('(min-width: 992px)').matches;
+            if (sidebarState === 'expanded' || (sidebarState === null && desktopDefault)) {
                 document.documentElement.classList.add('sidebar-expanded');
             } else {
                 document.documentElement.classList.remove('sidebar-expanded');
@@ -157,6 +173,11 @@
                         // Helper: kiểm tra user có permission không
                         bool HasPerm(string code) => isAdmin || userPermissions.Contains(code);
                         bool canViewEvaluationReports = HasPerm("EVALREPORTS_VIEW") || HasPerm("REPORTS_VIEW");
+                        bool canOpenSystemParameters = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("HR");
+                        bool canViewSystemUsers = HasPerm("SYSUSERS_VIEW");
+                        bool canViewRoles = HasPerm("ROLES_VIEW");
+                        bool canViewAuditLogs = HasPerm("AUDITLOGS_VIEW");
+                        bool canOpenAdminTools = isAdmin;
                     }
 
                     <div class="sidebar-group">
@@ -308,16 +329,13 @@
                                     <i class="bi bi-journal-text"></i> <span>Lịch sử hệ thống</span>
                                 </a>
                             }
-                            @if (User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("HR"))
-                            {
-                                <a href="/SystemParameters" class="sidebar-link">
-                                    <i class="bi bi-sliders"></i> <span>Cài đặt tham số</span>
-                                </a>
-                            }
                             @if (isAdmin)
                             {
                                 <a href="/Catalog" class="sidebar-link">
                                     <i class="bi bi-collection-fill"></i> <span>Quản lý danh mục</span>
+                                </a>
+                                <a href="/SaaSAdmin" class="sidebar-link">
+                                    <i class="bi bi-building-gear"></i> <span>Quản trị khách hàng</span>
                                 </a>
                             }
                         </div>
@@ -329,10 +347,11 @@
                 {
                     var userName = User.Identity.Name;
                     var userRole = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
-                    var settingsUrl = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("HR")
-                        ? "/SystemParameters"
-                        : "/Auth/MyProfile";
                     <div class="sidebar-footer dropup">
+                        <button type="button" class="sidebar-settings-trigger" data-settings-panel-trigger aria-controls="settingsPanel" aria-expanded="false">
+                            <i class="bi bi-gear-wide-connected"></i>
+                            <span>Cài đặt</span>
+                        </button>
                         <div class="sidebar-user sidebar-user-trigger" data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="user-avatar">
                                 <span>@(userName?[0].ToString().ToUpper() ?? "U")</span>
@@ -346,7 +365,6 @@
                         
                         <ul class="dropdown-menu sidebar-user-menu shadow-sm border-0 mb-2">
                             <li><a class="dropdown-item py-2 fw-medium" href="/Auth/MyProfile"><i class="bi bi-person me-2 text-muted"></i> Hồ sơ cá nhân</a></li>
-                            <li><a class="dropdown-item py-2 fw-medium" href="@settingsUrl"><i class="bi bi-gear me-2 text-muted"></i> Cài đặt</a></li>
                             <li><a class="dropdown-item py-2 fw-medium" href="/Auth/ChangePassword"><i class="bi bi-shield-lock me-2 text-muted"></i> Đổi mật khẩu</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header text-primary fw-bold"><i class="bi bi-people-fill"></i> TÀI KHOẢN DÙNG THỬ (1 CLICK)</h6></li>
@@ -360,6 +378,108 @@
                     </div>
                 }
             </nav>
+
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                <aside id="settingsPanel" class="settings-panel" data-settings-panel role="dialog" aria-modal="false" aria-hidden="true" aria-labelledby="settingsPanelTitle">
+                    <div class="settings-panel__header">
+                        <div>
+                            <div class="settings-panel__eyebrow">Bảng điều khiển</div>
+                            <h2 id="settingsPanelTitle">Cài đặt</h2>
+                        </div>
+                        <button type="button" class="settings-panel__close" data-settings-panel-close aria-label="Đóng bảng cài đặt">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+
+                    <div class="settings-panel__section">
+                        <div class="settings-panel__label">Tài khoản</div>
+                        <a href="/Auth/MyProfile" class="settings-panel__item">
+                            <span class="settings-panel__icon"><i class="bi bi-person-circle"></i></span>
+                            <span>
+                                <strong>Hồ sơ cá nhân</strong>
+                                <small>Thông tin, vai trò và hồ sơ làm việc</small>
+                            </span>
+                        </a>
+                        <a href="/Auth/ChangePassword" class="settings-panel__item">
+                            <span class="settings-panel__icon"><i class="bi bi-shield-lock"></i></span>
+                            <span>
+                                <strong>Đổi mật khẩu</strong>
+                                <small>Bảo vệ tài khoản đăng nhập</small>
+                            </span>
+                        </a>
+                    </div>
+
+                    @if (canOpenSystemParameters || canViewSystemUsers || canViewRoles || canViewAuditLogs || canOpenAdminTools)
+                    {
+                        <div class="settings-panel__section">
+                            <div class="settings-panel__label">Hệ thống</div>
+                            @if (canOpenSystemParameters)
+                            {
+                                <a href="/SystemParameters" class="settings-panel__item">
+                                    <span class="settings-panel__icon"><i class="bi bi-sliders"></i></span>
+                                    <span>
+                                        <strong>Tham số hệ thống</strong>
+                                        <small>Cấu hình KPI, OKR, thương hiệu và vận hành</small>
+                                    </span>
+                                </a>
+                            }
+                            @if (canViewSystemUsers)
+                            {
+                                <a href="/SystemUsers" class="settings-panel__item">
+                                    <span class="settings-panel__icon"><i class="bi bi-shield-lock-fill"></i></span>
+                                    <span>
+                                        <strong>Người dùng</strong>
+                                        <small>Tài khoản đăng nhập và trạng thái truy cập</small>
+                                    </span>
+                                </a>
+                            }
+                            @if (canViewRoles)
+                            {
+                                <a href="/Roles" class="settings-panel__item">
+                                    <span class="settings-panel__icon"><i class="bi bi-person-lines-fill"></i></span>
+                                    <span>
+                                        <strong>Phân quyền</strong>
+                                        <small>Vai trò và nhóm quyền sử dụng hệ thống</small>
+                                    </span>
+                                </a>
+                            }
+                            @if (canViewAuditLogs)
+                            {
+                                <a href="/AuditLogs" class="settings-panel__item">
+                                    <span class="settings-panel__icon"><i class="bi bi-journal-text"></i></span>
+                                    <span>
+                                        <strong>Lịch sử hệ thống</strong>
+                                        <small>Theo dõi các thay đổi quan trọng</small>
+                                    </span>
+                                </a>
+                            }
+                        </div>
+                    }
+
+                    @if (canOpenAdminTools)
+                    {
+                        <div class="settings-panel__section">
+                            <div class="settings-panel__label">Quản trị</div>
+                            <a href="/Catalog" class="settings-panel__item">
+                                <span class="settings-panel__icon"><i class="bi bi-collection-fill"></i></span>
+                                <span>
+                                    <strong>Danh mục nền</strong>
+                                    <small>Dữ liệu dùng chung cho các module nghiệp vụ</small>
+                                </span>
+                            </a>
+                            <a href="/SaaSAdmin" class="settings-panel__item">
+                                <span class="settings-panel__icon"><i class="bi bi-building-gear"></i></span>
+                                <span>
+                                    <strong>Quản trị khách hàng</strong>
+                                    <small>Gói dịch vụ, đăng ký và cấu hình SaaS</small>
+                                </span>
+                            </a>
+                        </div>
+                    }
+                </aside>
+                <div class="settings-panel-backdrop" data-settings-panel-close></div>
+            }
 
             <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
@@ -562,7 +682,7 @@
                     text: "Mã '@TempData["RestoreCode"]' đã từng tồn tại và bị xóa. Bạn có muốn khôi phục lại không?",
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
+                    confirmButtonColor: '#202023',
                     cancelButtonColor: '#d33',
                     confirmButtonText: 'Khôi phục ngay',
                     cancelButtonText: 'Bỏ qua'
@@ -692,7 +812,7 @@
                         showCancelButton: true,
                         confirmButtonText: 'Tiếp tục làm việc',
                         cancelButtonText: 'Đăng xuất ngay',
-                        confirmButtonColor: '#1a73e8',
+                        confirmButtonColor: '#202023',
                         cancelButtonColor: '#dc3545',
                         allowOutsideClick: false,
                         allowEscapeKey: false,

@@ -13,12 +13,12 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - SaaS Admin | @appBranding.ProductName</title>
+    <title>@ViewData["Title"] - Admin | @appBranding.ProductName</title>
     <link rel="icon" href="@appBranding.FaviconUrl" />
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -28,6 +28,21 @@
     
     <style id="brand-theme">
         :root {
+            --color-brand-violet: #7b68ee;
+            --color-signal-blue: #0091ff;
+            --color-ultra-violet: #6647f0;
+            --color-muted-violet: #514b81;
+            --color-midnight-ink: #090c1d;
+            --color-charcoal: #292d34;
+            --color-carbon: #202023;
+            --color-slate: #646464;
+            --color-steel: #7c828d;
+            --color-mist: #d9d9d9;
+            --color-cloud: #e8e8e8;
+            --color-paper: #f8f9fa;
+            --color-frost: #edf6fd;
+            --font-plus-jakarta-sans: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-inter: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             --primary: @appBranding.PrimaryColor;
             --primary-dark: @appBranding.PrimaryDarkColor;
             --primary-darker: @appBranding.PrimaryDarkColor;
@@ -35,10 +50,10 @@
             --primary-bg: color-mix(in srgb, @appBranding.PrimaryColor 8%, transparent);
             --info: @appBranding.PrimaryColor;
             --info-bg: color-mix(in srgb, @appBranding.PrimaryColor 12%, #ffffff);
-            --sidebar-bg: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); /* SaaS specific dark theme */
-            --sidebar-bg-solid: #0f172a;
-            --sidebar-text: #94a3b8;
-            --sidebar-text-active: #ffffff;
+            --sidebar-bg: #ffffff;
+            --sidebar-bg-solid: #ffffff;
+            --sidebar-text: #292d34;
+            --sidebar-text-active: #090c1d;
             --body-bg: @appBranding.BodyBackgroundColor;
             --card-bg: @appBranding.CardBackgroundColor;
         }
@@ -47,7 +62,8 @@
     <script>
         (function() {
             const sidebarState = localStorage.getItem('sidebarState');
-            if (sidebarState === 'expanded' || sidebarState === null) {
+            const desktopDefault = window.matchMedia('(min-width: 992px)').matches;
+            if (sidebarState === 'expanded' || (sidebarState === null && desktopDefault)) {
                 document.documentElement.classList.add('sidebar-expanded');
             } else {
                 document.documentElement.classList.remove('sidebar-expanded');
@@ -73,14 +89,17 @@
                     <i class="bi bi-hexagon-fill text-primary"></i>
                 </div>
                 <div class="brand-info">
-                    <div class="brand-text">SaaS Admin</div>
-                    <div class="brand-sub">Hệ thống chủ sở hữu</div>
+                    <div class="brand-text">Admin</div>
+                    <div class="brand-sub">Quản trị hệ thống</div>
                 </div>
             </div>
 
             <div class="sidebar-nav">
                 <div class="sidebar-group">
                     <div class="sidebar-group-label">Overview</div>
+                    <a href="/Dashboard/Index" class="sidebar-link">
+                        <i class="bi bi-layout-sidebar-inset"></i> <span>Hệ thống vận hành</span>
+                    </a>
                     <a href="/SaaSAdmin" class="sidebar-link @(ViewContext.RouteData.Values["Action"].ToString() == "Index" ? "active" : "")">
                         <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
                     </a>
@@ -106,25 +125,20 @@
                     </a>
                 </div>
 
-                <div class="sidebar-group mt-2">
-                    <div class="sidebar-group-label">Cấu hình Hệ Thống</div>
-                    <a href="/SaaSAdmin/Settings" class="sidebar-link @(ViewContext.RouteData.Values["Action"].ToString() == "Settings" ? "active" : "")">
-                        <i class="bi bi-sliders"></i> <span>Cài đặt hệ thống SaaS</span>
-                    </a>
-                    <a href="/SaaSAdmin/Security" class="sidebar-link @(ViewContext.RouteData.Values["Action"].ToString() == "Security" ? "active" : "")">
-                        <i class="bi bi-shield-lock-fill"></i> <span>Bảo mật & Phân quyền</span>
-                    </a>
-                </div>
             </div>
 
             <div class="sidebar-footer dropup">
+                <button type="button" class="sidebar-settings-trigger" data-settings-panel-trigger aria-controls="settingsPanel" aria-expanded="false">
+                    <i class="bi bi-gear-wide-connected"></i>
+                    <span>Cài đặt</span>
+                </button>
                 <div class="sidebar-user" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
                     <div class="user-avatar" style="background: var(--primary);">
-                        <span>SA</span>
+                        <span>AD</span>
                     </div>
                     <div class="user-info">
-                        <div class="user-name">Super Admin</div>
-                        <div class="user-role">SaaS_Admin</div>
+                        <div class="user-name">Admin</div>
+                        <div class="user-role">Admin</div>
                     </div>
                     <i class="bi bi-three-dots-vertical ms-auto user-dots" style="color: rgba(255,255,255,0.4);"></i>
                 </div>
@@ -136,6 +150,73 @@
                 </ul>
             </div>
         </nav>
+
+        <aside id="settingsPanel" class="settings-panel" data-settings-panel role="dialog" aria-modal="false" aria-hidden="true" aria-labelledby="settingsPanelTitle">
+            <div class="settings-panel__header">
+                <div>
+                    <div class="settings-panel__eyebrow">Bảng điều khiển</div>
+                    <h2 id="settingsPanelTitle">Cài đặt</h2>
+                </div>
+                <button type="button" class="settings-panel__close" data-settings-panel-close aria-label="Đóng bảng cài đặt">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="settings-panel__section">
+                <div class="settings-panel__label">Tài khoản</div>
+                <a href="/Auth/ChangePassword" class="settings-panel__item">
+                    <span class="settings-panel__icon"><i class="bi bi-shield-lock"></i></span>
+                    <span>
+                        <strong>Đổi mật khẩu</strong>
+                        <small>Bảo vệ tài khoản quản trị</small>
+                    </span>
+                </a>
+            </div>
+
+            <div class="settings-panel__section">
+                <div class="settings-panel__label">SaaS admin</div>
+                <a href="/SaaSAdmin/Settings" class="settings-panel__item">
+                    <span class="settings-panel__icon"><i class="bi bi-sliders"></i></span>
+                    <span>
+                        <strong>Cài đặt hệ thống SaaS</strong>
+                        <small>Thương hiệu, email, đăng ký và vận hành nền</small>
+                    </span>
+                </a>
+                <a href="/SaaSAdmin/Security" class="settings-panel__item">
+                    <span class="settings-panel__icon"><i class="bi bi-shield-lock-fill"></i></span>
+                    <span>
+                        <strong>Bảo mật & Phân quyền</strong>
+                        <small>Chính sách truy cập của khu vực quản trị</small>
+                    </span>
+                </a>
+            </div>
+
+            <div class="settings-panel__section">
+                <div class="settings-panel__label">Điều hướng nhanh</div>
+                <a href="/SaaSAdmin/Registrations" class="settings-panel__item">
+                    <span class="settings-panel__icon"><i class="bi bi-people-fill"></i></span>
+                    <span>
+                        <strong>Khách hàng & đăng ký</strong>
+                        <small>Theo dõi tenant và yêu cầu mới</small>
+                    </span>
+                </a>
+                <a href="/SaaSAdmin/Revenue" class="settings-panel__item">
+                    <span class="settings-panel__icon"><i class="bi bi-graph-up-arrow"></i></span>
+                    <span>
+                        <strong>Báo cáo doanh thu</strong>
+                        <small>Gói dịch vụ, thanh toán và tăng trưởng</small>
+                    </span>
+                </a>
+                <a href="/Dashboard/Index" class="settings-panel__item">
+                    <span class="settings-panel__icon"><i class="bi bi-layout-sidebar-inset"></i></span>
+                    <span>
+                        <strong>Hệ thống vận hành</strong>
+                        <small>Quay lại không gian KPI/OKR chính</small>
+                    </span>
+                </a>
+            </div>
+        </aside>
+        <div class="settings-panel-backdrop" data-settings-panel-close></div>
 
         <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
@@ -178,7 +259,7 @@
             </main>
 
             <footer class="app-footer">
-                <div>&copy; 2026 SaaS Admin - VIETMACH</div>
+                <div>&copy; 2026 Admin - VIETMACH</div>
             </footer>
         </div>
     </div>

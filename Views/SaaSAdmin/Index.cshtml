@@ -1,6 +1,6 @@
 @using Manage_KPI_or_OKR_System.Models
 @{
-    ViewData["Title"] = "Tổng quan Quản trị SaaS";
+    ViewData["Title"] = "Tổng quan Admin";
     Layout = "_SaaSAdminLayout";
 
     var recentRegistrations = ViewBag.RecentRegistrations as List<PurchaseRegistration> ?? new List<PurchaseRegistration>();
@@ -9,9 +9,9 @@
 <div class="dashboard-page">
     <div class="page-header dashboard-header mb-4 align-items-end">
         <div>
-            <h1 class="h3 font-weight-bold mb-1 text-primary">Dashboard Chủ Sở Hữu</h1>
+            <h1 class="h3 font-weight-bold mb-1 text-primary">Dashboard Admin</h1>
             <div class="page-breadcrumb text-muted" style="font-size: 0.85rem;">
-                <a href="/SaaSAdmin" class="text-decoration-none text-primary fw-medium">SaaS Admin</a>
+                <a href="/SaaSAdmin" class="text-decoration-none text-primary fw-medium">Admin</a>
                 <i class="bi bi-chevron-right separator mx-1"></i>
                 <span>Tổng quan</span>
             </div>
@@ -219,7 +219,7 @@
                 datasets: [{
                     label: 'Khách hàng mới',
                     data: growthData,
-                    backgroundColor: '#1a73e8',
+                    backgroundColor: '#7b68ee',
                     borderRadius: 6,
                     barThickness: 30
                 }]
@@ -244,7 +244,7 @@
                 labels: planLabels,
                 datasets: [{
                     data: planData,
-                    backgroundColor: ['#94a3b8', '#0f9d58', '#1a73e8', '#5e35b1'],
+                    backgroundColor: ['#94a3b8', '#0f9d58', '#7b68ee', '#514b81'],
                     borderWidth: 0,
                     hoverOffset: 15
                 }]

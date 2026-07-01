@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Bảo mật & Phân quyền (SaaS)";
+    ViewData["Title"] = "Bảo mật & Phân quyền";
     Layout = "_SaaSAdminLayout";
     
     var admins = ViewBag.Admins as List<Manage_KPI_or_OKR_System.Models.SystemUser> ?? new List<Manage_KPI_or_OKR_System.Models.SystemUser>();
@@ -9,9 +9,9 @@
 <div class="dashboard-page">
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 font-weight-bold mb-1 text-primary">Bảo mật & Phân quyền SaaS</h1>
+            <h1 class="h3 font-weight-bold mb-1 text-primary">Bảo mật & Phân quyền Admin</h1>
             <div class="page-breadcrumb text-muted" style="font-size: 0.85rem;">
-                <a href="/SaaSAdmin" class="text-decoration-none text-primary fw-medium">SaaS Admin</a>
+                <a href="/SaaSAdmin" class="text-decoration-none text-primary fw-medium">Admin</a>
                 <i class="bi bi-chevron-right separator mx-1"></i>
                 <span>Bảo mật</span>
             </div>
@@ -27,7 +27,7 @@
         <div class="col-lg-7">
             <div class="card shadow-sm border-0 h-100" style="border-radius: 12px;">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-shield-check text-success"></i> Danh sách Quản trị viên hệ thống (Super Admins)</h5>
+                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-shield-check text-success"></i> Danh sách Quản trị viên hệ thống</h5>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-hover align-middle mb-0">
@@ -64,14 +64,7 @@
                                         }
                                     </td>
                                     <td class="text-end pe-4">
-                                        @if (admin.Username == "superadmin")
-                                        {
-                                            <button class="btn btn-sm btn-light text-muted" disabled><i class="bi bi-pencil"></i></button>
-                                        }
-                                        else
-                                        {
-                                            <button class="btn btn-sm btn-outline-danger" title="Xóa quyền truy cập"><i class="bi bi-trash"></i></button>
-                                        }
+                                        <button class="btn btn-sm btn-outline-danger" title="Xóa quyền truy cập"><i class="bi bi-trash"></i></button>
                                     </td>
                                 </tr>
                             }

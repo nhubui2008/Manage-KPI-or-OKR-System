@@ -1,10 +1,10 @@
-/* login.css - Professional Blue Login Theme */
+/* login.css - ClickUp-inspired Login Theme */
 
 body, html {
     height: 100%;
     margin: 0;
-    font-family: 'Be Vietnam Pro', 'Segoe UI', 'Roboto', sans-serif;
-    background: linear-gradient(135deg, var(--body-bg, #f0f4fa) 0%, var(--primary-light, #e8f0fe) 50%, #ffffff 100%);
+    font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+    background: #ffffff;
 }
 
 /* --- Removed Ambient Blobs (Loang màu) --- */
@@ -23,9 +23,9 @@ body, html {
 
 .soft-card {
     background: var(--card-bg, #ffffff);
-    border: 1px solid #e1e8f0;
-    border-radius: 24px;
-    box-shadow: 0 8px 32px rgba(26, 115, 232, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    box-shadow: rgba(18, 43, 165, 0.04) 0 1px 1px -0.5px, rgba(18, 43, 165, 0.04) 0 3px 3px -1.5px, rgba(18, 43, 165, 0.04) 0 8px 12px -6px;
     padding: 48px 36px 32px 36px;
     max-width: 400px;
     width: 100%;
@@ -44,15 +44,15 @@ body, html {
     margin-bottom: 12px;
 }
 .logo-circle {
-    background: linear-gradient(135deg, var(--primary, #1a73e8), var(--primary-dark, #1557b0));
-    border-radius: 14px;
+    background: #7b68ee;
+    border-radius: 8px;
     width: 52px;
     height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    box-shadow: 0 6px 18px rgba(26, 115, 232, 0.35);
+    box-shadow: rgba(0, 0, 0, 0.1) 0 1px 3px 0, rgba(0, 0, 0, 0.1) 0 1px 2px -1px;
 }
 .comfort-icon svg {
     display: block;
@@ -73,12 +73,12 @@ body, html {
 .comfort-title {
     font-size: 1.8rem;
     font-weight: 800;
-    color: #1a2940;
+    color: #090c1d;
     margin: 0 0 4px 0;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
 }
 .gentle-subtitle {
-    color: #6b7c93;
+    color: #646464;
     font-size: 0.95rem;
     margin: 0;
 }
@@ -97,25 +97,25 @@ body, html {
     flex-direction: column;
 }
 .field-container input {
-    border: 1.5px solid #e3e8ef;
-    border-radius: 10px;
-    background: #f8fafe;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    background: #ffffff;
     padding: 14px 16px;
     font-size: 1rem;
-    color: #1a2940;
+    color: #090c1d;
     outline: none;
     transition: all 0.2s;
 }
 .field-container input:focus {
-    border-color: var(--primary, #1a73e8);
+    border-color: #7b68ee;
     background: #ffffff;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary, #1a73e8) 14%, transparent);
+    box-shadow: 0 0 0 3px rgba(123, 104, 238, 0.14);
 }
 .field-container label {
     position: absolute;
     left: 16px;
     top: 14px;
-    color: #6b7c93;
+    color: #646464;
     font-size: 1rem;
     pointer-events: none;
     transition: 0.2s;
@@ -126,7 +126,7 @@ body, html {
     top: -10px;
     left: 10px;
     font-size: 0.8rem;
-    color: var(--primary, #1a73e8);
+    color: #7b68ee;
     font-weight: 700;
     background: #ffffff;
     padding: 0 4px;
@@ -142,9 +142,9 @@ body, html {
 }
 
 .demo-accounts {
-    border: 1px solid #d8e6fb;
+    border: 1px solid #e8e8e8;
     border-radius: 8px;
-    background: #f8fbff;
+    background: #f8f9fa;
     padding: 14px;
     margin-bottom: 20px;
 }
@@ -155,13 +155,13 @@ body, html {
     align-items: center;
     gap: 10px;
     margin-bottom: 10px;
-    color: #1a2940;
+    color: #090c1d;
     font-size: 0.95rem;
     font-weight: 800;
 }
 
 .demo-accounts-header small {
-    color: #5f6f86;
+    color: #646464;
     font-size: 0.82rem;
     font-weight: 600;
 }
@@ -179,10 +179,10 @@ body, html {
     justify-content: center;
     gap: 2px;
     min-width: 0;
-    border: 1px solid #e3e8ef;
+    border: 1px solid #e8e8e8;
     border-radius: 8px;
     background: #ffffff;
-    color: #1a2940;
+    color: #090c1d;
     padding: 8px 12px;
     cursor: pointer;
     font: inherit;
@@ -192,23 +192,23 @@ body, html {
 
 .demo-account:hover,
 .demo-account:focus {
-    border-color: var(--primary, #1a73e8);
-    background: #eef5ff;
-    box-shadow: 0 3px 10px color-mix(in srgb, var(--primary, #1a73e8) 14%, transparent);
+    border-color: #7b68ee;
+    background: #f1efff;
+    box-shadow: none;
 }
 
 .demo-account.active {
-    border-color: var(--primary, #1a73e8) !important;
-    background: #eef5ff !important;
-    box-shadow: 0 3px 10px color-mix(in srgb, var(--primary, #1a73e8) 14%, transparent) !important;
+    border-color: #7b68ee !important;
+    background: #f1efff !important;
+    box-shadow: none !important;
 }
 
 .demo-account.active span {
-    color: var(--primary, #1a73e8) !important;
+    color: #7b68ee !important;
 }
 
 .demo-account.active small {
-    color: var(--primary, #1a73e8) !important;
+    color: #7b68ee !important;
 }
 
 .demo-account span {
@@ -221,7 +221,7 @@ body, html {
 }
 
 .demo-account small {
-    color: #6b7c93;
+    color: #646464;
     font-size: 0.72rem;
     font-weight: 600;
     width: 100%;
@@ -247,7 +247,7 @@ body, html {
     width: 20px; height: 20px;
     border-radius: 6px;
     background: #ffffff;
-    border: 1.5px solid #dadce0;
+    border: 1px solid #d9d9d9;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -256,8 +256,8 @@ body, html {
     transition: all 0.2s;
 }
 .gentle-checkbox input:checked + .checkbox-soft {
-    border-color: var(--primary, #1a73e8);
-    background: var(--primary, #1a73e8);
+    border-color: #7b68ee;
+    background: #7b68ee;
 }
 .check-circle {
     width: 12px; height: 12px;
@@ -283,34 +283,34 @@ body, html {
     font-size: 0.95rem;
 }
 .comfort-link {
-    color: var(--primary, #1a73e8);
+    color: #514b81;
     text-decoration: none;
     font-size: 0.95rem;
     font-weight: 600;
     transition: color 0.2s;
 }
 .comfort-link:hover {
-    color: var(--primary-dark, #1557b0);
+    color: #6647f0;
 }
 
 .comfort-button {
     width: 100%;
     padding: 14px 0;
     border: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, var(--primary, #1a73e8), var(--primary-dark, #1557b0));
+    border-radius: 9px;
+    background: #202023;
     color: #ffffff;
     font-size: 1.05rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.25s ease;
     margin-top: 8px;
-    box-shadow: 0 6px 18px rgba(26, 115, 232, 0.3);
+    box-shadow: rgba(13, 21, 48, 0.04) 0 4px 4px 0;
 }
 .comfort-button:hover {
-    background: linear-gradient(135deg, var(--primary-dark, #1557b0), var(--primary, #1a73e8));
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(26, 115, 232, 0.4);
+    background: #000000;
+    transform: translateY(-1px);
+    box-shadow: rgba(0, 0, 0, 0.1) 0 1px 3px 0, rgba(0, 0, 0, 0.1) 0 1px 2px -1px;
 }
 .button-background {
     display: none;
@@ -336,8 +336,8 @@ body, html {
 }
 .spinner-circle {
     width: 16px; height: 16px;
-    border: 2.5px solid color-mix(in srgb, var(--primary, #1a73e8) 24%, transparent);
-    border-top: 2.5px solid var(--primary, #1a73e8);
+    border: 2.5px solid rgba(123, 104, 238, 0.24);
+    border-top: 2.5px solid #7b68ee;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -357,11 +357,11 @@ body, html {
 .divider-line {
     flex: 1;
     height: 1px;
-    background: #e3e8ef;
+    background: #e8e8e8;
 }
 .divider-text {
     margin: 0 12px;
-    color: #6b7c93;
+    color: #646464;
     font-size: 0.9rem;
 }
 
@@ -372,9 +372,9 @@ body, html {
     margin-bottom: 18px;
 }
 .social-soft {
-    border: 1px solid #e3e8ef;
-    border-radius: 10px;
-    background: #f8fafe;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    background: #ffffff;
     padding: 10px 18px;
     display: flex;
     align-items: center;
@@ -383,8 +383,8 @@ body, html {
     transition: all 0.2s;
 }
 .social-soft:hover {
-    background: var(--primary-light, #e8f0fe);
-    border-color: var(--primary, #1a73e8);
+    background: #f8f9fa;
+    border-color: #7b68ee;
 }
 .social-background {
     display: none;
@@ -403,12 +403,12 @@ body, html {
 }
 .signup-link {
     margin-left: 6px;
-    color: var(--primary, #1a73e8);
+    color: #514b81;
     font-weight: 700;
     text-decoration: none;
 }
 .signup-link:hover {
-    color: var(--primary-dark, #1557b0);
+    color: #6647f0;
 }
 
 .gentle-success {
@@ -433,7 +433,7 @@ body, html {
 }
 .bloom-ring {
     border-radius: 50%;
-    border: 2.5px solid color-mix(in srgb, var(--primary, #1a73e8) 20%, transparent);
+    border: 2.5px solid rgba(123, 104, 238, 0.2);
     opacity: 0.18;
     position: absolute;
 }

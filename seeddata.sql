@@ -192,7 +192,7 @@ GO
 -- MODULE 3: ROLE_PERMISSIONS (Phân quyền chi tiết)
 -- ============================================================
 
--- === ADMIN: TOÀN QUYỀN (tất cả 60 permissions) ===
+-- === ADMIN: TOÀN QUYỀN (tất cả permissions hiện có) ===
 INSERT INTO [Role_Permissions] ([RoleId], [PermissionId])
 SELECT 1, Id FROM [Permissions];
 GO
@@ -465,12 +465,12 @@ VALUES
     (13, N'BRAND_LOGO_URL', N'', N'Đường dẫn logo sidebar/login.', NULL),
     (14, N'BRAND_FAVICON_URL', N'/favicon.ico', N'Đường dẫn favicon của trình duyệt.', NULL),
     (15, N'BRAND_SEO_IMAGE_URL', N'/images/seo-banner.png', N'Ảnh chia sẻ SEO/Open Graph.', NULL),
-    (16, N'BRAND_PRIMARY_COLOR', N'#0f766e', N'Màu chủ đạo của Bizen.', NULL),
-    (17, N'BRAND_PRIMARY_DARK_COLOR', N'#115e59', N'Màu chủ đạo đậm.', NULL),
-    (18, N'BRAND_SIDEBAR_COLOR', N'#12312f', N'Màu đầu sidebar.', NULL),
-    (19, N'BRAND_SIDEBAR_GRADIENT_END', N'#1f5b45', N'Màu cuối sidebar.', NULL),
-    (20, N'BRAND_SIDEBAR_TEXT_COLOR', N'#ffffff', N'Màu chữ trên sidebar.', NULL),
-    (21, N'BRAND_BODY_BACKGROUND', N'#f4f7f5', N'Màu nền tổng thể.', NULL),
+    (16, N'BRAND_PRIMARY_COLOR', N'#7b68ee', N'Màu chủ đạo của Bizen.', NULL),
+    (17, N'BRAND_PRIMARY_DARK_COLOR', N'#6647f0', N'Màu chủ đạo đậm.', NULL),
+    (18, N'BRAND_SIDEBAR_COLOR', N'#ffffff', N'Màu đầu sidebar.', NULL),
+    (19, N'BRAND_SIDEBAR_GRADIENT_END', N'#f8f9fa', N'Màu cuối sidebar.', NULL),
+    (20, N'BRAND_SIDEBAR_TEXT_COLOR', N'#292d34', N'Màu chữ trên sidebar.', NULL),
+    (21, N'BRAND_BODY_BACKGROUND', N'#ffffff', N'Màu nền tổng thể.', NULL),
     (22, N'BRAND_CARD_BACKGROUND', N'#ffffff', N'Màu nền card/table.', NULL),
     (23, N'BRAND_FOOTER_TEXT', N'© {year} Bizen - Food KPI & OKR Management System. All rights reserved.', N'Nội dung footer.', NULL),
     (24, N'BRAND_AI_ASSISTANT_NAME', N'Bizen AI Assistant', N'Tên trợ lý AI trong widget và prompt.', NULL),
@@ -1396,6 +1396,8 @@ DECLARE @KpiEmployeeAssignmentCount INT = (SELECT COUNT(*) FROM [KPI_Employee_As
 DECLARE @KpiCheckInCount INT = (SELECT COUNT(*) FROM [KPICheckIns]);
 DECLARE @WorkProjectCount INT = (SELECT COUNT(*) FROM [WorkProjects] WHERE [IsActive] = 1);
 DECLARE @WorkItemCount INT = (SELECT COUNT(*) FROM [WorkItems] WHERE [IsActive] = 1);
+DECLARE @PermissionCount INT = (SELECT COUNT(*) FROM [Permissions]);
+DECLARE @AdminPermissionCount INT = (SELECT COUNT(*) FROM [Role_Permissions] WHERE [RoleId] = 1);
 DECLARE @EmployeeAssignableTaskCount INT =
 (
     SELECT COUNT(*)
@@ -1485,6 +1487,23 @@ IF NOT EXISTS
 )
     THROW 51015, N'Seed validation failed: named sample accounts must keep the expected roles.', 1;
 
+IF @PermissionCount = 0 OR @AdminPermissionCount <> @PermissionCount
+    THROW 51018, N'Seed validation failed: Admin role must have every permission in the system.', 1;
+
+IF EXISTS
+(
+    SELECT 1
+    FROM [Roles]
+    WHERE [RoleName] IN (N'SaaS_Admin', N'SuperAdmin', N'SaaS Admin')
+)
+    OR EXISTS
+(
+    SELECT 1
+    FROM [SystemUsers]
+    WHERE LOWER([Username]) IN (N'superadmin', N'saasadmin', N'saas_admin')
+)
+    THROW 51019, N'Seed validation failed: seed data must use Admin only, not SaaS admin accounts or roles.', 1;
+
 IF EXISTS
 (
     SELECT 1
@@ -1536,6 +1555,8 @@ PRINT CONCAT(N'KPI partial check-ins: ', @KpiCheckInCount);
 PRINT CONCAT(N'Bizen work projects: ', @WorkProjectCount);
 PRINT CONCAT(N'Bizen work items: ', @WorkItemCount);
 PRINT CONCAT(N'Employee active tasks: ', @EmployeeAssignableTaskCount);
+PRINT CONCAT(N'Permissions: ', @PermissionCount);
+PRINT CONCAT(N'Admin permissions: ', @AdminPermissionCount);
 GO
 
 -- ============================================================
@@ -1550,6 +1571,9 @@ IF (SELECT COUNT(*) FROM [SystemUsers]) <> 240
     OR (SELECT COUNT(*) FROM [KPICheckIns]) < 150
     OR (SELECT COUNT(*) FROM [WorkProjects] WHERE [IsActive] = 1) < 4
     OR (SELECT COUNT(*) FROM [WorkItems] WHERE [IsActive] = 1) < 10
+    OR (SELECT COUNT(*) FROM [Role_Permissions] WHERE [RoleId] = 1) <> (SELECT COUNT(*) FROM [Permissions])
+    OR EXISTS (SELECT 1 FROM [Roles] WHERE [RoleName] IN (N'SaaS_Admin', N'SuperAdmin', N'SaaS Admin'))
+    OR EXISTS (SELECT 1 FROM [SystemUsers] WHERE LOWER([Username]) IN (N'superadmin', N'saasadmin', N'saas_admin'))
     OR
     (
         SELECT COUNT(*)

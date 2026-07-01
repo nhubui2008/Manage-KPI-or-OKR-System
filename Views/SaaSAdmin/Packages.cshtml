@@ -9,7 +9,7 @@
         <div>
             <h1 class="h3 font-weight-bold mb-1 text-primary">Quản lý Gói Dịch Vụ</h1>
             <div class="page-breadcrumb text-muted" style="font-size: 0.85rem;">
-                <a href="/SaaSAdmin" class="text-decoration-none text-primary fw-medium">SaaS Admin</a>
+                <a href="/SaaSAdmin" class="text-decoration-none text-primary fw-medium">Admin</a>
                 <i class="bi bi-chevron-right separator mx-1"></i>
                 <span>Gói Dịch Vụ</span>
             </div>
@@ -26,13 +26,13 @@
         {
             <div class="col-md-4">
                 <div class="card h-100 border-0 @(pkg.IsPopular ? "shadow-lg mt-0" : "shadow-sm mt-3")" 
-                     style="border-radius: 20px; transition: transform 0.3s ease; @(pkg.IsPopular ? "background: linear-gradient(145deg, #ffffff, #f0f7ff); border: 2px solid #0d6efd !important;" : "")">
+                     style="border-radius: 20px; transition: transform 0.3s ease; @(pkg.IsPopular ? "border: 1px solid var(--context-primary-border) !important;" : "")">
                     
                     <div class="card-body p-4 p-xl-5 text-center">
                         @if (pkg.IsPopular)
                         {
                             <div class="mb-3">
-                                <span class="badge rounded-pill px-3 py-2 shadow-sm" style="font-size: 0.8rem; letter-spacing: 1px; background: linear-gradient(90deg, #0d6efd, #0dcaf0) !important; color: white;">
+                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2" style="font-size: 0.8rem;">
                                     <i class="bi bi-star-fill text-warning me-1"></i> PHỔ BIẾN NHẤT
                                 </span>
                             </div>

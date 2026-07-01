@@ -6,6 +6,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
 {
     public static class AuthRoleHelper
     {
+        public const string AdminRoleName = "Admin";
         public const string DefaultSelfServiceRoleName = "Employee";
         public const string DashboardPermissionCode = "DASHBOARD_VIEW";
 
@@ -38,6 +39,19 @@ namespace Manage_KPI_or_OKR_System.Helpers
                 ? await context.Roles.FindAsync(user.RoleId.Value)
                 : null;
 
+            if (IsAdminRoleName(currentRole?.RoleName) || IsLegacyAdminRole(currentRole?.RoleName))
+            {
+                var adminRole = await EnsureAdminRoleAsync(context);
+                if (user.RoleId != adminRole.Id)
+                {
+                    user.RoleId = adminRole.Id;
+                    context.SystemUsers.Update(user);
+                    await context.SaveChangesAsync();
+                }
+
+                return adminRole;
+            }
+
             if (currentRole != null &&
                 string.Equals(currentRole.RoleName, DefaultSelfServiceRoleName, StringComparison.OrdinalIgnoreCase))
             {
@@ -67,9 +81,76 @@ namespace Manage_KPI_or_OKR_System.Helpers
 
         public static string GetRoleNameOrDefault(Role? role)
         {
+            if (IsAdminRoleName(role?.RoleName) || IsLegacyAdminRole(role?.RoleName))
+            {
+                return AdminRoleName;
+            }
+
             return string.IsNullOrWhiteSpace(role?.RoleName)
                 ? DefaultSelfServiceRoleName
                 : role.RoleName;
+        }
+
+        public static bool IsAdminRoleName(string? roleName)
+        {
+            return string.Equals(roleName, AdminRoleName, StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(roleName, "Administrator", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static async Task<Role> EnsureAdminRoleAsync(MiniERPDbContext context)
+        {
+            var role = await context.Roles
+                .FirstOrDefaultAsync(r => r.RoleName == AdminRoleName);
+
+            role ??= await context.Roles
+                .FirstOrDefaultAsync(r => r.RoleName == "Administrator" ||
+                                          r.RoleName == "SaaS_Admin" ||
+                                          r.RoleName == "SuperAdmin");
+
+            if (role == null)
+            {
+                role = new Role
+                {
+                    RoleName = AdminRoleName,
+                    Description = "Quản trị viên hệ thống - Toàn quyền truy cập",
+                    IsActive = true,
+                    CreatedAt = DateTime.Now
+                };
+
+                context.Roles.Add(role);
+                await context.SaveChangesAsync();
+            }
+            else
+            {
+                var changed = false;
+
+                if (!string.Equals(role.RoleName, AdminRoleName, StringComparison.Ordinal))
+                {
+                    role.RoleName = AdminRoleName;
+                    changed = true;
+                }
+
+                if (!string.Equals(role.Description, "Quản trị viên hệ thống - Toàn quyền truy cập", StringComparison.Ordinal))
+                {
+                    role.Description = "Quản trị viên hệ thống - Toàn quyền truy cập";
+                    changed = true;
+                }
+
+                if (role.IsActive != true)
+                {
+                    role.IsActive = true;
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    context.Roles.Update(role);
+                    await context.SaveChangesAsync();
+                }
+            }
+
+            await EnsureAdminHasAllPermissionsAsync(context, role.Id);
+            return role;
         }
 
         private static bool ShouldRepairSelfServiceRole(MiniERPDbContext context, Role role)
@@ -90,6 +171,12 @@ namespace Manage_KPI_or_OKR_System.Helpers
                     p => p.Id,
                     (rp, p) => new { rp, p })
                 .Any(x => x.rp.RoleId == role.Id && x.p.PermissionCode == DashboardPermissionCode);
+        }
+
+        private static bool IsLegacyAdminRole(string? roleName)
+        {
+            return string.Equals(roleName, "SaaS_Admin", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(roleName, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
         }
 
         private static async Task EnsureRolePermissionAsync(
@@ -126,6 +213,41 @@ namespace Manage_KPI_or_OKR_System.Helpers
 
                 await context.SaveChangesAsync();
             }
+        }
+
+        private static async Task EnsureAdminHasAllPermissionsAsync(MiniERPDbContext context, int roleId)
+        {
+            var permissionIds = await context.Permissions
+                .Select(p => p.Id)
+                .ToListAsync();
+
+            if (!permissionIds.Any())
+            {
+                return;
+            }
+
+            var existingPermissionIds = await context.Role_Permissions
+                .Where(rp => rp.RoleId == roleId)
+                .Select(rp => rp.PermissionId)
+                .ToListAsync();
+
+            var existing = existingPermissionIds.ToHashSet();
+            var missing = permissionIds
+                .Where(permissionId => !existing.Contains(permissionId))
+                .Select(permissionId => new Role_Permission
+                {
+                    RoleId = roleId,
+                    PermissionId = permissionId
+                })
+                .ToList();
+
+            if (!missing.Any())
+            {
+                return;
+            }
+
+            context.Role_Permissions.AddRange(missing);
+            await context.SaveChangesAsync();
         }
     }
 }

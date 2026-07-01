@@ -1003,6 +1003,78 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const currentPath = normalizeSidebarPath(window.location.pathname);
+
+    const settingsPanel = document.querySelector('[data-settings-panel]');
+    const settingsTriggers = Array.from(document.querySelectorAll('[data-settings-panel-trigger]'));
+    const settingsCloseControls = Array.from(document.querySelectorAll('[data-settings-panel-close]'));
+    const settingsItems = Array.from(document.querySelectorAll('.settings-panel__item[href]'));
+
+    function setSettingsPanelOpen(isOpen) {
+        if (!settingsPanel || !settingsTriggers.length) return;
+
+        document.documentElement.classList.toggle('settings-panel-open', isOpen);
+        settingsPanel.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+        settingsTriggers.forEach(function (trigger) {
+            trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        if (isOpen) {
+            window.setTimeout(function () {
+                settingsPanel.querySelector('.settings-panel__close, .settings-panel__item')?.focus({ preventScroll: true });
+            }, 0);
+        }
+    }
+
+    function getSettingsUrl(item) {
+        try {
+            return new URL(item.getAttribute('href'), window.location.origin);
+        } catch {
+            return null;
+        }
+    }
+
+    let hasActiveSettingsItem = false;
+    settingsItems.forEach(function (item) {
+        const itemUrl = getSettingsUrl(item);
+        if (!itemUrl || itemUrl.origin !== window.location.origin) return;
+
+        const itemPath = normalizeSidebarPath(itemUrl.pathname);
+        const isMatch = currentPath === itemPath || (itemPath !== '/' && currentPath.startsWith(itemPath + '/'));
+        if (!isMatch) return;
+
+        item.classList.add('active');
+        hasActiveSettingsItem = true;
+    });
+
+    if (hasActiveSettingsItem) {
+        settingsTriggers.forEach(trigger => trigger.classList.add('is-active'));
+    }
+
+    settingsTriggers.forEach(function (trigger) {
+        trigger.addEventListener('click', function () {
+            const isOpen = document.documentElement.classList.contains('settings-panel-open');
+            setSettingsPanelOpen(!isOpen);
+        });
+    });
+
+    settingsCloseControls.forEach(function (control) {
+        control.addEventListener('click', function () {
+            setSettingsPanelOpen(false);
+        });
+    });
+
+    settingsItems.forEach(function (item) {
+        item.addEventListener('click', function () {
+            setSettingsPanelOpen(false);
+        });
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && document.documentElement.classList.contains('settings-panel-open')) {
+            setSettingsPanelOpen(false);
+        }
+    });
+
     const sidebarLinks = Array.from(document.querySelectorAll('.sidebar-link[href]'));
     let activeSidebarLink = null;
     let activeSidebarScore = -1;

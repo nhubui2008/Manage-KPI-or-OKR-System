@@ -114,7 +114,7 @@
     </form>
 </div>
 
-<div class="row justify-content-center w-100 m-0">
+<div class="row justify-content-center w-100 m-0 strategic-goals-section">
         <div class="col-12 px-0">
             <div class="row g-4 w-100">
     @if (Model != null && Model.Any())
@@ -122,14 +122,19 @@
         foreach (var goal in Model)
         {
             <div class="col-md-6 col-xl-4">
-                <div class="content-card h-100">
-                    <div class="card-body-custom p-4">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-semibold">@goal.TypeDisplayName @goal.TargetYear</div>
+                <div class="content-card h-100 strategic-goal-card">
+                    <div class="card-body-custom strategic-goal-card__body">
+                        <div class="strategic-goal-card__top">
+                            <div class="strategic-goal-chip">
+                                <i class="bi bi-flag-fill"></i>
+                                <span>@goal.TypeDisplayName @goal.TargetYear</span>
+                            </div>
                             @if (canEditMission || canDeleteMission)
                             {
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
+                                    <button class="btn btn-sm btn-link text-muted p-0 strategic-goal-card__menu" data-bs-toggle="dropdown" aria-label="Tùy chọn mục tiêu">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                         @if (canEditMission)
                                         {
@@ -151,18 +156,18 @@
                                 </div>
                             }
                         </div>
-                        <h5 class="fw-bold text-dark mb-3" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">@goal.Content</h5>
+                        <h5 class="strategic-goal-card__title">@goal.Content</h5>
                         
-                        <div class="d-flex align-items-center justify-content-between mt-auto pt-3 border-top">
-                            <div>
-                                <div class="text-muted" style="font-size: 0.75rem;">Mục tiêu tài chính</div>
+                        <div class="strategic-goal-card__footer">
+                            <div class="strategic-goal-money">
+                                <div class="strategic-goal-money__label">Mục tiêu tài chính</div>
                                 @if (goal.FinancialTarget.HasValue)
                                 {
-                                    <div class="fw-semibold text-dark">@String.Format("{0:N0} đ", goal.FinancialTarget.Value)</div>
+                                    <div class="strategic-goal-money__value">@String.Format("{0:N0} đ", goal.FinancialTarget.Value)</div>
                                 }
                                 else
                                 {
-                                    <div class="text-muted fst-italic">Không đặt ra</div>
+                                    <div class="strategic-goal-money__value strategic-goal-money__value--muted">Không đặt ra</div>
                                 }
                             </div>
                             <span class="status-badge active">Đang áp dụng</span>
