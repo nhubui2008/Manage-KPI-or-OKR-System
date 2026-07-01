@@ -441,188 +441,346 @@
 
 <!-- Modal Create KPI -->
 <div class="modal fade" id="createKpiModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl kpi-workspace-modal">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0 bg-light rounded-top p-4">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-plus-circle text-primary me-2"></i>Thêm KPI Mới</h5>
+            <div class="modal-header modal-header-soft primary kpi-modal-header">
+                <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 w-100">
+                    <div class="d-flex align-items-start gap-3">
+                        <span class="kpi-modal-header__icon">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </span>
+                        <div>
+                            <div class="kpi-modal-eyebrow">KPI Workspace</div>
+                            <h5 class="modal-title-custom mb-1">Thêm KPI mới</h5>
+                            <p class="kpi-modal-header__desc mb-0">Thiết lập mục tiêu, chỉ số đo lường và phạm vi phân bổ theo luồng làm việc quen thuộc của hệ thống.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="soft-chip tone-primary"><i class="bi bi-lightning-charge"></i>Tạo nhanh trong kỳ hiện tại</span>
+                        <span class="soft-chip tone-info"><i class="bi bi-diagram-3"></i>Hỗ trợ liên kết OKR</span>
+                    </div>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
-                <form asp-controller="KPIs" asp-action="Create" method="post">
-                    <h6 class="fw-bold text-primary mb-3">Thông tin chung</h6>
-                    <div class="row g-3 mb-4" data-okr-link-scope>
-                        <div class="col-md-12">
-                            <label class="form-label fw-semibold">Tên KPI <span class="text-danger">*</span></label>
-                            <input type="text" name="kpi.KPIName" id="createKpiName" class="form-control" placeholder="VD: Doanh thu bán hàng tháng" required>
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label fw-semibold">Mô tả KPI</label>
-                            <textarea name="kpi.Description" id="createKpiDescription" class="form-control" rows="3" maxlength="1000" placeholder="Mô tả phạm vi, cách tính hoặc lưu ý để tránh hiểu sai KPI"></textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Phân loại KPI <span class="text-danger">*</span></label>
-                            <select name="kpi.KPITypeId" class="form-select" required>
-                                <option value="">-- Chọn loại KPI --</option>
-                                @foreach (var t in kpiTypesList)
-                                {
-                                    <option value="@t.Id">@t.TypeName</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Kỳ đánh giá <span class="text-danger">*</span></label>
-                            <select name="kpi.PeriodId" id="createPeriodId" class="form-select" required>
-                                @foreach(var kvp in periodsDict)
-                                {
-                                    <option value="@kvp.Key">@kvp.Value</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Liên kết OKR <span class="text-muted">(tùy chọn)</span></label>
-                            <select name="kpi.OKRId" id="createOkrId" class="form-select js-okr-select">
-                                <option value="">-- Không liên kết OKR --</option>
-                                @foreach (var okr in okrsList)
-                                {
-                                    <option value="@okr.Id">@okr.ObjectiveName</option>
-                                }
-                            </select>
-                            <div class="form-text">KPI có thể độc lập nếu không gắn với OKR cụ thể.</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Key Result <span class="text-muted">(tùy chọn)</span></label>
-                            <select name="kpi.OKRKeyResultId" id="createKrId" class="form-select js-kr-select">
-                                <option value="">-- Không liên kết Key Result --</option>
-                                @foreach (var kr in okrKeyResultsList)
-                                {
-                                    var parentOkrName = kr.OKRId.HasValue && okrNamesDict.ContainsKey(kr.OKRId.Value)
-                                        ? okrNamesDict[kr.OKRId.Value]
-                                        : "OKR";
-                                    <option value="@kr.Id" data-okr-id="@kr.OKRId">@parentOkrName - @kr.KeyResultName</option>
-                                }
-                            </select>
-                            <div class="form-text">Danh sách Key Result sẽ đổi theo OKR đã chọn.</div>
-                        </div>
-                    </div>
-
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-sliders me-2"></i>Chi tiết Chỉ tiêu</h6>
-                    <div class="row g-3 mb-4 bg-light p-3 rounded-3" data-measurement-scope>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="number" step="0.01" name="detail.TargetValue" id="createTarget" class="form-control measurement-value-input" data-measurement-role="target" placeholder="Nhập chỉ tiêu" required>
-                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Đơn vị đo lường <span class="text-danger">*</span></label>
-                            <select name="detail.MeasurementUnit" id="createUnit" class="form-select measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
-                                <option value="">-- Chọn đơn vị đo --</option>
-                                @foreach (var unit in measurementUnits)
-                                {
-                                    <option value="@unit.Value">@unit.Text</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Ngưỡng đạt (Pass Threshold)</label>
-                            <div class="input-group">
-                                <input type="number" step="0.01" name="detail.PassThreshold" id="createPass" class="form-control measurement-value-input" data-measurement-role="pass" placeholder="Mức tối thiểu để Đạt">
-                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold text-danger">Ngưỡng trượt (Fail Threshold)</label>
-                            <div class="input-group">
-                                <input type="number" step="0.01" name="detail.FailThreshold" id="createFail" class="form-control measurement-value-input" data-measurement-role="fail" placeholder="Mức xác định là Không đạt">
-                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
-                            </div>
-                        </div>
-                        <div class="col-md-12">
-                            <div class="form-check form-switch p-3 bg-white rounded-3 border border-warning border-opacity-25 shadow-sm">
-                                <input class="form-check-input ms-0 me-3" type="checkbox" name="detail.IsInverse" value="true" id="isInverseCheck">
-                                <label class="form-check-label fw-bold text-dark cursor-pointer" for="isInverseCheck">
-                                    <i class="bi bi-arrow-down-circle text-warning me-1"></i> Chỉ tiêu thu nhỏ (Càng thấp càng tốt)
-                                </label>
-                                <div class="text-muted small ms-5 ps-1 mt-1">Sử dụng cho các chỉ số như tỷ lệ lỗi, chi phí, thời gian chờ...</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Tần suất check-in</label>
-                            <div class="input-group">
-                                <input type="number" min="1" step="1" name="detail.CheckInFrequencyDays" class="form-control" value="1">
-                                <span class="input-group-text">ngày/lần</span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Ngày deadline</label>
-                            <input type="date" name="detail.DeadlineDate" class="form-control">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Giờ deadline</label>
-                            <input type="time" name="detail.CheckInDeadlineTime" class="form-control" value="10:00">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Nhắc trước deadline</label>
-                            <div class="input-group">
-                                <input type="number" min="0" step="1" name="detail.ReminderBeforeHours" class="form-control" value="24">
-                                <span class="input-group-text">giờ</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-plus me-2"></i>Phân bổ KPI</h6>
-                    <div class="row g-3 mb-4 bg-light p-3 rounded-3">
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label fw-semibold mb-0">Nhân viên phụ trách</label>
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="splitCreateModalWeights">Chia đều</button>
-                            </div>
-                            <div class="bg-white rounded-3 border p-3" style="max-height: 240px; overflow:auto;">
-                                @if (allEmployees.Any())
-                                {
-                                    foreach (var employee in allEmployees)
-                                    {
-                                        <div class="d-flex align-items-center gap-2 py-2 border-bottom">
-                                            <input class="form-check-input modal-kpi-employee-check" type="checkbox" name="employeeIds" value="@employee.Id" id="modal-employee-@employee.Id">
-                                            <label class="form-check-label flex-grow-1" for="modal-employee-@employee.Id">@employee.FullName (@employee.EmployeeCode)</label>
-                                            <div class="input-group input-group-sm" style="width: 110px;">
-                                                <input type="number" min="0.01" max="100" step="0.01" name="weights" class="form-control modal-kpi-weight-input" value="100" disabled>
-                                                <span class="input-group-text">%</span>
+            <div class="modal-body kpi-create-modal-body">
+                <form asp-controller="KPIs" asp-action="Create" method="post" id="createKpiForm" class="d-flex flex-column gap-4">
+                    <div class="row g-4 align-items-start">
+                        <div class="col-xl-8">
+                            <div class="d-grid gap-4">
+                                <section class="content-card kpi-modal-panel">
+                                    <div class="kpi-modal-panel__header">
+                                        <span class="kpi-modal-panel__badge bg-primary-subtle text-primary">1</span>
+                                        <div>
+                                            <h6 class="kpi-modal-panel__title mb-1">Thông tin chung</h6>
+                                            <p class="kpi-modal-panel__description mb-0">Đặt tên rõ nghĩa, chọn chu kỳ đánh giá và gắn với OKR nếu cần theo dõi chiến lược.</p>
+                                        </div>
+                                    </div>
+                                    <div class="row g-3" data-okr-link-scope>
+                                        <div class="col-md-12">
+                                            <label class="form-label fw-semibold">Tên KPI <span class="text-danger">*</span></label>
+                                            <input type="text" name="kpi.KPIName" id="createKpiName" class="form-control" placeholder="VD: Doanh thu bán hàng tháng" required>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="form-label fw-semibold">Mô tả KPI</label>
+                                            <textarea name="kpi.Description" id="createKpiDescription" class="form-control" rows="4" maxlength="1000" placeholder="Mô tả phạm vi, cách tính hoặc lưu ý để tránh hiểu sai KPI"></textarea>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Phân loại KPI <span class="text-danger">*</span></label>
+                                            <select name="kpi.KPITypeId" id="createKpiTypeId" class="form-select" required>
+                                                <option value="">-- Chọn loại KPI --</option>
+                                                @foreach (var t in kpiTypesList)
+                                                {
+                                                    <option value="@t.Id">@t.TypeName</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Kỳ đánh giá <span class="text-danger">*</span></label>
+                                            <select name="kpi.PeriodId" id="createPeriodId" class="form-select" required>
+                                                @foreach(var kvp in periodsDict)
+                                                {
+                                                    <option value="@kvp.Key">@kvp.Value</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Liên kết OKR <span class="text-muted">(tùy chọn)</span></label>
+                                            <select name="kpi.OKRId" id="createOkrId" class="form-select js-okr-select">
+                                                <option value="">-- Không liên kết OKR --</option>
+                                                @foreach (var okr in okrsList)
+                                                {
+                                                    <option value="@okr.Id">@okr.ObjectiveName</option>
+                                                }
+                                            </select>
+                                            <div class="form-text">KPI có thể độc lập nếu không gắn với OKR cụ thể.</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Key Result <span class="text-muted">(tùy chọn)</span></label>
+                                            <select name="kpi.OKRKeyResultId" id="createKrId" class="form-select js-kr-select">
+                                                <option value="">-- Không liên kết Key Result --</option>
+                                                @foreach (var kr in okrKeyResultsList)
+                                                {
+                                                    var parentOkrName = kr.OKRId.HasValue && okrNamesDict.ContainsKey(kr.OKRId.Value)
+                                                        ? okrNamesDict[kr.OKRId.Value]
+                                                        : "OKR";
+                                                    <option value="@kr.Id" data-okr-id="@kr.OKRId">@parentOkrName - @kr.KeyResultName</option>
+                                                }
+                                            </select>
+                                            <div class="form-text">Danh sách Key Result sẽ đổi theo OKR đã chọn.</div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="kpi-inline-note">
+                                                <i class="bi bi-info-circle"></i>
+                                                <span>Nếu KPI không gắn với OKR, hệ thống vẫn theo dõi như một KPI vận hành độc lập theo kỳ đánh giá bạn chọn.</span>
                                             </div>
                                         </div>
-                                    }
-                                }
-                                else
-                                {
-                                    <div class="text-muted small">Chưa có nhân viên khả dụng để phân bổ.</div>
-                                }
+                                    </div>
+                                </section>
+
+                                <section class="content-card kpi-modal-panel">
+                                    <div class="kpi-modal-panel__header">
+                                        <span class="kpi-modal-panel__badge bg-warning-subtle text-warning">2</span>
+                                        <div>
+                                            <h6 class="kpi-modal-panel__title mb-1">Chi tiết chỉ tiêu</h6>
+                                            <p class="kpi-modal-panel__description mb-0">Xác định target, ngưỡng đạt và nhịp check-in để việc đo lường luôn rõ ràng.</p>
+                                        </div>
+                                    </div>
+                                    <div class="row g-3" data-measurement-scope>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.01" name="detail.TargetValue" id="createTarget" class="form-control measurement-value-input" data-measurement-role="target" placeholder="Nhập chỉ tiêu" required>
+                                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Đơn vị đo lường <span class="text-danger">*</span></label>
+                                            <select name="detail.MeasurementUnit" id="createUnit" class="form-select measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
+                                                <option value="">-- Chọn đơn vị đo --</option>
+                                                @foreach (var unit in measurementUnits)
+                                                {
+                                                    <option value="@unit.Value">@unit.Text</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">Ngưỡng đạt (Pass Threshold)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.01" name="detail.PassThreshold" id="createPass" class="form-control measurement-value-input" data-measurement-role="pass" placeholder="Mức tối thiểu để Đạt">
+                                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold text-danger">Ngưỡng trượt (Fail Threshold)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.01" name="detail.FailThreshold" id="createFail" class="form-control measurement-value-input" data-measurement-role="fail" placeholder="Mức xác định là Không đạt">
+                                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="form-check form-switch p-3 bg-white rounded-4 border border-warning border-opacity-25 shadow-sm">
+                                                <input class="form-check-input ms-0 me-3" type="checkbox" name="detail.IsInverse" value="true" id="isInverseCheck">
+                                                <label class="form-check-label fw-bold text-dark cursor-pointer" for="isInverseCheck">
+                                                    <i class="bi bi-arrow-down-circle text-warning me-1"></i> Chỉ tiêu thu nhỏ (Càng thấp càng tốt)
+                                                </label>
+                                                <div class="text-muted small ms-5 ps-1 mt-1">Sử dụng cho các chỉ số như tỷ lệ lỗi, chi phí, thời gian chờ...</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold">Tần suất check-in</label>
+                                            <div class="input-group">
+                                                <input type="number" min="1" step="1" name="detail.CheckInFrequencyDays" class="form-control" value="1">
+                                                <span class="input-group-text">ngày/lần</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold">Ngày deadline</label>
+                                            <input type="date" name="detail.DeadlineDate" class="form-control">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold">Giờ deadline</label>
+                                            <input type="time" name="detail.CheckInDeadlineTime" class="form-control" value="10:00">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold">Nhắc trước deadline</label>
+                                            <div class="input-group">
+                                                <input type="number" min="0" step="1" name="detail.ReminderBeforeHours" class="form-control" value="24">
+                                                <span class="input-group-text">giờ</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="content-card kpi-modal-panel">
+                                    <div class="kpi-modal-panel__header">
+                                        <span class="kpi-modal-panel__badge bg-success-subtle text-success">3</span>
+                                        <div>
+                                            <h6 class="kpi-modal-panel__title mb-1">Phân bổ KPI</h6>
+                                            <p class="kpi-modal-panel__description mb-0">Chọn người chịu trách nhiệm chính và các phòng ban cần nhận KPI trong cùng một không gian làm việc.</p>
+                                        </div>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-lg-6">
+                                            <div class="kpi-assignment-box">
+                                                <div class="kpi-assignment-box__toolbar">
+                                                    <div>
+                                                        <label class="form-label fw-semibold mb-0">Nhân viên phụ trách</label>
+                                                        <div class="small text-muted">Mỗi nhân viên có thể mang một tỷ trọng riêng.</div>
+                                                    </div>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" id="splitCreateModalWeights">Chia đều</button>
+                                                </div>
+                                                <div class="kpi-assignment-list">
+                                                    @if (allEmployees.Any())
+                                                    {
+                                                        foreach (var employee in allEmployees)
+                                                        {
+                                                            <div class="kpi-assignment-row">
+                                                                <div class="form-check d-flex align-items-start gap-2 mb-0 flex-grow-1">
+                                                                    <input class="form-check-input modal-kpi-employee-check mt-1" type="checkbox" name="employeeIds" value="@employee.Id" id="modal-employee-@employee.Id">
+                                                                    <label class="form-check-label flex-grow-1" for="modal-employee-@employee.Id">
+                                                                        <span class="d-block fw-semibold text-dark">@employee.FullName</span>
+                                                                        <span class="small text-muted">@employee.EmployeeCode</span>
+                                                                    </label>
+                                                                </div>
+                                                                <div class="input-group input-group-sm kpi-assignment-weight">
+                                                                    <input type="number" min="0.01" max="100" step="0.01" name="weights" class="form-control modal-kpi-weight-input" value="100" disabled>
+                                                                    <span class="input-group-text">%</span>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="kpi-assignment-empty">Chưa có nhân viên khả dụng để phân bổ.</div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <div class="kpi-assignment-box">
+                                                <div class="kpi-assignment-box__toolbar">
+                                                    <div>
+                                                        <label class="form-label fw-semibold mb-0">Phòng ban nhận KPI</label>
+                                                        <div class="small text-muted">Dùng khi KPI áp dụng cho cả đơn vị hoặc nhóm chức năng.</div>
+                                                    </div>
+                                                </div>
+                                                <div class="kpi-assignment-list">
+                                                    @if (allDepartments.Any())
+                                                    {
+                                                        foreach (var department in allDepartments)
+                                                        {
+                                                            <div class="kpi-assignment-row">
+                                                                <div class="form-check d-flex align-items-start gap-2 mb-0 w-100">
+                                                                    <input class="form-check-input mt-1" type="checkbox" name="departmentIds" value="@department.Id" id="modal-department-@department.Id">
+                                                                    <label class="form-check-label flex-grow-1" for="modal-department-@department.Id">
+                                                                        <span class="d-block fw-semibold text-dark">@department.DepartmentName</span>
+                                                                        <span class="small text-muted">Nhận KPI ở cấp phòng ban</span>
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="kpi-assignment-empty">Chưa có phòng ban khả dụng để phân bổ.</div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Phòng ban nhận KPI</label>
-                            <div class="bg-white rounded-3 border p-3" style="max-height: 240px; overflow:auto;">
-                                @if (allDepartments.Any())
-                                {
-                                    foreach (var department in allDepartments)
-                                    {
-                                        <div class="form-check py-2 border-bottom">
-                                            <input class="form-check-input" type="checkbox" name="departmentIds" value="@department.Id" id="modal-department-@department.Id">
-                                            <label class="form-check-label" for="modal-department-@department.Id">@department.DepartmentName</label>
+
+                        <div class="col-xl-4">
+                            <div class="kpi-modal-sidebar">
+                                <aside class="content-card kpi-modal-panel kpi-modal-panel--summary">
+                                    <div class="kpi-modal-panel__header">
+                                        <span class="kpi-modal-panel__badge bg-info-subtle text-info"><i class="bi bi-eye"></i></span>
+                                        <div>
+                                            <h6 class="kpi-modal-panel__title mb-1">Tóm tắt nhanh</h6>
+                                            <p class="kpi-modal-panel__description mb-0">Thông tin dưới đây cập nhật theo những gì bạn vừa nhập.</p>
                                         </div>
-                                    }
-                                }
-                                else
-                                {
-                                    <div class="text-muted small">Chưa có phòng ban khả dụng để phân bổ.</div>
-                                }
+                                    </div>
+
+                                    <div class="kpi-live-summary-list">
+                                        <div class="kpi-live-summary">
+                                            <span class="kpi-live-summary__label">Tên KPI</span>
+                                            <strong class="kpi-live-summary__value" id="createSummaryName">Chưa nhập tên KPI</strong>
+                                        </div>
+                                        <div class="kpi-live-summary">
+                                            <span class="kpi-live-summary__label">Loại KPI</span>
+                                            <strong class="kpi-live-summary__value" id="createSummaryType">Chưa chọn loại KPI</strong>
+                                        </div>
+                                        <div class="kpi-live-summary">
+                                            <span class="kpi-live-summary__label">Target dự kiến</span>
+                                            <strong class="kpi-live-summary__value" id="createSummaryTarget">Chưa nhập chỉ tiêu</strong>
+                                        </div>
+                                        <div class="kpi-live-summary">
+                                            <span class="kpi-live-summary__label">Liên kết chiến lược</span>
+                                            <strong class="kpi-live-summary__value" id="createSummaryAlignment">KPI đang hoạt động độc lập</strong>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-wrap gap-2 mt-3">
+                                        <span class="soft-chip tone-primary" id="createSummaryPeriodChip"><i class="bi bi-calendar3"></i>Chưa chọn kỳ</span>
+                                        <span class="soft-chip tone-info" id="createSummaryUnitChip"><i class="bi bi-rulers"></i>Chưa chọn đơn vị</span>
+                                        <span class="soft-chip tone-success" id="createSummaryScopeChip"><i class="bi bi-bullseye"></i>KPI độc lập</span>
+                                    </div>
+
+                                    <div class="kpi-summary-stats mt-3">
+                                        <div class="kpi-summary-stat">
+                                            <span>Nhân viên</span>
+                                            <strong id="createSummaryEmployeeCount">0</strong>
+                                        </div>
+                                        <div class="kpi-summary-stat">
+                                            <span>Phòng ban</span>
+                                            <strong id="createSummaryDepartmentCount">0</strong>
+                                        </div>
+                                    </div>
+                                </aside>
+
+                                <aside class="content-card kpi-modal-panel">
+                                    <div class="kpi-modal-panel__header">
+                                        <span class="kpi-modal-panel__badge bg-warning-subtle text-warning"><i class="bi bi-lightbulb"></i></span>
+                                        <div>
+                                            <h6 class="kpi-modal-panel__title mb-1">Mẹo nhập KPI</h6>
+                                            <p class="kpi-modal-panel__description mb-0">Giữ KPI ngắn gọn, đo được và đủ rõ để người nhận hiểu ngay phải làm gì.</p>
+                                        </div>
+                                    </div>
+                                    <ul class="kpi-modal-checklist">
+                                        <li><i class="bi bi-check2-circle"></i><span>Đặt tên KPI theo kết quả hoặc hành vi có thể đo lường thay vì mô tả công việc chung chung.</span></li>
+                                        <li><i class="bi bi-check2-circle"></i><span>Chọn đơn vị đo khớp với target để khi check-in hệ thống tính tiến độ chính xác hơn.</span></li>
+                                        <li><i class="bi bi-check2-circle"></i><span>Chỉ bật “Càng thấp càng tốt” khi KPI là chi phí, tỷ lệ lỗi hoặc thời gian chờ.</span></li>
+                                    </ul>
+                                </aside>
+
+                                <aside class="content-card kpi-modal-panel">
+                                    <div class="kpi-modal-panel__header">
+                                        <span class="kpi-modal-panel__badge bg-success-subtle text-success"><i class="bi bi-shield-check"></i></span>
+                                        <div>
+                                            <h6 class="kpi-modal-panel__title mb-1">Checklist trước khi lưu</h6>
+                                            <p class="kpi-modal-panel__description mb-0">Một vài điểm nhanh để giảm sai sót khi gửi KPI đi duyệt.</p>
+                                        </div>
+                                    </div>
+                                    <ul class="kpi-modal-checklist mb-0">
+                                        <li><i class="bi bi-arrow-right-short"></i><span>Bạn đã chọn loại KPI và kỳ đánh giá phù hợp với chu kỳ cần áp dụng.</span></li>
+                                        <li><i class="bi bi-arrow-right-short"></i><span>Target, ngưỡng đạt và ngưỡng trượt không mâu thuẫn với nhau.</span></li>
+                                        <li><i class="bi bi-arrow-right-short"></i><span>Nhân viên hoặc phòng ban nhận KPI đã đúng phạm vi cần theo dõi.</span></li>
+                                    </ul>
+                                </aside>
                             </div>
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <button type="button" class="btn-outline-custom rounded-pill px-4" data-bs-dismiss="modal">Hủy thao tác</button>
-                        <button type="submit" class="btn-primary-custom rounded-pill px-4"><i class="bi bi-save me-2"></i>Lưu KPI mới</button>
+                    <div class="kpi-modal-actions">
+                        <div class="kpi-modal-actions__meta">
+                            <span class="soft-chip"><i class="bi bi-hourglass-split"></i>KPI mới sẽ được lưu ở trạng thái chờ duyệt.</span>
+                        </div>
+                        <div class="d-flex flex-wrap justify-content-end gap-2">
+                            <button type="button" class="btn-outline-custom rounded-pill px-4" data-bs-dismiss="modal">Hủy thao tác</button>
+                            <button type="submit" class="btn-primary-custom rounded-pill px-4"><i class="bi bi-save me-2"></i>Lưu KPI mới</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -633,7 +791,7 @@
 
 <!-- Modal AI Suggest KPI -->
 <div class="modal fade" id="aiKpiSuggestModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl kpi-workspace-modal">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-bottom-0 pb-0 bg-light rounded-top p-4">
                 <h5 class="modal-title fw-bold text-dark"><i class="bi bi-stars text-primary me-2"></i>AI Gợi ý KPI</h5>
@@ -813,6 +971,332 @@
 
     .kpi-index-page .dropdown-menu {
         z-index: 1060 !important;
+    }
+
+    .kpi-create-modal-body {
+        background:
+            radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 34%),
+            linear-gradient(180deg, rgba(248, 250, 252, 0.92), rgba(255, 255, 255, 0.96));
+    }
+
+    .kpi-modal-header {
+        align-items: flex-start;
+        gap: 1rem;
+        padding: clamp(1.1rem, 2vw, 1.6rem) clamp(1.2rem, 2.3vw, 2rem);
+    }
+
+    .kpi-modal-header__icon {
+        width: 52px;
+        height: 52px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        background: #ffffff;
+        color: var(--primary);
+        box-shadow: 0 12px 24px rgba(26, 115, 232, 0.14);
+        font-size: 1.4rem;
+        flex: 0 0 auto;
+    }
+
+    .kpi-modal-eyebrow {
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-slate);
+        margin-bottom: 0.2rem;
+    }
+
+    .kpi-modal-header__desc {
+        max-width: 44rem;
+        color: var(--color-slate);
+        font-size: 0.92rem;
+        line-height: 1.55;
+    }
+
+    .kpi-modal-panel {
+        padding: clamp(1rem, 1.5vw, 1.35rem);
+        border-radius: 22px !important;
+    }
+
+    .kpi-modal-panel:hover {
+        transform: none !important;
+    }
+
+    .kpi-modal-panel__header {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.95rem;
+        margin-bottom: 1.1rem;
+    }
+
+    .kpi-modal-panel__badge {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        flex: 0 0 auto;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+    }
+
+    .kpi-modal-panel__title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--color-midnight-ink);
+    }
+
+    .kpi-modal-panel__description {
+        color: var(--color-slate);
+        font-size: 0.88rem;
+        line-height: 1.55;
+    }
+
+    .kpi-modal-panel .form-label {
+        margin-bottom: 0.45rem;
+    }
+
+    .kpi-modal-panel .form-control,
+    .kpi-modal-panel .form-select,
+    .kpi-modal-panel .input-group-text {
+        min-height: 48px;
+        border-radius: 14px;
+    }
+
+    .kpi-modal-panel textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .kpi-modal-panel .input-group > .form-control,
+    .kpi-modal-panel .input-group > .form-select {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .kpi-modal-panel .input-group > .input-group-text:last-child {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .kpi-inline-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.7rem;
+        padding: 0.9rem 1rem;
+        border-radius: 16px;
+        background: rgba(59, 130, 246, 0.06);
+        border: 1px dashed rgba(59, 130, 246, 0.24);
+        color: var(--color-charcoal);
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .kpi-inline-note i {
+        color: var(--primary);
+        margin-top: 0.05rem;
+    }
+
+    .kpi-assignment-box {
+        background: #ffffff;
+        border: 1px solid var(--color-cloud);
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .kpi-assignment-box__toolbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 1rem 1rem 0.8rem;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+    }
+
+    .kpi-assignment-list {
+        max-height: 280px;
+        overflow: auto;
+        padding: 0.85rem;
+    }
+
+    .kpi-assignment-row {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.9rem 0.85rem;
+        border-radius: 16px;
+        border: 1px solid transparent;
+        transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .kpi-assignment-row + .kpi-assignment-row {
+        margin-top: 0.6rem;
+    }
+
+    .kpi-assignment-row:hover {
+        background: rgba(248, 250, 252, 0.88);
+    }
+
+    .kpi-assignment-row.is-selected {
+        background: rgba(37, 99, 235, 0.06);
+        border-color: rgba(37, 99, 235, 0.18);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+    }
+
+    .kpi-assignment-weight {
+        width: 118px;
+        flex: 0 0 auto;
+    }
+
+    .kpi-assignment-empty {
+        padding: 1rem;
+        text-align: center;
+        color: var(--color-slate);
+        font-size: 0.9rem;
+    }
+
+    .kpi-modal-sidebar {
+        position: sticky;
+        top: 0;
+        display: grid;
+        gap: 1rem;
+    }
+
+    .kpi-live-summary-list {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .kpi-live-summary {
+        padding: 0.9rem 1rem;
+        background: rgba(248, 250, 252, 0.95);
+        border-radius: 16px;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+    }
+
+    .kpi-live-summary__label {
+        display: block;
+        margin-bottom: 0.28rem;
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-slate);
+    }
+
+    .kpi-live-summary__value {
+        display: block;
+        color: var(--color-midnight-ink);
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+    }
+
+    .kpi-summary-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .kpi-summary-stat {
+        padding: 0.9rem 1rem;
+        border-radius: 16px;
+        background: #ffffff;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+    }
+
+    .kpi-summary-stat span {
+        display: block;
+        margin-bottom: 0.22rem;
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-slate);
+    }
+
+    .kpi-summary-stat strong {
+        font-size: 1.4rem;
+        color: var(--color-midnight-ink);
+    }
+
+    .kpi-modal-checklist {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 0.85rem;
+    }
+
+    .kpi-modal-checklist li {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.7rem;
+        color: var(--color-charcoal);
+        font-size: 0.92rem;
+        line-height: 1.55;
+    }
+
+    .kpi-modal-checklist i {
+        color: var(--primary);
+        margin-top: 0.08rem;
+        flex: 0 0 auto;
+    }
+
+    .kpi-modal-actions {
+        position: sticky;
+        bottom: -0.25rem;
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        padding: 1rem 1.2rem;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(226, 232, 240, 0.92);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        backdrop-filter: blur(12px);
+    }
+
+    .kpi-modal-actions__meta {
+        flex: 1 1 260px;
+    }
+
+    @@media (max-width: 1199.98px) {
+        .kpi-modal-sidebar {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .kpi-modal-header {
+            padding: 1rem;
+        }
+
+        .kpi-modal-panel {
+            padding: 1rem;
+        }
+
+        .kpi-summary-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .kpi-assignment-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .kpi-assignment-weight {
+            width: 100%;
+        }
+
+        .kpi-modal-actions {
+            padding: 0.9rem 1rem;
+        }
     }
 </style>
 

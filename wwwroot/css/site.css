@@ -6488,10 +6488,44 @@ a.text-decoration-none.opacity-75 {
     z-index: 1061 !important;
 }
 
+.modal-backdrop {
+    z-index: 1070 !important;
+}
+
+.modal {
+    z-index: 1075 !important;
+}
+
+.modal .select2-container--open,
+.modal .select2-dropdown {
+    z-index: 1076 !important;
+}
+
+.kpi-workspace-modal {
+    max-width: min(1320px, calc(100vw - 1.5rem)) !important;
+}
+
+.kpi-workspace-modal .modal-content {
+    min-height: 0;
+}
+
+.kpi-workspace-modal .modal-body {
+    padding: clamp(1.25rem, 1.8vw, 2rem) !important;
+}
+
 html,
 body {
     max-width: 100%;
     overflow-x: hidden;
+}
+
+html,
+body {
+    scrollbar-gutter: stable;
+}
+
+body.modal-open {
+    padding-right: 0 !important;
 }
 
 .select2-hidden-accessible {
@@ -6507,6 +6541,10 @@ body {
 }
 
 @media (max-width: 991.98px) {
+    .kpi-workspace-modal {
+        max-width: calc(100vw - 1rem) !important;
+    }
+
     html.sidebar-expanded .sidebar {
         transform: translateX(0) !important;
     }
