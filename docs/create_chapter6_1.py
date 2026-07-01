@@ -41,46 +41,58 @@ def add_page_break(doc):
 
 
 def add_chapter_title(doc, text):
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    """Tiêu đề chương (CHƯƠNG X: ...) - căn giữa, in đậm, viết hoa (Heading 1)"""
+    p = doc.add_paragraph(style='Heading 1')
+    p.alignment = 1 # WD_ALIGN_PARAGRAPH.CENTER
     pf = p.paragraph_format
     pf.space_before = Pt(24)
     pf.space_after = Pt(18)
+    pf.keep_with_next = True
     run = p.add_run(text.upper())
-    set_font(run, size=FONT_SIZE, bold=True)
+    set_font(run, size=14, bold=True)
+    run.font.color.rgb = RGBColor(0, 0, 0)
     return p
 
 
 def add_heading1(doc, text):
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    """Tiêu đề cấp 1 (1.1. ...) - in đậm (Heading 2)"""
+    p = doc.add_paragraph(style='Heading 2')
+    p.alignment = 0 # WD_ALIGN_PARAGRAPH.LEFT
     pf = p.paragraph_format
     pf.space_before = Pt(18)
     pf.space_after = Pt(8)
+    pf.keep_with_next = True
     run = p.add_run(text)
-    set_font(run, size=FONT_SIZE, bold=True)
+    set_font(run, size=14, bold=True)
+    run.font.color.rgb = RGBColor(0, 0, 0)
     return p
 
 
 def add_heading2(doc, text):
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    """Tiêu đề cấp 2 (1.1.1. ...) - in đậm (Heading 3)"""
+    p = doc.add_paragraph(style='Heading 3')
+    p.alignment = 0 # WD_ALIGN_PARAGRAPH.LEFT
     pf = p.paragraph_format
     pf.space_before = Pt(12)
     pf.space_after = Pt(6)
+    pf.keep_with_next = True
     run = p.add_run(text)
-    set_font(run, size=FONT_SIZE, bold=True)
+    set_font(run, size=13, bold=True)
+    run.font.color.rgb = RGBColor(0, 0, 0)
     return p
 
 
 def add_heading3(doc, text):
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    """Tiêu đề cấp 3 (1.1.1.1. ...) - in đậm (Heading 4)"""
+    p = doc.add_paragraph(style='Heading 4')
+    p.alignment = 0 # WD_ALIGN_PARAGRAPH.LEFT
     pf = p.paragraph_format
     pf.space_before = Pt(10)
     pf.space_after = Pt(4)
+    pf.keep_with_next = True
     run = p.add_run(text)
-    set_font(run, size=FONT_SIZE, bold=True)
+    set_font(run, size=13, bold=True)
+    run.font.color.rgb = RGBColor(0, 0, 0)
     return p
 
 

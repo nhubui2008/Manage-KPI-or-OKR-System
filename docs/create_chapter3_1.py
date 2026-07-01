@@ -41,46 +41,58 @@ def add_page_break(doc):
 
 
 def add_chapter_title(doc, text):
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    """Tiêu đề chương (CHƯƠNG X: ...) - căn giữa, in đậm, viết hoa (Heading 1)"""
+    p = doc.add_paragraph(style='Heading 1')
+    p.alignment = 1 # WD_ALIGN_PARAGRAPH.CENTER
     pf = p.paragraph_format
     pf.space_before = Pt(24)
     pf.space_after = Pt(18)
+    pf.keep_with_next = True
     run = p.add_run(text.upper())
-    set_font(run, size=FONT_SIZE, bold=True)
+    set_font(run, size=14, bold=True)
+    run.font.color.rgb = RGBColor(0, 0, 0)
     return p
 
 
 def add_heading1(doc, text):
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    """Tiêu đề cấp 1 (1.1. ...) - in đậm (Heading 2)"""
+    p = doc.add_paragraph(style='Heading 2')
+    p.alignment = 0 # WD_ALIGN_PARAGRAPH.LEFT
     pf = p.paragraph_format
     pf.space_before = Pt(18)
     pf.space_after = Pt(8)
+    pf.keep_with_next = True
     run = p.add_run(text)
-    set_font(run, size=FONT_SIZE, bold=True)
+    set_font(run, size=14, bold=True)
+    run.font.color.rgb = RGBColor(0, 0, 0)
     return p
 
 
 def add_heading2(doc, text):
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    """Tiêu đề cấp 2 (1.1.1. ...) - in đậm (Heading 3)"""
+    p = doc.add_paragraph(style='Heading 3')
+    p.alignment = 0 # WD_ALIGN_PARAGRAPH.LEFT
     pf = p.paragraph_format
     pf.space_before = Pt(12)
     pf.space_after = Pt(6)
+    pf.keep_with_next = True
     run = p.add_run(text)
-    set_font(run, size=FONT_SIZE, bold=True)
+    set_font(run, size=13, bold=True)
+    run.font.color.rgb = RGBColor(0, 0, 0)
     return p
 
 
 def add_heading3(doc, text):
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    """Tiêu đề cấp 3 (1.1.1.1. ...) - in đậm (Heading 4)"""
+    p = doc.add_paragraph(style='Heading 4')
+    p.alignment = 0 # WD_ALIGN_PARAGRAPH.LEFT
     pf = p.paragraph_format
     pf.space_before = Pt(10)
     pf.space_after = Pt(4)
+    pf.keep_with_next = True
     run = p.add_run(text)
-    set_font(run, size=FONT_SIZE, bold=True)
+    set_font(run, size=13, bold=True)
+    run.font.color.rgb = RGBColor(0, 0, 0)
     return p
 
 
@@ -197,13 +209,76 @@ def create_spec_table(doc, headers, rows, col_widths=None):
 
 
 def add_table_caption(doc, caption):
-    p = doc.add_paragraph()
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    """Thêm caption cho bảng (Heading style 'Caption' + SEQ field cho Word) """
+    import re
+    m = re.match(r"^(Bảng|Hình)\s+(\d+)\s*:\s*(.*)$", caption, re.IGNORECASE)
+    
+    p = doc.add_paragraph(style='Caption')
+    p.alignment = 1 # WD_ALIGN_PARAGRAPH.CENTER
     pf = p.paragraph_format
     pf.space_before = Pt(4)
     pf.space_after = Pt(12)
-    run = p.add_run(caption)
-    set_font(run, size=12, italic=True)
+    pf.keep_with_next = True
+    
+    if m:
+        label = m.group(1) # Bảng hoặc Hình
+        num = m.group(2)
+        desc = m.group(3)
+        
+        # Thêm nhãn
+        r1 = p.add_run(label + " ")
+        set_font(r1, size=12, italic=True)
+        r1.font.color.rgb = RGBColor(0, 0, 0)
+        
+        # Thêm SEQ field
+        run_seq = p.add_run()
+        set_font(run_seq, size=12, italic=True)
+        run_seq.font.color.rgb = RGBColor(0, 0, 0)
+        
+        fldChar1 = OxmlElement('w:fldChar')
+        fldChar1.set(qn('w:fldCharType'), 'begin')
+        run_seq._r.append(fldChar1)
+        
+        run_instr = p.add_run()
+        set_font(run_instr, size=12, italic=True)
+        run_instr.font.color.rgb = RGBColor(0, 0, 0)
+        instrText = OxmlElement('w:instrText')
+        instrText.set(qn('xml:space'), 'preserve')
+        instrText.text = f'SEQ {label} \\* ARABIC'
+        run_instr._r.append(instrText)
+        
+        run_sep = p.add_run()
+        set_font(run_sep, size=12, italic=True)
+        run_sep.font.color.rgb = RGBColor(0, 0, 0)
+        fldChar2 = OxmlElement('w:fldChar')
+        fldChar2.set(qn('w:fldCharType'), 'separate')
+        run_sep._r.append(fldChar2)
+        
+        run_num = p.add_run(num)
+        set_font(run_num, size=12, italic=True, bold=True)
+        run_num.font.color.rgb = RGBColor(0, 0, 0)
+        
+        run_end = p.add_run()
+        set_font(run_end, size=12, italic=True)
+        run_end.font.color.rgb = RGBColor(0, 0, 0)
+        fldChar3 = OxmlElement('w:fldChar')
+        fldChar3.set(qn('w:fldCharType'), 'end')
+        run_end._r.append(fldChar3)
+        
+        # Thêm mô tả
+        r2 = p.add_run(": " + desc)
+        set_font(r2, size=12, italic=True)
+        r2.font.color.rgb = RGBColor(0, 0, 0)
+    else:
+        run = p.add_run(caption)
+        set_font(run, size=12, italic=True)
+        run.font.color.rgb = RGBColor(0, 0, 0)
+    return p
+
+
+def add_figure_caption(doc, caption):
+    """Thêm caption cho hình (Heading style 'Caption' + SEQ field cho Word) """
+    return add_table_caption(doc, caption)
 
 
 # ===================== NỘI DUNG CHƯƠNG 3 =====================
