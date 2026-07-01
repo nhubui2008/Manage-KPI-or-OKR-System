@@ -721,6 +721,7 @@ public async Task<IActionResult> GoogleResponse()
         {
             Username = defaultUsername,
             Email = email,
+            PasswordHash = PasswordHelper.HashPassword(Guid.NewGuid().ToString()),
             RoleId = defaultRole.Id,
             IsActive = true,
             CreatedAt = DateTime.Now
