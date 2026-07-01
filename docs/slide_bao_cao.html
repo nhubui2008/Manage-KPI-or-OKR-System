@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slide Báo Cáo Dự Án Tốt Nghiệp - Bizen KPI/OKR</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #F1F5F9;
+            --card-bg: #FFFFFF;
+            --primary: #1D4ED8;
+            --primary-glow: rgba(29, 78, 216, 0.15);
+            --accent: #6D28D9;
+            --accent-glow: rgba(109, 40, 217, 0.15);
+            --text-main: #0F172A;
+            --text-muted: #475569;
+            --border-color: rgba(15, 23, 42, 0.08);
+            --transition-speed: 0.5s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s;
+        }
+
+        /* Nền Gradient mờ nhẹ nhàng */
+        .glow-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .glow-circle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+        }
+
+        .c1 {
+            background: var(--primary);
+            width: 600px;
+            height: 600px;
+            top: -150px;
+            left: -150px;
+        }
+
+        .c2 {
+            background: var(--accent);
+            width: 700px;
+            height: 700px;
+            bottom: -200px;
+            right: -200px;
+        }
+
+        /* Khung trình diễn Slide */
+        .presentation-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .slide-deck {
+            position: relative;
+            width: 92%;
+            height: 88%;
+            max-width: 1400px;
+            max-height: 820px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transform: translateX(80px);
+            transition: opacity var(--transition-speed) ease, transform var(--transition-speed) cubic-bezier(0.25, 1, 0.5, 1);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            padding: clamp(20px, 4.5vh, 40px) clamp(24px, 4.5vw, 48px);
+            justify-content: space-between;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+
+        .slide.prev {
+            opacity: 0;
+            transform: translateX(-80px);
+        }
+
+        /* Slide Header & Presenter Badge */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            padding-bottom: 12px;
+            transition: opacity 0.3s;
+        }
+
+        .slide-title-area {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .chapter-badge {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #FFFFFF;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px var(--primary-glow);
+        }
+
+        .slide-title {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            font-size: clamp(1.4rem, 4vh, 2.1rem);
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .presenter-badge {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .presenter-badge i {
+            color: var(--accent);
+        }
+
+        /* Slide Content Layouts */
+        .slide-content {
+            flex-grow: 1;
+            display: flex;
+            gap: 40px;
+            align-items: center;
+            overflow-y: auto;
+            max-height: 100%;
+            margin-bottom: 15px;
+        }
+
+        .content-left {
+            flex: 1.1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .content-right {
+            flex: 0.9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            position: relative;
+        }
+
+        /* Điểm nhấn dạng Thẻ (Cards) */
+        .bullet-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .bullet-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            background: #F8FAFC;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            padding: 14px 18px;
+            border-radius: 16px;
+            transition: all 0.25s ease;
+        }
+
+        .bullet-item:hover {
+            background: #FFFFFF;
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        .bullet-icon {
+            background: var(--primary-glow);
+            color: var(--primary);
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .bullet-text h4 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 3px;
+        }
+
+        .bullet-text p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
+
+        /* Hình ảnh mượt mà */
+        .slide-image {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            object-fit: contain;
+            background: #F8FAFC;
+        }
+
+        /* Video Slide */
+        .video-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #000;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Bố cục trang bìa (Cover) */
+        .cover-layout {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+            gap: 15px;
+        }
+
+        .cover-logo {
+            height: 60px;
+            margin-bottom: 5px;
+        }
+
+        .cover-sub {
+            font-size: 1.1rem;
+            color: var(--primary);
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .cover-title {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            font-size: clamp(1.6rem, 5vh, 2.5rem);
+            font-weight: 800;
+            line-height: 1.25;
+            max-width: 1100px;
+            color: var(--text-main);
+        }
+
+        .cover-meta {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            background: #F1F5F9;
+            padding: 12px 24px;
+            border-radius: 50px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .cover-meta strong {
+            color: var(--text-main);
+        }
+
+        /* Bố cục danh sách thành viên */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .member-card {
+            background: #F8FAFC;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.25s ease;
+        }
+
+        .member-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            background: #FFFFFF;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .member-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50px;
+            object-fit: cover;
+            border: 2px solid rgba(0, 0, 0, 0.08);
+            margin-bottom: 10px;
+            background-color: #E2E8F0;
+        }
+
+        .member-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 2px;
+        }
+
+        .member-role {
+            font-size: 0.7rem;
+            color: var(--primary);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .member-details {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.25;
+        }
+
+        /* Bảng timeline báo cáo */
+        .timeline-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.85rem;
+            background: #FFFFFF;
+        }
+
+        .timeline-table th {
+            background: var(--primary);
+            color: #FFFFFF;
+            font-weight: 700;
+            padding: 10px 12px;
+        }
+
+        .timeline-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            color: var(--text-main);
+        }
+
+        .timeline-table tr:hover {
+            background-color: #F8FAFC;
+        }
+
+        /* Bộ đếm ngược thời gian (Countdown Timer) */
+        .timer-widget {
+            position: absolute;
+            top: 20px;
+            right: 48px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 50px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: opacity 0.3s;
+        }
+
+        .timer-icon {
+            color: var(--primary);
+            font-size: 1rem;
+        }
+
+        .timer-display {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            min-width: 50px;
+        }
+
+        .timer-display.warn {
+            color: #D97706; /* Dark Orange */
+        }
+
+        .timer-display.danger {
+            color: #DC2626; /* Dark Red */
+            animation: blink 1s infinite;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        .timer-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: color 0.2s;
+        }
+
+        .timer-btn:hover {
+            color: var(--text-main);
+        }
+
+        /* Nút ẩn/hiện bảng điều khiển UI */
+        .ui-toggle-btn {
+            position: absolute;
+            top: 20px;
+            left: 48px;
+            background: #FFFFFF;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            z-index: 1000;
+            transition: all 0.2s;
+        }
+
+        .ui-toggle-btn:hover {
+            color: var(--text-main);
+            border-color: var(--primary);
+        }
+
+        /* Slide Footer & Navigation */
+        .slide-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            padding-top: 12px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            transition: opacity 0.3s;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 12px;
+            z-index: 1000;
+            transition: opacity 0.3s;
+        }
+
+        .nav-btn {
+            background: #F1F5F9;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            color: var(--text-main);
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: var(--primary);
+            color: #FFFFFF;
+            border-color: var(--primary);
+            box-shadow: 0 4px 10px var(--primary-glow);
+            transform: scale(1.05);
+        }
+
+        .progress-bar-container {
+            width: 250px;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Trạng thái Ẩn UI hoàn toàn */
+        .ui-hidden .slide-header,
+        .ui-hidden .slide-footer,
+        .ui-hidden .timer-widget,
+        .ui-hidden .keyboard-help,
+        .ui-hidden .nav-controls {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        .ui-hidden .slide-deck {
+            height: 94%;
+            width: 96%;
+        }
+
+        .ui-hidden .slide {
+            padding: 30px;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+
+        .keyboard-help {
+            position: absolute;
+            bottom: 15px;
+            left: 48px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            z-index: 10;
+            transition: opacity 0.3s;
+        }
+
+        .keyboard-help kbd {
+            background: rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.08);
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+        /* Custom scrollbar for scrollable areas */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.25);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Nền Gradient mờ -->
+    <div class="glow-bg">
+        <div class="glow-circle c1"></div>
+        <div class="glow-circle c2"></div>
+    </div>
+
+    <!-- Nút Ẩn/Hiện điều khiển UI -->
+    <!-- <button class="ui-toggle-btn" onclick="toggleUI()" title="Ẩn hoặc hiển thị thanh điều khiển, logo và số trang">
+        <i class="fa-solid fa-eye-slash" id="toggleIcon"></i> <span id="toggleText">Ẩn Điều Khiển</span>
+    </button> -->
+
+    <!-- Bộ đếm ngược thời gian (Countdown Timer) -->
+    <div class="timer-widget" id="timerWidget">
+        <i class="fa-solid fa-clock-rotate-left timer-icon"></i>
+        <span class="timer-display" id="timerDisplay">15:00</span>
+        <div class="timer-controls">
+            <button class="timer-btn" id="timerStartBtn" onclick="toggleTimer()" title="Play/Pause"><i class="fa-solid fa-play"></i></button>
+            <button class="timer-btn" onclick="resetTimer()" title="Reset"><i class="fa-solid fa-arrow-rotate-right"></i></button>
+        </div>
+    </div>
+
+
+    <div class="presentation-container">
+        <div class="slide-deck" id="slideDeck">
+
+            <!-- SLIDE 1: BÌA BÁO CÁO -->
+            <div class="slide active" data-presenter="Cả nhóm NEXTGEN">
+                <div class="slide-header">
+                    <div class="slide-title-area">
+                        <span class="chapter-badge">Trường Cao Đẳng FPT Polytechnic</span>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <div class="cover-layout">
+                        <img src="img_page0_2.png" alt="Logo FPT Polytechnic" class="cover-logo" onerror="this.style.display='none'">
+                        <span class="cover-sub">Báo cáo dự án tốt nghiệp</span>
+                        <h1 class="cover-title">HỆ THỐNG HỖ TRỢ VẬN HÀNH THÔNG MINH CHO DOANH NGHIỆP VỪA VÀ NHỎ HỖ TRỢ QUẢN LÝ ĐA CẤP VÀ ĐƯA RA QUYẾT ĐỊNH BẰNG AI</h1>
+                        <div class="cover-meta">
+                            <span>Giảng viên hướng dẫn: <strong>Phan Hoàng Khải</strong></span>
+                            <span>Chuyên ngành: <strong>Phát triển phần mềm</strong></span>
+                            <span>Nhóm: <strong>NEXTGEN</strong></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <span>Dự án tốt nghiệp UDPM - Kỳ Spring 2026</span>
+                    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+                    <span class="page-number">Slide 1/12</span>
+                </div>
+            </div>
+
+            <!-- SLIDE 2: GIỚI THIỆU THÀNH VIÊN -->
+            <div class="slide" data-presenter="Phạm Trần Anh Quân (Leader)">
+                <div class="slide-header">
+                    <div class="slide-title-area">
+                        <span class="chapter-badge">Giới thiệu</span>
+                        <h2 class="slide-title">Đội ngũ phát triển nhóm NEXTGEN</h2>
+                    </div>
+                    <span class="presenter-badge"><i class="fa-solid fa-microphone"></i> Thuyết trình: Cả nhóm</span>
+                </div>
+                <div class="slide-content">
+                    <div class="team-grid">
+                        <!-- 1. Quân -->
+                        <div class="member-card">
+                            <img src="img/quan.jpg" alt="Phạm Trần Anh Quân" class="member-avatar" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=quan'">
+                            <h3 class="member-name">A.Quân</h3>
+                            <span class="member-role">Leader, AI</span>
+                            <p class="member-details">Quản trị tiến độ, tích hợp Gemini API.</p>
+                        </div>
+                        <!-- 2. Như -->
+                        <div class="member-card">
+                            <img src="img/nhu.jpg" alt="Bùi Nguyễn Anh Như" class="member-avatar" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=nhu'">
+                            <h3 class="member-name">A.Như</h3>
+                            <span class="member-role">FE KPI OKR</span>
+                            <p class="member-details">Xây dựng UI mục tiêu & Dashboard.</p>
+                        </div>
+                        <!-- 3. An -->
+                        <div class="member-card">
+                            <img src="img/an.jpg" alt="Phạm Trần An An" class="member-avatar" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=an'">
+                            <h3 class="member-name">An An</h3>
+                            <span class="member-role">BE KPI OKR</span>
+                            <p class="member-details">Thiết kế Schema CSDL & API Core.</p>
+                        </div>
+                        <!-- 4. Nhật -->
+                        <div class="member-card">
+                            <img src="" alt="Vũ Hoàng Huy Nhật" class="member-avatar" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=nhat'">
+                            <h3 class="member-name">H.Nhật</h3>
+                            <span class="member-role">FE Vận hành & Kanban</span>
+                            <p class="member-details">Giao diện Check-in, 1-on-1, Board Kanban.</p>
+                        </div>
+                        <!-- 5. Bảo -->
+                        <div class="member-card">
+                            <img src="" alt="Nguyễn Thế Bảo" class="member-avatar" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=bao'">
+                            <h3 class="member-name">T.Bảo</h3>
+                            <span class="member-role">BE Vận hành & Kanban</span>
+                            <p class="member-details">Duyệt check-in, tính thưởng, API Kanban.</p>
+                        </div>
+                        <!-- 6. Phong -->
+                        <div class="member-card">
+                            <img src="" alt="Trần Thanh Phong" class="member-avatar" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=phong'">
+                            <h3 class="member-name">T.Phong</h3>
+                            <span class="member-role">FS Nền tảng & Hệ thống</span>
+                            <p class="member-details">Xây dựng Auth, Google OAuth, SaaS, Mail.</p>
+                        </div>
+                        <!-- 7. Khánh -->
+                        <div class="member-card">
+                            <img src="" alt="Đoàn Quốc Khánh" class="member-avatar" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=khanh'">
+                            <h3 class="member-name">Q.Khánh</h3>
+                            <span class="member-role">Tester</span>
+                            <p class="member-details">QA/Tester viết kịch bản & test lỗi.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <span>Nguồn lực nhân sự dự án</span>
+                    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+                    <span class="page-number">Slide 2/12</span>
+                </div>
+            </div>
+
+            <!-- SLIDE 4: BỐI CẢNH & HIỆN TRẠNG -->
+            <div class="slide" data-presenter="Phạm Trần Anh Quân (Leader)">
+                <div class="slide-header">
+                    <div class="slide-title-area">
+                        <span class="chapter-badge">Chương 1</span>
+                        <h2 class="slide-title">Bối cảnh và Hiện trạng doanh nghiệp</h2>
+                    </div>
+                    <span class="presenter-badge"><i class="fa-solid fa-microphone"></i> Thuyết trình: Anh Quân</span>
+                </div>
+                <div class="slide-content">
+                    <div class="content-left">
+                        <ul class="bullet-list">
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Điểm nghẽn quản trị hiệu suất truyền thống</h4>
+                                    <p>Hầu hết các SME quản lý KPI bằng Excel rải rác, gây trễ nải báo cáo, sai lệch số liệu và thiếu đi tính kết nối chiến lược (OKR).</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-chart-line"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Thiếu tính chủ động và dự báo</h4>
+                                    <p>Quản lý chỉ nhận thấy kết quả vào cuối kỳ đánh giá, không có khả năng cảnh báo sớm rủi ro hoặc tư vấn tức thời khi chỉ tiêu bị chậm tiến độ.</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-robot"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Nhu cầu tích hợp Trí tuệ nhân tạo (AI)</h4>
+                                    <p>Thay đổi từ quản trị bị động sang chủ động bằng cách sử dụng LLM (Gemini API) hỗ trợ gợi ý KPI và phân tích hiệu suất thời gian thực.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="content-right">
+                        <img src="screenshot_dashboard.png" alt="Bối cảnh Dashboard" class="slide-image">
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <span>Chương 1: Giới thiệu dự án tốt nghiệp</span>
+                    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+                    <span class="page-number">Slide 3/12</span>
+                </div>
+            </div>
+
+            <!-- SLIDE 5: MỤC TIÊU & PHẠM VI -->
+            <div class="slide" data-presenter="Phạm Trần Anh Quân (Leader)">
+                <div class="slide-header">
+                    <div class="slide-title-area">
+                        <span class="chapter-badge">Chương 1</span>
+                        <h2 class="slide-title">Mục tiêu và Phạm vi dự án</h2>
+                    </div>
+                    <span class="presenter-badge"><i class="fa-solid fa-microphone"></i> Thuyết trình: Anh Quân</span>
+                </div>
+                <div class="slide-content">
+                    <div class="content-left">
+                        <ul class="bullet-list">
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-bullseye"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Mục tiêu tổng quát</h4>
+                                    <p>Xây dựng hệ thống SaaS Bizen KPI/OKR giúp doanh nghiệp SME quản lý mục tiêu liên cấp và ứng dụng AI Gemini đưa ra các đề xuất giải pháp thông minh.</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-user-shield"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Phạm vi phía quản trị (Director / Manager)</h4>
+                                    <p>Thiết lập chiến lược OKR 3 cấp, giao KPI, duyệt tiến độ check-in, quản lý dự án Kanban, chấm điểm rank thưởng và chạy phân tích AI.</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-user-tie"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Phạm vi phía nhân viên (Employee)</h4>
+                                    <p>Xem danh sách KPI cá nhân, check-in tiến độ kèm giải trình rào cản, kéo thả thẻ việc Kanban, và chat với Trợ lý AI tư vấn.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="content-right">
+                        <img src="screenshot_okrs.png" alt="Phạm vi chiến lược" class="slide-image">
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <span>Chương 1.2: Mục tiêu - Phạm vi</span>
+                    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+                    <span class="page-number">Slide 4/12</span>
+                </div>
+            </div>
+
+            <!-- SLIDE 6: VIDEO DEMO HỆ THỐNG (3 PHÚT) -->
+            <div class="slide" data-presenter="Xem Video Demo (3 phút)">
+                <div class="slide-header">
+                    <div class="slide-title-area">
+                        <span class="chapter-badge">Trình chiếu</span>
+                        <h2 class="slide-title">Video Demo: Hệ thống vận hành thông minh tích hợp quyết định bằng AI</h2>
+                    </div>
+                    <span class="presenter-badge"><i class="fa-solid fa-video"></i> Demo 3 phút</span>
+                </div>
+                <div class="slide-content" style="justify-content: center;">
+                    <div class="video-container">
+                        <!-- Nhúng video cục bộ từ đường dẫn Relative -->
+                        <video id="demoVideo" controls preload="auto">
+                            <source src="video/VIDEO DEMO DATN.mp4" type="video/mp4">
+                            Trình duyệt của bạn không hỗ trợ thẻ video.
+                        </video>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <span>Video demo vận hành thực tế hệ thống</span>
+                    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+                    <span class="page-number">Slide 5/12</span>
+                </div>
+            </div>
+
+            <!-- SLIDE 7: GIAO DIỆN OKR & KPI -->
+            <div class="slide" data-presenter="Bùi Nguyễn Anh Như">
+                <div class="slide-header">
+                    <div class="slide-title-area">
+                        <span class="chapter-badge">Frontend OKR/KPI</span>
+                        <h2 class="slide-title">Giao diện thiết lập chiến lược OKR & KPI</h2>
+                    </div>
+                    <span class="presenter-badge"><i class="fa-solid fa-microphone"></i> Thuyết trình: Anh Như</span>
+                </div>
+                <div class="slide-content">
+                    <div class="content-left">
+                        <ul class="bullet-list">
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-sitemap"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Sơ đồ phân rã chiến lược đa cấp</h4>
+                                    <p>Giao diện cho phép tạo Mục tiêu (Objectives) và Kết quả then chốt (Key Results) liên kết động theo dạng cây từ Công ty xuống Phòng ban và Cá nhân.</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-tasks"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Giao chỉ tiêu KPI & Phân bổ trọng số</h4>
+                                    <p>Manager thực hiện giao chỉ tiêu cho nhân viên, tự động tính tổng trọng số để đảm bảo không vượt quá 100% trong kỳ đánh giá.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="content-right">
+                        <img src="screenshot_kpis.png" alt="KPIs Frontend" class="slide-image">
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <span>Chương 6.2 & 6.3: Giao diện OKR/KPI phía khách hàng</span>
+                    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+                    <span class="page-number">Slide 6/12</span>
+                </div>
+            </div>
+
+            <!-- SLIDE 8: backend OKR & KPI -->
+            <div class="slide" data-presenter="Phạm Trần An An">
+                <div class="slide-header">
+                    <div class="slide-title-area">
+                        <span class="chapter-badge">Backend OKR/KPI</span>
+                        <h2 class="slide-title">Kiến trúc CSDL & Đồng bộ tiến độ OKR/KPI</h2>
+                    </div>
+                    <span class="presenter-badge"><i class="fa-solid fa-microphone"></i> Thuyết trình: An An</span>
+                </div>
+                <div class="slide-content">
+                    <div class="content-left">
+                        <ul class="bullet-list">
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-code-fork"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Cơ chế tính toán tiến độ tự động (Progress Roll-up)</h4>
+                                    <p>Khi một check-in KPI được duyệt $\rightarrow$ Cập nhật tiến độ KPI $\rightarrow$ Đồng bộ tiến độ Key Result liên quan $\rightarrow$ Cập nhật phần trăm hoàn thành của Objective cha tương ứng.</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-database"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Đặc tả CSDL quan hệ chính</h4>
+                                    <p>Tối ưu hóa chỉ mục (Indexes) trên các khóa ngoại `CompanyOKRs.ParentId`, `KeyResults.OKRId`, và `KPIs.KeyResultId` tăng tốc độ Roll-up dưới 10ms.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="content-right">
+                        <img src="erd_diagram.png" alt="CSDL Core OKR/KPI" class="slide-image">
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <span>Chương 3.1 & 4.1.2: Phân tích kỹ thuật Backend OKR/KPI</span>
+                    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+                    <span class="page-number">Slide 7/12</span>
+                </div>
+            </div>
+
+            <!-- SLIDE 9: GIAO DIỆN PHÂN HỆ VẬN HÀNH -->
+            <div class="slide" data-presenter="Vũ Hoàng Huy Nhật">
+                <div class="slide-header">
+                    <div class="slide-title-area">
+                        <span class="chapter-badge">Frontend Vận hành</span>
+                        <h2 class="slide-title">Giao diện Vận hành & Bảng công việc Kanban</h2>
+                    </div>
+                    <span class="presenter-badge"><i class="fa-solid fa-microphone"></i> Thuyết trình: Huy Nhật</span>
+                </div>
+                <div class="slide-content">
+                    <div class="content-left">
+                        <ul class="bullet-list">
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-pen-to-square"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Form Check-in chi tiết</h4>
+                                    <p>Nhân viên nhập giá trị đạt được thực tế (Achieved Value), kèm theo giải thích Rào cản (Barriers) và Kế hoạch khắc phục (Plans).</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-handshake"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Không gian họp 1-on-1</h4>
+                                    <p>Hỗ trợ tạo lịch họp định kỳ giữa Quản lý và Nhân viên, ghi chép biên bản thống nhất ngay trên cùng một màn hình thao tác.</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-table-columns"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Bảng công việc Kanban phòng ban</h4>
+                                    <p>Giao diện kéo thả thẻ việc (WorkItems) liên kết chỉ tiêu KPI, giúp nhân viên trực quan hóa tiến độ công việc hàng ngày.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="content-right">
+                        <img src="screenshot_checkin.png" alt="Giao diện Check-in & Kanban" class="slide-image">
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <span>Chương 6.3 & 6.4: Giao diện check-in & bảng Kanban của nhân viên</span>
+                    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+                    <span class="page-number">Slide 8/12</span>
+                </div>
+            </div>
+
+            <!-- SLIDE 10: XỬ LÝ NGHIỆP VỤ & ĐỒNG BỘ VẬN HÀNH -->
+            <div class="slide" data-presenter="Nguyễn Thế Bảo">
+                <div class="slide-header">
+                    <div class="slide-title-area">
+                        <span class="chapter-badge">Backend Vận hành</span>
+                        <h2 class="slide-title">Logic Vận hành, Kanban & Tính Lương Thưởng</h2>
+                    </div>
+                    <span class="presenter-badge"><i class="fa-solid fa-microphone"></i> Thuyết trình: Thế Bảo</span>
+                </div>
+                <div class="slide-content">
+                    <div class="content-left">
+                        <ul class="bullet-list">
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-user-check"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Quy trình Phê duyệt Check-in an toàn</h4>
+                                    <p>Backend sử dụng Database Transaction khóa các hàng liên quan khi duyệt tiến độ, ngăn chặn xung đột ghi đồng thời (Race Conditions).</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-award"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Hệ thống tự động tính thưởng HR</h4>
+                                    <p>Khi hết kỳ đánh giá, backend tự động quét điểm hoàn thành KPI trung bình để xếp hạng Rank (S, A, B, C, D) và tính thưởng dựa trên `BonusRules` cấu hình.</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-code"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Nghiệp vụ Kanban & Phân rã Task công việc</h4>
+                                    <p>Các RESTful API cập nhật trạng thái thẻ việc và liên kết tự động ghi nhận tiến độ đóng góp cho chỉ tiêu KPI liên quan.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="content-right">
+                        <div style="background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; font-family: monospace; font-size: 0.85rem; width: 100%;">
+                            <div style="color: var(--primary); font-weight: bold; margin-bottom: 8px;">// Hàm tính thưởng tự động:</div>
+                            <div style="color: #000;">decimal kpiAvg = db.KPICheckIns.Where(c => c.EmployeeId == empId).Average(c => c.Score);</div>
+                            <div style="color: #000;">var rank = db.GradingRanks.FirstOrDefault(r => kpiAvg >= r.MinScore && kpiAvg <= r.MaxScore);</div>
+                            <div style="color: #000;">var bonusRule = db.BonusRules.FirstOrDefault(b => b.GradingRankId == rank.Id);</div>
+                            <div style="color: #000; font-weight: bold; margin-top: 8px;">decimal bonus = salary * (bonusRule.BonusPercentageOfSalary / 100) + bonusRule.FixedBonusAmount;</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <span>Chương 3.1.2 & 6.3: Phân tích Backend vận hành tính lương thưởng</span>
+                    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+                    <span class="page-number">Slide 9/12</span>
+                </div>
+            </div>
+
+            <!-- SLIDE 11: DEMO AI GEMINI & PHÂN HỆ NỀN TẢNG -->
+            <div class="slide" data-presenter="Trần Thanh Phong">
+                <div class="slide-header">
+                    <div class="slide-title-area">
+                        <span class="chapter-badge">AI & Nền tảng</span>
+                        <h2 class="slide-title">Trợ lý AI Gemini & Phân hệ Nền tảng Hệ thống</h2>
+                    </div>
+                    <span class="presenter-badge"><i class="fa-solid fa-microphone"></i> Thuyết trình: Thanh Phong</span>
+                </div>
+                <div class="slide-content">
+                    <div class="content-left">
+                        <ul class="bullet-list">
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-robot"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Trợ lý tư vấn AI Gemini tự động hóa</h4>
+                                    <p>Tích hợp API Gemini (mô hình `gemini-2.5-flash`) tự động phân tích dữ liệu hiệu suất của phòng ban để đưa ra đề xuất cải tiến.</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-server"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Các chức năng Nền tảng & Hệ thống</h4>
+                                    <p>Xây dựng cơ chế đăng nhập Google OAuth, phân quyền người dùng (Roles & Claims), quản lý đa doanh nghiệp (SaaS Tenants) và Nhật ký Audit log.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="content-right">
+                        <img src="screenshot_ai.png" alt="Gemini AI và Nền tảng" class="slide-image">
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <span>Chương 4.3 & 6.5: Trợ lý AI và phân hệ nền tảng chung</span>
+                    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+                    <span class="page-number">Slide 10/12</span>
+                </div>
+            </div>
+
+            <!-- SLIDE 12: KẾ HOẠCH & PHƯƠNG PHÁP KIỂM THỬ -->
+            <div class="slide" data-presenter="Đoàn Quốc Khánh (Tester)">
+                <div class="slide-header">
+                    <div class="slide-title-area">
+                        <span class="chapter-badge">Chương 5</span>
+                        <h2 class="slide-title">Kế hoạch kiểm thử & Phương pháp thực hiện</h2>
+                    </div>
+                    <span class="presenter-badge"><i class="fa-solid fa-microphone"></i> Thuyết trình: Quốc Khánh</span>
+                </div>
+                <div class="slide-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <ul class="bullet-list">
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-vial"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Phương pháp Kiểm thử Hộp đen (Black-Box)</h4>
+                                    <p>Tập trung kiểm thử chức năng giao diện người dùng, hành động bấm nút, kéo thả Kanban, và nhập liệu form check-in tiến độ.</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-user-shield"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Kiểm thử Phân quyền (Access Scope)</h4>
+                                    <p>Xác thực cơ chế bảo mật dữ liệu, đảm bảo nhân viên không thể chỉnh sửa hoặc xem trộm chỉ tiêu KPI của đồng nghiệp hoặc phòng ban khác.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <ul class="bullet-list">
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-gauge-high"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Kiểm thử Hiệu năng & Cache RAM</h4>
+                                    <p>Đánh giá thời gian tải trang khi cache Claims phân quyền trong IMemoryCache, đảm bảo tốc độ phản hồi REST API dưới 200ms.</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Kiểm thử Đa nền tảng (Cross-Device)</h4>
+                                    <p>Thực thi các kịch bản trên các trình duyệt phổ biến (Chrome, Edge, Safari) và các thiết bị di động thực tế để tối ưu hiển thị.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <span>Chương 5.1: Kế hoạch và phương pháp kiểm thử hệ thống</span>
+                    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+                    <span class="page-number">Slide 11/12</span>
+                </div>
+            </div>
+
+            <!-- SLIDE 13: TỔNG KẾT & ĐÌNH HƯỚNG TƯƠNG LAI -->
+            <div class="slide" data-presenter="Phạm Trần Anh Quân (Leader)">
+                <div class="slide-header">
+                    <div class="slide-title-area">
+                        <span class="chapter-badge">Chương 7</span>
+                        <h2 class="slide-title">Tổng kết và Định hướng tương lai</h2>
+                    </div>
+                    <span class="presenter-badge"><i class="fa-solid fa-microphone"></i> Thuyết trình: Anh Quân</span>
+                </div>
+                <div class="slide-content">
+                    <div class="content-left">
+                        <ul class="bullet-list">
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-check-double"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Kết quả đạt được</h4>
+                                    <p>Giải quyết triệt để bài toán quản lý hiệu suất OKR/KPI liên thông công việc Kanban, tích hợp thành công AI Gemini tư vấn & gợi ý chỉ tiêu thông minh.</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-lightbulb"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Bài học kinh nghiệm</h4>
+                                    <p>Mô hình kiến trúc phân tầng Layered giúp phát triển dự án song song hiệu quả; tối ưu Claims cache (RAM) tăng tốc độ tải trang web 90%.</p>
+                                </div>
+                            </li>
+                            <li class="bullet-item">
+                                <div class="bullet-icon"><i class="fa-solid fa-compass"></i></div>
+                                <div class="bullet-text">
+                                    <h4>Định hướng phát triển</h4>
+                                    <p>Phát triển Mobile App native (iOS/Android), Tự động hóa kết nối cổng thanh toán SaaS và nâng cấp AI RAG đọc hiểu tệp quy chế nội bộ công ty.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="content-right" style="flex-direction: column; text-align: center; gap: 15px;">
+                        <i class="fa-solid fa-circle-check" style="font-size: 5rem; color: #10B981; filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.2));"></i>
+                        <h3 style="font-family: 'Be Vietnam Pro', sans-serif; font-size: 1.8rem; color: var(--text-main);">XIN CẢM ƠN HỘI ĐỒNG!</h3>
+                        <p style="color: var(--text-muted); font-size: 0.95rem;">Nhóm NEXTGEN sẵn sàng nhận câu hỏi phản biện từ thầy cô.</p>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <span>Chương 7: Tổng kết dự án tốt nghiệp</span>
+                    <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
+                    <span class="page-number">Slide 12/12</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <script>
+        // Slide Navigation Logic
+        const slides = document.querySelectorAll('.slide');
+        let currentSlide = 0;
+
+        function updateSlidePosition() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'prev');
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else if (index < currentSlide) {
+                    slide.classList.add('prev');
+                }
+            });
+
+            // Update Progress Bar
+            const percent = ((currentSlide) / (slides.length - 1)) * 100;
+            document.querySelectorAll('.progress-bar-fill').forEach(fill => {
+                fill.style.width = `${percent}%`;
+            });
+
+            // Update Presenter Badge dynamically
+            const activeSlide = slides[currentSlide];
+            const presenter = activeSlide.getAttribute('data-presenter');
+            const presenterBadge = activeSlide.querySelector('.presenter-badge');
+            if (presenterBadge && presenter) {
+                presenterBadge.innerHTML = `<i class="fa-solid fa-microphone"></i> Thuyết trình: ${presenter}`;
+            }
+
+            // Play/Pause Video automatically on Slide 6
+            const video = document.getElementById('demoVideo');
+            if (video) {
+                if (currentSlide === 4) { // Slide 5 (Video)
+                    // auto play from start
+                    video.currentTime = 0;
+                    video.play().catch(e => console.log('Auto-play blocked, waiting for user click.'));
+                } else {
+                    video.pause();
+                }
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateSlidePosition();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlidePosition();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
+                e.preventDefault();
+                prevSlide();
+            }
+        });
+
+        // Toggle UI controls (Ẩn / Hiện)
+        let isUIHidden = false;
+        function toggleUI() {
+            const body = document.body;
+            const toggleIcon = document.getElementById('toggleIcon');
+            const toggleText = document.getElementById('toggleText');
+            
+            if (isUIHidden) {
+                body.classList.remove('ui-hidden');
+                toggleIcon.className = 'fa-solid fa-eye-slash';
+                toggleText.textContent = 'Ẩn Điều Khiển';
+                isUIHidden = false;
+            } else {
+                body.classList.add('ui-hidden');
+                toggleIcon.className = 'fa-solid fa-eye';
+                toggleText.textContent = 'Hiện Điều Khiển';
+                isUIHidden = true;
+            }
+        }
+
+        // Countdown Timer Logic
+        let totalSeconds = 15 * 60; // 15 Minutes default
+        let timerInterval = null;
+        let isRunning = false;
+
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerStartBtn = document.getElementById('timerStartBtn');
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const formattedMinutes = minutes.toString().padStart(2, '0');
+            const formattedSeconds = seconds.toString().padStart(2, '0');
+            
+            timerDisplay.textContent = `${formattedMinutes}:${formattedSeconds}`;
+
+            // Warn colors
+            timerDisplay.classList.remove('warn', 'danger');
+            if (totalSeconds <= 2 * 60) {
+                timerDisplay.classList.add('danger');
+            } else if (totalSeconds <= 5 * 60) {
+                timerDisplay.classList.add('warn');
+            }
+        }
+
+        function toggleTimer() {
+            if (isRunning) {
+                // Pause
+                clearInterval(timerInterval);
+                timerStartBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                isRunning = false;
+            } else {
+                // Start
+                timerInterval = setInterval(() => {
+                    if (totalSeconds > 0) {
+                        totalSeconds--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        timerDisplay.classList.add('danger');
+                        alert("Hết thời gian thuyết trình!");
+                    }
+                }, 1000);
+                timerStartBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                isRunning = true;
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            totalSeconds = 15 * 60;
+            isRunning = false;
+            timerStartBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            updateTimerDisplay();
+        }
+
+        // Initialize slide deck on load
+        updateSlidePosition();
+    </script>
+</body>
+</html>

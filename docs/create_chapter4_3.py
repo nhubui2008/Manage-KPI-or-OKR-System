@@ -1,0 +1,312 @@
+"""
+Script tạo phần 4.3: Đặc tả chức năng / Sequence diagram cho báo cáo tốt nghiệp
+"""
+
+from docx import Document
+from docx.shared import Pt, Cm, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+import os
+
+# ===================== CẤU HÌNH =====================
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+INPUT_PATH = os.path.join(SCRIPT_DIR, "BaoCao_DuAn_TotNghiep.docx")
+OUTPUT_PATH = os.path.join(SCRIPT_DIR, "BaoCao_DuAn_TotNghiep.docx")
+
+FONT_NAME = 'Times New Roman'
+FONT_SIZE = 14
+HEADER_BG = "1F4E79"
+
+
+def set_font(run, size=FONT_SIZE, bold=False, italic=False, color=None):
+    run.font.size = Pt(size)
+    run.font.name = FONT_NAME
+    run._element.rPr.rFonts.set(qn('w:eastAsia'), FONT_NAME)
+    run.bold = bold
+    run.italic = italic
+    if color:
+        run.font.color.rgb = color
+
+
+def add_heading1(doc, text):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    pf = p.paragraph_format
+    pf.space_before = Pt(18)
+    pf.space_after = Pt(8)
+    run = p.add_run(text)
+    set_font(run, size=FONT_SIZE, bold=True)
+    return p
+
+
+def add_heading2(doc, text):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    pf = p.paragraph_format
+    pf.space_before = Pt(12)
+    pf.space_after = Pt(6)
+    run = p.add_run(text)
+    set_font(run, size=FONT_SIZE, bold=True)
+    return p
+
+
+def add_heading3(doc, text):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    pf = p.paragraph_format
+    pf.space_before = Pt(10)
+    pf.space_after = Pt(4)
+    run = p.add_run(text)
+    set_font(run, size=FONT_SIZE, bold=True)
+    return p
+
+
+def add_para(doc, text, bold=False, italic=False, indent=True, space_before=3, space_after=3):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    pf = p.paragraph_format
+    pf.space_before = Pt(space_before)
+    pf.space_after = Pt(space_after)
+    pf.line_spacing = Pt(22)
+    if indent:
+        pf.first_line_indent = Cm(1.27)
+    run = p.add_run(text)
+    set_font(run, bold=bold, italic=italic)
+    return p
+
+
+def add_bullet(doc, text, bold_prefix="", level=0):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    pf = p.paragraph_format
+    pf.space_before = Pt(2)
+    pf.space_after = Pt(2)
+    pf.line_spacing = Pt(22)
+    pf.left_indent = Cm(1.27 + level * 0.63)
+    pf.first_line_indent = Cm(-0.63)
+
+    if bold_prefix:
+        run_b = p.add_run("● " + bold_prefix + ": ")
+        set_font(run_b, bold=True)
+        run_t = p.add_run(text)
+        set_font(run_t)
+    else:
+        run = p.add_run("● " + text)
+        set_font(run)
+    return p
+
+
+def set_cell_shading(cell, color):
+    shading = OxmlElement('w:shd')
+    shading.set(qn('w:fill'), color)
+    shading.set(qn('w:val'), 'clear')
+    cell._tc.get_or_add_tcPr().append(shading)
+
+
+def set_cell(cell, text, bold=False, size=FONT_SIZE, align=WD_ALIGN_PARAGRAPH.CENTER, color=None):
+    cell.text = ""
+    p = cell.paragraphs[0]
+    p.alignment = align
+    pf = p.paragraph_format
+    pf.space_before = Pt(2)
+    pf.space_after = Pt(2)
+    run = p.add_run(text)
+    set_font(run, size=size, bold=bold, color=color)
+
+
+def create_table(doc, headers, rows, col_widths=None):
+    table = doc.add_table(rows=1 + len(rows), cols=len(headers))
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.style = 'Table Grid'
+
+    for i, h in enumerate(headers):
+        cell = table.rows[0].cells[i]
+        set_cell(cell, h, bold=True, color=RGBColor(255, 255, 255))
+        set_cell_shading(cell, HEADER_BG)
+
+    for r_idx, row_data in enumerate(rows):
+        for c_idx, text in enumerate(row_data):
+            cell = table.rows[r_idx + 1].cells[c_idx]
+            if c_idx in [0]:
+                align = WD_ALIGN_PARAGRAPH.CENTER
+            else:
+                align = WD_ALIGN_PARAGRAPH.LEFT
+            set_cell(cell, text, size=11, align=align)
+
+    if col_widths:
+        for row in table.rows:
+            for i, w in enumerate(col_widths):
+                if i < len(row.cells):
+                    row.cells[i].width = Cm(w)
+
+    return table
+
+
+def add_table_caption(doc, caption):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    pf = p.paragraph_format
+    pf.space_before = Pt(4)
+    pf.space_after = Pt(12)
+    run = p.add_run(caption)
+    set_font(run, size=12, italic=True)
+
+
+def add_figure_caption(doc, caption):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    pf = p.paragraph_format
+    pf.space_before = Pt(2)
+    pf.space_after = Pt(12)
+    run = p.add_run(caption)
+    set_font(run, size=12, italic=True)
+
+
+# ===================== NỘI DUNG 4.3 =====================
+
+def write_section_4_3(doc):
+    """4.3. Đặc tả chức năng / Sequence diagram"""
+
+    add_heading1(doc, "4.3. Đặc tả chức năng / Sequence diagram")
+
+    add_para(doc,
+        "Đặc tả chức năng đi sâu vào mô tả chi tiết logic xử lý nghiệp vụ ở lớp backend, cấu trúc dữ liệu "
+        "đầu vào/đầu ra (Input/Output) và các quy tắc ràng buộc nghiệp vụ chính. Để minh họa trực quan "
+        "quy trình giao tiếp liên lớp, mục này trình bày sơ đồ tuần tự (Sequence Diagram) cho quy trình "
+        "yêu cầu tư vấn và gợi ý chỉ tiêu KPI thông minh từ Trợ lý AI Gemini."
+    )
+
+    # ============================================================
+    # 4.3.1. SƠ ĐỒ TUẦN TỰ QUY TRÌNH AI SUGGESTION
+    # ============================================================
+    add_heading2(doc, "4.3.1. Sơ đồ tuần tự quy trình tư vấn và gợi ý KPI bằng AI Gemini")
+    
+    add_para(doc,
+        "Sơ đồ dưới đây mô tả luồng tương tác không đồng bộ (Asynchronous call) từ trình duyệt web của người dùng, "
+        "đi qua lớp bảo mật phân quyền của Controller, nạp dữ liệu ngữ cảnh thực tế từ Database thông qua DbContext, "
+        "gửi gói tin đóng gói sang API Google Gemini và trả kết quả hiển thị cho người dùng:"
+    )
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    seq_path = os.path.join(script_dir, "sequence_ai.png")
+
+    p_seq = doc.add_paragraph()
+    p_seq.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    if os.path.exists(seq_path):
+        p_seq.add_run().add_picture(seq_path, width=Cm(15.0))
+    else:
+        p_seq.add_run("[SƠ ĐỒ SEQUENCE AI - LỖI HÌNH ẢNH]")
+    add_figure_caption(doc, "Hình 13: Sơ đồ tuần tự quy trình yêu cầu tư vấn & gợi ý KPI bằng AI Gemini")
+
+    # ============================================================
+    # 4.3.2. MÔ TẢ XỬ LÝ BACKEND (BACKEND LOGIC)
+    # ============================================================
+    add_heading2(doc, "4.3.2. Mô tả xử lý backend")
+
+    add_para(doc,
+        "Logic xử lý ở backend được phân rã thành các bước xử lý tuần tự trong 3 thành phần chính "
+        "đăng ký Dependency Injection trong Program.cs:"
+    )
+
+    add_bullet(doc, "Lớp Action 'GetKpiSuggestions' tiếp nhận tham số truyền lên. "
+                   "Gọi HasPermissionAttribute kiểm tra quyền 'AI_SUGGESTION_VIEW'. Nếu hợp lệ, "
+                   "gọi Service để lấy context và gọi tiếp GeminiService.", bold_prefix="1. AIController.cs")
+
+    add_bullet(doc, "Lớp xử lý nạp ngữ cảnh thực tế từ database. "
+                   "Sử dụng Entity Framework Core 10 truy vấn các bảng: OKRs, KPIs, Employees. "
+                   "Hệ thống sẽ biên dịch dữ liệu này thành cấu trúc văn bản XML/JSON chi tiết, bao gồm: "
+                   "danh sách OKR phòng ban hiện tại, danh sách KPI nhân sự đang chịu trách nhiệm, "
+                   "và chức danh công việc của nhân viên.", bold_prefix="2. AIDataService.cs")
+
+    add_bullet(doc, "Cấu hình tham số model (mặc định sử dụng gemini-2.5-flash), "
+                   "thiết lập SystemInstruction (chỉ dẫn hệ thống bắt buộc AI phản hồi bằng tiếng Việt, cấu trúc bảng HTML "
+                   "hoặc Markdown). Gửi request POST sang API Endpoint của Google thông qua HttpClient. "
+                   "Nhận kết quả JSON, trích xuất text phản hồi và trả về Controller.", bold_prefix="3. GeminiService.cs")
+
+    # ============================================================
+    # 4.3.3. MÔ TẢ INPUT / OUTPUT (CẤU TRÚC DỮ LIỆU)
+    # ============================================================
+    add_heading2(doc, "4.3.3. Mô tả Input và Output của chức năng")
+    
+    add_para(doc, "Cấu trúc dữ liệu trao đổi giữa Client và API Backend được quy định chặt chẽ như sau:")
+
+    # --- Input ---
+    add_heading3(doc, "a) Dữ liệu đầu vào (Input - JSON Request)")
+    add_para(doc, "Khi client gửi Ajax Request lên endpoint `/AI/GetKpiSuggestions`, gói tin JSON bao gồm:")
+    add_bullet(doc, "Chuỗi ký tự do người dùng nhập (Ví dụ: 'Hãy đề xuất 3 KPI đo lường tốc độ code').", bold_prefix="Prompt [string]")
+    add_bullet(doc, "ID của kỳ đánh giá hiện tại để lọc OKR liên quan.", bold_prefix="PeriodId [int]")
+    add_bullet(doc, "ID phòng ban của nhân viên để lọc OKR phòng ban.", bold_prefix="DepartmentId [int]")
+    add_bullet(doc, "ID của nhân viên để lọc chức danh công việc.", bold_prefix="EmployeeId [int]")
+
+    # --- Output ---
+    add_heading3(doc, "b) Dữ liệu đầu ra (Output - JSON Response)")
+    add_para(doc, "Sau khi xử lý thành công, backend phản hồi gói tin JSON có cấu trúc:")
+    add_bullet(doc, "Giá trị true/false xác định cuộc gọi API thành công hay lỗi.", bold_prefix="Success [bool]")
+    add_bullet(doc, "Nội dung câu trả lời của AI đã được định dạng mã HTML (render trực tiếp lên chat widget).", bold_prefix="HtmlResponse [string]")
+    add_bullet(doc, "Chuỗi văn bản thuần chưa định dạng của AI.", bold_prefix="RawResponse [string]")
+    add_bullet(doc, "Mã thông báo lỗi chi tiết nếu success = false.", bold_prefix="ErrorMessage [string]")
+
+    # ============================================================
+    # 4.3.4. QUY TẮC NGHIỆP VỤ CHÍNH (BUSINESS RULES)
+    # ============================================================
+    add_heading2(doc, "4.3.4. Quy tắc nghiệp vụ chính (Business Rules)")
+
+    add_para(doc, "Chức năng tích hợp AI được ràng buộc bởi các quy tắc nghiệp vụ nghiêm ngặt sau:")
+
+    rules = [
+        ("Ràng buộc Access Scope bảo mật dữ liệu",
+         "Người dùng chỉ được phép yêu cầu AI gợi ý KPI/OKR cho bản thân hoặc cho nhân viên thuộc phòng ban mình quản lý. "
+         "Backend sẽ đối chiếu ID người gửi request với AccessScopeHelper, nếu phát hiện truy cập chéo ID của phòng ban khác, "
+         "hệ thống sẽ từ chối xử lý và ghi nhận cảnh báo bảo mật vào Audit Logs."),
+        
+        ("Cơ chế Rate Limiting (Giới hạn tần suất gọi)",
+         "Để tránh tình trạng spam API làm cạn kiệt tài nguyên hệ thống và phát sinh chi phí lớn, hệ thống áp dụng "
+         "Rate Limit nghiêm ngặt ở mức tối đa 15 requests/phút đối với mỗi tài khoản doanh nghiệp. Lượt gọi được đếm "
+         "và reset tự động qua bộ đệm nhớ cache."),
+        
+        ("Quy tắc cấu trúc Prompt chống trùng lặp (Anti-duplication Prompting)",
+         "Khi AIDataService dựng context gửi sang Gemini, bắt buộc phải đính kèm danh sách các KPI đã giao từ trước. "
+         "SystemInstruction quy định rõ: 'AI không được đề xuất các chỉ tiêu KPI trùng lặp hoặc tương đương với danh sách "
+         "đang chạy, nhằm đảm bảo mỗi kỳ nhân viên chỉ tập trung vào các KPI độc lập'."),
+        
+        ("Cơ chế tự động dọn dẹp lịch sử (AI Auto-cleanup)",
+         "Lịch sử hội thoại AI được lưu tạm thời để phục vụ tính năng ghi nhớ ngữ cảnh cuộc trò chuyện. "
+         "Tuy nhiên, để bảo vệ dung lượng database, dịch vụ background AIHistoryCleanupService sẽ tự động quét "
+         "và xóa sạch các cuộc trò chuyện cũ hơn 30 ngày vào lúc 2 giờ sáng hàng ngày."),
+    ]
+
+    for title, desc in rules:
+        add_bullet(doc, desc, bold_prefix=title)
+
+    # Kết luận mục
+    add_para(doc, "", space_before=6, space_after=0, indent=False)
+    add_para(doc,
+        "Việc đặc tả chi tiết logic backend, cấu trúc dữ liệu trao đổi và các quy tắc nghiệp vụ trên giúp "
+        "quy trình tích hợp AI Gemini đạt hiệu năng tối ưu, đồng thời bảo vệ an toàn thông tin và kiểm soát tốt "
+        "chi phí tài nguyên hệ thống trong suốt quá trình vận hành lâu dài.",
+        italic=True, space_before=6, space_after=12
+    )
+
+
+# ===================== MAIN =====================
+
+def main():
+    print("📄 Đang mở file Word hiện có...")
+    doc = Document(INPUT_PATH)
+
+    print("    ✓ 4.3. Đặc tả chức năng / Sequence diagram")
+    print("      ✓ 4.3.1. Sơ đồ tuần tự AI (Hình 13)")
+    print("      ✓ 4.3.2. Mô tả xử lý backend")
+    print("      ✓ 4.3.3. Mô tả Input/Output dữ liệu")
+    print("      ✓ 4.3.4. Ràng buộc nghiệp vụ AI (Rate Limit, Scope)")
+    write_section_4_3(doc)
+
+    doc.save(OUTPUT_PATH)
+    print(f"\n✅ Đã thêm phần 4.3 vào file Word!")
+    print(f"   📄 {OUTPUT_PATH}")
+
+
+if __name__ == '__main__':
+    main()

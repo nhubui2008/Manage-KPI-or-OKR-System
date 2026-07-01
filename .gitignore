@@ -77,3 +77,6 @@ App_Data/DataProtection-Keys/
 
 ## Publish output
 publish/
+
+## Large media files
+docs/video/
