@@ -3,6 +3,8 @@
     ViewData["Title"] = "Cập nhật dự án";
     var employees = ViewBag.Employees as IEnumerable<Employee> ?? Enumerable.Empty<Employee>();
     var departments = ViewBag.Departments as IEnumerable<Department> ?? Enumerable.Empty<Department>();
+    var okrs = ViewBag.OKRs as IEnumerable<OKR> ?? Enumerable.Empty<OKR>();
+    var kpis = ViewBag.KPIs as IEnumerable<KPI> ?? Enumerable.Empty<KPI>();
     var selectedDepartmentIds = ViewBag.SelectedDepartmentIds as int[] ?? Array.Empty<int>();
     var priorities = ViewBag.PriorityOptions as IEnumerable<string> ?? Enumerable.Empty<string>();
     var statuses = ViewBag.ProjectStatusOptions as IEnumerable<string> ?? Enumerable.Empty<string>();
@@ -68,6 +70,30 @@
                     <label asp-for="Description" class="form-label fw-semibold">Mô tả</label>
                     <textarea asp-for="Description" class="form-control" rows="4" maxlength="1000"></textarea>
                 </div>
+                <div class="col-md-6">
+                    <label asp-for="SourceOKRId" class="form-label fw-semibold">OKR/Mục tiêu liên kết</label>
+                    <select asp-for="SourceOKRId" class="form-select">
+                        <option value="">Không liên kết OKR</option>
+                        @foreach (var okr in okrs)
+                        {
+                            <option value="@okr.Id">@OkrOptionLabel(okr)</option>
+                        }
+                    </select>
+                    <div class="form-text">AI sẽ đọc Objective và Key Result của OKR này khi chia task.</div>
+                    <span asp-validation-for="SourceOKRId" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="SourceKPIId" class="form-label fw-semibold">KPI liên kết</label>
+                    <select asp-for="SourceKPIId" class="form-select">
+                        <option value="">Không liên kết KPI</option>
+                        @foreach (var kpi in kpis)
+                        {
+                            <option value="@kpi.Id">@KpiOptionLabel(kpi)</option>
+                        }
+                    </select>
+                    <div class="form-text">Nếu KPI thuộc OKR, dự án sẽ tự lấy OKR tương ứng.</div>
+                    <span asp-validation-for="SourceKPIId" class="text-danger small"></span>
+                </div>
                 <div class="col-12">
                     <label class="form-label fw-semibold">Phòng ban cộng tác</label>
                     <select name="departmentIds" class="form-select" multiple size="6">
@@ -113,4 +139,16 @@
         "Archived" => "Lưu trữ",
         _ => "Đang chạy"
     };
+
+    private static string OkrOptionLabel(OKR okr)
+    {
+        var name = !string.IsNullOrWhiteSpace(okr.ObjectiveName) ? okr.ObjectiveName : $"OKR #{okr.Id}";
+        return $"{name} (#{okr.Id})";
+    }
+
+    private static string KpiOptionLabel(KPI kpi)
+    {
+        var name = !string.IsNullOrWhiteSpace(kpi.KPIName) ? kpi.KPIName : $"KPI #{kpi.Id}";
+        return $"{name} (#{kpi.Id})";
+    }
 }

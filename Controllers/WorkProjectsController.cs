@@ -165,12 +165,37 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var employeeNames = employees.ToDictionary(e => e.Id, e => e.FullName ?? $"Nhân viên #{e.Id}");
             var departmentNames = departments.ToDictionary(d => d.Id, d => d.DepartmentName ?? $"Phòng ban #{d.Id}");
-            var kpis = await GetAvailableKpisAsync(tasks.Where(t => t.KPIId.HasValue).Select(t => t.KPIId!.Value));
+            var includeKpiIds = tasks.Where(t => t.KPIId.HasValue).Select(t => t.KPIId!.Value).ToList();
+            if (project.SourceKPIId.HasValue)
+            {
+                includeKpiIds.Add(project.SourceKPIId.Value);
+            }
+
+            var sourceOkrId = project.SourceOKRId ?? project.LinkedOKRId;
+            var sourceKeyResultIds = sourceOkrId.HasValue
+                ? await _context.OKRKeyResults
+                    .Where(kr => kr.OKRId == sourceOkrId.Value)
+                    .Select(kr => kr.Id)
+                    .ToListAsync()
+                : new List<int>();
+            var kpis = await GetAvailableKpisAsync(includeKpiIds);
             var keyResults = await GetAvailableKeyResultsAsync(
                 kpis,
-                tasks.Where(t => t.OKRKeyResultId.HasValue).Select(t => t.OKRKeyResultId!.Value));
+                tasks.Where(t => t.OKRKeyResultId.HasValue).Select(t => t.OKRKeyResultId!.Value).Concat(sourceKeyResultIds));
             var kpiNames = kpis.ToDictionary(k => k.Id, k => k.KPIName ?? $"KPI #{k.Id}");
             var keyResultNames = keyResults.ToDictionary(k => k.Id, k => k.KeyResultName ?? $"KR #{k.Id}");
+            ViewBag.SourceOKRName = sourceOkrId.HasValue
+                ? await _context.OKRs
+                    .Where(o => o.Id == sourceOkrId.Value)
+                    .Select(o => o.ObjectiveName)
+                    .FirstOrDefaultAsync()
+                : null;
+            ViewBag.SourceKPIName = project.SourceKPIId.HasValue
+                ? await _context.KPIs
+                    .Where(k => k.Id == project.SourceKPIId.Value)
+                    .Select(k => k.KPIName)
+                    .FirstOrDefaultAsync()
+                : null;
 
             var canManage = await CanManageProjectAsync(project);
             var model = new WorkProjectBoardViewModel
@@ -193,7 +218,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             };
 
             ViewBag.SelectedDepartmentIds = departmentIds;
-            await PopulateFormListsAsync(project.OwnerId, departmentIds);
+            await PopulateFormListsAsync(project.OwnerId, departmentIds, sourceOkrId, project.SourceKPIId);
             return View(model);
         }
 
@@ -217,9 +242,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             IgnoreNavigationValidation();
 
+            if (ModelState.IsValid)
+            {
+                await NormalizeProjectGoalLinksAsync(project);
+            }
+
             if (!ModelState.IsValid)
             {
-                await PopulateFormListsAsync(project.OwnerId, departmentIds);
+                await PopulateFormListsAsync(project.OwnerId, departmentIds, project.SourceOKRId ?? project.LinkedOKRId, project.SourceKPIId);
                 return View(project);
             }
 
@@ -238,6 +268,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context.WorkProjects.Add(project);
             await _context.SaveChangesAsync();
             await ReplaceProjectDepartmentsAsync(project.Id, departmentIds);
+            await SyncProjectOkrLinkAsync(project.Id, Array.Empty<int?>(), project.SourceOKRId);
             AddAuditLog("CREATE", "WorkProjects", null, $"Tạo dự án {project.ProjectCode} - {project.ProjectName}");
             await _context.SaveChangesAsync();
 
@@ -264,7 +295,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Select(pd => pd.DepartmentId)
                 .ToArrayAsync();
 
-            await PopulateFormListsAsync(project.OwnerId, departmentIds);
+            await PopulateFormListsAsync(project.OwnerId, departmentIds, project.SourceOKRId ?? project.LinkedOKRId, project.SourceKPIId);
             ViewBag.SelectedDepartmentIds = departmentIds;
             return View(project);
         }
@@ -287,14 +318,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return Forbid();
             }
 
+            if (ModelState.IsValid)
+            {
+                await NormalizeProjectGoalLinksAsync(input);
+            }
+
             if (!ModelState.IsValid)
             {
-                await PopulateFormListsAsync(input.OwnerId, departmentIds);
+                await PopulateFormListsAsync(input.OwnerId, departmentIds, input.SourceOKRId ?? input.LinkedOKRId, input.SourceKPIId);
                 ViewBag.SelectedDepartmentIds = departmentIds;
                 return View(input);
             }
 
             var oldData = $"{project.ProjectName} | {project.Status} | {project.Priority}";
+            var previousOkrIds = new int?[] { project.SourceOKRId, project.LinkedOKRId };
             project.ProjectName = input.ProjectName;
             project.Description = input.Description;
             project.OwnerId = input.OwnerId;
@@ -302,10 +339,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             project.Priority = NormalizePriority(input.Priority);
             project.StartDate = input.StartDate;
             project.DueDate = input.DueDate;
+            project.SourceOKRId = input.SourceOKRId;
+            project.LinkedOKRId = input.LinkedOKRId;
+            project.SourceKPIId = input.SourceKPIId;
             project.IsCrossDepartment = departmentIds.Distinct().Count() > 1;
             project.UpdatedAt = DateTime.Now;
 
             await ReplaceProjectDepartmentsAsync(project.Id, departmentIds);
+            await SyncProjectOkrLinkAsync(project.Id, previousOkrIds, project.SourceOKRId);
             await RecalculateProjectProgressAsync(project.Id);
             AddAuditLog("UPDATE", "WorkProjects", oldData, $"{project.ProjectName} | {project.Status} | {project.Priority}");
             await _context.SaveChangesAsync();
@@ -957,14 +998,142 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 $"KR #{keyResultId} tự cập nhật từ {tasks.Count} task: {keyResult.CurrentValue:0.##}/{targetValue:0.##}");
         }
 
-        private async Task PopulateFormListsAsync(int? ownerId = null, IEnumerable<int>? selectedDepartmentIds = null)
+        private async Task PopulateFormListsAsync(
+            int? ownerId = null,
+            IEnumerable<int>? selectedDepartmentIds = null,
+            int? selectedOkrId = null,
+            int? selectedKpiId = null)
         {
             ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).OrderBy(e => e.FullName).ToListAsync();
             ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true).OrderBy(d => d.DepartmentName).ToListAsync();
+            ViewBag.OKRs = await GetAvailableOkrsAsync(selectedOkrId.HasValue ? new[] { selectedOkrId.Value } : Array.Empty<int>());
+            ViewBag.KPIs = await GetAvailableKpisAsync(selectedKpiId.HasValue ? new[] { selectedKpiId.Value } : Array.Empty<int>());
             ViewBag.OwnerId = ownerId;
             ViewBag.SelectedDepartmentIds = selectedDepartmentIds?.Distinct().ToArray() ?? Array.Empty<int>();
             ViewBag.PriorityOptions = Priorities;
             ViewBag.ProjectStatusOptions = new[] { "Planning", "Active", "OnHold", "Completed", "Archived" };
+        }
+
+        private async Task<List<OKR>> GetAvailableOkrsAsync(IEnumerable<int>? includeOkrIds = null)
+        {
+            var includeIds = includeOkrIds?.Distinct().ToList() ?? new List<int>();
+            var query = _context.OKRs.Where(o => o.IsActive == true);
+
+            if (AccessScopeHelper.IsAdmin(User) || AccessScopeHelper.IsDirector(User) || User.IsInRole("HR"))
+            {
+                return await query
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ThenBy(o => o.ObjectiveName)
+                    .ToListAsync();
+            }
+
+            var employee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
+            if (employee == null)
+            {
+                return includeIds.Any()
+                    ? await query.Where(o => includeIds.Contains(o.Id)).OrderBy(o => o.ObjectiveName).ToListAsync()
+                    : new List<OKR>();
+            }
+
+            var departmentIds = await AccessScopeHelper.GetEmployeeDepartmentIdsAsync(_context, employee.Id);
+            if (AccessScopeHelper.IsManagerScoped(User))
+            {
+                var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, employee);
+                departmentIds = departmentIds.Concat(managedDepartmentIds).Distinct().ToList();
+            }
+
+            var employeeOkrIds = await _context.OKR_Employee_Allocations
+                .Where(a => a.EmployeeId == employee.Id)
+                .Select(a => a.OKRId)
+                .ToListAsync();
+
+            var departmentOkrIds = departmentIds.Any()
+                ? await _context.OKR_Department_Allocations
+                    .Where(a => departmentIds.Contains(a.DepartmentId))
+                    .Select(a => a.OKRId)
+                    .ToListAsync()
+                : new List<int>();
+
+            var scopedOkrIds = employeeOkrIds
+                .Concat(departmentOkrIds)
+                .Concat(includeIds)
+                .Distinct()
+                .ToList();
+
+            return await query
+                .Where(o => scopedOkrIds.Contains(o.Id) || o.CreatedById == employee.Id)
+                .OrderByDescending(o => o.CreatedAt)
+                .ThenBy(o => o.ObjectiveName)
+                .ToListAsync();
+        }
+
+        private async Task NormalizeProjectGoalLinksAsync(WorkProject project)
+        {
+            KPI? sourceKpi = null;
+            if (project.SourceKPIId.HasValue)
+            {
+                sourceKpi = await _context.KPIs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(k => k.Id == project.SourceKPIId.Value && k.IsActive == true);
+                project.SourceKPIId = sourceKpi?.Id;
+            }
+
+            var sourceOkrId = project.SourceOKRId ?? project.LinkedOKRId;
+            if (sourceOkrId.HasValue)
+            {
+                var okrExists = await _context.OKRs
+                    .AsNoTracking()
+                    .AnyAsync(o => o.Id == sourceOkrId.Value && o.IsActive == true);
+                if (!okrExists)
+                {
+                    sourceOkrId = null;
+                }
+            }
+
+            if (sourceKpi?.OKRId.HasValue == true)
+            {
+                if (sourceOkrId.HasValue && sourceOkrId.Value != sourceKpi.OKRId.Value)
+                {
+                    ModelState.AddModelError(nameof(WorkProject.SourceKPIId), "KPI liên kết phải thuộc OKR đã chọn.");
+                }
+                else
+                {
+                    sourceOkrId = sourceKpi.OKRId.Value;
+                }
+            }
+
+            project.SourceOKRId = sourceOkrId;
+            project.LinkedOKRId = sourceOkrId;
+        }
+
+        private async Task SyncProjectOkrLinkAsync(int projectId, IEnumerable<int?> previousOkrIds, int? newOkrId)
+        {
+            var previousIds = previousOkrIds
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .Distinct()
+                .Where(id => !newOkrId.HasValue || id != newOkrId.Value)
+                .ToList();
+
+            if (previousIds.Any())
+            {
+                var previousOkrs = await _context.OKRs
+                    .Where(o => previousIds.Contains(o.Id) && o.LinkedWorkProjectId == projectId)
+                    .ToListAsync();
+                foreach (var okr in previousOkrs)
+                {
+                    okr.LinkedWorkProjectId = null;
+                }
+            }
+
+            if (newOkrId.HasValue)
+            {
+                var okr = await _context.OKRs.FirstOrDefaultAsync(o => o.Id == newOkrId.Value);
+                if (okr != null)
+                {
+                    okr.LinkedWorkProjectId = projectId;
+                }
+            }
         }
 
         private async Task ReplaceProjectDepartmentsAsync(int projectId, IEnumerable<int> departmentIds)

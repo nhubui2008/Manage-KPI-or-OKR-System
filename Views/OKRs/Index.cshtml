@@ -161,6 +161,7 @@
                                                     {
                                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
                                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAiSuggestKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-magic me-2 text-info"></i>AI Gợi ý KR</a></li>
+                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAiTaskDecomposeModal('OKR', @okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))', '@(okr.LinkedWorkProjectId?.ToString() ?? "")')"><i class="bi bi-stars me-2 text-primary"></i>AI Chia task</a></li>
                                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên/phòng ban</a></li>
                                                     }
                                                     @if ((canEditOkr || canCreateOkr) && canDeleteOkr)
@@ -644,6 +645,8 @@
         </div>
     </div>
 </div>
+
+@await Html.PartialAsync("_AITaskDecomposeModal")
 
 @section Scripts {
     <script>

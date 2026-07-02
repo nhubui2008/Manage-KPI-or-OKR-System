@@ -67,6 +67,9 @@
             </a>
             @if (!(User.IsInRole("Employee") || User.IsInRole("employee") || User.IsInRole("Sales") || User.IsInRole("sales")))
             {
+                <button type="button" class="btn btn-outline-primary rounded-pill px-4" onclick="openAiTaskDecomposeModal('KPI', @Model.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(Model.KPIName ?? ""))', '')">
+                    <i class="bi bi-stars me-1"></i> AI Chia task
+                </button>
                 <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#editKpiModal">
                     <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa
                 </button>
@@ -470,6 +473,8 @@
 
     .smaller { font-size: 0.75rem; }
 </style>
+
+@await Html.PartialAsync("_AITaskDecomposeModal")
 
 <!-- Modal Chỉnh sửa KPI -->
 <div class="modal fade" id="editKpiModal" tabindex="-1" aria-hidden="true">

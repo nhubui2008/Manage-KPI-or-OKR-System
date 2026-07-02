@@ -8,6 +8,8 @@
         .Select(d => d.DepartmentName)
         .Where(n => !string.IsNullOrWhiteSpace(n))
         .ToList();
+    var sourceOKRName = ViewBag.SourceOKRName as string;
+    var sourceKPIName = ViewBag.SourceKPIName as string;
     var progress = project.ProgressPercentage ?? 0;
 }
 
@@ -37,10 +39,24 @@
                     <span class="meta-chip" title="@(selectedDepartments.Any() ? string.Join(", ", selectedDepartments) : "Chưa gán phòng ban")">
                         <i class="bi bi-diagram-3 text-info"></i> @(selectedDepartments.Any() ? string.Join(", ", selectedDepartments) : "Chưa gán phòng ban")
                     </span>
+                    @if (!string.IsNullOrWhiteSpace(sourceOKRName))
+                    {
+                        <span class="meta-chip" title="@sourceOKRName"><i class="bi bi-crosshair text-primary"></i> OKR liên kết</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(sourceKPIName))
+                    {
+                        <span class="meta-chip" title="@sourceKPIName"><i class="bi bi-bullseye text-success"></i> KPI liên kết</span>
+                    }
                 </div>
             </div>
             <div class="d-flex gap-2">
                 <a asp-action="Index" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"><i class="bi bi-arrow-left"></i> Danh sách</a>
+                @if (Model.CanCreateTask)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" onclick="openAiTaskDecomposeModal('PROJECT', @project.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(project.ProjectName ?? ""))', '@project.Id')">
+                        <i class="bi bi-stars"></i> AI Gợi ý task
+                    </button>
+                }
                 @if (Model.CanManageProject)
                 {
                     <a asp-action="Edit" asp-route-id="@project.Id" class="btn btn-sm btn-primary d-flex align-items-center gap-1"><i class="bi bi-pencil-square"></i> Sửa dự án</a>
@@ -194,6 +210,7 @@
                             : "Chưa gán";
                         var taskProgress = task.ProgressPercentage ?? 0;
                         var comments = Model.CommentsByTask.TryGetValue(task.Id, out var list) ? list : new List<WorkItemComment>();
+                        var isAiGenerated = task.Description?.Contains("[AI Generated]", StringComparison.OrdinalIgnoreCase) == true;
                         
                         <article class="task-card task-card--@((task.Priority ?? "Normal").ToLowerInvariant()) border-0 rounded-3 p-3 shadow-sm bg-white" 
                                  draggable="true" 
@@ -201,7 +218,13 @@
                             
                             <div class="task-card__header d-flex justify-content-between align-items-center gap-2 mb-2">
                                 <span class="task-id text-muted small">#@task.Id</span>
-                                <span class="priority-badge priority-@((task.Priority ?? "Normal").ToLowerInvariant()) small px-2 py-1 rounded">@PriorityLabel(task.Priority)</span>
+                                <div class="d-flex align-items-center gap-1">
+                                    @if (isAiGenerated)
+                                    {
+                                        <span class="ai-generated-badge small px-2 py-1 rounded"><i class="bi bi-stars"></i> AI</span>
+                                    }
+                                    <span class="priority-badge priority-@((task.Priority ?? "Normal").ToLowerInvariant()) small px-2 py-1 rounded">@PriorityLabel(task.Priority)</span>
+                                </div>
                             </div>
                             
                             <h6 class="task-title fw-bold mb-2">@task.Title</h6>
@@ -733,6 +756,14 @@
     .priority-high { background: #fff4e5; color: var(--warning); }
     .priority-urgent { background: #fdecec; color: var(--danger); }
 
+    .ai-generated-badge {
+        background: #f2ecff;
+        color: #5b3db4;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
     .goal-chip {
         display: inline-flex;
         align-items: center;
@@ -813,6 +844,8 @@
 
     /* Removed max-width media query to prevent horizontal scroll override on desktop */
 </style>
+
+@await Html.PartialAsync("_AITaskDecomposeModal")
 
 @section Scripts {
     <script>
