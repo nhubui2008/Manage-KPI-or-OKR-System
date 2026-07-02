@@ -44,6 +44,7 @@ builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IOKRWorkflowService
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 builder.Services.AddScoped<IAIDataService, AIDataService>();
 builder.Services.AddScoped<IAIAlertService, AIAlertService>();
+builder.Services.AddScoped<IAITaskDecompositionService, AITaskDecompositionService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ISystemSettingsService, SystemSettingsService>();
 builder.Services.AddHostedService<Manage_KPI_or_OKR_System.Services.AIHistoryCleanupService>();

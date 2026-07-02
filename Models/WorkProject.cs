@@ -40,6 +40,8 @@ namespace Manage_KPI_or_OKR_System.Models
 
         public int? LinkedOKRId { get; set; }
 
+        public int? SourceKPIId { get; set; }
+
         public virtual ICollection<WorkProjectDepartment> Departments { get; set; } = new HashSet<WorkProjectDepartment>();
         public virtual ICollection<WorkItem> WorkItems { get; set; } = new HashSet<WorkItem>();
     }

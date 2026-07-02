@@ -15,6 +15,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
     {
         private readonly IAIDataService _dataService;
         private readonly IAIAlertService _alertService;
+        private readonly IAITaskDecompositionService _taskDecompositionService;
         private readonly IGeminiService _geminiService;
         private readonly ISystemSettingsService _settingsService;
         private readonly Manage_KPI_or_OKR_System.Data.MiniERPDbContext _context;
@@ -27,6 +28,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public AIController(
             IAIDataService dataService,
             IAIAlertService alertService,
+            IAITaskDecompositionService taskDecompositionService,
             IGeminiService geminiService,
             ISystemSettingsService settingsService,
             Manage_KPI_or_OKR_System.Data.MiniERPDbContext context,
@@ -34,6 +36,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             _dataService = dataService;
             _alertService = alertService;
+            _taskDecompositionService = taskDecompositionService;
             _geminiService = geminiService;
             _settingsService = settingsService;
             _context = context;
@@ -140,6 +143,86 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 _logger.LogError(ex, "Failed to load KPI suggestion options");
                 return StatusCode(500, new SuggestKpiOptionsResponse { Success = false, Warnings = { "Khong the tai danh sach lua chon cho AI goi y KPI." } });
+            }
+        }
+
+        [HttpPost]
+        [HasPermission("WORKITEMS_CREATE", "WORKPROJECTS_EDIT", "OKRS_EDIT", "KPIS_EDIT")]
+        public async Task<IActionResult> DecomposeOKR([FromBody] DecomposeOKRRequest request, CancellationToken cancellationToken)
+        {
+            if (request.OKRId <= 0)
+            {
+                return BadRequest(new DecomposeResponse { Success = false, Warnings = { "OKR khong hop le." } });
+            }
+
+            try
+            {
+                var response = await _taskDecompositionService.DecomposeOKRAsync(request, User, cancellationToken);
+                return response.Success ? Ok(response) : StatusCode(502, response);
+            }
+            catch (Exception ex)
+            {
+                return HandleDecomposeException(ex, "AI chia task OKR");
+            }
+        }
+
+        [HttpPost]
+        [HasPermission("WORKITEMS_CREATE", "WORKPROJECTS_EDIT", "OKRS_EDIT", "KPIS_EDIT")]
+        public async Task<IActionResult> DecomposeKPI([FromBody] DecomposeKPIRequest request, CancellationToken cancellationToken)
+        {
+            if (request.KPIId <= 0)
+            {
+                return BadRequest(new DecomposeResponse { Success = false, Warnings = { "KPI khong hop le." } });
+            }
+
+            try
+            {
+                var response = await _taskDecompositionService.DecomposeKPIAsync(request, User, cancellationToken);
+                return response.Success ? Ok(response) : StatusCode(502, response);
+            }
+            catch (Exception ex)
+            {
+                return HandleDecomposeException(ex, "AI chia task KPI");
+            }
+        }
+
+        [HttpPost]
+        [HasPermission("WORKITEMS_CREATE", "WORKPROJECTS_EDIT", "OKRS_EDIT", "KPIS_EDIT")]
+        public async Task<IActionResult> DecomposeProject([FromBody] DecomposeProjectRequest request, CancellationToken cancellationToken)
+        {
+            if (request.WorkProjectId <= 0)
+            {
+                return BadRequest(new DecomposeResponse { Success = false, Warnings = { "WorkProject khong hop le." } });
+            }
+
+            try
+            {
+                var response = await _taskDecompositionService.DecomposeProjectAsync(request, User, cancellationToken);
+                return response.Success ? Ok(response) : StatusCode(502, response);
+            }
+            catch (Exception ex)
+            {
+                return HandleDecomposeException(ex, "AI chia task project");
+            }
+        }
+
+        [HttpPost]
+        [HasPermission("WORKITEMS_CREATE", "WORKPROJECTS_EDIT", "OKRS_EDIT", "KPIS_EDIT")]
+        public async Task<IActionResult> ConfirmDecompose([FromBody] ConfirmDecomposeRequest request, CancellationToken cancellationToken)
+        {
+            if (request.Tasks == null || !request.Tasks.Any())
+            {
+                return BadRequest(new ConfirmDecomposeResponse { Success = false, Warnings = { "Chua co task nao de tao." } });
+            }
+
+            try
+            {
+                var response = await _taskDecompositionService.ConfirmDecomposeAsync(request, User, cancellationToken);
+                return response.Success ? Ok(response) : BadRequest(response);
+            }
+            catch (Exception ex)
+            {
+                return HandleConfirmDecomposeException(ex);
             }
         }
 
@@ -367,6 +450,33 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             _logger.LogError(ex, "Failed to execute {FeatureName}", featureName);
             return StatusCode(500, new AITextResponse { Success = false, Warnings = { $"Khong the thuc hien {featureName}. Vui long thu lai sau." } });
+        }
+
+        private IActionResult HandleDecomposeException(Exception ex, string featureName)
+        {
+            if (ex is GeminiConfigurationException or GeminiRateLimitException)
+            {
+                return StatusCode(503, new DecomposeResponse { Success = false, Warnings = { ex.Message } });
+            }
+
+            if (ex is UnauthorizedAccessException)
+            {
+                return StatusCode(403, new DecomposeResponse { Success = false, Warnings = { ex.Message } });
+            }
+
+            _logger.LogError(ex, "Failed to execute {FeatureName}", featureName);
+            return StatusCode(500, new DecomposeResponse { Success = false, Warnings = { $"Khong the thuc hien {featureName}. Vui long thu lai sau." } });
+        }
+
+        private IActionResult HandleConfirmDecomposeException(Exception ex)
+        {
+            if (ex is UnauthorizedAccessException)
+            {
+                return StatusCode(403, new ConfirmDecomposeResponse { Success = false, Warnings = { ex.Message } });
+            }
+
+            _logger.LogError(ex, "Failed to confirm AI task decomposition");
+            return StatusCode(500, new ConfirmDecomposeResponse { Success = false, Warnings = { "Khong the tao task tu goi y AI. Vui long thu lai sau." } });
         }
 
         [HttpGet]
