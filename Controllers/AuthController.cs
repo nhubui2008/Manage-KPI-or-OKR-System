@@ -155,6 +155,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return Redirect(returnUrl);
             }
 
+            if (user.RoleId == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
             return RedirectToAction("Index", "Dashboard");
         }
 
@@ -204,14 +209,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
-            var defaultRole = await AuthRoleHelper.EnsureDefaultSelfServiceRoleAsync(_context);
-
             var newUser = new SystemUser
             {
                 Username = username,
                 Email = email,
                 PasswordHash = PasswordHelper.HashPassword(password),
-                RoleId = defaultRole.Id,
+                RoleId = null, // Customer role outside the system
                 IsActive = true,
                 CreatedAt = DateTime.Now
             };
@@ -252,21 +255,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ForgotPassword(string username, string email)
+        public async Task<IActionResult> ForgotPassword(string email)
         {
             ViewData["IsLoginPage"] = true;
 
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(email))
+            if (string.IsNullOrEmpty(email))
             {
-                ViewBag.Error = "Vui lòng nhập đầy đủ tên đăng nhập và email.";
+                ViewBag.Error = "Vui lòng nhập email.";
                 return View();
             }
 
-            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == username && u.Email == email);
+            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email == email);
 
             if (user == null)
             {
-                ViewBag.Error = "Thông tin tên đăng nhập hoặc email không chính xác.";
+                ViewBag.Error = "Không tìm thấy tài khoản với email này.";
                 return View();
             }
 

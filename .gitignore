@@ -80,3 +80,6 @@ publish/
 
 ## Large media files
 docs/video/
+app.db
+app.db-shm
+app.db-wal

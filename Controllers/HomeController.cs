@@ -158,10 +158,10 @@ public class HomeController : Controller
                 Username = normalizedEmail,
                 Email = normalizedEmail,
                 PasswordHash = passwordHash,
-                RoleId = isPurchase ? adminRole.Id : userRole.Id,
+                RoleId = isPurchase ? adminRole.Id : (int?)null, // Pure customer if not purchasing
                 IsActive = true,
                 CreatedAt = DateTime.Now,
-                TrialEndTime = isPurchase ? (DateTime?)null : DateTime.Now.AddMinutes(30)
+                TrialEndTime = null // Trial is not started automatically upon registration
             };
 
             _context.SystemUsers.Add(newUser);
@@ -260,7 +260,7 @@ public class HomeController : Controller
             return Json(new
             {
                 success = true,
-                redirectUrl = "/Dashboard/Index",
+                redirectUrl = "", // Do not redirect to Dashboard automatically, stay on Home page
                 requiresPasswordChange = user.LastPasswordChange == null,
                 message = "Đăng nhập thành công!"
             });
@@ -296,8 +296,22 @@ public class HomeController : Controller
                 await _context.SaveChangesAsync();
                 await SignInSystemUserAsync(user, username);
             }
+            else
+            {
+                // Start 30m test
+                user.TrialEndTime = DateTime.Now.AddMinutes(30);
+                var adminRole = await AuthRoleHelper.EnsureAdminRoleAsync(_context);
+                user.RoleId = adminRole.Id;
+                
+                await _context.SaveChangesAsync();
+                await SignInSystemUserAsync(user, username);
+            }
 
-            return Json(new { success = true, message = $"Bạn đã nâng cấp {(string.IsNullOrEmpty(plan) ? "thành công" : plan)}! Tài khoản của bạn đã được kích hoạt vĩnh viễn với đầy đủ tính năng." });
+            var successMsg = string.IsNullOrEmpty(plan)
+                ? "Đã kích hoạt 30 phút dùng thử thành công! Hệ thống sẽ tải lại để bạn bắt đầu trải nghiệm."
+                : $"Bạn đã đăng ký gói {plan} thành công! Tài khoản của bạn đã được kích hoạt vĩnh viễn với đầy đủ tính năng.";
+
+            return Json(new { success = true, message = successMsg });
         }
         catch (Exception ex)
         {

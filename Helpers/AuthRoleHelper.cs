@@ -63,6 +63,11 @@ namespace Manage_KPI_or_OKR_System.Helpers
                 return currentRole;
             }
 
+            if (currentRole == null && !user.RoleId.HasValue)
+            {
+                return null; // Pure customer account
+            }
+
             if (currentRole != null && !ShouldRepairSelfServiceRole(context, currentRole))
             {
                 return currentRole;
@@ -87,7 +92,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
             }
 
             return string.IsNullOrWhiteSpace(role?.RoleName)
-                ? DefaultSelfServiceRoleName
+                ? "Customer"
                 : role.RoleName;
         }
 

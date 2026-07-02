@@ -621,6 +621,7 @@
             {
                 var username = User.Identity.Name ?? "User";
                 var firstLetter = username.Substring(0, 1).ToUpper();
+                var isCustomer = User.Claims.Any(c => c.Type == System.Security.Claims.ClaimTypes.Role && c.Value == "Customer");
 
                 <div class="lp-dropdown" style="padding: 0;">
                     <div class="lp-user-avatar" style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
@@ -631,8 +632,12 @@
                             <div style="font-size: 0.8rem; color: var(--text-tertiary);">Đăng nhập với</div>
                             <div style="font-weight: bold; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@username">@username</div>
                         </div>
-                        <a href="/Dashboard/Index"><i class="bi bi-grid-1x2-fill" style="color: var(--primary);"></i> Vào Hệ thống</a>
-                        @if (!(User.IsInRole("Admin") || User.IsInRole("Administrator")))
+                        @if (!isCustomer)
+                        {
+                            <a href="/Auth/Login"><i class="bi bi-grid-1x2-fill" style="color: var(--primary);"></i> Vào Hệ thống</a>
+                        }
+                        
+                        @if (!(User.IsInRole("SaaSAdmin") || User.IsInRole("Administrator")))
                         {
                             <a href="/Home/PurchaseHistory"><i class="bi bi-clock-history" style="color: var(--secondary);"></i> Lịch sử mua</a>
                         }
@@ -641,10 +646,11 @@
                         <a href="/Auth/Logout" style="color: #dc3545;"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
                     </div>
                 </div>
+
             }
             else
             {
-                <a href="/Auth/Login" class="lp-nav-link-btn">Đăng nhập Hệ thống</a>
+                <a href="javascript:void(0)" onclick="openRegModal(''); setTimeout(() => switchRegTab('login'), 100);" class="lp-nav-link-btn">Đăng nhập Hệ thống</a>
                 <a href="javascript:void(0)" onclick="openRegModal('')" class="lp-cta-btn">
                     Đăng ký Mua Hàng  <i class="bi bi-arrow-right"></i>
                 </a>
@@ -665,16 +671,29 @@
             <div class="lp-hero-actions">
                 @if (User.Identity != null && User.Identity.IsAuthenticated)
                 {
-                    <a href="/Auth/Login" class="btn-primary-lg">
-                        <i class="bi bi-grid-1x2-fill"></i> Truy cập Hệ thống
-                    </a>
+                    var isCustomer = User.Claims.Any(c => c.Type == System.Security.Claims.ClaimTypes.Role && c.Value == "Customer");
+                    if (isCustomer)
+                    {
+                        <a href="javascript:void(0)" onclick="purchasePlan('')" class="btn-primary-lg">
+                            Bắt đầu Đăng ký Test 30p
+                        </a>
+                        <a href="/Auth/Logout" class="btn-outline-lg" style="color: #dc3545; border-color: #dc3545;">
+                            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="/Auth/Login" class="btn-primary-lg">
+                            <i class="bi bi-grid-1x2-fill"></i> Truy cập Hệ thống
+                        </a>
+                    }
                 }
                 else
                 {
                     <a href="javascript:void(0)" onclick="openRegModal('')" class="btn-primary-lg">
                         Bắt đầu Đăng ký Test 30p
                     </a>
-                    <a href="/Auth/Login" class="btn-outline-lg">
+                    <a href="javascript:void(0)" onclick="openRegModal(''); setTimeout(() => switchRegTab('login'), 100);" class="btn-outline-lg">
                         <i class="bi bi-box-arrow-in-right"></i> Đăng nhập Hệ thống
                     </a>
                 }
@@ -1458,12 +1477,15 @@
         @if (User.Identity != null && User.Identity.IsAuthenticated)
         {
             <text>
+            const isTest = !plan || plan.trim() === '';
+            const planNameStr = isTest ? 'Test 30 phút' : plan;
+            
             Swal.fire({
-                title: 'Xác nhận đăng ký gói',
-                text: `Bạn có chắc chắn muốn đăng ký ${plan}? Đội ngũ của chúng tôi sẽ liên hệ để hỗ trợ bạn kích hoạt gói.`,
+                title: isTest ? 'Bắt đầu Test 30 phút' : 'Xác nhận đăng ký gói',
+                text: isTest ? 'Bạn có muốn bắt đầu 30 phút trải nghiệm toàn bộ tính năng của hệ thống với quyền Quản trị cao nhất không?' : `Bạn có chắc chắn muốn đăng ký ${planNameStr}? Đội ngũ của chúng tôi sẽ liên hệ để hỗ trợ bạn kích hoạt gói.`,
                 icon: 'info',
                 showCancelButton: true,
-                    confirmButtonColor: '#202023',
+                confirmButtonColor: '#202023',
                 cancelButtonColor: '#64748b',
                 confirmButtonText: 'Đồng ý',
                 cancelButtonText: 'Hủy'
@@ -1585,13 +1607,16 @@
                     alert(result.message);
                 }
                 
-                closeRegModal();
+                // Switch to the login tab inside the modal instead of redirecting
+                setTimeout(() => {
+                    switchRegTab('login');
+                }, 1500);
 
                 const heroBtn = document.querySelector('.lp-hero-actions .btn-primary-lg');
                 if (heroBtn) {
                     heroBtn.innerHTML = '<i class="bi bi-grid-1x2-fill"></i> Truy cập Hệ thống';
                     heroBtn.onclick = null;
-                    heroBtn.href = '/Auth/Login?username=' + encodeURIComponent(email);
+                    heroBtn.href = '/Dashboard/Index';
                 }
             } else {
                 if (typeof window.showAppToast === 'function') {
