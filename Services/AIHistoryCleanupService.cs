@@ -21,14 +21,24 @@ namespace Manage_KPI_or_OKR_System.Services
                 try
                 {
                     await CleanupHistoryAsync();
+                    await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error occurred while cleaning up AI Generation History.");
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                 }
-
-                // Run once a day
-                await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
             }
         }
 

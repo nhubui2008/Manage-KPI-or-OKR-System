@@ -980,8 +980,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function closeMobileSidebar() {
+        document.documentElement.classList.remove('sidebar-expanded');
         sidebar?.classList.remove('show');
         overlay?.classList.remove('show');
+        localStorage.setItem('sidebarState', 'collapsed');
     }
 
     if (overlay) {

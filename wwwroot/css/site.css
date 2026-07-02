@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    DESIGN SYSTEM - KPI/OKR Management System
    (ClickUp-inspired Product Cockpit Theme)
    ============================================ */
@@ -176,6 +176,11 @@ body {
     min-height: 100vh;
     overflow-x: hidden;
     width: 100%;
+}
+
+/* --- SIDEBAR OVERLAY --- */
+.sidebar-overlay {
+    display: none;
 }
 
 /* --- SIDEBAR --- */
@@ -2513,7 +2518,23 @@ html.sidebar-expanded .main-content {
 @media (max-width: 991.98px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.show { transform: translateX(0); }
-    .sidebar-overlay.show { display: block; }
+    
+    .sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1039;
+        background: rgba(9, 12, 29, 0.4);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--transition-base);
+        display: block;
+    }
+
+    html.sidebar-expanded .sidebar-overlay {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
     html.sidebar-expanded .main-content,
     html:not(.sidebar-expanded) .main-content,
     .main-content { margin-left: 0; }
@@ -3577,9 +3598,8 @@ select.form-select.w-auto {
         padding: 16px;
     }
 
-    .dashboard-page .dashboard-period-filter,
-    .dashboard-page .dashboard-period-filter .page-filter-select {
-        width: 100%;
+    .dashboard-page .dashboard-period-filter {
+        width: auto;
     }
 
     .dashboard-page .dashboard-quick-links .btn {
@@ -4321,7 +4341,6 @@ select.form-select.w-auto {
         background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.82));
         border-top: 1px solid rgba(220, 230, 242, 0.72);
     }
-}
 
 @media screen and (max-width: 991.98px) {
     .top-header {
@@ -4338,6 +4357,23 @@ select.form-select.w-auto {
 
     .header-search input {
         width: 100%;
+    }
+
+    .top-header {
+        height: var(--header-height);
+        min-height: var(--header-height);
+        padding: 0 16px;
+        flex-wrap: nowrap;
+        gap: 12px;
+    }
+
+    .header-left,
+    .header-right {
+        width: auto;
+    }
+
+    .header-right {
+        justify-content: flex-end;
     }
 }
 
@@ -4357,16 +4393,16 @@ select.form-select.w-auto {
     }
 
     .top-header {
-        height: auto;
+        height: var(--header-height);
         min-height: var(--header-height);
-        padding: 12px 16px;
-        flex-wrap: wrap;
+        padding: 0 16px;
+        flex-wrap: nowrap;
         gap: 12px;
     }
 
     .header-left,
     .header-right {
-        width: 100%;
+        width: auto;
     }
 
     .header-right {
@@ -6500,6 +6536,8 @@ a.text-decoration-none.opacity-75 {
 .modal .select2-dropdown {
     z-index: 1076 !important;
 }
+
+
 
 .kpi-workspace-modal {
     max-width: min(1320px, calc(100vw - 1.5rem)) !important;
