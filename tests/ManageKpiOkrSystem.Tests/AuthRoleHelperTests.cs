@@ -20,7 +20,7 @@ public sealed class AuthRoleHelperTests
     }
 
     [Fact]
-    public async Task EnsureUserHasLoginRoleAsync_AssignsDefaultRoleWhenRoleIsMissing()
+    public async Task EnsureUserHasLoginRoleAsync_KeepsPureCustomerAccountWhenRoleIsMissing()
     {
         await using var context = CreateContext();
         var user = new SystemUser
@@ -34,9 +34,9 @@ public sealed class AuthRoleHelperTests
 
         var role = await AuthRoleHelper.EnsureUserHasLoginRoleAsync(context, user);
 
-        Assert.Equal(AuthRoleHelper.DefaultSelfServiceRoleName, role.RoleName);
-        Assert.Equal(role.Id, user.RoleId);
-        Assert.True(await HasDashboardPermissionAsync(context, role.Id));
+        Assert.Null(role);
+        Assert.Null(user.RoleId);
+        Assert.Empty(await context.Roles.ToListAsync());
     }
 
     [Fact]
@@ -59,6 +59,7 @@ public sealed class AuthRoleHelperTests
 
         var role = await AuthRoleHelper.EnsureUserHasLoginRoleAsync(context, user);
 
+        Assert.NotNull(role);
         Assert.Equal(AuthRoleHelper.DefaultSelfServiceRoleName, role.RoleName);
         Assert.Equal(role.Id, user.RoleId);
         Assert.True(await HasDashboardPermissionAsync(context, role.Id));
@@ -104,6 +105,7 @@ public sealed class AuthRoleHelperTests
 
         var role = await AuthRoleHelper.EnsureUserHasLoginRoleAsync(context, user);
 
+        Assert.NotNull(role);
         Assert.Equal(AuthRoleHelper.AdminRoleName, role.RoleName);
         Assert.Equal(role.Id, user.RoleId);
         Assert.Equal(await context.Permissions.CountAsync(), await CountRolePermissionsAsync(context, role.Id));

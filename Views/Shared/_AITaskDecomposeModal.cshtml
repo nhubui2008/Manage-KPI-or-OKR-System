@@ -1,5 +1,5 @@
 <div class="modal fade ai-task-modal" id="aiTaskDecomposeModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0">
             <div class="modal-header ai-task-modal__header border-0">
                 <div class="d-flex align-items-start gap-3 min-w-0">
@@ -65,7 +65,13 @@
                             <div class="ai-task-modal__eyebrow">Danh sách chờ duyệt</div>
                             <div id="aiTaskSummary" class="ai-task-summary">0 task sẵn sàng tạo</div>
                         </div>
-                        <span class="ai-task-review-pill"><i class="bi bi-pencil-square"></i> Có thể chỉnh trước khi tạo</span>
+                        <div class="ai-task-preview-actions">
+                            <label class="ai-task-select-all" for="aiTaskSelectAll">
+                                <input class="form-check-input" type="checkbox" id="aiTaskSelectAll" checked>
+                                <span>Chọn tất cả</span>
+                            </label>
+                            <span class="ai-task-review-pill"><i class="bi bi-pencil-square"></i> Có thể chỉnh trước khi tạo</span>
+                        </div>
                     </div>
 
                     <div id="aiTaskEmpty" class="ai-task-empty d-none">
@@ -92,6 +98,14 @@
         border-radius: 8px;
         box-shadow: 0 18px 50px rgba(13, 21, 48, 0.16);
         overflow: hidden;
+    }
+
+    .ai-task-modal .modal-dialog {
+        min-height: calc(100dvh - 3rem);
+    }
+
+    .ai-task-modal .modal-content {
+        max-height: calc(100dvh - 3rem);
     }
 
     .ai-task-modal__header,
@@ -173,6 +187,30 @@
         white-space: nowrap;
     }
 
+    .ai-task-preview-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .ai-task-select-all {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        padding: 6px 10px;
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        background: var(--surface-paper, #f8f9fa);
+        color: var(--text-secondary);
+        font-size: 0.82rem;
+        font-weight: 800;
+        cursor: pointer;
+        user-select: none;
+    }
+
     .ai-task-review-list {
         display: flex;
         flex-direction: column;
@@ -190,12 +228,30 @@
         transform: translateY(-1px);
     }
 
+    .ai-task-review-card--unselected {
+        border-style: dashed;
+        opacity: 0.68;
+    }
+
+    .ai-task-review-card--unselected:hover {
+        opacity: 0.82;
+    }
+
     .ai-task-review-card__top {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
         gap: 12px;
         margin-bottom: 12px;
+    }
+
+    .ai-task-review-card__selector {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        padding-top: 30px;
+        cursor: pointer;
     }
 
     .ai-task-review-card__index {
@@ -210,6 +266,11 @@
         font-size: 0.75rem;
         font-weight: 800;
         font-variant-numeric: tabular-nums;
+    }
+
+    .ai-task-review-card__selector .form-check-input {
+        margin: 0;
+        cursor: pointer;
     }
 
     .ai-task-meta-grid {
@@ -293,6 +354,15 @@
         .ai-task-review-pill {
             justify-content: center;
             white-space: normal;
+        }
+
+        .ai-task-preview-actions {
+            justify-content: stretch;
+        }
+
+        .ai-task-preview-actions > * {
+            flex: 1 1 auto;
+            justify-content: center;
         }
 
         .ai-task-meta-grid {
@@ -426,6 +496,11 @@
             return task[camelName] ?? task[pascalName] ?? fallback;
         }
 
+        function selectedValue(task) {
+            const value = fieldValue(task, 'isSelected', 'IsSelected', true);
+            return value === true || value === 'true' || value === 1 || value === '1';
+        }
+
         function renderTasks(tasks) {
             state.tasks = tasks || [];
             const list = byId('aiTaskTableBody');
@@ -441,14 +516,18 @@
                 const kpiId = fieldValue(task, 'kpiId', 'KPIId', '');
                 const okrKeyResultId = fieldValue(task, 'okrKeyResultId', 'OKRKeyResultId', '');
                 const keyResultName = fieldValue(task, 'keyResultName', 'KeyResultName', '');
+                const isSelected = selectedValue(task);
 
                 const card = document.createElement('article');
-                card.className = 'ai-task-review-card';
+                card.className = `ai-task-review-card${isSelected ? '' : ' ai-task-review-card--unselected'}`;
                 card.dataset.index = index;
                 card.innerHTML = `
                     <div class="ai-task-review-card__top">
                         <div class="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
-                            <span class="ai-task-review-card__index">${index + 1}</span>
+                            <label class="ai-task-review-card__selector" title="Chọn task này để tạo">
+                                <input class="form-check-input js-ai-task-selected" type="checkbox" ${isSelected ? 'checked' : ''} aria-label="Chọn task ${index + 1}">
+                                <span class="ai-task-review-card__index">${index + 1}</span>
+                            </label>
                             <div class="flex-grow-1 min-w-0">
                                 <label class="form-label small fw-semibold text-secondary mb-1">Tên task</label>
                                 <input class="form-control form-control-sm js-ai-task-field" data-field="title" value="${escapeHtml(fieldValue(task, 'title', 'Title'))}" maxlength="220" required>
@@ -458,9 +537,6 @@
                                 <input type="hidden" class="js-ai-task-field" data-field="okrKeyResultId" value="${escapeHtml(okrKeyResultId)}">
                             </div>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-danger js-ai-task-remove" title="Xóa gợi ý này">
-                            <i class="bi bi-trash"></i>
-                        </button>
                     </div>
 
                     <div class="mb-3">
@@ -521,7 +597,9 @@
         }
 
         function collectTasks() {
-            return Array.from(byId('aiTaskTableBody').querySelectorAll('.ai-task-review-card')).map(row => {
+            return Array.from(byId('aiTaskTableBody').querySelectorAll('.ai-task-review-card')).filter(row =>
+                row.querySelector('.js-ai-task-selected')?.checked
+            ).map(row => {
                 const task = {};
                 row.querySelectorAll('.js-ai-task-field').forEach(input => {
                     const field = input.dataset.field;
@@ -534,15 +612,48 @@
                         task[field] = value;
                     }
                 });
+                task.isSelected = true;
                 return task;
             }).filter(task => task.title && task.title.trim());
         }
 
+        function getTaskCards() {
+            return Array.from(byId('aiTaskTableBody').querySelectorAll('.ai-task-review-card'));
+        }
+
+        function hasValidTitle(card) {
+            const title = card.querySelector('[data-field="title"]')?.value || '';
+            return Boolean(title.trim());
+        }
+
         function refreshPreviewState() {
-            const count = collectTasks().length;
-            byId('aiTaskSummary').textContent = `${count} task sẵn sàng tạo`;
-            byId('aiTaskEmpty').classList.toggle('d-none', count > 0);
-            byId('aiTaskConfirmBtn').disabled = state.isRunning || state.isConfirming || count === 0;
+            const cards = getTaskCards();
+            const validCards = cards.filter(hasValidTitle);
+            const selectedCards = validCards.filter(card => card.querySelector('.js-ai-task-selected')?.checked);
+            const selectedCount = selectedCards.length;
+            const totalCount = validCards.length;
+            const selectAll = byId('aiTaskSelectAll');
+
+            cards.forEach(card => {
+                const isSelected = card.querySelector('.js-ai-task-selected')?.checked;
+                card.classList.toggle('ai-task-review-card--unselected', !isSelected);
+            });
+
+            byId('aiTaskSummary').textContent = `${selectedCount}/${totalCount} task được chọn để tạo`;
+            byId('aiTaskEmpty').classList.toggle('d-none', cards.length > 0);
+            byId('aiTaskConfirmBtn').disabled = state.isRunning || state.isConfirming || selectedCount === 0;
+
+            if (selectAll) {
+                const isAllSelected = totalCount > 0 && selectedCount === totalCount;
+                const isPartiallySelected = selectedCount > 0 && selectedCount < totalCount;
+                selectAll.disabled = totalCount === 0;
+                selectAll.checked = isAllSelected;
+                selectAll.indeterminate = isPartiallySelected;
+                selectAll.setAttribute('aria-checked', isPartiallySelected ? 'mixed' : String(isAllSelected));
+                window.setTimeout(() => {
+                    selectAll.indeterminate = isPartiallySelected;
+                }, 0);
+            }
         }
 
         async function runDecompose() {
@@ -595,7 +706,7 @@
         async function confirmTasks() {
             const tasks = collectTasks();
             if (!tasks.length) {
-                showAlert('Vui lòng giữ lại ít nhất một task.', 'warning');
+                showAlert('Vui lòng chọn ít nhất một task để tạo.', 'warning');
                 refreshPreviewState();
                 return;
             }
@@ -631,10 +742,13 @@
 
         byId('aiTaskRunBtn')?.addEventListener('click', runDecompose);
         byId('aiTaskConfirmBtn')?.addEventListener('click', confirmTasks);
-        byId('aiTaskTableBody')?.addEventListener('click', event => {
-            const removeBtn = event.target.closest('.js-ai-task-remove');
-            if (!removeBtn) return;
-            removeBtn.closest('.ai-task-review-card')?.remove();
+        byId('aiTaskSelectAll')?.addEventListener('change', event => {
+            getTaskCards().forEach(card => {
+                const checkbox = card.querySelector('.js-ai-task-selected');
+                if (checkbox && hasValidTitle(card)) {
+                    checkbox.checked = event.target.checked;
+                }
+            });
             refreshPreviewState();
         });
         byId('aiTaskTableBody')?.addEventListener('input', refreshPreviewState);
@@ -653,6 +767,8 @@
             byId('aiTaskTableBody').innerHTML = '';
             byId('aiTaskProjectSelect').innerHTML = '<option value="">Tạo project mới</option>';
             byId('aiTaskNewProjectName').value = sourceName ? `[AI] ${sourceName}` : '';
+            byId('aiTaskSelectAll').checked = true;
+            byId('aiTaskSelectAll').indeterminate = false;
             byId('aiTaskPreview').classList.add('d-none');
             byId('aiTaskLoading').classList.add('d-none');
             byId('aiTaskEmpty').classList.add('d-none');

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -29,6 +30,7 @@ namespace Manage_KPI_or_OKR_System.Services
     {
         private const int RequestsPerMinuteLimit = 15;
         private const int RequestsPerDayLimit = 1500;
+        private const int MaxTransientAttempts = 2;
         private static readonly SemaphoreSlim RateGate = new(1, 1);
         private static readonly Queue<DateTimeOffset> MinuteWindow = new();
         private static DateOnly CurrentDay = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -87,28 +89,68 @@ namespace Manage_KPI_or_OKR_System.Services
                 generationConfig
             };
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
-            request.Headers.Add("x-goog-api-key", apiKey);
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            request.Content = new StringContent(JsonSerializer.Serialize(payload, _jsonOptions), Encoding.UTF8, "application/json");
+            var payloadJson = JsonSerializer.Serialize(payload, _jsonOptions);
 
-            using var response = await _httpClient.SendAsync(request, cancellationToken);
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-
-            if (!response.IsSuccessStatusCode)
+            for (var attempt = 1; attempt <= MaxTransientAttempts; attempt++)
             {
-                _logger.LogWarning("Gemini API returned {StatusCode}: {Body}", response.StatusCode, body);
+                using var request = CreateRequest(endpoint, apiKey, payloadJson);
+                using var response = await _httpClient.SendAsync(request, cancellationToken);
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var text = ExtractText(body);
+                    if (string.IsNullOrWhiteSpace(text))
+                    {
+                        _logger.LogWarning("Gemini API response did not contain text: {Body}", body);
+                        throw new InvalidOperationException("Gemini khong tra ve noi dung phu hop.");
+                    }
+
+                    return text.Trim();
+                }
+
+                _logger.LogWarning("Gemini API returned {StatusCode} on attempt {Attempt}: {Body}", response.StatusCode, attempt, body);
+
+                if (IsTransientFailure(response.StatusCode))
+                {
+                    if (attempt < MaxTransientAttempts)
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken);
+                        continue;
+                    }
+
+                    throw new GeminiRateLimitException(CreateTransientFailureMessage(response.StatusCode));
+                }
+
                 throw new InvalidOperationException("Gemini API tam thoi khong phan hoi thanh cong. Vui long thu lai sau.");
             }
 
-            var text = ExtractText(body);
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                _logger.LogWarning("Gemini API response did not contain text: {Body}", body);
-                throw new InvalidOperationException("Gemini khong tra ve noi dung phu hop.");
-            }
+            throw new GeminiRateLimitException("Gemini dang qua tai hoac tam thoi khong phan hoi. Vui long thu lai bang nut Tao goi y sau it phut.");
+        }
 
-            return text.Trim();
+        private static HttpRequestMessage CreateRequest(string endpoint, string apiKey, string payloadJson)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            request.Headers.Add("x-goog-api-key", apiKey);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Content = new StringContent(payloadJson, Encoding.UTF8, "application/json");
+            return request;
+        }
+
+        private static bool IsTransientFailure(HttpStatusCode statusCode)
+        {
+            return statusCode is HttpStatusCode.TooManyRequests
+                or HttpStatusCode.InternalServerError
+                or HttpStatusCode.BadGateway
+                or HttpStatusCode.ServiceUnavailable
+                or HttpStatusCode.GatewayTimeout;
+        }
+
+        private static string CreateTransientFailureMessage(HttpStatusCode statusCode)
+        {
+            return statusCode == HttpStatusCode.TooManyRequests
+                ? "Gemini dang bi gioi han tan suat. Vui long doi it phut roi thu lai bang nut Tao goi y."
+                : "Gemini dang qua tai hoac tam thoi khong phan hoi. Vui long doi it phut roi thu lai bang nut Tao goi y.";
         }
 
         private static async Task CheckRateLimitAsync(CancellationToken cancellationToken)

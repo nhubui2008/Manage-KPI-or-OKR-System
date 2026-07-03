@@ -46,6 +46,7 @@ namespace Manage_KPI_or_OKR_System.Models.AI
         public int? KPIId { get; set; }
         public int? OKRKeyResultId { get; set; }
         public string? KeyResultName { get; set; }
+        public bool IsSelected { get; set; } = true;
     }
 
     // ── Response models ─────────────────────────────────────────

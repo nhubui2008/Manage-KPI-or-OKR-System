@@ -192,6 +192,49 @@ public sealed class AITaskDecompositionServiceTests
     }
 
     [Fact]
+    public async Task ConfirmDecomposeAsync_CreatesOnlyReviewedSelectedTasks()
+    {
+        await using var context = CreateContext();
+        var (department, employee) = await SeedDepartmentAndEmployeeAsync(context);
+        var service = CreateService(context, new FakeGeminiService("[]"));
+
+        var response = await service.ConfirmDecomposeAsync(
+            new ConfirmDecomposeRequest
+            {
+                NewProjectName = "Selected AI task plan",
+                Tasks =
+                {
+                    new DecomposedTaskDto
+                    {
+                        Title = "Review enterprise pipeline",
+                        Description = "Keep this task after manager review.",
+                        Priority = "High",
+                        AssigneeId = employee.Id,
+                        DepartmentId = department.Id,
+                        IsSelected = true
+                    },
+                    new DecomposedTaskDto
+                    {
+                        Title = "Draft optional partner survey",
+                        Description = "This suggestion was not selected in preview.",
+                        Priority = "Low",
+                        AssigneeId = employee.Id,
+                        DepartmentId = department.Id,
+                        IsSelected = false
+                    }
+                }
+            },
+            AdminPrincipal(),
+            CancellationToken.None);
+
+        Assert.True(response.Success);
+        Assert.Equal(1, response.TasksCreated);
+
+        var task = await context.WorkItems.SingleAsync();
+        Assert.Equal("Review enterprise pipeline", task.Title);
+    }
+
+    [Fact]
     public async Task DecomposeProjectAsync_UsesStandaloneProjectContextWhenProjectHasNoOkr()
     {
         await using var context = CreateContext();
@@ -390,6 +433,146 @@ public sealed class AITaskDecompositionServiceTests
         Assert.Equal(kpi.Id, task.KPIId);
         Assert.Equal(keyResult.Id, task.OKRKeyResultId);
         Assert.Equal(keyResult.KeyResultName, task.KeyResultName);
+    }
+
+    [Fact]
+    public async Task DecomposeProjectAsync_PromptIncludesOkrAlignmentAndExistingTaskGuidance()
+    {
+        await using var context = CreateContext();
+        var (department, employee) = await SeedDepartmentAndEmployeeAsync(context);
+        var okr = new OKR
+        {
+            ObjectiveName = "Grow enterprise revenue in Q3",
+            Cycle = "Q3-2026",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.OKRs.Add(okr);
+        await context.SaveChangesAsync();
+
+        var keyResult = new OKRKeyResult
+        {
+            OKRId = okr.Id,
+            KeyResultName = "Close 18 enterprise contracts",
+            TargetValue = 18,
+            CurrentValue = 4,
+            Unit = "Contracts"
+        };
+        context.OKRKeyResults.Add(keyResult);
+        await context.SaveChangesAsync();
+
+        var project = new WorkProject
+        {
+            ProjectCode = "PRJ-20260703-001",
+            ProjectName = "Enterprise revenue execution",
+            SourceOKRId = okr.Id,
+            LinkedOKRId = okr.Id,
+            Status = "Active",
+            Priority = "High",
+            StartDate = DateTime.Today,
+            DueDate = DateTime.Today.AddDays(60),
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.WorkProjects.Add(project);
+        await context.SaveChangesAsync();
+
+        context.WorkProjectDepartments.Add(new WorkProjectDepartment
+        {
+            WorkProjectId = project.Id,
+            DepartmentId = department.Id,
+            CollaborationRole = "Owner",
+            IsActive = true
+        });
+        context.WorkItems.Add(new WorkItem
+        {
+            WorkProjectId = project.Id,
+            Title = "Review current enterprise pipeline",
+            Description = "Existing task that should not be duplicated.",
+            Priority = "High",
+            KanbanStatus = "Todo",
+            AssigneeId = employee.Id,
+            DepartmentId = department.Id,
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        });
+        await context.SaveChangesAsync();
+
+        var gemini = new FakeGeminiService("[]");
+        var service = CreateService(context, gemini);
+
+        await service.DecomposeProjectAsync(
+            new DecomposeProjectRequest
+            {
+                WorkProjectId = project.Id,
+                AdditionalContext = "Prioritize tasks that unblock contract closing."
+            },
+            AdminPrincipal(),
+            CancellationToken.None);
+
+        var prompt = Assert.Single(gemini.Prompts);
+        Assert.Contains("progressGap", prompt);
+        Assert.Contains("okrAlignment", prompt);
+        Assert.Contains("doNotDuplicateExistingTasks", prompt);
+        Assert.Contains("Review current enterprise pipeline", prompt);
+        Assert.Contains("Prioritize tasks that unblock contract closing.", prompt);
+    }
+
+    [Fact]
+    public async Task DecomposeProjectAsync_DropsSuggestionsThatDuplicateExistingProjectTasks()
+    {
+        await using var context = CreateContext();
+        var (department, employee) = await SeedDepartmentAndEmployeeAsync(context);
+        var project = new WorkProject
+        {
+            ProjectCode = "PRJ-20260703-002",
+            ProjectName = "Revenue execution cleanup",
+            Status = "Active",
+            Priority = "High",
+            StartDate = DateTime.Today,
+            DueDate = DateTime.Today.AddDays(30),
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.WorkProjects.Add(project);
+        await context.SaveChangesAsync();
+
+        context.WorkProjectDepartments.Add(new WorkProjectDepartment
+        {
+            WorkProjectId = project.Id,
+            DepartmentId = department.Id,
+            CollaborationRole = "Owner",
+            IsActive = true
+        });
+        context.WorkItems.Add(new WorkItem
+        {
+            WorkProjectId = project.Id,
+            Title = "Review enterprise pipeline",
+            Priority = "High",
+            KanbanStatus = "Todo",
+            AssigneeId = employee.Id,
+            DepartmentId = department.Id,
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        });
+        await context.SaveChangesAsync();
+
+        var gemini = new FakeGeminiService($$"""
+            [
+              { "title": " review   enterprise pipeline ", "priority": "High", "assigneeId": {{employee.Id}}, "departmentId": {{department.Id}} },
+              { "title": "Prepare contract close plan", "priority": "High", "assigneeId": {{employee.Id}}, "departmentId": {{department.Id}} }
+            ]
+            """);
+        var service = CreateService(context, gemini);
+
+        var response = await service.DecomposeProjectAsync(
+            new DecomposeProjectRequest { WorkProjectId = project.Id },
+            AdminPrincipal(),
+            CancellationToken.None);
+
+        Assert.True(response.Success);
+        var task = Assert.Single(response.Tasks);
+        Assert.Equal("Prepare contract close plan", task.Title);
     }
 
     [Fact]
