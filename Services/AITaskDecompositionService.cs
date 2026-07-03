@@ -219,7 +219,13 @@ namespace Manage_KPI_or_OKR_System.Services
                 new GeminiGenerationOptions { Temperature = 0.25, ResponseMimeType = "application/json" },
                 cancellationToken);
 
-            var tasks = await MapTasksAsync(ParseTasks(text), contextBundle, sourceOkr, sourceKpi, cancellationToken);
+            var existingTaskTitleKeys = existingTasks
+                .Select(t => NormalizeTitleKey(t.Title))
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .ToHashSet();
+            var tasks = (await MapTasksAsync(ParseTasks(text), contextBundle, sourceOkr, sourceKpi, cancellationToken))
+                .Where(t => !existingTaskTitleKeys.Contains(NormalizeTitleKey(t.Title)))
+                .ToList();
             await SaveAIHistoryAsync("DecomposeProject", project.Id, prompt, text, user, cancellationToken);
 
             var response = new DecomposeResponse
@@ -247,6 +253,7 @@ namespace Manage_KPI_or_OKR_System.Services
         {
             var warnings = new List<string>();
             var validTasks = request.Tasks
+                .Where(t => t.IsSelected)
                 .Where(t => !string.IsNullOrWhiteSpace(t.Title))
                 .GroupBy(t => NormalizeTitleKey(t.Title))
                 .Where(group => !string.IsNullOrWhiteSpace(group.Key))
@@ -512,7 +519,8 @@ namespace Manage_KPI_or_OKR_System.Services
                         KpiImpactWeight = NormalizeImpactWeight(t.KpiImpactWeight),
                         KPIId = mappedKpiId,
                         OKRKeyResultId = keyResultId,
-                        KeyResultName = okr?.KeyResults.FirstOrDefault(kr => kr.Id == keyResultId)?.KeyResultName
+                        KeyResultName = okr?.KeyResults.FirstOrDefault(kr => kr.Id == keyResultId)?.KeyResultName,
+                        IsSelected = true
                     };
                 })
                 .ToList();
@@ -700,7 +708,8 @@ namespace Manage_KPI_or_OKR_System.Services
                             kr.TargetValue,
                             kr.CurrentValue,
                             kr.Unit,
-                            kr.IsInverse
+                            kr.IsInverse,
+                            progressGap = CalculateProgressGap(kr.TargetValue, kr.CurrentValue, kr.IsInverse)
                         })
                     },
                     kpi = kpi == null ? null : new
@@ -723,6 +732,13 @@ namespace Manage_KPI_or_OKR_System.Services
                     }
                 },
                 existingTasks,
+                okrAlignment = new
+                {
+                    instruction = "Moi task nen gan voi KPI hoac Key Result cu the neu co du lieu lien ket.",
+                    progressGap = "Uu tien cac Key Result co khoang cach lon giua CurrentValue va TargetValue.",
+                    taskGranularity = "Moi task nen la mot viec co dau ra ro rang, hoan thanh trong 1-10 ngay."
+                },
+                doNotDuplicateExistingTasks = existingTasks,
                 departments = contextBundle.Departments.Values,
                 employees = contextBundle.Employees.Values.Select(e => new
                 {
@@ -735,10 +751,11 @@ namespace Manage_KPI_or_OKR_System.Services
             };
 
             return "Hay chia WorkProject sau thanh 3-10 task Kanban kha thi, uu tien task nho co the giao viec ngay va khong trung lap. " +
-                   "Neu linkedGoal co OKR/KPI thi phai bam sat objective, keyResults, KPI target va don vi do luong do de chia task. " +
-                   "Neu existingTasks da co task tuong tu thi khong lap lai. " +
+                   "Bam sat okrAlignment: moi task phai phuc vu Objective/KPI/Key Result cu the, neu co progressGap lon thi uu tien task tac dong truc tiep vao gap do. " +
+                   "Dung doNotDuplicateExistingTasks de tranh tao lai task da co, ke ca khi ten khac nhung noi dung tuong tu. " +
                    "Moi task bat buoc co field: title, description, priority, assigneeId, departmentId, kanbanStatus, estimatedDays, kpiImpactWeight, kpiId, okrKeyResultId. " +
                    "priority chi dung Low, Normal, High, Urgent; kanbanStatus chi dung Backlog, Todo, InProgress, Review, Done, Blocked va uu tien Todo/Backlog/InProgress, khong dat Done tru khi task that su da hoan thanh. " +
+                   "description phai noi ro dau ra, cach do hoan thanh va lien he voi KR/KPI nao; title nen bat dau bang dong tu hanh dong. " +
                    "Chi dung assigneeId/departmentId/kpiId/okrKeyResultId trong du lieu duoc cap; neu thieu nguoi phu hop thi de null. Tra ve JSON array hop le hoac object {\"tasks\": [...]}. JSON input:\n" +
                    JsonSerializer.Serialize(input, _jsonOptions);
         }
@@ -1112,6 +1129,20 @@ namespace Manage_KPI_or_OKR_System.Services
                     .Trim()
                     .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
                 .ToUpperInvariant();
+        }
+
+        private static decimal? CalculateProgressGap(decimal? targetValue, decimal? currentValue, bool isInverse)
+        {
+            if (!targetValue.HasValue)
+            {
+                return null;
+            }
+
+            var current = currentValue ?? 0;
+            var gap = isInverse
+                ? current - targetValue.Value
+                : targetValue.Value - current;
+            return gap <= 0 ? 0 : gap;
         }
 
         private sealed record PeopleContext(

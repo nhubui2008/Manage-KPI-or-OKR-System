@@ -33,7 +33,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
             return role;
         }
 
-        public static async Task<Role> EnsureUserHasLoginRoleAsync(MiniERPDbContext context, SystemUser user)
+        public static async Task<Role?> EnsureUserHasLoginRoleAsync(MiniERPDbContext context, SystemUser user)
         {
             var currentRole = user.RoleId.HasValue
                 ? await context.Roles.FindAsync(user.RoleId.Value)
