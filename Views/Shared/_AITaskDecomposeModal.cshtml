@@ -53,9 +53,9 @@
                                     <option value="">Tạo project mới</option>
                                 </select>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-semibold text-secondary">Tên project mới</label>
-                                <input type="text" id="aiTaskNewProjectName" class="form-control" maxlength="200" />
+                            <div class="col-md-6 ai-task-new-project-field">
+                                <label class="form-label small fw-semibold text-secondary">Tên project mới <span class="text-muted fw-normal">(khi tạo mới)</span></label>
+                                <input type="text" id="aiTaskNewProjectName" class="form-control" maxlength="200" placeholder="Nhập khi chọn tạo project mới" />
                             </div>
                         </div>
                     </div>
@@ -157,6 +157,24 @@
         padding: 16px;
     }
 
+    .ai-task-guidance textarea {
+        min-height: 84px;
+        resize: vertical;
+    }
+
+    .ai-task-guidance #aiTaskRunBtn {
+        min-height: 44px;
+    }
+
+    .ai-task-new-project-field.is-muted label {
+        color: var(--text-muted) !important;
+    }
+
+    .ai-task-new-project-field.is-muted input {
+        background: var(--surface-paper, #f8f9fa);
+        color: var(--text-muted);
+    }
+
     .ai-task-preview-toolbar {
         display: flex;
         align-items: center;
@@ -218,7 +236,7 @@
     }
 
     .ai-task-review-card {
-        padding: 14px;
+        padding: 12px;
         transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
     }
 
@@ -237,12 +255,78 @@
         opacity: 0.82;
     }
 
-    .ai-task-review-card__top {
+    .ai-task-review-card__layout {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+    }
+
+    .ai-task-review-card__body {
+        min-width: 0;
+    }
+
+	    .ai-task-card-grid {
+	        display: grid;
+	        grid-template-columns: minmax(0, 1fr) minmax(250px, 30%);
+	        gap: 12px;
+	        align-items: stretch;
+	        margin-top: 10px;
+	    }
+
+    .ai-task-field .form-label {
+        margin-bottom: 5px;
+    }
+
+	    .ai-task-field--description textarea {
+	        flex: 1 1 auto;
+	        min-height: 0;
+	        resize: vertical;
+	    }
+
+	    .ai-task-field--description {
+	        display: flex;
+	        flex-direction: column;
+	        min-height: 100%;
+	    }
+
+    .ai-task-side-panel {
+        display: grid;
+        gap: 10px;
+    }
+
+    .ai-task-quick-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .ai-task-meta-strip {
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 12px;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+    }
+
+    .ai-task-meta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        max-width: 100%;
+        min-width: 0;
+        padding: 5px 8px;
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        background: var(--surface-paper, #f8f9fa);
+        color: var(--text-secondary);
+        font-size: 0.76rem;
+        font-weight: 700;
+    }
+
+    .ai-task-meta-chip span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .ai-task-review-card__selector {
@@ -250,7 +334,7 @@
         align-items: center;
         gap: 8px;
         margin: 0;
-        padding-top: 30px;
+        padding-top: 25px;
         cursor: pointer;
     }
 
@@ -275,13 +359,17 @@
 
     .ai-task-meta-grid {
         display: grid;
-        grid-template-columns: repeat(4, minmax(120px, 1fr));
-        gap: 10px;
+        grid-template-columns: 1fr;
+        gap: 6px;
     }
 
     .ai-task-meta-item {
+        display: grid;
+        grid-template-columns: minmax(92px, auto) minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
         min-width: 0;
-        padding: 9px 10px;
+        padding: 7px 9px;
         border: 1px solid var(--card-border);
         border-radius: 8px;
         background: var(--surface-paper, #f8f9fa);
@@ -289,7 +377,7 @@
 
     .ai-task-meta-item small {
         display: block;
-        margin-bottom: 2px;
+        margin-bottom: 0;
         color: var(--text-muted);
         font-size: 0.68rem;
         font-weight: 800;
@@ -301,7 +389,7 @@
         display: block;
         overflow: hidden;
         color: var(--text-secondary);
-        font-size: 0.82rem;
+        font-size: 0.8rem;
         font-weight: 700;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -345,10 +433,21 @@
     }
 
     @@media (max-width: 991.98px) {
-        .ai-task-preview-toolbar,
-        .ai-task-review-card__top {
+        .ai-task-preview-toolbar {
             align-items: stretch;
             flex-direction: column;
+        }
+
+        .ai-task-review-card__layout {
+            grid-template-columns: 1fr;
+        }
+
+        .ai-task-review-card__selector {
+            padding-top: 0;
+        }
+
+        .ai-task-card-grid {
+            grid-template-columns: 1fr;
         }
 
         .ai-task-review-pill {
@@ -371,7 +470,12 @@
     }
 
     @@media (max-width: 575.98px) {
+        .ai-task-quick-grid,
         .ai-task-meta-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .ai-task-meta-item {
             grid-template-columns: 1fr;
         }
     }
@@ -388,12 +492,12 @@
         };
 
         const statusLabels = {
-            Backlog: 'Backlog',
+            Backlog: 'Chờ sắp xếp',
             Todo: 'Cần làm',
             InProgress: 'Đang làm',
-            Review: 'Chờ review',
+            Review: 'Chờ duyệt',
             Done: 'Hoàn thành',
-            Blocked: 'Đang vướng'
+            Blocked: 'Bị chặn'
         };
         const priorityLabels = {
             Low: 'Thấp',
@@ -490,6 +594,24 @@
             byId('aiTaskNewProjectName').value = data.sourceObjective || data.SourceObjective
                 ? `[AI] ${data.sourceObjective || data.SourceObjective}`
                 : '';
+            syncProjectNameState();
+        }
+
+        function syncProjectNameState() {
+            const select = byId('aiTaskProjectSelect');
+            const input = byId('aiTaskNewProjectName');
+            const field = input?.closest('.ai-task-new-project-field');
+            const usesExistingProject = Boolean(select?.value);
+
+            if (!input) {
+                return;
+            }
+
+            input.disabled = usesExistingProject;
+            input.title = usesExistingProject
+                ? 'Tên này chỉ dùng khi chọn tạo project mới.'
+                : '';
+            field?.classList.toggle('is-muted', usesExistingProject);
         }
 
         function fieldValue(task, camelName, pascalName, fallback = '') {
@@ -522,13 +644,13 @@
                 card.className = `ai-task-review-card${isSelected ? '' : ' ai-task-review-card--unselected'}`;
                 card.dataset.index = index;
                 card.innerHTML = `
-                    <div class="ai-task-review-card__top">
-                        <div class="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
-                            <label class="ai-task-review-card__selector" title="Chọn task này để tạo">
-                                <input class="form-check-input js-ai-task-selected" type="checkbox" ${isSelected ? 'checked' : ''} aria-label="Chọn task ${index + 1}">
-                                <span class="ai-task-review-card__index">${index + 1}</span>
-                            </label>
-                            <div class="flex-grow-1 min-w-0">
+                    <div class="ai-task-review-card__layout">
+                        <label class="ai-task-review-card__selector" title="Chọn task này để tạo">
+                            <input class="form-check-input js-ai-task-selected" type="checkbox" ${isSelected ? 'checked' : ''} aria-label="Chọn task ${index + 1}">
+                            <span class="ai-task-review-card__index">${index + 1}</span>
+                        </label>
+                        <div class="ai-task-review-card__body">
+                            <div class="ai-task-field ai-task-field--title">
                                 <label class="form-label small fw-semibold text-secondary mb-1">Tên task</label>
                                 <input class="form-control form-control-sm js-ai-task-field" data-field="title" value="${escapeHtml(fieldValue(task, 'title', 'Title'))}" maxlength="220" required>
                                 <input type="hidden" class="js-ai-task-field" data-field="assigneeId" value="${escapeHtml(assigneeId)}">
@@ -536,53 +658,53 @@
                                 <input type="hidden" class="js-ai-task-field" data-field="kpiId" value="${escapeHtml(kpiId)}">
                                 <input type="hidden" class="js-ai-task-field" data-field="okrKeyResultId" value="${escapeHtml(okrKeyResultId)}">
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary mb-1">Mô tả</label>
-                        <textarea class="form-control form-control-sm js-ai-task-field" data-field="description" rows="2" maxlength="2000">${escapeHtml(fieldValue(task, 'description', 'Description'))}</textarea>
-                    </div>
+                            <div class="ai-task-meta-strip">
+                                <div class="ai-task-meta-chip" title="${escapeHtml(assigneeName)}">
+                                    <i class="bi bi-person"></i><span>${escapeHtml(assigneeName)}</span>
+                                </div>
+                                <div class="ai-task-meta-chip" title="${escapeHtml(departmentName)}">
+                                    <i class="bi bi-diagram-3"></i><span>${escapeHtml(departmentName)}</span>
+                                </div>
+                                <div class="ai-task-meta-chip" title="${escapeHtml(kpiId ? `KPI #${kpiId}` : 'Không liên kết KPI')}">
+                                    <i class="bi bi-bullseye"></i><span>${escapeHtml(kpiId ? `KPI #${kpiId}` : 'Không liên kết KPI')}</span>
+                                </div>
+                                <div class="ai-task-meta-chip" title="${escapeHtml(keyResultName || (okrKeyResultId ? `KR #${okrKeyResultId}` : 'Không liên kết KR'))}">
+                                    <i class="bi bi-crosshair"></i><span>${escapeHtml(keyResultName || (okrKeyResultId ? `KR #${okrKeyResultId}` : 'Không liên kết KR'))}</span>
+                                </div>
+                            </div>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-3 col-6">
-                            <label class="form-label small fw-semibold text-secondary mb-1">Ưu tiên</label>
-                            <select class="form-select form-select-sm js-ai-task-field" data-field="priority">
-                                ${priorities.map(value => option(value, priority, priorityLabels[value])).join('')}
-                            </select>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <label class="form-label small fw-semibold text-secondary mb-1">Trạng thái</label>
-                            <select class="form-select form-select-sm js-ai-task-field" data-field="kanbanStatus">
-                                ${statuses.map(value => option(value, status, statusLabels[value])).join('')}
-                            </select>
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <label class="form-label small fw-semibold text-secondary mb-1">Số ngày</label>
-                            <input type="number" min="1" max="365" class="form-control form-control-sm js-ai-task-field" data-field="estimatedDays" value="${escapeHtml(fieldValue(task, 'estimatedDays', 'EstimatedDays', 7))}">
-                        </div>
-                        <div class="col-md-3 col-6">
-                            <label class="form-label small fw-semibold text-secondary mb-1">Trọng số</label>
-                            <input type="number" min="0.1" max="100" step="0.1" class="form-control form-control-sm js-ai-task-field" data-field="kpiImpactWeight" value="${escapeHtml(fieldValue(task, 'kpiImpactWeight', 'KpiImpactWeight', 1))}">
-                        </div>
-                    </div>
+                            <div class="ai-task-card-grid">
+                                <div class="ai-task-field ai-task-field--description">
+                                    <label class="form-label small fw-semibold text-secondary mb-1">Mô tả</label>
+                                    <textarea class="form-control form-control-sm js-ai-task-field" data-field="description" rows="3" maxlength="2000">${escapeHtml(fieldValue(task, 'description', 'Description'))}</textarea>
+                                </div>
 
-                    <div class="ai-task-meta-grid">
-                        <div class="ai-task-meta-item" title="${escapeHtml(assigneeName)}">
-                            <small>Người phụ trách</small>
-                            <span><i class="bi bi-person me-1"></i>${escapeHtml(assigneeName)}</span>
-                        </div>
-                        <div class="ai-task-meta-item" title="${escapeHtml(departmentName)}">
-                            <small>Phòng ban</small>
-                            <span><i class="bi bi-diagram-3 me-1"></i>${escapeHtml(departmentName)}</span>
-                        </div>
-                        <div class="ai-task-meta-item" title="${escapeHtml(kpiId ? `KPI #${kpiId}` : 'Không liên kết KPI')}">
-                            <small>KPI</small>
-                            <span><i class="bi bi-bullseye me-1"></i>${escapeHtml(kpiId ? `KPI #${kpiId}` : 'Không liên kết')}</span>
-                        </div>
-                        <div class="ai-task-meta-item" title="${escapeHtml(keyResultName || (okrKeyResultId ? `KR #${okrKeyResultId}` : 'Không liên kết KR'))}">
-                            <small>Key Result</small>
-                            <span><i class="bi bi-crosshair me-1"></i>${escapeHtml(keyResultName || (okrKeyResultId ? `KR #${okrKeyResultId}` : 'Không liên kết'))}</span>
+                                <div class="ai-task-side-panel">
+                                    <div class="ai-task-quick-grid">
+                                        <div class="ai-task-field">
+                                            <label class="form-label small fw-semibold text-secondary mb-1">Ưu tiên</label>
+                                            <select class="form-select form-select-sm js-ai-task-field" data-field="priority">
+                                                ${priorities.map(value => option(value, priority, priorityLabels[value])).join('')}
+                                            </select>
+                                        </div>
+                                        <div class="ai-task-field">
+                                            <label class="form-label small fw-semibold text-secondary mb-1">Trạng thái</label>
+                                            <select class="form-select form-select-sm js-ai-task-field" data-field="kanbanStatus">
+                                                ${statuses.map(value => option(value, status, statusLabels[value])).join('')}
+                                            </select>
+                                        </div>
+                                        <div class="ai-task-field">
+                                            <label class="form-label small fw-semibold text-secondary mb-1">Số ngày</label>
+                                            <input type="number" min="1" max="365" class="form-control form-control-sm js-ai-task-field" data-field="estimatedDays" value="${escapeHtml(fieldValue(task, 'estimatedDays', 'EstimatedDays', 7))}">
+                                        </div>
+                                        <div class="ai-task-field">
+                                            <label class="form-label small fw-semibold text-secondary mb-1">Trọng số</label>
+                                            <input type="number" min="0.1" max="100" step="0.1" class="form-control form-control-sm js-ai-task-field" data-field="kpiImpactWeight" value="${escapeHtml(fieldValue(task, 'kpiImpactWeight', 'KpiImpactWeight', 1))}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -753,6 +875,7 @@
         });
         byId('aiTaskTableBody')?.addEventListener('input', refreshPreviewState);
         byId('aiTaskTableBody')?.addEventListener('change', refreshPreviewState);
+        byId('aiTaskProjectSelect')?.addEventListener('change', syncProjectNameState);
 
         window.openAiTaskDecomposeModal = function (sourceType, sourceId, sourceName, preferredProjectId) {
             state.sourceType = sourceType;
@@ -772,6 +895,7 @@
             byId('aiTaskPreview').classList.add('d-none');
             byId('aiTaskLoading').classList.add('d-none');
             byId('aiTaskEmpty').classList.add('d-none');
+            syncProjectNameState();
             showAlert('');
             refreshPreviewState();
             setBusy('run', false);

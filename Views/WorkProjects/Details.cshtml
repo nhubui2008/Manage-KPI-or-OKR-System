@@ -10,29 +10,20 @@
         .ToList();
     var sourceOKRName = ViewBag.SourceOKRName as string;
     var sourceKPIName = ViewBag.SourceKPIName as string;
+    var currentEmployeeId = ViewBag.CurrentEmployeeId is int employeeId ? employeeId : (int?)null;
     var progress = project.ProgressPercentage ?? 0;
 }
 
 <div class="container-fluid p-0 position-relative">
     
-    <!-- Loading Overlay -->
-    <div id="kanban-loader" class="kanban-loader-overlay d-none">
-        <div class="text-center">
-            <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <div class="mt-3 text-white fw-bold fs-5">Đang cập nhật trạng thái...</div>
-        </div>
-    </div>
-
     <!-- Project Hero Section -->
-    <div class="project-hero mb-4 border-0 shadow-sm">
-        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
-            <div>
+    <div class="project-hero mb-3 border-0 shadow-sm">
+        <div class="project-hero__main d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div class="project-hero__info">
                 <div class="project-code mb-1">@project.ProjectCode</div>
-                <h3 class="mb-2 fw-bold text-primary">@project.ProjectName</h3>
-                <p class="text-secondary mb-3">@(!string.IsNullOrWhiteSpace(project.Description) ? project.Description : "Chưa có mô tả dự án.")</p>
-                <div class="d-flex flex-wrap gap-2">
+                <h3 class="project-title mb-1 fw-bold text-primary">@project.ProjectName</h3>
+                <p class="project-summary text-secondary mb-2">@(!string.IsNullOrWhiteSpace(project.Description) ? project.Description : "Chưa có mô tả dự án.")</p>
+                <div class="project-meta-row d-flex flex-wrap gap-1">
                     <span class="meta-chip"><i class="bi bi-flag-fill text-danger"></i> @PriorityLabel(project.Priority)</span>
                     <span class="meta-chip"><i class="bi bi-activity text-primary"></i> @ProjectStatusLabel(project.Status)</span>
                     <span class="meta-chip"><i class="bi bi-calendar-event text-success"></i> @(project.DueDate?.ToString("dd/MM/yyyy") ?? "Chưa có deadline")</span>
@@ -49,28 +40,29 @@
                     }
                 </div>
             </div>
-            <div class="d-flex gap-2">
-                <a asp-action="Index" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"><i class="bi bi-arrow-left"></i> Danh sách</a>
-                @if (Model.CanCreateTask)
-                {
-                    <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" onclick="openAiTaskDecomposeModal('PROJECT', @project.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(project.ProjectName ?? ""))', '@project.Id')">
-                        <i class="bi bi-stars"></i> AI Gợi ý task
-                    </button>
-                }
-                @if (Model.CanManageProject)
-                {
-                    <a asp-action="Edit" asp-route-id="@project.Id" class="btn btn-sm btn-primary d-flex align-items-center gap-1"><i class="bi bi-pencil-square"></i> Sửa dự án</a>
-                }
-            </div>
-        </div>
-
-        <div class="mt-4">
-            <div class="d-flex justify-content-between small fw-semibold mb-2">
-                <span class="text-secondary">Tiến độ tổng hợp từ task</span>
-                <span class="text-primary">@progress.ToString("0.##")%</span>
-            </div>
-            <div class="progress rounded-pill" style="height: 10px; background-color: var(--border-color);">
-                <div class="progress-bar progress-bar-striped progress-bar-animated rounded-pill" style="width: @progress.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+            <div class="project-hero__side">
+                <div class="project-actions d-flex gap-2 flex-wrap justify-content-end">
+                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"><i class="bi bi-arrow-left"></i> Danh sách</a>
+                    @if (Model.CanCreateTask)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" onclick="openAiTaskDecomposeModal('PROJECT', @project.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(project.ProjectName ?? ""))', '@project.Id')">
+                            <i class="bi bi-stars"></i> AI Gợi ý task
+                        </button>
+                    }
+                    @if (Model.CanManageProject)
+                    {
+                        <a asp-action="Edit" asp-route-id="@project.Id" class="btn btn-sm btn-primary d-flex align-items-center gap-1"><i class="bi bi-pencil-square"></i> Sửa dự án</a>
+                    }
+                </div>
+                <div class="project-progress-mini">
+                    <div class="d-flex justify-content-between small fw-semibold mb-1">
+                        <span class="text-secondary">Tiến độ task</span>
+                        <span class="text-primary">@progress.ToString("0.##")%</span>
+                    </div>
+                    <div class="progress rounded-pill">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated rounded-pill" style="width: @progress.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -78,8 +70,8 @@
     <!-- Collapsible Add Task Form -->
     @if (Model.CanCreateTask)
     {
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-3">
+        <div class="card add-task-card border-0 shadow-sm rounded-4 mb-3">
+            <div class="card-body p-2">
                 <div class="d-flex justify-content-between align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#addTaskCollapse" aria-expanded="false" aria-controls="addTaskCollapse" style="cursor: pointer;" id="addTaskHeader">
                     <div class="d-flex align-items-center gap-2">
                         <span class="section-icon"><i class="bi bi-plus-lg"></i></span>
@@ -88,7 +80,7 @@
                             <p class="text-muted small mb-0 d-none d-md-block">Giao việc cho nhân sự/phòng ban và phân loại mức độ ưu tiên ngay trên Kanban.</p>
                         </div>
                     </div>
-                    <button class="btn btn-sm btn-outline-primary collapse-indicator-btn d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-primary collapse-indicator-btn d-flex align-items-center gap-1">
                         <span>Mở rộng</span> <i class="bi bi-chevron-down"></i>
                     </button>
                 </div>
@@ -185,6 +177,64 @@
         </div>
     }
 
+    <div class="kanban-quick-tools d-flex align-items-center justify-content-between gap-2 flex-wrap mb-2">
+        <div class="kanban-search input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input id="kanbanTaskSearch" type="search" class="form-control" placeholder="Tìm task, người phụ trách, phòng ban..." autocomplete="off" />
+        </div>
+        <div class="kanban-sort input-group input-group-sm" title="Sắp xếp task trong từng cột">
+            <span class="input-group-text bg-white"><i class="bi bi-sort-down"></i></span>
+            <select id="kanbanTaskSort" class="form-select">
+                <option value="risk" selected>Rủi ro trước</option>
+                <option value="due">Deadline gần</option>
+                <option value="default">Mặc định</option>
+            </select>
+        </div>
+        <div class="kanban-filter-group d-flex align-items-center gap-1 flex-wrap">
+            <button type="button" class="btn btn-sm btn-primary kanban-filter-btn active" data-filter="all">
+                <i class="bi bi-grid-3x3-gap"></i>
+                <span>Tất cả</span>
+                <span class="kanban-filter-count" data-filter-count="all">0</span>
+            </button>
+            @if (currentEmployeeId.HasValue)
+            {
+                <button type="button" class="btn btn-sm btn-outline-secondary kanban-filter-btn" data-filter="mine">
+                    <i class="bi bi-person-check"></i>
+                    <span>Của tôi</span>
+                    <span class="kanban-filter-count" data-filter-count="mine">0</span>
+                </button>
+            }
+            <button type="button" class="btn btn-sm btn-outline-secondary kanban-filter-btn" data-filter="blocked">
+                <i class="bi bi-slash-circle"></i>
+                <span>Bị chặn</span>
+                <span class="kanban-filter-count" data-filter-count="blocked">0</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary kanban-filter-btn" data-filter="important">
+                <i class="bi bi-exclamation-diamond"></i>
+                <span>Ưu tiên</span>
+                <span class="kanban-filter-count" data-filter-count="important">0</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary kanban-filter-btn" data-filter="overdue">
+                <i class="bi bi-calendar-x"></i>
+                <span>Quá hạn</span>
+                <span class="kanban-filter-count" data-filter-count="overdue">0</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary kanban-filter-btn" data-filter="ai">
+                <i class="bi bi-stars"></i>
+                <span>AI</span>
+                <span class="kanban-filter-count" data-filter-count="ai">0</span>
+            </button>
+            <button type="button" id="kanbanFilterReset" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+            <button type="button" id="kanbanFocusToggle" class="btn btn-sm btn-outline-secondary kanban-focus-toggle" aria-pressed="false" title="Ẩn các cột không có task khớp bộ lọc">
+                <i class="bi bi-arrows-collapse"></i>
+                <span>Gọn cột</span>
+            </button>
+        </div>
+        <div id="kanbanFilterSummary" class="kanban-filter-summary small text-muted ms-auto"></div>
+    </div>
+
     <!-- Kanban Board Grid -->
     <div class="kanban-board">
         @foreach (var status in Model.StatusOptions)
@@ -199,7 +249,7 @@
                     <strong class="badge rounded-pill bg-white border text-dark">@tasks.Count</strong>
                 </div>
 
-                <div class="kanban-column__body p-3 flex-grow-1 d-flex flex-column gap-3" data-status="@status">
+                <div class="kanban-column__body p-3 flex-grow-1 d-flex flex-column gap-3" data-status="@status" data-drop-label="@StatusLabel(status)">
                     @foreach (var task in tasks)
                     {
                         var assigneeName = task.AssigneeId.HasValue && Model.EmployeeNames.TryGetValue(task.AssigneeId.Value, out var name)
@@ -211,12 +261,25 @@
                         var taskProgress = task.ProgressPercentage ?? 0;
                         var comments = Model.CommentsByTask.TryGetValue(task.Id, out var list) ? list : new List<WorkItemComment>();
                         var isAiGenerated = task.Description?.Contains("[AI Generated]", StringComparison.OrdinalIgnoreCase) == true;
+                        var cardDescription = (task.Description ?? string.Empty)
+                            .Replace("[AI Generated]", string.Empty, StringComparison.OrdinalIgnoreCase)
+                            .Trim();
+                        var isOverdue = task.DueDate.HasValue && task.DueDate.Value.Date < DateTime.Today && task.KanbanStatus != "Done";
+                        var deadlineClass = isOverdue ? "text-danger fw-bold" : "text-secondary";
                         
-                        <article class="task-card task-card--@((task.Priority ?? "Normal").ToLowerInvariant()) border-0 rounded-3 p-3 shadow-sm bg-white" 
+                        <article class="task-card task-card--@((task.Priority ?? "Normal").ToLowerInvariant()) border-0 rounded-3 p-2 shadow-sm bg-white" 
                                  draggable="true" 
-                                 data-task-id="@task.Id">
+                                 data-task-id="@task.Id"
+                                 data-task-status="@task.KanbanStatus"
+                                 data-task-priority="@(task.Priority ?? "Normal")"
+                                 data-task-assignee-id="@(task.AssigneeId?.ToString() ?? "")"
+                                 data-task-due-date="@(task.DueDate?.ToString("yyyy-MM-dd") ?? "")"
+                                 data-task-overdue="@isOverdue.ToString().ToLowerInvariant()"
+                                 data-task-ai="@isAiGenerated.ToString().ToLowerInvariant()"
+                                 data-task-created-at="@(task.CreatedAt?.ToString("yyyy-MM-ddTHH:mm:ss") ?? "")"
+                                 data-task-search="@($"{task.Title} {cardDescription} {assigneeName} {departmentName}")">
                             
-                            <div class="task-card__header d-flex justify-content-between align-items-center gap-2 mb-2">
+                            <div class="task-card__header d-flex justify-content-between align-items-center gap-2 mb-1">
                                 <span class="task-id text-muted small">#@task.Id</span>
                                 <div class="d-flex align-items-center gap-1">
                                     @if (isAiGenerated)
@@ -229,15 +292,15 @@
                             
                             <h6 class="task-title fw-bold mb-2">@task.Title</h6>
                             
-                            @if (!string.IsNullOrWhiteSpace(task.Description))
+                            @if (!string.IsNullOrWhiteSpace(cardDescription))
                             {
-                                <p class="task-desc mb-3 text-secondary small line-clamp-2">@task.Description</p>
+                                <p class="task-desc mb-2 text-secondary small line-clamp-1">@cardDescription</p>
                             }
                             
-                            <div class="task-meta mb-3 d-flex flex-column gap-1 text-muted small">
+                            <div class="task-meta mb-2 d-flex flex-wrap gap-1 text-muted small">
                                 @if (task.AssigneeId.HasValue)
                                 {
-                                    <div class="meta-item d-flex align-items-center gap-2" title="Người phụ trách: @assigneeName">
+                                    <div class="meta-item d-flex align-items-center gap-1" title="Người phụ trách: @assigneeName">
                                         <div class="avatar-circle-sm">
                                             <span>@(assigneeName.Length > 0 ? assigneeName[0].ToString().ToUpper() : "U")</span>
                                         </div>
@@ -246,22 +309,18 @@
                                 }
                                 else
                                 {
-                                    <div class="meta-item d-flex align-items-center gap-2 text-muted" title="Chưa gán">
+                                    <div class="meta-item d-flex align-items-center gap-1 text-muted" title="Chưa gán">
                                         <i class="bi bi-person-dash text-secondary"></i>
                                         <span class="meta-text">Chưa gán</span>
                                     </div>
                                 }
                                 
-                                <div class="meta-item d-flex align-items-center gap-2" title="Phòng ban: @departmentName">
+                                <div class="meta-item d-flex align-items-center gap-1" title="Phòng ban: @departmentName">
                                     <i class="bi bi-diagram-3 text-secondary"></i>
                                     <span class="meta-text text-truncate">@departmentName</span>
                                 </div>
                                 
-                                @{
-                                    var isOverdue = task.DueDate.HasValue && task.DueDate.Value.Date < DateTime.Today && task.KanbanStatus != "Done";
-                                    var deadlineClass = isOverdue ? "text-danger fw-bold" : "text-secondary";
-                                }
-                                <div class="meta-item d-flex align-items-center gap-2 @deadlineClass" title="Hạn chót">
+                                <div class="meta-item d-flex align-items-center gap-1 @deadlineClass" title="Hạn chót">
                                     <i class="bi bi-calendar2-week"></i>
                                     <span class="meta-text">@(task.DueDate?.ToString("dd/MM/yyyy") ?? "Chưa có hạn")</span>
                                 </div>
@@ -280,40 +339,20 @@
                                 }
                             </div>
                             
-                            <div class="task-card__progress mb-3">
-                                <div class="d-flex justify-content-between small fw-semibold mb-1 text-muted" style="font-size: 0.75rem;">
-                                    <span>Tiến độ</span>
-                                    <span>@taskProgress.ToString("0.##")%</span>
-                                </div>
-                                <div class="progress" style="height: 6px; background-color: var(--border-color);">
+                            <div class="task-card__progress mb-2 d-flex align-items-center gap-2" title="Tiến độ: @taskProgress.ToString("0.##")%">
+                                <div class="progress flex-grow-1">
                                     <div class="progress-bar rounded" style="width: @taskProgress.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></div>
                                 </div>
+                                <span class="progress-value small fw-semibold text-muted">@taskProgress.ToString("0.##")%</span>
                             </div>
                             
                             <div class="task-card__footer d-flex justify-content-between align-items-center pt-2 border-top border-dashed">
                                 <div class="d-flex gap-2 text-muted" style="font-size: 0.8rem;">
-                                    <span title="Trao đổi/Bình luận"><i class="bi bi-chat-dots me-1"></i> @comments.Count</span>
+                                    <span class="task-comment-count" data-task-id="@task.Id" title="Trao đổi/Bình luận"><i class="bi bi-chat-dots me-1"></i><span data-comment-count-value>@comments.Count</span></span>
                                 </div>
-                                
-                                <div class="dropdown">
-                                    <button class="btn btn-xs btn-outline-secondary dropdown-toggle py-0 px-2 btn-column-change" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.75rem; border-radius: 6px;">
-                                        Chuyển cột
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="min-width: 140px; font-size: 0.8rem; border-radius: 8px;">
-                                        @foreach (var nextStatus in Model.StatusOptions.Where(s => s != status))
-                                        {
-                                            <li>
-                                                <form asp-action="UpdateTaskStatus" method="post">
-                                                    <input type="hidden" name="id" value="@task.Id" />
-                                                    <input type="hidden" name="kanbanStatus" value="@nextStatus" />
-                                                    <button type="submit" class="dropdown-item py-1">
-                                                        Chuyển sang <strong>@StatusLabel(nextStatus)</strong>
-                                                    </button>
-                                                </form>
-                                            </li>
-                                        }
-                                    </ul>
-                                </div>
+                                <span class="task-drag-grip" title="Nắm card để kéo sang cột khác" aria-label="Kéo task sang cột khác">
+                                    <i class="bi bi-grip-horizontal" aria-hidden="true"></i>
+                                </span>
                             </div>
                         </article>
                     }
@@ -326,6 +365,8 @@
             </section>
         }
     </div>
+
+    <div id="kanbanFeedback" class="kanban-feedback-toast" role="status" aria-live="polite" aria-atomic="true"></div>
 </div>
 
 <!-- Modal chi tiết công việc cho từng task -->
@@ -341,34 +382,48 @@
     var comments = Model.CommentsByTask.TryGetValue(task.Id, out var list) ? list : new List<WorkItemComment>();
     
     <div class="modal fade task-detail-modal" id="taskModal-@task.Id" tabindex="-1" aria-labelledby="taskModalLabel-@task.Id" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 90% !important;">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
-                <div class="modal-header bg-light border-0 py-3 px-4" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-primary text-white fw-bold">#@task.Id</span>
-                        <h5 class="modal-title fw-bold mb-0 text-truncate text-primary" id="taskModalLabel-@task.Id" style="max-width: 500px;">@task.Title</h5>
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable task-modal-dialog">
+            <div class="modal-content task-modal-content border-0 shadow-lg">
+                <div class="modal-header task-modal-header border-0">
+                    <div class="task-modal-titlebar">
+                        <span class="task-modal-id">#@task.Id</span>
+                        <div class="task-modal-titlecopy">
+                            <h5 class="modal-title task-modal-title fw-bold mb-1 text-truncate" id="taskModalLabel-@task.Id">@task.Title</h5>
+                            <div class="task-modal-quickmeta">
+                                <span class="quick-chip priority-@((task.Priority ?? "Normal").ToLowerInvariant())">@PriorityLabel(task.Priority)</span>
+                                <span class="quick-chip task-status-label">@StatusLabel(task.KanbanStatus)</span>
+                                <span class="quick-chip"><i class="bi bi-calendar2-week"></i> @(task.DueDate?.ToString("dd/MM/yyyy") ?? "Chưa có hạn")</span>
+                                <span class="quick-chip"><i class="bi bi-graph-up"></i> @taskProgress.ToString("0.##")%</span>
+                            </div>
+                        </div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="row g-4">
+                <div class="modal-body task-modal-body">
+                    <div class="task-modal-layout">
                         <!-- Cột Trái (70%): Form chỉnh sửa chi tiết và comments -->
-                        <div class="col-lg-8 border-end border-light-subtle pe-lg-4">
-                            <form asp-action="UpdateTask" method="post" id="editForm-@task.Id" class="mb-4">
+                        <div class="task-modal-main">
+                            <form asp-action="UpdateTask" method="post" id="editForm-@task.Id" class="task-edit-form">
                                 <input type="hidden" name="id" value="@task.Id" />
                                 
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold text-secondary small d-block mb-1">Tên công việc</label>
-                                    <input type="text" name="title" value="@task.Title" class="form-control" maxlength="220" required />
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold text-secondary small d-block mb-1">Mô tả công việc</label>
-                                    <textarea name="description" class="form-control" rows="3" placeholder="Nhập mô tả kết quả mong muốn, tài liệu liên quan..." maxlength="2000">@task.Description</textarea>
-                                </div>
-                                
-                                <div class="row g-3 mb-3">
-                                    <div class="col-sm-4">
+                                <section class="task-edit-section task-edit-section--content">
+                                    <div class="task-section-title">Nội dung</div>
+                                    <div class="task-content-grid">
+                                        <div class="task-content-field">
+                                            <label class="form-label fw-bold text-secondary small d-block mb-1">Tên công việc</label>
+                                            <input type="text" name="title" value="@task.Title" class="form-control task-title-input" maxlength="220" required />
+                                        </div>
+                                        <div class="task-content-field">
+                                            <label class="form-label fw-bold text-secondary small d-block mb-1">Mô tả công việc</label>
+                                            <textarea name="description" class="form-control task-description-input" rows="4" placeholder="Nhập mô tả kết quả mong muốn, tài liệu liên quan..." maxlength="2000">@task.Description</textarea>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="task-edit-section">
+                                    <div class="task-section-title">Phân công</div>
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
                                         <label class="form-label fw-bold text-secondary small d-block mb-1">Người phụ trách</label>
                                         <select name="assigneeId" class="form-select">
                                             <option value="">Chưa gán</option>
@@ -377,8 +432,8 @@
                                                 <option value="@employee.Id" selected="@(employee.Id == task.AssigneeId ? "selected" : null)">@employee.FullName</option>
                                             }
                                         </select>
-                                    </div>
-                                    <div class="col-sm-8">
+                                        </div>
+                                        <div class="col-md-6">
                                         <label class="form-label fw-bold text-secondary small d-block mb-1">Phòng ban</label>
                                         <select name="departmentId" class="form-select">
                                             <option value="">Chưa gán phòng ban</option>
@@ -387,11 +442,14 @@
                                                 <option value="@department.Id" selected="@(department.Id == task.DepartmentId ? "selected" : null)">@department.DepartmentName</option>
                                             }
                                         </select>
+                                        </div>
                                     </div>
-                                </div>
+                                </section>
 
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-5">
+                                <section class="task-edit-section">
+                                    <div class="task-section-title">Liên kết mục tiêu</div>
+                                    <div class="row g-2">
+                                        <div class="col-md-5">
                                         <label class="form-label fw-bold text-secondary small d-block mb-1">Liên kết KPI</label>
                                         <select name="kpiId" class="form-select">
                                             <option value="">Không liên kết KPI</option>
@@ -400,8 +458,8 @@
                                                 <option value="@kpi.Id" selected="@(kpi.Id == task.KPIId ? "selected" : null)">@KpiOptionLabel(kpi)</option>
                                             }
                                         </select>
-                                    </div>
-                                    <div class="col-md-5">
+                                        </div>
+                                        <div class="col-md-5">
                                         <label class="form-label fw-bold text-secondary small d-block mb-1">Liên kết Key Result</label>
                                         <select name="okrKeyResultId" class="form-select">
                                             <option value="">Tự lấy từ KPI / Không liên kết</option>
@@ -410,15 +468,18 @@
                                                 <option value="@keyResult.Id" selected="@(keyResult.Id == task.OKRKeyResultId ? "selected" : null)">@KeyResultOptionLabel(keyResult)</option>
                                             }
                                         </select>
-                                    </div>
-                                    <div class="col-md-2">
+                                        </div>
+                                        <div class="col-md-2">
                                         <label class="form-label fw-bold text-secondary small d-block mb-1">Trọng số</label>
                                         <input type="number" name="kpiImpactWeight" class="form-control" min="0.1" max="100" step="0.1" value="@((task.KpiImpactWeight ?? 1).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))" />
+                                        </div>
                                     </div>
-                                </div>
+                                </section>
                                 
-                                <div class="row g-3 mb-4">
-                                    <div class="col-6 col-sm-4">
+                                <section class="task-edit-section task-edit-section--status">
+                                    <div class="task-section-title">Trạng thái</div>
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-xl-2 col-md-6">
                                         <label class="form-label fw-bold text-secondary small d-block mb-1">Độ ưu tiên</label>
                                         <select name="priority" class="form-select">
                                             @foreach (var item in Model.PriorityOptions)
@@ -426,8 +487,8 @@
                                                 <option value="@item" selected="@(item == task.Priority ? "selected" : null)">@PriorityLabel(item)</option>
                                             }
                                         </select>
-                                    </div>
-                                    <div class="col-6 col-sm-4">
+                                        </div>
+                                        <div class="col-xl-2 col-md-6">
                                         <label class="form-label fw-bold text-secondary small d-block mb-1">Trạng thái</label>
                                         <select name="kanbanStatus" class="form-select">
                                             @foreach (var item in Model.StatusOptions)
@@ -435,36 +496,39 @@
                                                 <option value="@item" selected="@(item == task.KanbanStatus ? "selected" : null)">@StatusLabel(item)</option>
                                             }
                                         </select>
-                                    </div>
-                                    <div class="col-12 col-sm-4">
+                                        </div>
+                                        <div class="col-xl-3 col-md-6">
+                                            <label class="form-label fw-bold text-secondary small d-block mb-1">Hạn chót</label>
+                                            <input type="date" name="dueDate" class="form-control" value="@(task.DueDate?.ToString("yyyy-MM-dd"))" />
+                                        </div>
+                                        <div class="col-xl-3 col-md-6">
                                         <label class="form-label fw-bold text-secondary small d-block mb-1">Tiến độ (@taskProgress.ToString("0.##")%)</label>
                                         <div class="d-flex align-items-center gap-2">
                                             <input type="range" name="progressPercentage" class="form-range flex-grow-1" min="0" max="100" step="5" value="@taskProgress.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" oninput="this.nextElementSibling.value = this.value + '%'" />
                                             <output class="fw-semibold text-primary small" style="min-width: 35px;">@taskProgress.ToString("0.##")%</output>
                                         </div>
+                                        </div>
+                                        <div class="col-xl-2 col-md-12 d-grid">
+                                            <button type="submit" class="btn btn-primary task-save-btn"><i class="bi bi-save me-1"></i> Lưu</button>
+                                        </div>
                                     </div>
-                                    <div class="col-md-8">
-                                        <label class="form-label fw-bold text-secondary small d-block mb-1">Hạn chót</label>
-                                        <input type="date" name="dueDate" class="form-control" value="@(task.DueDate?.ToString("yyyy-MM-dd"))" />
-                                    </div>
-                                    <div class="col-md-4 d-grid align-self-end">
-                                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Lưu thay đổi</button>
-                                    </div>
-                                </div>
+                                </section>
                             </form>
                             
-                            <!-- Thảo luận trao đổi (Comments) -->
-                            <hr class="my-4 text-muted opacity-25">
-                            <div class="comments">
-                                <h6 class="fw-bold mb-3 text-secondary d-flex align-items-center gap-2">
-                                    <i class="bi bi-chat-dots-fill text-primary"></i> Trao đổi & Thảo luận (@comments.Count)
-                                </h6>
+                            <div class="comments task-comments">
+                                <div class="task-comments__header">
+                                    <h6 class="fw-bold mb-0 text-secondary d-flex align-items-center gap-2">
+                                        <i class="bi bi-chat-dots-fill text-primary"></i>
+                                        <span>Trao đổi</span>
+                                        <span class="task-comment-count-badge" data-task-id="@task.Id" data-comment-count-value>@comments.Count</span>
+                                    </h6>
+                                </div>
                                 
-                                <div class="comment-stream-box mb-3 pe-2 border rounded-3 p-3 bg-light" style="max-height: 250px; overflow-y: auto; scrollbar-width: thin;">
+                                <div class="comment-stream-box task-comment-box mb-2" data-task-comment-stream="@task.Id">
                                     @if (!comments.Any())
                                     {
-                                        <div class="text-center text-muted py-4 small">
-                                            <i class="bi bi-chat-left-text d-block fs-3 mb-2 opacity-50"></i>
+                                        <div class="task-empty-comment text-center text-muted small" data-task-empty-comment="@task.Id">
+                                            <i class="bi bi-chat-left-text d-block fs-4 mb-1 opacity-50"></i>
                                             Chưa có thảo luận nào. Nhập tin nhắn bên dưới để trao đổi.
                                         </div>
                                     }
@@ -477,18 +541,23 @@
                                                 : "Hệ thống";
                                             var isSystem = comment.IsSystem == true;
                                             
-                                            <div class="comment mb-2 p-2 rounded-3 @(isSystem ? "comment--system bg-primary-subtle text-primary-emphasis" : "comment--user bg-white border shadow-sm")">
-                                                <div class="comment-meta d-flex justify-content-between align-items-center mb-1" style="font-size: 0.72rem;">
-                                                    <strong class="text-secondary"><i class="bi @(isSystem ? "bi-cpu-fill" : "bi-person-fill") me-1"></i>@commenter</strong>
-                                                    <span class="text-muted"><i class="bi bi-clock me-1"></i>@(comment.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "")</span>
+                                            <div class="comment task-comment-item @(isSystem ? "comment--system" : "comment--user")" data-comment-id="@comment.Id" data-task-id="@task.Id">
+                                                <div class="task-comment-avatar">
+                                                    <i class="bi @(isSystem ? "bi-arrow-left-right" : "bi-person-fill")"></i>
                                                 </div>
-                                                <div class="comment-text small" style="white-space: pre-wrap;">@comment.CommentText</div>
+                                                <div class="task-comment-bubble">
+                                                    <div class="comment-meta">
+                                                        <strong>@commenter</strong>
+                                                        <span><i class="bi bi-clock me-1"></i>@(comment.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "")</span>
+                                                    </div>
+                                                    <div class="comment-text">@comment.CommentText</div>
+                                                </div>
                                             </div>
                                         }
                                     }
                                 </div>
                                 
-                                <form asp-action="AddComment" method="post" class="comment-form">
+                                <form asp-action="AddComment" method="post" class="comment-form" data-task-id="@task.Id">
                                     <input type="hidden" name="taskId" value="@task.Id" />
                                     <div class="input-group">
                                         <input type="text" name="commentText" class="form-control" placeholder="Viết phản hồi, báo cáo vướng mắc hoặc chia sẻ tài liệu..." maxlength="2000" required />
@@ -498,65 +567,53 @@
                             </div>
                         </div>
                         
-                        <!-- Cột Phải (30%): Tóm tắt trạng thái và timeline -->
-                        <div class="col-lg-4 ps-lg-3">
-                            <h6 class="fw-bold mb-3 text-secondary"><i class="bi bi-info-circle-fill text-primary"></i> Tổng quan nhanh</h6>
-                            
-                            <div class="card bg-light border-0 mb-4" style="border-radius: 12px;">
-                                <div class="card-body p-3 small d-flex flex-column gap-3">
-                                    <div>
-                                        <span class="text-muted d-block font-monospace mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em;">Người phụ trách</span>
-                                        <span class="fw-semibold text-secondary d-flex align-items-center gap-1">
-                                            <i class="bi bi-person-fill"></i> @assigneeName
+                        <aside class="task-modal-aside">
+                            <div class="task-summary-panel">
+                                <h6 class="fw-bold mb-2 text-secondary"><i class="bi bi-info-circle-fill text-primary"></i> Tổng quan</h6>
+                                <div class="task-summary-list">
+                                    <div class="summary-row">
+                                        <span class="summary-label">Phụ trách</span>
+                                        <span class="summary-value"><i class="bi bi-person-fill"></i> @assigneeName</span>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span class="summary-label">Phòng ban</span>
+                                        <span class="summary-value"><i class="bi bi-diagram-3-fill"></i> @departmentName</span>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span class="summary-label">Ưu tiên</span>
+                                        <span class="summary-value"><span class="priority-badge priority-@((task.Priority ?? "Normal").ToLowerInvariant())">@PriorityLabel(task.Priority)</span></span>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span class="summary-label">Trạng thái</span>
+                                        <span class="summary-value"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fw-bold px-2 py-1 task-status-summary">@StatusLabel(task.KanbanStatus)</span></span>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span class="summary-label">Hạn chót</span>
+                                        <span class="summary-value"><i class="bi bi-calendar-check-fill"></i> @(task.DueDate?.ToString("dd/MM/yyyy") ?? "Chưa có hạn")</span>
+                                    </div>
+                                    <div class="summary-row summary-row--stack">
+                                        <span class="summary-label">Mục tiêu</span>
+                                        <span class="summary-value summary-value--wrap">
+                                            <span><i class="bi bi-bullseye"></i> @(task.KPIId.HasValue && Model.KpiNames.TryGetValue(task.KPIId.Value, out var summaryKpiName) ? summaryKpiName : "Chưa liên kết KPI")</span>
+                                            <span><i class="bi bi-crosshair"></i> @(task.OKRKeyResultId.HasValue && Model.KeyResultNames.TryGetValue(task.OKRKeyResultId.Value, out var summaryKrName) ? summaryKrName : "Chưa liên kết KR")</span>
+                                            <span class="text-muted">Trọng số: @((task.KpiImpactWeight ?? 1).ToString("0.##"))</span>
                                         </span>
-                                    </div>
-                                    <div>
-                                        <span class="text-muted d-block font-monospace mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em;">Phòng ban phụ trách</span>
-                                        <span class="fw-semibold text-secondary d-flex align-items-center gap-1">
-                                            <i class="bi bi-diagram-3-fill"></i> @departmentName
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span class="text-muted d-block font-monospace mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em;">Mức độ ưu tiên</span>
-                                        <span class="priority-badge priority-@((task.Priority ?? "Normal").ToLowerInvariant())">@PriorityLabel(task.Priority)</span>
-                                    </div>
-                                    <div>
-                                        <span class="text-muted d-block font-monospace mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em;">Trạng thái hiện tại</span>
-                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fw-bold px-2 py-1">@StatusLabel(task.KanbanStatus)</span>
-                                    </div>
-                                    <div>
-                                        <span class="text-muted d-block font-monospace mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em;">Thời hạn hoàn thành</span>
-                                        <span class="fw-semibold text-secondary d-flex align-items-center gap-1">
-                                            <i class="bi bi-calendar-check-fill"></i> @(task.DueDate?.ToString("dd/MM/yyyy") ?? "Chưa có hạn")
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span class="text-muted d-block font-monospace mb-1" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em;">Đồng bộ mục tiêu</span>
-                                        <div class="d-flex flex-column gap-1">
-                                            <span class="fw-semibold text-secondary d-flex align-items-center gap-1">
-                                                <i class="bi bi-bullseye"></i>
-                                                @(task.KPIId.HasValue && Model.KpiNames.TryGetValue(task.KPIId.Value, out var summaryKpiName) ? summaryKpiName : "Chưa liên kết KPI")
-                                            </span>
-                                            <span class="fw-semibold text-secondary d-flex align-items-center gap-1">
-                                                <i class="bi bi-crosshair"></i>
-                                                @(task.OKRKeyResultId.HasValue && Model.KeyResultNames.TryGetValue(task.OKRKeyResultId.Value, out var summaryKrName) ? summaryKrName : "Chưa liên kết KR")
-                                            </span>
-                                            <span class="text-muted small">Trọng số: @((task.KpiImpactWeight ?? 1).ToString("0.##"))</span>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <h6 class="fw-bold mb-2 text-secondary small"><i class="bi bi-clock-history text-primary"></i> Dòng thời gian</h6>
-                            <div class="ps-2 small text-muted font-monospace" style="font-size: 0.75rem; line-height: 1.8;">
-                                <div><i class="bi bi-plus-circle me-2"></i>Tạo lúc: @task.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</div>
-                                <div><i class="bi bi-arrow-repeat me-2"></i>Cập nhật: @task.UpdatedAt?.ToString("dd/MM/yyyy HH:mm")</div>
-                                @if (task.CompletedAt.HasValue)
-                                {
-                                    <div class="text-success"><i class="bi bi-check-circle-fill me-2"></i>Hoàn tất: @task.CompletedAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
-                                }
+                            <div class="task-summary-panel task-summary-panel--timeline">
+                                <h6 class="fw-bold mb-2 text-secondary small"><i class="bi bi-clock-history text-primary"></i> Dòng thời gian</h6>
+                                <div class="task-timeline small text-muted">
+                                    <div><i class="bi bi-plus-circle me-2"></i>Tạo: @task.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</div>
+                                    <div><i class="bi bi-arrow-repeat me-2"></i>Cập nhật: @task.UpdatedAt?.ToString("dd/MM/yyyy HH:mm")</div>
+                                    @if (task.CompletedAt.HasValue)
+                                    {
+                                        <div class="text-success"><i class="bi bi-check-circle-fill me-2"></i>Hoàn tất: @task.CompletedAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                    }
+                                </div>
                             </div>
-                        </div>
+                        </aside>
                     </div>
                 </div>
             </div>
@@ -571,8 +628,50 @@
         border: 1px solid var(--card-border);
         border-radius: var(--radius-lg);
         box-shadow: var(--card-shadow);
-        padding: 24px;
+        padding: 14px 16px;
         transition: all var(--transition-base);
+    }
+
+    .project-hero__main {
+        row-gap: 12px;
+    }
+
+    .project-hero__info {
+        min-width: 260px;
+        flex: 1 1 560px;
+    }
+
+    .project-title {
+        font-size: 1.2rem;
+        line-height: 1.25;
+    }
+
+    .project-summary {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-size: 0.86rem;
+        line-height: 1.35;
+        max-width: 980px;
+    }
+
+    .project-hero__side {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-end;
+        flex: 0 1 380px;
+        min-width: 280px;
+    }
+
+    .project-progress-mini {
+        width: min(100%, 320px);
+    }
+
+    .project-progress-mini .progress {
+        height: 6px;
+        background-color: var(--border-color);
     }
 
     .project-code,
@@ -587,19 +686,32 @@
     .meta-chip {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
         background: var(--primary-light);
         color: var(--primary-dark);
-        border-radius: 8px;
-        padding: 6px 12px;
+        border-radius: 7px;
+        padding: 4px 8px;
         font-size: var(--font-size-xs);
         font-weight: 700;
         border: 1px solid rgba(26, 115, 232, 0.08);
+        max-width: 240px;
+        min-height: 28px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .add-task-card {
+        border: 1px solid var(--card-border);
+    }
+
+    .add-task-card .card-body {
+        min-height: 44px;
     }
 
     .section-icon {
-        width: 36px;
-        height: 36px;
+        width: 30px;
+        height: 30px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -618,20 +730,121 @@
         transform: rotate(180deg);
     }
 
+    .kanban-quick-tools {
+        min-height: 40px;
+    }
+
+    .kanban-search {
+        width: min(100%, 420px);
+    }
+
+    .kanban-sort {
+        width: 190px;
+    }
+
+    .kanban-search .input-group-text,
+    .kanban-search .form-control,
+    .kanban-sort .input-group-text,
+    .kanban-sort .form-select,
+    .kanban-filter-group .btn {
+        border-radius: 8px;
+        min-height: 34px;
+        font-size: 0.82rem;
+    }
+
+    .kanban-search .input-group-text {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .kanban-sort .input-group-text {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .kanban-search .form-control {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .kanban-sort .form-select {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        font-weight: 700;
+        color: var(--text-secondary);
+    }
+
+    .kanban-filter-group .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .kanban-filter-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        padding: 0 6px;
+        background: rgba(15, 23, 42, 0.06);
+        color: var(--text-secondary);
+        font-size: 0.72rem;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+    }
+
+    .kanban-filter-btn.active .kanban-filter-count {
+        background: rgba(255, 255, 255, 0.24);
+        color: #ffffff;
+    }
+
+    .kanban-filter-count.is-zero {
+        opacity: 0.48;
+    }
+
+    .kanban-focus-toggle.active {
+        color: #ffffff;
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .kanban-filter-summary {
+        min-width: 108px;
+        text-align: right;
+    }
+
     /* Kanban Board Layout */
     .kanban-board {
         display: grid;
         grid-template-columns: repeat(6, 250px);
-        gap: 12px;
+        gap: 10px;
         overflow-x: auto;
-        padding-bottom: 16px;
+        padding-bottom: 10px;
         align-items: start;
         scrollbar-width: thin;
     }
 
+    .kanban-board.kanban-board--focused {
+        grid-template-columns: repeat(var(--kanban-visible-columns, 1), minmax(250px, 320px));
+        overflow-x: auto;
+    }
+
+    .kanban-column.is-focus-hidden {
+        display: none !important;
+    }
+	
     @@media (min-width: 1200px) {
         .kanban-board {
             grid-template-columns: repeat(6, 1fr);
+            overflow-x: visible;
+        }
+
+        .kanban-board.kanban-board--focused {
             overflow-x: visible;
         }
     }
@@ -639,7 +852,9 @@
     .kanban-column {
         background: #f8fafc;
         border: 1px solid var(--card-border);
-        min-height: 550px;
+        height: clamp(520px, calc(100dvh - 310px), 700px);
+        min-height: 0;
+        overflow: hidden;
         transition: all var(--transition-base);
         box-shadow: var(--card-shadow);
     }
@@ -654,6 +869,13 @@
 
     .kanban-column__header {
         background: rgba(255, 255, 255, 0.5);
+        padding: 10px 12px !important;
+        min-height: 44px;
+    }
+
+    .kanban-column__header .badge {
+        min-width: 28px;
+        font-variant-numeric: tabular-nums;
     }
 
     /* Column dot matches status */
@@ -671,27 +893,61 @@
     .kanban-column--blocked .column-dot { background-color: var(--danger); }
 
     .kanban-column__body {
-        min-height: 480px;
-        transition: background-color var(--transition-fast), border var(--transition-fast);
+        min-height: 0;
+        overflow-y: auto;
+        padding: 10px !important;
+        gap: 10px !important;
+        position: relative;
+        border: 1px solid transparent;
+        transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+        scrollbar-width: thin;
     }
 
     /* Drag and drop highlight styling */
+    .kanban-board--dragging .kanban-column__body {
+        background-color: rgba(88, 72, 214, 0.025);
+        border-color: rgba(88, 72, 214, 0.14);
+    }
+
     .kanban-column__body.dragover-highlight {
-        background-color: rgba(26, 115, 232, 0.05);
-        border: 2px dashed var(--primary) !important;
+        background-color: rgba(88, 72, 214, 0.07);
+        border: 1px dashed rgba(88, 72, 214, 0.58) !important;
         border-radius: var(--radius-md);
+        box-shadow: inset 0 0 0 1px rgba(88, 72, 214, 0.12);
+    }
+
+    .kanban-column__body.dragover-highlight::before {
+        content: "Thả vào " attr(data-drop-label);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        border: 1px dashed rgba(88, 72, 214, 0.34);
+        border-radius: 8px;
+        background: #ffffff;
+        color: var(--primary-dark);
+        font-size: 0.78rem;
+        font-weight: 800;
+        order: -1;
+    }
+
+    .kanban-board--dragging .kanban-empty {
+        border-color: rgba(88, 72, 214, 0.24) !important;
+        background: rgba(255, 255, 255, 0.76);
+        color: var(--primary-dark) !important;
     }
 
     /* Task Cards */
     .task-card {
         cursor: grab;
-        border-left: 4px solid var(--primary) !important;
+        border-left: 3px solid var(--primary) !important;
         transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast);
         user-select: none;
+        padding: 10px !important;
     }
 
     .task-card:hover {
-        transform: translateY(-3px);
+        transform: translateY(-1px);
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08) !important;
     }
 
@@ -705,21 +961,46 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
     }
 
+    .task-card--syncing {
+        opacity: 0.82;
+        cursor: progress;
+    }
+
+    .task-card--saved {
+        animation: taskSavedFlash 900ms ease-out;
+    }
+
+    @@keyframes taskSavedFlash {
+        0% {
+            box-shadow: 0 0 0 0 rgba(15, 122, 77, 0.28);
+        }
+        35% {
+            box-shadow: 0 0 0 3px rgba(15, 122, 77, 0.24);
+        }
+        100% {
+            box-shadow: var(--card-shadow);
+        }
+    }
+
     .task-card--urgent { border-left-color: var(--danger) !important; }
     .task-card--high { border-left-color: var(--warning) !important; }
     .task-card--low { border-left-color: var(--success) !important; }
     .task-card--normal { border-left-color: var(--info) !important; }
 
     .task-title {
-        font-size: 0.92rem;
-        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-size: 0.86rem;
+        line-height: 1.28;
         color: var(--text-primary);
     }
 
     .task-desc {
         color: var(--text-secondary);
-        font-size: 0.8rem;
-        line-height: 1.45;
+        font-size: 0.76rem;
+        line-height: 1.34;
     }
 
     .line-clamp-2 {
@@ -729,9 +1010,16 @@
         overflow: hidden;
     }
 
+    .line-clamp-1 {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
     .avatar-circle-sm {
-        width: 22px;
-        height: 22px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         background-color: var(--primary-light);
         color: var(--primary-dark);
@@ -744,11 +1032,67 @@
         border: 1px solid rgba(26, 115, 232, 0.15);
     }
 
+    .task-meta {
+        line-height: 1.2;
+    }
+
+    .task-meta .meta-item {
+        max-width: 100%;
+        min-width: 0;
+        min-height: 22px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 999px;
+        background: #ffffff;
+        padding: 1px 6px;
+    }
+
+    .task-meta .meta-text {
+        min-width: 0;
+        max-width: 112px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .task-card__progress .progress {
+        height: 5px !important;
+        background-color: var(--border-color);
+    }
+
+    .progress-value {
+        font-size: 0.68rem !important;
+        min-width: 34px;
+        text-align: right;
+    }
+
+    .task-card__footer {
+        min-height: 24px;
+        padding-top: 6px !important;
+    }
+
+    .task-drag-grip {
+        width: 26px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        color: var(--text-muted);
+        cursor: grab;
+        transition: color var(--transition-fast), background-color var(--transition-fast);
+    }
+
+    .task-card:hover .task-drag-grip {
+        color: var(--primary);
+        background-color: var(--primary-light);
+    }
+
     .priority-badge {
         font-size: 0.65rem;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.02em;
+        padding: 3px 6px !important;
     }
 
     .priority-low { background: #eef7ee; color: var(--success); }
@@ -762,14 +1106,15 @@
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.02em;
+        padding: 3px 6px !important;
     }
 
     .goal-chip {
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        border-radius: 6px;
-        padding: 3px 6px;
+        border-radius: 999px;
+        padding: 2px 6px;
         font-size: 0.65rem;
         font-weight: 800;
         border: 1px solid transparent;
@@ -798,14 +1143,7 @@
 
     /* Comment Section Styles */
     .comment {
-        border-left: 3px solid transparent;
-        transition: background-color var(--transition-fast);
-    }
-    .comment--system {
-        border-left-color: var(--primary);
-    }
-    .comment--user {
-        border-left-color: var(--card-border);
+        transition: background-color var(--transition-fast), border-color var(--transition-fast);
     }
 
     .kanban-empty {
@@ -813,33 +1151,498 @@
         font-size: 0.8rem;
     }
 
-    /* Global Loader overlay during Drag & Drop status updates */
-    .kanban-loader-overlay {
+    .kanban-filter-empty {
+        background: rgba(255, 255, 255, 0.55);
+        font-size: 0.8rem;
+    }
+
+    .kanban-feedback-toast {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(13, 33, 55, 0.65);
-        z-index: 1060;
+        left: 50%;
+        bottom: 22px;
+        z-index: 1080;
         display: flex;
-        justify-content: center;
         align-items: center;
-        backdrop-filter: blur(4px);
-        transition: opacity var(--transition-base);
+        gap: 8px;
+        min-height: 38px;
+        max-width: min(420px, calc(100vw - 32px));
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: #0f7a4d;
+        color: #ffffff;
+        font-size: 0.84rem;
+        font-weight: 800;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(-50%, 12px);
+        transition: opacity var(--transition-base), transform var(--transition-base);
     }
 
-    /* Modal Layout improvements */
-    .task-detail-modal .modal-body {
+    .kanban-feedback-toast::before {
+        content: "\F26B";
+        font-family: "bootstrap-icons";
+        font-weight: 400;
+    }
+
+    .kanban-feedback-toast.is-visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+
+    .kanban-feedback-toast.is-warning {
+        background: #b45309;
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .task-card--saved {
+            animation: none;
+            box-shadow: 0 0 0 2px rgba(15, 122, 77, 0.22) !important;
+        }
+
+        .kanban-feedback-toast {
+            transition: none;
+        }
+    }
+
+    @@media (max-width: 1199.98px) {
+        .kanban-quick-tools {
+            align-items: stretch !important;
+        }
+
+        .kanban-search {
+            width: 100%;
+        }
+
+        .kanban-sort {
+            width: min(100%, 220px);
+        }
+
+        .kanban-filter-summary {
+            width: 100%;
+            text-align: left;
+        }
+
+        .kanban-column {
+            height: clamp(480px, calc(100dvh - 260px), 620px);
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .project-hero__side,
+        .project-progress-mini {
+            width: 100%;
+            align-items: stretch;
+        }
+
+        .project-actions {
+            justify-content: flex-start !important;
+        }
+
+        .project-summary {
+            -webkit-line-clamp: 2;
+        }
+
+        .kanban-column {
+            height: calc(100dvh - 240px);
+            min-height: 430px;
+        }
+    }
+
+    /* Task Detail Modal */
+    .task-modal-dialog {
+        max-width: min(1380px, calc(100vw - 48px)) !important;
+        margin: 16px auto;
+    }
+
+    .task-modal-content {
+        border-radius: 12px;
+        max-height: calc(100dvh - 32px);
+        overflow: hidden;
+    }
+
+    .task-modal-header {
+        align-items: flex-start;
+        background: #f8fafc;
+        border-bottom: 1px solid var(--card-border) !important;
+        padding: 10px 18px;
+    }
+
+    .task-modal-titlebar {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .task-modal-id {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 42px;
+        min-height: 24px;
+        border-radius: 999px;
+        background: var(--primary);
+        color: #ffffff;
+        font-size: 0.8rem;
+        font-weight: 800;
+    }
+
+    .task-modal-titlecopy {
+        min-width: 0;
+    }
+
+    .task-modal-title {
+        max-width: min(760px, 58vw);
+        color: var(--primary);
+        font-size: 1rem;
+        line-height: 1.25;
+        margin-bottom: 2px !important;
+    }
+
+    .task-modal-quickmeta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .quick-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        max-width: 220px;
+        min-height: 24px;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 999px;
+        background: #ffffff;
+        color: var(--text-secondary);
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .task-modal-body {
         background-color: #ffffff;
+        overflow-y: auto;
+        padding: 12px 16px;
+        scrollbar-width: thin;
     }
 
-    .task-detail-modal select, 
-    .task-detail-modal input[type="text"], 
+    .task-modal-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 14px;
+        align-items: start;
+    }
+
+    .task-modal-main {
+        min-width: 0;
+        padding-right: 16px;
+        border-right: 1px solid var(--card-border);
+    }
+
+    .task-edit-form {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 0;
+    }
+
+    .task-edit-section {
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 10px;
+        background: #ffffff;
+        padding: 8px 10px;
+    }
+
+    .task-edit-section--content {
+        background: #fbfcff;
+    }
+
+    .task-content-grid {
+        display: grid;
+        gap: 10px;
+    }
+
+    .task-content-field {
+        min-width: 0;
+    }
+
+    .task-section-title {
+        margin-bottom: 6px;
+        color: var(--text-secondary);
+        font-size: 0.76rem;
+        font-weight: 800;
+    }
+
+    .task-detail-modal .form-label {
+        font-size: 0.76rem;
+    }
+
+    .task-detail-modal select,
+    .task-detail-modal input[type="text"],
+    .task-detail-modal input[type="number"],
     .task-detail-modal input[type="date"],
     .task-detail-modal textarea {
-        font-size: 0.875rem;
+        min-height: 38px;
+        font-size: 0.84rem;
         border-radius: 8px;
+    }
+
+    .task-detail-modal textarea {
+        min-height: 68px;
+        max-height: 82px;
+    }
+
+    .task-detail-modal .task-title-input {
+        min-height: 42px;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .task-detail-modal .task-description-input {
+        min-height: 116px;
+        max-height: 160px;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        resize: vertical;
+    }
+
+    .task-save-btn {
+        min-height: 38px;
+    }
+
+    .task-comments {
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid var(--card-border);
+    }
+
+    .task-comments__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+
+    .task-comment-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 22px;
+        border-radius: 999px;
+        background: var(--primary-light);
+        color: var(--primary);
+        font-size: 0.76rem;
+        font-weight: 800;
+        padding: 0 7px;
+    }
+
+    .task-comment-box {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 190px;
+        min-height: 84px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 10px;
+        background: #f8fafc;
+        padding: 8px;
+    }
+
+    .task-empty-comment {
+        padding: 10px 8px;
+    }
+
+    .task-comment-item {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
+    }
+
+    .task-comment-avatar {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: #ffffff;
+        color: var(--primary);
+        border: 1px solid rgba(88, 72, 214, 0.16);
+        font-size: 0.78rem;
+    }
+
+    .task-comment-bubble {
+        min-width: 0;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 10px;
+        background: #ffffff;
+        padding: 7px 9px;
+    }
+
+    .comment--system .task-comment-avatar {
+        background: var(--primary-light);
+    }
+
+    .comment--system .task-comment-bubble {
+        background: #f5f3ff;
+        border-color: rgba(88, 72, 214, 0.18);
+    }
+
+    .comment-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 3px;
+        color: var(--text-muted);
+        font-size: 0.72rem;
+    }
+
+    .comment-meta strong {
+        min-width: 0;
+        color: var(--text-secondary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .comment-meta span {
+        flex: 0 0 auto;
+    }
+
+    .comment-text {
+        color: var(--text-primary);
+        font-size: 0.82rem;
+        line-height: 1.45;
+        white-space: pre-wrap;
+    }
+
+    .task-modal-aside {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .task-summary-panel {
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 10px;
+        background: #f8fafc;
+        padding: 10px;
+    }
+
+    .task-summary-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .summary-row {
+        display: grid;
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .summary-row:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .summary-row:first-child {
+        padding-top: 0;
+    }
+
+    .summary-label {
+        color: var(--text-muted);
+        font-size: 0.73rem;
+        font-weight: 700;
+    }
+
+    .summary-value {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        min-width: 0;
+        color: var(--text-secondary);
+        font-size: 0.84rem;
+        font-weight: 700;
+    }
+
+    .summary-row:not(.summary-row--stack) .summary-value {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .summary-value--wrap {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 3px;
+        line-height: 1.35;
+    }
+
+    .task-timeline {
+        line-height: 1.75;
+    }
+
+    @@media (max-width: 1199.98px) {
+        .task-modal-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .task-modal-main {
+            padding-right: 0;
+            border-right: 0;
+        }
+
+        .task-modal-aside {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .task-modal-dialog {
+            max-width: calc(100vw - 16px) !important;
+            margin: 8px auto;
+        }
+
+        .task-modal-content {
+            max-height: calc(100dvh - 16px);
+        }
+
+        .task-modal-header {
+            padding: 10px 12px;
+        }
+
+        .task-modal-title {
+            max-width: calc(100vw - 112px);
+        }
+
+        .task-modal-body {
+            padding: 12px;
+        }
+
+        .task-edit-section {
+            padding: 10px;
+        }
+
+        .task-modal-aside {
+            grid-template-columns: 1fr;
+        }
     }
 
     /* Removed max-width media query to prevent horizontal scroll override on desktop */
@@ -850,48 +1653,85 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Loader overlay controller
-            const loader = document.getElementById('kanban-loader');
-            function showLoader(show) {
-                if (show) {
-                    loader.classList.remove('d-none');
-                } else {
-                    loader.classList.add('d-none');
-                }
-            }
-
             // --- DRAG AND DROP HANDLERS ---
             let draggedTaskId = null;
             let isDragging = false;
 
             const cards = document.querySelectorAll('.task-card');
             const columns = document.querySelectorAll('.kanban-column__body');
+            const kanbanBoard = document.querySelector('.kanban-board');
+            const kanbanFeedback = document.getElementById('kanbanFeedback');
+            const pendingStatusUpdates = new Map();
+            const searchInput = document.getElementById('kanbanTaskSearch');
+            const sortSelect = document.getElementById('kanbanTaskSort');
+            const filterButtons = document.querySelectorAll('.kanban-filter-btn');
+            const resetFilterButton = document.getElementById('kanbanFilterReset');
+            const filterSummary = document.getElementById('kanbanFilterSummary');
+            const focusToggleButton = document.getElementById('kanbanFocusToggle');
+            const filterCountBadges = document.querySelectorAll('[data-filter-count]');
+            const currentEmployeeId = '@(currentEmployeeId?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")';
+            const projectId = @project.Id;
+            let activeKanbanFilter = 'all';
+            let isKanbanFocusMode = false;
+            let activeKanbanSort = sortSelect?.value || 'risk';
+            let latestActivityCommentId = getLatestRenderedCommentId();
+            let activityPollInFlight = false;
+            const filterLabels = {
+                all: 'Tất cả',
+                mine: 'Của tôi',
+                blocked: 'Bị chặn',
+                important: 'Ưu tiên',
+                overdue: 'Quá hạn',
+                ai: 'AI'
+            };
+            const statusLabels = Array.from(columns).reduce((labels, column) => {
+                const status = column.dataset.status;
+                const labelNode = column.closest('.kanban-column')?.querySelector('.kanban-column__header .fw-bold');
+                const label = Array.from(labelNode?.childNodes ?? [])
+                    .filter(node => node.nodeType === Node.TEXT_NODE)
+                    .map(node => node.textContent.trim())
+                    .filter(Boolean)
+                    .join(' ');
 
-            cards.forEach(card => {
+                if (status) {
+                    labels[status] = label || status;
+                }
+
+                return labels;
+            }, {});
+
+            cards.forEach((card, index) => {
+                card.dataset.taskOrder = String(index);
+
                 card.addEventListener('dragstart', function(e) {
+                    if (pendingStatusUpdates.has(this.dataset.taskId)) {
+                        e.preventDefault();
+                        return;
+                    }
+
                     isDragging = true;
                     draggedTaskId = this.dataset.taskId;
                     this.classList.add('dragging');
+                    revealFocusHiddenColumns();
+                    kanbanBoard?.classList.add('kanban-board--dragging');
                     e.dataTransfer.effectAllowed = 'move';
                     e.dataTransfer.setData('text/plain', draggedTaskId);
                 });
 
                 card.addEventListener('dragend', function() {
                     this.classList.remove('dragging');
-                    columns.forEach(col => {
-                        col.classList.remove('dragover-highlight');
-                    });
+                    clearKanbanDragState();
                     setTimeout(() => {
                         isDragging = false;
+                        applyKanbanFilters();
                     }, 100);
                 });
 
-                // Open modal on click (but prevent if dragging or clicking buttons/dropdown)
+                // Open modal on click (but prevent if dragging or clicking interactive controls)
                 card.addEventListener('click', function(e) {
                     if (isDragging) return;
                     
-                    // Avoid opening modal if clicking dropdown button or its menu item
-                    if (e.target.closest('.dropdown') || e.target.closest('button') || e.target.closest('a') || e.target.closest('form')) {
+                    if (e.target.closest('.task-drag-grip') || e.target.closest('button') || e.target.closest('a') || e.target.closest('form')) {
                         return;
                     }
 
@@ -904,41 +1744,176 @@
                 });
             });
 
+            searchInput?.addEventListener('input', applyKanbanFilters);
+            sortSelect?.addEventListener('change', function() {
+                activeKanbanSort = this.value || 'risk';
+                applyKanbanFilters();
+            });
+
+            focusToggleButton?.addEventListener('click', function() {
+                isKanbanFocusMode = !isKanbanFocusMode;
+                this.classList.toggle('active', isKanbanFocusMode);
+                this.classList.toggle('btn-primary', isKanbanFocusMode);
+                this.classList.toggle('btn-outline-secondary', !isKanbanFocusMode);
+                this.setAttribute('aria-pressed', String(isKanbanFocusMode));
+                applyKanbanFilters();
+            });
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    activeKanbanFilter = this.dataset.filter || 'all';
+                    updateFilterButtonState();
+                    applyKanbanFilters();
+                });
+            });
+
+            resetFilterButton?.addEventListener('click', function() {
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+
+                activeKanbanFilter = 'all';
+                updateFilterButtonState();
+                applyKanbanFilters();
+                searchInput?.focus();
+            });
+
+            document.querySelectorAll('.comment-form').forEach(form => {
+                form.addEventListener('submit', submitCommentFormAjax);
+            });
+
             columns.forEach(column => {
                 column.addEventListener('dragover', function(e) {
                     e.preventDefault(); // Required to allow drop
                     this.classList.add('dragover-highlight');
                 });
 
-                column.addEventListener('dragleave', function() {
+                column.addEventListener('dragleave', function(e) {
+                    if (e.relatedTarget && this.contains(e.relatedTarget)) {
+                        return;
+                    }
+
                     this.classList.remove('dragover-highlight');
                 });
 
                 column.addEventListener('drop', function(e) {
                     e.preventDefault();
-                    this.classList.remove('dragover-highlight');
+                    clearKanbanDragState();
                     
                     const taskId = e.dataTransfer.getData('text/plain') || draggedTaskId;
                     const newStatus = this.dataset.status;
                     
                     if (!taskId || !newStatus) return;
+                    if (pendingStatusUpdates.has(taskId)) return;
                     
-                    // Retrieve origin column to prevent unnecessary server updates
                     const cardElement = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
-                    const originalStatus = cardElement ? cardElement.closest('.kanban-column__body').dataset.status : null;
+                    const sourceColumn = cardElement?.closest('.kanban-column__body');
+                    const originalStatus = sourceColumn?.dataset.status;
                     
-                    if (newStatus === originalStatus) return;
+                    if (!cardElement || !sourceColumn || newStatus === originalStatus) return;
 
-                    // Send AJAX post update status
-                    updateTaskStatusAjax(taskId, newStatus);
+                    const sourceNextSibling = cardElement.nextElementSibling;
+                    const originalProgress = getDisplayedProgress(cardElement);
+                    const nextProgress = newStatus === 'Done' ? 100 : originalProgress;
+
+                    insertTaskCard(cardElement, this);
+                    syncColumnState(sourceColumn);
+                    syncColumnState(this);
+                    syncTaskStatusDisplay(taskId, newStatus);
+                    cardElement.dataset.taskStatus = newStatus;
+                    cardElement.dataset.taskOverdue = String(isTaskOverdueForStatus(cardElement, newStatus));
+
+                    if (nextProgress !== null) {
+                        updateTaskProgressDisplay(cardElement, nextProgress);
+                    }
+
+                    applyKanbanFilters();
+
+                    cardElement.classList.add('task-card--syncing');
+                    cardElement.setAttribute('aria-busy', 'true');
+                    pendingStatusUpdates.set(taskId, true);
+
+                    persistTaskStatus(taskId, newStatus)
+                        .then(result => {
+                            if (result?.progress !== undefined) {
+                                const savedProgress = Number(result.progress);
+                                if (Number.isFinite(savedProgress)) {
+                                    updateTaskProgressDisplay(cardElement, savedProgress);
+                                }
+                            }
+
+                            mergeActivityComment(result?.comment);
+                            updateTaskCommentCount(taskId, result?.commentCount);
+                            markTaskSaved(cardElement);
+                            showKanbanFeedback(`Đã chuyển sang ${statusLabels[result?.status || newStatus] || statusLabels[newStatus] || 'trạng thái mới'}`);
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            const currentColumn = cardElement.closest('.kanban-column__body');
+
+                            insertTaskCard(cardElement, sourceColumn, sourceNextSibling);
+                            if (currentColumn && currentColumn !== sourceColumn) {
+                                syncColumnState(currentColumn);
+                            }
+
+                            syncColumnState(sourceColumn);
+                            syncTaskStatusDisplay(taskId, originalStatus);
+                            cardElement.dataset.taskStatus = originalStatus;
+                            cardElement.dataset.taskOverdue = String(isTaskOverdueForStatus(cardElement, originalStatus));
+
+                            if (originalProgress !== null) {
+                                updateTaskProgressDisplay(cardElement, originalProgress);
+                            }
+
+                            applyKanbanFilters();
+                            showKanbanFeedback('Chưa lưu được thay đổi trạng thái', 'warning');
+
+                            Swal.fire({
+                                title: 'Không thể chuyển trạng thái',
+                                text: 'Dữ liệu đã được đưa về vị trí cũ. Vui lòng thử lại sau.',
+                                icon: 'warning',
+                                confirmButtonText: 'Đồng ý'
+                            });
+                        })
+                        .finally(() => {
+                            pendingStatusUpdates.delete(taskId);
+                            cardElement.classList.remove('task-card--syncing');
+                            cardElement.removeAttribute('aria-busy');
+                        });
                 });
             });
 
-            function updateTaskStatusAjax(taskId, targetStatus) {
+            function clearKanbanDragState() {
+                kanbanBoard?.classList.remove('kanban-board--dragging');
+                columns.forEach(column => {
+                    column.classList.remove('dragover-highlight');
+                });
+            }
+
+            function markTaskSaved(card) {
+                card.classList.remove('task-card--saved');
+                void card.offsetWidth;
+                card.classList.add('task-card--saved');
+                window.setTimeout(() => card.classList.remove('task-card--saved'), 1000);
+            }
+
+            let kanbanFeedbackTimer = null;
+            function showKanbanFeedback(message, type = 'success') {
+                if (!kanbanFeedback) return;
+
+                window.clearTimeout(kanbanFeedbackTimer);
+                kanbanFeedback.textContent = message;
+                kanbanFeedback.classList.toggle('is-warning', type === 'warning');
+                kanbanFeedback.classList.add('is-visible');
+                kanbanFeedbackTimer = window.setTimeout(() => {
+                    kanbanFeedback.classList.remove('is-visible', 'is-warning');
+                }, 1800);
+            }
+
+            function persistTaskStatus(taskId, targetStatus) {
                 const antiForgeryToken = document.querySelector('#globalAntiForgeryForm input[name="__RequestVerificationToken"]')?.value;
                 if (!antiForgeryToken) {
-                    console.error('Anti-forgery token not found.');
-                    return;
+                    return Promise.reject(new Error('Anti-forgery token not found.'));
                 }
 
                 const formData = new FormData();
@@ -946,9 +1921,7 @@
                 formData.append('kanbanStatus', targetStatus);
                 formData.append('__RequestVerificationToken', antiForgeryToken);
 
-                showLoader(true);
-
-                fetch('/WorkProjects/UpdateTaskStatus', {
+                return fetch('/WorkProjects/UpdateTaskStatus', {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -956,36 +1929,586 @@
                     }
                 })
                 .then(response => {
-                    if (response.ok) {
-                        // Success toast and page reload
-                        if (window.showAppToast) {
-                            window.showAppToast({
-                                message: 'Đã cập nhật trạng thái công việc thành công.',
-                                tone: 'success',
-                                eyebrow: 'Hoàn tất',
-                                title: 'Thành công'
-                            });
-                        }
-                        window.location.reload();
-                    } else {
-                        showLoader(false);
-                        Swal.fire({
-                            title: 'Cảnh báo!',
-                            text: 'Không thể cập nhật trạng thái công việc. Vui lòng kiểm tra quyền hạn của bạn.',
-                            icon: 'warning',
-                            confirmButtonText: 'Đồng ý'
-                        });
+                    if (!response.ok) {
+                        throw new Error(`UpdateTaskStatus failed with HTTP ${response.status}`);
                     }
-                })
-                .catch(error => {
+
+                    const contentType = response.headers.get('content-type') || '';
+                    return contentType.includes('application/json') ? response.json() : {};
+                });
+            }
+
+            function insertTaskCard(card, column, beforeElement = null) {
+                removeEmptyState(column);
+
+                if (beforeElement && beforeElement.parentElement === column) {
+                    column.insertBefore(card, beforeElement);
+                    return;
+                }
+
+                column.appendChild(card);
+            }
+
+            function syncColumnState(column) {
+                const cardCount = column.querySelectorAll('.task-card').length;
+                setColumnCountBadge(column, cardCount);
+
+                if (cardCount > 0) {
+                    removeEmptyState(column);
+                    return;
+                }
+
+                if (!column.querySelector('.kanban-empty')) {
+                    const emptyState = document.createElement('div');
+                    emptyState.className = 'kanban-empty text-center py-4 rounded-3 text-muted border border-dashed';
+                    emptyState.textContent = 'Chưa có công việc';
+                    column.appendChild(emptyState);
+                }
+            }
+
+            function removeEmptyState(column) {
+                column.querySelectorAll('.kanban-empty').forEach(emptyState => emptyState.remove());
+            }
+
+            function applyKanbanFilters() {
+                const query = normalizeForSearch(searchInput?.value ?? '');
+                const allCards = Array.from(cards);
+                let visibleCount = 0;
+
+                refreshFilterCounts(allCards);
+
+                allCards.forEach(card => {
+                    const isVisible = matchesSearch(card, query) && matchesActiveFilter(card);
+                    card.classList.toggle('d-none', !isVisible);
+
+                    if (isVisible) {
+                        visibleCount++;
+                    }
+                });
+
+                sortKanbanColumns();
+                columns.forEach(column => syncColumnFilterState(column, visibleCount));
+                updateKanbanFocusLayout(visibleCount);
+                updateFilterSummary(visibleCount, allCards.length);
+            }
+
+            function sortKanbanColumns() {
+                if (isDragging) return;
+
+                columns.forEach(column => {
+                    const cardsInColumn = Array.from(column.querySelectorAll('.task-card'));
+                    if (cardsInColumn.length < 2) return;
+
+                    cardsInColumn
+                        .sort(compareTaskCards)
+                        .forEach(card => {
+                            const marker = column.querySelector('.kanban-empty, .kanban-filter-empty');
+                            if (marker && marker.parentElement === column) {
+                                column.insertBefore(card, marker);
+                                return;
+                            }
+
+                            column.appendChild(card);
+                        });
+                });
+            }
+
+            function compareTaskCards(a, b) {
+                if (activeKanbanSort === 'default') {
+                    return getOriginalTaskOrder(a) - getOriginalTaskOrder(b);
+                }
+
+                if (activeKanbanSort === 'due') {
+                    return compareDueTime(a, b)
+                        || getPriorityScore(b) - getPriorityScore(a)
+                        || getOriginalTaskOrder(a) - getOriginalTaskOrder(b);
+                }
+
+                return getRiskScore(b) - getRiskScore(a)
+                    || compareDueTime(a, b)
+                    || getOriginalTaskOrder(a) - getOriginalTaskOrder(b);
+            }
+
+            function getRiskScore(card) {
+                const dueTime = getDueTime(card);
+                const hasDueDate = Number.isFinite(dueTime);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const daysUntilDue = hasDueDate
+                    ? Math.ceil((dueTime - today.getTime()) / 86400000)
+                    : Number.POSITIVE_INFINITY;
+
+                let score = getPriorityScore(card);
+                if (card.dataset.taskOverdue === 'true') {
+                    score += 500;
+                } else if (daysUntilDue <= 1) {
+                    score += 160;
+                } else if (daysUntilDue <= 3) {
+                    score += 120;
+                } else if (daysUntilDue <= 7) {
+                    score += 80;
+                } else if (daysUntilDue <= 14) {
+                    score += 40;
+                }
+
+                return score;
+            }
+
+            function getPriorityScore(card) {
+                switch (card.dataset.taskPriority || 'Normal') {
+                    case 'Urgent':
+                        return 300;
+                    case 'High':
+                        return 200;
+                    case 'Low':
+                        return 20;
+                    default:
+                        return 100;
+                }
+            }
+
+            function getDueTime(card) {
+                const value = card.dataset.taskDueDate;
+                if (!value) return Number.POSITIVE_INFINITY;
+
+                const time = new Date(`${value}T00:00:00`).getTime();
+                return Number.isFinite(time) ? time : Number.POSITIVE_INFINITY;
+            }
+
+            function compareDueTime(a, b) {
+                const aTime = getDueTime(a);
+                const bTime = getDueTime(b);
+
+                if (!Number.isFinite(aTime) && !Number.isFinite(bTime)) return 0;
+                if (!Number.isFinite(aTime)) return 1;
+                if (!Number.isFinite(bTime)) return -1;
+
+                return aTime - bTime;
+            }
+
+            function getOriginalTaskOrder(card) {
+                const order = Number(card.dataset.taskOrder);
+                return Number.isFinite(order) ? order : Number.MAX_SAFE_INTEGER;
+            }
+
+            function normalizeForSearch(value) {
+                return (value || '')
+                    .toString()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .toLowerCase()
+                    .trim();
+            }
+
+            function matchesSearch(card, query) {
+                if (!query) return true;
+
+                const searchText = card.dataset.taskSearch || card.textContent || '';
+                return normalizeForSearch(searchText).includes(query);
+            }
+
+            function matchesActiveFilter(card) {
+                const priority = card.dataset.taskPriority || 'Normal';
+
+                switch (activeKanbanFilter) {
+                    case 'mine':
+                        return Boolean(currentEmployeeId) && card.dataset.taskAssigneeId === currentEmployeeId;
+                    case 'blocked':
+                        return card.dataset.taskStatus === 'Blocked';
+                    case 'important':
+                        return priority === 'Urgent' || priority === 'High';
+                    case 'overdue':
+                        return card.dataset.taskOverdue === 'true';
+                    case 'ai':
+                        return card.dataset.taskAi === 'true';
+                    default:
+                        return true;
+                }
+            }
+
+            function updateFilterButtonState() {
+                filterButtons.forEach(button => {
+                    const isActive = button.dataset.filter === activeKanbanFilter;
+                    button.classList.toggle('active', isActive);
+                    button.classList.toggle('btn-primary', isActive);
+                    button.classList.toggle('btn-outline-secondary', !isActive);
+                });
+            }
+
+            function updateFilterSummary(visibleCount, totalCount) {
+                if (!filterSummary) return;
+
+                const hasQuery = Boolean(searchInput?.value.trim());
+                const hasNamedFilter = activeKanbanFilter !== 'all';
+
+                if (!hasQuery && !hasNamedFilter) {
+                    filterSummary.textContent = '';
+                    return;
+                }
+
+                const filterLabel = filterLabels[activeKanbanFilter] || 'Bộ lọc';
+                if (hasQuery && hasNamedFilter) {
+                    filterSummary.textContent = `${filterLabel}: ${visibleCount}/${totalCount} task khớp tìm kiếm`;
+                    return;
+                }
+
+                filterSummary.textContent = hasNamedFilter
+                    ? `${filterLabel}: ${visibleCount}/${totalCount} task`
+                    : `Tìm thấy ${visibleCount}/${totalCount} task`;
+            }
+
+            function syncColumnFilterState(column, totalVisibleCount) {
+                const cardsInColumn = Array.from(column.querySelectorAll('.task-card'));
+                const visibleCards = cardsInColumn.filter(card => !card.classList.contains('d-none'));
+                const existingEmpty = column.querySelector('.kanban-filter-empty');
+                const hasFilter = isKanbanFilterActive();
+                const badgeValue = hasFilter && cardsInColumn.length > 0
+                    ? `${visibleCards.length}/${cardsInColumn.length}`
+                    : cardsInColumn.length;
+                const shouldHideColumn = isKanbanFocusMode
+                    && hasFilter
+                    && !isDragging
+                    && totalVisibleCount > 0
+                    && visibleCards.length === 0;
+
+                setColumnCountBadge(column, badgeValue);
+                column.closest('.kanban-column')?.classList.toggle('is-focus-hidden', shouldHideColumn);
+
+                if (!hasFilter) {
+                    existingEmpty?.remove();
+                    return;
+                }
+
+                if (cardsInColumn.length === 0 || visibleCards.length > 0) {
+                    existingEmpty?.remove();
+                    return;
+                }
+
+                if (!existingEmpty) {
+                    const emptyState = document.createElement('div');
+                    emptyState.className = 'kanban-filter-empty text-center py-4 rounded-3 text-muted border border-dashed';
+                    emptyState.textContent = 'Không có task phù hợp';
+                    column.appendChild(emptyState);
+                }
+            }
+
+            function updateKanbanFocusLayout(totalVisibleCount = 0) {
+                if (!kanbanBoard) return;
+
+                const canFocus = isKanbanFocusMode && isKanbanFilterActive() && !isDragging && totalVisibleCount > 0;
+                const visibleColumnCount = canFocus
+                    ? Array.from(columns).filter(column => !column.closest('.kanban-column')?.classList.contains('is-focus-hidden')).length
+                    : columns.length;
+
+                kanbanBoard.classList.toggle('kanban-board--focused', canFocus);
+                kanbanBoard.style.setProperty('--kanban-visible-columns', Math.max(1, visibleColumnCount));
+            }
+
+            function revealFocusHiddenColumns() {
+                columns.forEach(column => {
+                    column.closest('.kanban-column')?.classList.remove('is-focus-hidden');
+                });
+                kanbanBoard?.classList.remove('kanban-board--focused');
+                kanbanBoard?.style.setProperty('--kanban-visible-columns', columns.length);
+            }
+
+            function refreshFilterCounts(allCards = Array.from(cards)) {
+                const counts = allCards.reduce((result, card) => {
+                    const priority = card.dataset.taskPriority || 'Normal';
+
+                    result.all += 1;
+                    result.mine += Boolean(currentEmployeeId) && card.dataset.taskAssigneeId === currentEmployeeId ? 1 : 0;
+                    result.blocked += card.dataset.taskStatus === 'Blocked' ? 1 : 0;
+                    result.important += priority === 'Urgent' || priority === 'High' ? 1 : 0;
+                    result.overdue += card.dataset.taskOverdue === 'true' ? 1 : 0;
+                    result.ai += card.dataset.taskAi === 'true' ? 1 : 0;
+
+                    return result;
+                }, {
+                    all: 0,
+                    mine: 0,
+                    blocked: 0,
+                    important: 0,
+                    overdue: 0,
+                    ai: 0
+                });
+
+                filterCountBadges.forEach(badge => {
+                    const key = badge.dataset.filterCount || '';
+                    const count = counts[key] ?? 0;
+                    badge.textContent = count;
+                    badge.classList.toggle('is-zero', key !== 'all' && count === 0);
+                });
+            }
+
+            function setColumnCountBadge(column, value) {
+                const countBadge = column.closest('.kanban-column')?.querySelector('.kanban-column__header .badge');
+                if (countBadge) {
+                    countBadge.textContent = value;
+                }
+            }
+
+            function isKanbanFilterActive() {
+                return activeKanbanFilter !== 'all' || Boolean(searchInput?.value.trim());
+            }
+
+            function isTaskOverdueForStatus(card, status) {
+                const dueDateValue = card.dataset.taskDueDate;
+                if (!dueDateValue || status === 'Done') return false;
+
+                const dueDate = new Date(`${dueDateValue}T00:00:00`);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                return Number.isFinite(dueDate.getTime()) && dueDate < today;
+            }
+
+            function getLatestRenderedCommentId() {
+                return Array.from(document.querySelectorAll('[data-comment-id]'))
+                    .reduce((latest, element) => Math.max(latest, Number(element.dataset.commentId) || 0), 0);
+            }
+
+            function normalizeActivityComment(comment) {
+                if (!comment) return null;
+
+                return {
+                    id: Number(comment.id ?? comment.Id ?? 0),
+                    taskId: Number(comment.taskId ?? comment.TaskId ?? 0),
+                    commenter: comment.commenter ?? comment.Commenter ?? 'Hệ thống',
+                    text: comment.text ?? comment.Text ?? '',
+                    createdAt: comment.createdAt ?? comment.CreatedAt ?? '',
+                    isSystem: Boolean(comment.isSystem ?? comment.IsSystem)
+                };
+            }
+
+            function mergeActivityComment(rawComment) {
+                const comment = normalizeActivityComment(rawComment);
+                if (!comment?.id || !comment.taskId) return false;
+
+                latestActivityCommentId = Math.max(latestActivityCommentId, comment.id);
+
+                if (document.querySelector(`[data-comment-id="${comment.id}"]`)) {
+                    return false;
+                }
+
+                const stream = document.querySelector(`[data-task-comment-stream="${comment.taskId}"]`);
+                if (!stream) return false;
+
+                stream.querySelector(`[data-task-empty-comment="${comment.taskId}"]`)?.remove();
+                stream.appendChild(createActivityCommentElement(comment));
+                stream.scrollTop = stream.scrollHeight;
+
+                return true;
+            }
+
+            function createActivityCommentElement(comment) {
+                const item = document.createElement('div');
+                item.className = `comment task-comment-item ${comment.isSystem ? 'comment--system' : 'comment--user'}`;
+                item.dataset.commentId = comment.id;
+                item.dataset.taskId = comment.taskId;
+
+                const avatar = document.createElement('div');
+                avatar.className = 'task-comment-avatar';
+                const icon = document.createElement('i');
+                icon.className = `bi ${comment.isSystem ? 'bi-arrow-left-right' : 'bi-person-fill'}`;
+                avatar.appendChild(icon);
+
+                const bubble = document.createElement('div');
+                bubble.className = 'task-comment-bubble';
+
+                const meta = document.createElement('div');
+                meta.className = 'comment-meta';
+
+                const name = document.createElement('strong');
+                name.textContent = comment.commenter || 'Hệ thống';
+
+                const time = document.createElement('span');
+                const timeIcon = document.createElement('i');
+                timeIcon.className = 'bi bi-clock me-1';
+                time.appendChild(timeIcon);
+                time.append(comment.createdAt || '');
+
+                const text = document.createElement('div');
+                text.className = 'comment-text';
+                text.textContent = comment.text || '';
+
+                meta.append(name, time);
+                bubble.append(meta, text);
+                item.append(avatar, bubble);
+
+                return item;
+            }
+
+            function updateTaskCommentCount(taskId, count) {
+                const numericCount = Number(count);
+                if (!Number.isFinite(numericCount)) return;
+
+                document.querySelectorAll(`[data-task-id="${taskId}"] [data-comment-count-value], [data-task-id="${taskId}"][data-comment-count-value]`)
+                    .forEach(element => {
+                        element.textContent = numericCount;
+                    });
+            }
+
+            async function submitCommentFormAjax(e) {
+                e.preventDefault();
+
+                const form = e.currentTarget;
+                const input = form.querySelector('[name="commentText"]');
+                const submitButton = form.querySelector('button[type="submit"]');
+
+                if (!input?.value.trim()) return;
+
+                submitButton?.setAttribute('disabled', 'disabled');
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`AddComment failed with HTTP ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    mergeActivityComment(result.comment);
+                    updateTaskCommentCount(form.dataset.taskId, result.commentCount);
+                    form.reset();
+                } catch (error) {
                     console.error(error);
-                    showLoader(false);
                     Swal.fire({
-                        title: 'Lỗi hệ thống!',
-                        text: 'Có lỗi xảy ra trong quá trình gửi yêu cầu cập nhật.',
-                        icon: 'error',
+                        title: 'Không thể gửi trao đổi',
+                        text: 'Vui lòng thử lại sau.',
+                        icon: 'warning',
                         confirmButtonText: 'Đồng ý'
                     });
+                } finally {
+                    submitButton?.removeAttribute('disabled');
+                }
+            }
+
+            function applyRemoteTaskState(taskState) {
+                const taskId = String(taskState.id ?? taskState.Id ?? '');
+                if (!taskId || pendingStatusUpdates.has(taskId)) return;
+
+                const card = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+                const nextStatus = taskState.status ?? taskState.Status;
+                if (!card || !nextStatus) {
+                    updateTaskCommentCount(taskId, taskState.commentCount ?? taskState.CommentCount);
+                    return;
+                }
+
+                const currentColumn = card.closest('.kanban-column__body');
+                const currentStatus = currentColumn?.dataset.status;
+                const targetColumn = document.querySelector(`.kanban-column__body[data-status="${nextStatus}"]`);
+
+                if (targetColumn && currentColumn && currentStatus !== nextStatus) {
+                    insertTaskCard(card, targetColumn);
+                    syncColumnState(currentColumn);
+                    syncColumnState(targetColumn);
+                    syncTaskStatusDisplay(taskId, nextStatus);
+                    card.dataset.taskStatus = nextStatus;
+                    card.dataset.taskOverdue = String(isTaskOverdueForStatus(card, nextStatus));
+                }
+
+                const progress = Number(taskState.progress ?? taskState.Progress);
+                if (Number.isFinite(progress)) {
+                    updateTaskProgressDisplay(card, progress);
+                }
+
+                updateTaskCommentCount(taskId, taskState.commentCount ?? taskState.CommentCount);
+                applyKanbanFilters();
+            }
+
+            async function pollProjectActivity() {
+                if (activityPollInFlight || document.hidden) return;
+
+                activityPollInFlight = true;
+
+                try {
+                    const response = await fetch(`/WorkProjects/GetProjectActivity?projectId=${projectId}&afterCommentId=${latestActivityCommentId}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (!response.ok) return;
+
+                    const activity = await response.json();
+                    (activity.tasks ?? []).forEach(applyRemoteTaskState);
+                    (activity.comments ?? []).forEach(comment => {
+                        mergeActivityComment(comment);
+                        const normalized = normalizeActivityComment(comment);
+                        if (normalized) {
+                            const taskState = (activity.tasks ?? []).find(task => String(task.id ?? task.Id) === String(normalized.taskId));
+                            updateTaskCommentCount(normalized.taskId, taskState?.commentCount ?? taskState?.CommentCount);
+                        }
+                    });
+
+                    const serverLatest = Number(activity.latestCommentId ?? activity.LatestCommentId);
+                    if (Number.isFinite(serverLatest)) {
+                        latestActivityCommentId = Math.max(latestActivityCommentId, serverLatest);
+                    }
+                } catch (error) {
+                    console.error(error);
+                } finally {
+                    activityPollInFlight = false;
+                }
+            }
+
+            function syncTaskStatusDisplay(taskId, status) {
+                const label = statusLabels[status] || status;
+                const modalElement = document.getElementById(`taskModal-${taskId}`);
+
+                if (!modalElement) return;
+
+                modalElement.querySelectorAll('[name="kanbanStatus"]').forEach(input => {
+                    input.value = status;
+                });
+
+                modalElement.querySelectorAll('.task-status-label, .task-status-summary').forEach(element => {
+                    element.textContent = label;
+                });
+            }
+
+            function getDisplayedProgress(card) {
+                const value = card.querySelector('.progress-value')?.textContent?.replace('%', '').replace(',', '.').trim();
+                const progress = Number.parseFloat(value ?? '');
+
+                return Number.isFinite(progress) ? progress : null;
+            }
+
+            function updateTaskProgressDisplay(card, progress) {
+                const safeProgress = Math.max(0, Math.min(100, progress));
+                const formatted = safeProgress.toLocaleString('vi-VN', { maximumFractionDigits: 2 });
+                const progressWrapper = card.querySelector('.task-card__progress');
+                const progressBar = card.querySelector('.progress-bar');
+                const progressValue = card.querySelector('.progress-value');
+                const modalElement = document.getElementById(`taskModal-${card.dataset.taskId}`);
+
+                if (progressWrapper) {
+                    progressWrapper.title = `Tiến độ: ${formatted}%`;
+                }
+
+                if (progressBar) {
+                    progressBar.style.width = `${safeProgress}%`;
+                }
+
+                if (progressValue) {
+                    progressValue.textContent = `${formatted}%`;
+                }
+
+                modalElement?.querySelectorAll('[name="progressPercentage"]').forEach(input => {
+                    input.value = safeProgress;
+                });
+
+                modalElement?.querySelectorAll('.task-modal-quickmeta .quick-chip').forEach(chip => {
+                    if (chip.textContent.includes('%')) {
+                        chip.innerHTML = `<i class="bi bi-graph-up"></i> ${formatted}%`;
+                    }
                 });
             }
 
@@ -999,6 +2522,15 @@
                     }
                 });
             });
+
+            applyKanbanFilters();
+
+            setInterval(pollProjectActivity, 12000);
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    pollProjectActivity();
+                }
+            });
         });
     </script>
 }
@@ -1006,24 +2538,24 @@
 @functions {
     private static string StatusLabel(string? value) => value switch
     {
-        "Backlog" => "Backlog",
+        "Backlog" => "Chờ sắp xếp",
         "Todo" => "Cần làm",
         "InProgress" => "Đang làm",
-        "Review" => "Chờ review",
+        "Review" => "Chờ duyệt",
         "Done" => "Hoàn thành",
-        "Blocked" => "Đang vướng",
+        "Blocked" => "Bị chặn",
         _ => "Cần làm"
     };
 
     private static string StatusShortLabel(string? value) => value switch
     {
-        "Backlog" => "Backlog",
-        "Todo" => "Todo",
-        "InProgress" => "Doing",
-        "Review" => "Review",
-        "Done" => "Done",
-        "Blocked" => "Block",
-        _ => "Todo"
+        "Backlog" => "Chờ xếp",
+        "Todo" => "Cần làm",
+        "InProgress" => "Đang làm",
+        "Review" => "Chờ duyệt",
+        "Done" => "Xong",
+        "Blocked" => "Bị chặn",
+        _ => "Cần làm"
     };
 
     private static string PriorityLabel(string? value) => value switch

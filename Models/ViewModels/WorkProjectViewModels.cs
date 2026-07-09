@@ -9,6 +9,7 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public int DoneTasks { get; set; }
         public int BlockedTasks { get; set; }
         public int OverdueTasks { get; set; }
+        public int RiskScore { get; set; }
     }
 
     public class WorkProjectBoardViewModel

@@ -235,6 +235,176 @@ public sealed class AITaskDecompositionServiceTests
     }
 
     [Fact]
+    public async Task ConfirmDecomposeAsync_IgnoresReviewedTaskGoalLinksOutsideConfirmedSource()
+    {
+        await using var context = CreateContext();
+        var sourceOkr = new OKR
+        {
+            ObjectiveName = "Grow sales revenue",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        var outsiderOkr = new OKR
+        {
+            ObjectiveName = "Private operations objective",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.OKRs.AddRange(sourceOkr, outsiderOkr);
+        await context.SaveChangesAsync();
+
+        var sourceKeyResult = new OKRKeyResult
+        {
+            OKRId = sourceOkr.Id,
+            KeyResultName = "Close 12 sales contracts",
+            TargetValue = 12
+        };
+        var outsiderKeyResult = new OKRKeyResult
+        {
+            OKRId = outsiderOkr.Id,
+            KeyResultName = "Reduce warehouse cost",
+            TargetValue = 5
+        };
+        context.OKRKeyResults.AddRange(sourceKeyResult, outsiderKeyResult);
+        await context.SaveChangesAsync();
+
+        var sourceKpi = new KPI
+        {
+            KPIName = "Sales revenue",
+            OKRId = sourceOkr.Id,
+            OKRKeyResultId = sourceKeyResult.Id,
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        var outsiderKpi = new KPI
+        {
+            KPIName = "Operations cost",
+            OKRId = outsiderOkr.Id,
+            OKRKeyResultId = outsiderKeyResult.Id,
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.KPIs.AddRange(sourceKpi, outsiderKpi);
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context, new FakeGeminiService("[]"));
+
+        var response = await service.ConfirmDecomposeAsync(
+            new ConfirmDecomposeRequest
+            {
+                SourceKPIId = sourceKpi.Id,
+                NewProjectName = "Sales execution plan",
+                Tasks =
+                {
+                    new DecomposedTaskDto
+                    {
+                        Title = "Prepare sales close checklist",
+                        KPIId = outsiderKpi.Id,
+                        OKRKeyResultId = outsiderKeyResult.Id,
+                        IsSelected = true
+                    }
+                }
+            },
+            AdminPrincipal(),
+            CancellationToken.None);
+
+        Assert.True(response.Success);
+        var task = await context.WorkItems.SingleAsync();
+        Assert.Equal(sourceKpi.Id, task.KPIId);
+        Assert.Equal(sourceKeyResult.Id, task.OKRKeyResultId);
+        Assert.NotEqual(outsiderKpi.Id, task.KPIId);
+        Assert.NotEqual(outsiderKeyResult.Id, task.OKRKeyResultId);
+    }
+
+    [Fact]
+    public async Task ConfirmDecomposeAsync_IgnoresReviewedTaskPeopleOutsideAccessibleProjectDepartments()
+    {
+        await using var context = CreateContext();
+        var (userDepartment, userEmployee) = await SeedDepartmentEmployeeAndUserAsync(
+            context,
+            "SALES",
+            "Sales",
+            "E-SALES",
+            "Sales User",
+            "sales.user@example.com");
+        var outsiderDepartment = new Department
+        {
+            DepartmentCode = "OPS",
+            DepartmentName = "Operations",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        var outsiderEmployee = new Employee
+        {
+            EmployeeCode = "E-OPS",
+            FullName = "Operations User",
+            Email = "ops.user@example.com",
+            Phone = "0900000001",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.Departments.Add(outsiderDepartment);
+        context.Employees.Add(outsiderEmployee);
+        await context.SaveChangesAsync();
+        context.EmployeeAssignments.Add(new EmployeeAssignment
+        {
+            EmployeeId = outsiderEmployee.Id,
+            DepartmentId = outsiderDepartment.Id,
+            IsActive = true,
+            EffectiveDate = DateTime.Today
+        });
+
+        var project = new WorkProject
+        {
+            ProjectCode = "PRJ-SALES-SECURE",
+            ProjectName = "Sales secure project",
+            Status = "Active",
+            Priority = "Normal",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.WorkProjects.Add(project);
+        await context.SaveChangesAsync();
+        context.WorkProjectDepartments.Add(new WorkProjectDepartment
+        {
+            WorkProjectId = project.Id,
+            DepartmentId = userDepartment.Id,
+            CollaborationRole = "Owner",
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context, new FakeGeminiService("[]"));
+
+        var response = await service.ConfirmDecomposeAsync(
+            new ConfirmDecomposeRequest
+            {
+                WorkProjectId = project.Id,
+                Tasks =
+                {
+                    new DecomposedTaskDto
+                    {
+                        Title = "Prepare approved sales follow-up",
+                        AssigneeId = outsiderEmployee.Id,
+                        DepartmentId = outsiderDepartment.Id,
+                        IsSelected = true
+                    }
+                }
+            },
+            UserPrincipal(userEmployee.SystemUserId!.Value, "Employee"),
+            CancellationToken.None);
+
+        Assert.True(response.Success);
+        var task = await context.WorkItems.SingleAsync();
+        Assert.Null(task.AssigneeId);
+        Assert.Null(task.DepartmentId);
+        Assert.False(await context.WorkProjectDepartments.AnyAsync(pd =>
+            pd.WorkProjectId == project.Id &&
+            pd.DepartmentId == outsiderDepartment.Id &&
+            pd.IsActive == true));
+    }
+
+    [Fact]
     public async Task DecomposeProjectAsync_UsesStandaloneProjectContextWhenProjectHasNoOkr()
     {
         await using var context = CreateContext();
@@ -686,6 +856,322 @@ public sealed class AITaskDecompositionServiceTests
         Assert.Equal("High", task.Priority);
     }
 
+    [Fact]
+    public async Task ConfirmDecomposeAsync_RejectsExistingProjectOutsideUserScope()
+    {
+        await using var context = CreateContext();
+        var (userDepartment, userEmployee) = await SeedDepartmentEmployeeAndUserAsync(
+            context,
+            "SALES",
+            "Sales",
+            "E-SALES",
+            "Sales User",
+            "sales.user@example.com");
+        var outsiderDepartment = new Department
+        {
+            DepartmentCode = "OPS",
+            DepartmentName = "Operations",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.Departments.Add(outsiderDepartment);
+        await context.SaveChangesAsync();
+
+        var project = new WorkProject
+        {
+            ProjectCode = "PRJ-OUTSIDE-001",
+            ProjectName = "Outside project",
+            Status = "Active",
+            Priority = "Normal",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.WorkProjects.Add(project);
+        await context.SaveChangesAsync();
+        context.WorkProjectDepartments.Add(new WorkProjectDepartment
+        {
+            WorkProjectId = project.Id,
+            DepartmentId = outsiderDepartment.Id,
+            CollaborationRole = "Owner",
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context, new FakeGeminiService("[]"));
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.ConfirmDecomposeAsync(
+            new ConfirmDecomposeRequest
+            {
+                WorkProjectId = project.Id,
+                Tasks =
+                {
+                    new DecomposedTaskDto
+                    {
+                        Title = "Should not be created",
+                        DepartmentId = userDepartment.Id,
+                        AssigneeId = userEmployee.Id,
+                        IsSelected = true
+                    }
+                }
+            },
+            UserPrincipal(userEmployee.SystemUserId!.Value, "Employee"),
+            CancellationToken.None));
+
+        Assert.False(await context.WorkItems.AnyAsync());
+    }
+
+    [Fact]
+    public async Task DecomposeProjectAsync_RejectsDepartmentlessProjectWhenUserDoesNotOwnIt()
+    {
+        await using var context = CreateContext();
+        var (_, userEmployee) = await SeedDepartmentEmployeeAndUserAsync(
+            context,
+            "SALES",
+            "Sales",
+            "E-SALES",
+            "Sales User",
+            "sales.user@example.com");
+        var project = new WorkProject
+        {
+            ProjectCode = "PRJ-NO-DEPT-001",
+            ProjectName = "Departmentless private project",
+            Status = "Active",
+            Priority = "Normal",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.WorkProjects.Add(project);
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context, new FakeGeminiService("[]"));
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.DecomposeProjectAsync(
+            new DecomposeProjectRequest { WorkProjectId = project.Id },
+            UserPrincipal(userEmployee.SystemUserId!.Value, "Employee"),
+            CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task DecomposeKPIAsync_ReturnsOnlyProjectsAccessibleToUser()
+    {
+        await using var context = CreateContext();
+        var (userDepartment, userEmployee) = await SeedDepartmentEmployeeAndUserAsync(
+            context,
+            "SALES",
+            "Sales",
+            "E-SALES",
+            "Sales User",
+            "sales.user@example.com");
+        var outsiderDepartment = new Department
+        {
+            DepartmentCode = "OPS",
+            DepartmentName = "Operations",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.Departments.Add(outsiderDepartment);
+        await context.SaveChangesAsync();
+
+        var kpi = new KPI
+        {
+            KPIName = "Sales qualified pipeline",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.KPIs.Add(kpi);
+        await context.SaveChangesAsync();
+        context.KPI_Employee_Assignments.Add(new KPI_Employee_Assignment
+        {
+            KPIId = kpi.Id,
+            EmployeeId = userEmployee.Id,
+            Status = "Active",
+            Weight = 1
+        });
+        context.KPI_Department_Assignments.Add(new KPI_Department_Assignment
+        {
+            KPIId = kpi.Id,
+            DepartmentId = userDepartment.Id
+        });
+
+        var ownedProject = new WorkProject
+        {
+            ProjectCode = "PRJ-OWNED-001",
+            ProjectName = "Owned sales project",
+            OwnerId = userEmployee.Id,
+            Status = "Active",
+            Priority = "Normal",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        var departmentProject = new WorkProject
+        {
+            ProjectCode = "PRJ-DEPT-001",
+            ProjectName = "Sales department project",
+            Status = "Active",
+            Priority = "Normal",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        var outsiderProject = new WorkProject
+        {
+            ProjectCode = "PRJ-OUTSIDE-002",
+            ProjectName = "Operations project",
+            Status = "Active",
+            Priority = "Normal",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        var departmentlessProject = new WorkProject
+        {
+            ProjectCode = "PRJ-NO-DEPT-002",
+            ProjectName = "Departmentless project",
+            Status = "Active",
+            Priority = "Normal",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.WorkProjects.AddRange(ownedProject, departmentProject, outsiderProject, departmentlessProject);
+        await context.SaveChangesAsync();
+        context.WorkProjectDepartments.Add(new WorkProjectDepartment
+        {
+            WorkProjectId = departmentProject.Id,
+            DepartmentId = userDepartment.Id,
+            CollaborationRole = "Contributor",
+            IsActive = true
+        });
+        context.WorkProjectDepartments.Add(new WorkProjectDepartment
+        {
+            WorkProjectId = outsiderProject.Id,
+            DepartmentId = outsiderDepartment.Id,
+            CollaborationRole = "Contributor",
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+
+        var gemini = new FakeGeminiService($$"""
+            [
+              { "title": "Qualify inbound lead list", "priority": "High", "assigneeId": {{userEmployee.Id}}, "departmentId": {{userDepartment.Id}} }
+            ]
+            """);
+        var service = CreateService(context, gemini);
+
+        var response = await service.DecomposeKPIAsync(
+            new DecomposeKPIRequest { KPIId = kpi.Id },
+            UserPrincipal(userEmployee.SystemUserId!.Value, "Employee"),
+            CancellationToken.None);
+
+        Assert.True(response.Success);
+        var projectIds = response.AvailableProjects.Select(project => project.Id).ToList();
+        Assert.Contains(ownedProject.Id, projectIds);
+        Assert.Contains(departmentProject.Id, projectIds);
+        Assert.DoesNotContain(outsiderProject.Id, projectIds);
+        Assert.DoesNotContain(departmentlessProject.Id, projectIds);
+    }
+
+    [Fact]
+    public async Task ConfirmDecomposeAsync_RejectsNewProjectWithSourceOkrOutsideUserScope()
+    {
+        await using var context = CreateContext();
+        var (_, userEmployee) = await SeedDepartmentEmployeeAndUserAsync(
+            context,
+            "SALES",
+            "Sales",
+            "E-SALES",
+            "Sales User",
+            "sales.user@example.com");
+        var outsiderDepartment = new Department
+        {
+            DepartmentCode = "OPS",
+            DepartmentName = "Operations",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.Departments.Add(outsiderDepartment);
+        await context.SaveChangesAsync();
+
+        var okr = new OKR
+        {
+            ObjectiveName = "Operations objective",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.OKRs.Add(okr);
+        await context.SaveChangesAsync();
+        context.OKR_Department_Allocations.Add(new OKR_Department_Allocation
+        {
+            OKRId = okr.Id,
+            DepartmentId = outsiderDepartment.Id
+        });
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context, new FakeGeminiService("[]"));
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.ConfirmDecomposeAsync(
+            new ConfirmDecomposeRequest
+            {
+                SourceOKRId = okr.Id,
+                NewProjectName = "Unauthorized OKR plan",
+                Tasks = { new DecomposedTaskDto { Title = "Should not be created", IsSelected = true } }
+            },
+            UserPrincipal(userEmployee.SystemUserId!.Value, "Employee"),
+            CancellationToken.None));
+
+        Assert.False(await context.WorkProjects.AnyAsync());
+        Assert.False(await context.WorkItems.AnyAsync());
+    }
+
+    [Fact]
+    public async Task ConfirmDecomposeAsync_RejectsNewProjectWithSourceKpiOutsideUserScope()
+    {
+        await using var context = CreateContext();
+        var (_, userEmployee) = await SeedDepartmentEmployeeAndUserAsync(
+            context,
+            "SALES",
+            "Sales",
+            "E-SALES",
+            "Sales User",
+            "sales.user@example.com");
+        var outsiderDepartment = new Department
+        {
+            DepartmentCode = "OPS",
+            DepartmentName = "Operations",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.Departments.Add(outsiderDepartment);
+        await context.SaveChangesAsync();
+
+        var kpi = new KPI
+        {
+            KPIName = "Operations KPI",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.KPIs.Add(kpi);
+        await context.SaveChangesAsync();
+        context.KPI_Department_Assignments.Add(new KPI_Department_Assignment
+        {
+            KPIId = kpi.Id,
+            DepartmentId = outsiderDepartment.Id
+        });
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context, new FakeGeminiService("[]"));
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.ConfirmDecomposeAsync(
+            new ConfirmDecomposeRequest
+            {
+                SourceKPIId = kpi.Id,
+                NewProjectName = "Unauthorized KPI plan",
+                Tasks = { new DecomposedTaskDto { Title = "Should not be created", IsSelected = true } }
+            },
+            UserPrincipal(userEmployee.SystemUserId!.Value, "Employee"),
+            CancellationToken.None));
+
+        Assert.False(await context.WorkProjects.AnyAsync());
+        Assert.False(await context.WorkItems.AnyAsync());
+    }
+
     private static MiniERPDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<MiniERPDbContext>()
@@ -730,6 +1216,59 @@ public sealed class AITaskDecompositionServiceTests
         return (department, employee);
     }
 
+    private static async Task<(Department Department, Employee Employee)> SeedDepartmentEmployeeAndUserAsync(
+        MiniERPDbContext context,
+        string departmentCode,
+        string departmentName,
+        string employeeCode,
+        string employeeName,
+        string email)
+    {
+        var systemUser = new SystemUser
+        {
+            Username = email,
+            Email = email,
+            PasswordHash = "test",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.SystemUsers.Add(systemUser);
+        await context.SaveChangesAsync();
+
+        var department = new Department
+        {
+            DepartmentCode = departmentCode,
+            DepartmentName = departmentName,
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        var employee = new Employee
+        {
+            EmployeeCode = employeeCode,
+            FullName = employeeName,
+            Email = email,
+            Phone = "0900000000",
+            SystemUserId = systemUser.Id,
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+
+        context.Departments.Add(department);
+        context.Employees.Add(employee);
+        await context.SaveChangesAsync();
+
+        context.EmployeeAssignments.Add(new EmployeeAssignment
+        {
+            EmployeeId = employee.Id,
+            DepartmentId = department.Id,
+            IsActive = true,
+            EffectiveDate = DateTime.Today
+        });
+        await context.SaveChangesAsync();
+
+        return (department, employee);
+    }
+
     private static AITaskDecompositionService CreateService(MiniERPDbContext context, IGeminiService gemini)
     {
         return new AITaskDecompositionService(
@@ -744,6 +1283,17 @@ public sealed class AITaskDecompositionServiceTests
         {
             new Claim(ClaimTypes.NameIdentifier, "1"),
             new Claim(ClaimTypes.Role, "Admin")
+        }, "Test");
+
+        return new ClaimsPrincipal(identity);
+    }
+
+    private static ClaimsPrincipal UserPrincipal(int systemUserId, string role)
+    {
+        var identity = new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, systemUserId.ToString()),
+            new Claim(ClaimTypes.Role, role)
         }, "Test");
 
         return new ClaimsPrincipal(identity);

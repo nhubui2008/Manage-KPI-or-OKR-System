@@ -34,23 +34,42 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private const string ReviewStatusApproved = "Approved";
         private const string AutoWorkItemSyncMarker = "AUTO_WORKITEM_SYNC";
 
+        private sealed class ProjectTaskStats
+        {
+            public int WorkProjectId { get; set; }
+            public int TotalTasks { get; set; }
+            public int DoneTasks { get; set; }
+            public int BlockedTasks { get; set; }
+            public int OverdueTasks { get; set; }
+        }
+
         public WorkProjectsController(MiniERPDbContext context)
         {
             _context = context;
         }
 
         [HasPermission("WORKPROJECTS_VIEW")]
-        public async Task<IActionResult> Index(string? searchString, string? status, string? priority)
+        public async Task<IActionResult> Index(string? searchString, string? status, string? priority, string? quickFilter = null, string? sortBy = null)
         {
+            quickFilter = NormalizeProjectQuickFilter(quickFilter);
+            sortBy = NormalizeProjectSort(sortBy);
             ViewData["CurrentFilter"] = searchString;
             ViewData["StatusFilter"] = status;
             ViewData["PriorityFilter"] = priority;
+            ViewData["QuickFilter"] = quickFilter;
+            ViewData["SortBy"] = sortBy;
             ViewBag.StatusOptions = new[] { "Planning", "Active", "OnHold", "Completed", "Archived" };
             ViewBag.PriorityOptions = Priorities;
 
-            var accessibleProjectIds = await GetAccessibleProjectIdsAsync();
+            var today = DateTime.Today;
+            var showArchived = string.Equals(status, "Archived", StringComparison.OrdinalIgnoreCase);
+            var accessibleProjectIds = await GetAccessibleProjectIdsAsync(showArchived);
             var query = _context.WorkProjects
-                .Where(p => p.IsActive == true && accessibleProjectIds.Contains(p.Id));
+                .Where(p => accessibleProjectIds.Contains(p.Id));
+
+            query = showArchived
+                ? query.Where(p => p.Status == "Archived")
+                : query.Where(p => p.IsActive == true);
 
             if (!string.IsNullOrWhiteSpace(searchString))
             {
@@ -58,7 +77,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 query = query.Where(p =>
                     (p.ProjectName != null && p.ProjectName.Contains(keyword)) ||
                     (p.ProjectCode != null && p.ProjectCode.Contains(keyword)) ||
-                    (p.Description != null && p.Description.Contains(keyword)));
+                    (p.Description != null && p.Description.Contains(keyword)) ||
+                    (p.OwnerId.HasValue && _context.Employees.Any(e =>
+                        e.Id == p.OwnerId && e.FullName != null && e.FullName.Contains(keyword))) ||
+                    _context.WorkProjectDepartments.Any(pd =>
+                        pd.WorkProjectId == p.Id &&
+                        pd.IsActive == true &&
+                        _context.Departments.Any(d =>
+                            d.Id == pd.DepartmentId &&
+                            d.DepartmentName != null &&
+                            d.DepartmentName.Contains(keyword))));
             }
 
             if (!string.IsNullOrWhiteSpace(status))
@@ -71,15 +99,67 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 query = query.Where(p => p.Priority == priority);
             }
 
-            var projects = await query
-                .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt)
-                .ThenByDescending(p => p.Id)
-                .ToListAsync();
+            if (!string.IsNullOrWhiteSpace(quickFilter))
+            {
+                switch (quickFilter)
+                {
+                    case "mine":
+                        var currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
+                        query = currentEmployee == null
+                            ? query.Where(_ => false)
+                            : query.Where(p =>
+                                p.OwnerId == currentEmployee.Id ||
+                                p.CreatedById == currentEmployee.Id ||
+                                _context.WorkItems.Any(t =>
+                                    t.WorkProjectId == p.Id &&
+                                    t.IsActive == true &&
+                                    (t.AssigneeId == currentEmployee.Id || t.ReporterId == currentEmployee.Id)));
+                        break;
+                    case "overdue":
+                        query = query.Where(p =>
+                            (p.Status != "Completed" && p.Status != "Archived" && p.DueDate.HasValue && p.DueDate.Value.Date < today) ||
+                            _context.WorkItems.Any(t =>
+                                t.WorkProjectId == p.Id &&
+                                t.IsActive == true &&
+                                t.DueDate.HasValue &&
+                                t.DueDate.Value.Date < today &&
+                                t.KanbanStatus != "Done"));
+                        break;
+                    case "blocked":
+                        query = query.Where(p => _context.WorkItems.Any(t =>
+                            t.WorkProjectId == p.Id &&
+                            t.IsActive == true &&
+                            t.KanbanStatus == "Blocked"));
+                        break;
+                    case "urgent":
+                        query = query.Where(p => p.Priority == "Urgent");
+                        break;
+                    case "unassigned-department":
+                        query = query.Where(p => !_context.WorkProjectDepartments.Any(pd =>
+                            pd.WorkProjectId == p.Id &&
+                            pd.IsActive == true));
+                        break;
+                }
+            }
+
+            var projects = await query.ToListAsync();
 
             var projectIds = projects.Select(p => p.Id).ToList();
-            var tasks = await _context.WorkItems
-                .Where(t => projectIds.Contains(t.WorkProjectId) && t.IsActive == true)
-                .ToListAsync();
+            var taskStats = projectIds.Any()
+                ? await _context.WorkItems
+                    .Where(t => projectIds.Contains(t.WorkProjectId) && t.IsActive == true)
+                    .GroupBy(t => t.WorkProjectId)
+                    .Select(g => new ProjectTaskStats
+                    {
+                        WorkProjectId = g.Key,
+                        TotalTasks = g.Count(),
+                        DoneTasks = g.Count(t => t.KanbanStatus == "Done"),
+                        BlockedTasks = g.Count(t => t.KanbanStatus == "Blocked"),
+                        OverdueTasks = g.Count(t => t.DueDate.HasValue && t.DueDate.Value.Date < today && t.KanbanStatus != "Done")
+                    })
+                    .ToListAsync()
+                : new List<ProjectTaskStats>();
+            var taskStatsByProjectId = taskStats.ToDictionary(t => t.WorkProjectId);
 
             var projectDepartments = await _context.WorkProjectDepartments
                 .Where(pd => projectIds.Contains(pd.WorkProjectId) && pd.IsActive == true)
@@ -95,10 +175,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Where(e => ownerIds.Contains(e.Id))
                 .ToDictionaryAsync(e => e.Id, e => e.FullName ?? $"Nhân viên #{e.Id}");
 
-            var today = DateTime.Today;
             var model = projects.Select(project =>
             {
-                var projectTasks = tasks.Where(t => t.WorkProjectId == project.Id).ToList();
+                var stats = taskStatsByProjectId.TryGetValue(project.Id, out var foundStats)
+                    ? foundStats
+                    : new ProjectTaskStats { WorkProjectId = project.Id };
                 var names = projectDepartments
                     .Where(pd => pd.WorkProjectId == project.Id)
                     .Select(pd => departments.TryGetValue(pd.DepartmentId, out var name) ? name : $"PB #{pd.DepartmentId}")
@@ -110,14 +191,141 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     Project = project,
                     OwnerName = project.OwnerId.HasValue && owners.TryGetValue(project.OwnerId.Value, out var ownerName) ? ownerName : "Chưa gán",
                     DepartmentNames = names.Any() ? string.Join(", ", names) : "Chưa gán phòng ban",
-                    TotalTasks = projectTasks.Count,
-                    DoneTasks = projectTasks.Count(t => t.KanbanStatus == "Done"),
-                    BlockedTasks = projectTasks.Count(t => t.KanbanStatus == "Blocked"),
-                    OverdueTasks = projectTasks.Count(t => t.DueDate.HasValue && t.DueDate.Value.Date < today && t.KanbanStatus != "Done")
+                    TotalTasks = stats.TotalTasks,
+                    DoneTasks = stats.DoneTasks,
+                    BlockedTasks = stats.BlockedTasks,
+                    OverdueTasks = stats.OverdueTasks,
+                    RiskScore = CalculateProjectRiskScore(project, stats, today)
                 };
             }).ToList();
 
+            model = SortProjectIndexItems(model, sortBy);
+
             return View(model);
+        }
+
+        private static string NormalizeProjectQuickFilter(string? quickFilter)
+        {
+            return quickFilter switch
+            {
+                "mine" => "mine",
+                "overdue" => "overdue",
+                "blocked" => "blocked",
+                "urgent" => "urgent",
+                "unassigned-department" => "unassigned-department",
+                _ => ""
+            };
+        }
+
+        private static string NormalizeProjectSort(string? sortBy)
+        {
+            return sortBy switch
+            {
+                "updated" => "updated",
+                "deadline" => "deadline",
+                "low-progress" => "low-progress",
+                _ => "risk"
+            };
+        }
+
+        private static List<WorkProjectIndexItemViewModel> SortProjectIndexItems(
+            IEnumerable<WorkProjectIndexItemViewModel> items,
+            string sortBy)
+        {
+            return sortBy switch
+            {
+                "updated" => items
+                    .OrderByDescending(item => item.Project.UpdatedAt ?? item.Project.CreatedAt ?? DateTime.MinValue)
+                    .ThenByDescending(item => item.Project.Id)
+                    .ToList(),
+                "deadline" => items
+                    .OrderBy(item => item.Project.DueDate.HasValue ? 0 : 1)
+                    .ThenBy(item => item.Project.DueDate ?? DateTime.MaxValue)
+                    .ThenByDescending(item => item.RiskScore)
+                    .ThenByDescending(item => item.Project.UpdatedAt ?? item.Project.CreatedAt ?? DateTime.MinValue)
+                    .ToList(),
+                "low-progress" => items
+                    .OrderBy(item => item.Project.ProgressPercentage ?? 0)
+                    .ThenByDescending(item => item.RiskScore)
+                    .ThenBy(item => item.Project.DueDate ?? DateTime.MaxValue)
+                    .ThenByDescending(item => item.Project.UpdatedAt ?? item.Project.CreatedAt ?? DateTime.MinValue)
+                    .ToList(),
+                _ => items
+                    .OrderByDescending(item => item.RiskScore)
+                    .ThenBy(item => item.Project.DueDate ?? DateTime.MaxValue)
+                    .ThenByDescending(item => item.Project.UpdatedAt ?? item.Project.CreatedAt ?? DateTime.MinValue)
+                    .ThenByDescending(item => item.Project.Id)
+                    .ToList()
+            };
+        }
+
+        private static int CalculateProjectRiskScore(WorkProject project, ProjectTaskStats stats, DateTime today)
+        {
+            var score = stats.BlockedTasks * 1000 + stats.OverdueTasks * 800;
+
+            if (IsProjectDateOverdue(project.DueDate, project.Status, today))
+            {
+                score += 600;
+            }
+
+            if (string.Equals(project.Priority, "Urgent", StringComparison.OrdinalIgnoreCase))
+            {
+                score += 400;
+            }
+            else if (string.Equals(project.Priority, "High", StringComparison.OrdinalIgnoreCase))
+            {
+                score += 200;
+            }
+
+            if (IsProjectDueSoon(project.DueDate, project.Status, today))
+            {
+                score += 100;
+            }
+
+            var progress = project.ProgressPercentage ?? 0;
+            if (!IsClosedProjectStatus(project.Status) && progress < 50)
+            {
+                score += (int)(50 - progress);
+            }
+
+            return score;
+        }
+
+        private static bool IsProjectDateOverdue(DateTime? dueDate, string? status, DateTime today)
+        {
+            return dueDate.HasValue && dueDate.Value.Date < today && !IsClosedProjectStatus(status);
+        }
+
+        private static bool IsProjectDueSoon(DateTime? dueDate, string? status, DateTime today)
+        {
+            return dueDate.HasValue
+                && dueDate.Value.Date >= today
+                && dueDate.Value.Date <= today.AddDays(7)
+                && !IsClosedProjectStatus(status);
+        }
+
+        private static bool IsClosedProjectStatus(string? status)
+        {
+            return string.Equals(status, "Completed", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(status, "Archived", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void ValidateProjectDates(WorkProject project)
+        {
+            if (project.StartDate.HasValue &&
+                project.DueDate.HasValue &&
+                project.DueDate.Value.Date < project.StartDate.Value.Date)
+            {
+                ModelState.AddModelError(nameof(project.DueDate), "Deadline không được trước ngày bắt đầu.");
+            }
+        }
+
+        private Task<bool> HasOpenProjectTasksAsync(int projectId)
+        {
+            return _context.WorkItems.AnyAsync(t =>
+                t.WorkProjectId == projectId &&
+                t.IsActive == true &&
+                t.KanbanStatus != "Done");
         }
 
         [HasPermission("WORKPROJECTS_VIEW")]
@@ -198,6 +406,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 : null;
 
             var canManage = await CanManageProjectAsync(project);
+            var currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
             var model = new WorkProjectBoardViewModel
             {
                 Project = project,
@@ -218,6 +427,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             };
 
             ViewBag.SelectedDepartmentIds = departmentIds;
+            ViewBag.CurrentEmployeeId = currentEmployee?.Id;
             await PopulateFormListsAsync(project.OwnerId, departmentIds, sourceOkrId, project.SourceKPIId);
             return View(model);
         }
@@ -241,6 +451,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Create(WorkProject project, int[] departmentIds)
         {
             IgnoreNavigationValidation();
+            ValidateProjectDates(project);
 
             if (ModelState.IsValid)
             {
@@ -318,6 +529,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return Forbid();
             }
 
+            ValidateProjectDates(input);
+            if (NormalizeProjectStatus(input.Status) == "Completed" && await HasOpenProjectTasksAsync(id))
+            {
+                ModelState.AddModelError(nameof(input.Status), "Không thể hoàn thành dự án khi vẫn còn công việc chưa hoàn thành.");
+            }
+
             if (ModelState.IsValid)
             {
                 await NormalizeProjectGoalLinksAsync(input);
@@ -371,7 +588,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return Forbid();
             }
 
-            project.Status = NormalizeProjectStatus(status);
+            var normalizedStatus = NormalizeProjectStatus(status);
+            if (normalizedStatus == "Completed" && await HasOpenProjectTasksAsync(id))
+            {
+                TempData["ToastErrorMessage"] = "Không thể hoàn thành dự án vì vẫn còn công việc chưa hoàn thành.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            project.Status = normalizedStatus;
             project.UpdatedAt = DateTime.Now;
             if (project.Status == "Archived")
             {
@@ -503,6 +727,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("WORKITEMS_EDIT", "WORKPROJECTS_EDIT")]
         public async Task<IActionResult> UpdateTaskStatus(int id, string kanbanStatus)
         {
+            var isAjaxRequest = string.Equals(
+                Request.Headers["X-Requested-With"].ToString(),
+                "XMLHttpRequest",
+                StringComparison.OrdinalIgnoreCase);
             var task = await _context.WorkItems.FirstOrDefaultAsync(t => t.Id == id && t.IsActive == true);
             if (task == null)
             {
@@ -515,16 +743,40 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var oldStatus = task.KanbanStatus;
-            task.KanbanStatus = NormalizeKanbanStatus(kanbanStatus);
+            var normalizedStatus = NormalizeKanbanStatus(kanbanStatus);
+            if (oldStatus == normalizedStatus)
+            {
+                if (isAjaxRequest)
+                {
+                    return Ok(new { status = task.KanbanStatus, progress = task.ProgressPercentage ?? 0 });
+                }
+
+                return RedirectToAction(nameof(Details), new { id = task.WorkProjectId });
+            }
+
+            task.KanbanStatus = normalizedStatus;
             task.ProgressPercentage = NormalizeProgress(task.ProgressPercentage, task.KanbanStatus);
             task.CompletedAt = task.KanbanStatus == "Done" ? DateTime.Now : null;
             task.UpdatedAt = DateTime.Now;
-            await AddSystemCommentAsync(task.Id, $"Chuyển trạng thái từ {GetStatusLabel(oldStatus)} sang {GetStatusLabel(task.KanbanStatus)}.");
+            var statusComment = await AddSystemCommentAsync(task.Id, $"Chuyển trạng thái từ {GetStatusLabel(oldStatus)} sang {GetStatusLabel(task.KanbanStatus)}.");
             await RecalculateProjectProgressAsync(task.WorkProjectId);
             AddAuditLog("STATUS", "WorkItems", oldStatus, task.KanbanStatus);
             await _context.SaveChangesAsync();
             await SyncTaskGoalProgressAsync(task);
             await _context.SaveChangesAsync();
+
+            if (isAjaxRequest)
+            {
+                var commenterNames = await GetCommenterNamesAsync(new[] { statusComment });
+                var commentCount = await _context.WorkItemComments.CountAsync(c => c.WorkItemId == task.Id);
+                return Ok(new
+                {
+                    status = task.KanbanStatus,
+                    progress = task.ProgressPercentage ?? 0,
+                    comment = ToActivityCommentDto(statusComment, commenterNames),
+                    commentCount
+                });
+            }
 
             TempData["ToastSuccessMessage"] = "Đã chuyển trạng thái công việc.";
             return RedirectToAction(nameof(Details), new { id = task.WorkProjectId });
@@ -535,6 +787,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("WORKITEMS_COMMENT", "WORKPROJECTS_VIEW")]
         public async Task<IActionResult> AddComment(int taskId, string commentText)
         {
+            var isAjaxRequest = string.Equals(
+                Request.Headers["X-Requested-With"].ToString(),
+                "XMLHttpRequest",
+                StringComparison.OrdinalIgnoreCase);
             var task = await _context.WorkItems.FirstOrDefaultAsync(t => t.Id == taskId && t.IsActive == true);
             if (task == null)
             {
@@ -553,14 +809,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
-            _context.WorkItemComments.Add(new WorkItemComment
+            var comment = new WorkItemComment
             {
                 WorkItemId = taskId,
                 CommenterId = currentEmployee?.Id,
                 CommentText = commentText.Trim(),
                 CreatedAt = DateTime.Now,
                 IsSystem = false
-            });
+            };
+            _context.WorkItemComments.Add(comment);
 
             task.UpdatedAt = DateTime.Now;
             var project = await _context.WorkProjects.FindAsync(task.WorkProjectId);
@@ -571,16 +828,70 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             AddAuditLog("COMMENT", "WorkItems", null, $"Bình luận task #{taskId}");
             await _context.SaveChangesAsync();
+
+            if (isAjaxRequest)
+            {
+                var commenterNames = await GetCommenterNamesAsync(new[] { comment });
+                var commentCount = await _context.WorkItemComments.CountAsync(c => c.WorkItemId == taskId);
+                return Ok(new
+                {
+                    comment = ToActivityCommentDto(comment, commenterNames),
+                    commentCount
+                });
+            }
+
             TempData["ToastSuccessMessage"] = "Đã thêm trao đổi vào công việc.";
             return RedirectToAction(nameof(Details), new { id = task.WorkProjectId });
         }
 
-        private async Task<List<int>> GetAccessibleProjectIdsAsync()
+        [HttpGet]
+        [HasPermission("WORKPROJECTS_VIEW")]
+        public async Task<IActionResult> GetProjectActivity(int projectId, int afterCommentId = 0)
+        {
+            var project = await _context.WorkProjects.FirstOrDefaultAsync(p => p.Id == projectId && p.IsActive == true);
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            if (!await CanAccessProjectAsync(projectId))
+            {
+                return Forbid();
+            }
+
+            var tasks = await _context.WorkItems
+                .Where(t => t.WorkProjectId == projectId && t.IsActive == true)
+                .Select(t => new
+                {
+                    id = t.Id,
+                    status = t.KanbanStatus,
+                    progress = t.ProgressPercentage ?? 0,
+                    commentCount = _context.WorkItemComments.Count(c => c.WorkItemId == t.Id),
+                    updatedAt = t.UpdatedAt
+                })
+                .ToListAsync();
+
+            var taskIds = tasks.Select(t => t.id).ToList();
+            var comments = await _context.WorkItemComments
+                .Where(c => taskIds.Contains(c.WorkItemId) && c.Id > afterCommentId)
+                .OrderBy(c => c.Id)
+                .ToListAsync();
+            var commenterNames = await GetCommenterNamesAsync(comments);
+
+            return Ok(new
+            {
+                comments = comments.Select(c => ToActivityCommentDto(c, commenterNames)),
+                latestCommentId = comments.Any() ? comments.Max(c => c.Id) : afterCommentId,
+                tasks
+            });
+        }
+
+        private async Task<List<int>> GetAccessibleProjectIdsAsync(bool includeArchived = false)
         {
             if (AccessScopeHelper.IsAdmin(User) || AccessScopeHelper.IsDirector(User) || User.IsInRole("HR"))
             {
                 return await _context.WorkProjects
-                    .Where(p => p.IsActive == true)
+                    .Where(p => p.IsActive == true || includeArchived)
                     .Select(p => p.Id)
                     .ToListAsync();
             }
@@ -599,7 +910,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var ownedProjectIds = await _context.WorkProjects
-                .Where(p => p.IsActive == true && (p.OwnerId == employee.Id || p.CreatedById == employee.Id))
+                .Where(p => (p.IsActive == true || includeArchived) && (p.OwnerId == employee.Id || p.CreatedById == employee.Id))
                 .Select(p => p.Id)
                 .ToListAsync();
 
@@ -1182,17 +1493,52 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
         }
 
-        private async Task AddSystemCommentAsync(int taskId, string text)
+        private async Task<WorkItemComment> AddSystemCommentAsync(int taskId, string text)
         {
             var currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
-            _context.WorkItemComments.Add(new WorkItemComment
+            var comment = new WorkItemComment
             {
                 WorkItemId = taskId,
                 CommenterId = currentEmployee?.Id,
                 CommentText = text,
                 CreatedAt = DateTime.Now,
                 IsSystem = true
-            });
+            };
+            _context.WorkItemComments.Add(comment);
+
+            return comment;
+        }
+
+        private async Task<Dictionary<int, string>> GetCommenterNamesAsync(IEnumerable<WorkItemComment> comments)
+        {
+            var commenterIds = comments
+                .Where(c => c.CommenterId.HasValue)
+                .Select(c => c.CommenterId!.Value)
+                .Distinct()
+                .ToList();
+
+            return commenterIds.Any()
+                ? await _context.Employees
+                    .Where(e => commenterIds.Contains(e.Id))
+                    .ToDictionaryAsync(e => e.Id, e => e.FullName ?? $"Nhân viên #{e.Id}")
+                : new Dictionary<int, string>();
+        }
+
+        private static object ToActivityCommentDto(WorkItemComment comment, IReadOnlyDictionary<int, string> commenterNames)
+        {
+            var commenter = comment.CommenterId.HasValue && commenterNames.TryGetValue(comment.CommenterId.Value, out var name)
+                ? name
+                : "Hệ thống";
+
+            return new
+            {
+                id = comment.Id,
+                taskId = comment.WorkItemId,
+                commenter,
+                text = comment.CommentText ?? string.Empty,
+                createdAt = comment.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? string.Empty,
+                isSystem = comment.IsSystem == true
+            };
         }
 
         private async Task<string> GenerateProjectCodeAsync()
@@ -1343,12 +1689,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             return status switch
             {
-                "Backlog" => "Backlog",
+                "Backlog" => "Chờ sắp xếp",
                 "Todo" => "Cần làm",
                 "InProgress" => "Đang làm",
-                "Review" => "Chờ review",
+                "Review" => "Chờ duyệt",
                 "Done" => "Hoàn thành",
-                "Blocked" => "Đang vướng",
+                "Blocked" => "Bị chặn",
                 _ => status ?? "Chưa rõ"
             };
         }

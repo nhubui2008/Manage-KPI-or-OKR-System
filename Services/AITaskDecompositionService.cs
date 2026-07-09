@@ -76,7 +76,7 @@ namespace Manage_KPI_or_OKR_System.Services
             {
                 SourceObjective = okr.ObjectiveName,
                 Tasks = tasks,
-                AvailableProjects = await LoadAvailableProjectsAsync(cancellationToken)
+                AvailableProjects = await LoadAvailableProjectsAsync(user, cancellationToken)
             };
 
             await ApplySuggestedProjectAsync(response, okr, cancellationToken);
@@ -128,7 +128,7 @@ namespace Manage_KPI_or_OKR_System.Services
             {
                 SourceObjective = kpi.KPIName,
                 Tasks = tasks,
-                AvailableProjects = await LoadAvailableProjectsAsync(cancellationToken)
+                AvailableProjects = await LoadAvailableProjectsAsync(user, cancellationToken)
             };
 
             if (!tasks.Any())
@@ -234,7 +234,7 @@ namespace Manage_KPI_or_OKR_System.Services
                 SuggestedProjectId = project.Id,
                 SuggestedProjectName = project.ProjectName,
                 Tasks = tasks,
-                AvailableProjects = await LoadAvailableProjectsAsync(cancellationToken)
+                AvailableProjects = await LoadAvailableProjectsAsync(user, cancellationToken)
             };
 
             if (!tasks.Any())
@@ -265,6 +265,7 @@ namespace Manage_KPI_or_OKR_System.Services
             }
 
             var currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, user);
+            await EnsureCanAccessRequestedSourceLinksAsync(request, user, cancellationToken);
             var project = request.WorkProjectId.HasValue
                 ? await _context.WorkProjects.FirstOrDefaultAsync(p => p.Id == request.WorkProjectId.Value && p.IsActive == true, cancellationToken)
                 : null;
@@ -273,6 +274,14 @@ namespace Manage_KPI_or_OKR_System.Services
             {
                 return new ConfirmDecomposeResponse { Success = false, Warnings = { "Khong tim thay WorkProject duoc chon." } };
             }
+
+            if (project != null && !await CanAccessProjectAsync(project, user, cancellationToken))
+            {
+                throw new UnauthorizedAccessException("Ban khong co quyen tao task cho project nay.");
+            }
+
+            var confirmScope = await BuildConfirmTaskScopeAsync(request, project, currentEmployee, cancellationToken);
+            validTasks = await SanitizeConfirmedTasksAsync(validTasks, request, confirmScope, cancellationToken);
 
             if (project == null)
             {
@@ -337,6 +346,160 @@ namespace Manage_KPI_or_OKR_System.Services
                 TasksCreated = validTasks.Count,
                 Warnings = warnings
             };
+        }
+
+        private async Task<List<DecomposedTaskDto>> SanitizeConfirmedTasksAsync(
+            List<DecomposedTaskDto> tasks,
+            ConfirmDecomposeRequest request,
+            ConfirmTaskScope scope,
+            CancellationToken cancellationToken)
+        {
+            var sanitizedTasks = new List<DecomposedTaskDto>();
+            foreach (var task in tasks)
+            {
+                var kpiId = await ResolveScopedKpiIdAsync(task.KPIId, scope, cancellationToken);
+                var keyResultId = await ResolveScopedKeyResultIdAsync(task.OKRKeyResultId, kpiId, request.SourceOKRId, scope, cancellationToken);
+                var assigneeId = await ResolveScopedEmployeeIdAsync(task.AssigneeId, scope, cancellationToken);
+                var departmentId = await ResolveScopedDepartmentIdAsync(task.DepartmentId, assigneeId, scope, cancellationToken);
+
+                sanitizedTasks.Add(new DecomposedTaskDto
+                {
+                    Title = task.Title,
+                    Description = task.Description,
+                    Priority = task.Priority,
+                    AssigneeId = assigneeId,
+                    DepartmentId = departmentId,
+                    KanbanStatus = task.KanbanStatus,
+                    EstimatedDays = task.EstimatedDays,
+                    KpiImpactWeight = task.KpiImpactWeight,
+                    KPIId = kpiId,
+                    OKRKeyResultId = keyResultId,
+                    IsSelected = true
+                });
+            }
+
+            return sanitizedTasks;
+        }
+
+        private async Task<ConfirmTaskScope> BuildConfirmTaskScopeAsync(
+            ConfirmDecomposeRequest request,
+            WorkProject? project,
+            Employee? currentEmployee,
+            CancellationToken cancellationToken)
+        {
+            var departmentIds = new HashSet<int>();
+            var employeeIds = new HashSet<int>();
+            var kpiIds = new HashSet<int>();
+            var keyResultIds = new HashSet<int>();
+            int? fallbackKpiId = null;
+            int? fallbackKeyResultId = null;
+            var isGoalScopeConstrained = request.SourceOKRId.HasValue ||
+                request.SourceKPIId.HasValue ||
+                project?.SourceOKRId.HasValue == true ||
+                project?.LinkedOKRId.HasValue == true ||
+                project?.SourceKPIId.HasValue == true;
+
+            if (project != null)
+            {
+                var projectDepartmentIds = await _context.WorkProjectDepartments
+                    .Where(pd => pd.WorkProjectId == project.Id && pd.IsActive == true)
+                    .Select(pd => pd.DepartmentId)
+                    .ToListAsync(cancellationToken);
+                departmentIds.UnionWith(projectDepartmentIds);
+            }
+
+            var sourceKpiId = request.SourceKPIId ?? project?.SourceKPIId;
+            KPI? sourceKpi = null;
+            if (sourceKpiId.HasValue)
+            {
+                sourceKpi = await _context.KPIs
+                    .FirstOrDefaultAsync(k => k.Id == sourceKpiId.Value && k.IsActive == true, cancellationToken);
+                if (sourceKpi != null)
+                {
+                    fallbackKpiId = sourceKpi.Id;
+                    kpiIds.Add(sourceKpi.Id);
+                    if (sourceKpi.OKRKeyResultId.HasValue)
+                    {
+                        fallbackKeyResultId = sourceKpi.OKRKeyResultId.Value;
+                        keyResultIds.Add(sourceKpi.OKRKeyResultId.Value);
+                    }
+                }
+            }
+
+            var sourceOkrId = request.SourceOKRId ?? project?.SourceOKRId ?? project?.LinkedOKRId ?? sourceKpi?.OKRId;
+            if (sourceOkrId.HasValue)
+            {
+                var okrKeyResultIds = await _context.OKRKeyResults
+                    .Where(kr => kr.OKRId == sourceOkrId.Value)
+                    .OrderBy(kr => kr.Id)
+                    .Select(kr => kr.Id)
+                    .ToListAsync(cancellationToken);
+                keyResultIds.UnionWith(okrKeyResultIds);
+                fallbackKeyResultId ??= okrKeyResultIds.FirstOrDefault() == 0 ? null : okrKeyResultIds.FirstOrDefault();
+
+                var okrKpis = await _context.KPIs
+                    .Where(k => k.OKRId == sourceOkrId.Value && k.IsActive == true)
+                    .Select(k => new { k.Id, k.OKRKeyResultId })
+                    .ToListAsync(cancellationToken);
+                foreach (var kpi in okrKpis)
+                {
+                    kpiIds.Add(kpi.Id);
+                    if (kpi.OKRKeyResultId.HasValue)
+                    {
+                        keyResultIds.Add(kpi.OKRKeyResultId.Value);
+                    }
+                }
+
+                var okrDepartmentIds = await _context.OKR_Department_Allocations
+                    .Where(a => a.OKRId == sourceOkrId.Value)
+                    .Select(a => a.DepartmentId)
+                    .ToListAsync(cancellationToken);
+                departmentIds.UnionWith(okrDepartmentIds);
+            }
+
+            if (sourceKpiId.HasValue)
+            {
+                var kpiDepartmentIds = await _context.KPI_Department_Assignments
+                    .Where(a => a.KPIId == sourceKpiId.Value)
+                    .Select(a => a.DepartmentId)
+                    .ToListAsync(cancellationToken);
+                departmentIds.UnionWith(kpiDepartmentIds);
+
+                var directKpiEmployees = await _context.KPI_Employee_Assignments
+                    .Where(a => a.KPIId == sourceKpiId.Value && (a.Status == null || a.Status == "Active"))
+                    .Select(a => a.EmployeeId)
+                    .ToListAsync(cancellationToken);
+                employeeIds.UnionWith(directKpiEmployees);
+            }
+
+            if (!departmentIds.Any() && currentEmployee != null)
+            {
+                var currentEmployeeDepartmentIds = await AccessScopeHelper.GetEmployeeDepartmentIdsAsync(_context, currentEmployee.Id);
+                departmentIds.UnionWith(currentEmployeeDepartmentIds);
+            }
+
+            if (departmentIds.Any())
+            {
+                var departmentEmployeeIds = await _context.EmployeeAssignments
+                    .Where(a => a.IsActive == true &&
+                                a.EmployeeId.HasValue &&
+                                a.DepartmentId.HasValue &&
+                                departmentIds.Contains(a.DepartmentId.Value))
+                    .Select(a => a.EmployeeId!.Value)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
+                employeeIds.UnionWith(departmentEmployeeIds);
+            }
+
+            return new ConfirmTaskScope(
+                departmentIds,
+                employeeIds,
+                kpiIds,
+                keyResultIds,
+                fallbackKpiId,
+                fallbackKeyResultId,
+                isGoalScopeConstrained,
+                departmentIds.Any() || employeeIds.Any());
         }
 
         private async Task<WorkProject> CreateProjectAsync(
@@ -453,6 +616,33 @@ namespace Manage_KPI_or_OKR_System.Services
             }
 
             project.UpdatedAt = DateTime.Now;
+        }
+
+        private async Task EnsureCanAccessRequestedSourceLinksAsync(
+            ConfirmDecomposeRequest request,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken)
+        {
+            if (request.SourceOKRId.HasValue)
+            {
+                var okr = await _context.OKRs
+                    .Include(o => o.KeyResults)
+                    .FirstOrDefaultAsync(o => o.Id == request.SourceOKRId.Value && o.IsActive == true, cancellationToken);
+                if (okr != null && !await CanAccessOkrAsync(okr, user, cancellationToken))
+                {
+                    throw new UnauthorizedAccessException("Ban khong co quyen tao task tu OKR nay.");
+                }
+            }
+
+            if (request.SourceKPIId.HasValue)
+            {
+                var kpi = await _context.KPIs
+                    .FirstOrDefaultAsync(k => k.Id == request.SourceKPIId.Value && k.IsActive == true, cancellationToken);
+                if (kpi != null && !await AccessScopeHelper.CanAccessKpiAsync(_context, user, kpi))
+                {
+                    throw new UnauthorizedAccessException("Ban khong co quyen tao task tu KPI nay.");
+                }
+            }
         }
 
         private async Task<List<DecomposedTaskDto>> MapTasksAsync(
@@ -779,10 +969,16 @@ namespace Manage_KPI_or_OKR_System.Services
             }
         }
 
-        private async Task<List<WorkProjectOption>> LoadAvailableProjectsAsync(CancellationToken cancellationToken)
+        private async Task<List<WorkProjectOption>> LoadAvailableProjectsAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
         {
+            var accessibleProjectIds = await GetAccessibleProjectIdsAsync(user, cancellationToken);
+            if (!accessibleProjectIds.Any())
+            {
+                return new List<WorkProjectOption>();
+            }
+
             return await _context.WorkProjects
-                .Where(p => p.IsActive == true)
+                .Where(p => p.IsActive == true && accessibleProjectIds.Contains(p.Id))
                 .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt)
                 .Take(50)
                 .Select(p => new WorkProjectOption
@@ -856,36 +1052,58 @@ namespace Manage_KPI_or_OKR_System.Services
 
         private async Task<bool> CanAccessProjectAsync(WorkProject project, ClaimsPrincipal user, CancellationToken cancellationToken)
         {
-            if (AccessScopeHelper.IsAdmin(user) || AccessScopeHelper.IsDirector(user))
+            var accessibleProjectIds = await GetAccessibleProjectIdsAsync(user, cancellationToken);
+            return accessibleProjectIds.Contains(project.Id);
+        }
+
+        private async Task<List<int>> GetAccessibleProjectIdsAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
+        {
+            if (AccessScopeHelper.IsAdmin(user) || AccessScopeHelper.IsDirector(user) || user.IsInRole("HR"))
             {
-                return true;
+                return await _context.WorkProjects
+                    .Where(p => p.IsActive == true)
+                    .Select(p => p.Id)
+                    .ToListAsync(cancellationToken);
             }
 
             var employee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, user);
             if (employee == null)
             {
-                return false;
+                return new List<int>();
             }
 
-            if (project.OwnerId == employee.Id || project.CreatedById == employee.Id)
+            var departmentIds = await AccessScopeHelper.GetEmployeeDepartmentIdsAsync(_context, employee.Id);
+            if (AccessScopeHelper.IsManagerScoped(user))
             {
-                return true;
+                var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, employee);
+                departmentIds = departmentIds.Concat(managedDepartmentIds).Distinct().ToList();
             }
 
-            var projectDepartmentIds = await _context.WorkProjectDepartments
-                .Where(pd => pd.WorkProjectId == project.Id && pd.IsActive == true)
-                .Select(pd => pd.DepartmentId)
+            var ownedProjectIds = await _context.WorkProjects
+                .Where(p => p.IsActive == true && (p.OwnerId == employee.Id || p.CreatedById == employee.Id))
+                .Select(p => p.Id)
                 .ToListAsync(cancellationToken);
-            if (!projectDepartmentIds.Any())
-            {
-                return true;
-            }
 
-            var accessibleDepartmentIds = AccessScopeHelper.IsManagerScoped(user)
-                ? await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, employee)
-                : await AccessScopeHelper.GetEmployeeDepartmentIdsAsync(_context, employee.Id);
+            var departmentProjectIds = departmentIds.Any()
+                ? await _context.WorkProjectDepartments
+                    .Where(pd => pd.IsActive == true && departmentIds.Contains(pd.DepartmentId))
+                    .Select(pd => pd.WorkProjectId)
+                    .ToListAsync(cancellationToken)
+                : new List<int>();
 
-            return projectDepartmentIds.Intersect(accessibleDepartmentIds).Any();
+            var taskProjectIds = await _context.WorkItems
+                .Where(t => t.IsActive == true &&
+                            (t.AssigneeId == employee.Id ||
+                             t.ReporterId == employee.Id ||
+                             (t.DepartmentId.HasValue && departmentIds.Contains(t.DepartmentId.Value))))
+                .Select(t => t.WorkProjectId)
+                .ToListAsync(cancellationToken);
+
+            return ownedProjectIds
+                .Concat(departmentProjectIds)
+                .Concat(taskProjectIds)
+                .Distinct()
+                .ToList();
         }
 
         private async Task<int?> ResolveKpiIdAsync(int? kpiId, CancellationToken cancellationToken)
@@ -954,6 +1172,112 @@ namespace Manage_KPI_or_OKR_System.Services
             {
                 return await _context.EmployeeAssignments
                     .Where(a => a.EmployeeId == assigneeId.Value && a.IsActive == true && a.DepartmentId.HasValue)
+                    .Select(a => a.DepartmentId)
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+
+            return null;
+        }
+
+        private async Task<int?> ResolveScopedKpiIdAsync(int? kpiId, ConfirmTaskScope scope, CancellationToken cancellationToken)
+        {
+            if (!scope.IsGoalScopeConstrained)
+            {
+                return await ResolveKpiIdAsync(kpiId, cancellationToken);
+            }
+
+            if (kpiId.HasValue &&
+                scope.KpiIds.Contains(kpiId.Value) &&
+                await _context.KPIs.AnyAsync(k => k.Id == kpiId.Value && k.IsActive == true, cancellationToken))
+            {
+                return kpiId.Value;
+            }
+
+            return scope.FallbackKpiId;
+        }
+
+        private async Task<int?> ResolveScopedKeyResultIdAsync(
+            int? keyResultId,
+            int? kpiId,
+            int? sourceOkrId,
+            ConfirmTaskScope scope,
+            CancellationToken cancellationToken)
+        {
+            if (!scope.IsGoalScopeConstrained)
+            {
+                return await ResolveKeyResultIdAsync(keyResultId, kpiId, sourceOkrId, cancellationToken);
+            }
+
+            if (keyResultId.HasValue &&
+                scope.KeyResultIds.Contains(keyResultId.Value) &&
+                await _context.OKRKeyResults.AnyAsync(kr => kr.Id == keyResultId.Value, cancellationToken))
+            {
+                return keyResultId.Value;
+            }
+
+            if (kpiId.HasValue)
+            {
+                var kpiKeyResultId = await _context.KPIs
+                    .Where(k => k.Id == kpiId.Value && k.OKRKeyResultId.HasValue)
+                    .Select(k => k.OKRKeyResultId)
+                    .FirstOrDefaultAsync(cancellationToken);
+                if (kpiKeyResultId.HasValue && scope.KeyResultIds.Contains(kpiKeyResultId.Value))
+                {
+                    return kpiKeyResultId.Value;
+                }
+            }
+
+            if (sourceOkrId.HasValue)
+            {
+                var firstSourceKeyResultId = await _context.OKRKeyResults
+                    .Where(kr => kr.OKRId == sourceOkrId.Value && scope.KeyResultIds.Contains(kr.Id))
+                    .OrderBy(kr => kr.Id)
+                    .Select(kr => (int?)kr.Id)
+                    .FirstOrDefaultAsync(cancellationToken);
+                if (firstSourceKeyResultId.HasValue)
+                {
+                    return firstSourceKeyResultId.Value;
+                }
+            }
+
+            return scope.FallbackKeyResultId;
+        }
+
+        private async Task<int?> ResolveScopedEmployeeIdAsync(int? employeeId, ConfirmTaskScope scope, CancellationToken cancellationToken)
+        {
+            if (!scope.IsPeopleScopeConstrained)
+            {
+                return await ResolveEmployeeIdAsync(employeeId, cancellationToken);
+            }
+
+            return employeeId.HasValue && scope.EmployeeIds.Contains(employeeId.Value)
+                ? employeeId.Value
+                : null;
+        }
+
+        private async Task<int?> ResolveScopedDepartmentIdAsync(
+            int? departmentId,
+            int? assigneeId,
+            ConfirmTaskScope scope,
+            CancellationToken cancellationToken)
+        {
+            if (!scope.IsPeopleScopeConstrained)
+            {
+                return await ResolveDepartmentIdAsync(departmentId, assigneeId, cancellationToken);
+            }
+
+            if (departmentId.HasValue && scope.DepartmentIds.Contains(departmentId.Value))
+            {
+                return departmentId.Value;
+            }
+
+            if (assigneeId.HasValue)
+            {
+                return await _context.EmployeeAssignments
+                    .Where(a => a.EmployeeId == assigneeId.Value &&
+                                a.IsActive == true &&
+                                a.DepartmentId.HasValue &&
+                                scope.DepartmentIds.Contains(a.DepartmentId.Value))
                     .Select(a => a.DepartmentId)
                     .FirstOrDefaultAsync(cancellationToken);
             }
@@ -1148,6 +1472,16 @@ namespace Manage_KPI_or_OKR_System.Services
         private sealed record PeopleContext(
             Dictionary<int, DepartmentOption> Departments,
             Dictionary<int, EmployeeOption> Employees);
+
+        private sealed record ConfirmTaskScope(
+            HashSet<int> DepartmentIds,
+            HashSet<int> EmployeeIds,
+            HashSet<int> KpiIds,
+            HashSet<int> KeyResultIds,
+            int? FallbackKpiId,
+            int? FallbackKeyResultId,
+            bool IsGoalScopeConstrained,
+            bool IsPeopleScopeConstrained);
 
         private sealed record DepartmentOption(int Id, string Name);
 

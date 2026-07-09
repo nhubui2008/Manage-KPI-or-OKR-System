@@ -1650,10 +1650,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             $el.select2(selectOptions);
 
-            // Trigger change event to ensure native and jQuery listeners are notified
-            $el.on('change.select2', function () {
-                // Trigger natural change event for non-jQuery listeners
-                this.dispatchEvent(new Event('change', { bubbles: true }));
+            // Forward Select2's jQuery-only changes once for native listeners.
+            $el.on('change.select2', function (event) {
+                if (!event.originalEvent) {
+                    this.dispatchEvent(new Event('change', { bubbles: true }));
+                }
                 
                 // Trigger validation if available
                 if (typeof $(this).valid === 'function') {

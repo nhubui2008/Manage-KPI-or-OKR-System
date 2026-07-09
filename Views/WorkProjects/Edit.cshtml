@@ -57,6 +57,7 @@
                             <option value="@item">@ProjectStatusLabel(item)</option>
                         }
                     </select>
+                    <span asp-validation-for="Status" class="text-danger small"></span>
                 </div>
                 <div class="col-md-2">
                     <label asp-for="StartDate" class="form-label fw-semibold">Bắt đầu</label>
@@ -65,6 +66,7 @@
                 <div class="col-md-2">
                     <label asp-for="DueDate" class="form-label fw-semibold">Deadline</label>
                     <input asp-for="DueDate" asp-format="{0:yyyy-MM-dd}" class="form-control" type="date" lang="vi" />
+                    <span asp-validation-for="DueDate" class="text-danger small"></span>
                 </div>
                 <div class="col-12">
                     <label asp-for="Description" class="form-label fw-semibold">Mô tả</label>
