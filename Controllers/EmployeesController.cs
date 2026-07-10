@@ -105,7 +105,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
             ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username");
             ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", null);
             ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", null);
-            ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", null);
+            ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync();
             return View();
         }
 
@@ -133,7 +133,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
                     ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username");
                     ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
                     ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
-                    ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", employee.StrategicGoalId);
+                    ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
                     
                     return View(employee);
                 }
@@ -151,7 +151,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
                         ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", employee.SystemUserId);
                         ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
                         ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
-                        ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", employee.StrategicGoalId);
+                        ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
 
                         return View(employee);
                     }
@@ -185,7 +185,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
             ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username");
             ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
             ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
-            ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", employee.StrategicGoalId);
+            ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
             
             return View(employee);
         }
@@ -210,7 +210,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
             ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", emp.SystemUserId);
             ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", assignment?.DepartmentId);
             ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", assignment?.PositionId);
-            ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", emp.StrategicGoalId);
+            ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(emp.StrategicGoalId);
             ViewBag.Assignment = assignment;
 
             return View(emp);
@@ -241,7 +241,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
                 ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", employee.SystemUserId);
                 ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
                 ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
-                ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", employee.StrategicGoalId);
+                ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
 
                 return View(employee);
             }
@@ -320,10 +320,30 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
     ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", employee.SystemUserId);
     ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
     ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
-    ViewData["StrategicGoalId"] = new SelectList(_context.MissionVisions.Where(m => m.IsActive == true), "Id", "Content", employee.StrategicGoalId);
+    ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
 
     return View(employee);
 }
+
+        private async Task<SelectList> GetStrategicGoalSelectListAsync(int? selectedId = null)
+        {
+            var goals = await _context.MissionVisions
+                .AsNoTracking()
+                .Where(m => m.IsActive == true &&
+                            m.MissionVisionType == MissionVision.TypeYearlyGoal &&
+                            m.TargetYear.HasValue)
+                .OrderByDescending(m => m.TargetYear)
+                .ThenBy(m => m.Content)
+                .Select(m => new { m.Id, m.TargetYear, m.Content })
+                .ToListAsync();
+            var options = goals.Select(goal => new
+            {
+                goal.Id,
+                DisplayName = $"Năm {goal.TargetYear}: {goal.Content}"
+            });
+
+            return new SelectList(options, "Id", "DisplayName", selectedId);
+        }
 
         private bool EmployeeExists(int id)
         {

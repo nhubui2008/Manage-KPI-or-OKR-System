@@ -13,29 +13,75 @@ namespace Manage_KPI_or_OKR_System.Helpers
 
         public static async Task<bool> HasPermissionAsync(MiniERPDbContext context, ClaimsPrincipal user, string permissionCode)
         {
+            var permissions = await HasPermissionsAsync(context, user, new[] { permissionCode });
+            return permissions.TryGetValue(permissionCode, out var isGranted) && isGranted;
+        }
+
+        public static async Task<IReadOnlyDictionary<string, bool>> HasPermissionsAsync(
+            MiniERPDbContext context,
+            ClaimsPrincipal user,
+            IEnumerable<string> permissionCodes)
+        {
+            var requestedCodes = permissionCodes
+                .Where(code => !string.IsNullOrWhiteSpace(code))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            var result = requestedCodes.ToDictionary(
+                code => code,
+                _ => false,
+                StringComparer.OrdinalIgnoreCase);
+
+            if (requestedCodes.Length == 0)
+            {
+                return result;
+            }
+
             if (IsAdmin(user))
             {
-                return true;
+                foreach (var code in requestedCodes)
+                {
+                    result[code] = true;
+                }
+
+                return result;
             }
 
             var userRoles = user.Claims
                 .Where(c => c.Type == ClaimTypes.Role)
                 .Select(c => c.Value)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             if (!userRoles.Any())
             {
-                return false;
+                return result;
             }
 
-            if (PermissionAuthorizationHelper.HasRoleDefaultPermission(userRoles, new[] { permissionCode }))
+            var expandedByCode = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var code in requestedCodes)
             {
-                return true;
+                if (PermissionAuthorizationHelper.HasRoleDefaultPermission(userRoles, new[] { code }))
+                {
+                    result[code] = true;
+                    continue;
+                }
+
+                expandedByCode[code] = PermissionAuthorizationHelper
+                    .ExpandRequestedPermissions(new[] { code })
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
             }
 
-            var requestedPermissions = PermissionAuthorizationHelper.ExpandRequestedPermissions(new[] { permissionCode });
+            if (expandedByCode.Count == 0)
+            {
+                return result;
+            }
 
-            return await context.Role_Permissions
+            var expandedPermissions = expandedByCode.Values
+                .SelectMany(codes => codes)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var grantedPermissions = await context.Role_Permissions
                 .Join(context.Permissions,
                     rp => rp.PermissionId,
                     p => p.Id,
@@ -44,9 +90,21 @@ namespace Manage_KPI_or_OKR_System.Helpers
                     combined => combined.rp.RoleId,
                     r => r.Id,
                     (combined, r) => new { combined.p, r })
-                .AnyAsync(x => x.r.RoleName != null &&
-                               userRoles.Contains(x.r.RoleName) &&
-                               requestedPermissions.Contains(x.p.PermissionCode));
+                .Where(x => x.r.RoleName != null &&
+                            userRoles.Contains(x.r.RoleName) &&
+                            x.p.PermissionCode != null &&
+                            expandedPermissions.Contains(x.p.PermissionCode))
+                .Select(x => x.p.PermissionCode!)
+                .Distinct()
+                .ToListAsync();
+            var grantedSet = grantedPermissions.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var (code, expandedCodes) in expandedByCode)
+            {
+                result[code] = expandedCodes.Overlaps(grantedSet);
+            }
+
+            return result;
         }
     }
 }

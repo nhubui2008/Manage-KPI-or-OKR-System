@@ -93,7 +93,7 @@
                                     </div>
                                     <div class="input-wrapper shadow-sm rounded-4 overflow-hidden border">
                                         <i class="bi bi-cash-coin"></i>
-                                        <input asp-for="FinancialTarget" type="number" step="1000000" class="form-control border-0" placeholder="VD: 50,000,000,000" style="padding-left: 45px !important; height: 55px; background: #fff;">
+                                        <input asp-for="FinancialTarget" type="number" step="1" class="form-control border-0" placeholder="VD: 50000000000" style="padding-left: 45px !important; height: 55px; background: #fff;">
                                     </div>
                                     <span asp-validation-for="FinancialTarget" class="text-danger small"></span>
                                 </div>
@@ -107,7 +107,7 @@
                                     </div>
                                     <div class="input-wrapper shadow-sm rounded-4 overflow-hidden border">
                                         <i class="bi bi-calendar-check text-warning"></i>
-                                        <input asp-for="TargetYear" type="number" id="targetYearInput" class="form-control border-0" style="padding-left: 45px !important; height: 55px; background: #fff;">
+                                        <input asp-for="TargetYear" type="number" step="1" id="targetYearInput" class="form-control border-0" style="padding-left: 45px !important; height: 55px; background: #fff;">
                                     </div>
                                     <span asp-validation-for="TargetYear" class="text-danger small"></span>
                                     <div class="form-text mt-2 text-muted">

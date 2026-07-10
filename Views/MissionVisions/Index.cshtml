@@ -1,13 +1,12 @@
-﻿@model IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>
+﻿@model Manage_KPI_or_OKR_System.Models.ViewModels.MissionVisionIndexViewModel
 @{
     ViewData["Title"] = "Sứ mệnh & Tầm nhìn";
-    var longTermStatements = ViewBag.LongTermStatements as List<Manage_KPI_or_OKR_System.Models.MissionVision> ?? new List<Manage_KPI_or_OKR_System.Models.MissionVision>();
-    var selectedYear = ViewBag.SelectedYear as int?;
-    var availableYears = ViewBag.AvailableYears as List<int> ?? new List<int>();
-    var isAdminRole = User.IsInRole("Admin") || User.IsInRole("Administrator");
-    var canCreateMission = ViewBag.CanCreateMission is bool canCreateFromDb ? canCreateFromDb : isAdminRole || User.HasClaim("Permission", "MISSIONS_CREATE");
-    var canEditMission = ViewBag.CanEditMission is bool canEditFromDb ? canEditFromDb : isAdminRole || User.HasClaim("Permission", "MISSIONS_EDIT");
-    var canDeleteMission = ViewBag.CanDeleteMission is bool canDeleteFromDb ? canDeleteFromDb : isAdminRole || User.HasClaim("Permission", "MISSIONS_DELETE");
+    var longTermStatements = Model.LongTermStatements;
+    var selectedYear = Model.SelectedYear;
+    var availableYears = Model.AvailableYears;
+    var canCreateMission = Model.CanCreateMission;
+    var canEditMission = Model.CanEditMission;
+    var canDeleteMission = Model.CanDeleteMission;
 }
 
 <div class="container-fluid px-0">
@@ -115,9 +114,9 @@
 <div class="row justify-content-center w-100 m-0 strategic-goals-section">
         <div class="col-12 px-0">
             <div class="row g-4 w-100">
-    @if (Model != null && Model.Any())
+    @if (Model.YearlyGoals.Any())
     {
-        foreach (var goal in Model)
+        foreach (var goal in Model.YearlyGoals)
         {
             <div class="col-md-6 col-xl-4">
                 <div class="content-card h-100 strategic-goal-card">

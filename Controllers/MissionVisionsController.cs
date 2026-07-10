@@ -1,15 +1,25 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
+using Manage_KPI_or_OKR_System.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
+    [AutoValidateAntiforgeryToken]
     public class MissionVisionsController : Controller
     {
+        private static readonly string[] ManagementPermissions =
+        {
+            "MISSIONS_CREATE",
+            "MISSIONS_EDIT",
+            "MISSIONS_DELETE"
+        };
+
         private readonly MiniERPDbContext _context;
 
         public MissionVisionsController(MiniERPDbContext context)
@@ -20,40 +30,51 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("MISSIONS_VIEW")]
         public async Task<IActionResult> Index(int? year)
         {
-            var allMissions = await _context.MissionVisions.Where(m => m.IsActive == true).ToListAsync();
-            
-            var longTermStatements = allMissions
-                .Where(IsLongTermStatement)
-                .OrderBy(m => GetTypeOrder(m.MissionVisionType))
-                .ThenBy(m => m.CreatedAt)
-                .ToList();
-            var yearlyGoals = allMissions
-                .Where(m => NormalizeMissionVisionType(m.MissionVisionType) == MissionVision.TypeYearlyGoal && m.TargetYear != null)
-                .OrderByDescending(m => m.TargetYear)
-                .ToList();
-
-            var availableYears = yearlyGoals
-                .Where(m => m.TargetYear.HasValue)
+            var activeMissions = _context.MissionVisions
+                .AsNoTracking()
+                .Where(m => m.IsActive == true);
+            var availableYears = await activeMissions
+                .Where(m => m.MissionVisionType == MissionVision.TypeYearlyGoal && m.TargetYear.HasValue)
                 .Select(m => m.TargetYear!.Value)
                 .Distinct()
                 .OrderByDescending(y => y)
-                .ToList();
+                .ToListAsync();
 
             int? selectedYear = year.HasValue && availableYears.Contains(year.Value)
                 ? year.Value
                 : null;
-            var currentYearGoals = selectedYear.HasValue
-                ? yearlyGoals.Where(m => m.TargetYear == selectedYear.Value).ToList()
-                : yearlyGoals;
+            var longTermStatements = await activeMissions
+                .Where(m => m.MissionVisionType == MissionVision.TypeVision ||
+                            m.MissionVisionType == MissionVision.TypeMission)
+                .OrderBy(m => m.MissionVisionType == MissionVision.TypeVision ? 0 : 1)
+                .ThenBy(m => m.CreatedAt)
+                .ToListAsync();
+            var yearlyGoalsQuery = activeMissions
+                .Where(m => m.MissionVisionType == MissionVision.TypeYearlyGoal && m.TargetYear.HasValue);
+            if (selectedYear.HasValue)
+            {
+                yearlyGoalsQuery = yearlyGoalsQuery.Where(m => m.TargetYear == selectedYear.Value);
+            }
 
-            ViewBag.LongTermStatements = longTermStatements;
-            ViewBag.SelectedYear = selectedYear;
-            ViewBag.AvailableYears = availableYears;
-            ViewBag.CanCreateMission = await PermissionLookupHelper.HasPermissionAsync(_context, User, "MISSIONS_CREATE");
-            ViewBag.CanEditMission = await PermissionLookupHelper.HasPermissionAsync(_context, User, "MISSIONS_EDIT");
-            ViewBag.CanDeleteMission = await PermissionLookupHelper.HasPermissionAsync(_context, User, "MISSIONS_DELETE");
-            
-            return View(currentYearGoals);
+            var yearlyGoals = await yearlyGoalsQuery
+                .OrderByDescending(m => m.TargetYear)
+                .ThenByDescending(m => m.CreatedAt)
+                .ToListAsync();
+            var permissions = await PermissionLookupHelper.HasPermissionsAsync(
+                _context,
+                User,
+                ManagementPermissions);
+
+            return View(new MissionVisionIndexViewModel
+            {
+                LongTermStatements = longTermStatements,
+                YearlyGoals = yearlyGoals,
+                AvailableYears = availableYears,
+                SelectedYear = selectedYear,
+                CanCreateMission = permissions["MISSIONS_CREATE"],
+                CanEditMission = permissions["MISSIONS_EDIT"],
+                CanDeleteMission = permissions["MISSIONS_DELETE"]
+            });
         }
 
         [HttpGet]
@@ -72,19 +93,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Create(MissionVision model)
         {
             PrepareMissionVisionForSave(model);
-            ValidateMissionVision(model);
+            await ValidateMissionVisionAsync(model);
 
             if (ModelState.IsValid)
             {
                 model.CreatedAt = DateTime.Now;
+                model.CreatedById = GetCurrentUserId();
                 model.IsActive = true;
                 _context.MissionVisions.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã lưu chiến lược thành công!";
-                return model.MissionVisionType == MissionVision.TypeYearlyGoal
-                    ? RedirectToAction(nameof(Index), new { year = model.TargetYear })
-                    : RedirectToAction(nameof(Index));
+                return RedirectToMissionIndex(model);
             }
+
             return View(model);
         }
 
@@ -108,19 +129,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (id != model.Id) return NotFound();
 
+            var existingMissionVision = await _context.MissionVisions
+                .FirstOrDefaultAsync(m => m.Id == id && m.IsActive == true);
+            if (existingMissionVision == null) return NotFound();
+
             PrepareMissionVisionForSave(model);
-            ValidateMissionVision(model);
+            await ValidateMissionVisionAsync(model, existingMissionVision);
 
             if (!ModelState.IsValid)
             {
                 TempData["ErrorMessage"] = "Có lỗi xảy ra, vui lòng kiểm tra lại dữ liệu.";
                 return View(model);
             }
-
-            var existingMissionVision = await _context.MissionVisions
-                .FirstOrDefaultAsync(m => m.Id == id && m.IsActive == true);
-
-            if (existingMissionVision == null) return NotFound();
 
             existingMissionVision.MissionVisionType = model.MissionVisionType;
             existingMissionVision.TargetYear = model.TargetYear;
@@ -130,55 +150,50 @@ namespace Manage_KPI_or_OKR_System.Controllers
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã cập nhật mục tiêu chiến lược thành công!";
 
-            return existingMissionVision.MissionVisionType == MissionVision.TypeYearlyGoal
-                ? RedirectToAction(nameof(Index), new { year = existingMissionVision.TargetYear })
-                : RedirectToAction(nameof(Index));
+            return RedirectToMissionIndex(existingMissionVision);
         }
 
         [HttpPost]
         [HasPermission("MISSIONS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
-            var mv = await _context.MissionVisions.FindAsync(id);
-            if (mv != null)
+            var missionVision = await _context.MissionVisions
+                .FirstOrDefaultAsync(m => m.Id == id && m.IsActive == true);
+            if (missionVision == null)
             {
-                mv.IsActive = false;
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã vô hiệu hóa mục tiêu chiến lược.";
+                TempData["ErrorMessage"] = "Không tìm thấy mục tiêu chiến lược đang hoạt động.";
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
+
+            var linkedEmployeeCount = await _context.Employees
+                .CountAsync(e => e.IsActive == true && e.StrategicGoalId == id);
+            if (linkedEmployeeCount > 0)
+            {
+                TempData["ErrorMessage"] = $"Không thể vô hiệu hóa mục tiêu vì đang được {linkedEmployeeCount} nhân viên sử dụng.";
+                return RedirectToMissionIndex(missionVision);
+            }
+
+            missionVision.IsActive = false;
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã vô hiệu hóa mục tiêu chiến lược.";
+            return RedirectToMissionIndex(missionVision);
         }
 
-        private static bool IsLongTermStatement(MissionVision mission)
+        private void PrepareMissionVisionForSave(MissionVision model)
         {
-            var type = NormalizeMissionVisionType(mission.MissionVisionType);
-            return type == MissionVision.TypeVision || type == MissionVision.TypeMission || mission.TargetYear == null;
-        }
-
-        private static string NormalizeMissionVisionType(string? type)
-        {
-            return type switch
+            var requestedType = model.MissionVisionType?.Trim();
+            model.MissionVisionType = requestedType switch
             {
                 MissionVision.TypeVision => MissionVision.TypeVision,
                 MissionVision.TypeMission => MissionVision.TypeMission,
                 MissionVision.TypeYearlyGoal => MissionVision.TypeYearlyGoal,
                 _ => MissionVision.TypeYearlyGoal
             };
-        }
-
-        private static int GetTypeOrder(string? type)
-        {
-            return NormalizeMissionVisionType(type) switch
+            if (requestedType != model.MissionVisionType)
             {
-                MissionVision.TypeVision => 1,
-                MissionVision.TypeMission => 2,
-                _ => 3
-            };
-        }
+                ModelState.AddModelError(nameof(model.MissionVisionType), "Loại thiết lập không hợp lệ.");
+            }
 
-        private void PrepareMissionVisionForSave(MissionVision model)
-        {
-            model.MissionVisionType = NormalizeMissionVisionType(model.MissionVisionType);
             model.Content = model.Content?.Trim();
 
             if (model.MissionVisionType != MissionVision.TypeYearlyGoal)
@@ -188,17 +203,75 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
         }
 
-        private void ValidateMissionVision(MissionVision model)
+        private async Task ValidateMissionVisionAsync(
+            MissionVision model,
+            MissionVision? existingMissionVision = null)
         {
             if (string.IsNullOrWhiteSpace(model.Content))
             {
                 ModelState.AddModelError(nameof(model.Content), "Vui lòng nhập nội dung chiến lược.");
+            }
+            else if (model.Content.Length > 1000)
+            {
+                ModelState.AddModelError(nameof(model.Content), "Nội dung chiến lược không được vượt quá 1000 ký tự.");
             }
 
             if (model.MissionVisionType == MissionVision.TypeYearlyGoal && !model.TargetYear.HasValue)
             {
                 ModelState.AddModelError(nameof(model.TargetYear), "Vui lòng nhập năm áp dụng cho mục tiêu theo năm.");
             }
+            else if (model.TargetYear is < 2000 or > 2100)
+            {
+                ModelState.AddModelError(nameof(model.TargetYear), "Năm áp dụng phải nằm trong khoảng 2000 đến 2100.");
+            }
+
+            if (model.FinancialTarget < 0)
+            {
+                ModelState.AddModelError(nameof(model.FinancialTarget), "Mục tiêu tài chính không được là số âm.");
+            }
+
+            if (model.MissionVisionType is MissionVision.TypeVision or MissionVision.TypeMission)
+            {
+                var duplicateExists = await _context.MissionVisions
+                    .AsNoTracking()
+                    .AnyAsync(m => m.IsActive == true &&
+                                   m.MissionVisionType == model.MissionVisionType &&
+                                   (existingMissionVision == null || m.Id != existingMissionVision.Id));
+                if (duplicateExists)
+                {
+                    ModelState.AddModelError(
+                        nameof(model.MissionVisionType),
+                        $"Đã có {model.TypeDisplayName} đang hoạt động. Hãy chỉnh sửa nội dung hiện tại thay vì tạo thêm.");
+                }
+            }
+
+            if (existingMissionVision?.MissionVisionType == MissionVision.TypeYearlyGoal &&
+                model.MissionVisionType != MissionVision.TypeYearlyGoal)
+            {
+                var hasLinkedEmployees = await _context.Employees
+                    .AsNoTracking()
+                    .AnyAsync(e => e.IsActive == true && e.StrategicGoalId == existingMissionVision.Id);
+                if (hasLinkedEmployees)
+                {
+                    ModelState.AddModelError(
+                        nameof(model.MissionVisionType),
+                        "Không thể đổi loại vì mục tiêu đang được nhân viên sử dụng.");
+                }
+            }
+        }
+
+        private int? GetCurrentUserId()
+        {
+            return int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
+                ? userId
+                : null;
+        }
+
+        private IActionResult RedirectToMissionIndex(MissionVision missionVision)
+        {
+            return missionVision.MissionVisionType == MissionVision.TypeYearlyGoal && missionVision.TargetYear.HasValue
+                ? RedirectToAction(nameof(Index), new { year = missionVision.TargetYear })
+                : RedirectToAction(nameof(Index));
         }
     }
 }
