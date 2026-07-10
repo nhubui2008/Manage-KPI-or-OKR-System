@@ -63,9 +63,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var today = DateTime.Today;
             var showArchived = string.Equals(status, "Archived", StringComparison.OrdinalIgnoreCase);
-            var accessibleProjectIds = await GetAccessibleProjectIdsAsync(showArchived);
-            var query = _context.WorkProjects
-                .Where(p => accessibleProjectIds.Contains(p.Id));
+            var hasOrganizationWideAccess = AccessScopeHelper.IsAdmin(User)
+                || AccessScopeHelper.IsDirector(User)
+                || User.IsInRole("HR");
+            var query = _context.WorkProjects.AsNoTracking();
+
+            if (!hasOrganizationWideAccess)
+            {
+                var accessibleProjectIds = await GetAccessibleProjectIdsAsync(showArchived);
+                query = query.Where(p => accessibleProjectIds.Contains(p.Id));
+            }
 
             query = showArchived
                 ? query.Where(p => p.Status == "Archived")
@@ -104,16 +111,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 switch (quickFilter)
                 {
                     case "mine":
-                        var currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
-                        query = currentEmployee == null
-                            ? query.Where(_ => false)
-                            : query.Where(p =>
-                                p.OwnerId == currentEmployee.Id ||
-                                p.CreatedById == currentEmployee.Id ||
-                                _context.WorkItems.Any(t =>
-                                    t.WorkProjectId == p.Id &&
-                                    t.IsActive == true &&
-                                    (t.AssigneeId == currentEmployee.Id || t.ReporterId == currentEmployee.Id)));
+                        var currentSystemUserIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                        if (!int.TryParse(currentSystemUserIdValue, out var currentSystemUserId))
+                        {
+                            query = query.Where(_ => false);
+                            break;
+                        }
+
+                        query = query.Where(project => _context.Employees.Any(employee =>
+                            employee.SystemUserId == currentSystemUserId &&
+                            employee.IsActive == true &&
+                            (project.OwnerId == employee.Id ||
+                             project.CreatedById == employee.Id ||
+                             _context.WorkItems.Any(task =>
+                                 task.WorkProjectId == project.Id &&
+                                 task.IsActive == true &&
+                                 (task.AssigneeId == employee.Id || task.ReporterId == employee.Id)))));
                         break;
                     case "overdue":
                         query = query.Where(p =>
@@ -142,62 +155,75 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
             }
 
-            var projects = await query.ToListAsync();
-
-            var projectIds = projects.Select(p => p.Id).ToList();
-            var taskStats = projectIds.Any()
-                ? await _context.WorkItems
-                    .Where(t => projectIds.Contains(t.WorkProjectId) && t.IsActive == true)
-                    .GroupBy(t => t.WorkProjectId)
-                    .Select(g => new ProjectTaskStats
-                    {
-                        WorkProjectId = g.Key,
-                        TotalTasks = g.Count(),
-                        DoneTasks = g.Count(t => t.KanbanStatus == "Done"),
-                        BlockedTasks = g.Count(t => t.KanbanStatus == "Blocked"),
-                        OverdueTasks = g.Count(t => t.DueDate.HasValue && t.DueDate.Value.Date < today && t.KanbanStatus != "Done")
-                    })
-                    .ToListAsync()
-                : new List<ProjectTaskStats>();
-            var taskStatsByProjectId = taskStats.ToDictionary(t => t.WorkProjectId);
-
-            var projectDepartments = await _context.WorkProjectDepartments
-                .Where(pd => projectIds.Contains(pd.WorkProjectId) && pd.IsActive == true)
-                .ToListAsync();
-
-            var departmentIds = projectDepartments.Select(pd => pd.DepartmentId).Distinct().ToList();
-            var departments = await _context.Departments
-                .Where(d => departmentIds.Contains(d.Id))
-                .ToDictionaryAsync(d => d.Id, d => d.DepartmentName ?? $"Phòng ban #{d.Id}");
-
-            var ownerIds = projects.Where(p => p.OwnerId.HasValue).Select(p => p.OwnerId!.Value).Distinct().ToList();
-            var owners = await _context.Employees
-                .Where(e => ownerIds.Contains(e.Id))
-                .ToDictionaryAsync(e => e.Id, e => e.FullName ?? $"Nhân viên #{e.Id}");
-
-            var model = projects.Select(project =>
-            {
-                var stats = taskStatsByProjectId.TryGetValue(project.Id, out var foundStats)
-                    ? foundStats
-                    : new ProjectTaskStats { WorkProjectId = project.Id };
-                var names = projectDepartments
-                    .Where(pd => pd.WorkProjectId == project.Id)
-                    .Select(pd => departments.TryGetValue(pd.DepartmentId, out var name) ? name : $"PB #{pd.DepartmentId}")
-                    .Distinct()
-                    .ToList();
-
-                return new WorkProjectIndexItemViewModel
+            var model = await query
+                .Select(project => new WorkProjectIndexItemViewModel
                 {
                     Project = project,
-                    OwnerName = project.OwnerId.HasValue && owners.TryGetValue(project.OwnerId.Value, out var ownerName) ? ownerName : "Chưa gán",
-                    DepartmentNames = names.Any() ? string.Join(", ", names) : "Chưa gán phòng ban",
-                    TotalTasks = stats.TotalTasks,
-                    DoneTasks = stats.DoneTasks,
-                    BlockedTasks = stats.BlockedTasks,
-                    OverdueTasks = stats.OverdueTasks,
-                    RiskScore = CalculateProjectRiskScore(project, stats, today)
-                };
-            }).ToList();
+                    OwnerName = _context.Employees
+                        .Where(owner => project.OwnerId == owner.Id)
+                        .Select(owner => owner.FullName)
+                        .FirstOrDefault() ?? "Chưa gán",
+                    DepartmentNames = "Chưa gán phòng ban",
+                    TotalTasks = _context.WorkItems.Count(task =>
+                        task.WorkProjectId == project.Id && task.IsActive == true),
+                    DoneTasks = _context.WorkItems.Count(task =>
+                        task.WorkProjectId == project.Id && task.IsActive == true && task.KanbanStatus == "Done"),
+                    BlockedTasks = _context.WorkItems.Count(task =>
+                        task.WorkProjectId == project.Id && task.IsActive == true && task.KanbanStatus == "Blocked"),
+                    OverdueTasks = _context.WorkItems.Count(task =>
+                        task.WorkProjectId == project.Id &&
+                        task.IsActive == true &&
+                        task.DueDate.HasValue &&
+                        task.DueDate.Value.Date < today &&
+                        task.KanbanStatus != "Done")
+                })
+                .ToListAsync();
+
+            var projectIds = model.Select(item => item.Project.Id).ToList();
+            if (projectIds.Count > 0)
+            {
+                var departmentRows = await (
+                    from projectDepartment in _context.WorkProjectDepartments.AsNoTracking()
+                    join department in _context.Departments.AsNoTracking()
+                        on projectDepartment.DepartmentId equals department.Id
+                    where projectIds.Contains(projectDepartment.WorkProjectId)
+                        && projectDepartment.IsActive == true
+                    select new
+                    {
+                        projectDepartment.WorkProjectId,
+                        projectDepartment.DepartmentId,
+                        department.DepartmentName
+                    })
+                    .ToListAsync();
+
+                var departmentNamesByProjectId = departmentRows
+                    .GroupBy(row => row.WorkProjectId)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => string.Join(", ", group
+                            .Select(row => row.DepartmentName ?? $"Phòng ban #{row.DepartmentId}")
+                            .Distinct()));
+
+                foreach (var item in model)
+                {
+                    if (departmentNamesByProjectId.TryGetValue(item.Project.Id, out var departmentNames))
+                    {
+                        item.DepartmentNames = departmentNames;
+                    }
+                }
+            }
+
+            foreach (var item in model)
+            {
+                item.RiskScore = CalculateProjectRiskScore(item.Project, new ProjectTaskStats
+                {
+                    WorkProjectId = item.Project.Id,
+                    TotalTasks = item.TotalTasks,
+                    DoneTasks = item.DoneTasks,
+                    BlockedTasks = item.BlockedTasks,
+                    OverdueTasks = item.OverdueTasks
+                }, today);
+            }
 
             model = SortProjectIndexItems(model, sortBy);
 
@@ -909,31 +935,29 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 departmentIds = departmentIds.Concat(managedDepartmentIds).Distinct().ToList();
             }
 
-            var ownedProjectIds = await _context.WorkProjects
+            var accessibleProjectIdsQuery = _context.WorkProjects
                 .Where(p => (p.IsActive == true || includeArchived) && (p.OwnerId == employee.Id || p.CreatedById == employee.Id))
-                .Select(p => p.Id)
-                .ToListAsync();
+                .Select(p => p.Id);
 
-            var departmentProjectIds = departmentIds.Any()
-                ? await _context.WorkProjectDepartments
+            if (departmentIds.Any())
+            {
+                accessibleProjectIdsQuery = accessibleProjectIdsQuery.Concat(
+                    _context.WorkProjectDepartments
                     .Where(pd => pd.IsActive == true && departmentIds.Contains(pd.DepartmentId))
-                    .Select(pd => pd.WorkProjectId)
-                    .ToListAsync()
-                : new List<int>();
+                    .Select(pd => pd.WorkProjectId));
+            }
 
-            var taskProjectIds = await _context.WorkItems
-                .Where(t => t.IsActive == true &&
-                            (t.AssigneeId == employee.Id ||
-                             t.ReporterId == employee.Id ||
-                             (t.DepartmentId.HasValue && departmentIds.Contains(t.DepartmentId.Value))))
-                .Select(t => t.WorkProjectId)
-                .ToListAsync();
+            accessibleProjectIdsQuery = accessibleProjectIdsQuery.Concat(
+                _context.WorkItems
+                    .Where(t => t.IsActive == true &&
+                                (t.AssigneeId == employee.Id ||
+                                 t.ReporterId == employee.Id ||
+                                 (t.DepartmentId.HasValue && departmentIds.Contains(t.DepartmentId.Value))))
+                    .Select(t => t.WorkProjectId));
 
-            return ownedProjectIds
-                .Concat(departmentProjectIds)
-                .Concat(taskProjectIds)
+            return await accessibleProjectIdsQuery
                 .Distinct()
-                .ToList();
+                .ToListAsync();
         }
 
         private async Task<bool> CanAccessProjectAsync(int projectId)

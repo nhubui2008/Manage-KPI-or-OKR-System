@@ -134,6 +134,33 @@ public sealed class WorkProjectsControllerIndexTests
         Assert.Equal(blocked.Id, Assert.Single(model).Project.Id);
     }
 
+    [Fact]
+    public async Task Index_WithMineQuickFilter_ReturnsProjectsOwnedByCurrentEmployee()
+    {
+        await using var context = CreateContext();
+        var currentEmployee = new Employee
+        {
+            EmployeeCode = "EMP-MINE",
+            FullName = "Current employee",
+            Email = "mine@example.com",
+            Phone = "0900000001",
+            SystemUserId = 1,
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.Employees.Add(currentEmployee);
+        await context.SaveChangesAsync();
+
+        var mine = Project("MINE", "My project", "Active", "Normal", ownerId: currentEmployee.Id);
+        var unrelated = Project("OTHER", "Other project", "Active", "Normal");
+        context.WorkProjects.AddRange(mine, unrelated);
+        await context.SaveChangesAsync();
+
+        var model = await InvokeIndexAsync(CreateController(context), quickFilter: "mine");
+
+        Assert.Equal(mine.Id, Assert.Single(model).Project.Id);
+    }
+
     private static async Task<IReadOnlyList<WorkProjectIndexItemViewModel>> InvokeIndexAsync(
         WorkProjectsController controller,
         string? searchString = null,
