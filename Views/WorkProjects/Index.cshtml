@@ -141,6 +141,7 @@
             var status = item.Project.Status ?? "Active";
             var priority = item.Project.Priority ?? "Normal";
             var isClosed = IsProjectClosed(status);
+            var isArchived = string.Equals(status, "Archived", StringComparison.OrdinalIgnoreCase);
             var projectDateOverdue = IsProjectDateOverdue(item.Project.DueDate, status, today);
             var dueSoon = IsProjectDueSoon(item.Project.DueDate, status, today);
             var riskTone = ProjectRiskTone(item.BlockedTasks, item.OverdueTasks, projectDateOverdue, dueSoon, priority);
@@ -217,9 +218,18 @@
                             <span>@(item.TotalTasks - item.DoneTasks) việc đang mở</span>
                         }
                     </span>
-                    <a asp-action="Details" asp-route-id="@item.Project.Id" class="btn btn-sm btn-primary">
-                        Mở Kanban <i class="bi bi-arrow-right-short"></i>
-                    </a>
+                    @if (isArchived)
+                    {
+                        <span class="btn btn-sm btn-outline-secondary project-card__archived-action" role="status">
+                            <i class="bi bi-archive me-1"></i> Đã lưu trữ
+                        </span>
+                    }
+                    else
+                    {
+                        <a asp-action="Details" asp-route-id="@item.Project.Id" class="btn btn-sm btn-primary">
+                            Mở Kanban <i class="bi bi-arrow-right-short"></i>
+                        </a>
+                    }
                 </div>
             </article>
         }
@@ -648,6 +658,11 @@
         align-items: center;
         justify-content: center;
         gap: 2px;
+    }
+
+    .project-card__archived-action {
+        cursor: default;
+        opacity: 0.78;
     }
 
     .empty-state {
