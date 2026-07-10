@@ -39,6 +39,67 @@ public sealed class MissionVisionsControllerTests
     }
 
     [Fact]
+    public async Task Index_WithoutYear_DefaultsToTheCurrentYear()
+    {
+        await using var context = CreateContext();
+        var currentYear = DateTime.Now.Year;
+        context.MissionVisions.AddRange(
+            Mission(MissionVision.TypeYearlyGoal, "Current goal", currentYear),
+            Mission(MissionVision.TypeYearlyGoal, "Previous goal", currentYear - 1));
+        await context.SaveChangesAsync();
+
+        var result = Assert.IsType<ViewResult>(await CreateController(context).Index(null));
+        var model = Assert.IsType<MissionVisionIndexViewModel>(result.Model);
+
+        Assert.Equal(currentYear, model.SelectedYear);
+        Assert.False(model.ShowAllYears);
+        Assert.Equal("Current goal", Assert.Single(model.YearlyGoals).Content);
+    }
+
+    [Fact]
+    public async Task Index_WithAllYears_ReturnsEveryValidYearlyGoal()
+    {
+        await using var context = CreateContext();
+        context.MissionVisions.AddRange(
+            Mission(MissionVision.TypeYearlyGoal, "Goal 2026", 2026),
+            Mission(MissionVision.TypeYearlyGoal, "Goal 2025", 2025));
+        await context.SaveChangesAsync();
+
+        var result = Assert.IsType<ViewResult>(await CreateController(context).Index(null, allYears: true));
+        var model = Assert.IsType<MissionVisionIndexViewModel>(result.Model);
+
+        Assert.True(model.ShowAllYears);
+        Assert.Null(model.SelectedYear);
+        Assert.Equal(2, model.YearlyGoals.Count);
+    }
+
+    [Fact]
+    public async Task Index_WithUnavailableYear_RedirectsToTheDefaultYear()
+    {
+        await using var context = CreateContext();
+        var currentYear = DateTime.Now.Year;
+        context.MissionVisions.Add(Mission(MissionVision.TypeYearlyGoal, "Current goal", currentYear));
+        await context.SaveChangesAsync();
+
+        var result = Assert.IsType<RedirectToActionResult>(await CreateController(context).Index(2099));
+
+        Assert.Equal(nameof(MissionVisionsController.Index), result.ActionName);
+        Assert.Equal(currentYear, result.RouteValues?["year"]);
+    }
+
+    [Fact]
+    public void Create_WithVisionType_PrefillsTheRequestedStatement()
+    {
+        using var context = CreateContext();
+
+        var result = Assert.IsType<ViewResult>(CreateController(context).Create(MissionVision.TypeVision));
+        var model = Assert.IsType<MissionVision>(result.Model);
+
+        Assert.Equal(MissionVision.TypeVision, model.MissionVisionType);
+        Assert.Null(model.TargetYear);
+    }
+
+    [Fact]
     public async Task Create_WhenActiveVisionAlreadyExists_ReturnsValidationError()
     {
         await using var context = CreateContext();

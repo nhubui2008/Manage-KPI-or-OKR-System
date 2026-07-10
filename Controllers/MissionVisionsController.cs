@@ -28,7 +28,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HasPermission("MISSIONS_VIEW")]
-        public async Task<IActionResult> Index(int? year)
+        public async Task<IActionResult> Index(int? year, bool allYears = false)
         {
             var activeMissions = _context.MissionVisions
                 .AsNoTracking()
@@ -40,9 +40,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .OrderByDescending(y => y)
                 .ToListAsync();
 
-            int? selectedYear = year.HasValue && availableYears.Contains(year.Value)
-                ? year.Value
-                : null;
+            int? defaultYear = availableYears.Contains(DateTime.Now.Year)
+                ? DateTime.Now.Year
+                : availableYears.Select(value => (int?)value).FirstOrDefault();
+            if (year.HasValue && !availableYears.Contains(year.Value))
+            {
+                return defaultYear.HasValue
+                    ? RedirectToAction(nameof(Index), new { year = defaultYear.Value })
+                    : RedirectToAction(nameof(Index));
+            }
+
+            int? selectedYear = allYears ? null : year ?? defaultYear;
             var longTermStatements = await activeMissions
                 .Where(m => m.MissionVisionType == MissionVision.TypeVision ||
                             m.MissionVisionType == MissionVision.TypeMission)
@@ -71,6 +79,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 YearlyGoals = yearlyGoals,
                 AvailableYears = availableYears,
                 SelectedYear = selectedYear,
+                ShowAllYears = allYears || !selectedYear.HasValue,
                 CanCreateMission = permissions["MISSIONS_CREATE"],
                 CanEditMission = permissions["MISSIONS_EDIT"],
                 CanDeleteMission = permissions["MISSIONS_DELETE"]
@@ -79,12 +88,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpGet]
         [HasPermission("MISSIONS_CREATE")]
-        public IActionResult Create()
+        public IActionResult Create(string? type = null)
         {
+            var selectedType = type is MissionVision.TypeVision or MissionVision.TypeMission or MissionVision.TypeYearlyGoal
+                ? type
+                : MissionVision.TypeYearlyGoal;
             return View(new MissionVision
             {
-                MissionVisionType = MissionVision.TypeYearlyGoal,
-                TargetYear = DateTime.Now.Year
+                MissionVisionType = selectedType,
+                TargetYear = selectedType == MissionVision.TypeYearlyGoal ? DateTime.Now.Year : null
             });
         }
 
