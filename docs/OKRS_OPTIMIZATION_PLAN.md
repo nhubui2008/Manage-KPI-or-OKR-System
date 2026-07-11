@@ -228,6 +228,6 @@ AI thuc hien cap nhat phan nay sau moi task:
 
 | Ngay | Phase | Task | Nhanh | Test da chay | Ket qua | Commit |
 |---|---|---|---|---|---|---|
-| 2026-07-11 | 24 | Baseline Index tests | Ngthebao-phase-24-okrs-correctness-baseline | OKRsControllerIndexTests + full suite | Pass (5 + 65) | pending |
-| 2026-07-11 | 24 | Fix KR WorkItem duplicate + shared path | Ngthebao-phase-24-okrs-correctness-baseline | OKRsControllerKeyResultTests | Pass | pending |
-| 2026-07-11 | 24 | Pagination + KR validation + HTTP QA | Ngthebao-phase-24-okrs-correctness-baseline | unit + full + HTTP CRUD | Pass | pending |
+| 2026-07-11 | 24 | Baseline Index tests | Ngthebao-phase-24-okrs-correctness-baseline | OKRsControllerIndexTests + full suite | Pass (5 + 65) | 485ccf7 |
+| 2026-07-11 | 24 | Fix KR WorkItem duplicate + shared path | Ngthebao-phase-24-okrs-correctness-baseline | OKRsControllerKeyResultTests | Pass | 485ccf7 |
+| 2026-07-11 | 24 | Pagination + KR validation + HTTP QA | Ngthebao-phase-24-okrs-correctness-baseline | unit + full + HTTP CRUD | Pass | 485ccf7 |
