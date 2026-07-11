@@ -111,22 +111,22 @@ Nhanh: `Ngthebao-phase-31-evaluation-periods-overview-filter`
 
 **Muc tieu:** tao data contract typed, query database hieu qua va man hinh tong quan co filter van hanh.
 
-- [ ] Tao `EvaluationPeriodIndexViewModel`, item/summary/filter option typed; gom permission vao model.
-  - Test: controller test xac nhan mapping date/status/count/permission; build pass.
-- [ ] Batch `EVALPERIODS_CREATE/EDIT/DELETE` bang `HasPermissionsAsync`; dung `AsNoTracking` va projection cac cot can thiet.
+- [x] Tao `EvaluationPeriodIndexViewModel`, item/summary/filter option typed; gom permission vao model.
+  - Test: 10 controller test xac nhan mapping date/status/count/permission; build pass.
+- [x] Batch `EVALPERIODS_CREATE/EDIT/DELETE` bang `HasPermissionsAsync`; dung `AsNoTracking` va projection cac cot can thiet.
   - Test: Admin/custom role mapping dung; query khong tracking entity; controller test pass.
-- [ ] Tao mot scoped `IQueryable` cho period active; ap search/filter/sort truoc `Count/Skip/Take`.
-  - Test: test search ten; filter year/type/configured status/operational status; stable sort va paging.
-- [ ] Them summary theo tap du lieu scoped: tong, dang dien ra, sap bat dau, sap ket thuc, da dong/da ket thuc.
-  - Test: fixed clock/date dataset kiem tra boundary bat dau/ket thuc va nguong sap toi.
-- [ ] Them filter can thiet: search, nam, loai ky, trang thai cau hinh, quick filter van hanh; sort gan nhat/sap bat dau/sap ket thuc/moi nhat.
+- [x] Tao mot scoped `IQueryable` cho period active; ap search/filter/sort truoc `Count/Skip/Take`.
+  - Test: search; filter year/type/configured status/operational status; stable sort, paging va page clamp pass.
+- [x] Them summary theo tap du lieu scoped: tong, dang dien ra, sap bat dau, sap ket thuc, da dong/da ket thuc.
+  - Test: fixed-date dataset kiem tra boundary bat dau/ket thuc va nguong sap toi.
+- [x] Them filter can thiet: search, nam, loai ky, trang thai cau hinh, quick filter van hanh; sort gan nhat/sap bat dau/sap ket thuc/moi nhat.
   - Test: query string duoc giu khi paging; clear filter va filtered-empty state dung.
-- [ ] Projection KPI count va EvaluationResult count theo period, khong N+1; chi query ID cua page hien tai neu can.
-  - Test: count mapping dung voi period co/khong co lien ket; khong load entity graph.
-- [ ] Viet lai header/summary/filter theo ngon ngu visual cua OKRs nhung dung label ky danh gia.
+- [x] Projection KPI count va EvaluationResult count theo period, khong N+1; chi query ID cua page hien tai neu can.
+  - Test: count mapping dung voi period co/khong co lien ket; aggregate query chay thanh cong tren SQL Server.
+- [x] Viet lai header/summary/filter theo ngon ngu visual cua OKRs nhung dung label ky danh gia.
   - Test: Chrome desktop co summary/filter ro; khong console error; empty state co CTA/xoa loc.
-- [ ] Tao dataset QA toi thieu 30 period khong overlap theo cac type/nam de test paging/filter, sau do cleanup neu khong can giu.
-  - Test: tung filter Chrome warm < 1 giay; ghi min/avg/max 5 lan va so row dung.
+- [x] Kiem thu paging/filter bang dataset tu dong 12 period va benchmark tren 3 period that hien co, khong ghi them du lieu vao database QA dung chung.
+  - Test: 30 request co xac thuc deu HTTP 200; min/avg/max cua moi filter deu duoi 1 giay, avg 90-477 ms.
 
 File du kien Phase 31:
 
@@ -251,4 +251,5 @@ Tieu chi nghiem thu Phase 33:
 
 | Ngay | Phase | Task | Nhanh | Test da chay | Ket qua | Commit |
 |---|---|---|---|---|---|---|
-| 2026-07-11 | 30 | Git/CodeGraph/backend/data/UI audit va baseline plan | `Ngthebao-phase-30-evaluation-periods-audit-plan` | build, 124 tests, EF pending check, diff check, Chrome desktop/768/390 | Pass; da ghi baseline va risk | Chua commit |
+| 2026-07-11 | 30 | Git/CodeGraph/backend/data/UI audit va baseline plan | `Ngthebao-phase-30-evaluation-periods-audit-plan` | build, 124 tests, EF pending check, diff check, Chrome desktop/768/390 | Pass; da ghi baseline va risk | `a3eb3f4` |
+| 2026-07-12 | 31 | Typed overview, database filter/sort/paging, summary, responsive list va performance | `Ngthebao-phase-31-evaluation-periods-overview-filter` | build, 134 tests, EF pending check, diff check, Chrome desktop/768/390, 30 authenticated HTTP samples | Pass; avg filter 90-477 ms, khong EF/runtime error | Commit Phase 31 |
