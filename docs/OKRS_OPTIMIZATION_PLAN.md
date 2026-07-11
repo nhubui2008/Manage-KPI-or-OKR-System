@@ -242,4 +242,4 @@ AI thuc hien cap nhat phan nay sau moi task:
 | 2026-07-11 | 27 | Overview responsive UX + risk badges | Ngthebao-phase-27-okrs-overview-responsive-ux | RiskBadgeTests + full 94 + HTTP QA | Pass | 13750d7 |
 | 2026-07-11 | 28 | Interaction/modals/AI harden | Ngthebao-phase-28-okrs-interaction-ai-modals | AISuggestTests + full 102 + HTTP QA | Pass | 8457f25 |
 | 2026-07-11 | 29 | Business flow + final QA | Ngthebao-phase-29-okrs-business-flow-final-qa | BusinessFlowFinalTests + full 117 + HTTP | Pass | 8ad607f |
-| 2026-07-11 | 24-29 | Feedback fix: workflow sync, Index perf, sort semantics, modal/a11y | Ngthebao-phase-feedback-okrs-fixes-24-29 | KeyResult + FilterSort + full 122 | Pass | (pending commit) |
+| 2026-07-11 | 24-29 | Feedback fix: workflow sync, Index perf, sort semantics, modal/a11y | Ngthebao-phase-feedback-okrs-fixes-24-29 | KeyResult + FilterSort + full 122 | Pass | caf5480 |
