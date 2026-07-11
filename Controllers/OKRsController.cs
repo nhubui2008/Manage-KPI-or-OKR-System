@@ -330,6 +330,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
+            NormalizeOkrCoreFields(model);
+            await ValidateOkrCoreFieldsAsync(model);
+            var refValidation = await ValidateOkrReferenceIdsAsync(missionId, departmentId, employeeId, model.OKRTypeId);
+            if (!refValidation.IsValid)
+            {
+                ModelState.AddModelError(string.Empty, refValidation.ErrorMessage!);
+            }
+
             if (ModelState.IsValid)
             {
                 var scopeValidation = await ResolveAndValidateOkrAllocationScopeAsync(employeeId, departmentId);
@@ -442,6 +450,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(model.Id))
             {
                 return Forbid();
+            }
+
+            NormalizeOkrCoreFields(model);
+            await ValidateOkrCoreFieldsAsync(model);
+            var refValidation = await ValidateOkrReferenceIdsAsync(missionId, departmentId, employeeId, model.OKRTypeId);
+            if (!refValidation.IsValid)
+            {
+                ModelState.AddModelError(string.Empty, refValidation.ErrorMessage!);
             }
 
             if (!ModelState.IsValid)
@@ -880,6 +896,26 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     return Forbid();
                 }
 
+                var linkedActiveTasks = await _context.WorkItems
+                    .AsNoTracking()
+                    .CountAsync(t => t.OKRKeyResultId == kr.Id && t.IsActive == true);
+                if (linkedActiveTasks > 0)
+                {
+                    TempData["ErrorMessage"] =
+                        $"Không thể xóa Key Result vì còn {linkedActiveTasks} task đang liên kết. Hãy hoàn tất/xóa task trên Kanban trước, hoặc giữ KR để không tạo orphan mapping.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Detach historical inactive tasks so hard-delete does not leave broken FK expectations.
+                var inactiveTasks = await _context.WorkItems
+                    .Where(t => t.OKRKeyResultId == kr.Id)
+                    .ToListAsync();
+                foreach (var task in inactiveTasks)
+                {
+                    task.OKRKeyResultId = null;
+                    task.UpdatedAt = DateTime.Now;
+                }
+
                 _context.OKRKeyResults.Remove(kr);
                 await _context.SaveChangesAsync();
                 
@@ -1040,9 +1076,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var assignableDepartments = await GetAssignableDepartmentsAsync();
             var assignableEmployees = await GetAssignableEmployeesAsync(assignableDepartments.Select(d => d.Id).ToList());
 
-            ViewBag.Missions = await _context.MissionVisions
-                .Where(m => m.IsActive == true)
-                .ToListAsync();
+            ViewBag.Missions = await GetLinkableMissionVisionsAsync();
             ViewBag.Departments = assignableDepartments;
             ViewBag.Employees = assignableEmployees;
             ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
@@ -1054,13 +1088,136 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var assignableDepartments = await GetAssignableDepartmentsAsync();
             var assignableEmployees = await GetAssignableEmployeesAsync(assignableDepartments.Select(d => d.Id).ToList());
 
-            ViewBag.Missions = await _context.MissionVisions
-                .Where(m => m.IsActive == true)
-                .ToListAsync();
+            ViewBag.Missions = await GetLinkableMissionVisionsAsync();
             ViewBag.Departments = assignableDepartments;
             ViewBag.Employees = assignableEmployees;
             ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
             ViewBag.EmployeeDepartmentMap = await GetActiveEmployeeDepartmentMapAsync();
+        }
+
+        private async Task<List<MissionVision>> GetLinkableMissionVisionsAsync()
+        {
+            // Only strategic statements suitable for OKR linkage.
+            var allowedTypes = new[]
+            {
+                MissionVision.TypeYearlyGoal,
+                MissionVision.TypeMission,
+                MissionVision.TypeVision
+            };
+
+            return await _context.MissionVisions
+                .AsNoTracking()
+                .Where(m => m.IsActive == true &&
+                            m.MissionVisionType != null &&
+                            allowedTypes.Contains(m.MissionVisionType))
+                .OrderBy(m => m.MissionVisionType == MissionVision.TypeYearlyGoal ? 0 :
+                              m.MissionVisionType == MissionVision.TypeMission ? 1 : 2)
+                .ThenByDescending(m => m.TargetYear)
+                .ThenBy(m => m.Content)
+                .ToListAsync();
+        }
+
+        private static void NormalizeOkrCoreFields(OKR model)
+        {
+            model.ObjectiveName = model.ObjectiveName?.Trim();
+            model.Cycle = model.Cycle?.Trim();
+        }
+
+        private Task ValidateOkrCoreFieldsAsync(OKR model)
+        {
+            if (string.IsNullOrWhiteSpace(model.ObjectiveName))
+            {
+                ModelState.AddModelError(nameof(OKR.ObjectiveName), "Tên mục tiêu không được để trống.");
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Cycle))
+            {
+                ModelState.AddModelError(nameof(OKR.Cycle), "Chu kỳ thực hiện không được để trống.");
+            }
+            else if (!IsAllowedOkrCycle(model.Cycle))
+            {
+                ModelState.AddModelError(nameof(OKR.Cycle), "Chu kỳ không hợp lệ. Ví dụ: Q1-2026, Năm 2026.");
+            }
+
+            if (!model.OKRTypeId.HasValue || model.OKRTypeId.Value <= 0)
+            {
+                ModelState.AddModelError(nameof(OKR.OKRTypeId), "Vui lòng chọn loại OKR hợp lệ.");
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private static bool IsAllowedOkrCycle(string cycle)
+        {
+            // Accept Q1-YYYY ... Q4-YYYY or "Năm YYYY" / "Nam YYYY".
+            if (System.Text.RegularExpressions.Regex.IsMatch(cycle, @"^Q[1-4]-\d{4}$", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            {
+                return true;
+            }
+
+            return System.Text.RegularExpressions.Regex.IsMatch(
+                cycle,
+                @"^(N[ăa]m)\s+\d{4}$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+
+        private async Task<(bool IsValid, string? ErrorMessage)> ValidateOkrReferenceIdsAsync(
+            int? missionId,
+            int? departmentId,
+            int? employeeId,
+            int? okrTypeId)
+        {
+            if (missionId.HasValue)
+            {
+                var mission = await _context.MissionVisions
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(m => m.Id == missionId.Value && m.IsActive == true);
+                if (mission == null)
+                {
+                    return (false, "MissionVision không tồn tại hoặc đã vô hiệu.");
+                }
+
+                var allowedTypes = new[]
+                {
+                    MissionVision.TypeYearlyGoal,
+                    MissionVision.TypeMission,
+                    MissionVision.TypeVision
+                };
+                if (mission.MissionVisionType == null || !allowedTypes.Contains(mission.MissionVisionType))
+                {
+                    return (false, "Chỉ được liên kết MissionVision loại Tầm nhìn / Sứ mệnh / Mục tiêu năm.");
+                }
+            }
+
+            if (okrTypeId.HasValue && okrTypeId.Value > 0)
+            {
+                var typeExists = await _context.OKRTypes.AsNoTracking().AnyAsync(t => t.Id == okrTypeId.Value);
+                if (!typeExists)
+                {
+                    return (false, "Loại OKR không hợp lệ.");
+                }
+            }
+
+            if (departmentId.HasValue)
+            {
+                var assignableDepartments = await GetAssignableDepartmentsAsync();
+                if (!assignableDepartments.Any(d => d.Id == departmentId.Value))
+                {
+                    return (false, "Phòng ban không tồn tại hoặc ngoài phạm vi phân bổ của bạn.");
+                }
+            }
+
+            if (employeeId.HasValue)
+            {
+                var assignableDepartments = await GetAssignableDepartmentsAsync();
+                var assignableEmployees = await GetAssignableEmployeesAsync(assignableDepartments.Select(d => d.Id).ToList());
+                if (!assignableEmployees.Any(e => e.Id == employeeId.Value))
+                {
+                    return (false, "Nhân viên không tồn tại hoặc ngoài phạm vi phân bổ của bạn.");
+                }
+            }
+
+            return (true, null);
         }
 
         private async Task<int?> ResolveDepartmentIdFromEmployeeAsync(int? employeeId, int? currentDepartmentId)
@@ -1366,9 +1523,31 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     return Forbid();
                 }
 
+                // Soft-disable only: keep project/task history and mappings for audit.
                 okr.IsActive = false;
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã vô hiệu hóa OKR!";
+
+                var linkedProject = okr.LinkedWorkProjectId.HasValue
+                    ? await _context.WorkProjects.AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.Id == okr.LinkedWorkProjectId.Value)
+                    : null;
+                var activeTaskCount = await _context.WorkItems
+                    .AsNoTracking()
+                    .CountAsync(t => t.IsActive == true &&
+                                     t.OKRKeyResultId.HasValue &&
+                                     _context.OKRKeyResults.Any(k => k.Id == t.OKRKeyResultId && k.OKRId == id));
+
+                if (linkedProject != null || activeTaskCount > 0)
+                {
+                    TempData["SuccessMessage"] =
+                        $"Đã vô hiệu hóa OKR. Dự án/task liên kết được giữ nguyên lịch sử" +
+                        (linkedProject != null ? $" (project: {linkedProject.ProjectName})" : string.Empty) +
+                        (activeTaskCount > 0 ? $", {activeTaskCount} task đang hoạt động." : ".");
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = "Đã vô hiệu hóa OKR!";
+                }
             }
             return RedirectToAction(nameof(Index));
         }

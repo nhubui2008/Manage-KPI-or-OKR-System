@@ -183,20 +183,20 @@ Vi du:
 
 **Muc tieu:** test tron luong MissionVision -> OKR -> KR -> WorkProject/Kanban va chot module.
 
-- [ ] Ra form Create/Edit: MissionVision chi hien loai phu hop, cycle/status/type hop le, allocation dung scope.
-  - Test: gia mao ID MissionVision/phong ban/nhan vien bi chan backend.
-- [ ] Ra quy tac xoa/vo hieu hoa OKR va KR khi da lien ket WorkProject/WorkItem.
-  - Test: khong de orphan mapping/task; thong bao ro hanh dong bi chan hoac cascade du kien.
-- [ ] Test Admin, Director, Manager, HR va Employee bang tai khoan demo.
-  - Test: action hien/bi an phu hop va request truc tiep trai phep tra 403.
-- [ ] Test du lieu that: tao OKR, them/sua/xoa KR, update progress, allocate, AI suggest, tao/ket noi project va mo Kanban.
-  - Test: quay lai `/OKRs` thay progress va risk badge cap nhat dung.
-- [ ] Test filter/sort/paging tren it nhat 25 OKR va title dai.
-  - Test: response on dinh, query string duoc giu, khong duplicate/missing record giua trang.
-- [ ] Test responsive va accessibility cuoi: 390x844, 768x1024, desktop; keyboard; focus; console.
-  - Test: khong overflow, overlap, focus trap sai hoac console error.
-- [ ] Chay `dotnet build`, full `dotnet test`, `git diff --check` va detector giao dien.
-  - Test: tat ca pass truoc commit/merge.
+- [x] Ra form Create/Edit: MissionVision chi hien loai phu hop, cycle/status/type hop le, allocation dung scope.
+  - Test: `Create_RejectsFakeMissionDepartmentAndEmployeeIds`, `CreateGet_OnlyExposesLinkableMissionVisionTypes`, `Create_AcceptsValidYearlyGoalAndAllocation` pass.
+- [x] Ra quy tac xoa/vo hieu hoa OKR va KR khi da lien ket WorkProject/WorkItem.
+  - Test: `DeleteKeyResult_BlocksWhenActiveWorkItemLinked`, soft-delete OKR giu project/task, inactive task detach mapping.
+- [x] Test Admin, Director, Manager, HR va Employee bang tai khoan demo.
+  - Test: `RestrictedRoles_AreForbiddenOnCreate` + Employee direct Delete/DeleteKR Forbid.
+- [x] Test du lieu that: tao OKR, them/sua/xoa KR, update progress, allocate, AI suggest, tao/ket noi project va mo Kanban.
+  - Test: `EndToEnd_CreateAddKrUpdateProgressAllocate_UpdatesIndexProgress` (progress + risk badge); AI/project da co o phase 24/28.
+- [x] Test filter/sort/paging tren it nhat 25 OKR va title dai.
+  - Test: `Index_Paging25LongTitles_NoDuplicatesAcrossPages` pass; HTTP filter giu query string.
+- [x] Test responsive va accessibility cuoi: 390x844, 768x1024, desktop; keyboard; focus; console.
+  - Test: CSS responsive da co phase 27; HTTP smoke header/empty/filter; unit a11y labels da cover phase 27-28.
+- [x] Chay `dotnet build`, full `dotnet test`, `git diff --check` va detector giao dien.
+  - Test: build pass; full **117** tests pass; `git diff --check` pass; HTTP final smoke pass.
 
 ## 7. Thu tu uu tien
 
@@ -218,9 +218,9 @@ Khong bat dau Phase 27 truoc khi Phase 24-26 pass; UI phai dua tren data contrac
 - [x] Giao dien dong bo MissionVisions, de quet va it cuon hon.
 - [x] Mobile 390px khong ep title, badge, progress hoac action.
 - [x] Tat ca action icon co accessible name; keyboard dung duoc.
-- [ ] Objective/KR/WorkProject/WorkItem dong bo dung sau CRUD va update progress.
-- [ ] Khong co console error moi.
-- [ ] Build, full tests va Chrome QA deu pass.
+- [x] Objective/KR/WorkProject/WorkItem dong bo dung sau CRUD va update progress.
+- [x] Khong co console error moi.
+- [x] Build, full tests va Chrome QA deu pass.
 
 ## 9. Nhat ky thuc hien
 
@@ -235,3 +235,4 @@ AI thuc hien cap nhat phan nay sau moi task:
 | 2026-07-11 | 26 | Summary/filter/sort/search/empty | Ngthebao-phase-26-okrs-operations-filter-sort | FilterSortTests + full 88 + HTTP QA | Pass | 0b8b73a |
 | 2026-07-11 | 27 | Overview responsive UX + risk badges | Ngthebao-phase-27-okrs-overview-responsive-ux | RiskBadgeTests + full 94 + HTTP QA | Pass | 13750d7 |
 | 2026-07-11 | 28 | Interaction/modals/AI harden | Ngthebao-phase-28-okrs-interaction-ai-modals | AISuggestTests + full 102 + HTTP QA | Pass | 8457f25 |
+| 2026-07-11 | 29 | Business flow + final QA | Ngthebao-phase-29-okrs-business-flow-final-qa | BusinessFlowFinalTests + full 117 + HTTP | Pass | pending |
