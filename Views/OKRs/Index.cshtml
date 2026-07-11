@@ -43,26 +43,25 @@
     };
 }
 
-<div class="container-fluid px-0 okr-index-page">
+<div class="okr-index-page">
 
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <header class="okr-page-header">
         <div>
-            <h1 class="h3 font-weight-bold mb-1">Mục tiêu và Kết quả then chốt (OKR)</h1>
-            <div class="page-breadcrumb">
+            <h1>Mục tiêu và Kết quả then chốt (OKR)</h1>
+            <nav class="okr-breadcrumb" aria-label="Điều hướng trang">
                 <a href="/">Trang chủ</a>
-                <i class="bi bi-chevron-right separator"></i>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
                 <span>Quản lý OKR</span>
-            </div>
+            </nav>
         </div>
-        <div class="d-flex justify-content-end gap-2">
-            @if (canCreateOkr)
-            {
-                <a asp-action="Create" class="text-decoration-none btn-primary-custom d-flex align-items-center">
-                    <i class="bi bi-plus-lg me-1"></i> Tạo OKR mới
-                </a>
-            }
-        </div>
-    </div>
+        @if (canCreateOkr)
+        {
+            <a asp-action="Create" class="btn btn-primary okr-primary-action">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                <span>Tạo OKR mới</span>
+            </a>
+        }
+    </header>
 
     <section class="okr-summary" aria-label="Tổng quan OKR">
         <div class="okr-summary__item">
@@ -87,11 +86,8 @@
         </div>
     </section>
 
-    <div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <div class="content-card w-100">
-                <div class="card-body-custom">
-                    <form asp-action="Index" method="get" class="okr-filter mb-3">
+    <section class="okr-panel" aria-label="Danh sách OKR">
+                    <form asp-action="Index" method="get" class="okr-filter">
                         @if (!string.IsNullOrWhiteSpace(currentQuickFilter))
                         {
                             <input type="hidden" name="quickFilter" value="@currentQuickFilter" />
@@ -194,79 +190,90 @@
                                 var krs = okr.KeyResults ?? Array.Empty<Manage_KPI_or_OKR_System.Models.ViewModels.OkrKeyResultItemViewModel>();
                                 bool canUpdateProgress = okr.CanUpdateProgress;
 
-                                // Sử dụng TotalProgress từ view model đã map
                                 int okrProgressInt = (int)okr.TotalProgress;
                                 int okrProgressWidth = (int)Math.Min(100, okr.TotalProgress);
-
                                 string okrProgressColor = ProgressHelper.GetProgressColorClass(okrProgressInt);
-                                string okrBadgeTone = okrProgressInt >= 100 ? "okr-status-success" :
-                                                      okrProgressInt >= 70 ? "okr-status-primary" :
-                                                      okrProgressInt >= 40 ? "okr-status-warning" :
-                                                      "okr-status-danger";
+                                var objectiveTitle = string.IsNullOrWhiteSpace(okr.ObjectiveName) ? $"OKR #{okr.Id}" : okr.ObjectiveName;
+                                var menuLabel = $"Tùy chọn OKR: {objectiveTitle}";
 
-                                <div class="accordion-item mb-3 border-0 shadow-sm rounded" style="overflow: visible;">
-                                    <div class="accordion-header position-relative" id="heading-@index">
-
-                                        <div class="accordion-button collapsed bg-white p-3 d-flex justify-content-between align-items-center w-100" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId" style="cursor: pointer; box-shadow: none;">
-
-                                            <div class="d-flex flex-column flex-grow-1 pe-4">
-                                                <div class="d-flex align-items-center gap-2 mb-2">
-                                                    <span class="badge okr-status-badge @okrBadgeTone rounded-pill px-2">Objective (O)</span>
-                                                    @if(okr.OkrTypeId == 1){<span class="badge okr-strategic-badge rounded-pill px-2"><i class="bi bi-star-fill me-1"></i>Chiến lược công ty</span>}
-                                                    <h5 class="mb-0 fw-bold fs-6 text-dark">@okr.ObjectiveName</h5>
-                                                    <span class="badge text-bg-light border text-muted rounded-pill px-2" title="Số Key Result">@okr.KeyResultCount KR</span>
+                                <article class="accordion-item okr-objective-card" data-okr-id="@okr.Id">
+                                    <div class="accordion-header okr-objective-header" id="heading-@index">
+                                        <button type="button"
+                                                class="accordion-button collapsed okr-objective-toggle"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#@collapseId"
+                                                aria-expanded="false"
+                                                aria-controls="@collapseId"
+                                                aria-label="Mở rộng Key Results cho @objectiveTitle">
+                                            <div class="okr-objective-main">
+                                                <div class="okr-objective-badges">
+                                                    <span class="okr-chip">Objective</span>
+                                                    @if (okr.OkrTypeId == 1)
+                                                    {
+                                                        <span class="okr-chip okr-chip--type"><i class="bi bi-star-fill" aria-hidden="true"></i> Chiến lược công ty</span>
+                                                    }
+                                                    <span class="okr-risk-badge @okr.RiskStatusCssClass" title="@okr.RiskStatusLabel">
+                                                        <i class="bi @(okr.RiskStatusCode == "done" ? "bi-check-circle" : okr.RiskStatusCode == "good" ? "bi-graph-up" : "bi-exclamation-triangle")" aria-hidden="true"></i>
+                                                        <span>@okr.RiskStatusLabel</span>
+                                                    </span>
+                                                    @if (okr.IsUnallocated)
+                                                    {
+                                                        <span class="okr-risk-badge okr-risk-badge--unallocated" title="Chưa phân bổ">
+                                                            <i class="bi bi-people" aria-hidden="true"></i>
+                                                            <span>Chưa phân bổ</span>
+                                                        </span>
+                                                    }
+                                                    <span class="okr-chip okr-chip--muted">@okr.KeyResultCount KR</span>
                                                 </div>
-
-                                                <div class="d-flex align-items-center gap-4 flex-wrap">
-                                                    <div class="text-muted okr-meta-text" style="font-size: 0.8rem;">
-                                                        <i class="bi bi-calendar3"></i> @(okr.Cycle ?? "Chưa rõ chu kỳ")
-                                                    </div>
-                                                    <div class="text-muted okr-meta-text" style="font-size: 0.8rem;" title="Phạm vi phân bổ">
-                                                        <i class="bi bi-people"></i> @okr.AllocationSummary
-                                                    </div>
+                                                <h2 class="okr-objective-title">@objectiveTitle</h2>
+                                                <div class="okr-objective-meta">
+                                                    <span><i class="bi bi-calendar3" aria-hidden="true"></i> @(okr.Cycle ?? "Chưa rõ chu kỳ")</span>
+                                                    <span><i class="bi bi-people" aria-hidden="true"></i> @okr.AllocationSummary</span>
                                                     @if (okr.LinkedWorkProjectId.HasValue)
                                                     {
                                                         <a asp-controller="WorkProjects" asp-action="Details" asp-route-id="@okr.LinkedWorkProjectId"
-                                                           class="btn btn-sm btn-outline-info py-1 px-2"
-                                                           title="@(okr.LinkedWorkProjectName ?? "Xem dự án vận hành tự động sinh từ OKR này")"
+                                                           class="okr-project-link"
+                                                           title="@(okr.LinkedWorkProjectName ?? "Xem dự án vận hành")"
+                                                           aria-label="Mở dự án vận hành cho @objectiveTitle"
                                                            onclick="event.stopPropagation();">
-                                                            <i class="bi bi-kanban me-1"></i> Dự án vận hành
+                                                            <i class="bi bi-kanban" aria-hidden="true"></i> Dự án vận hành
                                                         </a>
                                                     }
-
-                                                    <div class="flex-grow-1" style="max-width: 400px;">
-                                                        <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                                            <span class="text-muted okr-progress-label">Tiến độ chung:</span>
-                                                            <span class="fw-bold">@okrProgressInt%</span>
-                                                        </div>
-                                                        <div class="progress" style="height: 6px; border-radius: 10px;">
-                                                            <div class="progress-bar @okrProgressColor" role="progressbar" style="width: @okrProgressWidth%" aria-valuenow="@okrProgressWidth" aria-valuemin="0" aria-valuemax="100"></div>
-                                                        </div>
+                                                </div>
+                                                <div class="okr-objective-progress" aria-label="Tiến độ @okrProgressInt phần trăm">
+                                                    <div class="okr-objective-progress__labels">
+                                                        <span>Tiến độ</span>
+                                                        <strong>@okrProgressInt%</strong>
+                                                    </div>
+                                                    <div class="progress" role="progressbar" aria-valuenow="@okrProgressWidth" aria-valuemin="0" aria-valuemax="100">
+                                                        <div class="progress-bar @okrProgressColor" style="width: @okrProgressWidth%"></div>
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            @if (canCreateOkr || canEditOkr || canDeleteOkr)
-                                            {
-                                                <div style="width: 45px;"></div>
-                                            }
-                                        </div>
+                                        </button>
 
                                         @if (canCreateOkr || canEditOkr || canDeleteOkr)
                                         {
-                                            <div class="action-btns dropdown position-absolute okr-action-dropdown" style="right: 50px; top: 50%; transform: translateY(-50%);" onclick="event.stopPropagation();">
-                                                <button type="button" class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
-                                                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                            <div class="okr-action-dropdown dropdown" onclick="event.stopPropagation();">
+                                                <button type="button"
+                                                        class="btn okr-menu-btn"
+                                                        data-bs-toggle="dropdown"
+                                                        aria-expanded="false"
+                                                        aria-label="@menuLabel"
+                                                        title="@menuLabel">
+                                                    <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                                     @if (canEditOkr)
                                                     {
-                                                        <li><a class="dropdown-item" href="@Url.Action("Edit", "OKRs", new { id = okr.Id })"><i class="bi bi-pencil-square me-2 text-primary"></i>Chỉnh sửa OKR</a></li>
+                                                        <li><a class="dropdown-item" href="@Url.Action("Edit", "OKRs", new { id = okr.Id })"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Chỉnh sửa OKR</a></li>
                                                     }
                                                     @if (canCreateOkr)
                                                     {
-                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
-                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAiSuggestKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-magic me-2 text-info"></i>AI Gợi ý KR</a></li>
-                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAiTaskDecomposeModal('OKR', @okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))', '@(okr.LinkedWorkProjectId?.ToString() ?? "")')"><i class="bi bi-stars me-2 text-primary"></i>AI Chia task</a></li>
-                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên/phòng ban</a></li>
+                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2" aria-hidden="true"></i>Thêm KR</a></li>
+                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAiSuggestKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-magic me-2" aria-hidden="true"></i>AI Gợi ý KR</a></li>
+                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAiTaskDecomposeModal('OKR', @okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))', '@(okr.LinkedWorkProjectId?.ToString() ?? "")')"><i class="bi bi-stars me-2" aria-hidden="true"></i>AI Chia task</a></li>
+                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2" aria-hidden="true"></i>Phân bổ</a></li>
                                                     }
                                                     @if ((canEditOkr || canCreateOkr) && canDeleteOkr)
                                                     {
@@ -276,19 +283,21 @@
                                                     {
                                                         <li>
                                                             <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận xóa OKR này?');">
-                                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa OKR</button>
+                                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2" aria-hidden="true"></i>Xóa OKR</button>
                                                             </form>
                                                         </li>
                                                     }
                                                 </ul>
                                             </div>
                                         }
-
                                     </div>
 
-                                    <div id="@collapseId" class="accordion-collapse collapse border-top" aria-labelledby="heading-@index">
-                                        <div class="accordion-body bg-light bg-opacity-25 p-3">
-                                            <h6 class="fs-6 fw-semibold text-muted mb-3"><i class="bi bi-key-fill text-warning me-1"></i> Key Results (Kết quả then chốt)</h6>
+                                    <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="heading-@index">
+                                        <div class="accordion-body okr-kr-panel">
+                                            <div class="okr-kr-panel__title">
+                                                <i class="bi bi-key-fill" aria-hidden="true"></i>
+                                                <span>Key Results</span>
+                                            </div>
 
                                             @if (krs.Any())
                                             {
@@ -299,95 +308,112 @@
                                                     var krWidth = (int)Math.Min(100, kr.Progress);
                                                     var krTargetJs = (kr.TargetValue ?? 0).ToString(CultureInfo.InvariantCulture);
                                                     var krCurrentJs = (kr.CurrentValue ?? 0).ToString(CultureInfo.InvariantCulture);
-
                                                     string krColor = ProgressHelper.GetProgressColorClass(krPercent);
-                                                    string krTextClass = ProgressHelper.GetProgressTextColorClass(krPercent);
+                                                    var krName = string.IsNullOrWhiteSpace(kr.KeyResultName) ? $"KR #{kr.Id}" : kr.KeyResultName;
 
-                                                    <div class="d-flex align-items-center justify-content-between py-3 border-bottom border-light">
-                                                        <div class="ps-4" style="flex: 1;">
-                                                            <div class="fw-medium text-dark mb-1">@krIndex. @kr.KeyResultName</div>
-                                                            <div class="text-muted okr-meta-text" style="font-size: 0.75rem;">Mục tiêu: @String.Format("{0:N0}", kr.TargetValue) @kr.Unit</div>
-                                                        </div>
-
-                                                        <div class="d-flex align-items-center gap-4" style="width: 45%;">
-                                                            <div class="flex-grow-1">
-                                                                 <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                                                    <span class="text-muted">Tiến độ: <strong>@String.Format("{0:N1}", kr.CurrentValue ?? 0)</strong>/@String.Format("{0:N0}", kr.TargetValue ?? 0) @kr.Unit</span>
-                                                                    <span class="fw-bold">@krPercent%</span>
-                                                                </div>
-                                                                <div class="progress mb-1" style="height: 6px; border-radius: 10px;">
-                                                                    <div class="progress-bar @krColor" role="progressbar" style="width: @krWidth%" aria-valuenow="@krWidth" aria-valuemin="0" aria-valuemax="100"></div>
-                                                                </div>
-                                                                <div class="d-flex justify-content-between" style="font-size: 0.7rem;">
-                                                                    <span class="badge badge-pastel-pink okr-kr-status-badge px-2 py-1">@ProgressHelper.GetResultStatus(kr.Progress)</span>
-                                                                    @if(kr.IsInverse){<span class="text-info"><i class="bi bi-info-circle me-1"></i>Chỉ tiêu giảm thiểu</span>}
-                                                                </div>
+                                                    <div class="okr-kr-row">
+                                                        <div class="okr-kr-row__main">
+                                                            <div class="okr-kr-row__name">@krIndex. @krName</div>
+                                                            <div class="okr-kr-row__meta">
+                                                                <span>Mục tiêu: @String.Format("{0:N0}", kr.TargetValue) @kr.Unit</span>
+                                                                <span>Hiện tại: @String.Format("{0:N1}", kr.CurrentValue ?? 0) @kr.Unit</span>
+                                                                @if (kr.IsInverse)
+                                                                {
+                                                                    <span class="okr-kr-inverse"><i class="bi bi-info-circle" aria-hidden="true"></i> Giảm thiểu</span>
+                                                                }
                                                             </div>
-
-                                                            @if (canEditOkr || canDeleteOkr || canUpdateProgress)
-                                                            {
-                                                                <div class="d-flex gap-1">
-                                                                    @if (canEditOkr)
-                                                                    {
-                                                                        <button type="button" class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle js-edit-kr"
-                                                                                data-kr-id="@kr.Id"
-                                                                                data-kr-name="@kr.KeyResultName"
-                                                                                data-kr-target="@krTargetJs"
-                                                                                data-kr-current="@krCurrentJs"
-                                                                                data-kr-unit="@kr.Unit"
-                                                                                data-kr-is-inverse="@kr.IsInverse.ToString().ToLowerInvariant()"
-                                                                                title="Sửa KR">
-                                                                            <i class="bi bi-pencil-square"></i>
+                                                        </div>
+                                                        <div class="okr-kr-row__progress">
+                                                            <div class="okr-kr-row__progress-labels">
+                                                                <span class="okr-risk-badge okr-risk-badge--compact">@ProgressHelper.GetResultStatus(kr.Progress)</span>
+                                                                <strong>@krPercent%</strong>
+                                                            </div>
+                                                            <div class="progress" role="progressbar" aria-valuenow="@krWidth" aria-valuemin="0" aria-valuemax="100" aria-label="Tiến độ @krName @krPercent phần trăm">
+                                                                <div class="progress-bar @krColor" style="width: @krWidth%"></div>
+                                                            </div>
+                                                        </div>
+                                                        @if (canEditOkr || canDeleteOkr || canUpdateProgress)
+                                                        {
+                                                            <div class="okr-kr-row__actions">
+                                                                @if (canEditOkr)
+                                                                {
+                                                                    <button type="button" class="btn btn-sm okr-icon-btn js-edit-kr"
+                                                                            data-kr-id="@kr.Id"
+                                                                            data-kr-name="@kr.KeyResultName"
+                                                                            data-kr-target="@krTargetJs"
+                                                                            data-kr-current="@krCurrentJs"
+                                                                            data-kr-unit="@kr.Unit"
+                                                                            data-kr-is-inverse="@kr.IsInverse.ToString().ToLowerInvariant()"
+                                                                            title="Sửa @krName"
+                                                                            aria-label="Sửa Key Result @krName">
+                                                                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                                                    </button>
+                                                                }
+                                                                @if (canDeleteOkr)
+                                                                {
+                                                                    <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
+                                                                        <button type="submit" class="btn btn-sm okr-icon-btn okr-icon-btn--danger"
+                                                                                title="Xóa @krName"
+                                                                                aria-label="Xóa Key Result @krName">
+                                                                            <i class="bi bi-trash" aria-hidden="true"></i>
                                                                         </button>
-                                                                    }
-                                                                    @if (canDeleteOkr)
-                                                                    {
-                                                                        <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
-                                                                            <button type="submit" class="btn btn-sm btn-light-danger text-danger border-0 rounded-circle" title="Xóa KR">
-                                                                                <i class="bi bi-trash"></i>
-                                                                            </button>
-                                                                        </form>
-                                                                    }
-                                                                </div>
+                                                                    </form>
+                                                                }
                                                                 @if (canUpdateProgress)
                                                                 {
-                                                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-circle js-update-kr-progress"
-                                                                            title="Cập nhật tiến độ"
+                                                                    <button type="button" class="btn btn-sm okr-icon-btn okr-icon-btn--primary js-update-kr-progress"
+                                                                            title="Cập nhật tiến độ @krName"
+                                                                            aria-label="Cập nhật tiến độ Key Result @krName"
                                                                             data-kr-id="@kr.Id"
                                                                             data-kr-name="@kr.KeyResultName"
                                                                             data-kr-current="@krCurrentJs"
                                                                             data-kr-unit="@kr.Unit">
-                                                                        <i class="bi bi-pencil"></i>
+                                                                        <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
                                                                     </button>
                                                                 }
-                                                            }
-                                                        </div>
+                                                            </div>
+                                                        }
                                                     </div>
                                                     krIndex++;
                                                 }
                                             }
                                             else
                                             {
-                                                <div class="text-muted fst-italic ps-4 py-2">Chưa có kết quả then chốt nào được thiết lập.</div>
+                                                <div class="okr-empty okr-empty--inline">
+                                                    <p>Chưa có Key Result cho objective này.</p>
+                                                    @if (canCreateOkr)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                                                onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')">
+                                                            Thêm KR
+                                                        </button>
+                                                    }
+                                                </div>
                                             }
                                         </div>
                                     </div>
-                                </div>
+                                </article>
                             }
                         }
                         else if (isFilteredEmpty)
                         {
-                            <div class="alert alert-warning border-0 shadow-sm text-center p-5">
-                                <h5 class="mb-2">Không có OKR khớp bộ lọc</h5>
-                                <p class="text-muted mb-3">Thử đổi điều kiện hoặc xóa lọc để xem toàn bộ OKR trong phạm vi quyền của bạn.</p>
+                            <div class="okr-empty" role="status">
+                                <div class="okr-empty__icon" aria-hidden="true"><i class="bi bi-funnel"></i></div>
+                                <h3>Không có OKR khớp bộ lọc</h3>
+                                <p>Thử đổi điều kiện hoặc xóa lọc để xem toàn bộ OKR trong phạm vi quyền của bạn.</p>
                                 <a asp-action="Index" class="btn btn-outline-primary">Xóa lọc</a>
                             </div>
                         }
                         else
                         {
-                            <div class="alert alert-info border-0 shadow-sm text-center p-5">
-                                <h5>Chưa có mục tiêu OKR nào.</h5>
-                                <p class="text-muted mb-0">Hãy bấm "Tạo OKR mới" để thiết lập mục tiêu.</p>
+                            <div class="okr-empty" role="status">
+                                <div class="okr-empty__icon" aria-hidden="true"><i class="bi bi-bullseye"></i></div>
+                                <h3>Chưa có mục tiêu OKR nào</h3>
+                                <p>Thiết lập objective đầu tiên để theo dõi tiến độ và liên kết dự án vận hành.</p>
+                                @if (canCreateOkr)
+                                {
+                                    <a asp-action="Create" class="btn btn-primary">Tạo OKR mới</a>
+                                }
                             </div>
                         }
                     </div>
@@ -474,11 +500,7 @@
                             </nav>
                         </div>
                     }
-
-                </div>
-            </div>
-        </div>
-    </div>
+    </section>
 </div>
 
 
@@ -1104,58 +1126,112 @@
     </script>
 
     <style>
+        .okr-index-page {
+            --okr-border: #dde3ec;
+            --okr-text: #172033;
+            --okr-muted: #64748b;
+            --okr-surface: #ffffff;
+            --okr-soft: #f7f9fc;
+            color: var(--okr-text);
+            max-width: 100%;
+            overflow-x: clip;
+        }
+        .okr-page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 4px 0 18px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid var(--okr-border);
+        }
+        .okr-page-header h1 {
+            margin: 0 0 6px;
+            color: var(--okr-text);
+            font-size: 1.75rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+        .okr-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--okr-muted);
+            font-size: 0.86rem;
+        }
+        .okr-breadcrumb a { color: var(--okr-muted); text-decoration: none; }
+        .okr-primary-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 42px;
+            border-radius: 8px;
+            font-weight: 700;
+            box-shadow: none;
+            white-space: nowrap;
+        }
         .okr-summary {
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             overflow: hidden;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--okr-border);
             border-radius: 8px;
-            background: #fff;
+            background: var(--okr-surface);
         }
         .okr-summary__item {
             min-width: 0;
             padding: 14px 16px;
-            border-right: 1px solid #e5e7eb;
+            border-right: 1px solid var(--okr-border);
         }
         .okr-summary__item:last-child { border-right: 0; }
         .okr-summary__label {
             display: block;
             margin-bottom: 4px;
-            color: #6b7280;
+            color: var(--okr-muted);
             font-size: 0.76rem;
             font-weight: 700;
         }
         .okr-summary__value {
             display: block;
-            color: #111827;
-            font-size: 1.1rem;
+            color: var(--okr-text);
+            font-size: 1.12rem;
             font-weight: 800;
             line-height: 1.25;
+            overflow-wrap: anywhere;
         }
-        .okr-filter {
-            border: 1px solid #e5e7eb;
+        .okr-panel {
+            border: 1px solid var(--okr-border);
             border-radius: 8px;
-            background: #fff;
+            background: var(--okr-surface);
             padding: 14px;
         }
+        .okr-filter { margin-bottom: 14px; }
         .okr-filter-grid {
             display: grid;
-            grid-template-columns: 1.6fr repeat(5, minmax(0, 1fr)) auto;
+            grid-template-columns: minmax(180px, 1.5fr) repeat(5, minmax(110px, 1fr)) auto;
             gap: 10px;
             align-items: end;
         }
         .okr-filter-field .form-label {
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: #6b7280;
             margin-bottom: 4px;
+            color: var(--okr-muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+        .okr-filter-field .form-control,
+        .okr-filter-field .form-select {
+            border-radius: 8px;
+            border-color: var(--okr-border);
+            min-height: 40px;
         }
         .okr-filter-actions {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+            align-items: center;
         }
+        .okr-filter-actions .btn { border-radius: 8px; }
         .okr-quick-filters {
             display: flex;
             flex-wrap: wrap;
@@ -1167,12 +1243,12 @@
             align-items: center;
             gap: 6px;
             padding: 6px 12px;
-            border-radius: 999px;
-            border: 1px solid #e5e7eb;
-            color: #374151;
+            border-radius: 8px;
+            border: 1px solid var(--okr-border);
+            color: var(--okr-text);
             text-decoration: none;
-            font-size: 0.85rem;
-            background: #f9fafb;
+            font-size: 0.84rem;
+            background: var(--okr-soft);
         }
         .okr-quick-filters a:hover,
         .okr-quick-filters a.is-active {
@@ -1180,16 +1256,267 @@
             background: #eff6ff;
             color: #1d4ed8;
         }
+        #accordionOKRs { display: flex; flex-direction: column; gap: 10px; }
+        .okr-objective-card {
+            position: relative;
+            border: 1px solid var(--okr-border) !important;
+            border-radius: 8px !important;
+            background: #fff;
+            overflow: visible;
+            box-shadow: none !important;
+            margin: 0 !important;
+        }
+        .okr-objective-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+            align-items: start;
+            padding: 12px 12px 12px 4px;
+        }
+        .okr-objective-toggle {
+            display: block !important;
+            width: 100%;
+            background: transparent !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            padding: 4px 8px !important;
+            text-align: left;
+            color: inherit;
+        }
+        .okr-objective-toggle::after {
+            position: absolute;
+            right: 12px;
+            top: 16px;
+            margin: 0;
+        }
+        .okr-objective-main {
+            min-width: 0;
+            padding-right: 28px;
+            display: grid;
+            gap: 8px;
+        }
+        .okr-objective-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        .okr-chip,
+        .okr-risk-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border-radius: 8px;
+            border: 1px solid var(--okr-border);
+            padding: 3px 8px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            line-height: 1.2;
+            white-space: nowrap;
+            background: var(--okr-soft);
+            color: var(--okr-text);
+        }
+        .okr-chip--type { color: #1557b0; background: #e8f0fe; border-color: rgba(26,115,232,.28); }
+        .okr-chip--muted { color: var(--okr-muted); }
+        .okr-risk-badge--no-kr { color: #7a4f00; background: #fff4d6; border-color: rgba(242,153,0,.34); }
+        .okr-risk-badge--low { color: #a50e0e; background: #fce8e6; border-color: rgba(217,48,37,.28); }
+        .okr-risk-badge--good { color: #1557b0; background: #e8f0fe; border-color: rgba(26,115,232,.28); }
+        .okr-risk-badge--done { color: #0b6f3a; background: #e6f4ea; border-color: rgba(15,157,88,.28); }
+        .okr-risk-badge--unallocated { color: #5b4b8a; background: #f1edff; border-color: rgba(111,66,193,.25); }
+        .okr-risk-badge--compact { font-size: 0.7rem; }
+        .okr-objective-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1.35;
+            color: var(--okr-text);
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .okr-objective-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 14px;
+            color: var(--okr-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .okr-objective-meta span,
+        .okr-project-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+        .okr-project-link {
+            color: #1557b0;
+            text-decoration: none;
+            border-radius: 8px;
+            padding: 2px 6px;
+            border: 1px solid rgba(26,115,232,.2);
+            background: #f8fbff;
+        }
+        .okr-objective-progress { max-width: 420px; width: 100%; }
+        .okr-objective-progress__labels,
+        .okr-kr-row__progress-labels {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
+            color: var(--okr-muted);
+            font-weight: 600;
+        }
+        .okr-objective-progress .progress,
+        .okr-kr-row__progress .progress {
+            height: 7px;
+            border-radius: 8px;
+            background: #eef2f7;
+            overflow: hidden;
+        }
+        .okr-action-dropdown { position: relative; z-index: 2; padding-top: 2px; }
+        .okr-menu-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--okr-border);
+            background: #fff;
+            color: var(--okr-text);
+        }
+        .okr-kr-panel {
+            border-top: 1px solid var(--okr-border);
+            background: var(--okr-soft);
+            padding: 12px !important;
+            border-radius: 0 0 8px 8px;
+        }
+        .okr-kr-panel__title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            color: var(--okr-muted);
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+        .okr-kr-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(140px, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e7ecf3;
+        }
+        .okr-kr-row:last-child { border-bottom: 0; }
+        .okr-kr-row__name {
+            font-weight: 700;
+            color: var(--okr-text);
+            overflow-wrap: anywhere;
+        }
+        .okr-kr-row__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 12px;
+            margin-top: 4px;
+            color: var(--okr-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .okr-kr-row__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+        .okr-icon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid var(--okr-border);
+            background: #fff;
+            color: #1557b0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .okr-icon-btn--danger { color: #a50e0e; }
+        .okr-icon-btn--primary { color: #0b6f3a; border-color: rgba(15,157,88,.25); }
+        .okr-empty {
+            text-align: center;
+            padding: 36px 18px;
+            border: 1px dashed var(--okr-border);
+            border-radius: 8px;
+            background: var(--okr-soft);
+        }
+        .okr-empty__icon {
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 10px;
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            background: #fff;
+            border: 1px solid var(--okr-border);
+            color: var(--okr-muted);
+            font-size: 1.2rem;
+        }
+        .okr-empty h3 {
+            margin: 0 0 8px;
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+        .okr-empty p {
+            margin: 0 0 14px;
+            color: var(--okr-muted);
+        }
+        .okr-empty--inline {
+            padding: 16px;
+            text-align: left;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .okr-empty--inline p { margin: 0; }
+        #aiErrorState.okr-empty,
+        #aiLoadingIndicator {
+            border-radius: 8px;
+        }
+
         @@media (max-width: 1200px) {
             .okr-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .okr-filter-field--search { grid-column: 1 / -1; }
+            .okr-filter-field--search,
+            .okr-filter-actions { grid-column: 1 / -1; }
             .okr-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-            .okr-summary__item:nth-child(3) { border-right: 0; }
+            .okr-summary__item:nth-child(3n) { border-right: 0; }
         }
         @@media (max-width: 768px) {
+            .okr-page-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .okr-primary-action { width: 100%; justify-content: center; }
+            .okr-page-header h1 { font-size: 1.4rem; }
             .okr-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .okr-summary__item {
+                border-right: 1px solid var(--okr-border);
+                border-bottom: 1px solid var(--okr-border);
+            }
+            .okr-summary__item:nth-child(2n) { border-right: 0; }
             .okr-filter-grid { grid-template-columns: 1fr; }
-            .okr-summary__item { border-bottom: 1px solid #e5e7eb; }
+            .okr-objective-header { grid-template-columns: minmax(0, 1fr) 40px; }
+            .okr-objective-main { padding-right: 8px; }
+            .okr-kr-row {
+                grid-template-columns: 1fr;
+                align-items: stretch;
+            }
+            .okr-kr-row__actions { justify-content: flex-start; }
+            .okr-objective-progress { max-width: none; }
+        }
+        @@media (max-width: 390px) {
+            .okr-panel { padding: 10px; }
+            .okr-objective-title { font-size: 0.95rem; }
+            .okr-chip, .okr-risk-badge { font-size: 0.7rem; }
         }
     </style>
 }

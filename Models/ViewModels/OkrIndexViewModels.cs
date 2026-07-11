@@ -81,6 +81,48 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public bool IsCompleted => KeyResultCount > 0 && TotalProgress >= 100m;
         public bool IsUnallocated => EmployeeAllocationCount == 0 && DepartmentAllocationCount == 0;
 
+        /// <summary>
+        /// Primary risk/status code for badges: no-kr | low | good | done.
+        /// </summary>
+        public string RiskStatusCode
+        {
+            get
+            {
+                if (KeyResultCount == 0)
+                {
+                    return "no-kr";
+                }
+
+                if (TotalProgress >= 100m)
+                {
+                    return "done";
+                }
+
+                if (TotalProgress < 40m)
+                {
+                    return "low";
+                }
+
+                return "good";
+            }
+        }
+
+        public string RiskStatusLabel => RiskStatusCode switch
+        {
+            "no-kr" => "Chưa có KR",
+            "low" => "Tiến độ thấp",
+            "done" => "Hoàn thành",
+            _ => "Đang tốt"
+        };
+
+        public string RiskStatusCssClass => RiskStatusCode switch
+        {
+            "no-kr" => "okr-risk-badge--no-kr",
+            "low" => "okr-risk-badge--low",
+            "done" => "okr-risk-badge--done",
+            _ => "okr-risk-badge--good"
+        };
+
         public string AllocationSummary
         {
             get
