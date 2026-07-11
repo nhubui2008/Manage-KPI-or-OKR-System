@@ -231,4 +231,4 @@ AI thuc hien cap nhat phan nay sau moi task:
 | 2026-07-11 | 24 | Baseline Index tests | Ngthebao-phase-24-okrs-correctness-baseline | OKRsControllerIndexTests + full suite | Pass (5 + 65) | 485ccf7 |
 | 2026-07-11 | 24 | Fix KR WorkItem duplicate + shared path | Ngthebao-phase-24-okrs-correctness-baseline | OKRsControllerKeyResultTests | Pass | 485ccf7 |
 | 2026-07-11 | 24 | Pagination + KR validation + HTTP QA | Ngthebao-phase-24-okrs-correctness-baseline | unit + full + HTTP CRUD | Pass | 485ccf7 |
-| 2026-07-11 | 25 | Index ViewModel + query/scope/permissions | Ngthebao-phase-25-okrs-index-query-viewmodel | OKRsControllerIndexTests + full 69 | Pass; /OKRs avg 311ms | pending |
+| 2026-07-11 | 25 | Index ViewModel + query/scope/permissions | Ngthebao-phase-25-okrs-index-query-viewmodel | OKRsControllerIndexTests + full 69 | Pass; /OKRs avg 311ms | 2abe373 |
