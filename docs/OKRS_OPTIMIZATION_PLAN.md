@@ -235,4 +235,4 @@ AI thuc hien cap nhat phan nay sau moi task:
 | 2026-07-11 | 26 | Summary/filter/sort/search/empty | Ngthebao-phase-26-okrs-operations-filter-sort | FilterSortTests + full 88 + HTTP QA | Pass | 0b8b73a |
 | 2026-07-11 | 27 | Overview responsive UX + risk badges | Ngthebao-phase-27-okrs-overview-responsive-ux | RiskBadgeTests + full 94 + HTTP QA | Pass | 13750d7 |
 | 2026-07-11 | 28 | Interaction/modals/AI harden | Ngthebao-phase-28-okrs-interaction-ai-modals | AISuggestTests + full 102 + HTTP QA | Pass | 8457f25 |
-| 2026-07-11 | 29 | Business flow + final QA | Ngthebao-phase-29-okrs-business-flow-final-qa | BusinessFlowFinalTests + full 117 + HTTP | Pass | pending |
+| 2026-07-11 | 29 | Business flow + final QA | Ngthebao-phase-29-okrs-business-flow-final-qa | BusinessFlowFinalTests + full 117 + HTTP | Pass | 8ad607f |
