@@ -28,7 +28,7 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public OkrIndexSummaryViewModel Summary { get; init; } = new();
         public IReadOnlyList<string> AvailableCycles { get; init; } = Array.Empty<string>();
         public IReadOnlyList<OkrTypeOptionViewModel> AvailableOkrTypes { get; init; } = Array.Empty<OkrTypeOptionViewModel>();
-        public IReadOnlyList<int> AvailableStatusIds { get; init; } = Array.Empty<int>();
+        public IReadOnlyList<OkrStatusOptionViewModel> AvailableStatuses { get; init; } = Array.Empty<OkrStatusOptionViewModel>();
 
         public IReadOnlyList<MissionVision> Missions { get; init; } = Array.Empty<MissionVision>();
         public IReadOnlyList<Department> Departments { get; init; } = Array.Empty<Department>();
@@ -46,6 +46,12 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
     }
 
     public sealed class OkrTypeOptionViewModel
+    {
+        public int Id { get; init; }
+        public string Name { get; init; } = string.Empty;
+    }
+
+    public sealed class OkrStatusOptionViewModel
     {
         public int Id { get; init; }
         public string Name { get; init; } = string.Empty;

@@ -4,7 +4,7 @@
 @{
     var okr = Model;
     var index = (int)(ViewData["Index"] ?? 0);
-    var collapseId = $"collapseOkr{index}";
+    var collapseId = $"collapseOkr{okr.Id}";
     var krs = okr.KeyResults ?? Array.Empty<Manage_KPI_or_OKR_System.Models.ViewModels.OkrKeyResultItemViewModel>();
     bool canUpdateProgress = okr.CanUpdateProgress;
     bool canCreateOkr = ViewData["CanCreateOkr"] as bool? == true;
@@ -14,17 +14,17 @@
     int okrProgressWidth = (int)Math.Min(100, okr.TotalProgress);
     string okrProgressColor = ProgressHelper.GetProgressColorClass(okrProgressInt);
     var objectiveTitle = string.IsNullOrWhiteSpace(okr.ObjectiveName) ? $"OKR #{okr.Id}" : okr.ObjectiveName;
-    var menuLabel = $"Tùy chọn OKR: {objectiveTitle}";
+    var menuLabel = $"Tùy chọn OKR #{okr.Id}: {objectiveTitle}";
 }
                                 <article class="accordion-item okr-objective-card" data-okr-id="@okr.Id">
-                                    <div class="accordion-header okr-objective-header" id="heading-@index">
+                                    <div class="accordion-header okr-objective-header" id="heading-@okr.Id">
                                         <button type="button"
                                                 class="accordion-button collapsed okr-objective-toggle"
                                                 data-bs-toggle="collapse"
                                                 data-bs-target="#@collapseId"
                                                 aria-expanded="false"
                                                 aria-controls="@collapseId"
-                                                aria-label="Mở rộng Key Results cho @objectiveTitle">
+                                                aria-label="Mở rộng Key Results cho OKR #@okr.Id: @objectiveTitle">
                                             <div class="okr-objective-main">
                                                 <div class="okr-objective-badges">
                                                     <span class="okr-chip">Objective</span>
@@ -54,12 +54,12 @@
                                                         <a asp-controller="WorkProjects" asp-action="Details" asp-route-id="@okr.LinkedWorkProjectId"
                                                            class="okr-project-link js-stop-propagation"
                                                            title="@(okr.LinkedWorkProjectName ?? "Xem dự án vận hành")"
-                                                           aria-label="Mở dự án vận hành cho @objectiveTitle">
+                                                           aria-label="Mở dự án vận hành cho OKR #@okr.Id: @objectiveTitle">
                                                             <i class="bi bi-kanban" aria-hidden="true"></i> Dự án vận hành
                                                         </a>
                                                     }
                                                 </div>
-                                                <div class="okr-objective-progress" aria-label="Tiến độ @okrProgressInt phần trăm">
+                                                <div class="okr-objective-progress" aria-label="Tiến độ OKR #@okr.Id: @okrProgressInt phần trăm">
                                                     <div class="okr-objective-progress__labels">
                                                         <span>Tiến độ</span>
                                                         <strong>@okrProgressInt%</strong>
@@ -140,7 +140,7 @@
                                         }
                                     </div>
 
-                                    <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="heading-@index">
+                                    <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="heading-@okr.Id">
                                         <div class="accordion-body okr-kr-panel">
                                             <div class="okr-kr-panel__title">
                                                 <i class="bi bi-key-fill" aria-hidden="true"></i>
@@ -176,7 +176,7 @@
                                                                 <span class="okr-risk-badge okr-risk-badge--compact">@ProgressHelper.GetResultStatus(kr.Progress)</span>
                                                                 <strong>@krPercent%</strong>
                                                             </div>
-                                                            <div class="progress" role="progressbar" aria-valuenow="@krWidth" aria-valuemin="0" aria-valuemax="100" aria-label="Tiến độ @krName @krPercent phần trăm">
+                                                            <div class="progress" role="progressbar" aria-valuenow="@krWidth" aria-valuemin="0" aria-valuemax="100" aria-label="Tiến độ KR #@kr.Id: @krName, @krPercent phần trăm">
                                                                 <div class="progress-bar @krColor" style="width: @krWidth%"></div>
                                                             </div>
                                                         </div>
@@ -193,7 +193,7 @@
                                                                             data-kr-unit="@kr.Unit"
                                                                             data-kr-is-inverse="@kr.IsInverse.ToString().ToLowerInvariant()"
                                                                             title="Sửa @krName"
-                                                                            aria-label="Sửa Key Result @krName">
+                                                                            aria-label="Sửa Key Result #@kr.Id: @krName">
                                                                         <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                                                     </button>
                                                                 }
@@ -202,7 +202,7 @@
                                                                     <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
                                                                         <button type="submit" class="btn btn-sm okr-icon-btn okr-icon-btn--danger"
                                                                                 title="Xóa @krName"
-                                                                                aria-label="Xóa Key Result @krName">
+                                                                                aria-label="Xóa Key Result #@kr.Id: @krName">
                                                                             <i class="bi bi-trash" aria-hidden="true"></i>
                                                                         </button>
                                                                     </form>
@@ -211,7 +211,7 @@
                                                                 {
                                                                     <button type="button" class="btn btn-sm okr-icon-btn okr-icon-btn--primary js-update-kr-progress"
                                                                             title="Cập nhật tiến độ @krName"
-                                                                            aria-label="Cập nhật tiến độ Key Result @krName"
+                                                                            aria-label="Cập nhật tiến độ Key Result #@kr.Id: @krName"
                                                                             data-kr-id="@kr.Id"
                                                                             data-kr-name="@kr.KeyResultName"
                                                                             data-kr-current="@krCurrentJs"

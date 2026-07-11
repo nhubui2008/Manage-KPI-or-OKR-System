@@ -98,9 +98,9 @@
                                 <label class="form-label" for="okr-status">Trạng thái</label>
                                 <select id="okr-status" name="statusId" class="form-select">
                                     <option value="">Tất cả</option>
-                                    @foreach (var s in Model?.AvailableStatusIds ?? Array.Empty<int>())
+                                    @foreach (var s in Model?.AvailableStatuses ?? Array.Empty<Manage_KPI_or_OKR_System.Models.ViewModels.OkrStatusOptionViewModel>())
                                     {
-                                        <option value="@s" selected="@(currentStatusId == s ? "selected" : null)">Status #@s</option>
+                                        <option value="@s.Id" selected="@(currentStatusId == s.Id ? "selected" : null)">@s.Name</option>
                                     }
                                 </select>
                             </div>

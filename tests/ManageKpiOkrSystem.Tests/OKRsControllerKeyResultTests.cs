@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Reflection;
 using Manage_KPI_or_OKR_System.Controllers;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
@@ -14,6 +15,18 @@ namespace ManageKpiOkrSystem.Tests;
 
 public sealed class OKRsControllerKeyResultTests
 {
+    [Theory]
+    [InlineData(nameof(OKRsController.SuggestKeyResultsAPI), typeof(int))]
+    [InlineData(nameof(OKRsController.EditKeyResult), typeof(OKRKeyResult))]
+    public void StateChangingActions_AcceptPostOnly(string actionName, Type parameterType)
+    {
+        var method = typeof(OKRsController).GetMethod(actionName, new[] { parameterType });
+
+        Assert.NotNull(method);
+        Assert.NotNull(method!.GetCustomAttribute<HttpPostAttribute>());
+        Assert.Null(method.GetCustomAttribute<HttpGetAttribute>());
+    }
+
     [Fact]
     public async Task AddKeyResult_WithLinkedProject_CreatesExactlyOneWorkItem()
     {
@@ -42,7 +55,7 @@ public sealed class OKRsControllerKeyResultTests
     }
 
     [Fact]
-    public async Task AddKeyResult_WhenWorkflowAlwaysFails_KeepsKrAndSurfacesDesyncWarning()
+    public async Task AddKeyResult_WhenWorkflowAlwaysFails_RollsBackKrAndReportsFailure()
     {
         await using var context = CreateContext();
         var (okr, _) = await SeedOkrWithLinkedProjectAsync(context);
@@ -57,9 +70,9 @@ public sealed class OKRsControllerKeyResultTests
         });
 
         Assert.IsType<RedirectToActionResult>(result);
-        var kr = Assert.Single(await context.OKRKeyResults.Where(k => k.OKRId == okr.Id).ToListAsync());
-        Assert.Equal(0, await context.WorkItems.CountAsync(w => w.OKRKeyResultId == kr.Id && w.IsActive == true));
-        Assert.Contains("chưa đồng bộ", Assert.IsType<string>(controller.TempData["ErrorMessage"]), StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(await context.OKRKeyResults.Where(k => k.OKRId == okr.Id).ToListAsync());
+        Assert.Equal(0, await context.WorkItems.CountAsync(w => w.OKRKeyResultId.HasValue && w.IsActive == true));
+        Assert.Contains("Không thể thêm", Assert.IsType<string>(controller.TempData["ErrorMessage"]), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

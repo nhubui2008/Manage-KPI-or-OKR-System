@@ -229,7 +229,11 @@
         resetAiSuggestLoading();
         byId('aiSuggestionContent').style.display = 'none';
 
-        fetch(`/OKRs/SuggestKeyResultsAPI/${okrId}`, { signal: aiSuggestAbort.signal })
+        fetch(`/OKRs/SuggestKeyResultsAPI/${okrId}`, {
+            method: 'POST',
+            headers: window.antiForgeryHeaders ? window.antiForgeryHeaders() : {},
+            signal: aiSuggestAbort.signal
+        })
             .then(async response => {
                 const payload = await response.json().catch(() => null);
                 if (!response.ok) {
