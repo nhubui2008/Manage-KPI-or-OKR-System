@@ -68,6 +68,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .OrderByDescending(m => m.TargetYear)
                 .ThenByDescending(m => m.CreatedAt)
                 .ToListAsync();
+            var visibleMissionIds = longTermStatements
+                .Select(m => m.Id)
+                .Concat(yearlyGoals.Select(m => m.Id))
+                .ToList();
+            var activeEmployeeCounts = await _context.Employees
+                .AsNoTracking()
+                .Where(e => e.IsActive == true &&
+                            e.StrategicGoalId.HasValue &&
+                            visibleMissionIds.Contains(e.StrategicGoalId.Value))
+                .GroupBy(e => e.StrategicGoalId!.Value)
+                .Select(group => new { MissionVisionId = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(item => item.MissionVisionId, item => item.Count);
             var permissions = await PermissionLookupHelper.HasPermissionsAsync(
                 _context,
                 User,
@@ -78,6 +90,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 LongTermStatements = longTermStatements,
                 YearlyGoals = yearlyGoals,
                 AvailableYears = availableYears,
+                ActiveEmployeeCounts = activeEmployeeCounts,
                 SelectedYear = selectedYear,
                 ShowAllYears = allYears || !selectedYear.HasValue,
                 CanCreateMission = permissions["MISSIONS_CREATE"],

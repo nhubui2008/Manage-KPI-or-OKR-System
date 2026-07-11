@@ -74,6 +74,27 @@ public sealed class MissionVisionsControllerTests
     }
 
     [Fact]
+    public async Task Index_ReturnsActiveEmployeeCountsForVisibleGoals()
+    {
+        await using var context = CreateContext();
+        var visibleGoal = Mission(MissionVision.TypeYearlyGoal, "Visible goal", 2026);
+        var otherGoal = Mission(MissionVision.TypeYearlyGoal, "Other goal", 2025);
+        context.MissionVisions.AddRange(visibleGoal, otherGoal);
+        await context.SaveChangesAsync();
+        context.Employees.AddRange(
+            Employee(visibleGoal.Id),
+            Employee(visibleGoal.Id),
+            Employee(otherGoal.Id));
+        await context.SaveChangesAsync();
+
+        var result = Assert.IsType<ViewResult>(await CreateController(context).Index(2026));
+        var model = Assert.IsType<MissionVisionIndexViewModel>(result.Model);
+
+        Assert.Equal(2, model.ActiveEmployeeCounts[visibleGoal.Id]);
+        Assert.DoesNotContain(otherGoal.Id, model.ActiveEmployeeCounts.Keys);
+    }
+
+    [Fact]
     public async Task Index_WithUnavailableYear_RedirectsToTheDefaultYear()
     {
         await using var context = CreateContext();

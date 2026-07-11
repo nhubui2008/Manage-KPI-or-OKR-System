@@ -214,6 +214,7 @@
                 @foreach (var goal in Model.YearlyGoals)
                 {
                     var goalYear = goal.TargetYear ?? currentYear;
+                    var linkedEmployeeCount = Model.ActiveEmployeeCounts.GetValueOrDefault(goal.Id);
                     var yearStatusClass = goalYear == currentYear ? "current" : goalYear > currentYear ? "upcoming" : "past";
                     var yearStatusLabel = goalYear == currentYear ? "Năm hiện tại" : goalYear > currentYear ? "Sắp tới" : "Đã qua";
                     var yearStatusIcon = goalYear == currentYear ? "bi-calendar-check" : goalYear > currentYear ? "bi-hourglass-split" : "bi-archive";
@@ -224,7 +225,7 @@
                             @if (canManageMission)
                             {
                                 <div class="dropdown">
-                                    <button class="btn mv-icon-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Tùy chọn mục tiêu năm @goalYear" title="Tùy chọn mục tiêu">
+                                    <button class="btn mv-icon-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Tùy chọn mục tiêu năm @goalYear, mã @goal.Id" title="Tùy chọn mục tiêu">
                                         <i class="bi bi-three-dots" aria-hidden="true"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -235,9 +236,18 @@
                                         @if (Model.CanDeleteMission)
                                         {
                                             <li>
-                                                <form asp-action="Delete" asp-route-id="@goal.Id" method="post" onsubmit="return confirm('Vô hiệu hóa mục tiêu chiến lược năm @goalYear?');">
-                                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-archive me-2" aria-hidden="true"></i>Vô hiệu hóa</button>
-                                                </form>
+                                                @if (linkedEmployeeCount > 0)
+                                                {
+                                                    <span class="dropdown-item-text mv-disabled-action" title="Hãy chuyển nhân viên sang mục tiêu khác trước">
+                                                        <i class="bi bi-lock me-2" aria-hidden="true"></i>Đang được sử dụng
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <form asp-action="Delete" asp-route-id="@goal.Id" method="post" onsubmit="return confirm('Vô hiệu hóa mục tiêu chiến lược năm @goalYear?');">
+                                                        <button type="submit" class="dropdown-item text-danger"><i class="bi bi-archive me-2" aria-hidden="true"></i>Vô hiệu hóa</button>
+                                                    </form>
+                                                }
                                             </li>
                                         }
                                     </ul>
@@ -245,6 +255,13 @@
                             }
                         </div>
                         <h3>@goal.Content</h3>
+                        @if (linkedEmployeeCount > 0)
+                        {
+                            <span class="mv-linked-employees" title="Mục tiêu này chưa thể vô hiệu hóa">
+                                <i class="bi bi-people" aria-hidden="true"></i>
+                                @linkedEmployeeCount nhân viên đang theo mục tiêu
+                            </span>
+                        }
                         <div class="mv-goal-card__footer">
                             <div class="mv-goal-finance">
                                 <span>Mục tiêu tài chính</span>
@@ -601,6 +618,12 @@
         font-size: 0.86rem;
     }
 
+    .mv-disabled-action {
+        color: var(--mv-muted);
+        cursor: not-allowed;
+        font-size: 0.86rem;
+    }
+
     .mv-year-filter {
         display: inline-flex;
         align-items: center;
@@ -676,6 +699,19 @@
         line-clamp: 4;
         -webkit-box-orient: vertical;
         overflow: hidden;
+    }
+
+    .mv-linked-employees {
+        display: inline-flex;
+        align-items: center;
+        align-self: flex-start;
+        gap: 7px;
+        padding: 6px 9px;
+        border-radius: 6px;
+        background: #fff3dc;
+        color: #854d0e;
+        font-size: 0.76rem;
+        font-weight: 750;
     }
 
     .mv-goal-card__footer {
