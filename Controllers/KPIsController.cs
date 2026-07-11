@@ -217,7 +217,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
             ViewBag.AllDepartments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
             ViewBag.Periods = periods;
-            ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
+            ViewBag.AllPeriods = await GetAvailableEvaluationPeriodsQuery().ToListAsync();
             ViewBag.KPITypes = await _context.KPITypes.OrderBy(t => t.Id).ToListAsync();
             ViewBag.KPIStatuses = await _context.GetKpiStatusNamesAsync();
             ViewBag.ExecutableKpiStatusIds = executableKpiStatusIds;
@@ -430,6 +430,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("KPIS_EDIT")]
         public async Task<IActionResult> Edit(int id, KPI kpi, KPIDetail detail)
         {
@@ -450,6 +451,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, existingKpi))
                 {
                     return Forbid();
+                }
+
+                if (kpi.PeriodId.HasValue && !await IsAvailableEvaluationPeriodAsync(kpi.PeriodId.Value))
+                {
+                    TempData["ErrorMessage"] = "Kỳ đánh giá được chọn không còn hoạt động hoặc đã đóng/hết hạn.";
+                    return RedirectToAction(nameof(Details), new { id });
                 }
 
                 // Update base KPI
@@ -505,6 +512,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("KPIS_CREATE")]
         public async Task<IActionResult> Create(KPI kpi, KPIDetail detail, List<int>? employeeIds, List<int>? departmentIds, List<string>? weights)
         {
@@ -520,6 +528,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 var errors = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
                 TempData["ErrorMessage"] = "Dữ liệu không hợp lệ: " + errors;
+                await PopulateCreateKpiViewBagAsync();
+                return View(kpi);
+            }
+
+            if (kpi.PeriodId.HasValue && !await IsAvailableEvaluationPeriodAsync(kpi.PeriodId.Value))
+            {
+                ModelState.AddModelError(nameof(kpi.PeriodId),
+                    "Kỳ đánh giá được chọn không còn hoạt động hoặc đã đóng/hết hạn.");
                 await PopulateCreateKpiViewBagAsync();
                 return View(kpi);
             }
@@ -1005,14 +1021,32 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 departmentQuery = departmentQuery.Where(d => managedDepartmentIds.Contains(d.Id));
             }
 
-            ViewBag.Periods = await _context.EvaluationPeriods
-                .Where(p => p.IsActive == true)
+            ViewBag.Periods = await GetAvailableEvaluationPeriodsQuery()
                 .OrderByDescending(p => p.StartDate)
                 .ToDictionaryAsync(p => p.Id, p => p.PeriodName ?? "N/A");
             ViewBag.KPITypes = await _context.KPITypes.OrderBy(t => t.Id).ToListAsync();
             ViewBag.AllEmployees = await employeeQuery.OrderBy(e => e.FullName).ToListAsync();
             ViewBag.AllDepartments = await departmentQuery.OrderBy(d => d.DepartmentName).ToListAsync();
             await PopulateOkrLinkViewBagAsync();
+        }
+
+        private IQueryable<EvaluationPeriod> GetAvailableEvaluationPeriodsQuery()
+        {
+            var writableStatusIds = _context.Statuses
+                .Where(s => s.StatusType == WorkflowStatusHelper.StatusTypeEvaluationPeriod &&
+                            s.StatusName != null &&
+                            EvaluationPeriodRules.WritableStatusNames.Contains(s.StatusName))
+                .Select(s => s.Id);
+            var today = DateTime.Today;
+            return _context.EvaluationPeriods.Where(p =>
+                p.IsActive == true &&
+                p.StatusId.HasValue && writableStatusIds.Contains(p.StatusId.Value) &&
+                p.EndDate.HasValue && p.EndDate.Value.Date >= today);
+        }
+
+        private Task<bool> IsAvailableEvaluationPeriodAsync(int periodId)
+        {
+            return GetAvailableEvaluationPeriodsQuery().AnyAsync(p => p.Id == periodId);
         }
 
         private void NormalizeDecimalFormValue(string key, Action<decimal> assignValue)

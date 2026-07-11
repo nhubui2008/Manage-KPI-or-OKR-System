@@ -410,9 +410,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
 
             var executableKpiStatusIds = await _context.GetExecutableKpiStatusIdsAsync();
+            var writablePeriodStatusIds = _context.Statuses
+                .Where(s => s.StatusType == WorkflowStatusHelper.StatusTypeEvaluationPeriod &&
+                            s.StatusName != null &&
+                            EvaluationPeriodRules.WritableStatusNames.Contains(s.StatusName))
+                .Select(s => s.Id);
+            var today = DateTime.Today;
             var kpiQuery = _context.KPIs.Where(k => k.IsActive == true &&
                                                     k.StatusId.HasValue &&
-                                                    executableKpiStatusIds.Contains(k.StatusId.Value));
+                                                    executableKpiStatusIds.Contains(k.StatusId.Value) &&
+                                                    k.PeriodId.HasValue &&
+                                                    _context.EvaluationPeriods.Any(p =>
+                                                        p.Id == k.PeriodId.Value &&
+                                                        p.IsActive == true &&
+                                                        p.StatusId.HasValue && writablePeriodStatusIds.Contains(p.StatusId.Value) &&
+                                                        p.StartDate.HasValue && p.StartDate.Value.Date <= today &&
+                                                        p.EndDate.HasValue && p.EndDate.Value.Date >= today));
             var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
 
             bool isManager = User.IsInRole("Manager");
@@ -785,6 +798,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("KPICHECKINS_CREATE", "CHECKINS_CREATE", "EMPLOYEE_UPDATE_KPI_PROGRESS")]
         public async Task<IActionResult> Create(KPICheckIn model, string AchievedValue, string Note)
         {
@@ -861,6 +875,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (kpi != null && model.EmployeeId.HasValue)
             {
+                var period = kpi.PeriodId.HasValue
+                    ? await _context.EvaluationPeriods.FirstOrDefaultAsync(p => p.Id == kpi.PeriodId.Value)
+                    : null;
+                var periodStatusName = period?.StatusId.HasValue == true
+                    ? await _context.Statuses
+                        .Where(s => s.Id == period.StatusId.Value)
+                        .Select(s => s.StatusName)
+                        .FirstOrDefaultAsync()
+                    : null;
+                if (!EvaluationPeriodRules.CanCheckIn(period, periodStatusName, DateTime.Today))
+                {
+                    ModelState.AddModelError(nameof(model.KPIId),
+                        "KPI không thuộc một kỳ đánh giá đang mở trong khoảng thời gian check-in.");
+                }
+
                 var isAssignedToKpi = await _context.KPI_Employee_Assignments
                     .AnyAsync(a => a.KPIId == kpi.Id &&
                                    a.EmployeeId == model.EmployeeId.Value &&

@@ -72,7 +72,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Ranks = ranks;
             ViewBag.WorkflowEmployees = workflowEmployees;
             ViewBag.AllEmployees = await GetEvaluationAssignableEmployeesAsync();
-            ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
+            ViewBag.AllPeriods = await GetWritableEvaluationPeriodsQuery().ToListAsync();
             var allRanks = await _context.GradingRanks.ToListAsync();
             ViewBag.AllRanks = allRanks;
             ViewBag.Classifications = allRanks.Where(r => !string.IsNullOrEmpty(r.Description))
@@ -149,7 +149,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return Forbid();
 
             ViewBag.AllEmployees = await GetEvaluationAssignableEmployeesAsync();
-            ViewBag.AllPeriods = await _context.EvaluationPeriods.Where(p => p.IsActive == true).ToListAsync();
+            ViewBag.AllPeriods = await GetWritableEvaluationPeriodsQuery().ToListAsync();
             var allRanks = await _context.GradingRanks.ToListAsync();
             ViewBag.AllRanks = allRanks;
             ViewBag.Classifications = allRanks.Where(r => !string.IsNullOrEmpty(r.Description))
@@ -160,6 +160,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("EVALRESULTS_CREATE")]
         public async Task<IActionResult> Create(EvaluationResult model)
         {
@@ -171,6 +172,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 if (!await CanCurrentUserAccessEvaluationEmployeeAsync(model.EmployeeId))
                 {
                     return Forbid();
+                }
+
+                if (!model.PeriodId.HasValue ||
+                    !await GetWritableEvaluationPeriodsQuery().AnyAsync(p => p.Id == model.PeriodId.Value))
+                {
+                    TempData["ErrorMessage"] = "Kỳ đánh giá không tồn tại, đã đóng hoặc đã bị vô hiệu hóa.";
+                    return RedirectToAction(nameof(Index));
                 }
 
                 var isDuplicate = await _context.EvaluationResults
@@ -203,6 +211,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("EVALRESULTS_EDIT")]
         public async Task<IActionResult> Edit(EvaluationResult model)
         {
@@ -221,6 +230,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 !await CanCurrentUserAccessEvaluationEmployeeAsync(existing.EmployeeId))
             {
                 return Forbid();
+            }
+
+            if (!model.PeriodId.HasValue ||
+                !await GetWritableEvaluationPeriodsQuery().AnyAsync(p => p.Id == model.PeriodId.Value))
+            {
+                TempData["ErrorMessage"] = "Kỳ đánh giá không tồn tại, đã đóng hoặc đã bị vô hiệu hóa.";
+                return RedirectToAction(nameof(Index));
             }
 
             var isDuplicate = await _context.EvaluationResults
@@ -417,6 +433,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             return await query.OrderBy(e => e.FullName).ToListAsync();
+        }
+
+        private IQueryable<EvaluationPeriod> GetWritableEvaluationPeriodsQuery()
+        {
+            var writableStatusIds = _context.Statuses
+                .Where(s => s.StatusType == WorkflowStatusHelper.StatusTypeEvaluationPeriod &&
+                            s.StatusName != null &&
+                            EvaluationPeriodRules.WritableStatusNames.Contains(s.StatusName))
+                .Select(s => s.Id);
+            return _context.EvaluationPeriods.Where(p =>
+                p.IsActive == true &&
+                p.StatusId.HasValue && writableStatusIds.Contains(p.StatusId.Value));
         }
 
         private async Task<bool> ApplyRankFromScoreAsync(EvaluationResult result)

@@ -238,12 +238,36 @@
                                     <div class="evaluation-actions">
                                         @if (Model.CanEditPeriod)
                                         {
-                                            <button type="button" class="evaluation-icon-button" data-evaluation-edit
-                                                    data-id="@item.Id" data-name="@item.PeriodName" data-type="@item.PeriodType"
-                                                    data-start="@item.StartDate?.ToString("yyyy-MM-dd")" data-end="@item.EndDate?.ToString("yyyy-MM-dd")"
-                                                    data-status-id="@(item.StatusId ?? 0)" aria-label="Sửa kỳ @item.PeriodName">
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="evaluation-icon-button" aria-label="Sửa kỳ @item.PeriodName">
                                                 <i class="bi bi-pencil-square" aria-hidden="true"></i>
-                                            </button>
+                                            </a>
+                                            @if (item.StatusName == "Mở")
+                                            {
+                                                <form asp-action="StartProcessing" method="post">
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <button type="submit" class="evaluation-icon-button" aria-label="Bắt đầu xử lý kỳ @item.PeriodName" title="Bắt đầu xử lý">
+                                                        <i class="bi bi-play-fill" aria-hidden="true"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else if (item.StatusName == "Đang xử lý")
+                                            {
+                                                <form asp-action="Close" method="post" data-evaluation-lifecycle data-message="Đóng kỳ @item.PeriodName?">
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <button type="submit" class="evaluation-icon-button" aria-label="Đóng kỳ @item.PeriodName" title="Đóng kỳ">
+                                                        <i class="bi bi-lock" aria-hidden="true"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else if (item.StatusName == "Đóng")
+                                            {
+                                                <form asp-action="Reopen" method="post" data-evaluation-lifecycle data-message="Mở lại kỳ @item.PeriodName?">
+                                                    <input type="hidden" name="id" value="@item.Id" />
+                                                    <button type="submit" class="evaluation-icon-button" aria-label="Mở lại kỳ @item.PeriodName" title="Mở lại kỳ">
+                                                        <i class="bi bi-unlock" aria-hidden="true"></i>
+                                                    </button>
+                                                </form>
+                                            }
                                         }
                                         @if (Model.CanDeletePeriod)
                                         {
@@ -287,12 +311,36 @@
                             <div class="evaluation-actions">
                                 @if (Model.CanEditPeriod)
                                 {
-                                    <button type="button" class="evaluation-icon-button" data-evaluation-edit
-                                            data-id="@item.Id" data-name="@item.PeriodName" data-type="@item.PeriodType"
-                                            data-start="@item.StartDate?.ToString("yyyy-MM-dd")" data-end="@item.EndDate?.ToString("yyyy-MM-dd")"
-                                            data-status-id="@(item.StatusId ?? 0)" aria-label="Sửa kỳ @item.PeriodName trên thẻ di động">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="evaluation-icon-button" aria-label="Sửa kỳ @item.PeriodName trên thẻ di động">
                                         <i class="bi bi-pencil-square" aria-hidden="true"></i>
-                                    </button>
+                                    </a>
+                                    @if (item.StatusName == "Mở")
+                                    {
+                                        <form asp-action="StartProcessing" method="post">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="evaluation-icon-button" aria-label="Bắt đầu xử lý kỳ @item.PeriodName trên thẻ di động">
+                                                <i class="bi bi-play-fill" aria-hidden="true"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (item.StatusName == "Đang xử lý")
+                                    {
+                                        <form asp-action="Close" method="post" data-evaluation-lifecycle data-message="Đóng kỳ @item.PeriodName?">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="evaluation-icon-button" aria-label="Đóng kỳ @item.PeriodName trên thẻ di động">
+                                                <i class="bi bi-lock" aria-hidden="true"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (item.StatusName == "Đóng")
+                                    {
+                                        <form asp-action="Reopen" method="post" data-evaluation-lifecycle data-message="Mở lại kỳ @item.PeriodName?">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="evaluation-icon-button" aria-label="Mở lại kỳ @item.PeriodName trên thẻ di động">
+                                                <i class="bi bi-unlock" aria-hidden="true"></i>
+                                            </button>
+                                        </form>
+                                    }
                                 }
                                 @if (Model.CanDeletePeriod)
                                 {
@@ -339,64 +387,6 @@
         }
     </section>
 </div>
-
-@if (Model.CanEditPeriod)
-{
-    <div class="modal fade" id="evaluationEditModal" tabindex="-1" aria-labelledby="evaluationEditModalTitle" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content evaluation-modal">
-                <div class="modal-header">
-                    <div>
-                        <p class="evaluation-eyebrow">Cập nhật kỳ</p>
-                        <h2 class="modal-title" id="evaluationEditModalTitle">Chỉnh sửa kỳ đánh giá</h2>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng cửa sổ chỉnh sửa"></button>
-                </div>
-                <form asp-action="Edit" method="post" id="evaluationEditForm">
-                    <input type="hidden" id="evaluationEditId" name="Id" />
-                    <div class="modal-body">
-                        <label>
-                            <span>Tên kỳ đánh giá</span>
-                            <input type="text" id="evaluationEditName" name="PeriodName" required maxlength="100" />
-                        </label>
-                        <label>
-                            <span>Loại kỳ</span>
-                            <select id="evaluationEditType" name="PeriodType" class="no-select2" required>
-                                <option value="MONTH">Hàng tháng</option>
-                                <option value="QUARTER">Hàng quý</option>
-                                <option value="YEAR">Hàng năm</option>
-                            </select>
-                        </label>
-                        <div class="evaluation-modal-dates">
-                            <label>
-                                <span>Ngày bắt đầu</span>
-                                <input type="date" id="evaluationEditStart" name="StartDate" required />
-                            </label>
-                            <label>
-                                <span>Ngày kết thúc</span>
-                                <input type="date" id="evaluationEditEnd" name="EndDate" required />
-                            </label>
-                        </div>
-                        <label>
-                            <span>Trạng thái dữ liệu</span>
-                            <select id="evaluationEditStatus" name="StatusId" class="no-select2" required>
-                                @foreach (var item in Model.AvailableStatuses)
-                                {
-                                    <option value="@item.Id">@item.Name</option>
-                                }
-                            </select>
-                        </label>
-                        <p class="evaluation-form-hint">Trạng thái vận hành trên danh sách được tính thêm từ ngày bắt đầu và kết thúc.</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="evaluation-secondary-action" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="evaluation-primary-action">Lưu thay đổi</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-}
 
 @section Styles {
     <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />

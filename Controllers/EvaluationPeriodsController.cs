@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -459,151 +461,392 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpGet]
         [HasPermission("EVALPERIODS_CREATE")]
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
-            var statuses = await _context.Statuses
-                .Where(s => s.StatusType == WorkflowStatusHelper.StatusTypeEvaluationPeriod)
-                .ToDictionaryAsync(s => s.Id, s => s.StatusName);
-            ViewBag.Statuses = statuses;
-            return View();
+            return View(new EvaluationPeriodInputViewModel());
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("EVALPERIODS_CREATE")]
-        public async Task<IActionResult> Create(EvaluationPeriod model)
+        public async Task<IActionResult> Create(EvaluationPeriodInputViewModel model)
         {
-            model.PeriodType = NormalizePeriodType(model.PeriodType);
-
-            if (ModelState.IsValid)
+            NormalizeInput(model);
+            if (!await ValidateInputAsync(model))
             {
-                var error = await ValidatePeriodAsync(model);
-                if (error != null)
-                {
-                    TempData["ErrorMessage"] = error;
-                    return RedirectToAction(nameof(Index));
-                }
-
-                model.IsActive = true;
-                model.IsSystemProcessed = false;
-                _context.EvaluationPeriods.Add(model);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã tạo kỳ đánh giá mới thành công!";
-                return RedirectToAction(nameof(Index));
+                return View(model);
             }
-            
-            var statuses = await _context.Statuses
-                .Where(s => s.StatusType == WorkflowStatusHelper.StatusTypeEvaluationPeriod)
-                .ToDictionaryAsync(s => s.Id, s => s.StatusName);
-            ViewBag.Statuses = statuses;
-            return View(model);
+
+            var openStatusId = await _context.GetStatusIdAsync(
+                WorkflowStatusHelper.StatusTypeEvaluationPeriod,
+                EvaluationPeriodRules.StatusOpen);
+            if (!openStatusId.HasValue)
+            {
+                ModelState.AddModelError(string.Empty, "Chưa cấu hình trạng thái Mở cho kỳ đánh giá.");
+                return View(model);
+            }
+
+            var period = new EvaluationPeriod
+            {
+                PeriodName = model.PeriodName,
+                PeriodType = model.PeriodType,
+                StartDate = model.StartDate?.Date,
+                EndDate = model.EndDate?.Date,
+                StatusId = openStatusId,
+                IsActive = true,
+                IsSystemProcessed = false
+            };
+            _context.EvaluationPeriods.Add(period);
+            AddAuditLog("CREATE", null, period);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Đã tạo kỳ đánh giá ở trạng thái Mở.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        [HasPermission("EVALPERIODS_EDIT")]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var period = await _context.EvaluationPeriods
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive == true);
+            if (period == null) return NotFound();
+
+            return View(new EvaluationPeriodInputViewModel
+            {
+                Id = period.Id,
+                PeriodName = period.PeriodName,
+                PeriodType = NormalizePeriodType(period.PeriodType),
+                StartDate = period.StartDate,
+                EndDate = period.EndDate
+            });
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("EVALPERIODS_EDIT")]
-        public async Task<IActionResult> Edit(EvaluationPeriod model)
+        public async Task<IActionResult> Edit(int id, EvaluationPeriodInputViewModel model)
         {
-            model.PeriodType = NormalizePeriodType(model.PeriodType);
+            if (id != model.Id) return NotFound();
 
-            if (ModelState.IsValid)
+            var existing = await _context.EvaluationPeriods
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive == true);
+            if (existing == null) return NotFound();
+
+            NormalizeInput(model);
+            if (!await ValidateInputAsync(model, id))
             {
-                var existing = await _context.EvaluationPeriods.FindAsync(model.Id);
-                if (existing == null) return NotFound();
-
-                var error = await ValidatePeriodAsync(model, model.Id);
-                if (error != null)
-                {
-                    TempData["ErrorMessage"] = error;
-                    return RedirectToAction(nameof(Index));
-                }
-
-                existing.PeriodName = model.PeriodName;
-                existing.PeriodType = model.PeriodType;
-                existing.StartDate = model.StartDate;
-                existing.EndDate = model.EndDate;
-                existing.StatusId = model.StatusId;
-
-                _context.Update(existing);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã cập nhật kỳ đánh giá thành công!";
+                return View(model);
             }
+
+            var changesProtectedFields =
+                !string.Equals(NormalizePeriodType(existing.PeriodType), model.PeriodType, StringComparison.Ordinal) ||
+                existing.StartDate?.Date != model.StartDate?.Date ||
+                existing.EndDate?.Date != model.EndDate?.Date;
+            var dependencies = await GetDependencySummaryAsync(id);
+            if (changesProtectedFields && dependencies.HasAny)
+            {
+                ModelState.AddModelError(string.Empty,
+                    $"Kỳ này đã có {dependencies.KpiCount} KPI, {dependencies.CheckInCount} check-in và " +
+                    $"{dependencies.EvaluationResultCount} kết quả đánh giá. Chỉ được sửa tên kỳ để bảo toàn lịch sử.");
+                return View(model);
+            }
+
+            var oldData = new
+            {
+                existing.PeriodName,
+                existing.PeriodType,
+                existing.StartDate,
+                existing.EndDate
+            };
+            existing.PeriodName = model.PeriodName;
+            existing.PeriodType = model.PeriodType;
+            existing.StartDate = model.StartDate?.Date;
+            existing.EndDate = model.EndDate?.Date;
+            AddAuditLog("UPDATE", oldData, existing);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "Đã cập nhật kỳ đánh giá thành công.";
             return RedirectToAction(nameof(Index));
         }
 
         private static string? NormalizePeriodType(string? periodType)
         {
-            var value = periodType?.Trim().ToUpperInvariant();
-            return value switch
-            {
-                "MONTH" or "THANG" or "THÁNG" or "HANG THANG" or "HÀNG THÁNG" => "MONTH",
-                "QUARTER" or "QUY" or "QUÝ" or "HANG QUY" or "HÀNG QUÝ" => "QUARTER",
-                "YEAR" or "NAM" or "NĂM" or "HANG NAM" or "HÀNG NĂM" => "YEAR",
-                _ => string.IsNullOrWhiteSpace(value) ? null : value
-            };
+            return EvaluationPeriodRules.NormalizePeriodType(periodType);
         }
 
-        private async Task<string?> ValidatePeriodAsync(EvaluationPeriod model, int? excludeId = null)
+        private static void NormalizeInput(EvaluationPeriodInputViewModel model)
         {
-            if (string.IsNullOrWhiteSpace(model.PeriodName) ||
-                string.IsNullOrWhiteSpace(model.PeriodType) ||
-                !model.StartDate.HasValue ||
-                !model.EndDate.HasValue)
+            model.PeriodName = model.PeriodName?.Trim();
+            model.PeriodType = NormalizePeriodType(model.PeriodType);
+        }
+
+        private async Task<bool> ValidateInputAsync(
+            EvaluationPeriodInputViewModel model,
+            int? excludeId = null)
+        {
+            foreach (var error in EvaluationPeriodRules.ValidateInput(model))
             {
-                return "Vui lòng nhập đầy đủ tên kỳ, loại kỳ, ngày bắt đầu và ngày kết thúc.";
+                ModelState.AddModelError(error.Key, error.Value);
             }
 
-            // 1. Kiểm tra trùng tên (giữa các bản ghi đang hoạt động)
-            if (await _context.EvaluationPeriods.AnyAsync(p => p.PeriodName == model.PeriodName && p.IsActive == true && p.Id != excludeId))
+            if (!string.IsNullOrWhiteSpace(model.PeriodName) &&
+                await _context.EvaluationPeriods.AnyAsync(p =>
+                    p.PeriodName == model.PeriodName && p.IsActive == true && p.Id != excludeId))
             {
-                return "Tên kỳ đánh giá đã tồn tại. Vui lòng chọn tên khác.";
+                ModelState.AddModelError(nameof(model.PeriodName),
+                    "Tên kỳ đánh giá đã tồn tại. Vui lòng chọn tên khác.");
             }
 
-            // 2. Kiểm tra khoảng thời gian hợp lệ
-            if (model.EndDate.Value < model.StartDate.Value)
+            if (model.StartDate.HasValue && model.EndDate.HasValue &&
+                model.PeriodType is EvaluationPeriodRules.TypeMonth or
+                    EvaluationPeriodRules.TypeQuarter or EvaluationPeriodRules.TypeYear)
             {
-                return "Ngày kết thúc không thể trước ngày bắt đầu.";
+                var aliases = GetPeriodTypeAliases(model.PeriodType);
+                var isOverlapping = await _context.EvaluationPeriods.AnyAsync(p =>
+                    p.IsActive == true &&
+                    p.Id != excludeId &&
+                    p.PeriodType != null && aliases.Contains(p.PeriodType) &&
+                    p.StartDate.HasValue && p.EndDate.HasValue &&
+                    model.StartDate.Value.Date <= p.EndDate.Value.Date &&
+                    model.EndDate.Value.Date >= p.StartDate.Value.Date);
+                if (isOverlapping)
+                {
+                    ModelState.AddModelError(nameof(model.StartDate),
+                        "Khoảng thời gian trùng với một kỳ đánh giá đang hoạt động cùng loại.");
+                }
             }
 
-            // 3. Kiểm tra độ dài kỳ đánh giá
-            var durationDays = (model.EndDate.Value - model.StartDate.Value).Days + 1;
-            if (model.PeriodType == "MONTH" && durationDays > 32)
-            {
-                return "Kỳ đánh giá Hàng tháng không nên dài quá 31 ngày.";
-            }
-            else if (model.PeriodType == "QUARTER" && durationDays < 80)
-            {
-                return "Kỳ đánh giá Hàng quý phải có độ dài khoảng 3 tháng (ít nhất 80 ngày).";
-            }
-
-            // 4. Kiểm tra trùng lặp khoảng thời gian (Overlap check cho cùng loại kỳ)
-            bool isOverlapping = await _context.EvaluationPeriods.AnyAsync(p => 
-                p.IsActive == true && 
-                p.Id != excludeId &&
-                p.PeriodType == model.PeriodType &&
-                p.StartDate.HasValue &&
-                p.EndDate.HasValue &&
-                model.StartDate.Value <= p.EndDate.Value &&
-                model.EndDate.Value >= p.StartDate.Value);
-
-            if (isOverlapping)
-            {
-                return "Khoảng thời gian này đã bị trùng lặp với một kỳ đánh giá khác cùng loại.";
-            }
-
-            return null;
+            return ModelState.IsValid;
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("EVALPERIODS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
-            var period = await _context.EvaluationPeriods.FindAsync(id);
-            if (period != null)
+            var period = await _context.EvaluationPeriods
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive == true);
+            if (period == null) return NotFound();
+
+            var dependencies = await GetDependencySummaryAsync(id);
+            if (dependencies.HasAny)
             {
-                period.IsActive = false;
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã vô hiệu hóa kỳ đánh giá!";
+                TempData["ErrorMessage"] =
+                    $"Không thể vô hiệu hóa kỳ này vì đang có {dependencies.KpiCount} KPI, " +
+                    $"{dependencies.CheckInCount} check-in và {dependencies.EvaluationResultCount} kết quả đánh giá liên kết.";
+                return RedirectToAction(nameof(Index));
             }
+
+            period.IsActive = false;
+            AddAuditLog("DELETE", period, new { period.Id, IsActive = false });
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã vô hiệu hóa kỳ đánh giá.";
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [HasPermission("EVALPERIODS_EDIT")]
+        public Task<IActionResult> StartProcessing(int id)
+        {
+            return ChangeLifecycleStatusAsync(
+                id,
+                EvaluationPeriodRules.StatusInProgress,
+                "Đã chuyển kỳ đánh giá sang trạng thái Đang xử lý.");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [HasPermission("EVALPERIODS_EDIT")]
+        public async Task<IActionResult> Close(int id)
+        {
+            var period = await _context.EvaluationPeriods
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive == true);
+            if (period == null) return NotFound();
+
+            var currentStatus = await GetStatusNameAsync(period.StatusId);
+            if (!EvaluationPeriodRules.CanTransition(currentStatus, EvaluationPeriodRules.StatusClosed))
+            {
+                TempData["ErrorMessage"] = "Chỉ kỳ đang ở trạng thái Đang xử lý mới có thể đóng.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var blockers = await GetCloseBlockersAsync(id);
+            if (blockers.HasAny)
+            {
+                TempData["ErrorMessage"] =
+                    $"Chưa thể đóng kỳ: {blockers.IncompleteKpiCount} KPI chưa hoàn tất, " +
+                    $"{blockers.PendingCheckInCount} check-in chờ duyệt và " +
+                    $"{blockers.IncompleteEvaluationCount} kết quả chưa được duyệt.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var closedStatusId = await GetStatusIdAsync(EvaluationPeriodRules.StatusClosed);
+            if (!closedStatusId.HasValue)
+            {
+                TempData["ErrorMessage"] = "Chưa cấu hình trạng thái Đóng cho kỳ đánh giá.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var oldStatusId = period.StatusId;
+            period.StatusId = closedStatusId;
+            period.IsSystemProcessed = true;
+            AddAuditLog("CLOSE", new { period.Id, StatusId = oldStatusId }, period);
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã đóng kỳ đánh giá.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [HasPermission("EVALPERIODS_EDIT")]
+        public async Task<IActionResult> Reopen(int id)
+        {
+            var period = await _context.EvaluationPeriods
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive == true);
+            if (period == null) return NotFound();
+
+            var currentStatus = await GetStatusNameAsync(period.StatusId);
+            var targetStatus = period.StartDate?.Date > DateTime.Today
+                ? EvaluationPeriodRules.StatusOpen
+                : EvaluationPeriodRules.StatusInProgress;
+            if (!EvaluationPeriodRules.CanTransition(currentStatus, targetStatus))
+            {
+                TempData["ErrorMessage"] = "Chỉ kỳ đã đóng mới có thể mở lại.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var targetStatusId = await GetStatusIdAsync(targetStatus);
+            if (!targetStatusId.HasValue)
+            {
+                TempData["ErrorMessage"] = $"Chưa cấu hình trạng thái {targetStatus}.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var oldStatusId = period.StatusId;
+            period.StatusId = targetStatusId;
+            period.IsSystemProcessed = false;
+            AddAuditLog("REOPEN", new { period.Id, StatusId = oldStatusId }, period);
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = $"Đã mở lại kỳ đánh giá ở trạng thái {targetStatus}.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<IActionResult> ChangeLifecycleStatusAsync(
+            int id,
+            string targetStatus,
+            string successMessage)
+        {
+            var period = await _context.EvaluationPeriods
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive == true);
+            if (period == null) return NotFound();
+
+            var currentStatus = await GetStatusNameAsync(period.StatusId);
+            if (!EvaluationPeriodRules.CanTransition(currentStatus, targetStatus))
+            {
+                TempData["ErrorMessage"] = $"Không thể chuyển từ {currentStatus ?? "Không xác định"} sang {targetStatus}.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (targetStatus == EvaluationPeriodRules.StatusInProgress &&
+                period.StartDate?.Date > DateTime.Today)
+            {
+                TempData["ErrorMessage"] = "Kỳ đánh giá chưa đến ngày bắt đầu nên chưa thể chuyển sang Đang xử lý.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var targetStatusId = await GetStatusIdAsync(targetStatus);
+            if (!targetStatusId.HasValue)
+            {
+                TempData["ErrorMessage"] = $"Chưa cấu hình trạng thái {targetStatus}.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var oldStatusId = period.StatusId;
+            period.StatusId = targetStatusId;
+            AddAuditLog("STATUS_CHANGE", new { period.Id, StatusId = oldStatusId }, period);
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = successMessage;
+            return RedirectToAction(nameof(Index));
+        }
+
+        private Task<int?> GetStatusIdAsync(string statusName)
+        {
+            return _context.GetStatusIdAsync(
+                WorkflowStatusHelper.StatusTypeEvaluationPeriod,
+                statusName);
+        }
+
+        private async Task<string?> GetStatusNameAsync(int? statusId)
+        {
+            if (!statusId.HasValue) return null;
+            return await _context.Statuses
+                .Where(s => s.Id == statusId.Value &&
+                            s.StatusType == WorkflowStatusHelper.StatusTypeEvaluationPeriod)
+                .Select(s => s.StatusName)
+                .FirstOrDefaultAsync();
+        }
+
+        private async Task<EvaluationPeriodDependencySummary> GetDependencySummaryAsync(int periodId)
+        {
+            var kpiIds = _context.KPIs.Where(k => k.PeriodId == periodId).Select(k => k.Id);
+            return new EvaluationPeriodDependencySummary(
+                await kpiIds.CountAsync(),
+                await _context.KPICheckIns.CountAsync(c => c.KPIId.HasValue && kpiIds.Contains(c.KPIId.Value)),
+                await _context.EvaluationResults.CountAsync(r => r.PeriodId == periodId));
+        }
+
+        private async Task<EvaluationPeriodCloseBlockers> GetCloseBlockersAsync(int periodId)
+        {
+            var finalKpiStatusIds = await _context.GetStatusIdsAsync(
+                WorkflowStatusHelper.StatusTypeKpi,
+                WorkflowStatusHelper.KpiFinalStatusNames);
+            var periodKpiIds = _context.KPIs
+                .Where(k => k.PeriodId == periodId)
+                .Select(k => k.Id);
+            var incompleteKpiCount = await _context.KPIs.CountAsync(k =>
+                k.PeriodId == periodId && k.IsActive == true &&
+                (!k.StatusId.HasValue || !finalKpiStatusIds.Contains(k.StatusId.Value)));
+            var pendingCheckInCount = await _context.KPICheckIns.CountAsync(c =>
+                c.KPIId.HasValue && periodKpiIds.Contains(c.KPIId.Value) && c.ReviewStatus == "Pending");
+            var incompleteEvaluationCount = await _context.EvaluationResults.CountAsync(r =>
+                r.PeriodId == periodId && r.SubmissionStatus != "Approved");
+            return new EvaluationPeriodCloseBlockers(
+                incompleteKpiCount,
+                pendingCheckInCount,
+                incompleteEvaluationCount);
+        }
+
+        private void AddAuditLog(string actionType, object? oldData, object? newData)
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _context.AuditLogs.Add(new AuditLog
+            {
+                SystemUserId = int.TryParse(userIdValue, out var userId) ? userId : null,
+                ActionType = actionType,
+                ImpactedTable = "EvaluationPeriods",
+                OldData = oldData == null ? null : JsonSerializer.Serialize(oldData),
+                NewData = newData == null ? null : JsonSerializer.Serialize(newData),
+                LogTime = DateTime.Now
+            });
+        }
+
+        private sealed record EvaluationPeriodDependencySummary(
+            int KpiCount,
+            int CheckInCount,
+            int EvaluationResultCount)
+        {
+            public bool HasAny => KpiCount > 0 || CheckInCount > 0 || EvaluationResultCount > 0;
+        }
+
+        private sealed record EvaluationPeriodCloseBlockers(
+            int IncompleteKpiCount,
+            int PendingCheckInCount,
+            int IncompleteEvaluationCount)
+        {
+            public bool HasAny => IncompleteKpiCount > 0 || PendingCheckInCount > 0 || IncompleteEvaluationCount > 0;
         }
     }
 }

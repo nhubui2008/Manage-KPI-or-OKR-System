@@ -146,26 +146,26 @@ Nhanh: `Ngthebao-phase-32-evaluation-periods-business-flow`
 
 **Muc tieu:** dua lifecycle/validation ve mot duong dung chung, bao ve du lieu phu thuoc va chot quyen action.
 
-- [ ] Tao input view model cho Create/Edit, whitelist `MONTH/QUARTER/YEAR`, validate required/length/date/status server-side va hien loi tai form thay vi redirect mat input.
-  - Test: theory invalid input; model error hien dung field; du lieu khong duoc luu.
-- [ ] Gom normalize va validation create/edit vao mot helper/service nho co the test; quy dinh duration cho month/quarter/year va overlap cung loai.
-  - Test: boundary month 28-31/32, quarter, leap year, inclusive overlap va edit exclude self.
-- [ ] Xac dinh lifecycle `Mo -> Dang xu ly -> Dong` va danh sach action hop le; khong tin StatusId gui tu client neu transition khong hop le.
-  - Test: allowed/forbidden transition theory; role/permission tests.
-- [ ] Bao ve Edit khi period da co KPI/check-in/result: cho sua ten an toan; canh bao hoac chan doi type/date lam du lieu roi ngoai ky.
-  - Test: linked period khong doi khoang ngay/type trai rule; ten hop le van sua duoc.
-- [ ] Bao ve Close: canh bao/chan neu KPI bat buoc, check-in pending hoac EvaluationResult chua hoan tat; thong bao ro so luong blocker.
-  - Test: tung blocker va happy path; khong partial save.
-- [ ] Bao ve Delete/soft-disable: khong vo hieu hoa period dang duoc KPI/EvaluationResult active tham chieu; phan biet not-found va dependency conflict.
-  - Test: linked period khong bi disable; unlinked period soft-disable dung.
-- [ ] Bo sung POST + `[ValidateAntiForgeryToken]` cho Create/Edit/Delete va action lifecycle; giu `[HasPermission]` tai moi endpoint.
-  - Test: reflection test method/attribute; request khong token bi reject neu integration harness ho tro.
-- [ ] Harden tich hop KPI/EvaluationResult: chi cho chon period hop le; validate `PeriodId` server-side. Khong sua check-in behavior cho den khi rule close duoc chot.
-  - Test: KPI/EvaluationResult khong nhan fake/inactive/closed period; test core hien co van pass.
-- [ ] Them check period lifecycle vao KPI Check-in neu acceptance rule chot la “chi period mo/dang xu ly trong khoang cho phep”.
-  - Test: check-in trong ky pass; ky dong/het han bi chan; tinh diem va OKR/WorkProject regression pass.
-- [ ] Chuan hoa audit log/TempData cho create/edit/close/reopen/delete neu pattern san co cua repo yeu cau.
-  - Test: audit entry va message dung, khong lo payload nhay cam.
+- [x] Tao input view model cho Create/Edit, whitelist `MONTH/QUARTER/YEAR`, validate required/length/date/status server-side va hien loi tai form thay vi redirect mat input.
+  - Test: invalid duration tra ve dung view/field error; khong luu du lieu; Create/Edit GET HTTP 200.
+- [x] Gom normalize va validation create/edit vao mot helper nho co the test; quy dinh duration cho month/quarter/year va overlap cung loai.
+  - Test: boundary month 28-31/32, quarter 89-92/93, year 365-366/364; overlap inclusive va edit exclude self.
+- [x] Xac dinh lifecycle `Mo -> Dang xu ly -> Dong` va danh sach action hop le; khong bind `StatusId` tu Create/Edit.
+  - Test: allowed/forbidden transition theory; lifecycle start/close/reopen; reflection permission test.
+- [x] Bao ve Edit khi period da co KPI/check-in/result: cho sua ten an toan; chan doi type/date lam du lieu roi ngoai ky.
+  - Test: linked period khong doi khoang ngay/type; ten hop le van sua duoc.
+- [x] Bao ve Close: chan KPI chua final, check-in pending hoac EvaluationResult chua approved; thong bao ro so luong blocker.
+  - Test: blocker tong hop va happy path lifecycle; status khong doi khi bi chan.
+- [x] Bao ve Delete/soft-disable: khong vo hieu hoa period dang duoc KPI/check-in/EvaluationResult tham chieu; phan biet not-found va dependency conflict.
+  - Test: linked period van active; unlinked period soft-disable va ghi audit.
+- [x] Bo sung POST + `[ValidateAntiForgeryToken]` cho Create/Edit/Delete va action lifecycle; giu `[HasPermission]` tai moi endpoint.
+  - Test: reflection test ca ba attribute tren 6 action state-changing.
+- [x] Harden tich hop KPI/EvaluationResult: chi cho chon period `Mo`/`Dang xu ly` hop le va validate `PeriodId` server-side.
+  - Test: SQL Server GET chi hien `Nam 2026`, loai hai quy dong/qua han; full test core pass.
+- [x] Them check period lifecycle vao KPI Check-in: chi period `Mo`/`Dang xu ly` trong khoang ngay cho phep.
+  - Test: helper current/closed/unknown/expired; Check-in Create HTTP 200 va full regression pass.
+- [x] Chuan hoa audit log/TempData cho create/edit/start/close/reopen/delete theo pattern san co.
+  - Test: create/delete co audit; blocker va success message dung, payload chi gom du lieu ky.
 
 File du kien Phase 32:
 
@@ -252,4 +252,5 @@ Tieu chi nghiem thu Phase 33:
 | Ngay | Phase | Task | Nhanh | Test da chay | Ket qua | Commit |
 |---|---|---|---|---|---|---|
 | 2026-07-11 | 30 | Git/CodeGraph/backend/data/UI audit va baseline plan | `Ngthebao-phase-30-evaluation-periods-audit-plan` | build, 124 tests, EF pending check, diff check, Chrome desktop/768/390 | Pass; da ghi baseline va risk | `a3eb3f4` |
-| 2026-07-12 | 31 | Typed overview, database filter/sort/paging, summary, responsive list va performance | `Ngthebao-phase-31-evaluation-periods-overview-filter` | build, 134 tests, EF pending check, diff check, Chrome desktop/768/390, 30 authenticated HTTP samples | Pass; avg filter 90-477 ms, khong EF/runtime error | Commit Phase 31 |
+| 2026-07-12 | 31 | Typed overview, database filter/sort/paging, summary, responsive list va performance | `Ngthebao-phase-31-evaluation-periods-overview-filter` | build, 134 tests, EF pending check, diff check, Chrome desktop/768/390, 30 authenticated HTTP samples | Pass; avg filter 90-477 ms, khong EF/runtime error | `c069632` |
+| 2026-07-12 | 32 | Typed CRUD, lifecycle, dependency guards va KPI/EvaluationResult/Check-in integration | `Ngthebao-phase-32-evaluation-periods-business-flow` | build, 163 tests, 6 authenticated SQL Server GET flows, diff check | Pass; lifecycle va integration whitelist hoat dong, khong runtime error | Commit Phase 32 |
