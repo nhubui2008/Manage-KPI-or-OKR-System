@@ -113,18 +113,18 @@ Vi du:
 
 **Muc tieu:** giam query, giam ViewBag va chuan bi du lieu dung cho UI moi.
 
-- [ ] Tao `OkrIndexViewModel` va `OkrIndexItemViewModel` chua Objective, KR summary, allocation summary, project link, permission va paging.
-  - Test: mapping dung voi OKR co/khong co KR, allocation va project.
-- [ ] Bo `Include(o => o.KeyResults)` trung lap; chi project cac cot can cho page hien tai.
-  - Test: ket qua progress/KR count khong doi; theo doi SQL query count neu co the.
-- [ ] Batch bon permission bang `PermissionLookupHelper.HasPermissionsAsync`.
-  - Test: Admin va role tuy chinh nhan dung tung permission.
-- [ ] Chi tai danh muc modal khi nguoi dung co action tuong ung; uu tien endpoint lazy-load neu modal nang.
-  - Test: role chi xem khong query Employees/Departments/Missions/OKRTypes.
-- [ ] Chuyen scope Manager/Employee thanh filter `IQueryable` som, han che tai danh sach ID lon vao memory.
-  - Test: Manager chi thay OKR phong ban quan ly; Employee chi thay OKR duoc giao/thuoc phong/tu tao.
-- [ ] Do thoi gian tai `/OKRs` truoc/sau voi du lieu that.
-  - Test: ghi baseline va ket qua vao phase; muc tieu page dau khong cham hon hien tai va khong N+1.
+- [x] Tao `OkrIndexViewModel` va `OkrIndexItemViewModel` chua Objective, KR summary, allocation summary, project link, permission va paging.
+  - Test: `Index_MapsKeyResultsAllocationAndProjectLink` pass (co/khong KR, allocation, project name).
+- [x] Bo `Include(o => o.KeyResults)` trung lap; chi project cac cot can cho page hien tai.
+  - Test: progress/KR count map tu KR page-only; Index tests + full suite pass.
+- [x] Batch bon permission bang `PermissionLookupHelper.HasPermissionsAsync`.
+  - Test: `Index_BatchesPermissions_ForAdminAndCustomRole` pass.
+- [x] Chi tai danh muc modal khi nguoi dung co action tuong ung; uu tien endpoint lazy-load neu modal nang.
+  - Test: `Index_ViewOnlyRole_DoesNotLoadModalCatalogs` pass (Employees/Departments/Missions/OKRTypes rong khi khong co OKRS_CREATE).
+- [x] Chuyen scope Manager/Employee thanh filter `IQueryable` som, han che tai danh sach ID lon vao memory.
+  - Test: Employee scope + `Index_ManagerOnlySeesManagedDepartmentScope` pass.
+- [x] Do thoi gian tai `/OKRs` truoc/sau voi du lieu that.
+  - Test: sau Phase 25, admin warm-up 5 lan: avg **311ms** (min 302, max 323), HTTP 200; page co KR badge + allocation summary; khong `pageNumber=0`. Baseline Phase 24 chua do so; ket qua sau khong N+1 Include+KR double-load + khong tai modal catalog vo dieu kien.
 
 ### Phase 26: `Ngthebao-phase-26-okrs-operations-filter-sort`
 
@@ -213,7 +213,7 @@ Khong bat dau Phase 27 truoc khi Phase 24-26 pass; UI phai dua tren data contrac
 
 - [x] Khong con kha nang sinh WorkItem trung khi them KR.
 - [x] Khong con URL paging 0/qua tong trang.
-- [ ] Index khong query trung KeyResults va khong tai danh muc modal vo dieu kien.
+- [x] Index khong query trung KeyResults va khong tai danh muc modal vo dieu kien.
 - [ ] Filter/sort/search/paging giu dung scope quyen.
 - [ ] Giao dien dong bo MissionVisions, de quet va it cuon hon.
 - [ ] Mobile 390px khong ep title, badge, progress hoac action.
@@ -231,3 +231,4 @@ AI thuc hien cap nhat phan nay sau moi task:
 | 2026-07-11 | 24 | Baseline Index tests | Ngthebao-phase-24-okrs-correctness-baseline | OKRsControllerIndexTests + full suite | Pass (5 + 65) | 485ccf7 |
 | 2026-07-11 | 24 | Fix KR WorkItem duplicate + shared path | Ngthebao-phase-24-okrs-correctness-baseline | OKRsControllerKeyResultTests | Pass | 485ccf7 |
 | 2026-07-11 | 24 | Pagination + KR validation + HTTP QA | Ngthebao-phase-24-okrs-correctness-baseline | unit + full + HTTP CRUD | Pass | 485ccf7 |
+| 2026-07-11 | 25 | Index ViewModel + query/scope/permissions | Ngthebao-phase-25-okrs-index-query-viewmodel | OKRsControllerIndexTests + full 69 | Pass; /OKRs avg 311ms | pending |

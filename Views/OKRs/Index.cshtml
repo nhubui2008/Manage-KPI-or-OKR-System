@@ -1,18 +1,14 @@
-@model Manage_KPI_or_OKR_System.Helpers.PaginatedList<Manage_KPI_or_OKR_System.Models.OKR>
+@model Manage_KPI_or_OKR_System.Models.ViewModels.OkrIndexViewModel
 @using Manage_KPI_or_OKR_System.Helpers
 @using System.Globalization
 @{
     ViewData["Title"] = "Quản lý OKR";
-    var keyResultsDict = ViewBag.KeyResults as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>> ??
-                         new Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>>();
-    var currentFilter = ViewData["CurrentFilter"] as string;
-    bool isAdminRole = User.IsInRole("Admin") || User.IsInRole("Administrator");
-    bool isRestrictedRole = User.IsInRole("Employee") || User.IsInRole("employee") ||
-                            User.IsInRole("Sales") || User.IsInRole("sales");
-    bool canCreateOkr = isAdminRole || User.HasClaim("Permission", "OKRS_CREATE");
-    bool canEditOkr = isAdminRole || User.HasClaim("Permission", "OKRS_EDIT");
-    bool canDeleteOkr = isAdminRole || User.HasClaim("Permission", "OKRS_DELETE");
-    bool canUpdateOwnProgress = isAdminRole || User.HasClaim("Permission", "EMPLOYEE_UPDATE_KPI_PROGRESS");
+    var pageItems = Model?.Items;
+    var currentFilter = Model?.SearchString ?? ViewData["CurrentFilter"] as string;
+    bool canCreateOkr = Model?.CanCreateOkr == true;
+    bool canEditOkr = Model?.CanEditOkr == true;
+    bool canDeleteOkr = Model?.CanDeleteOkr == true;
+    bool canUpdateOwnProgress = Model?.CanUpdateOkrProgress == true;
     var measurementUnits = new[] {
         new { Value = "%", Text = "% - Tỷ lệ phần trăm" },
         new { Value = "VNĐ", Text = "VNĐ - Tiền tệ" },
@@ -32,7 +28,7 @@
 }
 
 <div class="container-fluid px-0 okr-index-page">
-    
+
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 font-weight-bold mb-1">Mục tiêu và Kết quả then chốt (OKR)</h1>
@@ -76,28 +72,21 @@
                     </form>
 
                     <div class="accordion" id="accordionOKRs">
-                        @if (Model != null && Model.Any())
+                        @if (pageItems != null && pageItems.Any())
                         {
                             int index = 0;
-                            var currentEmployeeId = ViewBag.CurrentEmployeeId as int?;
-                            var allocatedIds = ViewBag.AllocatedOkrIds as List<int> ?? new List<int>();
-                            var deptOkrIds = ViewBag.DepartmentOkrIds as List<int> ?? new List<int>();
 
-                            foreach (var okr in Model)
+                            foreach (var okr in pageItems)
                             {
                                 index++;
                                 string collapseId = $"collapseOkr{index}";
-                                var krs = keyResultsDict.ContainsKey(okr.Id) ? keyResultsDict[okr.Id] : new List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>();
-                                
-                                bool isOwner = okr.CreatedById == currentEmployeeId;
-                                bool isAllocated = allocatedIds.Contains(okr.Id) || deptOkrIds.Contains(okr.Id);
-                                
-                                bool canUpdateProgress = canEditOkr || (canUpdateOwnProgress && (isOwner || isAllocated));
+                                var krs = okr.KeyResults ?? Array.Empty<Manage_KPI_or_OKR_System.Models.ViewModels.OkrKeyResultItemViewModel>();
+                                bool canUpdateProgress = okr.CanUpdateProgress;
 
-                                // Sử dụng TotalProgress từ model đã được chuẩn hóa
+                                // Sử dụng TotalProgress từ view model đã map
                                 int okrProgressInt = (int)okr.TotalProgress;
                                 int okrProgressWidth = (int)Math.Min(100, okr.TotalProgress);
-                                
+
                                 string okrProgressColor = ProgressHelper.GetProgressColorClass(okrProgressInt);
                                 string okrBadgeTone = okrProgressInt >= 100 ? "okr-status-success" :
                                                       okrProgressInt >= 70 ? "okr-status-primary" :
@@ -106,30 +95,34 @@
 
                                 <div class="accordion-item mb-3 border-0 shadow-sm rounded" style="overflow: visible;">
                                     <div class="accordion-header position-relative" id="heading-@index">
-        
+
                                         <div class="accordion-button collapsed bg-white p-3 d-flex justify-content-between align-items-center w-100" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId" style="cursor: pointer; box-shadow: none;">
-                                            
+
                                             <div class="d-flex flex-column flex-grow-1 pe-4">
                                                 <div class="d-flex align-items-center gap-2 mb-2">
                                                     <span class="badge okr-status-badge @okrBadgeTone rounded-pill px-2">Objective (O)</span>
-                                                    @if(okr.OKRTypeId == 1){<span class="badge okr-strategic-badge rounded-pill px-2"><i class="bi bi-star-fill me-1"></i>Chiến lược công ty</span>}
+                                                    @if(okr.OkrTypeId == 1){<span class="badge okr-strategic-badge rounded-pill px-2"><i class="bi bi-star-fill me-1"></i>Chiến lược công ty</span>}
                                                     <h5 class="mb-0 fw-bold fs-6 text-dark">@okr.ObjectiveName</h5>
+                                                    <span class="badge text-bg-light border text-muted rounded-pill px-2" title="Số Key Result">@okr.KeyResultCount KR</span>
                                                 </div>
-                                                
-                                                <div class="d-flex align-items-center gap-4">
+
+                                                <div class="d-flex align-items-center gap-4 flex-wrap">
                                                     <div class="text-muted okr-meta-text" style="font-size: 0.8rem;">
                                                         <i class="bi bi-calendar3"></i> @(okr.Cycle ?? "Chưa rõ chu kỳ")
+                                                    </div>
+                                                    <div class="text-muted okr-meta-text" style="font-size: 0.8rem;" title="Phạm vi phân bổ">
+                                                        <i class="bi bi-people"></i> @okr.AllocationSummary
                                                     </div>
                                                     @if (okr.LinkedWorkProjectId.HasValue)
                                                     {
                                                         <a asp-controller="WorkProjects" asp-action="Details" asp-route-id="@okr.LinkedWorkProjectId"
                                                            class="btn btn-sm btn-outline-info py-1 px-2"
-                                                           title="Xem dự án vận hành tự động sinh từ OKR này"
+                                                           title="@(okr.LinkedWorkProjectName ?? "Xem dự án vận hành tự động sinh từ OKR này")"
                                                            onclick="event.stopPropagation();">
                                                             <i class="bi bi-kanban me-1"></i> Dự án vận hành
                                                         </a>
                                                     }
-                                                    
+
                                                     <div class="flex-grow-1" style="max-width: 400px;">
                                                         <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
                                                             <span class="text-muted okr-progress-label">Tiến độ chung:</span>
@@ -179,13 +172,13 @@
                                                 </ul>
                                             </div>
                                         }
-                                        
+
                                     </div>
 
                                     <div id="@collapseId" class="accordion-collapse collapse border-top" aria-labelledby="heading-@index">
                                         <div class="accordion-body bg-light bg-opacity-25 p-3">
                                             <h6 class="fs-6 fw-semibold text-muted mb-3"><i class="bi bi-key-fill text-warning me-1"></i> Key Results (Kết quả then chốt)</h6>
-                                            
+
                                             @if (krs.Any())
                                             {
                                                 int krIndex = 1;
@@ -195,7 +188,7 @@
                                                     var krWidth = (int)Math.Min(100, kr.Progress);
                                                     var krTargetJs = (kr.TargetValue ?? 0).ToString(CultureInfo.InvariantCulture);
                                                     var krCurrentJs = (kr.CurrentValue ?? 0).ToString(CultureInfo.InvariantCulture);
-                                                    
+
                                                     string krColor = ProgressHelper.GetProgressColorClass(krPercent);
                                                     string krTextClass = ProgressHelper.GetProgressTextColorClass(krPercent);
 
@@ -281,19 +274,19 @@
                     </div>
 
                     <!-- PAGINATION -->
-                    @if (Model != null && Model.TotalPages > 1)
+                    @if (pageItems != null && pageItems.TotalPages > 1)
                     {
                         <div class="d-flex justify-content-between align-items-center mt-4 px-2">
                             <div class="text-muted small">
-                                Hiển thị trang @Model.PageIndex trên tổng số @Model.TotalPages
+                                Hiển thị trang @pageItems.PageIndex trên tổng số @pageItems.TotalPages
                             </div>
                             <nav aria-label="Page navigation">
                                 <ul class="pagination pagination-sm mb-0 gap-1">
-                                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
-                                        @if (Model.HasPreviousPage && Model.PreviousPageNumber.HasValue)
+                                    <li class="page-item @(!pageItems.HasPreviousPage ? "disabled" : "")">
+                                        @if (pageItems.HasPreviousPage && pageItems.PreviousPageNumber.HasValue)
                                         {
                                             <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index"
-                                               asp-route-pageNumber="@Model.PreviousPageNumber"
+                                               asp-route-pageNumber="@pageItems.PreviousPageNumber"
                                                asp-route-searchString="@currentFilter"
                                                aria-label="Trang trước">
                                                 <i class="bi bi-chevron-left"></i>
@@ -306,28 +299,28 @@
                                             </span>
                                         }
                                     </li>
-                                    
-                                    @for (int i = 1; i <= Model.TotalPages; i++)
+
+                                    @for (int i = 1; i <= pageItems.TotalPages; i++)
                                     {
-                                        if (i == 1 || i == Model.TotalPages || (i >= Model.PageIndex - 1 && i <= Model.PageIndex + 1))
+                                        if (i == 1 || i == pageItems.TotalPages || (i >= pageItems.PageIndex - 1 && i <= pageItems.PageIndex + 1))
                                         {
-                                            <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                                                <a class="page-link border-0 rounded-circle shadow-none @(i == Model.PageIndex ? "" : "text-dark")" asp-action="Index" 
-                                                   asp-route-pageNumber="@i" 
+                                            <li class="page-item @(i == pageItems.PageIndex ? "active" : "")">
+                                                <a class="page-link border-0 rounded-circle shadow-none @(i == pageItems.PageIndex ? "" : "text-dark")" asp-action="Index"
+                                                   asp-route-pageNumber="@i"
                                                    asp-route-searchString="@currentFilter">@i</a>
                                             </li>
                                         }
-                                        else if (i == Model.PageIndex - 2 || i == Model.PageIndex + 2)
+                                        else if (i == pageItems.PageIndex - 2 || i == pageItems.PageIndex + 2)
                                         {
                                             <li class="page-item disabled"><span class="page-link border-0">...</span></li>
                                         }
                                     }
 
-                                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                                        @if (Model.HasNextPage && Model.NextPageNumber.HasValue)
+                                    <li class="page-item @(!pageItems.HasNextPage ? "disabled" : "")">
+                                        @if (pageItems.HasNextPage && pageItems.NextPageNumber.HasValue)
                                         {
                                             <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index"
-                                               asp-route-pageNumber="@Model.NextPageNumber"
+                                               asp-route-pageNumber="@pageItems.NextPageNumber"
                                                asp-route-searchString="@currentFilter"
                                                aria-label="Trang sau">
                                                 <i class="bi bi-chevron-right"></i>
@@ -429,7 +422,7 @@
 
                 <form asp-controller="OKRs" asp-action="AddKeyResult" method="post" id="addKrForm" data-measurement-scope>
                     <input type="hidden" name="OKRId" id="krOkrId" />
-                    
+
                     <div class="form-icon-group">
                         <label>Mô tả Kết quả then chốt</label>
                         <div class="input-wrapper">
@@ -503,14 +496,15 @@
                         <i class="bi bi-person-check"></i>
                         <span>Phân bổ cho nhân viên</span>
                     </div>
-                    
+
                     <div class="form-icon-group">
                         <label>Chọn nhân viên phụ trách</label>
                         <div class="input-wrapper">
                             <i class="bi bi-person-badge"></i>
                             <select name="employeeId" class="form-select" required>
                                 <option value="">-- Chọn nhân viên --</option>
-                                @foreach(var e in (ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>())){
+                                @foreach (var e in Model?.Employees ?? Array.Empty<Manage_KPI_or_OKR_System.Models.Employee>())
+                                {
                                     <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
                                 }
                             </select>
@@ -550,7 +544,8 @@
                             <i class="bi bi-building"></i>
                             <select name="departmentId" class="form-select" required>
                                 <option value="">-- Chọn phòng ban --</option>
-                                @foreach(var d in (ViewBag.Departments as List<Manage_KPI_or_OKR_System.Models.Department> ?? new List<Manage_KPI_or_OKR_System.Models.Department>())){
+                                @foreach (var d in Model?.Departments ?? Array.Empty<Manage_KPI_or_OKR_System.Models.Department>())
+                                {
                                     <option value="@d.Id">@d.DepartmentName (@d.DepartmentCode)</option>
                                 }
                             </select>
@@ -589,7 +584,7 @@
 
                 <form asp-controller="OKRs" asp-action="UpdateKeyResultProgress" method="post">
                     <input type="hidden" name="krId" id="updateKrId" />
-                    
+
                     <div class="form-icon-group">
                         <label>Thực tế hiện tại</label>
                         <div class="input-wrapper">
@@ -825,7 +820,7 @@
         document.getElementById('toggleAllBtn')?.addEventListener('click', function() {
             const accordions = document.querySelectorAll('#accordionOKRs .accordion-collapse');
             const anyCollapsed = Array.from(accordions).some(a => !a.classList.contains('show'));
-            
+
             accordions.forEach(acc => {
                 const bsCollapse = bootstrap.Collapse.getOrCreateInstance(acc);
                 if (anyCollapsed) {
@@ -834,8 +829,8 @@
                     bsCollapse.hide();
                 }
             });
-            
-            // Cập nhật text & icon: Nếu trước đó có ít nhất 1 cái đóng, giờ đã mở hết -> nút thành "Thu gọn". 
+
+            // Cập nhật text & icon: Nếu trước đó có ít nhất 1 cái đóng, giờ đã mở hết -> nút thành "Thu gọn".
             // Nếu trước đó mở hết -> giờ đã đóng hết -> nút thành "Mở rộng".
             if (anyCollapsed) {
                 this.innerHTML = '<i class="bi bi-dash-square"></i> Thu gọn tất cả';
@@ -847,7 +842,7 @@
         function renderAiKrResults(data) {
             document.getElementById('aiLoadingIndicator').style.display = 'none';
             document.getElementById('aiSuggestionContent').style.display = 'block';
-            
+
             const tbody = document.getElementById('aiKrListTableBody');
             let html = '';
             data.forEach((kr, index) => {
@@ -875,7 +870,7 @@
                 datalistHTML += `</datalist>`;
                 document.body.insertAdjacentHTML('beforeend', datalistHTML);
             }
-            
+
             tbody.innerHTML = html;
         }
 
@@ -888,11 +883,11 @@
             closeAllOkrDropdowns();
             document.getElementById('aiOkrId').value = okrId;
             document.getElementById('aiOkrNameDisplay').innerText = 'Objective: ' + okrName;
-            
+
             document.getElementById('aiLoadingIndicator').style.display = 'block';
             document.getElementById('aiSuggestionContent').style.display = 'none';
             document.getElementById('aiKrListTableBody').innerHTML = '';
-            
+
             var modal = new bootstrap.Modal(document.getElementById('aiSuggestKrModal'));
             modal.show();
 
