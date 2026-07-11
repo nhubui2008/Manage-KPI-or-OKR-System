@@ -290,11 +290,21 @@
                             <nav aria-label="Page navigation">
                                 <ul class="pagination pagination-sm mb-0 gap-1">
                                     <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
-                                        <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index" 
-                                           asp-route-pageNumber="@(Model.PageIndex - 1)" 
-                                           asp-route-searchString="@currentFilter">
-                                            <i class="bi bi-chevron-left"></i>
-                                        </a>
+                                        @if (Model.HasPreviousPage && Model.PreviousPageNumber.HasValue)
+                                        {
+                                            <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index"
+                                               asp-route-pageNumber="@Model.PreviousPageNumber"
+                                               asp-route-searchString="@currentFilter"
+                                               aria-label="Trang trước">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="page-link border-0 rounded-circle text-dark shadow-none" aria-disabled="true" aria-label="Trang trước">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </span>
+                                        }
                                     </li>
                                     
                                     @for (int i = 1; i <= Model.TotalPages; i++)
@@ -314,11 +324,21 @@
                                     }
 
                                     <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                                        <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index" 
-                                           asp-route-pageNumber="@(Model.PageIndex + 1)" 
-                                           asp-route-searchString="@currentFilter">
-                                            <i class="bi bi-chevron-right"></i>
-                                        </a>
+                                        @if (Model.HasNextPage && Model.NextPageNumber.HasValue)
+                                        {
+                                            <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index"
+                                               asp-route-pageNumber="@Model.NextPageNumber"
+                                               asp-route-searchString="@currentFilter"
+                                               aria-label="Trang sau">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="page-link border-0 rounded-circle text-dark shadow-none" aria-disabled="true" aria-label="Trang sau">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </span>
+                                        }
                                     </li>
                                 </ul>
                             </nav>

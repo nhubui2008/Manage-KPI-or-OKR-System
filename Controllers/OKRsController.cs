@@ -423,50 +423,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return Forbid();
             }
 
-            if (ModelState.IsValid)
+            var validationError = ValidateKeyResultInput(kr, requireZeroCurrentOnCreate: true);
+            if (validationError != null)
             {
-                kr.CurrentValue = 0; // Khởi tạo tiến độ ban đầu là 0
-                _context.OKRKeyResults.Add(kr);
-                await _context.SaveChangesAsync();
-
-                // Tự động tạo task trong project liên kết
-                try
-                {
-                    await _workflowService.AutoCreateTaskFromKeyResultAsync(kr.OKRId!.Value, kr);
-                }
-                catch (Exception)
-                {
-                    // Không để lỗi sinh task ảnh hưởng
-                }
-                
-                // === TỰ ĐỘNG TẠO WORKITEM TỪ KR ===
-                var linkedProject = await _context.WorkProjects
-                    .FirstOrDefaultAsync(p => p.IsActive == true && p.LinkedOKRId == kr.OKRId);
-
-                if (linkedProject != null)
-                {
-                    var task = new WorkItem
-                    {
-                        WorkProjectId = linkedProject.Id,
-                        Title = kr.KeyResultName ?? $"KR #{kr.Id}",
-                        Description = $"Chỉ tiêu: {kr.TargetValue} {kr.Unit}",
-                        OKRKeyResultId = kr.Id,
-                        KanbanStatus = "Todo",
-                        Priority = "Normal",
-                        ProgressPercentage = 0,
-                        KpiImpactWeight = 1,
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now,
-                        IsActive = true
-                    };
-                    _context.WorkItems.Add(task);
-                    await _context.SaveChangesAsync();
-                }
-
-                // Lấy thông tin OKR để tính toán tiến độ mới
-                var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
-                TempData["SuccessMessage"] = $"Đã thêm KR thành công! Tiến độ mục tiêu: {okr?.TotalProgress}%";
+                TempData["ErrorMessage"] = validationError;
+                return RedirectToAction(nameof(Index));
             }
+
+            var saved = await PersistNewKeyResultAndCreateTaskAsync(kr);
+            if (!saved)
+            {
+                TempData["ErrorMessage"] = "Không thể thêm Key Result.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
+            TempData["SuccessMessage"] = $"Đã thêm KR thành công! Tiến độ mục tiêu: {okr?.TotalProgress}%";
             return RedirectToAction(nameof(Index));
         }
 
@@ -554,32 +526,35 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return Forbid();
             }
 
-            foreach(var kr in keyResults)
+            foreach (var kr in keyResults)
             {
-                kr.CurrentValue = 0;
                 kr.OKRId = okrId;
-                _context.OKRKeyResults.Add(kr);
-            }
-            
-            await _context.SaveChangesAsync();
-
-            // Tự động tạo tasks trong project liên kết
-            try
-            {
-                foreach (var kr in keyResults)
+                var validationError = ValidateKeyResultInput(kr, requireZeroCurrentOnCreate: true);
+                if (validationError != null)
                 {
-                    await _workflowService.AutoCreateTaskFromKeyResultAsync(okrId, kr);
+                    return BadRequest(validationError);
                 }
             }
-            catch (Exception)
+
+            var savedCount = 0;
+            foreach (var kr in keyResults)
             {
-                // Không để lỗi sinh task ảnh hưởng
+                kr.OKRId = okrId;
+                if (await PersistNewKeyResultAndCreateTaskAsync(kr))
+                {
+                    savedCount++;
+                }
+            }
+
+            if (savedCount == 0)
+            {
+                return BadRequest("Không thể thêm Key Result.");
             }
 
             var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == okrId);
-            TempData["SuccessMessage"] = $"Đã thêm {keyResults.Count} KR thành công! Tiến độ mục tiêu mới cập nhật: {okr?.TotalProgress}%";
+            TempData["SuccessMessage"] = $"Đã thêm {savedCount} KR thành công! Tiến độ mục tiêu mới cập nhật: {okr?.TotalProgress}%";
             
-            return Ok(new { success = true });
+            return Ok(new { success = true, count = savedCount });
         }
 
         [HttpPost]
@@ -624,31 +599,35 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
-            if (ModelState.IsValid)
+            var validationError = ValidateKeyResultInput(model, requireZeroCurrentOnCreate: false);
+            if (validationError != null)
             {
-                var kr = await _context.OKRKeyResults.FindAsync(model.Id);
-                if (kr != null)
-                {
-                    if (!kr.OKRId.HasValue || (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(kr.OKRId.Value)))
-                    {
-                        return Forbid();
-                    }
+                TempData["ErrorMessage"] = validationError;
+                return RedirectToAction(nameof(Index));
+            }
 
-                    kr.KeyResultName = model.KeyResultName;
-                    kr.TargetValue = model.TargetValue;
-                    kr.CurrentValue = model.CurrentValue;
-                    kr.Unit = model.Unit;
-                    kr.IsInverse = model.IsInverse;
-                    
-                    // Recalculate status
-                    decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, kr.TargetValue ?? 0, kr.IsInverse);
-                    kr.ResultStatus = ProgressHelper.GetResultStatus(progress);
-                    
-                    await _context.SaveChangesAsync();
-                    
-                    var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
-                    TempData["SuccessMessage"] = $"Đã cập nhật KR thành công! Tiến độ mục tiêu hiện tại: {okr?.TotalProgress}%";
+            var kr = await _context.OKRKeyResults.FindAsync(model.Id);
+            if (kr != null)
+            {
+                if (!kr.OKRId.HasValue || (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(kr.OKRId.Value)))
+                {
+                    return Forbid();
                 }
+
+                kr.KeyResultName = model.KeyResultName!.Trim();
+                kr.TargetValue = model.TargetValue;
+                kr.CurrentValue = model.CurrentValue ?? 0;
+                kr.Unit = model.Unit!.Trim();
+                kr.IsInverse = model.IsInverse;
+
+                // Recalculate status
+                decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, kr.TargetValue ?? 0, kr.IsInverse);
+                kr.ResultStatus = ProgressHelper.GetResultStatus(progress);
+
+                await _context.SaveChangesAsync();
+
+                var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
+                TempData["SuccessMessage"] = $"Đã cập nhật KR thành công! Tiến độ mục tiêu hiện tại: {okr?.TotalProgress}%";
             }
             return RedirectToAction(nameof(Index));
         }
@@ -1287,6 +1266,69 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return DateTime.TryParseExact(value, formats, CultureInfo.GetCultureInfo("vi-VN"), DateTimeStyles.None, out var parsed)
                 ? parsed
                 : null;
+        }
+
+        /// <summary>
+        /// Validates KR fields before create/edit. Inverse KR still requires Target &gt; 0 (ceiling).
+        /// </summary>
+        private static string? ValidateKeyResultInput(OKRKeyResult kr, bool requireZeroCurrentOnCreate)
+        {
+            if (string.IsNullOrWhiteSpace(kr.KeyResultName))
+            {
+                return "Tên Key Result không được để trống.";
+            }
+
+            if (!kr.TargetValue.HasValue || kr.TargetValue.Value <= 0)
+            {
+                return kr.IsInverse
+                    ? "Chỉ tiêu inverse (ngưỡng tối đa) phải lớn hơn 0."
+                    : "Chỉ tiêu (Target) phải lớn hơn 0.";
+            }
+
+            if (requireZeroCurrentOnCreate)
+            {
+                kr.CurrentValue = 0;
+            }
+            else if (kr.CurrentValue.HasValue && kr.CurrentValue.Value < 0)
+            {
+                return "Giá trị hiện tại không được âm.";
+            }
+
+            if (string.IsNullOrWhiteSpace(kr.Unit))
+            {
+                return "Đơn vị tính không được để trống.";
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Shared idempotent path: save KR then create at most one WorkItem via workflow service.
+        /// </summary>
+        private async Task<bool> PersistNewKeyResultAndCreateTaskAsync(OKRKeyResult kr)
+        {
+            if (!kr.OKRId.HasValue || kr.OKRId.Value <= 0)
+            {
+                return false;
+            }
+
+            kr.KeyResultName = kr.KeyResultName!.Trim();
+            kr.Unit = kr.Unit!.Trim();
+            kr.CurrentValue = 0;
+
+            _context.OKRKeyResults.Add(kr);
+            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _workflowService.AutoCreateTaskFromKeyResultAsync(kr.OKRId.Value, kr);
+            }
+            catch (Exception)
+            {
+                // Không để lỗi sinh task ảnh hưởng đến việc lưu KR
+            }
+
+            return true;
         }
     }
 }

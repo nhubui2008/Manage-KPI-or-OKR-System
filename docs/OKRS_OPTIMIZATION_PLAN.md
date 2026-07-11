@@ -96,18 +96,18 @@ Vi du:
 
 **Muc tieu:** sua bug du lieu va tao nen test an toan truoc khi redesign.
 
-- [ ] Viet test baseline cho `OKRsController.Index`: active only, search, paging, Admin va restricted role.
-  - Test: chay rieng test class moi; sau do chay full test project.
-- [ ] Ra luong `AddKeyResult` va `OKRWorkflowService`; dam bao moi KR chi sinh toi da mot WorkItem cho project lien ket.
-  - Test: tao OKR + project + mot KR; assert duy nhat mot WorkItem co `OKRKeyResultId` tuong ung.
-- [ ] Dong bo `AddMultipleKeyResults` voi `AddKeyResult`, dung chung mot duong sinh task idempotent.
-  - Test: them nhieu KR hai lan theo kich ban retry; khong sinh task trung.
-- [ ] Sua pagination de nut Previous/Next disabled khong co URL ngoai mien hop le.
-  - Test: page 1 khong co `pageNumber=0`; trang cuoi khong co link vuot `TotalPages`.
-- [ ] Ra validation KR: ten trong, target bang/duoi 0, current am, unit trong, inverse target.
-  - Test: request gia mao khong luu du lieu khong hop le.
-- [ ] QA Chrome CRUD nho: tao Objective QA, them KR, cap nhat progress, kiem tra WorkProject/WorkItem, cleanup.
-  - Test: console sach; khong task trung; build va full test pass.
+- [x] Viet test baseline cho `OKRsController.Index`: active only, search, paging, Admin va restricted role.
+  - Test: `OKRsControllerIndexTests` 5/5 pass; full suite 65 pass.
+- [x] Ra luong `AddKeyResult` va `OKRWorkflowService`; dam bao moi KR chi sinh toi da mot WorkItem cho project lien ket.
+  - Test: `AddKeyResult_WithLinkedProject_CreatesExactlyOneWorkItem` + legacy LinkedOKRId path pass; bo path tao WorkItem trung trong controller.
+- [x] Dong bo `AddMultipleKeyResults` voi `AddKeyResult`, dung chung mot duong sinh task idempotent.
+  - Test: `AddMultipleKeyResults_RetryDoesNotCreateDuplicateWorkItems` pass; ca hai action goi `PersistNewKeyResultAndCreateTaskAsync`.
+- [x] Sua pagination de nut Previous/Next disabled khong co URL ngoai mien hop le.
+  - Test: `PaginatedList_PreviousAndNextStayWithinValidRange` pass; HTTP `/OKRs?pageNumber=1` khong con `pageNumber=0`, prev la `span` disabled.
+- [x] Ra validation KR: ten trong, target bang/duoi 0, current am, unit trong, inverse target.
+  - Test: invalid Add/Edit/AddMultiple khong luu; inverse target <= 0 bi chan.
+- [x] QA Chrome CRUD nho: tao Objective QA, them KR, cap nhat progress, kiem tra WorkProject/WorkItem, cleanup.
+  - Test: HTTP session QA (admin/123) tao `QA OKR Phase 24`, them KR, progress 40, WorkProject hien thi, soft-delete cleanup; build + full test pass. (Khong co Chrome extension MCP trong moi truong agent; da verify HTML/URL paging va luong CRUD qua session cookie.)
 
 ### Phase 25: `Ngthebao-phase-25-okrs-index-query-viewmodel`
 
@@ -211,8 +211,8 @@ Khong bat dau Phase 27 truoc khi Phase 24-26 pass; UI phai dua tren data contrac
 
 ## 8. Tieu chi chot toan bo ke hoach
 
-- [ ] Khong con kha nang sinh WorkItem trung khi them KR.
-- [ ] Khong con URL paging 0/qua tong trang.
+- [x] Khong con kha nang sinh WorkItem trung khi them KR.
+- [x] Khong con URL paging 0/qua tong trang.
 - [ ] Index khong query trung KeyResults va khong tai danh muc modal vo dieu kien.
 - [ ] Filter/sort/search/paging giu dung scope quyen.
 - [ ] Giao dien dong bo MissionVisions, de quet va it cuon hon.
@@ -228,4 +228,6 @@ AI thuc hien cap nhat phan nay sau moi task:
 
 | Ngay | Phase | Task | Nhanh | Test da chay | Ket qua | Commit |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| 2026-07-11 | 24 | Baseline Index tests | Ngthebao-phase-24-okrs-correctness-baseline | OKRsControllerIndexTests + full suite | Pass (5 + 65) | pending |
+| 2026-07-11 | 24 | Fix KR WorkItem duplicate + shared path | Ngthebao-phase-24-okrs-correctness-baseline | OKRsControllerKeyResultTests | Pass | pending |
+| 2026-07-11 | 24 | Pagination + KR validation + HTTP QA | Ngthebao-phase-24-okrs-correctness-baseline | unit + full + HTTP CRUD | Pass | pending |

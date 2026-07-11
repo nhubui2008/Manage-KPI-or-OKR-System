@@ -86,16 +86,32 @@ namespace Manage_KPI_or_OKR_System.Services
             var okr = await _context.OKRs.FirstOrDefaultAsync(o => o.Id == okrId);
             if (okr == null) return;
 
-            if (!okr.LinkedWorkProjectId.HasValue)
+            WorkProject? existingProject = null;
+            if (okr.LinkedWorkProjectId.HasValue)
+            {
+                existingProject = await _context.WorkProjects
+                    .FirstOrDefaultAsync(p => p.Id == okr.LinkedWorkProjectId.Value && p.IsActive == true);
+            }
+
+            // Fallback: project linked via SourceOKRId / LinkedOKRId (legacy paths)
+            if (existingProject == null)
+            {
+                existingProject = await _context.WorkProjects
+                    .FirstOrDefaultAsync(p =>
+                        p.IsActive == true &&
+                        (p.SourceOKRId == okrId || p.LinkedOKRId == okrId));
+
+                if (existingProject != null && okr.LinkedWorkProjectId != existingProject.Id)
+                {
+                    okr.LinkedWorkProjectId = existingProject.Id;
+                }
+            }
+
+            if (existingProject == null)
             {
                 await AutoCreateProjectFromOKRAsync(okrId, okr.CreatedById, null);
                 return;
             }
-
-            var existingProject = await _context.WorkProjects
-                .FirstOrDefaultAsync(p => p.Id == okr.LinkedWorkProjectId.Value && p.IsActive == true);
-
-            if (existingProject == null) return;
 
             var taskExists = await _context.WorkItems.AnyAsync(t =>
                 t.WorkProjectId == existingProject.Id &&
