@@ -23,6 +23,16 @@ namespace Manage_KPI_or_OKR_System.Helpers
 
         public bool HasNextPage => PageIndex < TotalPages;
 
+        /// <summary>
+        /// Previous page number when navigation is valid; otherwise null (do not emit pageNumber=0).
+        /// </summary>
+        public int? PreviousPageNumber => HasPreviousPage ? PageIndex - 1 : null;
+
+        /// <summary>
+        /// Next page number when navigation is valid; otherwise null (do not exceed TotalPages).
+        /// </summary>
+        public int? NextPageNumber => HasNextPage ? PageIndex + 1 : null;
+
         public static async Task<PaginatedList<T>> CreateAsync(IQueryable<T> source, int pageIndex, int pageSize)
         {
             var count = await source.CountAsync();

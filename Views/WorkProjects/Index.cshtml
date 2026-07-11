@@ -98,7 +98,7 @@
             </div>
             <div class="filter-field">
                 <label for="workproject-sort" class="form-label">Sắp xếp</label>
-                <select id="workproject-sort" name="sortBy" class="form-select">
+                <select id="workproject-sort" name="sortBy" class="form-select" data-allow-clear="false">
                     <option value="risk" selected="@(currentSortBy == "risk" ? "selected" : null)">Rủi ro trước</option>
                     <option value="updated" selected="@(currentSortBy == "updated" ? "selected" : null)">Mới cập nhật</option>
                     <option value="deadline" selected="@(currentSortBy == "deadline" ? "selected" : null)">Deadline gần</option>
@@ -114,12 +114,12 @@
             </div>
         </div>
         <div class="quick-filter-row" aria-label="Lọc nhanh dự án">
-            <a asp-action="Index" asp-route-searchString="@currentSearch" asp-route-status="@currentStatus" asp-route-priority="@currentPriority" asp-route-sortBy="@currentSortBy" class="@(QuickFilterClass("", currentQuickFilter))">Tất cả</a>
-            <a asp-action="Index" asp-route-searchString="@currentSearch" asp-route-status="@currentStatus" asp-route-priority="@currentPriority" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="mine" class="@(QuickFilterClass("mine", currentQuickFilter))">Của tôi</a>
-            <a asp-action="Index" asp-route-searchString="@currentSearch" asp-route-status="@currentStatus" asp-route-priority="@currentPriority" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="overdue" class="@(QuickFilterClass("overdue", currentQuickFilter))">Có việc trễ</a>
-            <a asp-action="Index" asp-route-searchString="@currentSearch" asp-route-status="@currentStatus" asp-route-priority="@currentPriority" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="blocked" class="@(QuickFilterClass("blocked", currentQuickFilter))">Có việc vướng</a>
-            <a asp-action="Index" asp-route-searchString="@currentSearch" asp-route-status="@currentStatus" asp-route-priority="@currentPriority" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="urgent" class="@(QuickFilterClass("urgent", currentQuickFilter))">Khẩn cấp</a>
-            <a asp-action="Index" asp-route-searchString="@currentSearch" asp-route-status="@currentStatus" asp-route-priority="@currentPriority" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="unassigned-department" class="@(QuickFilterClass("unassigned-department", currentQuickFilter))">Chưa gán phòng ban</a>
+            <a asp-action="Index" asp-route-searchString="@currentSearch" asp-route-status="@currentStatus" asp-route-priority="@currentPriority" asp-route-sortBy="@currentSortBy" class="@(QuickFilterClass("", currentQuickFilter))"><i class="bi bi-grid-3x3-gap"></i> Tất cả</a>
+            <a asp-action="Index" asp-route-searchString="@currentSearch" asp-route-status="@currentStatus" asp-route-priority="@currentPriority" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="mine" class="@(QuickFilterClass("mine", currentQuickFilter))"><i class="bi bi-person-check"></i> Của tôi</a>
+            <a asp-action="Index" asp-route-searchString="@currentSearch" asp-route-status="@currentStatus" asp-route-priority="@currentPriority" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="overdue" class="@(QuickFilterClass("overdue", currentQuickFilter))"><i class="bi bi-calendar-x"></i> Có việc trễ</a>
+            <a asp-action="Index" asp-route-searchString="@currentSearch" asp-route-status="@currentStatus" asp-route-priority="@currentPriority" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="blocked" class="@(QuickFilterClass("blocked", currentQuickFilter))"><i class="bi bi-slash-circle"></i> Có việc vướng</a>
+            <a asp-action="Index" asp-route-searchString="@currentSearch" asp-route-status="@currentStatus" asp-route-priority="@currentPriority" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="urgent" class="@(QuickFilterClass("urgent", currentQuickFilter))"><i class="bi bi-exclamation-diamond"></i> Khẩn cấp</a>
+            <a asp-action="Index" asp-route-searchString="@currentSearch" asp-route-status="@currentStatus" asp-route-priority="@currentPriority" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="unassigned-department" class="@(QuickFilterClass("unassigned-department", currentQuickFilter))"><i class="bi bi-diagram-3"></i> Chưa gán phòng ban</a>
         </div>
     </form>
 
@@ -141,6 +141,7 @@
             var status = item.Project.Status ?? "Active";
             var priority = item.Project.Priority ?? "Normal";
             var isClosed = IsProjectClosed(status);
+            var isArchived = string.Equals(status, "Archived", StringComparison.OrdinalIgnoreCase);
             var projectDateOverdue = IsProjectDateOverdue(item.Project.DueDate, status, today);
             var dueSoon = IsProjectDueSoon(item.Project.DueDate, status, today);
             var riskTone = ProjectRiskTone(item.BlockedTasks, item.OverdueTasks, projectDateOverdue, dueSoon, priority);
@@ -217,9 +218,18 @@
                             <span>@(item.TotalTasks - item.DoneTasks) việc đang mở</span>
                         }
                     </span>
-                    <a asp-action="Details" asp-route-id="@item.Project.Id" class="btn btn-sm btn-primary">
-                        Mở Kanban <i class="bi bi-arrow-right-short"></i>
-                    </a>
+                    @if (isArchived)
+                    {
+                        <span class="btn btn-sm btn-outline-secondary project-card__archived-action" role="status">
+                            <i class="bi bi-archive me-1"></i> Đã lưu trữ
+                        </span>
+                    }
+                    else
+                    {
+                        <a asp-action="Details" asp-route-id="@item.Project.Id" class="btn btn-sm btn-primary">
+                            Mở Kanban <i class="bi bi-arrow-right-short"></i>
+                        </a>
+                    }
                 </div>
             </article>
         }
@@ -326,6 +336,12 @@
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
         padding: 14px;
         margin-bottom: 12px;
+        transition: opacity 0.18s ease;
+    }
+
+    .workprojects-filter.is-loading {
+        opacity: 0.72;
+        pointer-events: none;
     }
 
     .filter-grid {
@@ -382,6 +398,9 @@
     }
 
     .quick-filter-row a {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
         border: 1px solid var(--border-color, #d7dce2);
         border-radius: 999px;
         color: var(--text-secondary, #475569);
@@ -650,6 +669,11 @@
         gap: 2px;
     }
 
+    .project-card__archived-action {
+        cursor: default;
+        opacity: 0.78;
+    }
+
     .empty-state {
         margin-top: 18px;
         padding: 38px 20px;
@@ -735,14 +759,94 @@
 
     @@media (max-width: 575.98px) {
         .ops-summary {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .ops-summary__item {
+            min-height: 88px;
+            padding: 10px;
         }
 
         .workproject-grid {
             grid-template-columns: 1fr;
         }
+
+        .ai-chat-widget {
+            right: 8px;
+            bottom: 8px;
+        }
+
+        .ai-chat-toggle {
+            width: 44px;
+            height: 44px;
+            font-size: 1.1rem;
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .workprojects-filter {
+            transition: none;
+        }
     }
 </style>
+
+@section Scripts {
+    <script>
+        (() => {
+            const initWorkProjectFilters = () => {
+                const form = document.querySelector('.workprojects-filter');
+                if (!form || form.dataset.loadingBound === 'true') return;
+
+                form.dataset.loadingBound = 'true';
+                const submitButton = form.querySelector('button[type="submit"]');
+                const quickFilterLinks = form.querySelectorAll('.quick-filter-row a');
+                const originalSubmitHtml = submitButton?.innerHTML || '';
+
+                const setLoading = () => {
+                    form.classList.add('is-loading');
+                    form.setAttribute('aria-busy', 'true');
+
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Đang lọc';
+                    }
+                };
+
+                const resetLoading = () => {
+                    form.classList.remove('is-loading');
+                    form.removeAttribute('aria-busy');
+
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalSubmitHtml;
+                    }
+                };
+
+                form.addEventListener('submit', setLoading);
+                quickFilterLinks.forEach(link => {
+                    link.addEventListener('click', event => {
+                        if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+
+                        quickFilterLinks.forEach(item => item.classList.remove('is-active'));
+                        link.classList.add('is-active');
+                        setLoading();
+                    });
+                });
+
+                window.addEventListener('pageshow', resetLoading);
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initWorkProjectFilters, { once: true });
+            } else {
+                initWorkProjectFilters();
+            }
+
+            document.addEventListener('instant:navigation-ready', initWorkProjectFilters);
+        })();
+    </script>
+}
 
 @functions {
     private static string PriorityLabel(string? value) => value switch

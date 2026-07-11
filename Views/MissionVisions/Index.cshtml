@@ -1,193 +1,893 @@
-﻿@model IEnumerable<Manage_KPI_or_OKR_System.Models.MissionVision>
+﻿@model Manage_KPI_or_OKR_System.Models.ViewModels.MissionVisionIndexViewModel
 @{
     ViewData["Title"] = "Sứ mệnh & Tầm nhìn";
-    var longTermStatements = ViewBag.LongTermStatements as List<Manage_KPI_or_OKR_System.Models.MissionVision> ?? new List<Manage_KPI_or_OKR_System.Models.MissionVision>();
-    var selectedYear = ViewBag.SelectedYear as int?;
-    var availableYears = ViewBag.AvailableYears as List<int> ?? new List<int>();
-    var isAdminRole = User.IsInRole("Admin") || User.IsInRole("Administrator");
-    var canCreateMission = ViewBag.CanCreateMission is bool canCreateFromDb ? canCreateFromDb : isAdminRole || User.HasClaim("Permission", "MISSIONS_CREATE");
-    var canEditMission = ViewBag.CanEditMission is bool canEditFromDb ? canEditFromDb : isAdminRole || User.HasClaim("Permission", "MISSIONS_EDIT");
-    var canDeleteMission = ViewBag.CanDeleteMission is bool canDeleteFromDb ? canDeleteFromDb : isAdminRole || User.HasClaim("Permission", "MISSIONS_DELETE");
+    var currentYear = DateTime.Now.Year;
+    var visionStatement = Model.LongTermStatements.FirstOrDefault(item => item.MissionVisionType == MissionVision.TypeVision);
+    var missionStatement = Model.LongTermStatements.FirstOrDefault(item => item.MissionVisionType == MissionVision.TypeMission);
+    var foundationCount = (visionStatement != null ? 1 : 0) + (missionStatement != null ? 1 : 0);
+    var hasFinancialTargets = Model.YearlyGoals.Any(goal => goal.FinancialTarget.HasValue);
+    var financialTargetTotal = Model.YearlyGoals.Sum(goal => goal.FinancialTarget ?? 0);
+    var viewedYearLabel = Model.ShowAllYears ? "Tất cả" : Model.SelectedYear?.ToString() ?? "Chưa có";
+    var canManageMission = Model.CanEditMission || Model.CanDeleteMission;
 }
 
-<div class="container-fluid px-0">
-    
-    <div class="page-header d-flex justify-content-between align-items-center mb-4 animate__animated animate__fadeIn">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1 text-dark">Định hướng chiến lược</h1>
-        <div class="page-breadcrumb">
-            <a href="/" class="text-decoration-none opacity-75">Trang chủ</a>
-            <i class="bi bi-chevron-right separator mx-2 small opacity-50"></i>
-            <span class="text-primary fw-600">Sứ mệnh & Tầm nhìn</span>
+<div class="mission-vision-index">
+    <header class="mv-page-header">
+        <div>
+            <h1>Định hướng chiến lược</h1>
+            <nav class="mv-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span>Sứ mệnh &amp; Tầm nhìn</span>
+            </nav>
         </div>
-    </div>
-    <div class="d-flex justify-content-end gap-2">
-        @if (canCreateMission)
+        @if (Model.CanCreateMission)
         {
-            <a asp-action="Create" class="btn btn-primary shadow-sm d-flex align-items-center px-4 py-2" style="border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%); border: none; transition: all 0.3s;">
-                <i class="bi bi-plus-lg me-2"></i> Thêm mục tiêu
+            <a asp-action="Create" asp-route-type="@MissionVision.TypeYearlyGoal" class="btn btn-primary mv-primary-action">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                <span>Thêm mục tiêu</span>
             </a>
         }
-    </div>
-</div>
+    </header>
 
-<div class="row g-4 mb-4">
-    <!-- Tầm nhìn & Sứ mệnh chung -->
-    @if (longTermStatements.Any())
-    {
-        foreach (var statement in longTermStatements)
-        {
-            var iconClass = statement.MissionVisionType == MissionVision.TypeMission ? "bi-bullseye" : "bi-compass";
-            var financialLabel = statement.MissionVisionType == MissionVision.TypeMission ? "Mục tiêu tài chính hỗ trợ" : "Mục tiêu tài chính dài hạn";
-
-            <div class="@(longTermStatements.Count == 1 ? "col-12" : "col-lg-6")">
-                <div class="content-card bg-primary text-white border-0 position-relative h-100" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
-                    @if (canEditMission || canDeleteMission)
-                    {
-                    <div class="position-absolute top-0 end-0 p-3 d-flex gap-2">
-                        @if (canEditMission)
-                        {
-                            <a asp-action="Edit" asp-route-id="@statement.Id" class="btn btn-sm btn-outline-light border-0" title="Chỉnh sửa @statement.TypeDisplayName">
-                                <i class="bi bi-pencil-square"></i>
-                            </a>
-                        }
-                        @if (canDeleteMission)
-                        {
-                            <form asp-action="Delete" asp-route-id="@statement.Id" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc muốn xóa @statement.TypeDisplayName này?');">
-                                <button type="submit" class="btn btn-sm btn-outline-light border-0"><i class="bi bi-trash"></i></button>
-                            </form>
-                        }
-                    </div>
-                    }
-                    <div class="card-body-custom px-4 py-5 text-center">
-                        <i class="bi @iconClass mb-3" style="font-size: 3rem; opacity: 0.9;"></i>
-                        <div class="badge bg-white bg-opacity-25 text-white rounded-pill px-3 py-2 mb-3">@statement.TypeDisplayName</div>
-                        <h2 class="fw-bold mb-3" style="max-width: 900px; margin: 0 auto; line-height: 1.4;">@statement.Content</h2>
-                        @if (statement.FinancialTarget.HasValue)
-                        {
-                            <p class="mb-0 mx-auto" style="opacity: 0.9; font-size: 1.1rem;">
-                                @financialLabel: <strong>@String.Format("{0:N0} đ", statement.FinancialTarget.Value)</strong>
-                            </p>
-                        }
-                    </div>
-                </div>
-            </div>
-        }
-    }
-    else
-    {
-        <div class="col-12">
-            <div class="content-card bg-primary text-white border-0 position-relative" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
-                <div class="card-body-custom px-4 py-5 text-center">
-                    <i class="bi bi-compass mb-3" style="font-size: 3rem; opacity: 0.9;"></i>
-                    <h2 class="fw-bold mb-3">Chưa thiết lập Tầm nhìn & Sứ mệnh</h2>
-                    <p class="mb-0 mx-auto" style="opacity: 0.9; font-size: 1.1rem;">
-                        Hãy bấm "Thêm mục tiêu" và chọn loại "Tầm nhìn" hoặc "Sứ mệnh" để cài đặt định hướng dài hạn.
-                    </p>
-                </div>
-            </div>
+    <section class="mv-summary" aria-label="Tổng quan định hướng chiến lược">
+        <div class="mv-summary__item">
+            <span class="mv-summary__label">Nền tảng dài hạn</span>
+            <strong class="mv-summary__value">@foundationCount/2</strong>
         </div>
-    }
-</div>
+        <div class="mv-summary__item">
+            <span class="mv-summary__label">Mục tiêu đang xem</span>
+            <strong class="mv-summary__value">@Model.YearlyGoals.Count</strong>
+        </div>
+        <div class="mv-summary__item">
+            <span class="mv-summary__label">Mục tiêu tài chính</span>
+            <strong class="mv-summary__value mv-summary__value--money">
+                @(hasFinancialTargets ? String.Format("{0:N0} đ", financialTargetTotal) : "Chưa đặt")
+            </strong>
+        </div>
+        <div class="mv-summary__item">
+            <span class="mv-summary__label">Năm đang xem</span>
+            <strong class="mv-summary__value">@viewedYearLabel</strong>
+        </div>
+    </section>
 
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 mt-5">
-    <h4 class="mb-0 fw-bold text-dark">Mục tiêu chiến lược theo năm</h4>
-    <form method="get" asp-action="Index" class="d-inline-flex align-items-center bg-white p-1 px-3 rounded-pill shadow-sm border no-select2">
-        <i class="bi bi-funnel-fill text-primary me-2" style="font-size: 0.9rem;"></i>
-        <span class="text-muted small fw-bold text-uppercase me-2 d-none d-sm-inline-block" style="font-size: 0.7rem; white-space: nowrap; letter-spacing: 0.5px;">Năm:</span>
-        <select name="year" class="form-select form-select-sm border-0 fw-bold text-primary no-select2" style="outline: none; box-shadow: none; width: auto; min-width: 100px; background-color: transparent; cursor: pointer; font-size: 0.85rem;" onchange="this.form.submit()">
-            <option value="" selected="@(selectedYear == null ? "selected" : null)">Tất cả</option>
-            @foreach (var y in availableYears)
+    <section class="mv-section" aria-labelledby="mv-foundation-heading">
+        <div class="mv-section-header">
+            <div>
+                <span class="mv-section-kicker">Định hướng dài hạn</span>
+                <h2 id="mv-foundation-heading">Tầm nhìn và Sứ mệnh</h2>
+            </div>
+            <span class="mv-section-count">@foundationCount/2 đã thiết lập</span>
+        </div>
+
+        <div class="mv-foundation-grid">
+            @if (visionStatement != null)
             {
-                if (y == selectedYear)
-                {
-                    <option value="@y" selected="selected">Năm @y</option>
-                }
-                else
-                {
-                    <option value="@y">Năm @y</option>
-                }
-            }
-        </select>
-    </form>
-</div>
-
-<div class="row justify-content-center w-100 m-0 strategic-goals-section">
-        <div class="col-12 px-0">
-            <div class="row g-4 w-100">
-    @if (Model != null && Model.Any())
-    {
-        foreach (var goal in Model)
-        {
-            <div class="col-md-6 col-xl-4">
-                <div class="content-card h-100 strategic-goal-card">
-                    <div class="card-body-custom strategic-goal-card__body">
-                        <div class="strategic-goal-card__top">
-                            <div class="strategic-goal-chip">
-                                <i class="bi bi-flag-fill"></i>
-                                <span>@goal.TypeDisplayName @goal.TargetYear</span>
+                <article class="mv-foundation-card mv-foundation-card--vision">
+                    <div class="mv-foundation-card__header">
+                        <div class="mv-foundation-card__identity">
+                            <span class="mv-foundation-card__icon" aria-hidden="true"><i class="bi bi-compass"></i></span>
+                            <div>
+                                <span class="mv-foundation-card__type">Tầm nhìn</span>
+                                <span class="mv-foundation-card__meta">Đích đến dài hạn</span>
                             </div>
-                            @if (canEditMission || canDeleteMission)
+                        </div>
+                        @if (canManageMission)
+                        {
+                            <div class="dropdown">
+                                <button class="btn mv-icon-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Tùy chọn Tầm nhìn" title="Tùy chọn Tầm nhìn">
+                                    <i class="bi bi-three-dots" aria-hidden="true"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    @if (Model.CanEditMission)
+                                    {
+                                        <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@visionStatement.Id"><i class="bi bi-pencil me-2" aria-hidden="true"></i>Chỉnh sửa</a></li>
+                                    }
+                                    @if (Model.CanDeleteMission)
+                                    {
+                                        <li>
+                                            <form asp-action="Delete" asp-route-id="@visionStatement.Id" method="post" onsubmit="return confirm('Vô hiệu hóa Tầm nhìn này?');">
+                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-archive me-2" aria-hidden="true"></i>Vô hiệu hóa</button>
+                                            </form>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                    <h3>@visionStatement.Content</h3>
+                    <div class="mv-foundation-card__footer">
+                        <span>Mục tiêu tài chính dài hạn</span>
+                        <strong>@(visionStatement.FinancialTarget.HasValue ? String.Format("{0:N0} đ", visionStatement.FinancialTarget.Value) : "Chưa đặt")</strong>
+                    </div>
+                </article>
+            }
+            else
+            {
+                <article class="mv-foundation-card mv-foundation-card--empty mv-foundation-card--vision">
+                    <div class="mv-foundation-card__identity">
+                        <span class="mv-foundation-card__icon" aria-hidden="true"><i class="bi bi-compass"></i></span>
+                        <div>
+                            <span class="mv-foundation-card__type">Tầm nhìn</span>
+                            <span class="mv-foundation-card__meta">Chưa thiết lập</span>
+                        </div>
+                    </div>
+                    <h3>Doanh nghiệp muốn trở thành ai trong tương lai?</h3>
+                    <p>Mô tả đích đến dài hạn mà toàn tổ chức cùng hướng tới.</p>
+                    @if (Model.CanCreateMission)
+                    {
+                        <a asp-action="Create" asp-route-type="@MissionVision.TypeVision" class="btn btn-outline-primary mv-setup-action">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                            Thiết lập Tầm nhìn
+                        </a>
+                    }
+                </article>
+            }
+
+            @if (missionStatement != null)
+            {
+                <article class="mv-foundation-card mv-foundation-card--mission">
+                    <div class="mv-foundation-card__header">
+                        <div class="mv-foundation-card__identity">
+                            <span class="mv-foundation-card__icon" aria-hidden="true"><i class="bi bi-bullseye"></i></span>
+                            <div>
+                                <span class="mv-foundation-card__type">Sứ mệnh</span>
+                                <span class="mv-foundation-card__meta">Giá trị cốt lõi</span>
+                            </div>
+                        </div>
+                        @if (canManageMission)
+                        {
+                            <div class="dropdown">
+                                <button class="btn mv-icon-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Tùy chọn Sứ mệnh" title="Tùy chọn Sứ mệnh">
+                                    <i class="bi bi-three-dots" aria-hidden="true"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    @if (Model.CanEditMission)
+                                    {
+                                        <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@missionStatement.Id"><i class="bi bi-pencil me-2" aria-hidden="true"></i>Chỉnh sửa</a></li>
+                                    }
+                                    @if (Model.CanDeleteMission)
+                                    {
+                                        <li>
+                                            <form asp-action="Delete" asp-route-id="@missionStatement.Id" method="post" onsubmit="return confirm('Vô hiệu hóa Sứ mệnh này?');">
+                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-archive me-2" aria-hidden="true"></i>Vô hiệu hóa</button>
+                                            </form>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                    <h3>@missionStatement.Content</h3>
+                    <div class="mv-foundation-card__footer">
+                        <span>Mục tiêu tài chính hỗ trợ</span>
+                        <strong>@(missionStatement.FinancialTarget.HasValue ? String.Format("{0:N0} đ", missionStatement.FinancialTarget.Value) : "Chưa đặt")</strong>
+                    </div>
+                </article>
+            }
+            else
+            {
+                <article class="mv-foundation-card mv-foundation-card--empty mv-foundation-card--mission">
+                    <div class="mv-foundation-card__identity">
+                        <span class="mv-foundation-card__icon" aria-hidden="true"><i class="bi bi-bullseye"></i></span>
+                        <div>
+                            <span class="mv-foundation-card__type">Sứ mệnh</span>
+                            <span class="mv-foundation-card__meta">Chưa thiết lập</span>
+                        </div>
+                    </div>
+                    <h3>Doanh nghiệp tồn tại để tạo ra giá trị gì?</h3>
+                    <p>Nêu đối tượng phục vụ, giá trị mang lại và lý do tồn tại.</p>
+                    @if (Model.CanCreateMission)
+                    {
+                        <a asp-action="Create" asp-route-type="@MissionVision.TypeMission" class="btn btn-outline-primary mv-setup-action">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                            Thiết lập Sứ mệnh
+                        </a>
+                    }
+                </article>
+            }
+        </div>
+    </section>
+
+    <section class="mv-section" aria-labelledby="mv-yearly-heading">
+        <div class="mv-yearly-toolbar">
+            <div>
+                <span class="mv-section-kicker">Kế hoạch chiến lược</span>
+                <h2 id="mv-yearly-heading">Mục tiêu theo năm</h2>
+            </div>
+            @if (Model.AvailableYears.Any())
+            {
+                <nav class="mv-year-filter" aria-label="Lọc mục tiêu theo năm">
+                    <a asp-action="Index" asp-route-allYears="true" class="@(Model.ShowAllYears ? "active" : null)" aria-current="@(Model.ShowAllYears ? "page" : null)">Tất cả</a>
+                    @foreach (var year in Model.AvailableYears)
+                    {
+                        var isSelectedYear = !Model.ShowAllYears && Model.SelectedYear == year;
+                        <a asp-action="Index" asp-route-year="@year" class="@(isSelectedYear ? "active" : null)" aria-current="@(isSelectedYear ? "page" : null)">@year</a>
+                    }
+                </nav>
+            }
+        </div>
+
+        @if (Model.YearlyGoals.Any())
+        {
+            <div class="mv-goal-grid">
+                @foreach (var goal in Model.YearlyGoals)
+                {
+                    var goalYear = goal.TargetYear ?? currentYear;
+                    var linkedEmployeeCount = Model.ActiveEmployeeCounts.GetValueOrDefault(goal.Id);
+                    var yearStatusClass = goalYear == currentYear ? "current" : goalYear > currentYear ? "upcoming" : "past";
+                    var yearStatusLabel = goalYear == currentYear ? "Năm hiện tại" : goalYear > currentYear ? "Sắp tới" : "Đã qua";
+                    var yearStatusIcon = goalYear == currentYear ? "bi-calendar-check" : goalYear > currentYear ? "bi-hourglass-split" : "bi-archive";
+
+                    <article class="mv-goal-card">
+                        <div class="mv-goal-card__header">
+                            <span class="mv-year-chip"><i class="bi bi-calendar3" aria-hidden="true"></i>Năm @goalYear</span>
+                            @if (canManageMission)
                             {
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-link text-muted p-0 strategic-goal-card__menu" data-bs-toggle="dropdown" aria-label="Tùy chọn mục tiêu">
-                                        <i class="bi bi-three-dots"></i>
+                                    <button class="btn mv-icon-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Tùy chọn mục tiêu năm @goalYear, mã @goal.Id" title="Tùy chọn mục tiêu">
+                                        <i class="bi bi-three-dots" aria-hidden="true"></i>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                                        @if (canEditMission)
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                        @if (Model.CanEditMission)
                                         {
-                                            <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@goal.Id"><i class="bi bi-pencil me-2"></i>Chỉnh sửa</a></li>
+                                            <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@goal.Id"><i class="bi bi-pencil me-2" aria-hidden="true"></i>Chỉnh sửa</a></li>
                                         }
-                                        @if (canEditMission && canDeleteMission)
-                                        {
-                                            <li><hr class="dropdown-divider"></li>
-                                        }
-                                        @if (canDeleteMission)
+                                        @if (Model.CanDeleteMission)
                                         {
                                             <li>
-                                                <form asp-action="Delete" asp-route-id="@goal.Id" method="post" class="m-0" onsubmit="return confirm('Xóa mục tiêu chiến lược năm @goal.TargetYear?');">
-                                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa mục tiêu</button>
-                                                </form>
+                                                @if (linkedEmployeeCount > 0)
+                                                {
+                                                    <span class="dropdown-item-text mv-disabled-action" title="Hãy chuyển nhân viên sang mục tiêu khác trước">
+                                                        <i class="bi bi-lock me-2" aria-hidden="true"></i>Đang được sử dụng
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <form asp-action="Delete" asp-route-id="@goal.Id" method="post" onsubmit="return confirm('Vô hiệu hóa mục tiêu chiến lược năm @goalYear?');">
+                                                        <button type="submit" class="dropdown-item text-danger"><i class="bi bi-archive me-2" aria-hidden="true"></i>Vô hiệu hóa</button>
+                                                    </form>
+                                                }
                                             </li>
                                         }
                                     </ul>
                                 </div>
                             }
                         </div>
-                        <h5 class="strategic-goal-card__title">@goal.Content</h5>
-                        
-                        <div class="strategic-goal-card__footer">
-                            <div class="strategic-goal-money">
-                                <div class="strategic-goal-money__label">Mục tiêu tài chính</div>
-                                @if (goal.FinancialTarget.HasValue)
-                                {
-                                    <div class="strategic-goal-money__value">@String.Format("{0:N0} đ", goal.FinancialTarget.Value)</div>
-                                }
-                                else
-                                {
-                                    <div class="strategic-goal-money__value strategic-goal-money__value--muted">Không đặt ra</div>
-                                }
+                        <h3>@goal.Content</h3>
+                        @if (linkedEmployeeCount > 0)
+                        {
+                            <span class="mv-linked-employees" title="Mục tiêu này chưa thể vô hiệu hóa">
+                                <i class="bi bi-people" aria-hidden="true"></i>
+                                @linkedEmployeeCount nhân viên đang theo mục tiêu
+                            </span>
+                        }
+                        <div class="mv-goal-card__footer">
+                            <div class="mv-goal-finance">
+                                <span>Mục tiêu tài chính</span>
+                                <strong>@(goal.FinancialTarget.HasValue ? String.Format("{0:N0} đ", goal.FinancialTarget.Value) : "Chưa đặt")</strong>
                             </div>
-                            <span class="status-badge active">Đang áp dụng</span>
+                            <span class="mv-year-status mv-year-status--@yearStatusClass">
+                                <i class="bi @yearStatusIcon" aria-hidden="true"></i>
+                                @yearStatusLabel
+                            </span>
                         </div>
-                    </div>
-                </div>
+                    </article>
+                }
             </div>
         }
-    }
-    else
-    {
-        <div class="col-12">
-            <div class="alert alert-info border-0 shadow-sm text-center p-5">
-                <i class="bi bi-flag display-4 text-info mb-3 d-block"></i>
-                <h5>@(selectedYear.HasValue ? $"Chưa có mục tiêu trong năm {selectedYear}" : "Chưa có mục tiêu chiến lược theo năm")</h5>
-                <p class="text-muted mb-0">@(selectedYear.HasValue ? "Bấm \"Thêm mục tiêu\" để hoạch định chiến lược cho năm này." : "Bấm \"Thêm mục tiêu\" để hoạch định chiến lược cho các năm.")</p>
+        else
+        {
+            <div class="mv-empty-state">
+                <span class="mv-empty-state__icon" aria-hidden="true"><i class="bi bi-flag"></i></span>
+                <div>
+                    <h3>@(Model.SelectedYear.HasValue ? $"Chưa có mục tiêu năm {Model.SelectedYear}" : "Chưa có mục tiêu chiến lược theo năm")</h3>
+                    <p>Thiết lập mục tiêu cụ thể để chuyển định hướng dài hạn thành kế hoạch hành động.</p>
+                </div>
+                @if (Model.CanCreateMission)
+                {
+                    <a asp-action="Create" asp-route-type="@MissionVision.TypeYearlyGoal" class="btn btn-outline-primary mv-setup-action">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        Thêm mục tiêu
+                    </a>
+                }
             </div>
-        </div>
+        }
+    </section>
+</div>
+
+<style>
+    .mission-vision-index {
+        --mv-border: #dde3ec;
+        --mv-text: #172033;
+        --mv-muted: #64748b;
+        --mv-surface: #ffffff;
+        --mv-soft: #f7f9fc;
+        color: var(--mv-text);
+        letter-spacing: 0;
     }
-</div>
 
+    .mv-page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 4px 0 20px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--mv-border);
+    }
 
-        </div>
-    </div>
-</div>
+    .mv-page-header h1 {
+        margin: 0 0 6px;
+        color: var(--mv-text);
+        font-size: 1.75rem;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+
+    .mv-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--mv-muted);
+        font-size: 0.86rem;
+    }
+
+    .mv-breadcrumb a {
+        color: var(--mv-muted);
+        text-decoration: none;
+    }
+
+    .mv-breadcrumb i {
+        font-size: 0.68rem;
+    }
+
+    .mv-primary-action,
+    .mv-setup-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 8px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .mv-primary-action {
+        min-height: 42px;
+        padding: 9px 16px;
+        box-shadow: none;
+    }
+
+    .mv-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-bottom: 28px;
+        overflow: hidden;
+        border: 1px solid var(--mv-border);
+        border-radius: 8px;
+        background: var(--mv-surface);
+    }
+
+    .mv-summary__item {
+        min-width: 0;
+        padding: 15px 18px;
+        border-right: 1px solid var(--mv-border);
+    }
+
+    .mv-summary__item:last-child {
+        border-right: 0;
+    }
+
+    .mv-summary__label,
+    .mv-summary__value {
+        display: block;
+    }
+
+    .mv-summary__label {
+        margin-bottom: 5px;
+        color: var(--mv-muted);
+        font-size: 0.76rem;
+        font-weight: 700;
+    }
+
+    .mv-summary__value {
+        overflow-wrap: anywhere;
+        color: var(--mv-text);
+        font-size: 1.12rem;
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    .mv-summary__value--money {
+        font-size: 1rem;
+    }
+
+    .mv-section {
+        margin-bottom: 32px;
+    }
+
+    .mv-section-header,
+    .mv-yearly-toolbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 14px;
+    }
+
+    .mv-section-kicker {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--mv-muted);
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .mv-section h2 {
+        margin: 0;
+        color: var(--mv-text);
+        font-size: 1.28rem;
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    .mv-section-count {
+        color: var(--mv-muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .mv-foundation-grid,
+    .mv-goal-grid {
+        display: grid;
+        gap: 16px;
+    }
+
+    .mv-foundation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mv-foundation-card,
+    .mv-goal-card {
+        min-width: 0;
+        border: 1px solid var(--mv-border);
+        border-radius: 8px;
+        background: var(--mv-surface);
+    }
+
+    .mv-foundation-card {
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding: 20px;
+        border-top-width: 3px;
+    }
+
+    .mv-foundation-card--vision {
+        border-top-color: #2563eb;
+    }
+
+    .mv-foundation-card--mission {
+        border-top-color: #0f766e;
+    }
+
+    .mv-foundation-card__header,
+    .mv-goal-card__header,
+    .mv-foundation-card__identity {
+        display: flex;
+        align-items: center;
+    }
+
+    .mv-foundation-card__header,
+    .mv-goal-card__header {
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .mv-foundation-card__identity {
+        min-width: 0;
+        gap: 12px;
+    }
+
+    .mv-foundation-card__icon,
+    .mv-empty-state__icon {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        font-size: 1.05rem;
+    }
+
+    .mv-foundation-card--vision .mv-foundation-card__icon {
+        background: #eaf2ff;
+        color: #1d4ed8;
+    }
+
+    .mv-foundation-card--mission .mv-foundation-card__icon {
+        background: #e6f5f2;
+        color: #0f766e;
+    }
+
+    .mv-foundation-card__type,
+    .mv-foundation-card__meta {
+        display: block;
+    }
+
+    .mv-foundation-card__type {
+        color: var(--mv-text);
+        font-size: 0.95rem;
+        font-weight: 800;
+    }
+
+    .mv-foundation-card__meta {
+        margin-top: 1px;
+        color: var(--mv-muted);
+        font-size: 0.75rem;
+        font-weight: 650;
+    }
+
+    .mv-foundation-card h3,
+    .mv-goal-card h3,
+    .mv-empty-state h3 {
+        overflow-wrap: anywhere;
+        color: var(--mv-text);
+        font-weight: 780;
+    }
+
+    .mv-foundation-card h3 {
+        margin: 0;
+        font-size: 1.15rem;
+        line-height: 1.42;
+    }
+
+    .mv-foundation-card__footer {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 14px;
+        margin-top: auto;
+        padding-top: 14px;
+        border-top: 1px solid var(--mv-border);
+    }
+
+    .mv-foundation-card__footer span {
+        color: var(--mv-muted);
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .mv-foundation-card__footer strong {
+        color: var(--mv-text);
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .mv-foundation-card--empty {
+        justify-content: flex-start;
+        border-style: dashed;
+        background: var(--mv-soft);
+    }
+
+    .mv-foundation-card--empty h3 {
+        margin-bottom: -8px;
+    }
+
+    .mv-foundation-card--empty p {
+        margin: 0;
+        color: var(--mv-muted);
+        font-size: 0.88rem;
+        line-height: 1.5;
+    }
+
+    .mv-foundation-card--empty .mv-setup-action {
+        align-self: flex-start;
+        margin-top: auto;
+    }
+
+    .mv-icon-button {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: var(--mv-muted);
+    }
+
+    .mv-icon-button:hover,
+    .mv-icon-button:focus-visible {
+        border-color: var(--mv-border);
+        background: var(--mv-soft);
+        color: var(--mv-text);
+    }
+
+    .mission-vision-index .dropdown-menu {
+        border: 1px solid var(--mv-border);
+        border-radius: 8px;
+    }
+
+    .mission-vision-index .dropdown-item {
+        font-size: 0.86rem;
+    }
+
+    .mv-disabled-action {
+        color: var(--mv-muted);
+        cursor: not-allowed;
+        font-size: 0.86rem;
+    }
+
+    .mv-year-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid var(--mv-border);
+        border-radius: 8px;
+        background: var(--mv-surface);
+    }
+
+    .mv-year-filter a {
+        min-width: 48px;
+        padding: 7px 10px;
+        border-radius: 6px;
+        color: var(--mv-muted);
+        font-size: 0.8rem;
+        font-weight: 750;
+        text-align: center;
+        text-decoration: none;
+    }
+
+    .mv-year-filter a:hover {
+        background: var(--mv-soft);
+        color: var(--mv-text);
+    }
+
+    .mv-year-filter a.active {
+        background: #5b47d6;
+        color: #ffffff;
+    }
+
+    .mv-goal-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .mv-goal-card {
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 18px;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .mv-goal-card:hover {
+        border-color: #b9c3d3;
+        box-shadow: 0 8px 22px rgba(23, 32, 51, 0.07);
+    }
+
+    .mv-year-chip,
+    .mv-year-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border-radius: 6px;
+        font-size: 0.76rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .mv-year-chip {
+        padding: 6px 9px;
+        background: #eef2ff;
+        color: #4338ca;
+    }
+
+    .mv-goal-card h3 {
+        margin: 0;
+        font-size: 1.03rem;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .mv-linked-employees {
+        display: inline-flex;
+        align-items: center;
+        align-self: flex-start;
+        gap: 7px;
+        padding: 6px 9px;
+        border-radius: 6px;
+        background: #fff3dc;
+        color: #854d0e;
+        font-size: 0.76rem;
+        font-weight: 750;
+    }
+
+    .mv-goal-card__footer {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: auto;
+        padding-top: 14px;
+        border-top: 1px solid var(--mv-border);
+    }
+
+    .mv-goal-finance {
+        min-width: 0;
+    }
+
+    .mv-goal-finance span,
+    .mv-goal-finance strong {
+        display: block;
+    }
+
+    .mv-goal-finance span {
+        color: var(--mv-muted);
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .mv-goal-finance strong {
+        margin-top: 3px;
+        color: var(--mv-text);
+        font-size: 0.9rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .mv-year-status {
+        flex: 0 0 auto;
+        padding: 6px 9px;
+    }
+
+    .mv-year-status--current {
+        background: #e7f6ec;
+        color: #137a3d;
+    }
+
+    .mv-year-status--upcoming {
+        background: #fff3dc;
+        color: #9a5b06;
+    }
+
+    .mv-year-status--past {
+        background: #eef1f5;
+        color: #556274;
+    }
+
+    .mv-empty-state {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 16px;
+        padding: 20px;
+        border: 1px dashed #bcc7d6;
+        border-radius: 8px;
+        background: var(--mv-soft);
+    }
+
+    .mv-empty-state__icon {
+        background: #eef2ff;
+        color: #4338ca;
+    }
+
+    .mv-empty-state h3 {
+        margin: 0 0 3px;
+        font-size: 1rem;
+    }
+
+    .mv-empty-state p {
+        margin: 0;
+        color: var(--mv-muted);
+        font-size: 0.85rem;
+    }
+
+    @@media (max-width: 1100px) {
+        .mv-summary,
+        .mv-goal-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .mv-summary__item:nth-child(2) {
+            border-right: 0;
+        }
+
+        .mv-summary__item:nth-child(-n + 2) {
+            border-bottom: 1px solid var(--mv-border);
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .mv-page-header,
+        .mv-section-header,
+        .mv-yearly-toolbar {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .mv-page-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .mv-primary-action {
+            width: 100%;
+        }
+
+        .mv-summary__item {
+            min-height: 78px;
+            padding: 12px;
+        }
+
+	        .mv-summary__value {
+	            font-size: 0.94rem;
+	        }
+
+	        .mv-summary__value--money {
+	            font-size: 0.82rem;
+	            white-space: nowrap;
+	        }
+
+        .mv-foundation-grid,
+        .mv-goal-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .mv-foundation-card {
+            min-height: 206px;
+            padding: 17px;
+        }
+
+        .mv-foundation-card__footer,
+        .mv-goal-card__footer {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .mv-foundation-card__footer strong,
+        .mv-goal-finance strong {
+            max-width: 100%;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .mv-year-filter {
+            align-self: flex-start;
+            max-width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .mv-empty-state {
+            grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        .mv-empty-state .mv-setup-action {
+            grid-column: 1 / -1;
+            width: 100%;
+        }
+
+        .ai-chat-toggle {
+            width: 44px !important;
+            height: 44px !important;
+            right: 8px !important;
+            bottom: 8px !important;
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .mv-goal-card {
+            transition: none;
+        }
+    }
+</style>

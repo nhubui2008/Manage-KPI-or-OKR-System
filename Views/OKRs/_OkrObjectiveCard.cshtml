@@ -1,0 +1,245 @@
+﻿@model Manage_KPI_or_OKR_System.Models.ViewModels.OkrIndexItemViewModel
+@using Manage_KPI_or_OKR_System.Helpers
+@using System.Globalization
+@{
+    var okr = Model;
+    var index = (int)(ViewData["Index"] ?? 0);
+    var collapseId = $"collapseOkr{okr.Id}";
+    var krs = okr.KeyResults ?? Array.Empty<Manage_KPI_or_OKR_System.Models.ViewModels.OkrKeyResultItemViewModel>();
+    bool canUpdateProgress = okr.CanUpdateProgress;
+    bool canCreateOkr = ViewData["CanCreateOkr"] as bool? == true;
+    bool canEditOkr = ViewData["CanEditOkr"] as bool? == true;
+    bool canDeleteOkr = ViewData["CanDeleteOkr"] as bool? == true;
+    int okrProgressInt = (int)okr.TotalProgress;
+    int okrProgressWidth = (int)Math.Min(100, okr.TotalProgress);
+    string okrProgressColor = ProgressHelper.GetProgressColorClass(okrProgressInt);
+    var objectiveTitle = string.IsNullOrWhiteSpace(okr.ObjectiveName) ? $"OKR #{okr.Id}" : okr.ObjectiveName;
+    var menuLabel = $"Tùy chọn OKR #{okr.Id}: {objectiveTitle}";
+}
+                                <article class="accordion-item okr-objective-card" data-okr-id="@okr.Id">
+                                    <div class="accordion-header okr-objective-header" id="heading-@okr.Id">
+                                        <button type="button"
+                                                class="accordion-button collapsed okr-objective-toggle"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#@collapseId"
+                                                aria-expanded="false"
+                                                aria-controls="@collapseId"
+                                                aria-label="Mở rộng Key Results cho OKR #@okr.Id: @objectiveTitle">
+                                            <div class="okr-objective-main">
+                                                <div class="okr-objective-badges">
+                                                    <span class="okr-chip">Objective</span>
+                                                    @if (okr.OkrTypeId == 1)
+                                                    {
+                                                        <span class="okr-chip okr-chip--type"><i class="bi bi-star-fill" aria-hidden="true"></i> Chiến lược công ty</span>
+                                                    }
+                                                    <span class="okr-risk-badge @okr.RiskStatusCssClass" title="@okr.RiskStatusLabel">
+                                                        <i class="bi @(okr.RiskStatusCode == "done" ? "bi-check-circle" : okr.RiskStatusCode == "good" ? "bi-graph-up" : "bi-exclamation-triangle")" aria-hidden="true"></i>
+                                                        <span>@okr.RiskStatusLabel</span>
+                                                    </span>
+                                                    @if (okr.IsUnallocated)
+                                                    {
+                                                        <span class="okr-risk-badge okr-risk-badge--unallocated" title="Chưa phân bổ">
+                                                            <i class="bi bi-people" aria-hidden="true"></i>
+                                                            <span>Chưa phân bổ</span>
+                                                        </span>
+                                                    }
+                                                    <span class="okr-chip okr-chip--muted">@okr.KeyResultCount KR</span>
+                                                </div>
+                                                <h2 class="okr-objective-title">@objectiveTitle</h2>
+                                                <div class="okr-objective-meta">
+                                                    <span><i class="bi bi-calendar3" aria-hidden="true"></i> @(okr.Cycle ?? "Chưa rõ chu kỳ")</span>
+                                                    <span><i class="bi bi-people" aria-hidden="true"></i> @okr.AllocationSummary</span>
+                                                    @if (okr.LinkedWorkProjectId.HasValue)
+                                                    {
+                                                        <a asp-controller="WorkProjects" asp-action="Details" asp-route-id="@okr.LinkedWorkProjectId"
+                                                           class="okr-project-link js-stop-propagation"
+                                                           title="@(okr.LinkedWorkProjectName ?? "Xem dự án vận hành")"
+                                                           aria-label="Mở dự án vận hành cho OKR #@okr.Id: @objectiveTitle">
+                                                            <i class="bi bi-kanban" aria-hidden="true"></i> Dự án vận hành
+                                                        </a>
+                                                    }
+                                                </div>
+                                                <div class="okr-objective-progress" aria-label="Tiến độ OKR #@okr.Id: @okrProgressInt phần trăm">
+                                                    <div class="okr-objective-progress__labels">
+                                                        <span>Tiến độ</span>
+                                                        <strong>@okrProgressInt%</strong>
+                                                    </div>
+                                                    <div class="progress" role="progressbar" aria-valuenow="@okrProgressWidth" aria-valuemin="0" aria-valuemax="100">
+                                                        <div class="progress-bar @okrProgressColor" style="width: @okrProgressWidth%"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </button>
+
+                                        @if (canCreateOkr || canEditOkr || canDeleteOkr)
+                                        {
+                                            <div class="okr-action-dropdown dropdown" data-stop-propagation="true">
+                                                <button type="button"
+                                                        class="btn okr-menu-btn"
+                                                        data-bs-toggle="dropdown"
+                                                        aria-expanded="false"
+                                                        aria-label="@menuLabel"
+                                                        title="@menuLabel">
+                                                    <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                                    @if (canEditOkr)
+                                                    {
+                                                        <li><a class="dropdown-item" href="@Url.Action("Edit", "OKRs", new { id = okr.Id })"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Chỉnh sửa OKR</a></li>
+                                                    }
+                                                    @if (canCreateOkr)
+                                                    {
+                                                        <li>
+                                                            <button type="button" class="dropdown-item js-okr-action"
+                                                                    data-action="add-kr"
+                                                                    data-okr-id="@okr.Id"
+                                                                    data-okr-name="@objectiveTitle">
+                                                                <i class="bi bi-plus me-2" aria-hidden="true"></i>Thêm KR
+                                                            </button>
+                                                        </li>
+                                                        <li>
+                                                            <button type="button" class="dropdown-item js-okr-action"
+                                                                    data-action="ai-suggest-kr"
+                                                                    data-okr-id="@okr.Id"
+                                                                    data-okr-name="@objectiveTitle">
+                                                                <i class="bi bi-magic me-2" aria-hidden="true"></i>AI Gợi ý KR
+                                                            </button>
+                                                        </li>
+                                                        <li>
+                                                            <button type="button" class="dropdown-item js-okr-action"
+                                                                    data-action="ai-decompose"
+                                                                    data-okr-id="@okr.Id"
+                                                                    data-okr-name="@objectiveTitle"
+                                                                    data-project-id="@(okr.LinkedWorkProjectId?.ToString() ?? "")"
+                                                                    data-project-name="@(okr.LinkedWorkProjectName ?? "")">
+                                                                <i class="bi bi-stars me-2" aria-hidden="true"></i>AI Chia task
+                                                            </button>
+                                                        </li>
+                                                        <li>
+                                                            <button type="button" class="dropdown-item js-okr-action"
+                                                                    data-action="allocate"
+                                                                    data-okr-id="@okr.Id">
+                                                                <i class="bi bi-person-plus me-2" aria-hidden="true"></i>Phân bổ
+                                                            </button>
+                                                        </li>
+                                                    }
+                                                    @if ((canEditOkr || canCreateOkr) && canDeleteOkr)
+                                                    {
+                                                        <li><hr class="dropdown-divider"></li>
+                                                    }
+                                                    @if (canDeleteOkr)
+                                                    {
+                                                        <li>
+                                                            <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận xóa OKR này?');">
+                                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2" aria-hidden="true"></i>Xóa OKR</button>
+                                                            </form>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="heading-@okr.Id">
+                                        <div class="accordion-body okr-kr-panel">
+                                            <div class="okr-kr-panel__title">
+                                                <i class="bi bi-key-fill" aria-hidden="true"></i>
+                                                <span>Key Results</span>
+                                            </div>
+
+                                            @if (krs.Any())
+                                            {
+                                                int krIndex = 1;
+                                                foreach (var kr in krs)
+                                                {
+                                                    var krPercent = (int)kr.Progress;
+                                                    var krWidth = (int)Math.Min(100, kr.Progress);
+                                                    var krTargetJs = (kr.TargetValue ?? 0).ToString(CultureInfo.InvariantCulture);
+                                                    var krCurrentJs = (kr.CurrentValue ?? 0).ToString(CultureInfo.InvariantCulture);
+                                                    string krColor = ProgressHelper.GetProgressColorClass(krPercent);
+                                                    var krName = string.IsNullOrWhiteSpace(kr.KeyResultName) ? $"KR #{kr.Id}" : kr.KeyResultName;
+
+                                                    <div class="okr-kr-row">
+                                                        <div class="okr-kr-row__main">
+                                                            <div class="okr-kr-row__name">@krIndex. @krName</div>
+                                                            <div class="okr-kr-row__meta">
+                                                                <span>Mục tiêu: @String.Format("{0:N0}", kr.TargetValue) @kr.Unit</span>
+                                                                <span>Hiện tại: @String.Format("{0:N1}", kr.CurrentValue ?? 0) @kr.Unit</span>
+                                                                @if (kr.IsInverse)
+                                                                {
+                                                                    <span class="okr-kr-inverse"><i class="bi bi-info-circle" aria-hidden="true"></i> Giảm thiểu</span>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                        <div class="okr-kr-row__progress">
+                                                            <div class="okr-kr-row__progress-labels">
+                                                                <span class="okr-risk-badge okr-risk-badge--compact">@ProgressHelper.GetResultStatus(kr.Progress)</span>
+                                                                <strong>@krPercent%</strong>
+                                                            </div>
+                                                            <div class="progress" role="progressbar" aria-valuenow="@krWidth" aria-valuemin="0" aria-valuemax="100" aria-label="Tiến độ KR #@kr.Id: @krName, @krPercent phần trăm">
+                                                                <div class="progress-bar @krColor" style="width: @krWidth%"></div>
+                                                            </div>
+                                                        </div>
+                                                        @if (canEditOkr || canDeleteOkr || canUpdateProgress)
+                                                        {
+                                                            <div class="okr-kr-row__actions">
+                                                                @if (canEditOkr)
+                                                                {
+                                                                    <button type="button" class="btn btn-sm okr-icon-btn js-edit-kr"
+                                                                            data-kr-id="@kr.Id"
+                                                                            data-kr-name="@kr.KeyResultName"
+                                                                            data-kr-target="@krTargetJs"
+                                                                            data-kr-current="@krCurrentJs"
+                                                                            data-kr-unit="@kr.Unit"
+                                                                            data-kr-is-inverse="@kr.IsInverse.ToString().ToLowerInvariant()"
+                                                                            title="Sửa @krName"
+                                                                            aria-label="Sửa Key Result #@kr.Id: @krName">
+                                                                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                                                    </button>
+                                                                }
+                                                                @if (canDeleteOkr)
+                                                                {
+                                                                    <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
+                                                                        <button type="submit" class="btn btn-sm okr-icon-btn okr-icon-btn--danger"
+                                                                                title="Xóa @krName"
+                                                                                aria-label="Xóa Key Result #@kr.Id: @krName">
+                                                                            <i class="bi bi-trash" aria-hidden="true"></i>
+                                                                        </button>
+                                                                    </form>
+                                                                }
+                                                                @if (canUpdateProgress)
+                                                                {
+                                                                    <button type="button" class="btn btn-sm okr-icon-btn okr-icon-btn--primary js-update-kr-progress"
+                                                                            title="Cập nhật tiến độ @krName"
+                                                                            aria-label="Cập nhật tiến độ Key Result #@kr.Id: @krName"
+                                                                            data-kr-id="@kr.Id"
+                                                                            data-kr-name="@kr.KeyResultName"
+                                                                            data-kr-current="@krCurrentJs"
+                                                                            data-kr-unit="@kr.Unit">
+                                                                        <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+                                                                    </button>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                    krIndex++;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <div class="okr-empty okr-empty--inline">
+                                                    <p>Chưa có Key Result cho objective này.</p>
+                                                    @if (canCreateOkr)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-primary js-okr-action"
+                                                                data-action="add-kr"
+                                                                data-okr-id="@okr.Id"
+                                                                data-okr-name="@objectiveTitle">
+                                                            Thêm KR
+                                                        </button>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </article>

@@ -170,6 +170,10 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<WorkItem>().HasOne<Department>().WithMany().HasForeignKey(t => t.DepartmentId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<WorkItem>().HasOne<KPI>().WithMany().HasForeignKey(t => t.KPIId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<WorkItem>().HasOne<OKRKeyResult>().WithMany().HasForeignKey(t => t.OKRKeyResultId).OnDelete(DeleteBehavior.NoAction);
+            modelBuilder.Entity<WorkItem>()
+                .HasIndex(t => t.OKRKeyResultId)
+                .IsUnique()
+                .HasFilter("[OKRKeyResultId] IS NOT NULL AND [IsActive] = 1");
             modelBuilder.Entity<WorkItemComment>().HasOne<WorkItem>().WithMany(t => t.Comments).HasForeignKey(c => c.WorkItemId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<WorkItemComment>().HasOne<Employee>().WithMany().HasForeignKey(c => c.CommenterId).OnDelete(DeleteBehavior.NoAction);
 

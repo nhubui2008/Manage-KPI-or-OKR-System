@@ -1,953 +1,298 @@
-@model Manage_KPI_or_OKR_System.Helpers.PaginatedList<Manage_KPI_or_OKR_System.Models.OKR>
+﻿@model Manage_KPI_or_OKR_System.Models.ViewModels.OkrIndexViewModel
 @using Manage_KPI_or_OKR_System.Helpers
 @using System.Globalization
 @{
     ViewData["Title"] = "Quản lý OKR";
-    var keyResultsDict = ViewBag.KeyResults as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>> ??
-                         new Dictionary<int, List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>>();
-    var currentFilter = ViewData["CurrentFilter"] as string;
-    bool isAdminRole = User.IsInRole("Admin") || User.IsInRole("Administrator");
-    bool isRestrictedRole = User.IsInRole("Employee") || User.IsInRole("employee") ||
-                            User.IsInRole("Sales") || User.IsInRole("sales");
-    bool canCreateOkr = isAdminRole || User.HasClaim("Permission", "OKRS_CREATE");
-    bool canEditOkr = isAdminRole || User.HasClaim("Permission", "OKRS_EDIT");
-    bool canDeleteOkr = isAdminRole || User.HasClaim("Permission", "OKRS_DELETE");
-    bool canUpdateOwnProgress = isAdminRole || User.HasClaim("Permission", "EMPLOYEE_UPDATE_KPI_PROGRESS");
-    var measurementUnits = new[] {
-        new { Value = "%", Text = "% - Tỷ lệ phần trăm" },
-        new { Value = "VNĐ", Text = "VNĐ - Tiền tệ" },
-        new { Value = "Triệu VNĐ", Text = "Triệu VNĐ - Tiền tệ rút gọn" },
-        new { Value = "Điểm", Text = "Điểm - Thang điểm" },
-        new { Value = "Người", Text = "Người - Nhân sự" },
-        new { Value = "Khách hàng", Text = "Khách hàng" },
-        new { Value = "Cơ hội", Text = "Cơ hội bán hàng" },
-        new { Value = "Hợp đồng", Text = "Hợp đồng" },
-        new { Value = "Sản phẩm", Text = "Sản phẩm" },
-        new { Value = "Lần", Text = "Lần" },
-        new { Value = "Giờ", Text = "Giờ" },
-        new { Value = "Ngày", Text = "Ngày" },
-        new { Value = "Dự án", Text = "Dự án" },
-        new { Value = "Công việc", Text = "Công việc" }
-    };
+    var pageItems = Model?.Items;
+    var currentFilter = Model?.SearchString ?? ViewData["CurrentFilter"] as string;
+    var currentCycle = Model?.Cycle;
+    var currentStatusId = Model?.StatusId;
+    var currentOkrTypeId = Model?.OkrTypeId;
+    var currentScope = Model?.Scope ?? "";
+    var currentQuickFilter = Model?.QuickFilter ?? "";
+    var currentSortBy = Model?.SortBy ?? "attention";
+    var hasActiveFilters = Model?.HasActiveFilters == true;
+    var isFilteredEmpty = Model?.IsFilteredEmpty == true;
+    var summary = Model?.Summary;
+    bool canCreateOkr = Model?.CanCreateOkr == true;
+    bool canEditOkr = Model?.CanEditOkr == true;
+    bool canDeleteOkr = Model?.CanDeleteOkr == true;
+    bool canUpdateOwnProgress = Model?.CanUpdateOkrProgress == true;
+
+    string QuickFilterClass(string value) =>
+        string.Equals(value, currentQuickFilter, StringComparison.OrdinalIgnoreCase) ||
+        (string.IsNullOrEmpty(value) && string.IsNullOrEmpty(currentQuickFilter))
+            ? "is-active"
+            : "";
+
 }
 
-<div class="container-fluid px-0 okr-index-page">
-    
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 font-weight-bold mb-1">Mục tiêu và Kết quả then chốt (OKR)</h1>
-            <div class="page-breadcrumb">
-                <a href="/">Trang chủ</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <span>Quản lý OKR</span>
-            </div>
-        </div>
-        <div class="d-flex justify-content-end gap-2">
-            @if (canCreateOkr)
-            {
-                <a asp-action="Create" class="text-decoration-none btn-primary-custom d-flex align-items-center">
-                    <i class="bi bi-plus-lg me-1"></i> Tạo OKR mới
-                </a>
-            }
-        </div>
-    </div>
+<div class="okr-index-page">
 
-    <div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <div class="content-card w-100">
-                <div class="card-body-custom">
-                    <!-- SEARCH FORM -->
-                    <form asp-action="Index" method="get" class="toolbar mb-3">
-                        <div class="toolbar-left" style="width: 400px;">
-                            <div class="toolbar-search position-relative">
-                                <i class="bi bi-search position-absolute" style="left: 15px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
-                                <input type="text" name="searchString" value="@currentFilter" class="form-control" style="padding-left: 2.5rem;" placeholder="Tìm tên, chu kỳ hoặc thời gian OKR..." />
+    <header class="okr-page-header">
+        <div>
+            <h1>Mục tiêu và Kết quả then chốt (OKR)</h1>
+            <nav class="okr-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span>Quản lý OKR</span>
+            </nav>
+        </div>
+        @if (canCreateOkr)
+        {
+            <a asp-action="Create" class="btn btn-primary okr-primary-action">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                <span>Tạo OKR mới</span>
+            </a>
+        }
+    </header>
+
+    <section class="okr-summary" aria-label="Tổng quan OKR">
+        <div class="okr-summary__item">
+            <span class="okr-summary__label">Tổng OKR</span>
+            <strong class="okr-summary__value">@(summary?.TotalCount ?? 0)</strong>
+        </div>
+        <div class="okr-summary__item">
+            <span class="okr-summary__label">Cần chú ý</span>
+            <strong class="okr-summary__value">@(summary?.NeedsAttentionCount ?? 0)</strong>
+        </div>
+        <div class="okr-summary__item">
+            <span class="okr-summary__label">Chưa có KR</span>
+            <strong class="okr-summary__value">@(summary?.WithoutKeyResultsCount ?? 0)</strong>
+        </div>
+        <div class="okr-summary__item">
+            <span class="okr-summary__label">Hoàn thành</span>
+            <strong class="okr-summary__value">@(summary?.CompletedCount ?? 0)</strong>
+        </div>
+        <div class="okr-summary__item">
+            <span class="okr-summary__label">Tiến độ trung bình</span>
+            <strong class="okr-summary__value">@((summary?.AverageProgress ?? 0).ToString("0.#"))%</strong>
+        </div>
+    </section>
+
+    <section class="okr-panel" aria-label="Danh sách OKR">
+                    <form asp-action="Index" method="get" class="okr-filter">
+                        @if (!string.IsNullOrWhiteSpace(currentQuickFilter))
+                        {
+                            <input type="hidden" name="quickFilter" value="@currentQuickFilter" />
+                        }
+                        <div class="okr-filter-grid">
+                            <div class="okr-filter-field okr-filter-field--search">
+                                <label class="form-label" for="okr-search">Tìm kiếm</label>
+                                <div class="position-relative">
+                                    <i class="bi bi-search position-absolute" style="left: 12px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
+                                    <input id="okr-search" type="text" name="searchString" value="@currentFilter" class="form-control" style="padding-left: 2.25rem;" placeholder="Objective, chu kỳ, sứ mệnh, người/phòng ban..." />
+                                </div>
+                            </div>
+                            <div class="okr-filter-field">
+                                <label class="form-label" for="okr-cycle">Chu kỳ</label>
+                                <select id="okr-cycle" name="cycle" class="form-select">
+                                    <option value="">Tất cả</option>
+                                    @foreach (var c in Model?.AvailableCycles ?? Array.Empty<string>())
+                                    {
+                                        <option value="@c" selected="@(c == currentCycle ? "selected" : null)">@c</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="okr-filter-field">
+                                <label class="form-label" for="okr-status">Trạng thái</label>
+                                <select id="okr-status" name="statusId" class="form-select">
+                                    <option value="">Tất cả</option>
+                                    @foreach (var s in Model?.AvailableStatuses ?? Array.Empty<Manage_KPI_or_OKR_System.Models.ViewModels.OkrStatusOptionViewModel>())
+                                    {
+                                        <option value="@s.Id" selected="@(currentStatusId == s.Id ? "selected" : null)">@s.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="okr-filter-field">
+                                <label class="form-label" for="okr-type">Loại OKR</label>
+                                <select id="okr-type" name="okrTypeId" class="form-select">
+                                    <option value="">Tất cả</option>
+                                    @foreach (var t in Model?.AvailableOkrTypes ?? Array.Empty<Manage_KPI_or_OKR_System.Models.ViewModels.OkrTypeOptionViewModel>())
+                                    {
+                                        <option value="@t.Id" selected="@(currentOkrTypeId == t.Id ? "selected" : null)">@t.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="okr-filter-field">
+                                <label class="form-label" for="okr-scope">Phạm vi</label>
+                                <select id="okr-scope" name="scope" class="form-select">
+                                    <option value="" selected="@(string.IsNullOrEmpty(currentScope) ? "selected" : null)">Tất cả</option>
+                                    <option value="mine" selected="@(currentScope == "mine" ? "selected" : null)">Của tôi</option>
+                                    <option value="department" selected="@(currentScope == "department" ? "selected" : null)">Phòng ban</option>
+                                    <option value="company" selected="@(currentScope == "company" ? "selected" : null)">Công ty</option>
+                                </select>
+                            </div>
+                            <div class="okr-filter-field">
+                                <label class="form-label" for="okr-sort">Sắp xếp</label>
+                                <select id="okr-sort" name="sortBy" class="form-select">
+                                    <option value="attention" selected="@(currentSortBy == "attention" ? "selected" : null)">Cần chú ý trước</option>
+                                    <option value="recent" selected="@(currentSortBy == "recent" ? "selected" : null)">Mới cập nhật</option>
+                                    <option value="progress-low" selected="@(currentSortBy == "progress-low" ? "selected" : null)">Tiến độ thấp</option>
+                                    <option value="progress-high" selected="@(currentSortBy == "progress-high" ? "selected" : null)">Tiến độ cao</option>
+                                    <option value="cycle" selected="@(currentSortBy == "cycle" ? "selected" : null)">Chu kỳ gần</option>
+                                </select>
+                            </div>
+                            <div class="okr-filter-actions">
+                                <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1"></i> Lọc</button>
+                                @if (hasActiveFilters)
+                                {
+                                    <a asp-action="Index" class="btn btn-light">Xóa lọc</a>
+                                }
+                                <button type="button" class="btn btn-outline-secondary" id="toggleAllBtn" aria-label="Mở rộng hoặc thu gọn tất cả Key Results" title="Mở rộng / thu gọn tất cả"><i class="bi bi-list-task" aria-hidden="true"></i></button>
                             </div>
                         </div>
-                        <div class="toolbar-right d-flex gap-2">
-                            <button type="submit" class="btn btn-primary d-flex align-items-center rounded-pill px-3 shadow-none">
-                                <i class="bi bi-search me-1"></i> Tìm kiếm
-                            </button>
-                            <a asp-action="Index" class="btn btn-outline-secondary border-0 btn-sm d-flex align-items-center" title="Làm mới">
-                                <i class="bi bi-arrow-clockwise fs-5"></i>
-                            </a>
-                            <button type="button" class="btn btn-sm btn-outline-secondary border-0" id="toggleAllBtn"><i class="bi bi-list-task"></i> Mở rộng tất cả</button>
+                        <div class="okr-quick-filters" aria-label="Lọc nhanh OKR">
+                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" class="@QuickFilterClass("")"><i class="bi bi-grid-3x3-gap"></i> Tất cả</a>
+                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="mine" class="@QuickFilterClass("mine")"><i class="bi bi-person-check"></i> Của tôi</a>
+                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="attention" class="@QuickFilterClass("attention")"><i class="bi bi-exclamation-triangle"></i> Cần chú ý</a>
+                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="no-kr" class="@QuickFilterClass("no-kr")"><i class="bi bi-key"></i> Chưa có KR</a>
+                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="has-project" class="@QuickFilterClass("has-project")"><i class="bi bi-kanban"></i> Có dự án</a>
+                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="unallocated" class="@QuickFilterClass("unallocated")"><i class="bi bi-people"></i> Chưa phân bổ</a>
                         </div>
                     </form>
 
-                    <div class="accordion" id="accordionOKRs">
-                        @if (Model != null && Model.Any())
-                        {
-                            int index = 0;
-                            var currentEmployeeId = ViewBag.CurrentEmployeeId as int?;
-                            var allocatedIds = ViewBag.AllocatedOkrIds as List<int> ?? new List<int>();
-                            var deptOkrIds = ViewBag.DepartmentOkrIds as List<int> ?? new List<int>();
+                    <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+                        <div class="text-muted small">
+                            <strong>@(summary?.TotalCount ?? 0)</strong> OKR phù hợp
+                            @if (hasActiveFilters)
+                            {
+                                <span>· đang áp dụng bộ lọc</span>
+                            }
+                        </div>
+                    </div>
 
-                            foreach (var okr in Model)
+                    <div class="accordion" id="accordionOKRs">
+                        @if (pageItems != null && pageItems.Any())
+                        {
+                            var index = 0;
+                            foreach (var okr in pageItems)
                             {
                                 index++;
-                                string collapseId = $"collapseOkr{index}";
-                                var krs = keyResultsDict.ContainsKey(okr.Id) ? keyResultsDict[okr.Id] : new List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>();
-                                
-                                bool isOwner = okr.CreatedById == currentEmployeeId;
-                                bool isAllocated = allocatedIds.Contains(okr.Id) || deptOkrIds.Contains(okr.Id);
-                                
-                                bool canUpdateProgress = canEditOkr || (canUpdateOwnProgress && (isOwner || isAllocated));
-
-                                // Sử dụng TotalProgress từ model đã được chuẩn hóa
-                                int okrProgressInt = (int)okr.TotalProgress;
-                                int okrProgressWidth = (int)Math.Min(100, okr.TotalProgress);
-                                
-                                string okrProgressColor = ProgressHelper.GetProgressColorClass(okrProgressInt);
-                                string okrBadgeTone = okrProgressInt >= 100 ? "okr-status-success" :
-                                                      okrProgressInt >= 70 ? "okr-status-primary" :
-                                                      okrProgressInt >= 40 ? "okr-status-warning" :
-                                                      "okr-status-danger";
-
-                                <div class="accordion-item mb-3 border-0 shadow-sm rounded" style="overflow: visible;">
-                                    <div class="accordion-header position-relative" id="heading-@index">
-        
-                                        <div class="accordion-button collapsed bg-white p-3 d-flex justify-content-between align-items-center w-100" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId" style="cursor: pointer; box-shadow: none;">
-                                            
-                                            <div class="d-flex flex-column flex-grow-1 pe-4">
-                                                <div class="d-flex align-items-center gap-2 mb-2">
-                                                    <span class="badge okr-status-badge @okrBadgeTone rounded-pill px-2">Objective (O)</span>
-                                                    @if(okr.OKRTypeId == 1){<span class="badge okr-strategic-badge rounded-pill px-2"><i class="bi bi-star-fill me-1"></i>Chiến lược công ty</span>}
-                                                    <h5 class="mb-0 fw-bold fs-6 text-dark">@okr.ObjectiveName</h5>
-                                                </div>
-                                                
-                                                <div class="d-flex align-items-center gap-4">
-                                                    <div class="text-muted okr-meta-text" style="font-size: 0.8rem;">
-                                                        <i class="bi bi-calendar3"></i> @(okr.Cycle ?? "Chưa rõ chu kỳ")
-                                                    </div>
-                                                    @if (okr.LinkedWorkProjectId.HasValue)
-                                                    {
-                                                        <a asp-controller="WorkProjects" asp-action="Details" asp-route-id="@okr.LinkedWorkProjectId"
-                                                           class="btn btn-sm btn-outline-info py-1 px-2"
-                                                           title="Xem dự án vận hành tự động sinh từ OKR này"
-                                                           onclick="event.stopPropagation();">
-                                                            <i class="bi bi-kanban me-1"></i> Dự án vận hành
-                                                        </a>
-                                                    }
-                                                    
-                                                    <div class="flex-grow-1" style="max-width: 400px;">
-                                                        <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                                            <span class="text-muted okr-progress-label">Tiến độ chung:</span>
-                                                            <span class="fw-bold">@okrProgressInt%</span>
-                                                        </div>
-                                                        <div class="progress" style="height: 6px; border-radius: 10px;">
-                                                            <div class="progress-bar @okrProgressColor" role="progressbar" style="width: @okrProgressWidth%" aria-valuenow="@okrProgressWidth" aria-valuemin="0" aria-valuemax="100"></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            @if (canCreateOkr || canEditOkr || canDeleteOkr)
-                                            {
-                                                <div style="width: 45px;"></div>
-                                            }
-                                        </div>
-
-                                        @if (canCreateOkr || canEditOkr || canDeleteOkr)
-                                        {
-                                            <div class="action-btns dropdown position-absolute okr-action-dropdown" style="right: 50px; top: 50%; transform: translateY(-50%);" onclick="event.stopPropagation();">
-                                                <button type="button" class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots-vertical"></i></button>
-                                                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                                    @if (canEditOkr)
-                                                    {
-                                                        <li><a class="dropdown-item" href="@Url.Action("Edit", "OKRs", new { id = okr.Id })"><i class="bi bi-pencil-square me-2 text-primary"></i>Chỉnh sửa OKR</a></li>
-                                                    }
-                                                    @if (canCreateOkr)
-                                                    {
-                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAddKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-plus me-2 text-warning"></i>Thêm KR</a></li>
-                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAiSuggestKrModal(@okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))')"><i class="bi bi-magic me-2 text-info"></i>AI Gợi ý KR</a></li>
-                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAiTaskDecomposeModal('OKR', @okr.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(okr.ObjectiveName ?? ""))', '@(okr.LinkedWorkProjectId?.ToString() ?? "")')"><i class="bi bi-stars me-2 text-primary"></i>AI Chia task</a></li>
-                                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="openAllocateModal(@okr.Id)"><i class="bi bi-person-plus me-2 text-primary"></i>Phân bổ nhân viên/phòng ban</a></li>
-                                                    }
-                                                    @if ((canEditOkr || canCreateOkr) && canDeleteOkr)
-                                                    {
-                                                        <li><hr class="dropdown-divider"></li>
-                                                    }
-                                                    @if (canDeleteOkr)
-                                                    {
-                                                        <li>
-                                                            <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận xóa OKR này?');">
-                                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa OKR</button>
-                                                            </form>
-                                                        </li>
-                                                    }
-                                                </ul>
-                                            </div>
-                                        }
-                                        
-                                    </div>
-
-                                    <div id="@collapseId" class="accordion-collapse collapse border-top" aria-labelledby="heading-@index">
-                                        <div class="accordion-body bg-light bg-opacity-25 p-3">
-                                            <h6 class="fs-6 fw-semibold text-muted mb-3"><i class="bi bi-key-fill text-warning me-1"></i> Key Results (Kết quả then chốt)</h6>
-                                            
-                                            @if (krs.Any())
-                                            {
-                                                int krIndex = 1;
-                                                foreach (var kr in krs)
-                                                {
-                                                    var krPercent = (int)kr.Progress;
-                                                    var krWidth = (int)Math.Min(100, kr.Progress);
-                                                    var krTargetJs = (kr.TargetValue ?? 0).ToString(CultureInfo.InvariantCulture);
-                                                    var krCurrentJs = (kr.CurrentValue ?? 0).ToString(CultureInfo.InvariantCulture);
-                                                    
-                                                    string krColor = ProgressHelper.GetProgressColorClass(krPercent);
-                                                    string krTextClass = ProgressHelper.GetProgressTextColorClass(krPercent);
-
-                                                    <div class="d-flex align-items-center justify-content-between py-3 border-bottom border-light">
-                                                        <div class="ps-4" style="flex: 1;">
-                                                            <div class="fw-medium text-dark mb-1">@krIndex. @kr.KeyResultName</div>
-                                                            <div class="text-muted okr-meta-text" style="font-size: 0.75rem;">Mục tiêu: @String.Format("{0:N0}", kr.TargetValue) @kr.Unit</div>
-                                                        </div>
-
-                                                        <div class="d-flex align-items-center gap-4" style="width: 45%;">
-                                                            <div class="flex-grow-1">
-                                                                 <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                                                    <span class="text-muted">Tiến độ: <strong>@String.Format("{0:N1}", kr.CurrentValue ?? 0)</strong>/@String.Format("{0:N0}", kr.TargetValue ?? 0) @kr.Unit</span>
-                                                                    <span class="fw-bold">@krPercent%</span>
-                                                                </div>
-                                                                <div class="progress mb-1" style="height: 6px; border-radius: 10px;">
-                                                                    <div class="progress-bar @krColor" role="progressbar" style="width: @krWidth%" aria-valuenow="@krWidth" aria-valuemin="0" aria-valuemax="100"></div>
-                                                                </div>
-                                                                <div class="d-flex justify-content-between" style="font-size: 0.7rem;">
-                                                                    <span class="badge badge-pastel-pink okr-kr-status-badge px-2 py-1">@ProgressHelper.GetResultStatus(kr.Progress)</span>
-                                                                    @if(kr.IsInverse){<span class="text-info"><i class="bi bi-info-circle me-1"></i>Chỉ tiêu giảm thiểu</span>}
-                                                                </div>
-                                                            </div>
-
-                                                            @if (canEditOkr || canDeleteOkr || canUpdateProgress)
-                                                            {
-                                                                <div class="d-flex gap-1">
-                                                                    @if (canEditOkr)
-                                                                    {
-                                                                        <button type="button" class="btn btn-sm btn-light-primary text-primary border-0 rounded-circle js-edit-kr"
-                                                                                data-kr-id="@kr.Id"
-                                                                                data-kr-name="@kr.KeyResultName"
-                                                                                data-kr-target="@krTargetJs"
-                                                                                data-kr-current="@krCurrentJs"
-                                                                                data-kr-unit="@kr.Unit"
-                                                                                data-kr-is-inverse="@kr.IsInverse.ToString().ToLowerInvariant()"
-                                                                                title="Sửa KR">
-                                                                            <i class="bi bi-pencil-square"></i>
-                                                                        </button>
-                                                                    }
-                                                                    @if (canDeleteOkr)
-                                                                    {
-                                                                        <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
-                                                                            <button type="submit" class="btn btn-sm btn-light-danger text-danger border-0 rounded-circle" title="Xóa KR">
-                                                                                <i class="bi bi-trash"></i>
-                                                                            </button>
-                                                                        </form>
-                                                                    }
-                                                                </div>
-                                                                @if (canUpdateProgress)
-                                                                {
-                                                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-circle js-update-kr-progress"
-                                                                            title="Cập nhật tiến độ"
-                                                                            data-kr-id="@kr.Id"
-                                                                            data-kr-name="@kr.KeyResultName"
-                                                                            data-kr-current="@krCurrentJs"
-                                                                            data-kr-unit="@kr.Unit">
-                                                                        <i class="bi bi-pencil"></i>
-                                                                    </button>
-                                                                }
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                    krIndex++;
-                                                }
-                                            }
-                                            else
-                                            {
-                                                <div class="text-muted fst-italic ps-4 py-2">Chưa có kết quả then chốt nào được thiết lập.</div>
-                                            }
-                                        </div>
-                                    </div>
-                                </div>
+                                ViewData["Index"] = index;
+                                ViewData["CanCreateOkr"] = canCreateOkr;
+                                ViewData["CanEditOkr"] = canEditOkr;
+                                ViewData["CanDeleteOkr"] = canDeleteOkr;
+                                @await Html.PartialAsync("_OkrObjectiveCard", okr)
                             }
+                        }
+                        else if (isFilteredEmpty)
+                        {
+                            <div class="okr-empty" role="status">
+                                <div class="okr-empty__icon" aria-hidden="true"><i class="bi bi-funnel"></i></div>
+                                <h3>Không có OKR khớp bộ lọc</h3>
+                                <p>Thử đổi điều kiện hoặc xóa lọc để xem toàn bộ OKR trong phạm vi quyền của bạn.</p>
+                                <a asp-action="Index" class="btn btn-outline-primary">Xóa lọc</a>
+                            </div>
                         }
                         else
                         {
-                            <div class="alert alert-info border-0 shadow-sm text-center p-5">
-                                <h5>Chưa có mục tiêu OKR nào.</h5>
-                                <p class="text-muted mb-0">Hãy bấm "Tạo OKR mới" để thiết lập mục tiêu.</p>
+                            <div class="okr-empty" role="status">
+                                <div class="okr-empty__icon" aria-hidden="true"><i class="bi bi-bullseye"></i></div>
+                                <h3>Chưa có mục tiêu OKR nào</h3>
+                                <p>Thiết lập objective đầu tiên để theo dõi tiến độ và liên kết dự án vận hành.</p>
+                                @if (canCreateOkr)
+                                {
+                                    <a asp-action="Create" class="btn btn-primary">Tạo OKR mới</a>
+                                }
                             </div>
                         }
                     </div>
 
                     <!-- PAGINATION -->
-                    @if (Model != null && Model.TotalPages > 1)
+                    @if (pageItems != null && pageItems.TotalPages > 1)
                     {
                         <div class="d-flex justify-content-between align-items-center mt-4 px-2">
                             <div class="text-muted small">
-                                Hiển thị trang @Model.PageIndex trên tổng số @Model.TotalPages
+                                Hiển thị trang @pageItems.PageIndex trên tổng số @pageItems.TotalPages
                             </div>
                             <nav aria-label="Page navigation">
                                 <ul class="pagination pagination-sm mb-0 gap-1">
-                                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
-                                        <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index" 
-                                           asp-route-pageNumber="@(Model.PageIndex - 1)" 
-                                           asp-route-searchString="@currentFilter">
-                                            <i class="bi bi-chevron-left"></i>
-                                        </a>
-                                    </li>
-                                    
-                                    @for (int i = 1; i <= Model.TotalPages; i++)
-                                    {
-                                        if (i == 1 || i == Model.TotalPages || (i >= Model.PageIndex - 1 && i <= Model.PageIndex + 1))
+                                    <li class="page-item @(!pageItems.HasPreviousPage ? "disabled" : "")">
+                                        @if (pageItems.HasPreviousPage && pageItems.PreviousPageNumber.HasValue)
                                         {
-                                            <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                                                <a class="page-link border-0 rounded-circle shadow-none @(i == Model.PageIndex ? "" : "text-dark")" asp-action="Index" 
-                                                   asp-route-pageNumber="@i" 
-                                                   asp-route-searchString="@currentFilter">@i</a>
+                                            <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index"
+                                               asp-route-pageNumber="@pageItems.PreviousPageNumber"
+                                               asp-route-searchString="@currentFilter"
+                                               asp-route-cycle="@currentCycle"
+                                               asp-route-statusId="@currentStatusId"
+                                               asp-route-okrTypeId="@currentOkrTypeId"
+                                               asp-route-scope="@currentScope"
+                                               asp-route-quickFilter="@currentQuickFilter"
+                                               asp-route-sortBy="@currentSortBy"
+                                               aria-label="Trang trước">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="page-link border-0 rounded-circle text-dark shadow-none" aria-disabled="true" aria-label="Trang trước">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </span>
+                                        }
+                                    </li>
+
+                                    @for (int i = 1; i <= pageItems.TotalPages; i++)
+                                    {
+                                        if (i == 1 || i == pageItems.TotalPages || (i >= pageItems.PageIndex - 1 && i <= pageItems.PageIndex + 1))
+                                        {
+                                            <li class="page-item @(i == pageItems.PageIndex ? "active" : "")">
+                                                <a class="page-link border-0 rounded-circle shadow-none @(i == pageItems.PageIndex ? "" : "text-dark")" asp-action="Index"
+                                                   asp-route-pageNumber="@i"
+                                                   asp-route-searchString="@currentFilter"
+                                                   asp-route-cycle="@currentCycle"
+                                                   asp-route-statusId="@currentStatusId"
+                                                   asp-route-okrTypeId="@currentOkrTypeId"
+                                                   asp-route-scope="@currentScope"
+                                                   asp-route-quickFilter="@currentQuickFilter"
+                                                   asp-route-sortBy="@currentSortBy">@i</a>
                                             </li>
                                         }
-                                        else if (i == Model.PageIndex - 2 || i == Model.PageIndex + 2)
+                                        else if (i == pageItems.PageIndex - 2 || i == pageItems.PageIndex + 2)
                                         {
                                             <li class="page-item disabled"><span class="page-link border-0">...</span></li>
                                         }
                                     }
 
-                                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                                        <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index" 
-                                           asp-route-pageNumber="@(Model.PageIndex + 1)" 
-                                           asp-route-searchString="@currentFilter">
-                                            <i class="bi bi-chevron-right"></i>
-                                        </a>
+                                    <li class="page-item @(!pageItems.HasNextPage ? "disabled" : "")">
+                                        @if (pageItems.HasNextPage && pageItems.NextPageNumber.HasValue)
+                                        {
+                                            <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index"
+                                               asp-route-pageNumber="@pageItems.NextPageNumber"
+                                               asp-route-searchString="@currentFilter"
+                                               asp-route-cycle="@currentCycle"
+                                               asp-route-statusId="@currentStatusId"
+                                               asp-route-okrTypeId="@currentOkrTypeId"
+                                               asp-route-scope="@currentScope"
+                                               asp-route-quickFilter="@currentQuickFilter"
+                                               asp-route-sortBy="@currentSortBy"
+                                               aria-label="Trang sau">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="page-link border-0 rounded-circle text-dark shadow-none" aria-disabled="true" aria-label="Trang sau">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </span>
+                                        }
                                     </li>
                                 </ul>
                             </nav>
                         </div>
                     }
-
-                </div>
-            </div>
-        </div>
-    </div>
+    </section>
 </div>
 
 
-<!-- Modal AI Suggest Key Results -->
-<div class="modal fade" id="aiSuggestKrModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header-soft info">
-                <h5 class="modal-title-custom">
-                    <i class="bi bi-robot text-info"></i>
-                    AI Gợi ý Kết quả then chốt
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body-soft">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div class="soft-tag-indicator mb-0">
-                        <i class="bi bi-bullseye"></i>
-                        <span id="aiOkrNameDisplay" class="text-truncate fw-bold">Objective: </span>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill" onclick="openAiHistoryModal('SuggestKR', document.getElementById('aiOkrId').value, applyAiHistoryKR)">
-                        <i class="bi bi-clock-history"></i> Lịch sử AI
-                    </button>
-                </div>
-                <div id="aiLoadingIndicator" class="text-center py-5">
-                    <div class="spinner-grow text-info" role="status" style="width: 3rem; height: 3rem;">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-3 text-muted">AI đang phân tích và tạo Kết quả then chốt...</p>
-                </div>
 
-                <div id="aiSuggestionContent" style="display: none;">
-                    <form id="aiSuggestForm">
-                        <input type="hidden" id="aiOkrId" name="aiOkrId" />
-                        <div class="table-responsive">
-                            <table class="table table-borderless table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th style="width: 40px;"><input class="form-check-input" type="checkbox" id="checkAllAiKr" checked border-0 shadow-sm></th>
-                                        <th>Mô tả (KeyResultName)</th>
-                                        <th style="width: 120px;">Chỉ tiêu</th>
-                                        <th style="width: 150px;">Đơn vị</th>
-                                        <th style="width: 100px;">Thu nhỏ</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="aiKrListTableBody">
-                                    <!-- Dynamic content -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="d-flex justify-content-end gap-3 mt-4">
-                            <button type="button" class="btn-outline-custom px-4" data-bs-dismiss="modal">Hủy bỏ</button>
-                            <button type="button" class="btn-primary-custom px-4" id="btnSaveAiKrs">Thêm KR đã chọn</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+@* AI history modal is already rendered once in _Layout — do not include again (duplicate id → console/a11y issues). *@
+@await Html.PartialAsync("_OkrIndexModals", Model)
 
-<!-- Modal Add Key Result -->
-<div class="modal fade" id="addKrModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header-soft warning">
-                <h5 class="modal-title-custom">
-                    <i class="bi bi-key-fill text-warning"></i>
-                    Thêm Kết quả then chốt (KR)
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body-soft">
-                <div class="soft-tag-indicator">
-                    <i class="bi bi-bullseye"></i>
-                    <span id="krOkrNameDisplay" class="text-truncate">Objective: </span>
-                </div>
-
-                <form asp-controller="OKRs" asp-action="AddKeyResult" method="post" id="addKrForm" data-measurement-scope>
-                    <input type="hidden" name="OKRId" id="krOkrId" />
-                    
-                    <div class="form-icon-group">
-                        <label>Mô tả Kết quả then chốt</label>
-                        <div class="input-wrapper">
-                            <i class="bi bi-pencil-square"></i>
-                            <input type="text" name="KeyResultName" class="form-control" placeholder="VD: Đạt 1000 khách hàng mới trong Q1" required>
-                        </div>
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <div class="form-icon-group">
-                                <label>Chỉ tiêu (Target)</label>
-                                <div class="input-wrapper input-group">
-                                    <i class="bi bi-flag-fill"></i>
-                                    <input type="number" step="0.01" name="TargetValue" class="form-control measurement-value-input" data-measurement-role="target" placeholder="0.00" required>
-                                    <span class="input-group-text measurement-unit-suffix">đơn vị</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="form-icon-group">
-                                <label>Đơn vị tính</label>
-                                <div class="input-wrapper">
-                                    <i class="bi bi-rulers"></i>
-                                    <select name="Unit" class="form-select measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
-                                        <option value="">-- Chọn đơn vị đo --</option>
-                                        @foreach (var unit in measurementUnits)
-                                        {
-                                            <option value="@unit.Value">@unit.Text</option>
-                                        }
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <label class="form-switch-premium" for="isInverseCheck">
-                        <div class="label-content">
-                            <span class="label-title">Chỉ tiêu thu nhỏ</span>
-                            <span class="label-desc">Kích hoạt nếu giá trị càng thấp càng tốt</span>
-                        </div>
-                        <input class="form-check-input" type="checkbox" name="IsInverse" value="true" id="isInverseCheck" role="switch">
-                    </label>
-
-                    <div class="d-flex justify-content-end gap-3 mt-4">
-                        <button type="button" class="btn-outline-custom px-4" data-bs-dismiss="modal">Hủy bỏ</button>
-                        <button type="submit" class="btn-primary-custom px-4">Xác nhận tạo KR</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Allocate OKR -->
-<div class="modal fade" id="allocateOkrModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header-soft primary">
-                <h5 class="modal-title-custom">
-                    <i class="bi bi-person-plus-fill text-primary"></i>
-                    Phân bổ OKR
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body-soft">
-                <form asp-controller="OKRs" asp-action="AllocateTarget" method="post">
-                    <input type="hidden" name="okrId" id="allocOkrId" />
-
-                    <div class="soft-tag-indicator">
-                        <i class="bi bi-person-check"></i>
-                        <span>Phân bổ cho nhân viên</span>
-                    </div>
-                    
-                    <div class="form-icon-group">
-                        <label>Chọn nhân viên phụ trách</label>
-                        <div class="input-wrapper">
-                            <i class="bi bi-person-badge"></i>
-                            <select name="employeeId" class="form-select" required>
-                                <option value="">-- Chọn nhân viên --</option>
-                                @foreach(var e in (ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>())){
-                                    <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-icon-group">
-                        <label>Giá trị phân bổ</label>
-                        <div class="input-wrapper">
-                            <i class="bi bi-calculator"></i>
-                            <input type="number" step="0.01" min="0.01" name="allocatedValue" class="form-control" required placeholder="Nhập con số cụ thể...">
-                        </div>
-                        <div class="form-text text-muted small mt-2">
-                            <i class="bi bi-info-circle me-1"></i> Lưu ý: Tổng các chỉ tiêu phân bổ nên bằng chỉ tiêu chung của OKR.
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-3 mt-4">
-                        <button type="button" class="btn-outline-custom px-4" data-bs-dismiss="modal">Hủy bỏ</button>
-                        <button type="submit" class="btn-primary-custom px-4">Xác nhận phân bổ</button>
-                    </div>
-                </form>
-
-                <hr class="my-4">
-
-                <form asp-controller="OKRs" asp-action="AllocateDepartment" method="post">
-                    <input type="hidden" name="okrId" id="allocDeptOkrId" />
-
-                    <div class="soft-tag-indicator">
-                        <i class="bi bi-building"></i>
-                        <span>Phân bổ cho phòng ban</span>
-                    </div>
-
-                    <div class="form-icon-group">
-                        <label>Chọn phòng ban phụ trách</label>
-                        <div class="input-wrapper">
-                            <i class="bi bi-building"></i>
-                            <select name="departmentId" class="form-select" required>
-                                <option value="">-- Chọn phòng ban --</option>
-                                @foreach(var d in (ViewBag.Departments as List<Manage_KPI_or_OKR_System.Models.Department> ?? new List<Manage_KPI_or_OKR_System.Models.Department>())){
-                                    <option value="@d.Id">@d.DepartmentName (@d.DepartmentCode)</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="form-text text-muted small mt-2">
-                            <i class="bi bi-info-circle me-1"></i> Nhân viên đang thuộc phòng ban này có thể nhìn thấy và cập nhật OKR theo quyền được cấp.
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-3 mt-4">
-                        <button type="button" class="btn-outline-custom px-4" data-bs-dismiss="modal">Hủy bỏ</button>
-                        <button type="submit" class="btn-primary-custom px-4">Phân bổ phòng ban</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Update KR Progress -->
-<div class="modal fade" id="updateKrProgressModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header-soft primary">
-                <h5 class="modal-title-custom">
-                    <i class="bi bi-graph-up-arrow text-primary"></i>
-                    Cập nhật tiến độ KR
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body-soft">
-                <div class="soft-tag-indicator">
-                    <i class="bi bi-info-circle"></i>
-                    <span id="updateKrNameDisplay" class="text-truncate">KR: </span>
-                </div>
-
-                <form asp-controller="OKRs" asp-action="UpdateKeyResultProgress" method="post">
-                    <input type="hidden" name="krId" id="updateKrId" />
-                    
-                    <div class="form-icon-group">
-                        <label>Thực tế hiện tại</label>
-                        <div class="input-wrapper">
-                            <i class="bi bi-lightning-charge-fill"></i>
-                            <input type="number" step="0.01" min="0" name="currentValue" id="updateKrCurrentValue" class="form-control measurement-value-input" data-measurement-role="current" data-measurement-suffix-target="updateKrUnitDisplay" required>
-                            <span class="position-absolute end-0 top-50 translate-middle-y pe-4 fw-bold text-muted" id="updateKrUnitDisplay"></span>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-3 mt-4">
-                        <button type="button" class="btn-outline-custom px-4" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn-primary-custom px-4">Cập nhật ngay</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Edit Key Result -->
-<div class="modal fade" id="editKrModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-2"></i>Cập nhật Kết quả then chốt (KR)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form asp-controller="OKRs" asp-action="EditKeyResult" method="post" data-measurement-scope>
-                    <input type="hidden" name="Id" id="editKrId" />
-                    <div class="mb-3">
-                        <label class="form-label">Mô tả Key Result <span class="text-danger">*</span></label>
-                        <input type="text" name="KeyResultName" id="editKrName" class="form-control" required>
-                    </div>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label class="form-label">Hiện tại <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="number" step="0.01" name="CurrentValue" id="editKrCurrent" class="form-control measurement-value-input" data-measurement-role="current" required>
-                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label class="form-label">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="number" step="0.01" name="TargetValue" id="editKrTarget" class="form-control measurement-value-input" data-measurement-role="target" required>
-                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Đơn vị đo lường <span class="text-danger">*</span></label>
-                        <select name="Unit" id="editKrUnit" class="form-select measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
-                            <option value="">-- Chọn đơn vị đo --</option>
-                            @foreach (var unit in measurementUnits)
-                            {
-                                <option value="@unit.Value">@unit.Text</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="IsInverse" value="true" id="editKrIsInverse">
-                            <label class="form-check-label" for="editKrIsInverse">Chỉ tiêu thu nhỏ (Càng thấp càng tốt)</label>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-primary rounded-pill px-4">Cập nhật KR</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-@await Html.PartialAsync("_AITaskDecomposeModal")
+@section Styles {
+    <link rel="stylesheet" href="~/css/okrs-index.css" asp-append-version="true" />
+}
 
 @section Scripts {
-    <script>
-        // Đóng tất cả dropdown OKR đang mở (tránh dropdown đè lên modal)
-        function closeAllOkrDropdowns() {
-            document.querySelectorAll('.okr-index-page .okr-action-dropdown [data-bs-toggle="dropdown"]').forEach(function (toggleEl) {
-                var dd = bootstrap.Dropdown.getInstance(toggleEl);
-                if (dd) dd.hide();
-            });
-            // Reset z-index layering
-            document.querySelectorAll('.okr-index-page #accordionOKRs .accordion-item').forEach(function (el) {
-                el.classList.remove('okr-dropdown-open');
-            });
-        }
-
-        function openAddKrModal(okrId, okrName) {
-            closeAllOkrDropdowns();
-
-            const addKrForm = document.getElementById('addKrForm');
-            if (addKrForm) {
-                addKrForm.reset();
-            }
-
-            document.getElementById('krOkrId').value = okrId;
-            document.getElementById('krOkrNameDisplay').innerText = 'Objective: ' + okrName;
-            document.getElementById('isInverseCheck').checked = false;
-
-            if (window.applyMeasurementUnitBehavior) {
-                window.applyMeasurementUnitBehavior(document.getElementById('addKrModal'));
-            }
-
-            var modal = new bootstrap.Modal(document.getElementById('addKrModal'));
-            modal.show();
-        }
-
-        function openAllocateModal(okrId) {
-            closeAllOkrDropdowns();
-
-            document.getElementById('allocOkrId').value = okrId;
-            document.getElementById('allocDeptOkrId').value = okrId;
-            var modal = new bootstrap.Modal(document.getElementById('allocateOkrModal'));
-            modal.show();
-        }
-
-        function openEditKrModal(id, name, target, current, unit, isInverse) {
-            document.getElementById('editKrId').value = id;
-            document.getElementById('editKrName').value = name;
-            document.getElementById('editKrTarget').value = normalizeDecimalValue(target);
-            document.getElementById('editKrCurrent').value = normalizeDecimalValue(current);
-            const editKrUnitSelect = document.getElementById('editKrUnit');
-            if (window.setMeasurementUnitSelectValue) {
-                window.setMeasurementUnitSelectValue(editKrUnitSelect, unit || '');
-            } else {
-                editKrUnitSelect.value = unit || '';
-            }
-            document.getElementById('editKrIsInverse').checked = isInverse === true || isInverse === 'true';
-            if (window.applyMeasurementUnitBehavior) {
-                window.applyMeasurementUnitBehavior(document.getElementById('editKrModal'));
-            }
-            new bootstrap.Modal(document.getElementById('editKrModal')).show();
-        }
-
-        function openUpdateProgressModal(krId, krName, currentVal, unit) {
-            document.getElementById('updateKrId').value = krId;
-            document.getElementById('updateKrNameDisplay').innerText = 'KR: ' + krName;
-            document.getElementById('updateKrCurrentValue').value = normalizeDecimalValue(currentVal);
-            const config = window.applyMeasurementUnitConfigToInputs
-                ? window.applyMeasurementUnitConfigToInputs(unit, [document.getElementById('updateKrCurrentValue')])
-                : { suffix: unit || '' };
-            document.getElementById('updateKrUnitDisplay').innerText = config.suffix || unit || '';
-            var modal = new bootstrap.Modal(document.getElementById('updateKrProgressModal'));
-            modal.show();
-        }
-
-        function normalizeDecimalValue(value) {
-            return String(value ?? '').replace(',', '.');
-        }
-
-        document.querySelectorAll('.js-edit-kr').forEach(button => {
-            button.addEventListener('click', event => {
-                event.preventDefault();
-                event.stopPropagation();
-                openEditKrModal(
-                    button.dataset.krId,
-                    button.dataset.krName || '',
-                    button.dataset.krTarget || '0',
-                    button.dataset.krCurrent || '0',
-                    button.dataset.krUnit || '',
-                    button.dataset.krIsInverse || 'false'
-                );
-            });
-        });
-
-        document.querySelectorAll('.js-update-kr-progress').forEach(button => {
-            button.addEventListener('click', event => {
-                event.preventDefault();
-                event.stopPropagation();
-                openUpdateProgressModal(
-                    button.dataset.krId,
-                    button.dataset.krName || '',
-                    button.dataset.krCurrent || '0',
-                    button.dataset.krUnit || ''
-                );
-            });
-        });
-
-        function hideOtherOkrDropdowns(currentToggleEl) {
-            document.querySelectorAll('.okr-index-page .okr-action-dropdown [data-bs-toggle="dropdown"]').forEach(toggleEl => {
-                if (toggleEl !== currentToggleEl) {
-                    bootstrap.Dropdown.getOrCreateInstance(toggleEl).hide();
-                }
-            });
-        }
-
-        function getOpenOkrDropdown() {
-            return Array.from(document.querySelectorAll('.okr-index-page .okr-action-dropdown'))
-                .find(dropdownEl => dropdownEl.querySelector('.dropdown-menu.show'));
-        }
-
-        function syncOkrDropdownLayering(activeDropdownEl = null) {
-            const openDropdownEl = activeDropdownEl || getOpenOkrDropdown();
-
-            document.querySelectorAll('.okr-index-page #accordionOKRs .accordion-item').forEach(accordionItemEl => {
-                accordionItemEl.classList.toggle(
-                    'okr-dropdown-open',
-                    openDropdownEl !== null && accordionItemEl.contains(openDropdownEl)
-                );
-            });
-        }
-
-        document.querySelectorAll('.okr-index-page .okr-action-dropdown').forEach(dropdownEl => {
-            const toggleEl = dropdownEl.querySelector('[data-bs-toggle="dropdown"]');
-            if (!toggleEl) {
-                return;
-            }
-
-            toggleEl.addEventListener('click', () => {
-                hideOtherOkrDropdowns(toggleEl);
-            });
-
-            dropdownEl.addEventListener('show.bs.dropdown', () => {
-                hideOtherOkrDropdowns(toggleEl);
-                syncOkrDropdownLayering(dropdownEl);
-            });
-
-            dropdownEl.addEventListener('shown.bs.dropdown', () => {
-                syncOkrDropdownLayering(dropdownEl);
-            });
-
-            dropdownEl.addEventListener('hidden.bs.dropdown', () => {
-                syncOkrDropdownLayering();
-            });
-        });
-
-        // Toggle all accordions functionality
-        document.getElementById('toggleAllBtn')?.addEventListener('click', function() {
-            const accordions = document.querySelectorAll('#accordionOKRs .accordion-collapse');
-            const anyCollapsed = Array.from(accordions).some(a => !a.classList.contains('show'));
-            
-            accordions.forEach(acc => {
-                const bsCollapse = bootstrap.Collapse.getOrCreateInstance(acc);
-                if (anyCollapsed) {
-                    bsCollapse.show();
-                } else {
-                    bsCollapse.hide();
-                }
-            });
-            
-            // Cập nhật text & icon: Nếu trước đó có ít nhất 1 cái đóng, giờ đã mở hết -> nút thành "Thu gọn". 
-            // Nếu trước đó mở hết -> giờ đã đóng hết -> nút thành "Mở rộng".
-            if (anyCollapsed) {
-                this.innerHTML = '<i class="bi bi-dash-square"></i> Thu gọn tất cả';
-            } else {
-                this.innerHTML = '<i class="bi bi-list-task"></i> Mở rộng tất cả';
-            }
-        });
-
-        function renderAiKrResults(data) {
-            document.getElementById('aiLoadingIndicator').style.display = 'none';
-            document.getElementById('aiSuggestionContent').style.display = 'block';
-            
-            const tbody = document.getElementById('aiKrListTableBody');
-            let html = '';
-            data.forEach((kr, index) => {
-                let isInverseChecked = kr.IsInverse || kr.isInverse ? 'checked' : '';
-                html += `
-                    <tr>
-                        <td><input class="form-check-input ai-kr-checkbox" type="checkbox" checked data-index="${index}"></td>
-                        <td><input type="text" class="form-control form-control-sm ai-kr-name" value="${kr.KeyResultName || kr.keyResultName}" required></td>
-                        <td><input type="number" step="0.01" class="form-control form-control-sm ai-kr-target" value="${kr.TargetValue || kr.targetValue}" required></td>
-                        <td><input type="text" class="form-control form-control-sm ai-kr-unit" value="${kr.Unit || kr.unit}" list="unitList" required></td>
-                        <td>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input ai-kr-is-inverse" type="checkbox" ${isInverseChecked}>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-            // Add datalist for units if not exist
-            if (!document.getElementById('unitList')) {
-                let datalistHTML = `<datalist id="unitList">`;
-                document.querySelectorAll('.measurement-unit-select option').forEach(opt => {
-                    if(opt.value) datalistHTML += `<option value="${opt.value}">`;
-                });
-                datalistHTML += `</datalist>`;
-                document.body.insertAdjacentHTML('beforeend', datalistHTML);
-            }
-            
-            tbody.innerHTML = html;
-        }
-
-        function applyAiHistoryKR(parsedData) {
-            renderAiKrResults(parsedData);
-        }
-
-        // AI Gợi ý KR
-        function openAiSuggestKrModal(okrId, okrName) {
-            closeAllOkrDropdowns();
-            document.getElementById('aiOkrId').value = okrId;
-            document.getElementById('aiOkrNameDisplay').innerText = 'Objective: ' + okrName;
-            
-            document.getElementById('aiLoadingIndicator').style.display = 'block';
-            document.getElementById('aiSuggestionContent').style.display = 'none';
-            document.getElementById('aiKrListTableBody').innerHTML = '';
-            
-            var modal = new bootstrap.Modal(document.getElementById('aiSuggestKrModal'));
-            modal.show();
-
-            fetch(`/OKRs/SuggestKeyResultsAPI/${okrId}`)
-                .then(response => {
-                    if(!response.ok) throw new Error('Không thể tải gợi ý từ AI');
-                    return response.json();
-                })
-                .then(data => {
-                    renderAiKrResults(data);
-                })
-                .catch(error => {
-                    document.getElementById('aiLoadingIndicator').innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
-                });
-        }
-
-        document.getElementById('checkAllAiKr')?.addEventListener('change', function() {
-            document.querySelectorAll('.ai-kr-checkbox').forEach(cb => cb.checked = this.checked);
-        });
-
-        document.getElementById('btnSaveAiKrs')?.addEventListener('click', function() {
-            const okrId = document.getElementById('aiOkrId').value;
-            const rows = document.querySelectorAll('#aiKrListTableBody tr');
-            const payload = [];
-
-            rows.forEach(row => {
-                const checkbox = row.querySelector('.ai-kr-checkbox');
-                if (checkbox.checked) {
-                    payload.push({
-                        OKRId: parseInt(okrId),
-                        KeyResultName: row.querySelector('.ai-kr-name').value,
-                        TargetValue: parseFloat(row.querySelector('.ai-kr-target').value),
-                        Unit: row.querySelector('.ai-kr-unit').value,
-                        IsInverse: row.querySelector('.ai-kr-is-inverse').checked,
-                        CurrentValue: 0
-                    });
-                }
-            });
-
-            if (payload.length === 0) {
-                alert('Vui lòng chọn ít nhất 1 Key Result.');
-                return;
-            }
-
-            const btn = this;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang lưu...';
-            btn.disabled = true;
-
-            fetch('/OKRs/AddMultipleKeyResults', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(window.antiForgeryHeaders ? window.antiForgeryHeaders() : {})
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(response => {
-                if(!response.ok) throw new Error('Lỗi khi lưu KR');
-                return response.json();
-            })
-            .then(data => {
-                if(data.success) {
-                    window.location.reload();
-                } else {
-                    alert('Có lỗi xảy ra.');
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }
-            })
-            .catch(error => {
-                alert(error.message);
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            });
-        });
-    </script>
+    <script src="~/js/okrs-index.js" asp-append-version="true"></script>
 }

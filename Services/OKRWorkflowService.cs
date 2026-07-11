@@ -7,7 +7,11 @@ namespace Manage_KPI_or_OKR_System.Services
     public interface IOKRWorkflowService
     {
         Task<WorkProject?> AutoCreateProjectFromOKRAsync(int okrId, int? createdByEmployeeId, int? departmentId);
-        Task AutoCreateTaskFromKeyResultAsync(int okrId, OKRKeyResult keyResult);
+        /// <summary>
+        /// Ensures the key result has an active WorkItem on the linked/source project (creating project if needed).
+        /// Returns true when an active WorkItem exists for the KR after the call.
+        /// </summary>
+        Task<bool> AutoCreateTaskFromKeyResultAsync(int okrId, OKRKeyResult keyResult);
     }
 
     public class OKRWorkflowService : IOKRWorkflowService
@@ -27,17 +31,37 @@ namespace Manage_KPI_or_OKR_System.Services
 
             if (okr == null) return null;
 
+            WorkProject? project = null;
             if (okr.LinkedWorkProjectId.HasValue)
             {
-                var existingProject = await _context.WorkProjects
+                project = await _context.WorkProjects
                     .FirstOrDefaultAsync(p => p.Id == okr.LinkedWorkProjectId.Value && p.IsActive == true);
+            }
 
-                if (existingProject != null) return existingProject;
+            if (project == null)
+            {
+                project = await _context.WorkProjects
+                    .FirstOrDefaultAsync(p =>
+                        p.IsActive == true &&
+                        (p.SourceOKRId == okrId || p.LinkedOKRId == okrId));
+            }
+
+            if (project != null)
+            {
+                if (okr.LinkedWorkProjectId != project.Id)
+                {
+                    okr.LinkedWorkProjectId = project.Id;
+                }
+
+                await EnsureWorkItemsForKeyResultsAsync(project, okr.KeyResults);
+                project.UpdatedAt = DateTime.Now;
+                await _context.SaveChangesAsync();
+                return project;
             }
 
             var dueDate = ResolveDueDateFromCycle(okr.Cycle);
             var now = DateTime.Now;
-            var project = new WorkProject
+            project = new WorkProject
             {
                 ProjectCode = await GenerateProjectCodeAsync(),
                 ProjectName = $"[OKR] {okr.ObjectiveName}",
@@ -71,43 +95,88 @@ namespace Manage_KPI_or_OKR_System.Services
             }
 
             okr.LinkedWorkProjectId = project.Id;
-
-            foreach (var keyResult in okr.KeyResults ?? Enumerable.Empty<OKRKeyResult>())
-            {
-                AddWorkItem(project.Id, keyResult, dueDate);
-            }
-
+            await EnsureWorkItemsForKeyResultsAsync(project, okr.KeyResults);
             await _context.SaveChangesAsync();
             return project;
         }
 
-        public async Task AutoCreateTaskFromKeyResultAsync(int okrId, OKRKeyResult keyResult)
+        public async Task<bool> AutoCreateTaskFromKeyResultAsync(int okrId, OKRKeyResult keyResult)
         {
-            var okr = await _context.OKRs.FirstOrDefaultAsync(o => o.Id == okrId);
-            if (okr == null) return;
-
-            if (!okr.LinkedWorkProjectId.HasValue)
+            if (keyResult.Id <= 0)
             {
-                await AutoCreateProjectFromOKRAsync(okrId, okr.CreatedById, null);
-                return;
+                return false;
             }
 
-            var existingProject = await _context.WorkProjects
-                .FirstOrDefaultAsync(p => p.Id == okr.LinkedWorkProjectId.Value && p.IsActive == true);
+            var okr = await _context.OKRs.FirstOrDefaultAsync(o => o.Id == okrId);
+            if (okr == null) return false;
 
-            if (existingProject == null) return;
+            WorkProject? existingProject = null;
+            if (okr.LinkedWorkProjectId.HasValue)
+            {
+                existingProject = await _context.WorkProjects
+                    .FirstOrDefaultAsync(p => p.Id == okr.LinkedWorkProjectId.Value && p.IsActive == true);
+            }
 
-            var taskExists = await _context.WorkItems.AnyAsync(t =>
-                t.WorkProjectId == existingProject.Id &&
-                t.OKRKeyResultId == keyResult.Id &&
-                t.IsActive == true);
+            // Fallback: project linked via SourceOKRId / LinkedOKRId (legacy paths)
+            if (existingProject == null)
+            {
+                existingProject = await _context.WorkProjects
+                    .FirstOrDefaultAsync(p =>
+                        p.IsActive == true &&
+                        (p.SourceOKRId == okrId || p.LinkedOKRId == okrId));
 
-            if (taskExists) return;
+                if (existingProject != null && okr.LinkedWorkProjectId != existingProject.Id)
+                {
+                    okr.LinkedWorkProjectId = existingProject.Id;
+                }
+            }
+
+            if (existingProject == null)
+            {
+                existingProject = await AutoCreateProjectFromOKRAsync(okrId, okr.CreatedById, null);
+                if (existingProject == null)
+                {
+                    return false;
+                }
+
+                return await HasActiveWorkItemAsync(keyResult.Id);
+            }
+
+            var taskExists = await HasActiveWorkItemAsync(keyResult.Id);
+            if (taskExists)
+            {
+                return true;
+            }
 
             AddWorkItem(existingProject.Id, keyResult, existingProject.DueDate);
             existingProject.UpdatedAt = DateTime.Now;
             await _context.SaveChangesAsync();
+            return await HasActiveWorkItemAsync(keyResult.Id);
         }
+
+        private async Task EnsureWorkItemsForKeyResultsAsync(WorkProject project, IEnumerable<OKRKeyResult>? keyResults)
+        {
+            foreach (var keyResult in keyResults ?? Enumerable.Empty<OKRKeyResult>())
+            {
+                if (keyResult.Id <= 0)
+                {
+                    continue;
+                }
+
+                var taskExists = await _context.WorkItems.AnyAsync(t =>
+                    t.WorkProjectId == project.Id &&
+                    t.OKRKeyResultId == keyResult.Id &&
+                    t.IsActive == true);
+
+                if (!taskExists)
+                {
+                    AddWorkItem(project.Id, keyResult, project.DueDate);
+                }
+            }
+        }
+
+        private Task<bool> HasActiveWorkItemAsync(int keyResultId) =>
+            _context.WorkItems.AnyAsync(t => t.OKRKeyResultId == keyResultId && t.IsActive == true);
 
         private void AddWorkItem(int projectId, OKRKeyResult keyResult, DateTime? dueDate)
         {

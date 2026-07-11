@@ -224,7 +224,7 @@
                 <span>AI</span>
                 <span class="kanban-filter-count" data-filter-count="ai">0</span>
             </button>
-            <button type="button" id="kanbanFilterReset" class="btn btn-sm btn-outline-secondary">
+            <button type="button" id="kanbanFilterReset" class="btn btn-sm btn-outline-secondary" title="Xóa tìm kiếm và bộ lọc Kanban" aria-label="Xóa tìm kiếm và bộ lọc Kanban">
                 <i class="bi bi-arrow-counterclockwise"></i>
             </button>
             <button type="button" id="kanbanFocusToggle" class="btn btn-sm btn-outline-secondary kanban-focus-toggle" aria-pressed="false" title="Ẩn các cột không có task khớp bộ lọc">
@@ -268,7 +268,10 @@
                         var deadlineClass = isOverdue ? "text-danger fw-bold" : "text-secondary";
                         
                         <article class="task-card task-card--@((task.Priority ?? "Normal").ToLowerInvariant()) border-0 rounded-3 p-2 shadow-sm bg-white" 
-                                 draggable="true" 
+                                 draggable="true"
+                                 tabindex="0"
+                                 role="button"
+                                 aria-label="Mở chi tiết task #@task.Id: @task.Title"
                                  data-task-id="@task.Id"
                                  data-task-status="@task.KanbanStatus"
                                  data-task-priority="@(task.Priority ?? "Normal")"
@@ -940,7 +943,7 @@
     /* Task Cards */
     .task-card {
         cursor: grab;
-        border-left: 3px solid var(--primary) !important;
+        border: 1px solid var(--card-border) !important;
         transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast);
         user-select: none;
         padding: 10px !important;
@@ -948,7 +951,12 @@
 
     .task-card:hover {
         transform: translateY(-1px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08) !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .task-card:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
     }
 
     .task-card:active {
@@ -982,10 +990,10 @@
         }
     }
 
-    .task-card--urgent { border-left-color: var(--danger) !important; }
-    .task-card--high { border-left-color: var(--warning) !important; }
-    .task-card--low { border-left-color: var(--success) !important; }
-    .task-card--normal { border-left-color: var(--info) !important; }
+    .task-card--urgent { border-color: color-mix(in srgb, var(--danger) 45%, var(--card-border)) !important; }
+    .task-card--high { border-color: color-mix(in srgb, var(--warning) 45%, var(--card-border)) !important; }
+    .task-card--low { border-color: color-mix(in srgb, var(--success) 45%, var(--card-border)) !important; }
+    .task-card--normal { border-color: color-mix(in srgb, var(--info) 45%, var(--card-border)) !important; }
 
     .task-title {
         display: -webkit-box;
@@ -1740,6 +1748,17 @@
                     if (modalElement) {
                         const modalInstance = new bootstrap.Modal(modalElement);
                         modalInstance.show();
+                    }
+                });
+
+                card.addEventListener('keydown', function(e) {
+                    if ((e.key === 'Enter' || e.key === ' ') && e.target === this) {
+                        e.preventDefault();
+                        const modalElement = document.getElementById(`taskModal-${this.dataset.taskId}`);
+                        if (modalElement) {
+                            const modalInstance = new bootstrap.Modal(modalElement);
+                            modalInstance.show();
+                        }
                     }
                 });
             });
