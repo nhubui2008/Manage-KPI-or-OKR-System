@@ -30,36 +30,40 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HasPermission("OKRS_VIEW")]
-        public async Task<IActionResult> Index(string searchString, int? pageNumber)
+        public async Task<IActionResult> Index(
+            string? searchString,
+            int? pageNumber,
+            string? cycle = null,
+            int? statusId = null,
+            int? okrTypeId = null,
+            string? scope = null,
+            string? quickFilter = null,
+            string? sortBy = null)
         {
+            searchString = string.IsNullOrWhiteSpace(searchString) ? null : searchString.Trim();
+            cycle = string.IsNullOrWhiteSpace(cycle) ? null : cycle.Trim();
+            scope = NormalizeOkrScope(scope);
+            quickFilter = NormalizeOkrQuickFilter(quickFilter);
+            sortBy = NormalizeOkrSort(sortBy);
+
             ViewData["CurrentFilter"] = searchString;
 
             var currentEmployee = await GetCurrentEmployeeAsync();
             int? currentEmployeeId = currentEmployee?.Id;
+            var currentUserDepartmentIds = currentEmployeeId.HasValue
+                ? await _context.EmployeeAssignments
+                    .AsNoTracking()
+                    .Where(a => a.EmployeeId == currentEmployeeId.Value && a.IsActive == true && a.DepartmentId.HasValue)
+                    .Select(a => a.DepartmentId!.Value)
+                    .Distinct()
+                    .ToListAsync()
+                : new List<int>();
 
             IQueryable<OKR> query = _context.OKRs
                 .AsNoTracking()
                 .Where(o => o.IsActive == true);
 
-            if (!string.IsNullOrEmpty(searchString))
-            {
-                searchString = searchString.Trim();
-                var searchYear = TryParseSearchYear(searchString);
-                var searchMonthYear = TryParseSearchMonthYear(searchString);
-                var searchDate = TryParseSearchDate(searchString);
-
-                query = query.Where(o =>
-                    (o.ObjectiveName != null && o.ObjectiveName.Contains(searchString)) ||
-                    (o.Cycle != null && o.Cycle.Contains(searchString)) ||
-                    (searchYear.HasValue && o.CreatedAt.HasValue && o.CreatedAt.Value.Year == searchYear.Value) ||
-                    (searchMonthYear.HasValue && o.CreatedAt.HasValue &&
-                        o.CreatedAt.Value.Year == searchMonthYear.Value.Year &&
-                        o.CreatedAt.Value.Month == searchMonthYear.Value.Month) ||
-                    (searchDate.HasValue && o.CreatedAt.HasValue &&
-                        o.CreatedAt.Value.Date == searchDate.Value.Date));
-            }
-
-            // Scope early as IQueryable — avoid materializing large OKR ID lists into memory.
+            // Permission scope early as IQueryable.
             if (IsManagerScopedRole())
             {
                 query = await ApplyManagerScopeToQueryAsync(query, currentEmployee);
@@ -69,16 +73,43 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 query = ApplyEmployeeScopeToQuery(query, currentEmployeeId);
             }
 
-            query = query.OrderByDescending(o => o.CreatedAt);
+            // Facet options from role-scoped data (before user filters).
+            var availableCycles = await query
+                .Where(o => o.Cycle != null && o.Cycle != "")
+                .Select(o => o.Cycle!)
+                .Distinct()
+                .OrderBy(c => c)
+                .ToListAsync();
+            var availableStatusIds = await query
+                .Where(o => o.StatusId.HasValue)
+                .Select(o => o.StatusId!.Value)
+                .Distinct()
+                .OrderBy(id => id)
+                .ToListAsync();
+            var availableTypeIds = await query
+                .Where(o => o.OKRTypeId.HasValue)
+                .Select(o => o.OKRTypeId!.Value)
+                .Distinct()
+                .ToListAsync();
+            var availableOkrTypes = availableTypeIds.Count == 0
+                ? new List<OkrTypeOptionViewModel>()
+                : await _context.OKRTypes
+                    .AsNoTracking()
+                    .Where(t => availableTypeIds.Contains(t.Id))
+                    .OrderBy(t => t.TypeName)
+                    .Select(t => new OkrTypeOptionViewModel
+                    {
+                        Id = t.Id,
+                        Name = t.TypeName ?? $"Loại #{t.Id}"
+                    })
+                    .ToListAsync();
 
-            const int pageSize = 10;
-            var pageIndex = pageNumber ?? 1;
-            var totalCount = await query.CountAsync();
+            query = ApplyOkrSearchFilter(query, searchString);
+            query = ApplyOkrStructuredFilters(query, cycle, statusId, okrTypeId, scope, currentEmployeeId, currentUserDepartmentIds);
+            query = ApplyOkrQuickFilter(query, quickFilter, currentEmployeeId, currentUserDepartmentIds);
 
-            // Project only columns needed for the current page (no Include(KeyResults)).
-            var pageRows = await query
-                .Skip((pageIndex - 1) * pageSize)
-                .Take(pageSize)
+            // Load candidates for progress-aware summary/sort/paging.
+            var candidates = await query
                 .Select(o => new
                 {
                     o.Id,
@@ -92,24 +123,24 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 })
                 .ToListAsync();
 
-            var okrIds = pageRows.Select(r => r.Id).ToList();
-
-            var keyResults = okrIds.Count == 0
+            var candidateIds = candidates.Select(c => c.Id).ToList();
+            var keyResultsAll = candidateIds.Count == 0
                 ? new List<OKRKeyResult>()
                 : await _context.OKRKeyResults
                     .AsNoTracking()
-                    .Where(k => k.OKRId.HasValue && okrIds.Contains(k.OKRId.Value))
+                    .Where(k => k.OKRId.HasValue && candidateIds.Contains(k.OKRId.Value))
                     .ToListAsync();
-
-            var keyResultsByOkr = keyResults
+            var keyResultsByOkr = keyResultsAll
                 .Where(k => k.OKRId.HasValue)
                 .GroupBy(k => k.OKRId!.Value)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             List<(int OkrId, int EmployeeId, string? FullName)> employeeAllocationRows;
-            if (okrIds.Count == 0)
+            List<(int OkrId, int DepartmentId, string? DepartmentName)> departmentAllocationRows;
+            if (candidateIds.Count == 0)
             {
-                employeeAllocationRows = new List<(int OkrId, int EmployeeId, string? FullName)>();
+                employeeAllocationRows = new List<(int, int, string?)>();
+                departmentAllocationRows = new List<(int, int, string?)>();
             }
             else
             {
@@ -117,26 +148,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     from a in _context.OKR_Employee_Allocations.AsNoTracking()
                     join e in _context.Employees.AsNoTracking() on a.EmployeeId equals e.Id into eg
                     from e in eg.DefaultIfEmpty()
-                    where okrIds.Contains(a.OKRId)
+                    where candidateIds.Contains(a.OKRId)
                     select new { a.OKRId, a.EmployeeId, FullName = e != null ? e.FullName : null }
                 ).ToListAsync();
                 employeeAllocationRows = empRows
                     .Select(a => ((int OkrId, int EmployeeId, string? FullName))(a.OKRId, a.EmployeeId, a.FullName))
                     .ToList();
-            }
 
-            List<(int OkrId, int DepartmentId, string? DepartmentName)> departmentAllocationRows;
-            if (okrIds.Count == 0)
-            {
-                departmentAllocationRows = new List<(int OkrId, int DepartmentId, string? DepartmentName)>();
-            }
-            else
-            {
                 var deptRows = await (
                     from a in _context.OKR_Department_Allocations.AsNoTracking()
                     join d in _context.Departments.AsNoTracking() on a.DepartmentId equals d.Id into dg
                     from d in dg.DefaultIfEmpty()
-                    where okrIds.Contains(a.OKRId)
+                    where candidateIds.Contains(a.OKRId)
                     select new { a.OKRId, a.DepartmentId, DepartmentName = d != null ? d.DepartmentName : null }
                 ).ToListAsync();
                 departmentAllocationRows = deptRows
@@ -144,12 +167,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .ToList();
             }
 
-            var projectIds = pageRows
-                .Where(r => r.LinkedWorkProjectId.HasValue)
-                .Select(r => r.LinkedWorkProjectId!.Value)
+            var projectIds = candidates
+                .Where(c => c.LinkedWorkProjectId.HasValue)
+                .Select(c => c.LinkedWorkProjectId!.Value)
                 .Distinct()
                 .ToList();
-
             var projectNames = projectIds.Count == 0
                 ? new Dictionary<int, string?>()
                 : await _context.WorkProjects
@@ -157,54 +179,26 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .Where(p => projectIds.Contains(p.Id))
                     .ToDictionaryAsync(p => p.Id, p => p.ProjectName);
 
-            var currentUserDepartmentIds = currentEmployeeId.HasValue
-                ? await _context.EmployeeAssignments
-                    .AsNoTracking()
-                    .Where(a => a.EmployeeId == currentEmployeeId.Value && a.IsActive == true && a.DepartmentId.HasValue)
-                    .Select(a => a.DepartmentId!.Value)
-                    .Distinct()
-                    .ToListAsync()
-                : new List<int>();
-
-            var currentUserAllocatedOkrIds = currentEmployeeId.HasValue
-                ? employeeAllocationRows
-                    .Where(a => a.EmployeeId == currentEmployeeId.Value)
-                    .Select(a => a.OkrId)
-                    .ToHashSet()
-                : new HashSet<int>();
-
-            var currentUserDepartmentOkrIds = departmentAllocationRows
-                .Where(a => currentUserDepartmentIds.Contains(a.DepartmentId))
-                .Select(a => a.OkrId)
-                .ToHashSet();
-
             var permissions = await PermissionLookupHelper.HasPermissionsAsync(
                 _context,
                 User,
                 new[] { "OKRS_CREATE", "OKRS_EDIT", "OKRS_DELETE", "EMPLOYEE_UPDATE_KPI_PROGRESS" });
-
             var canCreateOkr = permissions.TryGetValue("OKRS_CREATE", out var createGranted) && createGranted;
             var canEditOkr = permissions.TryGetValue("OKRS_EDIT", out var editGranted) && editGranted;
             var canDeleteOkr = permissions.TryGetValue("OKRS_DELETE", out var deleteGranted) && deleteGranted;
             var canUpdateOkrProgress = permissions.TryGetValue("EMPLOYEE_UPDATE_KPI_PROGRESS", out var progressGranted) && progressGranted;
 
-            var items = pageRows.Select(row =>
+            var mappedCandidates = candidates.Select(row =>
             {
-                var krs = keyResultsByOkr.TryGetValue(row.Id, out var list)
-                    ? list
-                    : new List<OKRKeyResult>();
-                var krItems = krs
-                    .Select(MapKeyResultItem)
-                    .ToList();
-                var totalProgress = krItems.Count == 0
-                    ? 0m
-                    : Math.Round(krItems.Average(k => k.Progress), 2);
-
+                var krs = keyResultsByOkr.TryGetValue(row.Id, out var list) ? list : new List<OKRKeyResult>();
+                var krItems = krs.Select(MapKeyResultItem).ToList();
+                var totalProgress = krItems.Count == 0 ? 0m : Math.Round(krItems.Average(k => k.Progress), 2);
                 var empAllocs = employeeAllocationRows.Where(a => a.OkrId == row.Id).ToList();
                 var deptAllocs = departmentAllocationRows.Where(a => a.OkrId == row.Id).ToList();
                 var isOwner = currentEmployeeId.HasValue && row.CreatedById == currentEmployeeId.Value;
-                var isAllocatedToUser = currentUserAllocatedOkrIds.Contains(row.Id);
-                var isAllocatedToDept = currentUserDepartmentOkrIds.Contains(row.Id);
+                var isAllocatedToUser = currentEmployeeId.HasValue &&
+                                        empAllocs.Any(a => a.EmployeeId == currentEmployeeId.Value);
+                var isAllocatedToDept = deptAllocs.Any(a => currentUserDepartmentIds.Contains(a.DepartmentId));
 
                 return new OkrIndexItemViewModel
                 {
@@ -235,33 +229,81 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 };
             }).ToList();
 
-            // Modal catalogs only when the user can open create/allocate actions.
+            // Progress-sensitive quick filters applied after mapping when SQL path is approximate.
+            if (quickFilter == "attention")
+            {
+                mappedCandidates = mappedCandidates.Where(i => i.NeedsAttention).ToList();
+            }
+
+            mappedCandidates = SortOkrIndexItems(mappedCandidates, sortBy);
+
+            var summary = new OkrIndexSummaryViewModel
+            {
+                TotalCount = mappedCandidates.Count,
+                NeedsAttentionCount = mappedCandidates.Count(i => i.NeedsAttention),
+                WithoutKeyResultsCount = mappedCandidates.Count(i => i.KeyResultCount == 0),
+                CompletedCount = mappedCandidates.Count(i => i.IsCompleted),
+                AverageProgress = mappedCandidates.Count == 0
+                    ? 0m
+                    : Math.Round(mappedCandidates.Average(i => i.TotalProgress), 1)
+            };
+
+            const int pageSize = 10;
+            var pageIndex = pageNumber is > 0 ? pageNumber.Value : 1;
+            var totalCount = mappedCandidates.Count;
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+            if (pageIndex > totalPages)
+            {
+                pageIndex = totalPages;
+            }
+
+            var pageItems = mappedCandidates
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
             var loadModalCatalogs = canCreateOkr;
             IReadOnlyList<Department> departments = Array.Empty<Department>();
             IReadOnlyList<Employee> employees = Array.Empty<Employee>();
-            IReadOnlyList<MissionVision> missions = Array.Empty<MissionVision>();
-            IReadOnlyList<OKRType> okrTypes = Array.Empty<OKRType>();
-
             if (loadModalCatalogs)
             {
                 departments = await GetAssignableDepartmentsAsync();
                 employees = await GetAssignableEmployeesAsync(departments.Select(d => d.Id).ToList());
             }
 
+            var hasActiveFilters =
+                !string.IsNullOrWhiteSpace(searchString) ||
+                !string.IsNullOrWhiteSpace(cycle) ||
+                statusId.HasValue ||
+                okrTypeId.HasValue ||
+                !string.IsNullOrWhiteSpace(scope) ||
+                !string.IsNullOrWhiteSpace(quickFilter) ||
+                !string.Equals(sortBy, "attention", StringComparison.Ordinal);
+
             var viewModel = new OkrIndexViewModel
             {
-                Items = new PaginatedList<OkrIndexItemViewModel>(items, totalCount, pageIndex, pageSize),
+                Items = new PaginatedList<OkrIndexItemViewModel>(pageItems, totalCount, pageIndex, pageSize),
                 SearchString = searchString,
+                Cycle = cycle,
+                StatusId = statusId,
+                OkrTypeId = okrTypeId,
+                Scope = scope,
+                QuickFilter = quickFilter,
+                SortBy = sortBy,
                 CurrentEmployeeId = currentEmployeeId,
                 CanCreateOkr = canCreateOkr,
                 CanEditOkr = canEditOkr,
                 CanDeleteOkr = canDeleteOkr,
                 CanUpdateOkrProgress = canUpdateOkrProgress,
                 ModalCatalogsLoaded = loadModalCatalogs,
-                Missions = missions,
+                HasActiveFilters = hasActiveFilters,
+                IsFilteredEmpty = hasActiveFilters && totalCount == 0,
+                Summary = summary,
+                AvailableCycles = availableCycles,
+                AvailableOkrTypes = availableOkrTypes,
+                AvailableStatusIds = availableStatusIds,
                 Departments = departments,
-                Employees = employees,
-                OkrTypes = okrTypes
+                Employees = employees
             };
 
             return View(viewModel);
@@ -1351,6 +1393,206 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             return User.IsInRole("Employee") || User.IsInRole("employee") ||
                    User.IsInRole("Sales") || User.IsInRole("sales");
+        }
+
+        private static string NormalizeOkrQuickFilter(string? quickFilter)
+        {
+            return quickFilter?.Trim().ToLowerInvariant() switch
+            {
+                "mine" => "mine",
+                "attention" => "attention",
+                "no-kr" => "no-kr",
+                "has-project" => "has-project",
+                "unallocated" => "unallocated",
+                _ => ""
+            };
+        }
+
+        private static string NormalizeOkrSort(string? sortBy)
+        {
+            return sortBy?.Trim().ToLowerInvariant() switch
+            {
+                "recent" => "recent",
+                "progress-low" => "progress-low",
+                "progress-high" => "progress-high",
+                "cycle" => "cycle",
+                _ => "attention"
+            };
+        }
+
+        private static string NormalizeOkrScope(string? scope)
+        {
+            return scope?.Trim().ToLowerInvariant() switch
+            {
+                "mine" => "mine",
+                "department" => "department",
+                "company" => "company",
+                _ => ""
+            };
+        }
+
+        private IQueryable<OKR> ApplyOkrSearchFilter(IQueryable<OKR> query, string? searchString)
+        {
+            if (string.IsNullOrWhiteSpace(searchString))
+            {
+                return query;
+            }
+
+            var keyword = searchString.Trim();
+            var searchYear = TryParseSearchYear(keyword);
+            var searchMonthYear = TryParseSearchMonthYear(keyword);
+            var searchDate = TryParseSearchDate(keyword);
+
+            return query.Where(o =>
+                (o.ObjectiveName != null && o.ObjectiveName.Contains(keyword)) ||
+                (o.Cycle != null && o.Cycle.Contains(keyword)) ||
+                (searchYear.HasValue && o.CreatedAt.HasValue && o.CreatedAt.Value.Year == searchYear.Value) ||
+                (searchMonthYear.HasValue && o.CreatedAt.HasValue &&
+                    o.CreatedAt.Value.Year == searchMonthYear.Value.Year &&
+                    o.CreatedAt.Value.Month == searchMonthYear.Value.Month) ||
+                (searchDate.HasValue && o.CreatedAt.HasValue &&
+                    o.CreatedAt.Value.Date == searchDate.Value.Date) ||
+                _context.OKR_Mission_Mappings.Any(m =>
+                    m.OKRId == o.Id &&
+                    _context.MissionVisions.Any(mv =>
+                        mv.Id == m.MissionId &&
+                        mv.Content != null &&
+                        mv.Content.Contains(keyword))) ||
+                _context.OKR_Employee_Allocations.Any(a =>
+                    a.OKRId == o.Id &&
+                    _context.Employees.Any(e =>
+                        e.Id == a.EmployeeId &&
+                        e.FullName != null &&
+                        e.FullName.Contains(keyword))) ||
+                _context.OKR_Department_Allocations.Any(a =>
+                    a.OKRId == o.Id &&
+                    _context.Departments.Any(d =>
+                        d.Id == a.DepartmentId &&
+                        d.DepartmentName != null &&
+                        d.DepartmentName.Contains(keyword))));
+        }
+
+        private IQueryable<OKR> ApplyOkrStructuredFilters(
+            IQueryable<OKR> query,
+            string? cycle,
+            int? statusId,
+            int? okrTypeId,
+            string? scope,
+            int? currentEmployeeId,
+            List<int> currentUserDepartmentIds)
+        {
+            if (!string.IsNullOrWhiteSpace(cycle))
+            {
+                query = query.Where(o => o.Cycle == cycle);
+            }
+
+            if (statusId.HasValue)
+            {
+                query = query.Where(o => o.StatusId == statusId.Value);
+            }
+
+            if (okrTypeId.HasValue)
+            {
+                query = query.Where(o => o.OKRTypeId == okrTypeId.Value);
+            }
+
+            if (scope == "mine")
+            {
+                if (!currentEmployeeId.HasValue)
+                {
+                    return query.Where(_ => false);
+                }
+
+                var empId = currentEmployeeId.Value;
+                query = query.Where(o =>
+                    o.CreatedById == empId ||
+                    _context.OKR_Employee_Allocations.Any(a => a.OKRId == o.Id && a.EmployeeId == empId));
+            }
+            else if (scope == "department")
+            {
+                if (currentUserDepartmentIds.Count == 0)
+                {
+                    return query.Where(_ => false);
+                }
+
+                query = query.Where(o =>
+                    _context.OKR_Department_Allocations.Any(a =>
+                        a.OKRId == o.Id && currentUserDepartmentIds.Contains(a.DepartmentId)));
+            }
+            else if (scope == "company")
+            {
+                // Company-level objectives: strategic type id 1 or not employee-only personal OKRs.
+                query = query.Where(o => o.OKRTypeId == 1);
+            }
+
+            return query;
+        }
+
+        private IQueryable<OKR> ApplyOkrQuickFilter(
+            IQueryable<OKR> query,
+            string quickFilter,
+            int? currentEmployeeId,
+            List<int> currentUserDepartmentIds)
+        {
+            switch (quickFilter)
+            {
+                case "mine":
+                    if (!currentEmployeeId.HasValue)
+                    {
+                        return query.Where(_ => false);
+                    }
+
+                    var empId = currentEmployeeId.Value;
+                    return query.Where(o =>
+                        o.CreatedById == empId ||
+                        _context.OKR_Employee_Allocations.Any(a => a.OKRId == o.Id && a.EmployeeId == empId) ||
+                        _context.OKR_Department_Allocations.Any(a =>
+                            a.OKRId == o.Id && currentUserDepartmentIds.Contains(a.DepartmentId)));
+                case "no-kr":
+                    return query.Where(o => !_context.OKRKeyResults.Any(k => k.OKRId == o.Id));
+                case "has-project":
+                    return query.Where(o => o.LinkedWorkProjectId.HasValue);
+                case "unallocated":
+                    return query.Where(o =>
+                        !_context.OKR_Employee_Allocations.Any(a => a.OKRId == o.Id) &&
+                        !_context.OKR_Department_Allocations.Any(a => a.OKRId == o.Id));
+                case "attention":
+                    // Progress uses ProgressHelper (incl. inverse); apply after mapping.
+                    return query;
+                default:
+                    return query;
+            }
+        }
+
+        private static List<OkrIndexItemViewModel> SortOkrIndexItems(
+            IEnumerable<OkrIndexItemViewModel> items,
+            string sortBy)
+        {
+            return sortBy switch
+            {
+                "recent" => items
+                    .OrderByDescending(i => i.CreatedAt ?? DateTime.MinValue)
+                    .ThenByDescending(i => i.Id)
+                    .ToList(),
+                "progress-low" => items
+                    .OrderBy(i => i.TotalProgress)
+                    .ThenBy(i => i.Id)
+                    .ToList(),
+                "progress-high" => items
+                    .OrderByDescending(i => i.TotalProgress)
+                    .ThenBy(i => i.Id)
+                    .ToList(),
+                "cycle" => items
+                    .OrderBy(i => i.Cycle ?? "\uFFFF")
+                    .ThenBy(i => i.Id)
+                    .ToList(),
+                _ => items
+                    .OrderByDescending(i => i.NeedsAttention)
+                    .ThenBy(i => i.KeyResultCount == 0 ? 0 : 1)
+                    .ThenBy(i => i.TotalProgress)
+                    .ThenBy(i => i.Id)
+                    .ToList()
+            };
         }
 
         /// <summary>

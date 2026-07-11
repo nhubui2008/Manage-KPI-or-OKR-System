@@ -5,10 +5,26 @@
     ViewData["Title"] = "Quản lý OKR";
     var pageItems = Model?.Items;
     var currentFilter = Model?.SearchString ?? ViewData["CurrentFilter"] as string;
+    var currentCycle = Model?.Cycle;
+    var currentStatusId = Model?.StatusId;
+    var currentOkrTypeId = Model?.OkrTypeId;
+    var currentScope = Model?.Scope ?? "";
+    var currentQuickFilter = Model?.QuickFilter ?? "";
+    var currentSortBy = Model?.SortBy ?? "attention";
+    var hasActiveFilters = Model?.HasActiveFilters == true;
+    var isFilteredEmpty = Model?.IsFilteredEmpty == true;
+    var summary = Model?.Summary;
     bool canCreateOkr = Model?.CanCreateOkr == true;
     bool canEditOkr = Model?.CanEditOkr == true;
     bool canDeleteOkr = Model?.CanDeleteOkr == true;
     bool canUpdateOwnProgress = Model?.CanUpdateOkrProgress == true;
+
+    string QuickFilterClass(string value) =>
+        string.Equals(value, currentQuickFilter, StringComparison.OrdinalIgnoreCase) ||
+        (string.IsNullOrEmpty(value) && string.IsNullOrEmpty(currentQuickFilter))
+            ? "is-active"
+            : "";
+
     var measurementUnits = new[] {
         new { Value = "%", Text = "% - Tỷ lệ phần trăm" },
         new { Value = "VNĐ", Text = "VNĐ - Tiền tệ" },
@@ -48,28 +64,123 @@
         </div>
     </div>
 
+    <section class="okr-summary" aria-label="Tổng quan OKR">
+        <div class="okr-summary__item">
+            <span class="okr-summary__label">Tổng OKR</span>
+            <strong class="okr-summary__value">@(summary?.TotalCount ?? 0)</strong>
+        </div>
+        <div class="okr-summary__item">
+            <span class="okr-summary__label">Cần chú ý</span>
+            <strong class="okr-summary__value">@(summary?.NeedsAttentionCount ?? 0)</strong>
+        </div>
+        <div class="okr-summary__item">
+            <span class="okr-summary__label">Chưa có KR</span>
+            <strong class="okr-summary__value">@(summary?.WithoutKeyResultsCount ?? 0)</strong>
+        </div>
+        <div class="okr-summary__item">
+            <span class="okr-summary__label">Hoàn thành</span>
+            <strong class="okr-summary__value">@(summary?.CompletedCount ?? 0)</strong>
+        </div>
+        <div class="okr-summary__item">
+            <span class="okr-summary__label">Tiến độ trung bình</span>
+            <strong class="okr-summary__value">@((summary?.AverageProgress ?? 0).ToString("0.#"))%</strong>
+        </div>
+    </section>
+
     <div class="row justify-content-center w-100 m-0">
         <div class="col-12 px-0">
             <div class="content-card w-100">
                 <div class="card-body-custom">
-                    <!-- SEARCH FORM -->
-                    <form asp-action="Index" method="get" class="toolbar mb-3">
-                        <div class="toolbar-left" style="width: 400px;">
-                            <div class="toolbar-search position-relative">
-                                <i class="bi bi-search position-absolute" style="left: 15px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
-                                <input type="text" name="searchString" value="@currentFilter" class="form-control" style="padding-left: 2.5rem;" placeholder="Tìm tên, chu kỳ hoặc thời gian OKR..." />
+                    <form asp-action="Index" method="get" class="okr-filter mb-3">
+                        @if (!string.IsNullOrWhiteSpace(currentQuickFilter))
+                        {
+                            <input type="hidden" name="quickFilter" value="@currentQuickFilter" />
+                        }
+                        <div class="okr-filter-grid">
+                            <div class="okr-filter-field okr-filter-field--search">
+                                <label class="form-label" for="okr-search">Tìm kiếm</label>
+                                <div class="position-relative">
+                                    <i class="bi bi-search position-absolute" style="left: 12px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
+                                    <input id="okr-search" type="text" name="searchString" value="@currentFilter" class="form-control" style="padding-left: 2.25rem;" placeholder="Objective, chu kỳ, sứ mệnh, người/phòng ban..." />
+                                </div>
+                            </div>
+                            <div class="okr-filter-field">
+                                <label class="form-label" for="okr-cycle">Chu kỳ</label>
+                                <select id="okr-cycle" name="cycle" class="form-select">
+                                    <option value="">Tất cả</option>
+                                    @foreach (var c in Model?.AvailableCycles ?? Array.Empty<string>())
+                                    {
+                                        <option value="@c" selected="@(c == currentCycle ? "selected" : null)">@c</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="okr-filter-field">
+                                <label class="form-label" for="okr-status">Trạng thái</label>
+                                <select id="okr-status" name="statusId" class="form-select">
+                                    <option value="">Tất cả</option>
+                                    @foreach (var s in Model?.AvailableStatusIds ?? Array.Empty<int>())
+                                    {
+                                        <option value="@s" selected="@(currentStatusId == s ? "selected" : null)">Status #@s</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="okr-filter-field">
+                                <label class="form-label" for="okr-type">Loại OKR</label>
+                                <select id="okr-type" name="okrTypeId" class="form-select">
+                                    <option value="">Tất cả</option>
+                                    @foreach (var t in Model?.AvailableOkrTypes ?? Array.Empty<Manage_KPI_or_OKR_System.Models.ViewModels.OkrTypeOptionViewModel>())
+                                    {
+                                        <option value="@t.Id" selected="@(currentOkrTypeId == t.Id ? "selected" : null)">@t.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="okr-filter-field">
+                                <label class="form-label" for="okr-scope">Phạm vi</label>
+                                <select id="okr-scope" name="scope" class="form-select">
+                                    <option value="" selected="@(string.IsNullOrEmpty(currentScope) ? "selected" : null)">Tất cả</option>
+                                    <option value="mine" selected="@(currentScope == "mine" ? "selected" : null)">Của tôi</option>
+                                    <option value="department" selected="@(currentScope == "department" ? "selected" : null)">Phòng ban</option>
+                                    <option value="company" selected="@(currentScope == "company" ? "selected" : null)">Công ty</option>
+                                </select>
+                            </div>
+                            <div class="okr-filter-field">
+                                <label class="form-label" for="okr-sort">Sắp xếp</label>
+                                <select id="okr-sort" name="sortBy" class="form-select">
+                                    <option value="attention" selected="@(currentSortBy == "attention" ? "selected" : null)">Cần chú ý trước</option>
+                                    <option value="recent" selected="@(currentSortBy == "recent" ? "selected" : null)">Mới cập nhật</option>
+                                    <option value="progress-low" selected="@(currentSortBy == "progress-low" ? "selected" : null)">Tiến độ thấp</option>
+                                    <option value="progress-high" selected="@(currentSortBy == "progress-high" ? "selected" : null)">Tiến độ cao</option>
+                                    <option value="cycle" selected="@(currentSortBy == "cycle" ? "selected" : null)">Chu kỳ gần</option>
+                                </select>
+                            </div>
+                            <div class="okr-filter-actions">
+                                <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1"></i> Lọc</button>
+                                @if (hasActiveFilters)
+                                {
+                                    <a asp-action="Index" class="btn btn-light">Xóa lọc</a>
+                                }
+                                <button type="button" class="btn btn-outline-secondary" id="toggleAllBtn"><i class="bi bi-list-task"></i></button>
                             </div>
                         </div>
-                        <div class="toolbar-right d-flex gap-2">
-                            <button type="submit" class="btn btn-primary d-flex align-items-center rounded-pill px-3 shadow-none">
-                                <i class="bi bi-search me-1"></i> Tìm kiếm
-                            </button>
-                            <a asp-action="Index" class="btn btn-outline-secondary border-0 btn-sm d-flex align-items-center" title="Làm mới">
-                                <i class="bi bi-arrow-clockwise fs-5"></i>
-                            </a>
-                            <button type="button" class="btn btn-sm btn-outline-secondary border-0" id="toggleAllBtn"><i class="bi bi-list-task"></i> Mở rộng tất cả</button>
+                        <div class="okr-quick-filters" aria-label="Lọc nhanh OKR">
+                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" class="@QuickFilterClass("")"><i class="bi bi-grid-3x3-gap"></i> Tất cả</a>
+                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="mine" class="@QuickFilterClass("mine")"><i class="bi bi-person-check"></i> Của tôi</a>
+                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="attention" class="@QuickFilterClass("attention")"><i class="bi bi-exclamation-triangle"></i> Cần chú ý</a>
+                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="no-kr" class="@QuickFilterClass("no-kr")"><i class="bi bi-key"></i> Chưa có KR</a>
+                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="has-project" class="@QuickFilterClass("has-project")"><i class="bi bi-kanban"></i> Có dự án</a>
+                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="unallocated" class="@QuickFilterClass("unallocated")"><i class="bi bi-people"></i> Chưa phân bổ</a>
                         </div>
                     </form>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+                        <div class="text-muted small">
+                            <strong>@(summary?.TotalCount ?? 0)</strong> OKR phù hợp
+                            @if (hasActiveFilters)
+                            {
+                                <span>· đang áp dụng bộ lọc</span>
+                            }
+                        </div>
+                    </div>
 
                     <div class="accordion" id="accordionOKRs">
                         @if (pageItems != null && pageItems.Any())
@@ -264,6 +375,14 @@
                                 </div>
                             }
                         }
+                        else if (isFilteredEmpty)
+                        {
+                            <div class="alert alert-warning border-0 shadow-sm text-center p-5">
+                                <h5 class="mb-2">Không có OKR khớp bộ lọc</h5>
+                                <p class="text-muted mb-3">Thử đổi điều kiện hoặc xóa lọc để xem toàn bộ OKR trong phạm vi quyền của bạn.</p>
+                                <a asp-action="Index" class="btn btn-outline-primary">Xóa lọc</a>
+                            </div>
+                        }
                         else
                         {
                             <div class="alert alert-info border-0 shadow-sm text-center p-5">
@@ -288,6 +407,12 @@
                                             <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index"
                                                asp-route-pageNumber="@pageItems.PreviousPageNumber"
                                                asp-route-searchString="@currentFilter"
+                                               asp-route-cycle="@currentCycle"
+                                               asp-route-statusId="@currentStatusId"
+                                               asp-route-okrTypeId="@currentOkrTypeId"
+                                               asp-route-scope="@currentScope"
+                                               asp-route-quickFilter="@currentQuickFilter"
+                                               asp-route-sortBy="@currentSortBy"
                                                aria-label="Trang trước">
                                                 <i class="bi bi-chevron-left"></i>
                                             </a>
@@ -307,7 +432,13 @@
                                             <li class="page-item @(i == pageItems.PageIndex ? "active" : "")">
                                                 <a class="page-link border-0 rounded-circle shadow-none @(i == pageItems.PageIndex ? "" : "text-dark")" asp-action="Index"
                                                    asp-route-pageNumber="@i"
-                                                   asp-route-searchString="@currentFilter">@i</a>
+                                                   asp-route-searchString="@currentFilter"
+                                                   asp-route-cycle="@currentCycle"
+                                                   asp-route-statusId="@currentStatusId"
+                                                   asp-route-okrTypeId="@currentOkrTypeId"
+                                                   asp-route-scope="@currentScope"
+                                                   asp-route-quickFilter="@currentQuickFilter"
+                                                   asp-route-sortBy="@currentSortBy">@i</a>
                                             </li>
                                         }
                                         else if (i == pageItems.PageIndex - 2 || i == pageItems.PageIndex + 2)
@@ -322,6 +453,12 @@
                                             <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="Index"
                                                asp-route-pageNumber="@pageItems.NextPageNumber"
                                                asp-route-searchString="@currentFilter"
+                                               asp-route-cycle="@currentCycle"
+                                               asp-route-statusId="@currentStatusId"
+                                               asp-route-okrTypeId="@currentOkrTypeId"
+                                               asp-route-scope="@currentScope"
+                                               asp-route-quickFilter="@currentQuickFilter"
+                                               asp-route-sortBy="@currentSortBy"
                                                aria-label="Trang sau">
                                                 <i class="bi bi-chevron-right"></i>
                                             </a>
@@ -965,4 +1102,94 @@
             });
         });
     </script>
+
+    <style>
+        .okr-summary {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            margin-bottom: 20px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .okr-summary__item {
+            min-width: 0;
+            padding: 14px 16px;
+            border-right: 1px solid #e5e7eb;
+        }
+        .okr-summary__item:last-child { border-right: 0; }
+        .okr-summary__label {
+            display: block;
+            margin-bottom: 4px;
+            color: #6b7280;
+            font-size: 0.76rem;
+            font-weight: 700;
+        }
+        .okr-summary__value {
+            display: block;
+            color: #111827;
+            font-size: 1.1rem;
+            font-weight: 800;
+            line-height: 1.25;
+        }
+        .okr-filter {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #fff;
+            padding: 14px;
+        }
+        .okr-filter-grid {
+            display: grid;
+            grid-template-columns: 1.6fr repeat(5, minmax(0, 1fr)) auto;
+            gap: 10px;
+            align-items: end;
+        }
+        .okr-filter-field .form-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .okr-filter-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .okr-quick-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .okr-quick-filters a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            text-decoration: none;
+            font-size: 0.85rem;
+            background: #f9fafb;
+        }
+        .okr-quick-filters a:hover,
+        .okr-quick-filters a.is-active {
+            border-color: #93c5fd;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+        @@media (max-width: 1200px) {
+            .okr-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .okr-filter-field--search { grid-column: 1 / -1; }
+            .okr-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .okr-summary__item:nth-child(3) { border-right: 0; }
+        }
+        @@media (max-width: 768px) {
+            .okr-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .okr-filter-grid { grid-template-columns: 1fr; }
+            .okr-summary__item { border-bottom: 1px solid #e5e7eb; }
+        }
+    </style>
 }

@@ -130,18 +130,18 @@ Vi du:
 
 **Muc tieu:** bien Index thanh man hinh dieu phoi OKR de hieu.
 
-- [ ] Them dai tong quan compact dong bo MissionVisions: Tong OKR, Can chu y, Chua co KR, Hoan thanh, Tien do trung binh.
-  - Test: so lieu dung theo scope quyen va filter dang ap dung.
-- [ ] Tach search va filter ro rang: chu ky, trang thai, loai OKR, pham vi cua toi/phong ban/cong ty.
-  - Test: moi filter co unit/controller test va giu query string khi paging.
-- [ ] Them quick filter: `Tat ca`, `Cua toi`, `Can chu y`, `Chua co KR`, `Co du an`, `Chua phan bo`.
-  - Test: click tung filter tren Chrome, URL va ket qua dung.
-- [ ] Them sort: `Can chu y truoc`, `Moi cap nhat`, `Tien do thap`, `Tien do cao`, `Chu ky gan`.
-  - Test: du lieu co cung gia tri van co thu tu phu on dinh theo ID/CreatedAt.
-- [ ] Them nut `Xoa loc` va empty state rieng cho filter khong co ket qua.
-  - Test: clear filter ve trang 1, xoa toan bo query filter.
-- [ ] Search theo Objective, Cycle, MissionVision, nguoi duoc giao va phong ban.
-  - Test: moi truong search co it nhat mot test positive va mot negative.
+- [x] Them dai tong quan compact dong bo MissionVisions: Tong OKR, Can chu y, Chua co KR, Hoan thanh, Tien do trung binh.
+  - Test: `Index_SummaryReflectsScopedAndFilteredData` pass; HTTP index co 5 o summary.
+- [x] Tach search va filter ro rang: chu ky, trang thai, loai OKR, pham vi cua toi/phong ban/cong ty.
+  - Test: `Index_FiltersByCycleStatusTypeAndScope_KeepPagingQueryState` pass; paging giu query string.
+- [x] Them quick filter: `Tat ca`, `Cua toi`, `Can chu y`, `Chua co KR`, `Co du an`, `Chua phan bo`.
+  - Test: theory quick filters pass; HTTP `quickFilter=attention|no-kr` 200 + is-active.
+- [x] Them sort: `Can chu y truoc`, `Moi cap nhat`, `Tien do thap`, `Tien do cao`, `Chu ky gan`.
+  - Test: `Index_SortProgressAndAttentionHaveStableSecondaryOrder` pass (tie-break theo Id).
+- [x] Them nut `Xoa loc` va empty state rieng cho filter khong co ket qua.
+  - Test: `Index_ClearFilterState_WhenNoFilters_AndEmptyFilteredState` + HTTP empty cycle message.
+- [x] Search theo Objective, Cycle, MissionVision, nguoi duoc giao va phong ban.
+  - Test: moi truong co theory positive/negative pass.
 
 ### Phase 27: `Ngthebao-phase-27-okrs-overview-responsive-ux`
 
@@ -214,7 +214,7 @@ Khong bat dau Phase 27 truoc khi Phase 24-26 pass; UI phai dua tren data contrac
 - [x] Khong con kha nang sinh WorkItem trung khi them KR.
 - [x] Khong con URL paging 0/qua tong trang.
 - [x] Index khong query trung KeyResults va khong tai danh muc modal vo dieu kien.
-- [ ] Filter/sort/search/paging giu dung scope quyen.
+- [x] Filter/sort/search/paging giu dung scope quyen.
 - [ ] Giao dien dong bo MissionVisions, de quet va it cuon hon.
 - [ ] Mobile 390px khong ep title, badge, progress hoac action.
 - [ ] Tat ca action icon co accessible name; keyboard dung duoc.
@@ -232,3 +232,4 @@ AI thuc hien cap nhat phan nay sau moi task:
 | 2026-07-11 | 24 | Fix KR WorkItem duplicate + shared path | Ngthebao-phase-24-okrs-correctness-baseline | OKRsControllerKeyResultTests | Pass | 485ccf7 |
 | 2026-07-11 | 24 | Pagination + KR validation + HTTP QA | Ngthebao-phase-24-okrs-correctness-baseline | unit + full + HTTP CRUD | Pass | 485ccf7 |
 | 2026-07-11 | 25 | Index ViewModel + query/scope/permissions | Ngthebao-phase-25-okrs-index-query-viewmodel | OKRsControllerIndexTests + full 69 | Pass; /OKRs avg 311ms | 2abe373 |
+| 2026-07-11 | 26 | Summary/filter/sort/search/empty | Ngthebao-phase-26-okrs-operations-filter-sort | FilterSortTests + full 88 + HTTP QA | Pass | pending |

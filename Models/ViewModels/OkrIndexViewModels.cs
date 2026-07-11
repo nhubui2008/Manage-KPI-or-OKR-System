@@ -8,6 +8,12 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
             new(new List<OkrIndexItemViewModel>(), 0, 1, 10);
 
         public string? SearchString { get; init; }
+        public string? Cycle { get; init; }
+        public int? StatusId { get; init; }
+        public int? OkrTypeId { get; init; }
+        public string? Scope { get; init; }
+        public string? QuickFilter { get; init; }
+        public string SortBy { get; init; } = "attention";
         public int? CurrentEmployeeId { get; init; }
 
         public bool CanCreateOkr { get; init; }
@@ -15,15 +21,34 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public bool CanDeleteOkr { get; init; }
         public bool CanUpdateOkrProgress { get; init; }
 
-        /// <summary>
-        /// True when Employees/Departments (and optional create catalogs) were loaded for modals.
-        /// </summary>
         public bool ModalCatalogsLoaded { get; init; }
+        public bool HasActiveFilters { get; init; }
+        public bool IsFilteredEmpty { get; init; }
+
+        public OkrIndexSummaryViewModel Summary { get; init; } = new();
+        public IReadOnlyList<string> AvailableCycles { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<OkrTypeOptionViewModel> AvailableOkrTypes { get; init; } = Array.Empty<OkrTypeOptionViewModel>();
+        public IReadOnlyList<int> AvailableStatusIds { get; init; } = Array.Empty<int>();
 
         public IReadOnlyList<MissionVision> Missions { get; init; } = Array.Empty<MissionVision>();
         public IReadOnlyList<Department> Departments { get; init; } = Array.Empty<Department>();
         public IReadOnlyList<Employee> Employees { get; init; } = Array.Empty<Employee>();
         public IReadOnlyList<OKRType> OkrTypes { get; init; } = Array.Empty<OKRType>();
+    }
+
+    public sealed class OkrIndexSummaryViewModel
+    {
+        public int TotalCount { get; init; }
+        public int NeedsAttentionCount { get; init; }
+        public int WithoutKeyResultsCount { get; init; }
+        public int CompletedCount { get; init; }
+        public decimal AverageProgress { get; init; }
+    }
+
+    public sealed class OkrTypeOptionViewModel
+    {
+        public int Id { get; init; }
+        public string Name { get; init; } = string.Empty;
     }
 
     public sealed class OkrIndexItemViewModel
@@ -52,6 +77,9 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public string? PrimaryDepartmentName { get; init; }
 
         public bool CanUpdateProgress { get; init; }
+        public bool NeedsAttention => KeyResultCount == 0 || TotalProgress < 40m;
+        public bool IsCompleted => KeyResultCount > 0 && TotalProgress >= 100m;
+        public bool IsUnallocated => EmployeeAllocationCount == 0 && DepartmentAllocationCount == 0;
 
         public string AllocationSummary
         {
