@@ -114,6 +114,8 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
         [HasPermission("EMPLOYEES_CREATE")]
         public async Task<IActionResult> Create([Bind("Id,EmployeeCode,FullName,DateOfBirth,Phone,Email,TaxCode,JoinDate,SystemUserId,IsActive,StrategicGoalId")] Employee employee, int? departmentId, int? positionId)
         {
+            await ValidateStrategicGoalAsync(employee.StrategicGoalId);
+
             if (ModelState.IsValid)
             {
                 // 1. NẾU KHÔNG CÓ MÃ THÌ TỰ ĐỘNG SINH
@@ -227,6 +229,8 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
         return NotFound();
     }
 
+    await ValidateStrategicGoalAsync(employee.StrategicGoalId);
+
     if (ModelState.IsValid)
     {
         // KIỂM TRA TRÙNG LẬP TÀI KHOẢN LIÊN KẾT (Trừ chính nhân viên này)
@@ -324,6 +328,27 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
 
     return View(employee);
 }
+
+        private async Task ValidateStrategicGoalAsync(int? strategicGoalId)
+        {
+            if (!strategicGoalId.HasValue)
+            {
+                return;
+            }
+
+            var isAssignableGoal = await _context.MissionVisions
+                .AsNoTracking()
+                .AnyAsync(m => m.Id == strategicGoalId.Value &&
+                               m.IsActive == true &&
+                               m.MissionVisionType == MissionVision.TypeYearlyGoal &&
+                               m.TargetYear.HasValue);
+            if (!isAssignableGoal)
+            {
+                ModelState.AddModelError(
+                    nameof(Employee.StrategicGoalId),
+                    "Mục tiêu chiến lược đã chọn không còn hoạt động hoặc không phải mục tiêu theo năm.");
+            }
+        }
 
         private async Task<SelectList> GetStrategicGoalSelectListAsync(int? selectedId = null)
         {
