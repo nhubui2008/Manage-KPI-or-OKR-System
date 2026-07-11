@@ -572,7 +572,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return Forbid();
 
             var okr = await _context.OKRs.FindAsync(id);
-            if (okr == null) return NotFound("Không tìm thấy OKR.");
+            if (okr == null) return NotFound(new { success = false, message = "Không tìm thấy OKR." });
 
             if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(id))
             {
@@ -582,27 +582,25 @@ namespace Manage_KPI_or_OKR_System.Controllers
             string prompt = $"Mục tiêu (Objective) hiện tại là: '{okr.ObjectiveName}'. " +
                             $"Hãy tạo ra danh sách 3 đến 5 Kết quả then chốt (Key Results) tối ưu nhất, mang tính định lượng rõ ràng. " +
                             $"Mỗi Key Result bao gồm: Tên (KeyResultName), Chỉ tiêu (TargetValue - là số nguyên hoặc thập phân), Đơn vị tính (Unit, có thể là %, VNĐ, Người, Sản phẩm, vv...), và Cờ thu nhỏ (IsInverse - trả về true nếu thuộc tính này là chỉ tiêu mà khi giá trị càng nhỏ càng tốt, ngược lại false nếu càng lớn càng tốt). " +
-                            $"Chỉ trả về danh sách JSON thuần, mảng các đối tượng chứa: KeyResultName (chuỗi), TargetValue (số), Unit (chuỗi), IsInverse (boolean). Định dạng chuẩn: [{{ \"KeyResultName\": \"...\", \"TargetValue\": 10, \"Unit\": \"%\", \"IsInverse\": false }}]. Không bao gồm đoạn giải thích nào khác, không dùng markdown ```json.";
+                            $"Chỉ trả về danh sách JSON thuần, mảng các đối tượng gồm: KeyResultName (chuỗi), TargetValue (số), Unit (chuỗi), IsInverse (boolean). Định dạng chuẩn: [{{ \"KeyResultName\": \"...\", \"TargetValue\": 10, \"Unit\": \"%\", \"IsInverse\": false }}]. Không bao gồm đoạn giải thích nào khác, không dùng markdown ```json.";
             string systemInstruction = "Bạn là chuyên gia thiết lập cấu trúc OKR chuyên nghiệp của các công ty công nghệ lớn.";
 
             try
             {
                 var options = new GeminiGenerationOptions { Temperature = 0.6, ResponseMimeType = "application/json" };
                 var responseJson = await _geminiService.GenerateTextAsync(systemInstruction, prompt, options);
-                
-                string cleanJson = responseJson.Trim();
-                if (cleanJson.StartsWith("```json"))
+                var cleanJson = StripAiJsonFence(responseJson);
+                var parseResult = TryParseSuggestedKeyResults(cleanJson);
+                if (!parseResult.Success)
                 {
-                    cleanJson = cleanJson.Substring(7);
-                    if (cleanJson.EndsWith("```")) cleanJson = cleanJson.Substring(0, cleanJson.Length - 3);
-                }
-                else if (cleanJson.StartsWith("```"))
-                {
-                    cleanJson = cleanJson.Substring(3);
-                    if (cleanJson.EndsWith("```")) cleanJson = cleanJson.Substring(0, cleanJson.Length - 3);
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = parseResult.ErrorMessage ?? "Phản hồi AI không hợp lệ.",
+                        raw = cleanJson.Length > 500 ? cleanJson[..500] : cleanJson
+                    });
                 }
 
-                // Luu vao lich su (AIGenerationHistories)
                 var suIdValue = User.FindFirstValue("SystemUserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(suIdValue, out int suId))
                 {
@@ -611,18 +609,27 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         FeatureName = "SuggestKR",
                         TargetId = id,
                         Prompt = prompt,
-                        Response = cleanJson.Trim(),
+                        Response = cleanJson,
                         SystemUserId = suId,
                         CreatedAt = DateTime.Now
                     });
                     await _context.SaveChangesAsync();
                 }
 
-                return Content(cleanJson.Trim(), "application/json");
+                return Ok(new
+                {
+                    success = true,
+                    items = parseResult.Items,
+                    count = parseResult.Items.Count
+                });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { message = "Lỗi khi gọi AI: " + ex.Message });
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Không gọi được AI gợi ý KR. Vui lòng thử lại sau."
+                });
             }
         }
 
@@ -1666,6 +1673,91 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 ResultStatus = kr.ResultStatus,
                 Progress = kr.Progress
             };
+        }
+
+        public static string StripAiJsonFence(string? raw)
+        {
+            var cleanJson = (raw ?? string.Empty).Trim();
+            if (cleanJson.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanJson = cleanJson.Substring(7).Trim();
+            }
+            else if (cleanJson.StartsWith("```", StringComparison.Ordinal))
+            {
+                cleanJson = cleanJson.Substring(3).Trim();
+            }
+
+            if (cleanJson.EndsWith("```", StringComparison.Ordinal))
+            {
+                cleanJson = cleanJson.Substring(0, cleanJson.Length - 3).Trim();
+            }
+
+            return cleanJson;
+        }
+
+        public static (bool Success, string? ErrorMessage, List<SuggestedKeyResultDto> Items)
+            TryParseSuggestedKeyResults(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return (false, "Phản hồi AI trống.", new List<SuggestedKeyResultDto>());
+            }
+
+            List<SuggestedKeyResultDto>? items;
+            try
+            {
+                items = System.Text.Json.JsonSerializer.Deserialize<List<SuggestedKeyResultDto>>(
+                    json,
+                    new System.Text.Json.JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return (false, "JSON AI không hợp lệ.", new List<SuggestedKeyResultDto>());
+            }
+
+            if (items == null || items.Count == 0)
+            {
+                return (false, "AI không trả về Key Result nào.", new List<SuggestedKeyResultDto>());
+            }
+
+            var valid = new List<SuggestedKeyResultDto>();
+            foreach (var item in items)
+            {
+                var name = item.KeyResultName?.Trim();
+                var unit = item.Unit?.Trim();
+                if (string.IsNullOrWhiteSpace(name) ||
+                    string.IsNullOrWhiteSpace(unit) ||
+                    item.TargetValue is null or <= 0)
+                {
+                    continue;
+                }
+
+                valid.Add(new SuggestedKeyResultDto
+                {
+                    KeyResultName = name,
+                    TargetValue = item.TargetValue,
+                    Unit = unit,
+                    IsInverse = item.IsInverse
+                });
+            }
+
+            if (valid.Count == 0)
+            {
+                return (false, "Không có Key Result hợp lệ (cần tên, unit, target > 0).", new List<SuggestedKeyResultDto>());
+            }
+
+            return (true, null, valid);
+        }
+
+        public sealed class SuggestedKeyResultDto
+        {
+            public string? KeyResultName { get; set; }
+            public decimal? TargetValue { get; set; }
+            public string? Unit { get; set; }
+            public bool IsInverse { get; set; }
         }
 
         /// <summary>

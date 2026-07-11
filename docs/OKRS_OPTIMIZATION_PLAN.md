@@ -166,18 +166,18 @@ Vi du:
 
 **Muc tieu:** giam do nang Index va lam action/AI tin cay.
 
-- [ ] Tach Objective row, KR list va modal thanh partial/component phu hop; dua CSS/JS lon ra file rieng neu pattern du an cho phep.
-  - Test: page behavior khong doi; `Index.cshtml` giam dang ke do phuc tap.
-- [ ] Chi khoi tao modal khi can; reset state, validation va loading moi lan mo.
-  - Test: mo/dong lien tiep tren nhieu OKR khong mang du lieu cu.
-- [ ] Thay `javascript:void(0)` va inline `onclick` bang button/handler co data attributes.
-  - Test: keyboard va screen reader nhan dung action.
-- [ ] Chuan hoa feedback saving/success/error cho them KR, sua KR, progress va allocation.
-  - Test: double-click khong gui hai request; button co loading/disabled state.
-- [ ] Harden AI goi y KR: validate JSON server-side, validate tung KR, hien preview truoc khi luu, thong bao loi an toan.
-  - Test: JSON loi, field thieu, target khong hop le, timeout va retry.
-- [ ] Ra AI task decomposition va lien ket WorkProject; hien ro task se tao moi hay cap nhat project nao.
-  - Test: preview -> confirm -> project/task dung; huy khong tao du lieu.
+- [x] Tach Objective row, KR list va modal thanh partial/component phu hop; dua CSS/JS lon ra file rieng neu pattern du an cho phep.
+  - Test: `Index.cshtml` ~298 dong (tu ~1522); partial `_OkrObjectiveCard`, `_OkrIndexModals`; `wwwroot/css/okrs-index.css`, `wwwroot/js/okrs-index.js`; full 102 tests pass.
+- [x] Chi khoi tao modal khi can; reset state, validation va loading moi lan mo.
+  - Test: JS reset form/modal AI khi open/hidden; `bootstrap.Modal.getOrCreateInstance` lazy.
+- [x] Thay `javascript:void(0)` va inline `onclick` bang button/handler co data attributes.
+  - Test: HTTP khong con `javascript:void`; co `data-action`/`js-okr-action`.
+- [x] Chuan hoa feedback saving/success/error cho them KR, sua KR, progress va allocation.
+  - Test: forms `data-submit-guard` + AI save loading/disabled; client validate truoc luu.
+- [x] Harden AI goi y KR: validate JSON server-side, validate tung KR, hien preview truoc khi luu, thong bao loi an toan.
+  - Test: `OKRsAiSuggestValidationTests` pass (JSON loi, field thieu, target <=0, filter valid rows); API tra `{success,items,message}`.
+- [x] Ra AI task decomposition va lien ket WorkProject; hien ro task se tao moi hay cap nhat project nao.
+  - Test: `aiTaskProjectLinkHint` hien create vs update project; HTTP co hint element; existing AI decompose confirm flow giu nguyen.
 
 ### Phase 29: `Ngthebao-phase-29-okrs-business-flow-final-qa`
 
@@ -234,3 +234,4 @@ AI thuc hien cap nhat phan nay sau moi task:
 | 2026-07-11 | 25 | Index ViewModel + query/scope/permissions | Ngthebao-phase-25-okrs-index-query-viewmodel | OKRsControllerIndexTests + full 69 | Pass; /OKRs avg 311ms | 2abe373 |
 | 2026-07-11 | 26 | Summary/filter/sort/search/empty | Ngthebao-phase-26-okrs-operations-filter-sort | FilterSortTests + full 88 + HTTP QA | Pass | 0b8b73a |
 | 2026-07-11 | 27 | Overview responsive UX + risk badges | Ngthebao-phase-27-okrs-overview-responsive-ux | RiskBadgeTests + full 94 + HTTP QA | Pass | 13750d7 |
+| 2026-07-11 | 28 | Interaction/modals/AI harden | Ngthebao-phase-28-okrs-interaction-ai-modals | AISuggestTests + full 102 + HTTP QA | Pass | pending |

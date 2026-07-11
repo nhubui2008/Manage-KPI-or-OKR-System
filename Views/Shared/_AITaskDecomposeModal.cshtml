@@ -46,6 +46,7 @@
 
                 <div id="aiTaskPreview" class="d-none">
                     <div class="ai-task-target mb-3">
+                        <div id="aiTaskProjectLinkHint" class="alert alert-info py-2 px-3 small mb-3 d-none" role="status"></div>
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label small fw-semibold text-secondary">WorkProject đích</label>
@@ -877,7 +878,7 @@
         byId('aiTaskTableBody')?.addEventListener('change', refreshPreviewState);
         byId('aiTaskProjectSelect')?.addEventListener('change', syncProjectNameState);
 
-        window.openAiTaskDecomposeModal = function (sourceType, sourceId, sourceName, preferredProjectId) {
+        window.openAiTaskDecomposeModal = function (sourceType, sourceId, sourceName, preferredProjectId, preferredProjectName) {
             state.sourceType = sourceType;
             state.sourceId = parseInt(sourceId, 10);
             state.isRunning = false;
@@ -895,6 +896,17 @@
             byId('aiTaskPreview').classList.add('d-none');
             byId('aiTaskLoading').classList.add('d-none');
             byId('aiTaskEmpty').classList.add('d-none');
+            const hint = byId('aiTaskProjectLinkHint');
+            if (hint) {
+                if (preferredProjectId) {
+                    const projectLabel = preferredProjectName || `project #${preferredProjectId}`;
+                    hint.classList.remove('d-none');
+                    hint.innerHTML = `<i class="bi bi-link-45deg me-1"></i>Sẽ <strong>cập nhật/thêm task</strong> vào project hiện có: <strong>${escapeHtml(projectLabel)}</strong>. Bạn vẫn có thể đổi sang project khác hoặc tạo mới ở bước preview.`;
+                } else {
+                    hint.classList.remove('d-none');
+                    hint.innerHTML = `<i class="bi bi-plus-circle me-1"></i>Chưa có project liên kết — mặc định sẽ <strong>tạo project mới</strong> sau khi bạn xác nhận. Có thể chọn project hiện có ở bước preview.`;
+                }
+            }
             syncProjectNameState();
             showAlert('');
             refreshPreviewState();
