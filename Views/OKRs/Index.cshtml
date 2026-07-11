@@ -139,7 +139,7 @@
                                 {
                                     <a asp-action="Index" class="btn btn-light">Xóa lọc</a>
                                 }
-                                <button type="button" class="btn btn-outline-secondary" id="toggleAllBtn"><i class="bi bi-list-task"></i></button>
+                                <button type="button" class="btn btn-outline-secondary" id="toggleAllBtn" aria-label="Mở rộng hoặc thu gọn tất cả Key Results" title="Mở rộng / thu gọn tất cả"><i class="bi bi-list-task" aria-hidden="true"></i></button>
                             </div>
                         </div>
                         <div class="okr-quick-filters" aria-label="Lọc nhanh OKR">
@@ -286,8 +286,8 @@
 
 
 
+@* AI history modal is already rendered once in _Layout — do not include again (duplicate id → console/a11y issues). *@
 @await Html.PartialAsync("_OkrIndexModals", Model)
-@await Html.PartialAsync("_AiHistoryModal")
 
 @section Styles {
     <link rel="stylesheet" href="~/css/okrs-index.css" asp-append-version="true" />

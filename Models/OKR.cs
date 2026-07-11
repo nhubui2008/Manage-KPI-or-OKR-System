@@ -17,6 +17,8 @@ namespace Manage_KPI_or_OKR_System.Models
         public int? StatusId { get; set; }
         public bool? IsActive { get; set; } = true;
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
+        /// <summary>Last meaningful update (progress, KR, allocation, edit). Used for "Mới cập nhật" sort.</summary>
+        public DateTime? UpdatedAt { get; set; }
         public int? CreatedById { get; set; }
         public int? LinkedWorkProjectId { get; set; }
         

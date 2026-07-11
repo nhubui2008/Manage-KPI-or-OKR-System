@@ -10,6 +10,7 @@
     }
 
     function closeAllOkrDropdowns() {
+        if (typeof bootstrap === 'undefined' || !bootstrap.Dropdown) return;
         document.querySelectorAll('.okr-index-page .okr-action-dropdown [data-bs-toggle="dropdown"]').forEach(toggleEl => {
             bootstrap.Dropdown.getOrCreateInstance(toggleEl).hide();
         });
@@ -17,7 +18,20 @@
 
     function getModal(id) {
         const el = byId(id);
-        return el ? bootstrap.Modal.getOrCreateInstance(el) : null;
+        if (!el || typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+            return null;
+        }
+        return bootstrap.Modal.getOrCreateInstance(el);
+    }
+
+    function setText(id, text) {
+        const el = byId(id);
+        if (el) el.textContent = text;
+    }
+
+    function setValue(id, value) {
+        const el = byId(id);
+        if (el) el.value = value;
     }
 
     function resetForm(form) {
@@ -59,10 +73,11 @@
 
     function openAddKrModal(okrId, okrName) {
         closeAllOkrDropdowns();
+        if (!byId('addKrModal')) return;
         const form = byId('addKrForm');
         resetForm(form);
-        byId('krOkrId').value = okrId;
-        byId('krOkrNameDisplay').textContent = 'Objective: ' + (okrName || '');
+        setValue('krOkrId', okrId);
+        setText('krOkrNameDisplay', 'Objective: ' + (okrName || ''));
         if (window.applyMeasurementUnitBehavior) {
             window.applyMeasurementUnitBehavior(byId('addKrModal'));
         }
@@ -71,26 +86,31 @@
 
     function openAllocateModal(okrId) {
         closeAllOkrDropdowns();
+        if (!byId('allocateOkrModal')) return;
         document.querySelectorAll('#allocateOkrModal form').forEach(resetForm);
-        byId('allocOkrId').value = okrId;
-        byId('allocDeptOkrId').value = okrId;
+        setValue('allocOkrId', okrId);
+        setValue('allocDeptOkrId', okrId);
         getModal('allocateOkrModal')?.show();
     }
 
     function openEditKrModal(id, name, target, current, unit, isInverse) {
+        if (!byId('editKrModal')) return;
         const form = byId('editKrModal')?.querySelector('form');
         resetForm(form);
-        byId('editKrId').value = id;
-        byId('editKrName').value = name || '';
-        byId('editKrTarget').value = normalizeDecimalValue(target);
-        byId('editKrCurrent').value = normalizeDecimalValue(current);
+        setValue('editKrId', id);
+        setValue('editKrName', name || '');
+        setValue('editKrTarget', normalizeDecimalValue(target));
+        setValue('editKrCurrent', normalizeDecimalValue(current));
         const editKrUnitSelect = byId('editKrUnit');
         if (window.setMeasurementUnitSelectValue) {
             window.setMeasurementUnitSelectValue(editKrUnitSelect, unit || '');
         } else if (editKrUnitSelect) {
             editKrUnitSelect.value = unit || '';
         }
-        byId('editKrIsInverse').checked = isInverse === true || isInverse === 'true';
+        const inverseEl = byId('editKrIsInverse');
+        if (inverseEl) {
+            inverseEl.checked = isInverse === true || isInverse === 'true';
+        }
         if (window.applyMeasurementUnitBehavior) {
             window.applyMeasurementUnitBehavior(byId('editKrModal'));
         }
@@ -98,15 +118,16 @@
     }
 
     function openUpdateProgressModal(krId, krName, currentVal, unit) {
+        if (!byId('updateKrProgressModal')) return;
         const form = byId('updateKrProgressModal')?.querySelector('form');
         resetForm(form);
-        byId('updateKrId').value = krId;
-        byId('updateKrNameDisplay').textContent = 'KR: ' + (krName || '');
-        byId('updateKrCurrentValue').value = normalizeDecimalValue(currentVal);
+        setValue('updateKrId', krId);
+        setText('updateKrNameDisplay', 'KR: ' + (krName || ''));
+        setValue('updateKrCurrentValue', normalizeDecimalValue(currentVal));
         const config = window.applyMeasurementUnitConfigToInputs
             ? window.applyMeasurementUnitConfigToInputs(unit, [byId('updateKrCurrentValue')])
             : { suffix: unit || '' };
-        byId('updateKrUnitDisplay').textContent = config.suffix || unit || '';
+        setText('updateKrUnitDisplay', config.suffix || unit || '');
         getModal('updateKrProgressModal')?.show();
     }
 
@@ -173,16 +194,9 @@
                 </tr>`;
         });
 
-        if (!byId('unitList')) {
-            let datalistHTML = '<datalist id="unitList">';
-            document.querySelectorAll('.measurement-unit-select option').forEach(opt => {
-                if (opt.value) datalistHTML += `<option value="${escapeHtml(opt.value)}">`;
-            });
-            datalistHTML += '</datalist>';
-            document.body.insertAdjacentHTML('beforeend', datalistHTML);
+        if (tbody) {
+            tbody.innerHTML = html;
         }
-
-        tbody.innerHTML = html;
     }
 
     window.applyAiHistoryKR = function (parsedData) {
@@ -194,11 +208,14 @@
 
     function openAiSuggestKrModal(okrId, okrName) {
         closeAllOkrDropdowns();
+        if (!byId('aiSuggestKrModal')) return;
         currentAiOkr = { id: okrId, name: okrName || '' };
-        byId('aiOkrId').value = okrId;
-        byId('aiOkrNameDisplay').textContent = 'Objective: ' + (okrName || '');
-        byId('aiSuggestionContent').style.display = 'none';
-        byId('aiKrListTableBody').innerHTML = '';
+        setValue('aiOkrId', okrId);
+        setText('aiOkrNameDisplay', 'Objective: ' + (okrName || ''));
+        const content = byId('aiSuggestionContent');
+        if (content) content.style.display = 'none';
+        const tbody = byId('aiKrListTableBody');
+        if (tbody) tbody.innerHTML = '';
         resetAiSuggestLoading();
         getModal('aiSuggestKrModal')?.show();
         loadAiSuggestions(okrId);
@@ -234,6 +251,7 @@
     }
 
     function hideOtherOkrDropdowns(currentToggleEl) {
+        if (typeof bootstrap === 'undefined' || !bootstrap.Dropdown) return;
         document.querySelectorAll('.okr-index-page .okr-action-dropdown [data-bs-toggle="dropdown"]').forEach(toggleEl => {
             if (toggleEl !== currentToggleEl) {
                 bootstrap.Dropdown.getOrCreateInstance(toggleEl).hide();
@@ -355,6 +373,7 @@
         wireDropdowns();
 
         byId('toggleAllBtn')?.addEventListener('click', function () {
+            if (typeof bootstrap === 'undefined' || !bootstrap.Collapse) return;
             const accordions = document.querySelectorAll('#accordionOKRs .accordion-collapse');
             const anyCollapsed = Array.from(accordions).some(a => !a.classList.contains('show'));
             accordions.forEach(acc => {
@@ -362,9 +381,10 @@
                 if (anyCollapsed) bsCollapse.show();
                 else bsCollapse.hide();
             });
+            this.setAttribute('aria-label', anyCollapsed ? 'Thu gọn tất cả Key Results' : 'Mở rộng tất cả Key Results');
             this.innerHTML = anyCollapsed
-                ? '<i class="bi bi-dash-square"></i> Thu gọn tất cả'
-                : '<i class="bi bi-list-task"></i> Mở rộng tất cả';
+                ? '<i class="bi bi-dash-square" aria-hidden="true"></i>'
+                : '<i class="bi bi-list-task" aria-hidden="true"></i>';
         });
 
         byId('checkAllAiKr')?.addEventListener('change', function () {

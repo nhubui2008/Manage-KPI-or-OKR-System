@@ -60,7 +60,11 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public int? StatusId { get; init; }
         public int? CreatedById { get; init; }
         public DateTime? CreatedAt { get; init; }
+        public DateTime? UpdatedAt { get; init; }
         public int? LinkedWorkProjectId { get; init; }
+
+        /// <summary>Activity stamp for "Mới cập nhật" (UpdatedAt if set, otherwise CreatedAt).</summary>
+        public DateTime LastActivityAt => UpdatedAt ?? CreatedAt ?? DateTime.MinValue;
         public string? LinkedWorkProjectName { get; init; }
 
         public decimal TotalProgress { get; init; }

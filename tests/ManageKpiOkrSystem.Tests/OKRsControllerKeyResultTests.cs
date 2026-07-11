@@ -42,6 +42,49 @@ public sealed class OKRsControllerKeyResultTests
     }
 
     [Fact]
+    public async Task AddKeyResult_WhenWorkflowAlwaysFails_KeepsKrAndSurfacesDesyncWarning()
+    {
+        await using var context = CreateContext();
+        var (okr, _) = await SeedOkrWithLinkedProjectAsync(context);
+        var controller = CreateController(context, new ThrowingWorkflowService());
+
+        var result = await controller.AddKeyResult(new OKRKeyResult
+        {
+            OKRId = okr.Id,
+            KeyResultName = "Orphan KR when workflow fails",
+            TargetValue = 10,
+            Unit = "%"
+        });
+
+        Assert.IsType<RedirectToActionResult>(result);
+        var kr = Assert.Single(await context.OKRKeyResults.Where(k => k.OKRId == okr.Id).ToListAsync());
+        Assert.Equal(0, await context.WorkItems.CountAsync(w => w.OKRKeyResultId == kr.Id && w.IsActive == true));
+        Assert.Contains("chưa đồng bộ", Assert.IsType<string>(controller.TempData["ErrorMessage"]), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AddKeyResult_WhenWorkflowFailsOnce_RetriesAndSyncsWorkItem()
+    {
+        await using var context = CreateContext();
+        var (okr, project) = await SeedOkrWithLinkedProjectAsync(context);
+        var workflow = new FailOnceWorkflowService(context);
+        var controller = CreateController(context, workflow);
+
+        await controller.AddKeyResult(new OKRKeyResult
+        {
+            OKRId = okr.Id,
+            KeyResultName = "Retry sync KR",
+            TargetValue = 5,
+            Unit = "sp"
+        });
+
+        var kr = Assert.Single(await context.OKRKeyResults.Where(k => k.OKRId == okr.Id).ToListAsync());
+        Assert.Equal(1, await context.WorkItems.CountAsync(w => w.OKRKeyResultId == kr.Id && w.IsActive == true && w.WorkProjectId == project.Id));
+        Assert.True(workflow.Attempts >= 2);
+        Assert.Contains("thành công", Assert.IsType<string>(controller.TempData["SuccessMessage"]), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task AddKeyResult_WhenLinkedViaLinkedOKRId_DoesNotDuplicateWorkItem()
     {
         await using var context = CreateContext();
@@ -300,14 +343,14 @@ public sealed class OKRsControllerKeyResultTests
         return (okr, project);
     }
 
-    private static OKRsController CreateController(MiniERPDbContext context)
+    private static OKRsController CreateController(MiniERPDbContext context, IOKRWorkflowService? workflow = null)
     {
         var httpContext = new DefaultHttpContext
         {
             User = AdminPrincipal()
         };
 
-        return new OKRsController(context, new NoopGeminiService(), new OKRWorkflowService(context))
+        return new OKRsController(context, new NoopGeminiService(), workflow ?? new OKRWorkflowService(context))
         {
             ControllerContext = new ControllerContext
             {
@@ -315,6 +358,37 @@ public sealed class OKRsControllerKeyResultTests
             },
             TempData = new TempDataDictionary(httpContext, new TestTempDataProvider())
         };
+    }
+
+    private sealed class ThrowingWorkflowService : IOKRWorkflowService
+    {
+        public Task<WorkProject?> AutoCreateProjectFromOKRAsync(int okrId, int? createdByEmployeeId, int? departmentId) =>
+            Task.FromResult<WorkProject?>(null);
+
+        public Task<bool> AutoCreateTaskFromKeyResultAsync(int okrId, OKRKeyResult keyResult) =>
+            throw new InvalidOperationException("Simulated workflow failure");
+    }
+
+    private sealed class FailOnceWorkflowService : IOKRWorkflowService
+    {
+        private readonly OKRWorkflowService _inner;
+        public int Attempts { get; private set; }
+
+        public FailOnceWorkflowService(MiniERPDbContext context) => _inner = new OKRWorkflowService(context);
+
+        public Task<WorkProject?> AutoCreateProjectFromOKRAsync(int okrId, int? createdByEmployeeId, int? departmentId) =>
+            _inner.AutoCreateProjectFromOKRAsync(okrId, createdByEmployeeId, departmentId);
+
+        public async Task<bool> AutoCreateTaskFromKeyResultAsync(int okrId, OKRKeyResult keyResult)
+        {
+            Attempts++;
+            if (Attempts == 1)
+            {
+                throw new InvalidOperationException("First attempt fails");
+            }
+
+            return await _inner.AutoCreateTaskFromKeyResultAsync(okrId, keyResult);
+        }
     }
 
     private static MiniERPDbContext CreateContext()

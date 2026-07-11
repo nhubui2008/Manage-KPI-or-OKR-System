@@ -18,15 +18,15 @@
     };
 }
 <!-- Modal AI Suggest Key Results -->
-<div class="modal fade" id="aiSuggestKrModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="aiSuggestKrModal" tabindex="-1" aria-labelledby="aiSuggestKrModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header-soft info">
-                <h5 class="modal-title-custom">
-                    <i class="bi bi-robot text-info"></i>
+                <h5 class="modal-title-custom" id="aiSuggestKrModalTitle">
+                    <i class="bi bi-robot text-info" aria-hidden="true"></i>
                     AI Gợi ý Kết quả then chốt
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <div class="modal-body-soft">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -53,7 +53,10 @@
                             <table class="table table-borderless table-hover align-middle">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 40px;"><input class="form-check-input" type="checkbox" id="checkAllAiKr" checked border-0 shadow-sm></th>
+                                        <th style="width: 40px;">
+                                            <input class="form-check-input border-0 shadow-sm" type="checkbox" id="checkAllAiKr" checked
+                                                   aria-label="Chọn tất cả gợi ý Key Result">
+                                        </th>
                                         <th>Mô tả (KeyResultName)</th>
                                         <th style="width: 120px;">Chỉ tiêu</th>
                                         <th style="width: 150px;">Đơn vị</th>
@@ -77,19 +80,19 @@
 </div>
 
 <!-- Modal Add Key Result -->
-<div class="modal fade" id="addKrModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="addKrModal" tabindex="-1" aria-labelledby="addKrModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header-soft warning">
-                <h5 class="modal-title-custom">
-                    <i class="bi bi-key-fill text-warning"></i>
+                <h5 class="modal-title-custom" id="addKrModalTitle">
+                    <i class="bi bi-key-fill text-warning" aria-hidden="true"></i>
                     Thêm Kết quả then chốt (KR)
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <div class="modal-body-soft">
                 <div class="soft-tag-indicator">
-                    <i class="bi bi-bullseye"></i>
+                    <i class="bi bi-bullseye" aria-hidden="true"></i>
                     <span id="krOkrNameDisplay" class="text-truncate">Objective: </span>
                 </div>
 
@@ -97,30 +100,30 @@
                     <input type="hidden" name="OKRId" id="krOkrId" />
 
                     <div class="form-icon-group">
-                        <label>Mô tả Kết quả then chốt</label>
+                        <label for="addKrName">Mô tả Kết quả then chốt</label>
                         <div class="input-wrapper">
-                            <i class="bi bi-pencil-square"></i>
-                            <input type="text" name="KeyResultName" class="form-control" placeholder="VD: Đạt 1000 khách hàng mới trong Q1" required>
+                            <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                            <input id="addKrName" type="text" name="KeyResultName" class="form-control" placeholder="VD: Đạt 1000 khách hàng mới trong Q1" required>
                         </div>
                     </div>
 
                     <div class="row g-3">
                         <div class="col-6">
                             <div class="form-icon-group">
-                                <label>Chỉ tiêu (Target)</label>
+                                <label for="addKrTarget">Chỉ tiêu (Target)</label>
                                 <div class="input-wrapper input-group">
-                                    <i class="bi bi-flag-fill"></i>
-                                    <input type="number" step="0.01" name="TargetValue" class="form-control measurement-value-input" data-measurement-role="target" placeholder="0.00" required>
+                                    <i class="bi bi-flag-fill" aria-hidden="true"></i>
+                                    <input id="addKrTarget" type="number" step="0.01" name="TargetValue" class="form-control measurement-value-input" data-measurement-role="target" placeholder="0.00" required>
                                     <span class="input-group-text measurement-unit-suffix">đơn vị</span>
                                 </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="form-icon-group">
-                                <label>Đơn vị tính</label>
+                                <label for="addKrUnit">Đơn vị tính</label>
                                 <div class="input-wrapper">
-                                    <i class="bi bi-rulers"></i>
-                                    <select name="Unit" class="form-select measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
+                                    <i class="bi bi-rulers" aria-hidden="true"></i>
+                                    <select id="addKrUnit" name="Unit" class="form-select measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
                                         <option value="">-- Chọn đơn vị đo --</option>
                                         @foreach (var unit in measurementUnits)
                                         {
@@ -151,15 +154,15 @@
 </div>
 
 <!-- Modal Allocate OKR -->
-<div class="modal fade" id="allocateOkrModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="allocateOkrModal" tabindex="-1" aria-labelledby="allocateOkrModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header-soft primary">
-                <h5 class="modal-title-custom">
-                    <i class="bi bi-person-plus-fill text-primary"></i>
+                <h5 class="modal-title-custom" id="allocateOkrModalTitle">
+                    <i class="bi bi-person-plus-fill text-primary" aria-hidden="true"></i>
                     Phân bổ OKR
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <div class="modal-body-soft">
                 <form asp-controller="OKRs" asp-action="AllocateTarget" method="post" data-submit-guard>
@@ -239,19 +242,19 @@
 </div>
 
 <!-- Modal Update KR Progress -->
-<div class="modal fade" id="updateKrProgressModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="updateKrProgressModal" tabindex="-1" aria-labelledby="updateKrProgressModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header-soft primary">
-                <h5 class="modal-title-custom">
-                    <i class="bi bi-graph-up-arrow text-primary"></i>
+                <h5 class="modal-title-custom" id="updateKrProgressModalTitle">
+                    <i class="bi bi-graph-up-arrow text-primary" aria-hidden="true"></i>
                     Cập nhật tiến độ KR
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <div class="modal-body-soft">
                 <div class="soft-tag-indicator">
-                    <i class="bi bi-info-circle"></i>
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
                     <span id="updateKrNameDisplay" class="text-truncate">KR: </span>
                 </div>
 
@@ -259,9 +262,9 @@
                     <input type="hidden" name="krId" id="updateKrId" />
 
                     <div class="form-icon-group">
-                        <label>Thực tế hiện tại</label>
+                        <label for="updateKrCurrentValue">Thực tế hiện tại</label>
                         <div class="input-wrapper">
-                            <i class="bi bi-lightning-charge-fill"></i>
+                            <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
                             <input type="number" step="0.01" min="0" name="currentValue" id="updateKrCurrentValue" class="form-control measurement-value-input" data-measurement-role="current" data-measurement-suffix-target="updateKrUnitDisplay" required>
                             <span class="position-absolute end-0 top-50 translate-middle-y pe-4 fw-bold text-muted" id="updateKrUnitDisplay"></span>
                         </div>
@@ -278,30 +281,30 @@
 </div>
 
 <!-- Modal Edit Key Result -->
-<div class="modal fade" id="editKrModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="editKrModal" tabindex="-1" aria-labelledby="editKrModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-2"></i>Cập nhật Kết quả then chốt (KR)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title fw-bold text-dark" id="editKrModalTitle"><i class="bi bi-pencil-square text-primary me-2" aria-hidden="true"></i>Cập nhật Kết quả then chốt (KR)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <div class="modal-body p-4">
                 <form asp-controller="OKRs" asp-action="EditKeyResult" method="post" data-measurement-scope data-submit-guard>
                     <input type="hidden" name="Id" id="editKrId" />
                     <div class="mb-3">
-                        <label class="form-label">Mô tả Key Result <span class="text-danger">*</span></label>
+                        <label class="form-label" for="editKrName">Mô tả Key Result <span class="text-danger">*</span></label>
                         <input type="text" name="KeyResultName" id="editKrName" class="form-control" required>
                     </div>
                     <div class="row">
                         <div class="col-6 mb-3">
-                            <label class="form-label">Hiện tại <span class="text-danger">*</span></label>
+                            <label class="form-label" for="editKrCurrent">Hiện tại <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input type="number" step="0.01" name="CurrentValue" id="editKrCurrent" class="form-control measurement-value-input" data-measurement-role="current" required>
                                 <span class="input-group-text measurement-unit-suffix">đơn vị</span>
                             </div>
                         </div>
                         <div class="col-6 mb-3">
-                            <label class="form-label">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
+                            <label class="form-label" for="editKrTarget">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input type="number" step="0.01" name="TargetValue" id="editKrTarget" class="form-control measurement-value-input" data-measurement-role="target" required>
                                 <span class="input-group-text measurement-unit-suffix">đơn vị</span>
@@ -309,7 +312,7 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Đơn vị đo lường <span class="text-danger">*</span></label>
+                        <label class="form-label" for="editKrUnit">Đơn vị đo lường <span class="text-danger">*</span></label>
                         <select name="Unit" id="editKrUnit" class="form-select measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
                             <option value="">-- Chọn đơn vị đo --</option>
                             @foreach (var unit in measurementUnits)
@@ -333,5 +336,13 @@
         </div>
     </div>
 </div>
+
+@* Shared unit suggestions for AI KR inputs (avoids missing datalist / console warnings). *@
+<datalist id="unitList">
+@foreach (var unit in measurementUnits)
+{
+    <option value="@unit.Value"></option>
+}
+</datalist>
 
 @await Html.PartialAsync("_AITaskDecomposeModal")

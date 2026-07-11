@@ -154,6 +154,71 @@ public sealed class OKRsControllerFilterSortTests
     }
 
     [Fact]
+    public async Task Index_SortCycle_NearestCycleEndFirst_NotAlphabetical()
+    {
+        await using var context = CreateContext();
+        // Alphabetical would put Q4 before Q1 of next year if only string sort on same year; use clear nearness.
+        var far = Okr("Far Q4", cycle: "Q4-2026", createdAt: DateTime.Now.AddDays(-3));
+        var near = Okr("Near Q1", cycle: "Q1-2026", createdAt: DateTime.Now.AddDays(-2));
+        var mid = Okr("Mid Q2", cycle: "Q2-2026", createdAt: DateTime.Now.AddDays(-1));
+        context.OKRs.AddRange(far, near, mid);
+        await context.SaveChangesAsync();
+
+        var model = await IndexAsync(context, sortBy: "cycle");
+        Assert.Equal(new[] { "Near Q1", "Mid Q2", "Far Q4" }, model.Items.Select(i => i.ObjectiveName).ToArray());
+        Assert.Equal(new DateTime(2026, 3, 31), OKRsController.ResolveCycleEndDate("Q1-2026"));
+    }
+
+    [Fact]
+    public async Task Index_SortRecent_UsesUpdatedAtNotOnlyCreatedAt()
+    {
+        await using var context = CreateContext();
+        var olderCreatedButUpdated = Okr("Updated recently", createdAt: DateTime.Now.AddDays(-10));
+        olderCreatedButUpdated.UpdatedAt = DateTime.Now;
+        var newerCreated = Okr("Created recently", createdAt: DateTime.Now.AddDays(-1));
+        newerCreated.UpdatedAt = DateTime.Now.AddDays(-5);
+        context.OKRs.AddRange(olderCreatedButUpdated, newerCreated);
+        await context.SaveChangesAsync();
+
+        var model = await IndexAsync(context, sortBy: "recent");
+        Assert.Equal("Updated recently", model.Items.First().ObjectiveName);
+    }
+
+    [Fact]
+    public async Task Index_LoadsKeyResultDetailsOnlyForCurrentPage()
+    {
+        await using var context = CreateContext();
+        for (var i = 0; i < 12; i++)
+        {
+            var okr = Okr($"OKR page load {i:00}", createdAt: DateTime.Now.AddMinutes(-i));
+            context.OKRs.Add(okr);
+            await context.SaveChangesAsync();
+            context.OKRKeyResults.Add(new OKRKeyResult
+            {
+                OKRId = okr.Id,
+                KeyResultName = $"KR-{i}",
+                TargetValue = 100,
+                CurrentValue = i,
+                Unit = "%"
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var page1 = await IndexAsync(context, sortBy: "recent", pageNumber: 1);
+        Assert.Equal(10, page1.Items.Count);
+        Assert.All(page1.Items, item =>
+        {
+            Assert.Equal(1, item.KeyResultCount);
+            Assert.Single(item.KeyResults);
+            Assert.False(string.IsNullOrWhiteSpace(item.KeyResults[0].KeyResultName));
+        });
+
+        var page2 = await IndexAsync(context, sortBy: "recent", pageNumber: 2);
+        Assert.Equal(2, page2.Items.Count);
+        Assert.All(page2.Items, item => Assert.Single(item.KeyResults));
+    }
+
+    [Fact]
     public async Task Index_ClearFilterState_WhenNoFilters_AndEmptyFilteredState()
     {
         await using var context = CreateContext();

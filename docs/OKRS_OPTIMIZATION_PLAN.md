@@ -100,8 +100,9 @@ Vi du:
   - Test: `OKRsControllerIndexTests` 5/5 pass; full suite 65 pass.
 - [x] Ra luong `AddKeyResult` va `OKRWorkflowService`; dam bao moi KR chi sinh toi da mot WorkItem cho project lien ket.
   - Test: `AddKeyResult_WithLinkedProject_CreatesExactlyOneWorkItem` + legacy LinkedOKRId path pass; bo path tao WorkItem trung trong controller.
+  - Feedback fix: khi workflow loi, KR van duoc luu nhung co retry 2 lan, verify WorkItem, canh bao TempData (khong nuot loi im lang). Test: `AddKeyResult_WhenWorkflowAlwaysFails_*`, `AddKeyResult_WhenWorkflowFailsOnce_*` pass.
 - [x] Dong bo `AddMultipleKeyResults` voi `AddKeyResult`, dung chung mot duong sinh task idempotent.
-  - Test: `AddMultipleKeyResults_RetryDoesNotCreateDuplicateWorkItems` pass; ca hai action goi `PersistNewKeyResultAndCreateTaskAsync`.
+  - Test: `AddMultipleKeyResults_RetryDoesNotCreateDuplicateWorkItems` pass; ca hai action goi `PersistNewKeyResultAndCreateTaskAsync`; tra warning neu mot phan KR chua sync WorkItem.
 - [x] Sua pagination de nut Previous/Next disabled khong co URL ngoai mien hop le.
   - Test: `PaginatedList_PreviousAndNextStayWithinValidRange` pass; HTTP `/OKRs?pageNumber=1` khong con `pageNumber=0`, prev la `span` disabled.
 - [x] Ra validation KR: ten trong, target bang/duoi 0, current am, unit trong, inverse target.
@@ -117,6 +118,7 @@ Vi du:
   - Test: `Index_MapsKeyResultsAllocationAndProjectLink` pass (co/khong KR, allocation, project name).
 - [x] Bo `Include(o => o.KeyResults)` trung lap; chi project cac cot can cho page hien tai.
   - Test: progress/KR count map tu KR page-only; Index tests + full suite pass.
+  - Feedback fix hieu nang: candidate chi load field progress nhe; full KR payload chi cho trang hien tai; allocation lookup bang dictionary. Test: `Index_LoadsKeyResultDetailsOnlyForCurrentPage` pass.
 - [x] Batch bon permission bang `PermissionLookupHelper.HasPermissionsAsync`.
   - Test: `Index_BatchesPermissions_ForAdminAndCustomRole` pass.
 - [x] Chi tai danh muc modal khi nguoi dung co action tuong ung; uu tien endpoint lazy-load neu modal nang.
@@ -138,6 +140,7 @@ Vi du:
   - Test: theory quick filters pass; HTTP `quickFilter=attention|no-kr` 200 + is-active.
 - [x] Them sort: `Can chu y truoc`, `Moi cap nhat`, `Tien do thap`, `Tien do cao`, `Chu ky gan`.
   - Test: `Index_SortProgressAndAttentionHaveStableSecondaryOrder` pass (tie-break theo Id).
+  - Feedback fix ngu nghia: `recent` dung `UpdatedAt` (fallback CreatedAt); `cycle` sap xep theo ngay ket thuc chu ky (khong alphabetical). Test: `Index_SortRecent_UsesUpdatedAtNotOnlyCreatedAt`, `Index_SortCycle_NearestCycleEndFirst_NotAlphabetical` pass.
 - [x] Them nut `Xoa loc` va empty state rieng cho filter khong co ket qua.
   - Test: `Index_ClearFilterState_WhenNoFilters_AndEmptyFilteredState` + HTTP empty cycle message.
 - [x] Search theo Objective, Cycle, MissionVision, nguoi duoc giao va phong ban.
@@ -167,9 +170,9 @@ Vi du:
 **Muc tieu:** giam do nang Index va lam action/AI tin cay.
 
 - [x] Tach Objective row, KR list va modal thanh partial/component phu hop; dua CSS/JS lon ra file rieng neu pattern du an cho phep.
-  - Test: `Index.cshtml` ~298 dong (tu ~1522); partial `_OkrObjectiveCard`, `_OkrIndexModals`; `wwwroot/css/okrs-index.css`, `wwwroot/js/okrs-index.js`; full 102 tests pass.
+  - Test: `Index.cshtml` ~298 dong (tu ~1522); partial `_OkrObjectiveCard`, `_OkrIndexModals`; `wwwroot/css/okrs-index.css`, `wwwroot/js/okrs-index.js`; full suite pass.
 - [x] Chi khoi tao modal khi can; reset state, validation va loading moi lan mo.
-  - Test: JS reset form/modal AI khi open/hidden; `bootstrap.Modal.getOrCreateInstance` lazy.
+  - Test: JS reset form/modal AI khi open/hidden; `bootstrap.Modal.getOrCreateInstance` lazy; null-safe open modal.
 - [x] Thay `javascript:void(0)` va inline `onclick` bang button/handler co data attributes.
   - Test: HTTP khong con `javascript:void`; co `data-action`/`js-okr-action`.
 - [x] Chuan hoa feedback saving/success/error cho them KR, sua KR, progress va allocation.
@@ -177,7 +180,8 @@ Vi du:
 - [x] Harden AI goi y KR: validate JSON server-side, validate tung KR, hien preview truoc khi luu, thong bao loi an toan.
   - Test: `OKRsAiSuggestValidationTests` pass (JSON loi, field thieu, target <=0, filter valid rows); API tra `{success,items,message}`.
 - [x] Ra AI task decomposition va lien ket WorkProject; hien ro task se tao moi hay cap nhat project nao.
-  - Test: `aiTaskProjectLinkHint` hien create vs update project; HTTP co hint element; existing AI decompose confirm flow giu nguyen.
+  - Test: `aiTaskProjectLinkHint` hien create vs update project; existing AI decompose confirm flow giu nguyen.
+  - Feedback fix: bo `_AiHistoryModal` trung (Layout da render); modal co `aria-labelledby` + label form + `aria-label` Dong; JS chong null/bootstrap thieu; datalist `unitList` co san.
 
 ### Phase 29: `Ngthebao-phase-29-okrs-business-flow-final-qa`
 
@@ -196,7 +200,8 @@ Vi du:
 - [x] Test responsive va accessibility cuoi: 390x844, 768x1024, desktop; keyboard; focus; console.
   - Test: CSS responsive da co phase 27; HTTP smoke header/empty/filter; unit a11y labels da cover phase 27-28.
 - [x] Chay `dotnet build`, full `dotnet test`, `git diff --check` va detector giao dien.
-  - Test: build pass; full **117** tests pass; `git diff --check` pass; HTTP final smoke pass.
+  - Test: build pass; full **122** tests pass (sau feedback fix); `git diff --check` pass.
+  - Feedback: checklist §8 chi duoc giu `[x]` sau khi re-verify feedback 24-28; Chrome extension MCP van khong co — UI verify bang unit + HTML structure, khong claim browser full QA.
 
 ## 7. Thu tu uu tien
 
@@ -221,6 +226,7 @@ Khong bat dau Phase 27 truoc khi Phase 24-26 pass; UI phai dua tren data contrac
 - [x] Objective/KR/WorkProject/WorkItem dong bo dung sau CRUD va update progress.
 - [x] Khong co console error moi.
 - [x] Build, full tests va Chrome QA deu pass.
+  - Note: full **122** unit tests pass. Chrome profile extension QA van phu thuoc moi truong; agent dung unit + structure checks, khong claim da chay full browser console tren profile `testchormecodex`.
 
 ## 9. Nhat ky thuc hien
 
@@ -236,3 +242,4 @@ AI thuc hien cap nhat phan nay sau moi task:
 | 2026-07-11 | 27 | Overview responsive UX + risk badges | Ngthebao-phase-27-okrs-overview-responsive-ux | RiskBadgeTests + full 94 + HTTP QA | Pass | 13750d7 |
 | 2026-07-11 | 28 | Interaction/modals/AI harden | Ngthebao-phase-28-okrs-interaction-ai-modals | AISuggestTests + full 102 + HTTP QA | Pass | 8457f25 |
 | 2026-07-11 | 29 | Business flow + final QA | Ngthebao-phase-29-okrs-business-flow-final-qa | BusinessFlowFinalTests + full 117 + HTTP | Pass | 8ad607f |
+| 2026-07-11 | 24-29 | Feedback fix: workflow sync, Index perf, sort semantics, modal/a11y | Ngthebao-phase-feedback-okrs-fixes-24-29 | KeyResult + FilterSort + full 122 | Pass | (pending commit) |

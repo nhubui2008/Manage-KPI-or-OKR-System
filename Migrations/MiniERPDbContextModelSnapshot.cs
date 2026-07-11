@@ -1056,6 +1056,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("StatusId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");

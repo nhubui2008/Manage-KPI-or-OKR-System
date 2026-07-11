@@ -108,7 +108,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             query = ApplyOkrStructuredFilters(query, cycle, statusId, okrTypeId, scope, currentEmployeeId, currentUserDepartmentIds);
             query = ApplyOkrQuickFilter(query, quickFilter, currentEmployeeId, currentUserDepartmentIds);
 
-            // Load candidates for progress-aware summary/sort/paging.
+            // Lightweight candidates for progress-aware summary/sort/paging (no full KR payloads yet).
             var candidates = await query
                 .Select(o => new
                 {
@@ -119,28 +119,44 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     o.StatusId,
                     o.CreatedById,
                     o.CreatedAt,
+                    o.UpdatedAt,
                     o.LinkedWorkProjectId
                 })
                 .ToListAsync();
 
             var candidateIds = candidates.Select(c => c.Id).ToList();
-            var keyResultsAll = candidateIds.Count == 0
-                ? new List<OKRKeyResult>()
-                : await _context.OKRKeyResults
+
+            // Only progress fields for all candidates — full KR rows load after paging (Phase 25 perf).
+            var krProgressRows = candidateIds.Count == 0
+                ? new List<(int OkrId, decimal? CurrentValue, decimal? TargetValue, bool IsInverse)>()
+                : (await _context.OKRKeyResults
                     .AsNoTracking()
                     .Where(k => k.OKRId.HasValue && candidateIds.Contains(k.OKRId.Value))
-                    .ToListAsync();
-            var keyResultsByOkr = keyResultsAll
-                .Where(k => k.OKRId.HasValue)
-                .GroupBy(k => k.OKRId!.Value)
-                .ToDictionary(g => g.Key, g => g.ToList());
+                    .Select(k => new { OkrId = k.OKRId!.Value, k.CurrentValue, k.TargetValue, k.IsInverse })
+                    .ToListAsync())
+                .Select(k => (k.OkrId, k.CurrentValue, k.TargetValue, k.IsInverse))
+                .ToList();
 
-            List<(int OkrId, int EmployeeId, string? FullName)> employeeAllocationRows;
-            List<(int OkrId, int DepartmentId, string? DepartmentName)> departmentAllocationRows;
+            var progressByOkr = krProgressRows
+                .GroupBy(k => k.OkrId)
+                .ToDictionary(
+                    g => g.Key,
+                    g =>
+                    {
+                        var progresses = g
+                            .Select(r => ProgressHelper.CalculateProgress(r.CurrentValue ?? 0, r.TargetValue ?? 0, r.IsInverse))
+                            .ToList();
+                        return (
+                            Count: progresses.Count,
+                            Average: progresses.Count == 0 ? 0m : Math.Round(progresses.Average(), 2));
+                    });
+
+            Dictionary<int, List<(int EmployeeId, string? FullName)>> empAllocByOkr;
+            Dictionary<int, List<(int DepartmentId, string? DepartmentName)>> deptAllocByOkr;
             if (candidateIds.Count == 0)
             {
-                employeeAllocationRows = new List<(int, int, string?)>();
-                departmentAllocationRows = new List<(int, int, string?)>();
+                empAllocByOkr = new Dictionary<int, List<(int, string?)>>();
+                deptAllocByOkr = new Dictionary<int, List<(int, string?)>>();
             }
             else
             {
@@ -151,9 +167,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     where candidateIds.Contains(a.OKRId)
                     select new { a.OKRId, a.EmployeeId, FullName = e != null ? e.FullName : null }
                 ).ToListAsync();
-                employeeAllocationRows = empRows
-                    .Select(a => ((int OkrId, int EmployeeId, string? FullName))(a.OKRId, a.EmployeeId, a.FullName))
-                    .ToList();
+                empAllocByOkr = empRows
+                    .GroupBy(a => a.OKRId)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(a => (a.EmployeeId, a.FullName)).ToList());
 
                 var deptRows = await (
                     from a in _context.OKR_Department_Allocations.AsNoTracking()
@@ -162,9 +180,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     where candidateIds.Contains(a.OKRId)
                     select new { a.OKRId, a.DepartmentId, DepartmentName = d != null ? d.DepartmentName : null }
                 ).ToListAsync();
-                departmentAllocationRows = deptRows
-                    .Select(a => ((int OkrId, int DepartmentId, string? DepartmentName))(a.OKRId, a.DepartmentId, a.DepartmentName))
-                    .ToList();
+                deptAllocByOkr = deptRows
+                    .GroupBy(a => a.OKRId)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(a => (a.DepartmentId, a.DepartmentName)).ToList());
             }
 
             var projectIds = candidates
@@ -190,11 +210,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var mappedCandidates = candidates.Select(row =>
             {
-                var krs = keyResultsByOkr.TryGetValue(row.Id, out var list) ? list : new List<OKRKeyResult>();
-                var krItems = krs.Select(MapKeyResultItem).ToList();
-                var totalProgress = krItems.Count == 0 ? 0m : Math.Round(krItems.Average(k => k.Progress), 2);
-                var empAllocs = employeeAllocationRows.Where(a => a.OkrId == row.Id).ToList();
-                var deptAllocs = departmentAllocationRows.Where(a => a.OkrId == row.Id).ToList();
+                var progressInfo = progressByOkr.TryGetValue(row.Id, out var p) ? p : (Count: 0, Average: 0m);
+                var empAllocs = empAllocByOkr.TryGetValue(row.Id, out var ea) ? ea : new List<(int EmployeeId, string? FullName)>();
+                var deptAllocs = deptAllocByOkr.TryGetValue(row.Id, out var da) ? da : new List<(int DepartmentId, string? DepartmentName)>();
                 var isOwner = currentEmployeeId.HasValue && row.CreatedById == currentEmployeeId.Value;
                 var isAllocatedToUser = currentEmployeeId.HasValue &&
                                         empAllocs.Any(a => a.EmployeeId == currentEmployeeId.Value);
@@ -209,14 +227,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     StatusId = row.StatusId,
                     CreatedById = row.CreatedById,
                     CreatedAt = row.CreatedAt,
+                    UpdatedAt = row.UpdatedAt,
                     LinkedWorkProjectId = row.LinkedWorkProjectId,
                     LinkedWorkProjectName = row.LinkedWorkProjectId.HasValue &&
                                            projectNames.TryGetValue(row.LinkedWorkProjectId.Value, out var projectName)
                         ? projectName
                         : null,
-                    TotalProgress = totalProgress,
-                    KeyResultCount = krItems.Count,
-                    KeyResults = krItems,
+                    TotalProgress = progressInfo.Average,
+                    KeyResultCount = progressInfo.Count,
+                    KeyResults = Array.Empty<OkrKeyResultItemViewModel>(),
                     IsOwnedByCurrentUser = isOwner,
                     IsAllocatedToCurrentUser = isAllocatedToUser,
                     IsAllocatedToCurrentDepartment = isAllocatedToDept,
@@ -257,10 +276,54 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 pageIndex = totalPages;
             }
 
-            var pageItems = mappedCandidates
+            var pageSlice = mappedCandidates
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
+
+            // Full KR payloads only for the current page.
+            var pageIds = pageSlice.Select(i => i.Id).ToList();
+            var pageKeyResults = pageIds.Count == 0
+                ? new List<OKRKeyResult>()
+                : await _context.OKRKeyResults
+                    .AsNoTracking()
+                    .Where(k => k.OKRId.HasValue && pageIds.Contains(k.OKRId.Value))
+                    .ToListAsync();
+            var pageKrByOkr = pageKeyResults
+                .Where(k => k.OKRId.HasValue)
+                .GroupBy(k => k.OKRId!.Value)
+                .ToDictionary(g => g.Key, g => g.Select(MapKeyResultItem).ToList());
+
+            var pageItems = pageSlice.Select(item =>
+            {
+                var krs = pageKrByOkr.TryGetValue(item.Id, out var list)
+                    ? (IReadOnlyList<OkrKeyResultItemViewModel>)list
+                    : Array.Empty<OkrKeyResultItemViewModel>();
+                return new OkrIndexItemViewModel
+                {
+                    Id = item.Id,
+                    ObjectiveName = item.ObjectiveName,
+                    Cycle = item.Cycle,
+                    OkrTypeId = item.OkrTypeId,
+                    StatusId = item.StatusId,
+                    CreatedById = item.CreatedById,
+                    CreatedAt = item.CreatedAt,
+                    UpdatedAt = item.UpdatedAt,
+                    LinkedWorkProjectId = item.LinkedWorkProjectId,
+                    LinkedWorkProjectName = item.LinkedWorkProjectName,
+                    TotalProgress = item.TotalProgress,
+                    KeyResultCount = item.KeyResultCount,
+                    KeyResults = krs,
+                    IsOwnedByCurrentUser = item.IsOwnedByCurrentUser,
+                    IsAllocatedToCurrentUser = item.IsAllocatedToCurrentUser,
+                    IsAllocatedToCurrentDepartment = item.IsAllocatedToCurrentDepartment,
+                    EmployeeAllocationCount = item.EmployeeAllocationCount,
+                    DepartmentAllocationCount = item.DepartmentAllocationCount,
+                    PrimaryAssigneeName = item.PrimaryAssigneeName,
+                    PrimaryDepartmentName = item.PrimaryDepartmentName,
+                    CanUpdateProgress = item.CanUpdateProgress
+                };
+            }).ToList();
 
             var loadModalCatalogs = canCreateOkr;
             IReadOnlyList<Department> departments = Array.Empty<Department>();
@@ -361,6 +424,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
 
                 model.CreatedAt = DateTime.Now;
+                model.UpdatedAt = model.CreatedAt;
                 model.IsActive = true;
                 _context.OKRs.Add(model);
                 await _context.SaveChangesAsync();
@@ -538,6 +602,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _context.OKR_Employee_Allocations.RemoveRange(existingEmployees);
             }
 
+            existingOkr.UpdatedAt = DateTime.Now;
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã cập nhật OKR thành công!";
             return RedirectToAction(nameof(Index));
@@ -567,7 +632,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var saved = await PersistNewKeyResultAndCreateTaskAsync(kr);
+            var (saved, workItemSynced) = await PersistNewKeyResultAndCreateTaskAsync(kr);
             if (!saved)
             {
                 TempData["ErrorMessage"] = "Không thể thêm Key Result.";
@@ -575,7 +640,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
-            TempData["SuccessMessage"] = $"Đã thêm KR thành công! Tiến độ mục tiêu: {okr?.TotalProgress}%";
+            if (!workItemSynced)
+            {
+                TempData["ErrorMessage"] =
+                    "Đã lưu Key Result nhưng chưa đồng bộ được task trên dự án vận hành. Vui lòng thử AI chia task hoặc mở dự án để kiểm tra.";
+            }
+            else
+            {
+                TempData["SuccessMessage"] = $"Đã thêm KR thành công! Tiến độ mục tiêu: {okr?.TotalProgress}%";
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -681,23 +755,39 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var savedCount = 0;
+            var unsyncedCount = 0;
             foreach (var kr in keyResults)
             {
                 kr.OKRId = okrId;
-                if (await PersistNewKeyResultAndCreateTaskAsync(kr))
+                var (saved, workItemSynced) = await PersistNewKeyResultAndCreateTaskAsync(kr);
+                if (saved)
                 {
                     savedCount++;
+                    if (!workItemSynced)
+                    {
+                        unsyncedCount++;
+                    }
                 }
             }
 
             if (savedCount == 0)
             {
-                return BadRequest("Không thể thêm Key Result.");
+                return BadRequest(new { success = false, message = "Không thể thêm Key Result." });
             }
 
             var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == okrId);
+            if (unsyncedCount > 0)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    count = savedCount,
+                    warning =
+                        $"Đã lưu {savedCount} KR nhưng {unsyncedCount} KR chưa đồng bộ task trên dự án vận hành."
+                });
+            }
+
             TempData["SuccessMessage"] = $"Đã thêm {savedCount} KR thành công! Tiến độ mục tiêu mới cập nhật: {okr?.TotalProgress}%";
-            
             return Ok(new { success = true, count = savedCount });
         }
 
@@ -731,6 +821,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             _context.Update(kr);
             await _context.SaveChangesAsync();
+            if (kr.OKRId.HasValue)
+            {
+                await TouchOkrUpdatedAtAsync(kr.OKRId.Value);
+            }
+
             TempData["SuccessMessage"] = "Đã cập nhật tiến độ Key Result và đánh giá thành công!";
 
             return RedirectToAction(nameof(Index));
@@ -769,6 +864,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 kr.ResultStatus = ProgressHelper.GetResultStatus(progress);
 
                 await _context.SaveChangesAsync();
+                if (kr.OKRId.HasValue)
+                {
+                    await TouchOkrUpdatedAtAsync(kr.OKRId.Value);
+                }
 
                 var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
                 TempData["SuccessMessage"] = $"Đã cập nhật KR thành công! Tiến độ mục tiêu hiện tại: {okr?.TotalProgress}%";
@@ -829,6 +928,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 TempData["SuccessMessage"] = "Đã phân bổ chỉ tiêu cho nhân viên thành công!";
             }
 
+            await TouchOkrUpdatedAtAsync(okrId);
             return RedirectToAction(nameof(Index));
         }
 
@@ -874,6 +974,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 DepartmentId = departmentId
             });
             await _context.SaveChangesAsync();
+            await TouchOkrUpdatedAtAsync(okrId);
 
             TempData["SuccessMessage"] = $"Đã phân bổ OKR cho phòng ban {department.DepartmentName} thành công!";
             return RedirectToAction(nameof(Index));
@@ -1756,8 +1857,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             return sortBy switch
             {
+                // "Mới cập nhật": last activity (UpdatedAt), not just CreatedAt.
                 "recent" => items
-                    .OrderByDescending(i => i.CreatedAt ?? DateTime.MinValue)
+                    .OrderByDescending(i => i.LastActivityAt)
                     .ThenByDescending(i => i.Id)
                     .ToList(),
                 "progress-low" => items
@@ -1768,10 +1870,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .OrderByDescending(i => i.TotalProgress)
                     .ThenBy(i => i.Id)
                     .ToList(),
+                // "Chu kỳ gần": soonest cycle end date first (not alphabetical).
                 "cycle" => items
-                    .OrderBy(i => i.Cycle ?? "\uFFFF")
+                    .OrderBy(i => ResolveCycleEndDate(i.Cycle) ?? DateTime.MaxValue)
                     .ThenBy(i => i.Id)
                     .ToList(),
+                // Attention first: no-KR / low progress, then lowest progress, stable Id.
                 _ => items
                     .OrderByDescending(i => i.NeedsAttention)
                     .ThenBy(i => i.KeyResultCount == 0 ? 0 : 1)
@@ -1779,6 +1883,38 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .ThenBy(i => i.Id)
                     .ToList()
             };
+        }
+
+        /// <summary>End-of-cycle date used for "Chu kỳ gần" sort. Shared semantics with workflow due dates.</summary>
+        public static DateTime? ResolveCycleEndDate(string? cycle)
+        {
+            if (string.IsNullOrWhiteSpace(cycle))
+            {
+                return null;
+            }
+
+            var year = DateTime.Now.Year;
+            var parts = cycle.Split(new[] { '-', ' ', '/' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var part in parts)
+            {
+                if (int.TryParse(part, out var parsedYear) && parsedYear is >= 2020 and <= 2099)
+                {
+                    year = parsedYear;
+                    break;
+                }
+            }
+
+            if (cycle.StartsWith("Q1", StringComparison.OrdinalIgnoreCase)) return new DateTime(year, 3, 31);
+            if (cycle.StartsWith("Q2", StringComparison.OrdinalIgnoreCase)) return new DateTime(year, 6, 30);
+            if (cycle.StartsWith("Q3", StringComparison.OrdinalIgnoreCase)) return new DateTime(year, 9, 30);
+            if (cycle.StartsWith("Q4", StringComparison.OrdinalIgnoreCase)) return new DateTime(year, 12, 31);
+            if (cycle.Contains("Năm", StringComparison.OrdinalIgnoreCase) ||
+                cycle.Contains("Nam", StringComparison.OrdinalIgnoreCase))
+            {
+                return new DateTime(year, 12, 31);
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -1974,13 +2110,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         /// <summary>
-        /// Shared idempotent path: save KR then create at most one WorkItem via workflow service.
+        /// Shared path: save KR, then ensure WorkItem sync with retry. KR is kept even if task sync fails;
+        /// caller receives WorkItemSynced so UI can warn instead of silent desync.
         /// </summary>
-        private async Task<bool> PersistNewKeyResultAndCreateTaskAsync(OKRKeyResult kr)
+        private async Task<(bool Saved, bool WorkItemSynced)> PersistNewKeyResultAndCreateTaskAsync(OKRKeyResult kr)
         {
             if (!kr.OKRId.HasValue || kr.OKRId.Value <= 0)
             {
-                return false;
+                return (false, false);
             }
 
             kr.KeyResultName = kr.KeyResultName!.Trim();
@@ -1989,17 +2126,39 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             _context.OKRKeyResults.Add(kr);
             await _context.SaveChangesAsync();
+            await TouchOkrUpdatedAtAsync(kr.OKRId.Value);
 
-            try
+            var synced = false;
+            for (var attempt = 0; attempt < 2 && !synced; attempt++)
             {
-                await _workflowService.AutoCreateTaskFromKeyResultAsync(kr.OKRId.Value, kr);
-            }
-            catch (Exception)
-            {
-                // Không để lỗi sinh task ảnh hưởng đến việc lưu KR
+                try
+                {
+                    synced = await _workflowService.AutoCreateTaskFromKeyResultAsync(kr.OKRId.Value, kr);
+                    if (!synced)
+                    {
+                        synced = await _context.WorkItems.AnyAsync(t =>
+                            t.OKRKeyResultId == kr.Id && t.IsActive == true);
+                    }
+                }
+                catch
+                {
+                    synced = false;
+                }
             }
 
-            return true;
+            return (true, synced);
+        }
+
+        private async Task TouchOkrUpdatedAtAsync(int okrId)
+        {
+            var okr = await _context.OKRs.FirstOrDefaultAsync(o => o.Id == okrId);
+            if (okr == null)
+            {
+                return;
+            }
+
+            okr.UpdatedAt = DateTime.Now;
+            await _context.SaveChangesAsync();
         }
     }
 }
