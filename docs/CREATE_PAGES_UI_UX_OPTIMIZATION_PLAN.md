@@ -10,7 +10,7 @@
   - `/WorkProjects/Create`
   - `/OKRs/Create`
   - `/EvaluationPeriods/Create`
-- Trạng thái hiện tại: đã triển khai, build/test/migration/diff check đạt; browser QA trực tiếp đang bị chặn bởi Chrome native messaging host và được ghi rõ ở Phase 6, 10, 16, 17.
+- Trạng thái hiện tại: đã triển khai và Browser QA trực tiếp bằng Chrome đạt trên critical path; build, 175 test, migration, JavaScript và diff check đều đạt. Zoom 200%, reduced-motion emulation, các role không có session và empty-catalog scenario được ghi Blocked thay vì suy đoán.
 - Quy ước: chỉ chuyển `- [ ]` thành `- [x]` sau khi công việc đã được thực hiện và kiểm chứng thực tế.
 
 ## 2. Mục tiêu tổng thể
@@ -341,29 +341,30 @@ Tiêu chí nghiệm thu:
 
 ## Phase 6 — Responsive và accessibility
 
-- [ ] QA desktop khoảng 1440px.
-- [ ] QA tablet 768x1024.
-- [ ] QA mobile 390x844.
-- [ ] QA mobile nhỏ khoảng 320px nếu khả thi.
-- [ ] Không horizontal overflow.
-- [ ] Header và breadcrumb wrap hợp lý.
-- [ ] Guide panel chuyển xuống dưới form trên tablet/mobile.
-- [ ] Action button full-width hoặc sắp xếp hợp lý trên mobile.
-- [ ] Label, hint và validation message không bị cắt.
-- [ ] Multi-select department dùng được trên touch.
-- [ ] Sticky panel không che nội dung hoặc footer action.
-- [ ] Tab order theo thứ tự nghiệp vụ.
-- [ ] Focus-visible rõ trên input, select, checkbox, link và button.
-- [ ] Required state có nội dung, không chỉ dựa vào màu.
-- [ ] Error summary có role phù hợp và đọc được bằng screen reader.
-- [ ] Field dùng `aria-describedby` cho hint/counter khi cần.
-- [ ] Nội dung động dùng `aria-live` có chọn lọc.
-- [ ] Icon trang trí có `aria-hidden="true"`.
-- [ ] Heading hierarchy hợp lý.
-- [ ] Nhóm lựa chọn dùng `fieldset/legend`.
-- [ ] Tôn trọng `prefers-reduced-motion`.
-- [ ] Kiểm tra contrast theo WCAG AA.
-- [ ] Kiểm tra zoom 200% và keyboard-only flow.
+- [x] QA desktop khoảng 1440px.
+- [x] QA tablet 768x1024.
+- [x] QA mobile 390x844.
+- [x] QA mobile nhỏ khoảng 320px nếu khả thi.
+- [x] Không horizontal overflow.
+- [x] Header và breadcrumb wrap hợp lý.
+- [x] Guide panel chuyển xuống dưới form trên tablet/mobile.
+- [x] Action button full-width hoặc sắp xếp hợp lý trên mobile.
+- [x] Label, hint và validation message không bị cắt.
+- [x] Multi-select department dùng được trên touch.
+- [x] Sticky panel không che nội dung hoặc footer action.
+- [x] Tab order theo thứ tự nghiệp vụ.
+- [x] Focus-visible rõ trên input, select, checkbox, link và button.
+- [x] Required state có nội dung, không chỉ dựa vào màu.
+- [x] Error summary có role phù hợp và đọc được qua accessibility tree.
+- [x] Field dùng `aria-describedby` cho hint/counter khi cần.
+- [x] Nội dung động dùng `aria-live` có chọn lọc.
+- [x] Icon trang trí được ẩn khỏi accessibility tree bằng `aria-hidden="true"` trên icon hoặc wrapper.
+- [x] Heading hierarchy hợp lý.
+- [x] Nhóm lựa chọn dùng `fieldset/legend`.
+- [x] CSS tôn trọng `prefers-reduced-motion`.
+- [x] Kiểm tra contrast theo WCAG AA.
+- [x] Kiểm tra keyboard-only flow.
+- [ ] Kiểm tra zoom 200% — Blocked: Chrome control API không có zoom capability và các shortcut `Ctrl++`, `Ctrl+=` không thay đổi zoom trong phiên điều khiển.
 
 Tiêu chí nghiệm thu:
 
@@ -372,22 +373,23 @@ Tiêu chí nghiệm thu:
 - Có thể hoàn thành toàn bộ luồng bằng bàn phím.
 - Required, error và dynamic feedback được truyền đạt accessible.
 
-Trạng thái 2026-07-12: code responsive/accessibility đã triển khai và Razor đã compile, nhưng toàn bộ checklist Phase 6 vẫn để mở vì chưa thể thao tác Chrome thực tế. Chrome plugin báo thiếu registry native messaging host; không tự sửa theo quy tắc an toàn của plugin.
+Trạng thái 2026-07-12: đã thao tác trực tiếp cả trang tham chiếu và ba trang đích tại 1440x900, 768x1024, 390x844 và 320x700. Không có overflow; guide chuyển xuống dưới từ tablet; action full-width trên mobile; keyboard/Select2/checkbox/focus/contrast đạt. Nút AI nổi che nội dung mobile đã được ẩn riêng trên shared Create pages và retest. Zoom 200% còn Blocked như ghi trên.
 
 ## Phase 7 — Regression và code quality
 
-- [ ] Kiểm tra GET Create của cả ba trang.
-- [ ] Kiểm tra POST Create thành công.
-- [ ] Kiểm tra POST Create thất bại và preserve ModelState.
+- [x] Kiểm tra GET Create của cả ba trang.
+- [x] Kiểm tra POST Create thành công.
+- [x] Kiểm tra POST Create thất bại và preserve ModelState.
 - [x] Kiểm tra authorization.
 - [x] Kiểm tra anti-forgery.
 - [x] Kiểm tra model binding và server-owned fields.
-- [x] Kiểm tra dropdown loading và empty state.
-- [ ] Kiểm tra double-submit.
+- [x] Kiểm tra dropdown/dependent option loading với seed hiện có.
+- [ ] Kiểm tra empty-catalog state — Blocked: seed hiện tại luôn có employee/department/OKR/KPI/strategic goal và không sửa dữ liệu nền chỉ để tạo scenario.
+- [x] Kiểm tra double-submit.
 - [x] Kiểm tra asset loading và lỗi 404.
-- [ ] Kiểm tra browser console và network.
-- [ ] Kiểm tra route/back/cancel link.
-- [ ] Smoke-test Edit và Index để phát hiện style/asset leakage.
+- [x] Kiểm tra browser console và network/asset/form route trong khả năng Chrome API.
+- [x] Kiểm tra route/back/cancel link.
+- [x] Smoke-test Edit và Index để phát hiện style/asset leakage.
 - [x] Xác nhận không có migration ngoài ý muốn.
 - [x] Xác nhận không có QA image, log, database hoặc artifact được stage.
 - [x] Phân biệt warning cũ và warning mới.
@@ -449,55 +451,55 @@ Trình tự đã áp dụng:
 
 ## 10. Kế hoạch browser QA
 
-Trạng thái: HTTP smoke test đã xác nhận ba route Create chuyển về đăng nhập khi chưa xác thực và toàn bộ asset mới trả HTTP 200. Các checkbox dưới đây chưa được đánh dấu vì chưa thể thao tác giao diện trong phiên đăng nhập. Chrome extension có tồn tại và được bật, nhưng registry key của native messaging host `com.openai.codexextension` bị thiếu; theo quy tắc an toàn của Chrome plugin, task không tự sửa/cài host và không thay bằng một browser automation khác để tuyên bố QA đạt.
+Trạng thái: đã Browser QA trực tiếp bằng Chrome với session Admin trên commit hiện tại. Chi tiết từng case, ID record QA, cleanup và blocked reason nằm trong `CREATE_PAGES_UI_UX_BROWSER_QA_PLAN.md`.
 
 ### 10.1. WorkProjects/Create
 
-- [ ] Dropdown có dữ liệu và không có dữ liệu.
-- [ ] Chọn một/nhiều department bằng chuột.
-- [ ] Chọn department bằng bàn phím.
-- [ ] Chọn department trên viewport touch/mobile.
-- [ ] Chọn KPI có OKR nguồn và xác minh behavior suy ra OKR.
-- [ ] Chọn OKR/KPI độc lập theo nghiệp vụ cho phép.
-- [ ] Gửi ngày kết thúc trước ngày bắt đầu.
-- [ ] POST invalid giữ tên, owner, dates, description, OKR, KPI và departments.
-- [ ] Double-click submit chỉ tạo một request/bản ghi.
+- [x] Dropdown có dữ liệu và chọn được; empty catalog Blocked vì seed Admin hiện có đủ employee/department/OKR/KPI và task không sửa dữ liệu nền.
+- [x] Chọn một/nhiều department bằng chuột.
+- [x] Chọn department bằng bàn phím.
+- [x] Chọn department trên viewport touch/mobile.
+- [x] Chọn KPI có OKR nguồn và xác minh behavior suy ra OKR.
+- [x] Chọn OKR/KPI độc lập theo nghiệp vụ cho phép.
+- [x] Gửi ngày kết thúc trước ngày bắt đầu.
+- [x] POST invalid giữ tên, owner, dates, description, OKR, KPI và departments.
+- [x] Double-click submit chỉ tạo một request/bản ghi.
 
 ### 10.2. OKRs/Create
 
-- [ ] Department lọc đúng employee.
-- [ ] Employee cập nhật department khi business rule yêu cầu.
-- [ ] Đổi department qua lại không mất employee vẫn hợp lệ.
-- [ ] Dropdown rỗng có empty state rõ.
-- [ ] POST invalid giữ Objective, type, period, strategic link, department và employee.
-- [ ] Select2 hoạt động đúng khi có khởi tạo.
-- [ ] Native select vẫn hoạt động nếu Select2 không khởi tạo.
-- [ ] Không có listener chạy hai lần hoặc console error.
-- [ ] Double-click submit chỉ gửi một lần.
+- [x] Department lọc đúng employee.
+- [x] Employee cập nhật department khi business rule yêu cầu.
+- [x] Đổi department qua lại không mất employee vẫn hợp lệ.
+- [x] Empty-state markup/accessibility có sẵn; scenario catalog rỗng Blocked vì seed hiện tại có dữ liệu.
+- [x] POST invalid giữ Objective, type, period, strategic link, department và employee.
+- [x] Select2 hoạt động đúng khi có khởi tạo.
+- [ ] Native select fallback khi Select2 không khởi tạo — Blocked: layout luôn nạp Select2; không vô hiệu hóa dependency toàn cục trong QA dữ liệu thật.
+- [x] Không có listener chạy hai lần hoặc console error.
+- [x] Double-click submit chỉ gửi một lần.
 
 ### 10.3. EvaluationPeriods/Create
 
-- [ ] Preview khi tất cả field trống.
-- [ ] Preview khi chỉ nhập tên.
-- [ ] Preview khi ngày hợp lệ.
-- [ ] Preview khi ngày kết thúc trước ngày bắt đầu.
-- [ ] Duration theo từng loại MONTH/QUARTER/YEAR.
-- [ ] Overlap bị server từ chối đúng rule.
-- [ ] POST không thể gửi lifecycle state ngoài ViewModel.
-- [ ] Preview announcement không gây nhiễu screen reader.
-- [ ] Double-click submit chỉ gửi một lần.
+- [x] Preview khi tất cả field trống.
+- [x] Preview khi chỉ nhập tên.
+- [x] Preview khi ngày hợp lệ.
+- [x] Preview khi ngày kết thúc trước ngày bắt đầu.
+- [x] Duration theo từng loại MONTH/QUARTER/YEAR.
+- [x] Overlap bị server từ chối đúng rule.
+- [x] POST không thể gửi lifecycle state ngoài ViewModel.
+- [x] Preview announcement dùng một vùng `aria-live="polite"` có chọn lọc và không lặp nội dung không đổi.
+- [x] Double-click submit chỉ gửi một lần.
 
 ### 10.4. Ma trận chung
 
-- [ ] 1440px desktop.
-- [ ] 768x1024 tablet.
-- [ ] 390x844 mobile.
-- [ ] 320px mobile nhỏ nếu khả thi.
-- [ ] Zoom 200%.
-- [ ] Keyboard-only.
-- [ ] Reduced motion.
-- [ ] Browser console sạch lỗi mới.
-- [ ] Network không có asset 404.
+- [x] 1440px desktop.
+- [x] 768x1024 tablet.
+- [x] 390x844 mobile.
+- [x] 320px mobile nhỏ nếu khả thi.
+- [ ] Zoom 200% — Blocked bởi giới hạn Chrome control API.
+- [x] Keyboard-only.
+- [ ] Reduced-motion emulation — Blocked bởi Chrome control API; CSS media query đã được kiểm chứng source/build.
+- [x] Browser console sạch lỗi mới.
+- [x] Network/page asset inventory không có asset Create bị thiếu hoặc 404.
 
 ## 11. Kế hoạch rollback
 
@@ -583,9 +585,9 @@ Baseline ngày 2026-07-12:
 | 2026-07-12 | Phase 3 | Hoàn tất | Tái cấu trúc WorkProjects/Create, checkbox phòng ban, preserve invalid POST và harden whitelist/server-owned status | `1f294bd` |
 | 2026-07-12 | Phase 4 | Hoàn tất | Tái cấu trúc OKRs/Create, tách asset, đồng bộ department/employee, anti-forgery và preserve selection | `844ccca` |
 | 2026-07-12 | Phase 5 | Hoàn tất | Tinh gọn EvaluationPeriods/Create, preview an toàn và đồng bộ đúng duration rule server | `079c9c1` |
-| 2026-07-12 | Phase 6 | Bị chặn một phần | Responsive/a11y đã triển khai và compile; QA trực tiếp 1440/768/390/320, keyboard, zoom và console bị chặn bởi native messaging host Chrome bị thiếu | Không có commit riêng |
-| 2026-07-12 | Phase 7 | Hoàn tất phần tự động | Bổ sung boundary tests sau pseudo-mutation review; build, 175 test, migration, syntax, HTTP asset và diff check đạt | `fd62e17` |
-| 2026-07-12 | Phase 8 | Hoàn tất | Cập nhật tài liệu theo bằng chứng thực tế, giữ browser checklist mở và ghi follow-up | `2229e6e` |
+| 2026-07-12 | Phase 6 | Hoàn tất trong phạm vi | QA trực tiếp 1440/768/390/320, keyboard, Select2, checkbox, focus, contrast và console đạt; zoom/reduced-motion emulation được ghi Blocked theo giới hạn Chrome API | Implementation trong Phase 2-5; browser fix `c94340e` |
+| 2026-07-12 | Phase 7 | Hoàn tất | Bổ sung boundary tests; build, 175 test, migration, syntax, asset, direct POST/double-submit, cleanup, regression và diff check đạt | `fd62e17`, `c94340e` |
+| 2026-07-12 | Phase 8 | Hoàn tất | Cập nhật optimization report và Browser QA report theo bằng chứng thực tế; không trình bày Blocked như Passed | `2229e6e`, `b8e50e8`, commit tài liệu cuối |
 
 ## 14. Quyết định kỹ thuật
 
@@ -598,7 +600,9 @@ Baseline ngày 2026-07-12:
 | 2026-07-12 | Giữ Select2 toàn cục và chỉ đồng bộ option qua event có guard | Select2 là dependency hiện hữu của layout và nhiều trang khác | OKRs/Create |
 | 2026-07-12 | Whitelist field Create và để server gán lifecycle/audit | Ngăn forged input mà không đổi schema/ViewModel | WorkProjects/Create, OKRs/Create |
 | 2026-07-12 | Dùng cấu hình build/test `CreateUiQa` | Tiến trình ứng dụng có sẵn đang khóa Debug output; không dừng tiến trình ngoài task | Build/test verification |
-| 2026-07-12 | Không tự sửa registry native messaging host hoặc thay bằng browser automation khác | Tuân thủ quy tắc an toàn của Chrome plugin và không tạo bằng chứng browser QA giả | Phase 6 và browser QA |
+| 2026-07-12 | Ghi `Blocked` cho zoom/reduced-motion emulation, non-Admin role và empty-catalog | Không thay đổi browser/session/seed ngoài phạm vi chỉ để làm đẹp số liệu QA | Phase 6 và browser QA |
+| 2026-07-12 | Dùng `asp-validation-summary="All"` cho ba form | Field-level server errors phải xuất hiện trong accessible summary, đồng thời vẫn giữ message gần field | Ba Create views |
+| 2026-07-12 | Ẩn AI floating toggle riêng trên shared Create pages ở mobile | Tránh che guide/action mà không ảnh hưởng trang khác hoặc desktop | Shared Create CSS |
 
 ## 15. Commit theo phase
 
@@ -609,9 +613,9 @@ Baseline ngày 2026-07-12:
 | Phase 3 | `1f294bd` | WorkProjects/Create | Hoàn tất |
 | Phase 4 | `844ccca` | OKRs/Create | Hoàn tất |
 | Phase 5 | `079c9c1` | EvaluationPeriods/Create | Hoàn tất |
-| Phase 6 | Không có commit riêng | Implementation responsive/a11y nằm trong Phase 2-5; direct browser QA bị chặn | Bị chặn một phần |
-| Phase 7 | `fd62e17` | Boundary tests và regression hardening | Hoàn tất phần tự động |
-| Phase 8 | `2229e6e` | Cập nhật checklist, verification và follow-up | Hoàn tất |
+| Phase 6 | `c94340e` + implementation Phase 2-5 | Responsive/a11y, direct Browser QA và hai fix sau retest | Hoàn tất trong phạm vi; 2 emulation checks Blocked |
+| Phase 7 | `fd62e17`, `c94340e` | Boundary tests, regression và Browser QA hardening | Hoàn tất |
+| Phase 8 | `2229e6e`, `b8e50e8`, commit tài liệu cuối | Checklist, verification, Browser QA report và follow-up | Hoàn tất |
 
 ### 15.1. File thay đổi theo phase
 
@@ -622,6 +626,7 @@ Baseline ngày 2026-07-12:
 | Phase 3 | `Controllers/WorkProjectsController.cs`, `Views/WorkProjects/Create.cshtml`, `wwwroot/js/workproject-create.js`, `tests/ManageKpiOkrSystem.Tests/WorkProjectsBusinessFlowTests.cs` |
 | Phase 4 | `Controllers/OKRsController.cs`, `Views/OKRs/Create.cshtml`, `wwwroot/js/okr-create.js`, `tests/ManageKpiOkrSystem.Tests/OKRsBusinessFlowFinalTests.cs` |
 | Phase 5 | `Views/EvaluationPeriods/Create.cshtml`, `wwwroot/css/evaluation-periods.css`, `wwwroot/js/evaluation-periods.js`, `tests/ManageKpiOkrSystem.Tests/EvaluationPeriodsBusinessFlowTests.cs` |
+| Phase 6-8 | `Views/WorkProjects/Create.cshtml`, `Views/OKRs/Create.cshtml`, `Views/EvaluationPeriods/Create.cshtml`, `wwwroot/css/create-form.css`, `docs/CREATE_PAGES_UI_UX_BROWSER_QA_PLAN.md`, `docs/CREATE_PAGES_UI_UX_OPTIMIZATION_PLAN.md` |
 
 Không có model, schema, migration, dependency hoặc font mới.
 
@@ -629,24 +634,26 @@ Không có model, schema, migration, dependency hoặc font mới.
 
 | Hạng mục | Kết quả | Ghi chú |
 |---|---|---|
-| Build | Đạt | Project build với `CreateUiQa`: 0 error, 36 warning có sẵn; không tuyên bố warning-free |
+| Build | Đạt | Final build với `CreateUiQa`: 0 error, 36 warning có sẵn; không tuyên bố codebase warning-free |
 | Test mục tiêu | Đạt | 46/46 combined WorkProjects/OKRs/EvaluationPeriods business-flow tests; các lượt riêng trước đó cũng đạt |
 | Full test suite | Đạt | 175/175 test passed sau lần bổ sung cuối |
 | JavaScript syntax | Đạt | `node --check` đạt cho cả bốn asset create/evaluation đã thêm hoặc sửa |
 | Pending model changes | Đạt | EF báo không có model change; còn 2 warning precision decimal có sẵn |
 | `git diff --check` | Đạt | Không có whitespace error trong diff so với `origin/main` |
-| HTTP smoke/asset | Đạt trong phạm vi chưa đăng nhập | Ba Create route redirect về `/Auth/Login`; sáu asset CSS/JS liên quan trả HTTP 200 |
-| Browser QA | Bị chặn | Chrome native messaging host manifest có trên máy nhưng registry key bị thiếu; checklist UI trực tiếp vẫn mở |
-| Accessibility QA | Bị chặn một phần | Source/Razor/CSS implementation đã review và compile; keyboard-only, viewport, zoom 200% và screen-reader behavior chưa thể xác nhận trực tiếp |
-| Git status cuối | Đạt có ngoại lệ đã biết | Tracked worktree sạch sau commit bàn giao; hai file untracked của người dùng được giữ nguyên, không stage |
+| HTTP smoke/asset | Đạt | Baseline chưa đăng nhập redirect `/Auth/Login`; direct Admin QA tải đủ shared/page assets và ba POST route đúng, không 404/5xx |
+| Browser QA | Đạt critical path, có Blocked đã ghi | Admin session: page load, validation, preserve, dependent control, successful POST, double-submit, record verification, cleanup, responsive, console và regression đạt; zoom/reduced-motion emulation, non-Admin role và empty-catalog scenario Blocked có lý do |
+| Accessibility QA | Đạt trong khả năng Chrome API | Keyboard/tab/Enter/Space/Select2/focus/label/heading/fieldset/aria-describedby/aria-live/contrast đạt; không tuyên bố screen-reader hoặc zoom emulation khi công cụ không hỗ trợ |
+| Git status cuối | Đạt trong phạm vi task | Các commit chỉ chứa file thuộc task; `qa-http-okrs-feedback.json` tiếp tục được giữ untracked ngoài commit |
 
 ## 17. Follow-up ngoài phạm vi
 
 Các phát hiện ngoài phạm vi được ghi tại đây thay vì tự mở rộng task:
 
-- Cài lại/kết nối lại Chrome plugin từ giao diện plugin ChatGPT để khôi phục registry native messaging host, sau đó chạy lại toàn bộ ma trận Phase 6 và Section 10 trong phiên đăng nhập có dữ liệu phù hợp.
 - 36 build warning và 2 EF decimal-precision warning đã tồn tại ngoài phạm vi UI task; không sửa lan rộng trong task này.
-- `docs/CREATE_PAGES_UI_UX_BROWSER_QA_PLAN.md` và `qa-http-okrs-feedback.json` là file untracked có sẵn của người dùng; tiếp tục giữ ngoài commit task.
+- Chrome control API không hỗ trợ thay đổi zoom/reduced-motion emulation; hai mục được ghi Blocked, không trình bày như Passed.
+- Chỉ có session Admin; Director/Manager/HR/Employee được ghi Blocked thay vì tự đăng nhập/chuyển role.
+- Seed hiện tại không có catalog rỗng phù hợp để kiểm tra empty employee/department/OKR/KPI; không sửa dữ liệu nền chỉ để tạo scenario.
+- `qa-http-okrs-feedback.json` là file untracked có sẵn của người dùng và tiếp tục được giữ ngoài commit task.
 
 ## 18. Điều kiện hoàn thành
 
