@@ -474,7 +474,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [HasPermission("WORKPROJECTS_CREATE")]
-        public async Task<IActionResult> Create(WorkProject project, int[] departmentIds)
+        public async Task<IActionResult> Create(
+            [Bind("ProjectName,Description,OwnerId,Priority,StartDate,DueDate,SourceOKRId,SourceKPIId")] WorkProject project,
+            int[] departmentIds)
         {
             IgnoreNavigationValidation();
             ValidateProjectDates(project);
@@ -492,7 +494,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
             project.ProjectCode = await GenerateProjectCodeAsync();
-            project.Status = NormalizeProjectStatus(project.Status);
+            project.Status = "Active";
             project.Priority = NormalizePriority(project.Priority);
             project.ProgressPercentage = 0;
             project.CreatedAt = DateTime.Now;

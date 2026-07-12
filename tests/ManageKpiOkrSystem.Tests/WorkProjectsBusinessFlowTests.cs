@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Security.Claims;
 using Manage_KPI_or_OKR_System.Controllers;
 using Manage_KPI_or_OKR_System.Data;
@@ -16,17 +17,127 @@ public sealed class WorkProjectsBusinessFlowTests
     public async Task Create_ReturnsFormError_WhenDueDateIsBeforeStartDate()
     {
         await using var context = CreateContext();
+        var firstDepartment = new Department
+        {
+            DepartmentCode = "OPS",
+            DepartmentName = "Operations",
+            IsActive = true
+        };
+        var secondDepartment = new Department
+        {
+            DepartmentCode = "SALES",
+            DepartmentName = "Sales",
+            IsActive = true
+        };
+        var sourceOkr = new OKR { ObjectiveName = "Source objective", IsActive = true };
+        var sourceKpi = new KPI { KPIName = "Source KPI", IsActive = true };
+        context.AddRange(firstDepartment, secondDepartment, sourceOkr, sourceKpi);
+        await context.SaveChangesAsync();
+
         var controller = CreateController(context);
         var project = Project("Invalid dates", "Active", "Normal");
         project.StartDate = new DateTime(2026, 7, 20);
         project.DueDate = new DateTime(2026, 7, 10);
+        project.SourceOKRId = sourceOkr.Id;
+        project.SourceKPIId = sourceKpi.Id;
 
-        var result = await controller.Create(project, Array.Empty<int>());
+        var result = await controller.Create(project, new[] { firstDepartment.Id, secondDepartment.Id });
 
-        Assert.IsType<ViewResult>(result);
+        var view = Assert.IsType<ViewResult>(result);
+        var returnedProject = Assert.IsType<WorkProject>(view.Model);
         Assert.False(controller.ModelState.IsValid);
         Assert.Contains(nameof(WorkProject.DueDate), controller.ModelState.Keys);
+        Assert.Equal(sourceOkr.Id, returnedProject.SourceOKRId);
+        Assert.Equal(sourceKpi.Id, returnedProject.SourceKPIId);
+        Assert.Contains(
+            Assert.IsAssignableFrom<IEnumerable<OKR>>((object)controller.ViewBag.OKRs),
+            option => option.Id == sourceOkr.Id);
+        Assert.Contains(
+            Assert.IsAssignableFrom<IEnumerable<KPI>>((object)controller.ViewBag.KPIs),
+            option => option.Id == sourceKpi.Id);
+        Assert.Equal(
+            new[] { firstDepartment.Id, secondDepartment.Id },
+            Assert.IsType<int[]>((object)controller.ViewBag.SelectedDepartmentIds).OrderBy(id => id).ToArray());
         Assert.False(await context.WorkProjects.AnyAsync());
+    }
+
+    [Fact]
+    public async Task Create_WithKpiLinkedToOkr_InfersAndPersistsSourceOkr()
+    {
+        await using var context = CreateContext();
+        var sourceOkr = new OKR { ObjectiveName = "Linked objective", IsActive = true };
+        context.OKRs.Add(sourceOkr);
+        await context.SaveChangesAsync();
+        var sourceKpi = new KPI { KPIName = "Linked KPI", OKRId = sourceOkr.Id, IsActive = true };
+        context.KPIs.Add(sourceKpi);
+        await context.SaveChangesAsync();
+
+        var project = Project("Project inferred from KPI", "Planning", "High");
+        project.SourceKPIId = sourceKpi.Id;
+
+        var result = await CreateController(context).Create(project, Array.Empty<int>());
+
+        Assert.IsType<RedirectToActionResult>(result);
+        var saved = Assert.Single(await context.WorkProjects.ToListAsync());
+        Assert.Equal(sourceKpi.Id, saved.SourceKPIId);
+        Assert.Equal(sourceOkr.Id, saved.SourceOKRId);
+        Assert.Equal(sourceOkr.Id, saved.LinkedOKRId);
+    }
+
+    [Fact]
+    public async Task Create_ServerOwnsGeneratedAndLifecycleFields()
+    {
+        await using var context = CreateContext();
+        var project = Project("Server-owned fields", "Archived", "Normal");
+        project.ProjectCode = "FORGED";
+        project.ProgressPercentage = 87;
+        project.CreatedAt = new DateTime(2000, 1, 1);
+        project.UpdatedAt = new DateTime(2000, 1, 1);
+        project.CreatedById = 999;
+        project.IsActive = false;
+        project.IsCrossDepartment = true;
+        var beforeCreate = DateTime.Now;
+
+        var result = await CreateController(context).Create(project, Array.Empty<int>());
+        var afterCreate = DateTime.Now;
+
+        Assert.IsType<RedirectToActionResult>(result);
+        var saved = Assert.Single(await context.WorkProjects.ToListAsync());
+        Assert.StartsWith("PRJ-", saved.ProjectCode);
+        Assert.NotEqual("FORGED", saved.ProjectCode);
+        Assert.Equal("Active", saved.Status);
+        Assert.Equal(0m, saved.ProgressPercentage);
+        Assert.True(saved.IsActive);
+        Assert.False(saved.IsCrossDepartment);
+        Assert.Null(saved.CreatedById);
+        Assert.InRange(saved.CreatedAt!.Value, beforeCreate, afterCreate);
+        Assert.InRange(saved.UpdatedAt!.Value, beforeCreate, afterCreate);
+    }
+
+    [Fact]
+    public void Create_PostWhitelistsEditableFieldsAndRequiresAntiforgery()
+    {
+        var method = typeof(WorkProjectsController).GetMethod(
+            nameof(WorkProjectsController.Create),
+            new[] { typeof(WorkProject), typeof(int[]) });
+
+        Assert.NotNull(method);
+        Assert.NotNull(method!.GetCustomAttribute<HttpPostAttribute>());
+        Assert.NotNull(method.GetCustomAttribute<ValidateAntiForgeryTokenAttribute>());
+        var bind = Assert.IsType<BindAttribute>(method.GetParameters()[0].GetCustomAttribute<BindAttribute>());
+        Assert.Equal(
+            new[]
+            {
+                nameof(WorkProject.ProjectName),
+                nameof(WorkProject.Description),
+                nameof(WorkProject.OwnerId),
+                nameof(WorkProject.Priority),
+                nameof(WorkProject.StartDate),
+                nameof(WorkProject.DueDate),
+                nameof(WorkProject.SourceOKRId),
+                nameof(WorkProject.SourceKPIId)
+            },
+            bind.Include);
     }
 
     [Fact]

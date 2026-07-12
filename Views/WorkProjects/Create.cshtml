@@ -1,125 +1,313 @@
 @model Manage_KPI_or_OKR_System.Models.WorkProject
 @{
     ViewData["Title"] = "Tạo dự án cộng tác";
-    var employees = ViewBag.Employees as IEnumerable<Employee> ?? Enumerable.Empty<Employee>();
-    var departments = ViewBag.Departments as IEnumerable<Department> ?? Enumerable.Empty<Department>();
-    var okrs = ViewBag.OKRs as IEnumerable<OKR> ?? Enumerable.Empty<OKR>();
-    var kpis = ViewBag.KPIs as IEnumerable<KPI> ?? Enumerable.Empty<KPI>();
+    var employees = (ViewBag.Employees as IEnumerable<Employee> ?? Enumerable.Empty<Employee>()).ToList();
+    var departments = (ViewBag.Departments as IEnumerable<Department> ?? Enumerable.Empty<Department>()).ToList();
+    var okrs = (ViewBag.OKRs as IEnumerable<OKR> ?? Enumerable.Empty<OKR>()).ToList();
+    var kpis = (ViewBag.KPIs as IEnumerable<KPI> ?? Enumerable.Empty<KPI>()).ToList();
     var priorities = ViewBag.PriorityOptions as IEnumerable<string> ?? Enumerable.Empty<string>();
-    var statuses = ViewBag.ProjectStatusOptions as IEnumerable<string> ?? Enumerable.Empty<string>();
+    var selectedDepartmentIds = (ViewBag.SelectedDepartmentIds as IEnumerable<int> ?? Enumerable.Empty<int>()).ToHashSet();
 }
 
-<div class="container-fluid p-0">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="mb-1 fw-bold"><i class="bi bi-plus-square text-primary me-2"></i>Tạo dự án cộng tác</h3>
-            <p class="text-muted mb-0">Thiết lập dự án Agile/Kanban và chọn các phòng ban cùng tham gia.</p>
+<div class="cf-page" data-create-form data-workproject-create>
+    <header class="cf-header">
+        <div class="cf-header__content">
+            <h1>Tạo dự án cộng tác</h1>
+            <nav class="cf-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <a asp-action="Index">Dự án cộng tác</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Thêm mới</span>
+            </nav>
+            <p class="cf-header__description">Thiết lập phạm vi, người phụ trách và liên kết mục tiêu để nhóm có thể bắt đầu vận hành trên Kanban.</p>
         </div>
-        <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Quay lại</a>
-    </div>
+        <a asp-action="Index" class="cf-back-action">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Quay lại</span>
+        </a>
+    </header>
 
-    <form asp-action="Create" method="post" class="card border-0 shadow-sm rounded-4">
-        <div class="card-body p-4">
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-            <div class="row g-3">
-                <div class="col-md-8">
-                    <label asp-for="ProjectName" class="form-label fw-semibold">Tên dự án</label>
-                    <input asp-for="ProjectName" class="form-control" maxlength="200" />
-                    <span asp-validation-for="ProjectName" class="text-danger small"></span>
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="OwnerId" class="form-label fw-semibold">Người phụ trách</label>
-                    <select asp-for="OwnerId" class="form-select">
-                        <option value="">Chọn người phụ trách</option>
-                        @foreach (var employee in employees)
-                        {
-                            <option value="@employee.Id">@employee.FullName</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="Priority" class="form-label fw-semibold">Mức ưu tiên</label>
-                    <select asp-for="Priority" class="form-select">
-                        @foreach (var item in priorities)
-                        {
-                            <option value="@item">@PriorityLabel(item)</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label asp-for="Status" class="form-label fw-semibold">Trạng thái</label>
-                    <select asp-for="Status" class="form-select">
-                        @foreach (var item in statuses)
-                        {
-                            <option value="@item">@ProjectStatusLabel(item)</option>
-                        }
-                    </select>
-                    <span asp-validation-for="Status" class="text-danger small"></span>
-                </div>
-                <div class="col-md-2">
-                    <label asp-for="StartDate" class="form-label fw-semibold">Bắt đầu</label>
-                    <input asp-for="StartDate" asp-format="{0:yyyy-MM-dd}" class="form-control" type="date" lang="vi" />
-                </div>
-                <div class="col-md-2">
-                    <label asp-for="DueDate" class="form-label fw-semibold">Deadline</label>
-                    <input asp-for="DueDate" asp-format="{0:yyyy-MM-dd}" class="form-control" type="date" lang="vi" />
-                    <span asp-validation-for="DueDate" class="text-danger small"></span>
-                </div>
-                <div class="col-12">
-                    <label asp-for="Description" class="form-label fw-semibold">Mô tả</label>
-                    <textarea asp-for="Description" class="form-control" rows="4" maxlength="1000"></textarea>
-                </div>
-                <div class="col-md-6">
-                    <label asp-for="SourceOKRId" class="form-label fw-semibold">OKR/Mục tiêu liên kết</label>
-                    <select asp-for="SourceOKRId" class="form-select">
-                        <option value="">Không liên kết OKR</option>
-                        @foreach (var okr in okrs)
-                        {
-                            <option value="@okr.Id">@OkrOptionLabel(okr)</option>
-                        }
-                    </select>
-                    <div class="form-text">AI sẽ đọc Objective và Key Result của OKR này khi chia task.</div>
-                    <span asp-validation-for="SourceOKRId" class="text-danger small"></span>
-                </div>
-                <div class="col-md-6">
-                    <label asp-for="SourceKPIId" class="form-label fw-semibold">KPI liên kết</label>
-                    <select asp-for="SourceKPIId" class="form-select">
-                        <option value="">Không liên kết KPI</option>
-                        @foreach (var kpi in kpis)
-                        {
-                            <option value="@kpi.Id">@KpiOptionLabel(kpi)</option>
-                        }
-                    </select>
-                    <div class="form-text">Nếu KPI thuộc OKR, dự án sẽ tự lấy OKR tương ứng.</div>
-                    <span asp-validation-for="SourceKPIId" class="text-danger small"></span>
-                </div>
-                <div class="col-12">
-                    <label class="form-label fw-semibold">Phòng ban cộng tác</label>
-                    <select name="departmentIds" class="form-select" multiple size="6">
-                        @foreach (var department in departments)
-                        {
-                            <option value="@department.Id">@department.DepartmentName</option>
-                        }
-                    </select>
-                    <div class="form-text">Giữ Ctrl để chọn nhiều phòng ban. Các phòng ban được chọn sẽ cùng nhìn thấy không gian cộng tác của dự án.</div>
+    <div class="cf-layout">
+        <section class="cf-panel" aria-labelledby="workProjectFormHeading">
+            <div class="cf-panel__header">
+                <div>
+                    <h2 id="workProjectFormHeading">Thông tin dự án</h2>
+                    <p>Các trường có dấu <span class="cf-required" aria-hidden="true">*</span> là bắt buộc.</p>
                 </div>
             </div>
-        </div>
-        <div class="card-footer bg-white border-0 p-4 pt-0 d-flex justify-content-end gap-2">
-            <a asp-action="Index" class="btn btn-outline-secondary">Hủy</a>
-            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Tạo dự án</button>
-        </div>
-    </form>
+
+            <form asp-action="Create" method="post" class="cf-form" data-create-form-element>
+                <div asp-validation-summary="ModelOnly" class="cf-alert" role="alert" tabindex="-1" data-error-summary></div>
+
+                <section class="cf-section" aria-labelledby="workProjectBasicHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-folder2-open"></i></span>
+                        <div>
+                            <h3 id="workProjectBasicHeading">Thông tin cơ bản</h3>
+                            <p>Đặt tên dễ nhận biết trong danh sách dự án và báo cáo.</p>
+                        </div>
+                    </div>
+                    <div class="cf-field">
+                        <label asp-for="ProjectName">Tên dự án <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                        <input asp-for="ProjectName"
+                               class="form-control cf-control"
+                               maxlength="200"
+                               autocomplete="off"
+                               placeholder="Ví dụ: Chuẩn hóa quy trình giao hàng quý 3"
+                               aria-describedby="projectNameHint"
+                               required />
+                        <span asp-validation-for="ProjectName" class="cf-validation"></span>
+                        <p id="projectNameHint" class="cf-hint">Tối đa 200 ký tự; mã dự án sẽ được hệ thống tự sinh sau khi lưu.</p>
+                    </div>
+                </section>
+
+                <section class="cf-section" aria-labelledby="workProjectOwnershipHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-person-workspace"></i></span>
+                        <div>
+                            <h3 id="workProjectOwnershipHeading">Trách nhiệm và ưu tiên</h3>
+                            <p>Chọn người điều phối chính và mức ưu tiên vận hành.</p>
+                        </div>
+                    </div>
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <label asp-for="OwnerId">Người phụ trách</label>
+                            <select asp-for="OwnerId"
+                                    class="form-select cf-control"
+                                    data-placeholder="Chọn người phụ trách"
+                                    disabled="@(!employees.Any())"
+                                    aria-describedby="ownerHint">
+                                <option value="">Chưa gán người phụ trách</option>
+                                @foreach (var employee in employees)
+                                {
+                                    <option value="@employee.Id">@employee.FullName</option>
+                                }
+                            </select>
+                            <p id="ownerHint" class="cf-hint">Nếu để trống, hệ thống dùng nhân viên tương ứng với tài khoản tạo khi có thể.</p>
+                            @if (!employees.Any())
+                            {
+                                <div class="cf-empty-state" role="status">
+                                    <i class="bi bi-person-x" aria-hidden="true"></i>
+                                    <span>Chưa có nhân viên đang hoạt động để phân công.</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="Priority">Mức ưu tiên</label>
+                            <select asp-for="Priority" class="form-select cf-control no-select2" aria-describedby="priorityHint">
+                                @foreach (var item in priorities)
+                                {
+                                    <option value="@item">@PriorityLabel(item)</option>
+                                }
+                            </select>
+                            <p id="priorityHint" class="cf-hint">Dùng để sắp xếp và nhận diện dự án cần xử lý trước.</p>
+                        </div>
+                    </div>
+                    <div class="cf-inline-note" role="status">
+                        <i class="bi bi-shield-check" aria-hidden="true"></i>
+                        <span>Dự án mới luôn bắt đầu ở trạng thái <strong>Đang chạy</strong> với tiến độ 0%. Trạng thái và tiến độ được cập nhật trong luồng vận hành.</span>
+                    </div>
+                </section>
+
+                <section class="cf-section" aria-labelledby="workProjectDatesHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-calendar-range"></i></span>
+                        <div>
+                            <h3 id="workProjectDatesHeading">Thời gian thực hiện</h3>
+                            <p>Ngày kết thúc có thể bằng nhưng không được trước ngày bắt đầu.</p>
+                        </div>
+                    </div>
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <label asp-for="StartDate">Ngày bắt đầu</label>
+                            <input asp-for="StartDate"
+                                   asp-format="{0:yyyy-MM-dd}"
+                                   class="form-control cf-control"
+                                   type="date"
+                                   lang="vi"
+                                   aria-describedby="startDateHint" />
+                            <p id="startDateHint" class="cf-hint">Mặc định là ngày hiện tại.</p>
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="DueDate">Ngày kết thúc</label>
+                            <input asp-for="DueDate"
+                                   asp-format="{0:yyyy-MM-dd}"
+                                   class="form-control cf-control"
+                                   type="date"
+                                   lang="vi"
+                                   aria-describedby="dueDateHint" />
+                            <span asp-validation-for="DueDate" class="cf-validation"></span>
+                            <p id="dueDateHint" class="cf-hint">Hệ thống sẽ từ chối nếu ngày này trước ngày bắt đầu.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cf-section" aria-labelledby="workProjectDescriptionHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-card-text"></i></span>
+                        <div>
+                            <h3 id="workProjectDescriptionHeading">Mô tả phạm vi</h3>
+                            <p>Ghi rõ kết quả mong đợi, giới hạn và bối cảnh cần thiết cho nhóm.</p>
+                        </div>
+                    </div>
+                    <div class="cf-field">
+                        <div class="cf-label-row">
+                            <label asp-for="Description">Mô tả</label>
+                            <output id="workProjectDescriptionCounter" class="cf-counter" for="Description" data-character-counter>0/1000</output>
+                        </div>
+                        <textarea asp-for="Description"
+                                  class="form-control cf-control"
+                                  rows="5"
+                                  maxlength="1000"
+                                  placeholder="Mục tiêu vận hành, đầu ra chính và lưu ý phối hợp..."
+                                  aria-describedby="descriptionHint workProjectDescriptionCounter"></textarea>
+                        <span asp-validation-for="Description" class="cf-validation"></span>
+                        <p id="descriptionHint" class="cf-hint">Mô tả này cũng cung cấp bối cảnh khi hệ thống hỗ trợ chia nhỏ công việc.</p>
+                    </div>
+                </section>
+
+                <section class="cf-section" aria-labelledby="workProjectGoalsHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-diagram-3"></i></span>
+                        <div>
+                            <h3 id="workProjectGoalsHeading">Liên kết mục tiêu</h3>
+                            <p>OKR định hướng kết quả; KPI cung cấp chỉ số cần cải thiện hoặc duy trì.</p>
+                        </div>
+                    </div>
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <label asp-for="SourceOKRId">OKR nguồn</label>
+                            <select asp-for="SourceOKRId"
+                                    class="form-select cf-control"
+                                    data-placeholder="Không liên kết OKR"
+                                    disabled="@(!okrs.Any())"
+                                    aria-describedby="sourceOkrHint">
+                                <option value="">Không liên kết OKR</option>
+                                @foreach (var okr in okrs)
+                                {
+                                    <option value="@okr.Id">@OkrOptionLabel(okr)</option>
+                                }
+                            </select>
+                            <span asp-validation-for="SourceOKRId" class="cf-validation"></span>
+                            <p id="sourceOkrHint" class="cf-hint">Chọn khi dự án trực tiếp thực thi một Objective hoặc Key Result.</p>
+                            @if (!okrs.Any())
+                            {
+                                <div class="cf-empty-state" role="status">
+                                    <i class="bi bi-bullseye" aria-hidden="true"></i>
+                                    <span>Chưa có OKR đang hoạt động để liên kết.</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="SourceKPIId">KPI nguồn</label>
+                            <select asp-for="SourceKPIId"
+                                    class="form-select cf-control"
+                                    data-placeholder="Không liên kết KPI"
+                                    disabled="@(!kpis.Any())"
+                                    aria-describedby="sourceKpiHint sourceRelationshipHint">
+                                <option value="">Không liên kết KPI</option>
+                                @foreach (var kpi in kpis)
+                                {
+                                    var linkedOkr = kpi.OKRId.HasValue ? okrs.FirstOrDefault(okr => okr.Id == kpi.OKRId.Value) : null;
+                                    <option value="@kpi.Id"
+                                            data-okr-id="@kpi.OKRId"
+                                            data-okr-label="@(linkedOkr == null ? null : OkrOptionLabel(linkedOkr))">@KpiOptionLabel(kpi)</option>
+                                }
+                            </select>
+                            <span asp-validation-for="SourceKPIId" class="cf-validation"></span>
+                            <p id="sourceKpiHint" class="cf-hint">Nếu KPI thuộc một OKR, server sẽ dùng chính OKR đó làm nguồn dự án.</p>
+                            <p id="sourceRelationshipHint" class="cf-dynamic-hint" aria-live="polite" data-source-relationship></p>
+                            @if (!kpis.Any())
+                            {
+                                <div class="cf-empty-state" role="status">
+                                    <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                                    <span>Chưa có KPI đang hoạt động để liên kết.</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </section>
+
+                <fieldset class="cf-section cf-field-group" aria-describedby="departmentHint">
+                    <legend>Phòng ban cộng tác</legend>
+                    <div class="cf-label-row">
+                        <p id="departmentHint" class="cf-section__description">Chọn trực tiếp từng phòng ban; không cần giữ Ctrl. Các đơn vị được chọn sẽ thấy không gian cộng tác của dự án.</p>
+                        <output class="cf-selection-count" data-selection-count="departmentIds">0 đã chọn</output>
+                    </div>
+                    @if (departments.Any())
+                    {
+                        <div class="cf-checkbox-list">
+                            @foreach (var department in departments)
+                            {
+                                var checkboxId = $"department-{department.Id}";
+                                <div class="cf-checkbox">
+                                    <label for="@checkboxId">
+                                        <input id="@checkboxId"
+                                               type="checkbox"
+                                               name="departmentIds"
+                                               value="@department.Id"
+                                               checked="@(selectedDepartmentIds.Contains(department.Id) ? "checked" : null)" />
+                                        <span>@department.DepartmentName</span>
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="cf-empty-state" role="status">
+                            <i class="bi bi-building-x" aria-hidden="true"></i>
+                            <span>Chưa có phòng ban đang hoạt động. Dự án vẫn có thể được tạo và phân công sau.</span>
+                        </div>
+                    }
+                    <span class="cf-validation" data-valmsg-for="departmentIds" data-valmsg-replace="true"></span>
+                </fieldset>
+
+                <div class="cf-actions">
+                    <a asp-action="Index" class="cf-secondary-action">Hủy</a>
+                    <button type="submit"
+                            class="cf-primary-action"
+                            data-submit-button
+                            data-default-label="Tạo dự án"
+                            data-loading-label="Đang tạo...">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        <span data-submit-label>Tạo dự án</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="cf-guide" aria-labelledby="workProjectGuideHeading">
+            <div class="cf-guide__identity">
+                <span class="cf-guide__icon" aria-hidden="true"><i class="bi bi-kanban"></i></span>
+                <div>
+                    <span class="cf-guide__eyebrow">Sau khi lưu</span>
+                    <h2 id="workProjectGuideHeading">Sẵn sàng vận hành</h2>
+                </div>
+            </div>
+            <p>Dự án được tạo với mã riêng và một không gian Kanban để nhóm bắt đầu lập kế hoạch công việc.</p>
+            <ul class="cf-guide__list">
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Người phụ trách điều phối tiến độ và phối hợp liên phòng ban.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>OKR hoặc KPI nguồn giúp công việc bám đúng kết quả cần đạt.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Có thể cập nhật phòng ban và trạng thái sau khi tạo.</span></li>
+            </ul>
+            <div class="cf-guide__note">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>Chỉ các field trên form được nhận từ client; mã, tiến độ và dữ liệu audit do server kiểm soát.</span>
+            </div>
+        </aside>
+    </div>
 </div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
+}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
-        // Force date inputs to display in dd/mm/yyyy format
-        document.querySelectorAll('input[type="date"]').forEach(function(input) {
-            input.setAttribute('lang', 'vi');
-        });
-    </script>
+    <script src="~/js/create-form.js" asp-append-version="true"></script>
+    <script src="~/js/workproject-create.js" asp-append-version="true"></script>
 }
 
 @functions {
@@ -129,15 +317,6 @@
         "High" => "Cao",
         "Urgent" => "Khẩn cấp",
         _ => "Bình thường"
-    };
-
-    private static string ProjectStatusLabel(string? value) => value switch
-    {
-        "Planning" => "Lên kế hoạch",
-        "OnHold" => "Tạm dừng",
-        "Completed" => "Hoàn thành",
-        "Archived" => "Lưu trữ",
-        _ => "Đang chạy"
     };
 
     private static string OkrOptionLabel(OKR okr)
