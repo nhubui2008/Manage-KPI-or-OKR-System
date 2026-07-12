@@ -4,13 +4,13 @@
 
 - Repository: `E:\Dự Án Tốt Nghiệp\Manage-KPI-or-OKR-System`
 - Ứng dụng: ASP.NET Core MVC
-- Nhánh dự kiến: `codex/create-pages-ui-ux-optimization`
+- Nhánh triển khai: `codex/create-pages-ui-ux-optimization`
 - Trang tham chiếu: `/MissionVisions/Create?type=YearlyGoal`
 - Các trang trong phạm vi:
   - `/WorkProjects/Create`
   - `/OKRs/Create`
   - `/EvaluationPeriods/Create`
-- Trạng thái hiện tại: chỉ lập kế hoạch, chưa triển khai
+- Trạng thái hiện tại: đã triển khai, build/test/migration/diff check đạt; browser QA trực tiếp đang bị chặn bởi Chrome native messaging host và được ghi rõ ở Phase 6, 10, 16, 17.
 - Quy ước: chỉ chuyển `- [ ]` thành `- [x]` sau khi công việc đã được thực hiện và kiểm chứng thực tế.
 
 ## 2. Mục tiêu tổng thể
@@ -233,17 +233,17 @@ Tiêu chí nghiệm thu:
 
 ## Phase 2 — Shared form foundation
 
-- [ ] Xác định pattern thật sự dùng chung giữa ít nhất hai trang.
-- [ ] Chuẩn hóa page header, breadcrumb, back action, form panel và guide panel ở mức phù hợp.
-- [ ] Chuẩn hóa section heading, required marker, field hint, validation message và error summary.
-- [ ] Chuẩn hóa action footer, loading state và double-submit guard nếu dùng chung.
-- [ ] Chọn namespace feature rõ ràng cho shared CSS/JavaScript.
-- [ ] Không khai báo selector `.form-control`, `.form-select` hoặc `.btn` ở phạm vi toàn cục.
-- [ ] Chỉ tạo partial/helper khi markup và hành vi thực sự giống nhau.
-- [ ] Ưu tiên Bootstrap, Bootstrap Icons, CSS variables và browser-native behavior hiện có.
-- [ ] Định nghĩa breakpoint desktop, tablet và mobile.
-- [ ] Thêm `focus-visible` và `prefers-reduced-motion` cho behavior dùng chung.
-- [ ] Mọi JavaScript phải kiểm tra element tồn tại và chống khởi tạo hai lần.
+- [x] Xác định pattern thật sự dùng chung giữa ít nhất hai trang.
+- [x] Chuẩn hóa page header, breadcrumb, back action, form panel và guide panel ở mức phù hợp.
+- [x] Chuẩn hóa section heading, required marker, field hint, validation message và error summary.
+- [x] Chuẩn hóa action footer, loading state và double-submit guard nếu dùng chung.
+- [x] Chọn namespace feature rõ ràng cho shared CSS/JavaScript.
+- [x] Không khai báo selector `.form-control`, `.form-select` hoặc `.btn` ở phạm vi toàn cục.
+- [x] Chỉ tạo partial/helper khi markup và hành vi thực sự giống nhau.
+- [x] Ưu tiên Bootstrap, Bootstrap Icons, CSS variables và browser-native behavior hiện có.
+- [x] Định nghĩa breakpoint desktop, tablet và mobile.
+- [x] Thêm `focus-visible` và `prefers-reduced-motion` cho behavior dùng chung.
+- [x] Mọi JavaScript phải kiểm tra element tồn tại và chống khởi tạo hai lần.
 
 Tiêu chí nghiệm thu:
 
@@ -254,22 +254,22 @@ Tiêu chí nghiệm thu:
 
 ## Phase 3 — WorkProjects/Create
 
-- [ ] Chia form thành các section: thông tin cơ bản, trách nhiệm/ưu tiên, thời gian, mô tả, liên kết mục tiêu và phòng ban cộng tác.
-- [ ] Giữ nguyên tên binding `OwnerId`, `SourceOKRId`, `SourceKPIId` và `departmentIds`.
-- [ ] Xác minh server kiểm soát project code, progress, audit fields và lifecycle fields.
-- [ ] Thay `<select multiple>` yêu cầu giữ `Ctrl` bằng danh sách checkbox browser-native/Bootstrap dễ dùng trên touch và keyboard.
-- [ ] Giữ lựa chọn department sau POST invalid.
-- [ ] Thêm empty state cho employee, department, OKR và KPI.
-- [ ] Giải thích ngắn gọn sự khác nhau giữa `SourceOKRId` và `SourceKPIId`.
-- [ ] Giữ logic tự lấy OKR từ KPI nếu nghiệp vụ hiện tại hỗ trợ.
-- [ ] Không làm mất lựa chọn hợp lệ khi thay đổi KPI/OKR.
-- [ ] Hiển thị validation `DueDate` không trước `StartDate` gần field và trong summary.
-- [ ] Thêm character counter cho Description nếu không tạo thêm độ phức tạp không cần thiết.
-- [ ] Thêm guide/summary panel ngắn gọn và có giá trị vận hành.
-- [ ] Thêm submit loading state và double-submit guard.
-- [ ] Bổ sung test cho preserve department/source relationship/server-owned fields chỉ khi có gap.
-- [ ] Build, chạy test liên quan, `git diff --check` và review diff.
-- [ ] Commit riêng cho phase và ghi commit hash vào tài liệu.
+- [x] Chia form thành các section: thông tin cơ bản, trách nhiệm/ưu tiên, thời gian, mô tả, liên kết mục tiêu và phòng ban cộng tác.
+- [x] Giữ nguyên tên binding `OwnerId`, `SourceOKRId`, `SourceKPIId` và `departmentIds`.
+- [x] Xác minh server kiểm soát project code, progress, audit fields và lifecycle fields.
+- [x] Thay `<select multiple>` yêu cầu giữ `Ctrl` bằng danh sách checkbox browser-native/Bootstrap dễ dùng trên touch và keyboard.
+- [x] Giữ lựa chọn department sau POST invalid.
+- [x] Thêm empty state cho employee, department, OKR và KPI.
+- [x] Giải thích ngắn gọn sự khác nhau giữa `SourceOKRId` và `SourceKPIId`.
+- [x] Giữ logic tự lấy OKR từ KPI nếu nghiệp vụ hiện tại hỗ trợ.
+- [x] Không làm mất lựa chọn hợp lệ khi thay đổi KPI/OKR.
+- [x] Hiển thị validation `DueDate` không trước `StartDate` gần field và trong summary.
+- [x] Thêm character counter cho Description nếu không tạo thêm độ phức tạp không cần thiết.
+- [x] Thêm guide/summary panel ngắn gọn và có giá trị vận hành.
+- [x] Thêm submit loading state và double-submit guard.
+- [x] Bổ sung test cho preserve department/source relationship/server-owned fields chỉ khi có gap.
+- [x] Build, chạy test liên quan, `git diff --check` và review diff.
+- [x] Commit riêng cho phase và ghi commit hash vào tài liệu.
 
 Tiêu chí nghiệm thu:
 
@@ -281,26 +281,26 @@ Tiêu chí nghiệm thu:
 
 ## Phase 4 — OKRs/Create
 
-- [ ] Lập inventory toàn bộ CSS/JavaScript inline trước khi di chuyển.
-- [ ] Chia form thành section dễ hiểu: Objective, loại/chu kỳ, liên kết chiến lược, department/owner và xác nhận.
-- [ ] Làm rõ Objective bằng label, hint và hướng dẫn viết ngắn gọn.
-- [ ] Làm rõ loại OKR và chu kỳ theo dữ liệu controller hiện tại.
-- [ ] Làm rõ liên kết Mission/Vision/Yearly Goal.
-- [ ] Thêm empty state cho OKR type, period, strategic goal, department và employee.
-- [ ] Giữ nguyên field name, ModelState, authorization và data scope.
-- [ ] Giữ department lọc employee.
-- [ ] Giữ employee cập nhật department khi đúng business rule.
-- [ ] Chuyển qua lại không làm mất employee vẫn còn hợp lệ.
-- [ ] Không hard-code chu kỳ hoặc option nghiệp vụ.
-- [ ] Không cho client gửi field mà server phải kiểm soát.
-- [ ] Không xóa Select2 nếu nơi khác phụ thuộc; chỉ thay đổi sau khi xác minh phạm vi.
-- [ ] Không khởi tạo Select2 hoặc event listener trùng lặp.
-- [ ] Di chuyển CSS/JavaScript đủ lớn sang asset có namespace `okr-create-*` hoặc namespace tương đương.
-- [ ] Loại selector toàn cục, gradient trang trí, hover nâng card, shadow lớn và animation float không cần thiết.
-- [ ] Thêm error summary accessible, loading state và double-submit guard.
-- [ ] Bổ sung test đúng test gap đã xác định.
-- [ ] Build, chạy toàn bộ test OKR, `git diff --check` và review diff.
-- [ ] Commit riêng cho phase và ghi commit hash vào tài liệu.
+- [x] Lập inventory toàn bộ CSS/JavaScript inline trước khi di chuyển.
+- [x] Chia form thành section dễ hiểu: Objective, loại/chu kỳ, liên kết chiến lược, department/owner và xác nhận.
+- [x] Làm rõ Objective bằng label, hint và hướng dẫn viết ngắn gọn.
+- [x] Làm rõ loại OKR và chu kỳ theo dữ liệu controller hiện tại.
+- [x] Làm rõ liên kết Mission/Vision/Yearly Goal.
+- [x] Thêm empty state cho OKR type, period, strategic goal, department và employee.
+- [x] Giữ nguyên field name, ModelState, authorization và data scope.
+- [x] Giữ department lọc employee.
+- [x] Giữ employee cập nhật department khi đúng business rule.
+- [x] Chuyển qua lại không làm mất employee vẫn còn hợp lệ.
+- [x] Không hard-code chu kỳ hoặc option nghiệp vụ.
+- [x] Không cho client gửi field mà server phải kiểm soát.
+- [x] Không xóa Select2 nếu nơi khác phụ thuộc; chỉ thay đổi sau khi xác minh phạm vi.
+- [x] Không khởi tạo Select2 hoặc event listener trùng lặp.
+- [x] Di chuyển CSS/JavaScript đủ lớn sang asset có namespace `okr-create-*` hoặc namespace tương đương.
+- [x] Loại selector toàn cục, gradient trang trí, hover nâng card, shadow lớn và animation float không cần thiết.
+- [x] Thêm error summary accessible, loading state và double-submit guard.
+- [x] Bổ sung test đúng test gap đã xác định.
+- [x] Build, chạy toàn bộ test OKR, `git diff --check` và review diff.
+- [x] Commit riêng cho phase và ghi commit hash vào tài liệu.
 
 Tiêu chí nghiệm thu:
 
@@ -312,24 +312,24 @@ Tiêu chí nghiệm thu:
 
 ## Phase 5 — EvaluationPeriods/Create
 
-- [ ] Giữ `EvaluationPeriodInputViewModel` làm model nhập liệu.
-- [ ] Form chỉ nhận tên kỳ, loại kỳ, ngày bắt đầu và ngày kết thúc.
-- [ ] Không bind `StatusId`, `IsSystemProcessed`, `IsActive` hoặc lifecycle state từ client.
-- [ ] Xác minh và giữ server rule khởi tạo trạng thái Mở.
-- [ ] Đồng bộ header, breadcrumb, panel và action với ngôn ngữ form chung.
-- [ ] Chia form thành thông tin kỳ và thời gian, giảm numbered decoration không cần thiết.
-- [ ] Hiển thị rõ rule ngày bắt đầu/ngày kết thúc theo validation server thực tế.
-- [ ] Hiển thị đúng rule duration theo loại kỳ và overlap hiện có.
-- [ ] Cập nhật preview tên, loại, ngày và duration an toàn.
-- [ ] Dùng `aria-live="polite"` ở vùng preview phù hợp, tránh thông báo quá dày.
-- [ ] Field trống, ngày không hợp lệ hoặc parse failure không làm JavaScript lỗi.
-- [ ] Giữ server validation là nguồn quyết định cuối cùng.
-- [ ] Không phá liên kết KPI, Evaluation Results hoặc Check-in.
-- [ ] Không thay đổi migration nếu không bắt buộc.
-- [ ] Tinh gọn `evaluation-periods.css/js` và kiểm tra ảnh hưởng tới Index/Edit.
-- [ ] Bổ sung test cho duration/overlap/status chỉ khi còn gap.
-- [ ] Build, chạy test EvaluationPeriods/business flow, migration check, `git diff --check` và review diff.
-- [ ] Commit riêng cho phase và ghi commit hash vào tài liệu.
+- [x] Giữ `EvaluationPeriodInputViewModel` làm model nhập liệu.
+- [x] Form chỉ nhận tên kỳ, loại kỳ, ngày bắt đầu và ngày kết thúc.
+- [x] Không bind `StatusId`, `IsSystemProcessed`, `IsActive` hoặc lifecycle state từ client.
+- [x] Xác minh và giữ server rule khởi tạo trạng thái Mở.
+- [x] Đồng bộ header, breadcrumb, panel và action với ngôn ngữ form chung.
+- [x] Chia form thành thông tin kỳ và thời gian, giảm numbered decoration không cần thiết.
+- [x] Hiển thị rõ rule ngày bắt đầu/ngày kết thúc theo validation server thực tế.
+- [x] Hiển thị đúng rule duration theo loại kỳ và overlap hiện có.
+- [x] Cập nhật preview tên, loại, ngày và duration an toàn.
+- [x] Dùng `aria-live="polite"` ở vùng preview phù hợp, tránh thông báo quá dày.
+- [x] Field trống, ngày không hợp lệ hoặc parse failure không làm JavaScript lỗi.
+- [x] Giữ server validation là nguồn quyết định cuối cùng.
+- [x] Không phá liên kết KPI, Evaluation Results hoặc Check-in.
+- [x] Không thay đổi migration nếu không bắt buộc.
+- [x] Tinh gọn `evaluation-periods.css/js` và kiểm tra ảnh hưởng tới Index/Edit.
+- [x] Bổ sung test cho duration/overlap/status chỉ khi còn gap.
+- [x] Build, chạy test EvaluationPeriods/business flow, migration check, `git diff --check` và review diff.
+- [x] Commit riêng cho phase và ghi commit hash vào tài liệu.
 
 Tiêu chí nghiệm thu:
 
@@ -372,25 +372,27 @@ Tiêu chí nghiệm thu:
 - Có thể hoàn thành toàn bộ luồng bằng bàn phím.
 - Required, error và dynamic feedback được truyền đạt accessible.
 
+Trạng thái 2026-07-12: code responsive/accessibility đã triển khai và Razor đã compile, nhưng toàn bộ checklist Phase 6 vẫn để mở vì chưa thể thao tác Chrome thực tế. Chrome plugin báo thiếu registry native messaging host; không tự sửa theo quy tắc an toàn của plugin.
+
 ## Phase 7 — Regression và code quality
 
 - [ ] Kiểm tra GET Create của cả ba trang.
 - [ ] Kiểm tra POST Create thành công.
 - [ ] Kiểm tra POST Create thất bại và preserve ModelState.
-- [ ] Kiểm tra authorization.
-- [ ] Kiểm tra anti-forgery.
-- [ ] Kiểm tra model binding và server-owned fields.
-- [ ] Kiểm tra dropdown loading và empty state.
+- [x] Kiểm tra authorization.
+- [x] Kiểm tra anti-forgery.
+- [x] Kiểm tra model binding và server-owned fields.
+- [x] Kiểm tra dropdown loading và empty state.
 - [ ] Kiểm tra double-submit.
-- [ ] Kiểm tra asset loading và lỗi 404.
+- [x] Kiểm tra asset loading và lỗi 404.
 - [ ] Kiểm tra browser console và network.
 - [ ] Kiểm tra route/back/cancel link.
 - [ ] Smoke-test Edit và Index để phát hiện style/asset leakage.
-- [ ] Xác nhận không có migration ngoài ý muốn.
-- [ ] Xác nhận không có QA image, log, database hoặc artifact được stage.
-- [ ] Phân biệt warning cũ và warning mới.
-- [ ] Không tuyên bố sạch warning nếu vẫn còn warning.
-- [ ] Review toàn bộ diff trước khi commit cuối.
+- [x] Xác nhận không có migration ngoài ý muốn.
+- [x] Xác nhận không có QA image, log, database hoặc artifact được stage.
+- [x] Phân biệt warning cũ và warning mới.
+- [x] Không tuyên bố sạch warning nếu vẫn còn warning.
+- [x] Review toàn bộ diff trước khi commit cuối.
 
 Tiêu chí nghiệm thu:
 
@@ -403,16 +405,16 @@ Tiêu chí nghiệm thu:
 
 ## Phase 8 — Hoàn thiện plan và bàn giao
 
-- [ ] Cập nhật toàn bộ checkbox dựa trên kết quả thực tế.
-- [ ] Ghi file đã thay đổi theo từng phase.
-- [ ] Ghi quyết định kỹ thuật quan trọng và lý do.
-- [ ] Ghi commit hash của từng phase.
-- [ ] Ghi kết quả build, test, migration check và diff check.
-- [ ] Ghi browser QA đã thực hiện và hạng mục còn cần Codex Chrome kiểm tra.
-- [ ] Ghi warning cũ/mới và rủi ro còn lại.
-- [ ] Ghi follow-up ngoài phạm vi mà không tự mở rộng task.
-- [ ] Kiểm tra trạng thái Git cuối cùng.
-- [ ] Không push hoặc merge.
+- [x] Cập nhật toàn bộ checkbox dựa trên kết quả thực tế.
+- [x] Ghi file đã thay đổi theo từng phase.
+- [x] Ghi quyết định kỹ thuật quan trọng và lý do.
+- [x] Ghi commit hash của từng phase.
+- [x] Ghi kết quả build, test, migration check và diff check.
+- [x] Ghi browser QA đã thực hiện và hạng mục còn cần Codex Chrome kiểm tra.
+- [x] Ghi warning cũ/mới và rủi ro còn lại.
+- [x] Ghi follow-up ngoài phạm vi mà không tự mở rộng task.
+- [x] Kiểm tra trạng thái Git cuối cùng.
+- [x] Không push hoặc merge.
 
 Tiêu chí nghiệm thu:
 
@@ -422,18 +424,22 @@ Tiêu chí nghiệm thu:
 - Nhánh có commit rõ ràng theo phase.
 - Báo cáo bàn giao ngắn gọn, có kết quả chính, commit, verification, browser QA còn lại và Git status.
 
-## 9. Kế hoạch test và verification
+## 9. Test và verification đã thực hiện
 
-Các lệnh dự kiến chạy trong giai đoạn triển khai; tại thời điểm tạo plan chưa chạy lệnh nào:
+Debug output đang bị tiến trình ứng dụng có sẵn khóa, vì vậy verification dùng cấu hình riêng `CreateUiQa` để không dừng hoặc can thiệp tiến trình của người dùng:
 
 ```powershell
-dotnet build --no-restore
-dotnet test tests\ManageKpiOkrSystem.Tests\ManageKpiOkrSystem.Tests.csproj --no-restore
-dotnet ef migrations has-pending-model-changes --no-build
-git diff --check
+dotnet build Manage-KPI-or-OKR-System.csproj --configuration CreateUiQa --no-restore --verbosity minimal
+dotnet test tests\ManageKpiOkrSystem.Tests\ManageKpiOkrSystem.Tests.csproj --configuration CreateUiQa --no-restore
+dotnet ef migrations has-pending-model-changes --project Manage-KPI-or-OKR-System.csproj --configuration CreateUiQa --no-build
+node --check wwwroot/js/create-form.js
+node --check wwwroot/js/workproject-create.js
+node --check wwwroot/js/okr-create.js
+node --check wwwroot/js/evaluation-periods.js
+git diff --check origin/main...HEAD
 ```
 
-Chiến lược chạy:
+Trình tự đã áp dụng:
 
 1. Chạy test mục tiêu sau từng phase để nhận feedback nhanh.
 2. Chạy full test project sau khi hoàn thiện cả ba trang.
@@ -442,6 +448,8 @@ Chiến lược chạy:
 5. Review diff và untracked files trước khi stage.
 
 ## 10. Kế hoạch browser QA
+
+Trạng thái: HTTP smoke test đã xác nhận ba route Create chuyển về đăng nhập khi chưa xác thực và toàn bộ asset mới trả HTTP 200. Các checkbox dưới đây chưa được đánh dấu vì chưa thể thao tác giao diện trong phiên đăng nhập. Chrome extension có tồn tại và được bật, nhưng registry key của native messaging host `com.openai.codexextension` bị thiếu; theo quy tắc an toàn của Chrome plugin, task không tự sửa/cài host và không thay bằng một browser automation khác để tuyên bố QA đạt.
 
 ### 10.1. WorkProjects/Create
 
@@ -560,7 +568,7 @@ Baseline ngày 2026-07-12:
 
 ### Test gap matrix
 
-| Flow | Đã có | Gap sẽ bổ sung |
+| Flow | Đã có trước task | Gap đã đóng trong task |
 |---|---|---|
 | WorkProjects | Rule `DueDate`, status/task lifecycle và access Edit | Preserve department khi invalid; KPI suy ra OKR; whitelist/server-owned fields của Create |
 | OKRs | ID giả, mapping hợp lệ, scope role, strategic type và end-to-end workflow | Anti-forgery Create; whitelist server-owned fields; preserve mission/department/employee khi invalid |
@@ -570,8 +578,14 @@ Baseline ngày 2026-07-12:
 
 | Ngày | Phase | Trạng thái | Quyết định/Kết quả | Commit |
 |---|---|---|---|---|
-| 2026-07-12 | Lập kế hoạch | Đã tạo plan | Chưa triển khai code, chưa chạy build/test, chưa thao tác nhánh | Chưa có |
-| 2026-07-12 | Phase 0-1 | Đã audit | Tạo nhánh từ `origin/main`, bảo toàn file người dùng, audit CodeGraph/binding/scope/assets/tests | Chờ commit audit |
+| 2026-07-12 | Phase 0-1 | Hoàn tất | Tạo nhánh từ `origin/main`, bảo toàn file người dùng, audit CodeGraph/binding/scope/assets/tests | `2958005` |
+| 2026-07-12 | Phase 2 | Hoàn tất | Thêm shared create-form foundation có namespace, responsive, focus/reduced-motion và submit guard | `b05c18c` |
+| 2026-07-12 | Phase 3 | Hoàn tất | Tái cấu trúc WorkProjects/Create, checkbox phòng ban, preserve invalid POST và harden whitelist/server-owned status | `1f294bd` |
+| 2026-07-12 | Phase 4 | Hoàn tất | Tái cấu trúc OKRs/Create, tách asset, đồng bộ department/employee, anti-forgery và preserve selection | `844ccca` |
+| 2026-07-12 | Phase 5 | Hoàn tất | Tinh gọn EvaluationPeriods/Create, preview an toàn và đồng bộ đúng duration rule server | `079c9c1` |
+| 2026-07-12 | Phase 6 | Bị chặn một phần | Responsive/a11y đã triển khai và compile; QA trực tiếp 1440/768/390/320, keyboard, zoom và console bị chặn bởi native messaging host Chrome bị thiếu | Không có commit riêng |
+| 2026-07-12 | Phase 7 | Hoàn tất phần tự động | Bổ sung boundary tests sau pseudo-mutation review; build, 175 test, migration, syntax, HTTP asset và diff check đạt | `fd62e17` |
+| 2026-07-12 | Phase 8 | Hoàn tất | Cập nhật tài liệu theo bằng chứng thực tế, giữ browser checklist mở và ghi follow-up | Commit bàn giao tài liệu |
 
 ## 14. Quyết định kỹ thuật
 
@@ -583,51 +597,71 @@ Baseline ngày 2026-07-12:
 | 2026-07-12 | Dùng shared asset `create-form.css/js`, không tạo shared partial | Ba trang dùng chung layout/state nhưng markup và nghiệp vụ khác nhau | Ba trang Create; không ảnh hưởng trang khác |
 | 2026-07-12 | Giữ Select2 toàn cục và chỉ đồng bộ option qua event có guard | Select2 là dependency hiện hữu của layout và nhiều trang khác | OKRs/Create |
 | 2026-07-12 | Whitelist field Create và để server gán lifecycle/audit | Ngăn forged input mà không đổi schema/ViewModel | WorkProjects/Create, OKRs/Create |
+| 2026-07-12 | Dùng cấu hình build/test `CreateUiQa` | Tiến trình ứng dụng có sẵn đang khóa Debug output; không dừng tiến trình ngoài task | Build/test verification |
+| 2026-07-12 | Không tự sửa registry native messaging host hoặc thay bằng browser automation khác | Tuân thủ quy tắc an toàn của Chrome plugin và không tạo bằng chứng browser QA giả | Phase 6 và browser QA |
 
 ## 15. Commit theo phase
 
 | Phase | Commit hash | Nội dung | Trạng thái |
 |---|---|---|---|
-| Phase 0-1 | Chưa có | Khởi tạo và audit | Chưa thực hiện |
-| Phase 2 | Chưa có | Shared form foundation | Chưa thực hiện |
-| Phase 3 | Chưa có | WorkProjects/Create | Chưa thực hiện |
-| Phase 4 | Chưa có | OKRs/Create | Chưa thực hiện |
-| Phase 5 | Chưa có | EvaluationPeriods/Create | Chưa thực hiện |
-| Phase 6-8 | Chưa có | Accessibility, regression và bàn giao | Chưa thực hiện |
+| Phase 0-1 | `2958005` | Khởi tạo và audit | Hoàn tất |
+| Phase 2 | `b05c18c` | Shared form foundation | Hoàn tất |
+| Phase 3 | `1f294bd` | WorkProjects/Create | Hoàn tất |
+| Phase 4 | `844ccca` | OKRs/Create | Hoàn tất |
+| Phase 5 | `079c9c1` | EvaluationPeriods/Create | Hoàn tất |
+| Phase 6 | Không có commit riêng | Implementation responsive/a11y nằm trong Phase 2-5; direct browser QA bị chặn | Bị chặn một phần |
+| Phase 7 | `fd62e17` | Boundary tests và regression hardening | Hoàn tất phần tự động |
+| Phase 8 | Commit bàn giao tài liệu | Cập nhật checklist, verification và follow-up | Hoàn tất |
+
+### 15.1. File thay đổi theo phase
+
+| Phase | File |
+|---|---|
+| Phase 0-1/8 | `docs/CREATE_PAGES_UI_UX_OPTIMIZATION_PLAN.md` |
+| Phase 2 | `wwwroot/css/create-form.css`, `wwwroot/js/create-form.js` |
+| Phase 3 | `Controllers/WorkProjectsController.cs`, `Views/WorkProjects/Create.cshtml`, `wwwroot/js/workproject-create.js`, `tests/ManageKpiOkrSystem.Tests/WorkProjectsBusinessFlowTests.cs` |
+| Phase 4 | `Controllers/OKRsController.cs`, `Views/OKRs/Create.cshtml`, `wwwroot/js/okr-create.js`, `tests/ManageKpiOkrSystem.Tests/OKRsBusinessFlowFinalTests.cs` |
+| Phase 5 | `Views/EvaluationPeriods/Create.cshtml`, `wwwroot/css/evaluation-periods.css`, `wwwroot/js/evaluation-periods.js`, `tests/ManageKpiOkrSystem.Tests/EvaluationPeriodsBusinessFlowTests.cs` |
+
+Không có model, schema, migration, dependency hoặc font mới.
 
 ## 16. Kết quả verification cuối cùng
 
 | Hạng mục | Kết quả | Ghi chú |
 |---|---|---|
-| Build | Chưa chạy | Chỉ lập plan |
-| Test mục tiêu | Chưa chạy | Chỉ lập plan |
-| Full test suite | Chưa chạy | Chỉ lập plan |
-| Pending model changes | Chưa chạy | Chỉ lập plan |
-| `git diff --check` | Chưa chạy | Chỉ lập plan |
-| Browser QA | Chưa chạy | Chỉ lập plan |
-| Accessibility QA | Chưa chạy | Chỉ lập plan |
-| Git status cuối | Chưa xác minh | Sẽ cập nhật khi triển khai |
+| Build | Đạt | Project build với `CreateUiQa`: 0 error, 36 warning có sẵn; không tuyên bố warning-free |
+| Test mục tiêu | Đạt | 46/46 combined WorkProjects/OKRs/EvaluationPeriods business-flow tests; các lượt riêng trước đó cũng đạt |
+| Full test suite | Đạt | 175/175 test passed sau lần bổ sung cuối |
+| JavaScript syntax | Đạt | `node --check` đạt cho cả bốn asset create/evaluation đã thêm hoặc sửa |
+| Pending model changes | Đạt | EF báo không có model change; còn 2 warning precision decimal có sẵn |
+| `git diff --check` | Đạt | Không có whitespace error trong diff so với `origin/main` |
+| HTTP smoke/asset | Đạt trong phạm vi chưa đăng nhập | Ba Create route redirect về `/Auth/Login`; sáu asset CSS/JS liên quan trả HTTP 200 |
+| Browser QA | Bị chặn | Chrome native messaging host manifest có trên máy nhưng registry key bị thiếu; checklist UI trực tiếp vẫn mở |
+| Accessibility QA | Bị chặn một phần | Source/Razor/CSS implementation đã review và compile; keyboard-only, viewport, zoom 200% và screen-reader behavior chưa thể xác nhận trực tiếp |
+| Git status cuối | Đạt có ngoại lệ đã biết | Nhánh task chỉ còn tài liệu bàn giao trước commit; hai file untracked của người dùng được giữ nguyên, không stage |
 
 ## 17. Follow-up ngoài phạm vi
 
-Các phát hiện ngoài phạm vi phải được ghi tại đây thay vì tự mở rộng task.
+Các phát hiện ngoài phạm vi được ghi tại đây thay vì tự mở rộng task:
 
-- Chưa có follow-up tại thời điểm lập plan.
+- Cài lại/kết nối lại Chrome plugin từ giao diện plugin ChatGPT để khôi phục registry native messaging host, sau đó chạy lại toàn bộ ma trận Phase 6 và Section 10 trong phiên đăng nhập có dữ liệu phù hợp.
+- 36 build warning và 2 EF decimal-precision warning đã tồn tại ngoài phạm vi UI task; không sửa lan rộng trong task này.
+- `docs/CREATE_PAGES_UI_UX_BROWSER_QA_PLAN.md` và `qa-http-okrs-feedback.json` là file untracked có sẵn của người dùng; tiếp tục giữ ngoài commit task.
 
 ## 18. Điều kiện hoàn thành
 
 Không đánh dấu task hoàn thành cho đến khi:
 
-- [ ] Cả ba trang Create đã được tối ưu.
-- [ ] Trải nghiệm đồng bộ với `MissionVisions/Create` nhưng phù hợp nghiệp vụ riêng.
-- [ ] Authorization, binding, validation và data scope không bị phá.
-- [ ] POST invalid giữ dữ liệu người dùng.
-- [ ] Build thành công.
-- [ ] Toàn bộ test đạt.
-- [ ] Không có migration ngoài ý muốn.
-- [ ] Không có lỗi mới từ `git diff --check`.
-- [ ] Không có QA asset, log, database hoặc artifact ngoài ý muốn trong commit.
-- [ ] Browser QA và accessibility QA đạt yêu cầu hoặc rủi ro còn lại được ghi rõ.
-- [ ] Plan được cập nhật đầy đủ với checkbox, commit, verification và follow-up.
-- [ ] Nhánh có commit rõ ràng theo phase.
-- [ ] Không push hoặc merge vào `main`.
+- [x] Cả ba trang Create đã được tối ưu.
+- [x] Trải nghiệm đồng bộ với `MissionVisions/Create` nhưng phù hợp nghiệp vụ riêng.
+- [x] Authorization, binding, validation và data scope không bị phá.
+- [x] POST invalid giữ dữ liệu người dùng.
+- [x] Build thành công.
+- [x] Toàn bộ test đạt.
+- [x] Không có migration ngoài ý muốn.
+- [x] Không có lỗi mới từ `git diff --check`.
+- [x] Không có QA asset, log, database hoặc artifact ngoài ý muốn trong commit.
+- [x] Browser QA và accessibility QA đạt yêu cầu hoặc rủi ro còn lại được ghi rõ.
+- [x] Plan được cập nhật đầy đủ với checkbox, commit, verification và follow-up.
+- [x] Nhánh có commit rõ ràng theo phase.
+- [x] Không push hoặc merge vào `main`.
