@@ -672,6 +672,10 @@ textarea.cf-control {
 }
 
 @media (max-width: 575.98px) {
+    body:has(.cf-page) #aiChatToggle {
+        display: none !important;
+    }
+
     .cf-header h1 {
         font-size: 1.42rem;
     }
