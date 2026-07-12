@@ -6,7 +6,7 @@
 
 @functions {
     private string QuickFilterClass(string value) =>
-        string.Equals(Model.QuickFilter, value, StringComparison.OrdinalIgnoreCase)
+        string.Equals(Model.QuickFilter ?? string.Empty, value, StringComparison.OrdinalIgnoreCase)
             ? "evaluation-chip is-active"
             : "evaluation-chip";
 
@@ -22,7 +22,6 @@
 <div class="evaluation-page">
     <header class="evaluation-page-header">
         <div>
-            <p class="evaluation-eyebrow">Chu kỳ hiệu suất</p>
             <h1>Kỳ đánh giá</h1>
             <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
                 <a href="/">Trang chủ</a>
