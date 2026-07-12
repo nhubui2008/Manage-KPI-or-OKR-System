@@ -243,7 +243,9 @@
                                             </a>
                                             @if (item.StatusName == "Mở")
                                             {
-                                                <form asp-action="StartProcessing" method="post">
+                                                <form asp-action="StartProcessing" method="post" data-evaluation-confirm
+                                                      data-confirm-title="Bắt đầu xử lý kỳ?"
+                                                      data-confirm-message="Chuyển @item.PeriodName sang trạng thái Đang xử lý.">
                                                     <input type="hidden" name="id" value="@item.Id" />
                                                     <button type="submit" class="evaluation-icon-button" aria-label="Bắt đầu xử lý kỳ @item.PeriodName" title="Bắt đầu xử lý">
                                                         <i class="bi bi-play-fill" aria-hidden="true"></i>
@@ -252,7 +254,9 @@
                                             }
                                             else if (item.StatusName == "Đang xử lý")
                                             {
-                                                <form asp-action="Close" method="post" data-evaluation-lifecycle data-message="Đóng kỳ @item.PeriodName?">
+                                                <form asp-action="Close" method="post" data-evaluation-confirm data-confirm-tone="warning"
+                                                      data-confirm-title="Đóng kỳ đánh giá?"
+                                                      data-confirm-message="Đóng @item.PeriodName. Hệ thống sẽ kiểm tra KPI, check-in và kết quả chưa hoàn tất trước khi lưu.">
                                                     <input type="hidden" name="id" value="@item.Id" />
                                                     <button type="submit" class="evaluation-icon-button" aria-label="Đóng kỳ @item.PeriodName" title="Đóng kỳ">
                                                         <i class="bi bi-lock" aria-hidden="true"></i>
@@ -261,7 +265,9 @@
                                             }
                                             else if (item.StatusName == "Đóng")
                                             {
-                                                <form asp-action="Reopen" method="post" data-evaluation-lifecycle data-message="Mở lại kỳ @item.PeriodName?">
+                                                <form asp-action="Reopen" method="post" data-evaluation-confirm
+                                                      data-confirm-title="Mở lại kỳ đánh giá?"
+                                                      data-confirm-message="Mở lại @item.PeriodName để tiếp tục xử lý dữ liệu.">
                                                     <input type="hidden" name="id" value="@item.Id" />
                                                     <button type="submit" class="evaluation-icon-button" aria-label="Mở lại kỳ @item.PeriodName" title="Mở lại kỳ">
                                                         <i class="bi bi-unlock" aria-hidden="true"></i>
@@ -271,7 +277,9 @@
                                         }
                                         @if (Model.CanDeletePeriod)
                                         {
-                                            <form asp-action="Delete" method="post" data-evaluation-delete data-period-name="@item.PeriodName">
+                                            <form asp-action="Delete" method="post" data-evaluation-confirm data-confirm-tone="danger"
+                                                  data-confirm-title="Vô hiệu hóa kỳ đánh giá?"
+                                                  data-confirm-message="Vô hiệu hóa @item.PeriodName. Kỳ hiện có @item.KpiCount KPI và @item.EvaluationResultCount kết quả liên kết; nếu còn dependency, hệ thống sẽ từ chối thao tác.">
                                                 <input type="hidden" name="id" value="@item.Id" />
                                                 <button type="submit" class="evaluation-icon-button evaluation-icon-button--danger" aria-label="Vô hiệu hóa kỳ @item.PeriodName">
                                                     <i class="bi bi-trash3" aria-hidden="true"></i>
@@ -316,7 +324,9 @@
                                     </a>
                                     @if (item.StatusName == "Mở")
                                     {
-                                        <form asp-action="StartProcessing" method="post">
+                                        <form asp-action="StartProcessing" method="post" data-evaluation-confirm
+                                              data-confirm-title="Bắt đầu xử lý kỳ?"
+                                              data-confirm-message="Chuyển @item.PeriodName sang trạng thái Đang xử lý.">
                                             <input type="hidden" name="id" value="@item.Id" />
                                             <button type="submit" class="evaluation-icon-button" aria-label="Bắt đầu xử lý kỳ @item.PeriodName trên thẻ di động">
                                                 <i class="bi bi-play-fill" aria-hidden="true"></i>
@@ -325,7 +335,9 @@
                                     }
                                     else if (item.StatusName == "Đang xử lý")
                                     {
-                                        <form asp-action="Close" method="post" data-evaluation-lifecycle data-message="Đóng kỳ @item.PeriodName?">
+                                        <form asp-action="Close" method="post" data-evaluation-confirm data-confirm-tone="warning"
+                                              data-confirm-title="Đóng kỳ đánh giá?"
+                                              data-confirm-message="Đóng @item.PeriodName. Hệ thống sẽ kiểm tra KPI, check-in và kết quả chưa hoàn tất trước khi lưu.">
                                             <input type="hidden" name="id" value="@item.Id" />
                                             <button type="submit" class="evaluation-icon-button" aria-label="Đóng kỳ @item.PeriodName trên thẻ di động">
                                                 <i class="bi bi-lock" aria-hidden="true"></i>
@@ -334,7 +346,9 @@
                                     }
                                     else if (item.StatusName == "Đóng")
                                     {
-                                        <form asp-action="Reopen" method="post" data-evaluation-lifecycle data-message="Mở lại kỳ @item.PeriodName?">
+                                        <form asp-action="Reopen" method="post" data-evaluation-confirm
+                                              data-confirm-title="Mở lại kỳ đánh giá?"
+                                              data-confirm-message="Mở lại @item.PeriodName để tiếp tục xử lý dữ liệu.">
                                             <input type="hidden" name="id" value="@item.Id" />
                                             <button type="submit" class="evaluation-icon-button" aria-label="Mở lại kỳ @item.PeriodName trên thẻ di động">
                                                 <i class="bi bi-unlock" aria-hidden="true"></i>
@@ -344,7 +358,9 @@
                                 }
                                 @if (Model.CanDeletePeriod)
                                 {
-                                    <form asp-action="Delete" method="post" data-evaluation-delete data-period-name="@item.PeriodName">
+                                    <form asp-action="Delete" method="post" data-evaluation-confirm data-confirm-tone="danger"
+                                          data-confirm-title="Vô hiệu hóa kỳ đánh giá?"
+                                          data-confirm-message="Vô hiệu hóa @item.PeriodName. Kỳ hiện có @item.KpiCount KPI và @item.EvaluationResultCount kết quả liên kết; nếu còn dependency, hệ thống sẽ từ chối thao tác.">
                                         <input type="hidden" name="id" value="@item.Id" />
                                         <button type="submit" class="evaluation-icon-button evaluation-icon-button--danger" aria-label="Vô hiệu hóa kỳ @item.PeriodName trên thẻ di động">
                                             <i class="bi bi-trash3" aria-hidden="true"></i>
@@ -387,6 +403,34 @@
         }
     </section>
 </div>
+
+@if (Model.CanEditPeriod || Model.CanDeletePeriod)
+{
+    <div class="modal fade" id="evaluationConfirmModal" tabindex="-1"
+         aria-labelledby="evaluationConfirmTitle" aria-describedby="evaluationConfirmMessage" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content evaluation-modal evaluation-confirm-modal">
+                <div class="modal-header border-0 pb-0">
+                    <div class="evaluation-confirm-heading">
+                        <span class="evaluation-confirm-icon" aria-hidden="true"><i class="bi bi-shield-check"></i></span>
+                        <div>
+                            <p class="evaluation-eyebrow">Xác nhận thao tác</p>
+                            <h2 class="modal-title" id="evaluationConfirmTitle">Xác nhận thay đổi</h2>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng cửa sổ xác nhận"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <p id="evaluationConfirmMessage" class="mb-0"></p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="evaluation-secondary-action" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="evaluation-primary-action" id="evaluationConfirmSubmit">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @section Styles {
     <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />

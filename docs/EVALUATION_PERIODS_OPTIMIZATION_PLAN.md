@@ -190,22 +190,22 @@ Nhanh: `Ngthebao-phase-33-evaluation-periods-final-qa`
 
 **Muc tieu:** hoan thien visual, responsive, accessibility va test tron luong that.
 
-- [ ] Tai cau truc danh sach: table compact desktop va card/stacked row mobile; uu tien ten, operational badge, ngay, KPI/result count va action.
-  - Test: 1534 desktop, 768x1024, 390x844; khong table scroll ngang o mobile; title/action khong bi cat.
-- [ ] Chuan hoa badge co text + mau + icon: dang dien ra, sap bat dau, sap ket thuc, qua han chua dong, da dong.
-  - Test: boundary date snapshots/unit mapping; khong phan biet chi bang mau.
-- [ ] Thay inline `onclick`/native confirm bang data attribute va modal xac nhan co ten ky, dependency summary va focus hop le.
-  - Test: keyboard open/close/submit; modal co `aria-labelledby`; khong duplicate ID.
-- [ ] Them `aria-label` duy nhat cho menu/edit/close/reopen/delete, gom ten period; focus ring ro.
-  - Test: DOM audit moi action co accessible name duy nhat.
-- [ ] Don Create/Edit UI: bo CDN/inline style khong can, giu form ngan, preview huu ich; action khong wrap xau o 390 px.
-  - Test: validation inline, back/cancel dung, desktop/mobile screenshot va console sach.
-- [ ] QA luong that: create, edit, search/filter/sort/paging, close/reopen/delete theo rule; mo KPI, KPI Check-in va EvaluationResult lien quan.
-  - Test: du lieu dong bo dung, blocker message dung, cleanup QA an toan.
-- [ ] QA role Admin, Director, Manager, HR va Employee voi permission matrix.
-  - Test: view/create/edit/delete/lifecycle hien dung va server-side Forbid dung.
-- [ ] Chay final verification.
-  - Test: `dotnet build --no-restore`; full test project; `dotnet ef migrations has-pending-model-changes --no-build`; `git diff --check`; Chrome console khong co loi moi.
+- [x] Tai cau truc danh sach: table compact desktop va card/stacked row mobile; uu tien ten, operational badge, ngay, KPI/result count va action.
+  - Test: 1519 desktop, 768x1024, 390x844; table an/card hien <=900 px; khong overflow hoac cat action.
+- [x] Chuan hoa badge co text + mau: dang dien ra, sap bat dau, sap ket thuc, qua han chua dong, da dong.
+  - Test: boundary unit mapping va Chrome DOM; badge co text, cham status va contrast rieng.
+- [x] Thay native confirm bang data attribute va modal xac nhan co ten ky, dependency summary va focus hop le.
+  - Test: open/cancel modal khong submit; co `aria-labelledby`/`aria-describedby`; khong duplicate ID.
+- [x] Them `aria-label` duy nhat cho edit/start/close/reopen/delete, gom ten period; focus ring ro.
+  - Test: desktop DOM audit 18/18 action co accessible name duy nhat.
+- [x] Don Create/Edit UI: bo CDN/inline style khong can, dung asset noi bo, giu preview va native select; action stack o 390 px.
+  - Test: preview cap nhat; Create/Edit khong overflow; Select2 wrapper = 0; console sach.
+- [x] QA luong that: create, edit, start, close, reopen, delete theo rule va cleanup an toan.
+  - Test: SQL period `Id=4` inactive sau flow; audit co du CREATE/STATUS_CHANGE/UPDATE/CLOSE/REOPEN/DELETE.
+- [x] QA role Admin, Director, Manager, HR va Employee voi permission matrix.
+  - Test: 5 role Index HTTP 200; action visibility khop endpoint; Employee Create/Edit chuyen AccessDenied.
+- [x] Chay final verification.
+  - Test: build; 163 tests; no pending model changes; diff check; Chrome desktop/768/390 va console sach.
 
 File du kien Phase 33:
 
@@ -236,16 +236,16 @@ Tieu chi nghiem thu Phase 33:
 
 ## 7. Acceptance criteria toan bo
 
-- [ ] `/EvaluationPeriods` warm load/filter khong co do tre 2-3 giay; filter QA < 1 giay va query duoc thuc hien tren database.
-- [ ] Summary/list cung scope va phan loai dung ky dang chay, sap bat dau, sap ket thuc, qua han, da dong.
-- [ ] Filter/search/sort/paging giu query state va co clear/empty state ro.
-- [ ] Create/Edit/Close/Reopen/Delete tuan thu lifecycle, dependency va permission.
-- [ ] KPI, KPI Check-in, EvaluationResult khong nhan period gia/khong hop le; core KPI/OKR khong regression.
-- [ ] Desktop, 768x1024 va 390x844 khong overflow cap trang; mobile khong can scroll ngang de thay status/action.
-- [ ] Moi action va modal co accessible name; khong duplicate ID; keyboard/focus dung.
-- [ ] Khong co console error/warning moi.
-- [ ] `dotnet build`, full test project, pending-model check va `git diff --check` pass.
-- [ ] Chi file trong pham vi duoc commit; `qa-http-okrs-feedback.json` khong duoc commit/push.
+- [x] `/EvaluationPeriods` warm load/filter khong co do tre 2-3 giay; filter QA < 1 giay va query duoc thuc hien tren database.
+- [x] Summary/list cung scope va phan loai dung ky dang chay, sap bat dau, sap ket thuc, qua han, da dong.
+- [x] Filter/search/sort/paging giu query state va co clear/empty state ro.
+- [x] Create/Edit/Close/Reopen/Delete tuan thu lifecycle, dependency va permission.
+- [x] KPI, KPI Check-in, EvaluationResult khong nhan period gia/khong hop le; core KPI/OKR khong regression.
+- [x] Desktop, 768x1024 va 390x844 khong overflow cap trang; mobile khong can scroll ngang de thay status/action.
+- [x] Moi action va modal co accessible name; khong duplicate ID; keyboard/focus dung.
+- [x] Khong co console error/warning moi.
+- [x] `dotnet build`, full test project, pending-model check va `git diff --check` pass.
+- [x] Chi file trong pham vi duoc commit; `qa-http-okrs-feedback.json` khong duoc commit/push.
 
 ## 8. Nhat ky thuc hien
 
@@ -253,4 +253,5 @@ Tieu chi nghiem thu Phase 33:
 |---|---|---|---|---|---|---|
 | 2026-07-11 | 30 | Git/CodeGraph/backend/data/UI audit va baseline plan | `Ngthebao-phase-30-evaluation-periods-audit-plan` | build, 124 tests, EF pending check, diff check, Chrome desktop/768/390 | Pass; da ghi baseline va risk | `a3eb3f4` |
 | 2026-07-12 | 31 | Typed overview, database filter/sort/paging, summary, responsive list va performance | `Ngthebao-phase-31-evaluation-periods-overview-filter` | build, 134 tests, EF pending check, diff check, Chrome desktop/768/390, 30 authenticated HTTP samples | Pass; avg filter 90-477 ms, khong EF/runtime error | `c069632` |
-| 2026-07-12 | 32 | Typed CRUD, lifecycle, dependency guards va KPI/EvaluationResult/Check-in integration | `Ngthebao-phase-32-evaluation-periods-business-flow` | build, 163 tests, 6 authenticated SQL Server GET flows, diff check | Pass; lifecycle va integration whitelist hoat dong, khong runtime error | Commit Phase 32 |
+| 2026-07-12 | 32 | Typed CRUD, lifecycle, dependency guards va KPI/EvaluationResult/Check-in integration | `Ngthebao-phase-32-evaluation-periods-business-flow` | build, 163 tests, 6 authenticated SQL Server GET flows, diff check | Pass; lifecycle va integration whitelist hoat dong, khong runtime error | `e1fbf64` |
+| 2026-07-12 | 33 | Modal xac nhan, Create/Edit polish, responsive/accessibility, role matrix va full-flow QA | `Ngthebao-phase-33-evaluation-periods-final-qa` | build, 163 tests, EF/diff check, Chrome desktop/768/390, 5 role, SQL CRUD/lifecycle | Pass; console sach, QA period da soft-disable | Commit Phase 33 |

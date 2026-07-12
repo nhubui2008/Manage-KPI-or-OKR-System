@@ -5,7 +5,7 @@
 }
 
 <div class="page-content">
-    <div class="page-header d-flex align-items-center justify-content-between mb-4">
+    <div class="page-header evaluation-form-header d-flex align-items-center justify-content-between mb-4">
         <div>
             <h1 class="mb-2 fw-bold">Sửa kỳ đánh giá</h1>
             <div class="page-breadcrumb">
@@ -19,7 +19,7 @@
         </a>
     </div>
 
-    <div class="content-card border-0 shadow-sm mx-auto" style="max-width: 860px;">
+    <div class="content-card evaluation-edit-card border-0 shadow-sm mx-auto">
         <div class="card-body-custom p-4 p-lg-5">
             <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
                 <input asp-for="Id" type="hidden" />
@@ -34,7 +34,7 @@
                 <div class="row g-4">
                     <div class="col-md-4">
                         <label asp-for="PeriodType" class="form-label fw-semibold"></label>
-                        <select asp-for="PeriodType" class="form-select">
+                        <select asp-for="PeriodType" class="form-select no-select2">
                             <option value="MONTH">Hàng tháng</option>
                             <option value="QUARTER">Hàng quý</option>
                             <option value="YEAR">Hàng năm</option>
@@ -57,7 +57,7 @@
                     Nếu kỳ đã có KPI, check-in hoặc kết quả đánh giá, hệ thống chỉ cho phép đổi tên để bảo toàn lịch sử.
                 </p>
 
-                <div class="d-flex flex-wrap justify-content-end gap-3 mt-4 pt-4 border-top">
+                <div class="evaluation-form-actions d-flex flex-wrap justify-content-end gap-3 mt-4 pt-4 border-top">
                     <a asp-action="Index" class="btn-outline-custom">Hủy</a>
                     <button type="submit" class="btn-primary-custom">
                         <i class="bi bi-check-lg me-2" aria-hidden="true"></i> Lưu thay đổi
@@ -67,6 +67,10 @@
         </div>
     </div>
 </div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
+}
 
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
