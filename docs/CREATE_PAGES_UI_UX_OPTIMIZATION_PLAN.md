@@ -585,7 +585,7 @@ Baseline ngày 2026-07-12:
 | 2026-07-12 | Phase 5 | Hoàn tất | Tinh gọn EvaluationPeriods/Create, preview an toàn và đồng bộ đúng duration rule server | `079c9c1` |
 | 2026-07-12 | Phase 6 | Bị chặn một phần | Responsive/a11y đã triển khai và compile; QA trực tiếp 1440/768/390/320, keyboard, zoom và console bị chặn bởi native messaging host Chrome bị thiếu | Không có commit riêng |
 | 2026-07-12 | Phase 7 | Hoàn tất phần tự động | Bổ sung boundary tests sau pseudo-mutation review; build, 175 test, migration, syntax, HTTP asset và diff check đạt | `fd62e17` |
-| 2026-07-12 | Phase 8 | Hoàn tất | Cập nhật tài liệu theo bằng chứng thực tế, giữ browser checklist mở và ghi follow-up | Commit bàn giao tài liệu |
+| 2026-07-12 | Phase 8 | Hoàn tất | Cập nhật tài liệu theo bằng chứng thực tế, giữ browser checklist mở và ghi follow-up | `2229e6e` |
 
 ## 14. Quyết định kỹ thuật
 
@@ -611,7 +611,7 @@ Baseline ngày 2026-07-12:
 | Phase 5 | `079c9c1` | EvaluationPeriods/Create | Hoàn tất |
 | Phase 6 | Không có commit riêng | Implementation responsive/a11y nằm trong Phase 2-5; direct browser QA bị chặn | Bị chặn một phần |
 | Phase 7 | `fd62e17` | Boundary tests và regression hardening | Hoàn tất phần tự động |
-| Phase 8 | Commit bàn giao tài liệu | Cập nhật checklist, verification và follow-up | Hoàn tất |
+| Phase 8 | `2229e6e` | Cập nhật checklist, verification và follow-up | Hoàn tất |
 
 ### 15.1. File thay đổi theo phase
 
@@ -638,7 +638,7 @@ Không có model, schema, migration, dependency hoặc font mới.
 | HTTP smoke/asset | Đạt trong phạm vi chưa đăng nhập | Ba Create route redirect về `/Auth/Login`; sáu asset CSS/JS liên quan trả HTTP 200 |
 | Browser QA | Bị chặn | Chrome native messaging host manifest có trên máy nhưng registry key bị thiếu; checklist UI trực tiếp vẫn mở |
 | Accessibility QA | Bị chặn một phần | Source/Razor/CSS implementation đã review và compile; keyboard-only, viewport, zoom 200% và screen-reader behavior chưa thể xác nhận trực tiếp |
-| Git status cuối | Đạt có ngoại lệ đã biết | Nhánh task chỉ còn tài liệu bàn giao trước commit; hai file untracked của người dùng được giữ nguyên, không stage |
+| Git status cuối | Đạt có ngoại lệ đã biết | Tracked worktree sạch sau commit bàn giao; hai file untracked của người dùng được giữ nguyên, không stage |
 
 ## 17. Follow-up ngoài phạm vi
 
