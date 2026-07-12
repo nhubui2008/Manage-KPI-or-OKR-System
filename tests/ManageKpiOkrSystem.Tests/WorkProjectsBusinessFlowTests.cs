@@ -85,6 +85,47 @@ public sealed class WorkProjectsBusinessFlowTests
     }
 
     [Fact]
+    public async Task Create_AllowsDueDateEqualToStartDate()
+    {
+        await using var context = CreateContext();
+        var project = Project("Same-day project", "Planning", "Normal");
+        project.StartDate = new DateTime(2026, 8, 20);
+        project.DueDate = project.StartDate;
+
+        var result = await CreateController(context).Create(project, Array.Empty<int>());
+
+        Assert.IsType<RedirectToActionResult>(result);
+        var saved = Assert.Single(await context.WorkProjects.ToListAsync());
+        Assert.Equal(saved.StartDate, saved.DueDate);
+    }
+
+    [Fact]
+    public async Task Create_RejectsKpiThatBelongsToDifferentSelectedOkr()
+    {
+        await using var context = CreateContext();
+        var selectedOkr = new OKR { ObjectiveName = "Selected objective", IsActive = true };
+        var kpiOkr = new OKR { ObjectiveName = "KPI objective", IsActive = true };
+        context.OKRs.AddRange(selectedOkr, kpiOkr);
+        await context.SaveChangesAsync();
+        var sourceKpi = new KPI { KPIName = "Mismatched KPI", OKRId = kpiOkr.Id, IsActive = true };
+        context.KPIs.Add(sourceKpi);
+        await context.SaveChangesAsync();
+        var project = Project("Mismatched source", "Planning", "Normal");
+        project.SourceOKRId = selectedOkr.Id;
+        project.SourceKPIId = sourceKpi.Id;
+        var controller = CreateController(context);
+
+        var result = await controller.Create(project, Array.Empty<int>());
+
+        Assert.IsType<ViewResult>(result);
+        Assert.DoesNotContain(
+            context.ChangeTracker.Entries<WorkProject>(),
+            entry => entry.State == EntityState.Added);
+        Assert.Contains(nameof(WorkProject.SourceKPIId), controller.ModelState.Keys);
+        Assert.Empty(await context.WorkProjects.ToListAsync());
+    }
+
+    [Fact]
     public async Task Create_ServerOwnsGeneratedAndLifecycleFields()
     {
         await using var context = CreateContext();

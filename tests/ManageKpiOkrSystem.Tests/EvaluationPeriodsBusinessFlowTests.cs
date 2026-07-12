@@ -80,6 +80,52 @@ public sealed class EvaluationPeriodsBusinessFlowTests
     }
 
     [Fact]
+    public async Task Create_OverlappingPeriodOfDifferentTypeIsAllowed()
+    {
+        await using var context = CreateContext();
+        var statuses = await AddStatusesAsync(context);
+        context.EvaluationPeriods.Add(Period(
+            "Tháng 8/2026",
+            new DateTime(2026, 8, 1),
+            new DateTime(2026, 8, 31),
+            statuses.Open.Id));
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+        var quarter = Input(
+            "Quý vận hành 2026",
+            EvaluationPeriodRules.TypeQuarter,
+            new DateTime(2026, 8, 15),
+            new DateTime(2026, 11, 12));
+
+        var result = await controller.Create(quarter);
+
+        Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal(2, await context.EvaluationPeriods.CountAsync());
+        Assert.Contains(
+            context.EvaluationPeriods,
+            period => period.PeriodName == quarter.PeriodName && period.PeriodType == EvaluationPeriodRules.TypeQuarter);
+    }
+
+    [Fact]
+    public async Task Create_EndDateBeforeStartDateReturnsFieldError()
+    {
+        await using var context = CreateContext();
+        await AddStatusesAsync(context);
+        var controller = CreateController(context);
+        var model = Input(
+            "Khoảng ngày đảo ngược",
+            EvaluationPeriodRules.TypeMonth,
+            new DateTime(2026, 8, 31),
+            new DateTime(2026, 8, 1));
+
+        var result = await controller.Create(model);
+
+        Assert.IsType<ViewResult>(result);
+        Assert.Contains(nameof(model.EndDate), controller.ModelState.Keys);
+        Assert.Empty(context.EvaluationPeriods);
+    }
+
+    [Fact]
     public async Task Edit_LinkedPeriodBlocksScheduleChangeButAllowsRename()
     {
         await using var context = CreateContext();

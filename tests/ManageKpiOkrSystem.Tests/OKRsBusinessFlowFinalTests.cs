@@ -233,6 +233,24 @@ public sealed class OKRsBusinessFlowFinalTests
     }
 
     [Fact]
+    public async Task Create_RejectsForgedCycleValue()
+    {
+        await using var context = CreateContext();
+        var type = await SeedOkrTypeAsync(context);
+        var controller = CreateController(context, AdminPrincipal(1));
+
+        var result = await controller.Create(
+            new OKR { ObjectiveName = "Invalid cycle", Cycle = "Q5-2026", OKRTypeId = type.Id },
+            missionId: null,
+            departmentId: null,
+            employeeId: null);
+
+        Assert.IsType<ViewResult>(result);
+        Assert.Contains(nameof(OKR.Cycle), controller.ModelState.Keys);
+        Assert.Empty(context.OKRs);
+    }
+
+    [Fact]
     public async Task CreateGet_OnlyExposesLinkableMissionVisionTypes()
     {
         await using var context = CreateContext();
