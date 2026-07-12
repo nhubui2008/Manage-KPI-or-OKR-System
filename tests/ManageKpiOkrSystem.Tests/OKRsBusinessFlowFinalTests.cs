@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Security.Claims;
 using Manage_KPI_or_OKR_System.Controllers;
 using Manage_KPI_or_OKR_System.Data;
@@ -93,6 +94,142 @@ public sealed class OKRsBusinessFlowFinalTests
         Assert.Single(await context.OKR_Mission_Mappings.Where(m => m.OKRId == okr.Id).ToListAsync());
         Assert.Single(await context.OKR_Department_Allocations.Where(a => a.OKRId == okr.Id).ToListAsync());
         Assert.Single(await context.OKR_Employee_Allocations.Where(a => a.OKRId == okr.Id).ToListAsync());
+    }
+
+    [Fact]
+    public async Task Create_InvalidCoreFieldsPreservesValidAllocationSelections()
+    {
+        await using var context = CreateContext();
+        var type = await SeedOkrTypeAsync(context);
+        var mission = new MissionVision
+        {
+            MissionVisionType = MissionVision.TypeYearlyGoal,
+            TargetYear = DateTime.Now.Year,
+            Content = "Strategic source",
+            IsActive = true
+        };
+        var department = new Department { DepartmentCode = "QA", DepartmentName = "Quality", IsActive = true };
+        var employee = new Employee
+        {
+            EmployeeCode = "QA-01",
+            FullName = "Quality owner",
+            Email = "quality@example.com",
+            Phone = "1",
+            IsActive = true
+        };
+        context.AddRange(mission, department, employee);
+        await context.SaveChangesAsync();
+        context.EmployeeAssignments.Add(new EmployeeAssignment
+        {
+            EmployeeId = employee.Id,
+            DepartmentId = department.Id,
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+        var controller = CreateController(context, AdminPrincipal(1));
+        var cycle = $"Q4-{DateTime.Now.Year}";
+
+        var result = await controller.Create(
+            new OKR { ObjectiveName = "   ", Cycle = cycle, OKRTypeId = type.Id },
+            mission.Id,
+            department.Id,
+            employee.Id);
+
+        var view = Assert.IsType<ViewResult>(result);
+        var returned = Assert.IsType<OKR>(view.Model);
+        Assert.False(controller.ModelState.IsValid);
+        Assert.Equal(cycle, returned.Cycle);
+        Assert.Equal(mission.Id, Assert.IsType<int>((object)controller.ViewBag.SelectedMissionId));
+        Assert.Equal(department.Id, Assert.IsType<int>((object)controller.ViewBag.SelectedDepartmentId));
+        Assert.Equal(employee.Id, Assert.IsType<int>((object)controller.ViewBag.SelectedEmployeeId));
+        Assert.Contains(
+            Assert.IsAssignableFrom<IEnumerable<MissionVision>>((object)controller.ViewBag.Missions),
+            option => option.Id == mission.Id);
+        Assert.Contains(
+            Assert.IsAssignableFrom<IEnumerable<Department>>((object)controller.ViewBag.Departments),
+            option => option.Id == department.Id);
+        Assert.Contains(
+            Assert.IsAssignableFrom<IEnumerable<Employee>>((object)controller.ViewBag.Employees),
+            option => option.Id == employee.Id);
+        var departmentMap = Assert.IsType<Dictionary<int, int>>((object)controller.ViewBag.EmployeeDepartmentMap);
+        Assert.Equal(department.Id, departmentMap[employee.Id]);
+        Assert.Empty(context.OKRs);
+    }
+
+    [Fact]
+    public async Task Create_EmployeeSelectionUsesEmployeesActiveDepartment()
+    {
+        await using var context = CreateContext();
+        var type = await SeedOkrTypeAsync(context);
+        var requestedDepartment = new Department
+        {
+            DepartmentCode = "REQUESTED",
+            DepartmentName = "Requested department",
+            IsActive = true
+        };
+        var employeeDepartment = new Department
+        {
+            DepartmentCode = "OWNER",
+            DepartmentName = "Employee department",
+            IsActive = true
+        };
+        var employee = new Employee
+        {
+            EmployeeCode = "OWNER-01",
+            FullName = "Objective owner",
+            Email = "owner@example.com",
+            Phone = "1",
+            IsActive = true
+        };
+        context.AddRange(requestedDepartment, employeeDepartment, employee);
+        await context.SaveChangesAsync();
+        context.EmployeeAssignments.Add(new EmployeeAssignment
+        {
+            EmployeeId = employee.Id,
+            DepartmentId = employeeDepartment.Id,
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+
+        var result = await CreateController(context, AdminPrincipal(1)).Create(
+            new OKR
+            {
+                ObjectiveName = "Use the employee allocation scope",
+                Cycle = $"Q1-{DateTime.Now.Year}",
+                OKRTypeId = type.Id
+            },
+            missionId: null,
+            departmentId: requestedDepartment.Id,
+            employeeId: employee.Id);
+
+        Assert.IsType<RedirectToActionResult>(result);
+        var okr = Assert.Single(await context.OKRs.ToListAsync());
+        var departmentAllocation = Assert.Single(
+            await context.OKR_Department_Allocations.Where(allocation => allocation.OKRId == okr.Id).ToListAsync());
+        Assert.Equal(employeeDepartment.Id, departmentAllocation.DepartmentId);
+        Assert.DoesNotContain(
+            context.OKR_Department_Allocations,
+            allocation => allocation.OKRId == okr.Id && allocation.DepartmentId == requestedDepartment.Id);
+        Assert.Contains(
+            context.OKR_Employee_Allocations,
+            allocation => allocation.OKRId == okr.Id && allocation.EmployeeId == employee.Id);
+    }
+
+    [Fact]
+    public void Create_PostRequiresAntiforgeryAndWhitelistsEditableOkrFields()
+    {
+        var method = typeof(OKRsController).GetMethod(
+            nameof(OKRsController.Create),
+            new[] { typeof(OKR), typeof(int?), typeof(int?), typeof(int?) });
+
+        Assert.NotNull(method);
+        Assert.NotNull(method!.GetCustomAttribute<HttpPostAttribute>());
+        Assert.NotNull(method.GetCustomAttribute<ValidateAntiForgeryTokenAttribute>());
+        Assert.NotEmpty(method.GetCustomAttributes<HasPermissionAttribute>());
+        var bind = Assert.IsType<BindAttribute>(method.GetParameters()[0].GetCustomAttribute<BindAttribute>());
+        Assert.Equal(
+            new[] { nameof(OKR.ObjectiveName), nameof(OKR.OKRTypeId), nameof(OKR.Cycle) },
+            bind.Include);
     }
 
     [Fact]

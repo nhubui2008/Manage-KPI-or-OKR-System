@@ -13,6 +13,7 @@ using System.Security.Claims;
 using Manage_KPI_or_OKR_System.Services;
 using Manage_KPI_or_OKR_System.Models.ViewModels;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -349,8 +350,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("OKRS_CREATE")]
-        public async Task<IActionResult> Create(OKR model, int? missionId, int? departmentId, int? employeeId, bool autoCreateProject = false)
+        public async Task<IActionResult> Create(
+            [Bind("ObjectiveName,OKRTypeId,Cycle")] OKR model,
+            int? missionId,
+            int? departmentId,
+            int? employeeId)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
@@ -370,7 +376,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 if (!scopeValidation.IsAllowed)
                 {
                     ModelState.AddModelError(string.Empty, "Bạn chỉ được tạo hoặc phân bổ OKR cho phòng ban mình quản lý.");
-                    await PopulateOkrCreateListsAsync();
+                    await PopulateOkrCreateListsAsync(missionId, departmentId, employeeId, model.Cycle);
                     return View(model);
                 }
 
@@ -430,12 +436,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
                 else
                 {
-                    TempData["SuccessMessage"] = "Đã tạo OKR, phân bổ và sinh dự án vận hành thành công!";
+                    TempData["SuccessMessage"] = "Đã tạo OKR, phân bổ và sinh dự án vận hành thành công.";
                 }
                 return RedirectToAction(nameof(Index));
             }
             
-            await PopulateOkrCreateListsAsync();
+            await PopulateOkrCreateListsAsync(missionId, departmentId, employeeId, model.Cycle);
             
             return View(model);
         }
@@ -1157,7 +1163,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.EmployeeDepartmentMap = await GetActiveEmployeeDepartmentMapAsync();
         }
 
-        private async Task PopulateOkrCreateListsAsync()
+        private async Task PopulateOkrCreateListsAsync(
+            int? selectedMissionId = null,
+            int? selectedDepartmentId = null,
+            int? selectedEmployeeId = null,
+            string? selectedCycle = null)
         {
             var assignableDepartments = await GetAssignableDepartmentsAsync();
             var assignableEmployees = await GetAssignableEmployeesAsync(assignableDepartments.Select(d => d.Id).ToList());
@@ -1165,8 +1175,33 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Missions = await GetLinkableMissionVisionsAsync();
             ViewBag.Departments = assignableDepartments;
             ViewBag.Employees = assignableEmployees;
-            ViewBag.OKRTypes = await _context.OKRTypes.ToListAsync();
+            ViewBag.OKRTypes = await _context.OKRTypes.OrderBy(type => type.TypeName).ToListAsync();
             ViewBag.EmployeeDepartmentMap = await GetActiveEmployeeDepartmentMapAsync();
+            ViewBag.CycleOptions = GetOkrCreateCycleOptions(selectedCycle);
+            ViewBag.SelectedMissionId = selectedMissionId;
+            ViewBag.SelectedDepartmentId = selectedDepartmentId;
+            ViewBag.SelectedEmployeeId = selectedEmployeeId;
+        }
+
+        private static IReadOnlyList<SelectListItem> GetOkrCreateCycleOptions(string? selectedCycle = null)
+        {
+            var year = DateTime.Now.Year;
+            var options = new List<SelectListItem>
+            {
+                new($"Quý 1 - {year}", $"Q1-{year}"),
+                new($"Quý 2 - {year}", $"Q2-{year}"),
+                new($"Quý 3 - {year}", $"Q3-{year}"),
+                new($"Quý 4 - {year}", $"Q4-{year}"),
+                new($"Cả năm {year}", $"Năm {year}")
+            };
+
+            if (!string.IsNullOrWhiteSpace(selectedCycle) &&
+                options.All(option => !string.Equals(option.Value, selectedCycle, StringComparison.OrdinalIgnoreCase)))
+            {
+                options.Add(new SelectListItem($"{selectedCycle} (giá trị đã gửi)", selectedCycle));
+            }
+
+            return options;
         }
 
         private async Task<List<MissionVision>> GetLinkableMissionVisionsAsync()
