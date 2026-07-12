@@ -222,21 +222,43 @@
 .evaluation-primary-action--warning { background: #a15c07; border-color: #a15c07; }
 .evaluation-primary-action--warning:hover { background: #814904; border-color: #814904; }
 
-.evaluation-form-card { background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px); }
-.evaluation-section-number { width: 38px; height: 38px; flex: 0 0 auto; border-radius: 12px; }
-.evaluation-form-submit { padding: 12px 40px; border-radius: 12px; }
-.evaluation-sticky-panel { top: 100px; }
-.evaluation-preview-card { border-radius: 16px; background: linear-gradient(135deg, var(--evaluation-brand), var(--evaluation-brand-dark)); }
-.evaluation-note-list { line-height: 1.8; }
 .evaluation-edit-card { max-width: 860px; }
-.evaluation-form-card .form-select,
-.evaluation-form-card .form-control,
 .evaluation-edit-card .form-select,
 .evaluation-edit-card .form-control { border: 1.5px solid #dfe5e7; padding-top: 12px; padding-bottom: 12px; }
-.evaluation-form-card .form-select:focus,
-.evaluation-form-card .form-control:focus,
 .evaluation-edit-card .form-select:focus,
 .evaluation-edit-card .form-control:focus { border-color: var(--evaluation-brand); box-shadow: 0 0 0 4px rgba(91, 66, 214, 0.12); }
+
+.evaluation-create .evaluation-duration-rule {
+    margin-top: 0.75rem;
+    font-weight: 700;
+}
+
+.evaluation-preview__status {
+    margin: 0.9rem 0 0;
+    padding: 0.65rem 0.7rem;
+    border: 1px solid var(--evaluation-line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--evaluation-muted);
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
+.evaluation-preview__status.is-valid {
+    border-color: #b8dfcc;
+    background: #edf8f2;
+    color: #126b38;
+}
+
+.evaluation-preview__status.is-invalid {
+    border-color: #efc2bd;
+    background: #fff1ef;
+    color: #912018;
+}
+
+.evaluation-preview__rules {
+    margin-top: 1rem;
+}
 
 @media (max-width: 1100px) {
     .evaluation-filter-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -283,7 +305,6 @@
     .evaluation-results-heading > span { display: none; }
     .evaluation-pagination { justify-content: center; }
     .evaluation-form-header { align-items: flex-start !important; gap: 1rem; }
-    .evaluation-sticky-panel { position: static !important; }
 }
 
 @media (max-width: 420px) {
@@ -299,7 +320,6 @@
     .evaluation-form-header > a { justify-self: start; }
     .evaluation-form-actions { display: grid !important; grid-template-columns: 1fr; }
     .evaluation-form-actions > * { width: 100%; text-align: center; }
-    .evaluation-form-submit { padding-inline: 1rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

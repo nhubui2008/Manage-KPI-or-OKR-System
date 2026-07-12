@@ -1,180 +1,181 @@
 @model Manage_KPI_or_OKR_System.Models.ViewModels.EvaluationPeriodInputViewModel
 @{
-    ViewData["Title"] = "Thêm Kỳ Đánh giá";
+    ViewData["Title"] = "Thêm kỳ đánh giá";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="page-content" data-evaluation-preview>
-    <div class="page-header evaluation-form-header d-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h1 class="mb-2 fw-800">Thêm Kỳ Đánh giá Mới</h1>
-            <div class="page-breadcrumb">
+<div class="cf-page evaluation-create" data-create-form data-evaluation-preview>
+    <header class="cf-header">
+        <div class="cf-header__content">
+            <h1>Thêm kỳ đánh giá</h1>
+            <nav class="cf-breadcrumb" aria-label="Điều hướng trang">
                 <a href="/">Trang chủ</a>
-                <span class="separator">/</span>
-                <a asp-action="Index">Kỳ Đánh giá</a>
-                <span class="separator">/</span>
-                <span class="text-muted">Thêm mới</span>
-            </div>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <a asp-action="Index">Kỳ đánh giá</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Thêm mới</span>
+            </nav>
+            <p class="cf-header__description">Xác định tên, loại và khoảng ngày để liên kết KPI, check-in và kết quả đánh giá đúng chu kỳ.</p>
         </div>
-        <div>
-            <a asp-action="Index" class="btn-outline-custom shadow-sm">
-                <i class="bi bi-arrow-left me-2"></i> Quay lại
-            </a>
-        </div>
-    </div>
+        <a asp-action="Index" class="cf-back-action">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Quay lại</span>
+        </a>
+    </header>
 
-    <div class="row g-4">
-        <div class="col-xl-8">
-            <div class="content-card evaluation-form-card border-0 shadow-lg">
-                <div class="card-header-custom border-bottom bg-transparent py-4">
-                    <h5 class="fw-bold fs-5 mb-0"><i class="bi bi-calendar-plus me-2"></i> Thông tin Kỳ đánh giá</h5>
-                </div>
-
-                <div class="card-body-custom p-4">
-                    <form asp-action="Create" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
-
-                        <!-- SECTION 1 -->
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="evaluation-section-number bg-primary text-white me-3 d-flex align-items-center justify-content-center shadow">
-                                <span class="fw-bold">1</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Thông tin kỳ</h6>
-                        </div>
-
-                        <div class="row g-4 mb-5 p-3 rounded-4 bg-light bg-opacity-50 border border-white">
-                            <div class="col-md-7">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Tên kỳ đánh giá <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-calendar3"></i>
-                                        <input asp-for="PeriodName" class="form-control shadow-sm" placeholder="VD: Quý 1 - 2026" required />
-                                    </div>
-                                    <span asp-validation-for="PeriodName" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Loại kỳ <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-clock-history"></i>
-                                        <select asp-for="PeriodType" class="form-select shadow-sm no-select2">
-                                            <option value="MONTH">Hàng tháng</option>
-                                            <option value="QUARTER">Hàng quý</option>
-                                            <option value="YEAR">Hàng năm</option>
-                                        </select>
-                                    </div>
-                                    <span asp-validation-for="PeriodType" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 2 -->
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="evaluation-section-number bg-success text-white me-3 d-flex align-items-center justify-content-center shadow">
-                                <span class="fw-bold">2</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Thời gian & trạng thái</h6>
-                        </div>
-
-                        <div class="row g-4 p-3 rounded-4 bg-light bg-opacity-50 border border-white mb-4">
-                            <div class="col-md-5">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Ngày bắt đầu <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-calendar-check"></i>
-                                        <input asp-for="StartDate" type="date" class="form-control shadow-sm" required />
-                                    </div>
-                                    <span asp-validation-for="StartDate" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Ngày kết thúc <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-calendar-x"></i>
-                                        <input asp-for="EndDate" type="date" class="form-control shadow-sm" required />
-                                    </div>
-                                    <span asp-validation-for="EndDate" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <div class="alert alert-info border-0 rounded-4" role="status">
-                            <i class="bi bi-shield-check me-2" aria-hidden="true"></i>
-                            Kỳ mới luôn bắt đầu ở trạng thái <strong>Mở</strong>. Trạng thái được chuyển bằng thao tác vòng đời riêng.
-                        </div>
-
-                        <div class="evaluation-form-actions d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
-                            <a asp-action="Index" class="btn-outline-custom">
-                                <i class="bi bi-x-lg me-2"></i> Hủy thao tác
-                            </a>
-                            <button type="submit" class="btn-primary-custom evaluation-form-submit">
-                                <i class="bi bi-check-lg fs-5 me-2"></i> Tạo Kỳ đánh giá
-                            </button>
-                        </div>
-                    </form>
+    <div class="cf-layout">
+        <section class="cf-panel" aria-labelledby="evaluationFormHeading">
+            <div class="cf-panel__header">
+                <div>
+                    <h2 id="evaluationFormHeading">Thông tin kỳ</h2>
+                    <p>Các trường có dấu <span class="cf-required" aria-hidden="true">*</span> là bắt buộc.</p>
                 </div>
             </div>
-        </div>
 
-        <div class="col-xl-4">
-            <div class="sticky-top evaluation-sticky-panel">
-                <div class="content-card evaluation-preview-card border-0 shadow-lg text-white mb-4">
-                    <div class="card-body-custom p-4">
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
-                                <i class="bi bi-calendar-range fs-3 text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small">Kỳ đánh giá</h6>
-                                <h4 class="mb-0 fw-800" id="previewName">--</h4>
-                            </div>
-                        </div>
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
-                                    <i class="bi bi-calendar-check fs-4 me-3 opacity-75"></i>
-                                    <div>
-                                        <div class="small opacity-75 mb-1">Bắt đầu</div>
-                                        <div class="fw-bold small" id="previewStart">--</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
-                                    <i class="bi bi-calendar-x fs-4 me-3 opacity-75"></i>
-                                    <div>
-                                        <div class="small opacity-75 mb-1">Kết thúc</div>
-                                        <div class="fw-bold small" id="previewEnd">--</div>
-                                    </div>
-                                </div>
-                            </div>
+            <form asp-action="Create" method="post" class="cf-form" data-create-form-element>
+                <div asp-validation-summary="ModelOnly" class="cf-alert" role="alert" tabindex="-1" data-error-summary></div>
+
+                <section class="cf-section" aria-labelledby="evaluationIdentityHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-calendar2-week"></i></span>
+                        <div>
+                            <h3 id="evaluationIdentityHeading">Thông tin kỳ đánh giá</h3>
+                            <p>Đặt tên nhất quán và chọn loại kỳ phù hợp với lịch đo lường.</p>
                         </div>
                     </div>
-                </div>
+                    <div class="cf-field-grid cf-field-grid--wide-first">
+                        <div class="cf-field">
+                            <div class="cf-label-row">
+                                <label asp-for="PeriodName">Tên kỳ đánh giá <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                                <output id="periodNameCounter" class="cf-counter" for="PeriodName" data-character-counter>0/100</output>
+                            </div>
+                            <input asp-for="PeriodName"
+                                   class="form-control cf-control"
+                                   maxlength="100"
+                                   autocomplete="off"
+                                   placeholder="Ví dụ: Đánh giá quý 3/2026"
+                                   aria-describedby="periodNameHint periodNameCounter"
+                                   required />
+                            <span asp-validation-for="PeriodName" class="cf-validation"></span>
+                            <p id="periodNameHint" class="cf-hint">Tên phải khác các kỳ đang hoạt động và không vượt quá 100 ký tự.</p>
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="PeriodType">Loại kỳ <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <select asp-for="PeriodType"
+                                    class="form-select cf-control no-select2"
+                                    aria-describedby="periodTypeHint durationRule"
+                                    required>
+                                <option value="MONTH">Hàng tháng</option>
+                                <option value="QUARTER">Hàng quý</option>
+                                <option value="YEAR">Hàng năm</option>
+                            </select>
+                            <span asp-validation-for="PeriodType" class="cf-validation"></span>
+                            <p id="periodTypeHint" class="cf-hint">Loại kỳ quyết định khoảng số ngày hợp lệ.</p>
+                        </div>
+                    </div>
+                </section>
 
-                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
-                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle text-primary me-2"></i> Lưu ý</h6>
-                    <ul class="list-unstyled evaluation-note-list mb-0 small text-muted">
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Ngày kết thúc phải sau ngày bắt đầu.</li>
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Kỳ đánh giá được dùng để liên kết KPI và kết quả.</li>
-                        <li><i class="bi bi-patch-check-fill text-success me-2"></i> Chỉ kỳ "Đang hoạt động" mới được dùng để check-in.</li>
-                    </ul>
+                <section class="cf-section" aria-labelledby="evaluationDatesHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-calendar-range"></i></span>
+                        <div>
+                            <h3 id="evaluationDatesHeading">Khoảng thời gian</h3>
+                            <p>Server kiểm tra thứ tự ngày, độ dài theo loại kỳ và khoảng trùng cùng loại.</p>
+                        </div>
+                    </div>
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <label asp-for="StartDate">Ngày bắt đầu <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <input asp-for="StartDate"
+                                   asp-format="{0:yyyy-MM-dd}"
+                                   type="date"
+                                   class="form-control cf-control"
+                                   lang="vi"
+                                   aria-describedby="dateRangeHint durationRule"
+                                   required />
+                            <span asp-validation-for="StartDate" class="cf-validation"></span>
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="EndDate">Ngày kết thúc <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <input asp-for="EndDate"
+                                   asp-format="{0:yyyy-MM-dd}"
+                                   type="date"
+                                   class="form-control cf-control"
+                                   lang="vi"
+                                   aria-describedby="dateRangeHint durationRule"
+                                   required />
+                            <span asp-validation-for="EndDate" class="cf-validation"></span>
+                        </div>
+                    </div>
+                    <p id="durationRule" class="cf-dynamic-hint evaluation-duration-rule" data-duration-rule>Chọn từ 28 đến 31 ngày cho kỳ tháng.</p>
+                    <p id="dateRangeHint" class="cf-hint">Ngày kết thúc không được trước ngày bắt đầu; hai kỳ đang hoạt động cùng loại không được chồng lấn.</p>
+                    <div class="cf-inline-note" role="status">
+                        <i class="bi bi-shield-check" aria-hidden="true"></i>
+                        <span>Kỳ mới luôn được server tạo ở trạng thái <strong>Mở</strong> và chưa xử lý. Trạng thái được chuyển bằng thao tác vòng đời riêng.</span>
+                    </div>
+                </section>
+
+                <div class="cf-actions">
+                    <a asp-action="Index" class="cf-secondary-action">Hủy</a>
+                    <button type="submit"
+                            class="cf-primary-action"
+                            data-submit-button
+                            data-default-label="Tạo kỳ đánh giá"
+                            data-loading-label="Đang tạo...">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        <span data-submit-label>Tạo kỳ đánh giá</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="cf-guide evaluation-preview" aria-labelledby="evaluationPreviewHeading">
+            <div class="cf-guide__identity">
+                <span class="cf-guide__icon" aria-hidden="true"><i class="bi bi-calendar-check"></i></span>
+                <div>
+                    <span class="cf-guide__eyebrow">Xem trước</span>
+                    <h2 id="evaluationPreviewHeading"><span id="previewName">Chưa đặt tên kỳ</span></h2>
                 </div>
             </div>
-        </div>
+            <p id="previewStatus" class="evaluation-preview__status" aria-live="polite">Nhập đủ ngày để kiểm tra độ dài kỳ.</p>
+            <dl class="cf-preview-list">
+                <div>
+                    <dt>Loại kỳ</dt>
+                    <dd id="previewType">Hàng tháng</dd>
+                </div>
+                <div>
+                    <dt>Bắt đầu</dt>
+                    <dd id="previewStart">Chưa chọn</dd>
+                </div>
+                <div>
+                    <dt>Kết thúc</dt>
+                    <dd id="previewEnd">Chưa chọn</dd>
+                </div>
+                <div>
+                    <dt>Độ dài</dt>
+                    <dd id="previewDuration">Chưa tính</dd>
+                </div>
+            </dl>
+            <ul class="cf-guide__list evaluation-preview__rules">
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Kỳ tháng: 28-31 ngày.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Kỳ quý: 89-92 ngày.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Kỳ năm: 365-366 ngày.</span></li>
+            </ul>
+            <div class="cf-guide__note">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>Preview chỉ hỗ trợ nhập liệu; validation server vẫn là kết quả quyết định cuối cùng.</span>
+            </div>
+        </aside>
     </div>
 </div>
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
 }
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/create-form.js" asp-append-version="true"></script>
     <script src="~/js/evaluation-periods.js" asp-append-version="true"></script>
 }

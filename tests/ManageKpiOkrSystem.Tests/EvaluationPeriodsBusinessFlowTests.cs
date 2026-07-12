@@ -51,6 +51,35 @@ public sealed class EvaluationPeriodsBusinessFlowTests
     }
 
     [Fact]
+    public async Task Create_OverlappingActivePeriodOfSameTypeReturnsFieldError()
+    {
+        await using var context = CreateContext();
+        var statuses = await AddStatusesAsync(context);
+        context.EvaluationPeriods.Add(Period(
+            "Tháng 8/2026",
+            new DateTime(2026, 8, 1),
+            new DateTime(2026, 8, 31),
+            statuses.Open.Id));
+        await context.SaveChangesAsync();
+        var controller = CreateController(context);
+        var model = Input(
+            "Kỳ tháng bị trùng",
+            EvaluationPeriodRules.TypeMonth,
+            new DateTime(2026, 8, 15),
+            new DateTime(2026, 9, 14));
+
+        var result = await controller.Create(model);
+
+        Assert.IsType<ViewResult>(result);
+        var startDateState = controller.ModelState[nameof(model.StartDate)];
+        Assert.NotNull(startDateState);
+        Assert.Contains(
+            startDateState!.Errors,
+            error => error.ErrorMessage.Contains("trùng", StringComparison.OrdinalIgnoreCase));
+        Assert.Single(context.EvaluationPeriods);
+    }
+
+    [Fact]
     public async Task Edit_LinkedPeriodBlocksScheduleChangeButAllowsRename()
     {
         await using var context = CreateContext();
