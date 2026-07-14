@@ -594,10 +594,108 @@
     }
     .stat-card { transition: transform 0.2s ease; }
     .stat-card:hover { transform: translateY(-2px); }
+
+    @@media (max-width: 767.98px) {
+        .page-header {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 1rem;
+        }
+
+        .catalog-tabs {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+
+        #catalogTabContent {
+            padding: 1rem !important;
+        }
+
+        #catalogTabContent .tab-pane > .d-flex:first-child {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 0.875rem;
+        }
+
+        #catalogTabContent .tab-pane > .d-flex:first-child > button {
+            width: 100%;
+            justify-content: center;
+        }
+
+        #catalogTabContent .table-responsive {
+            overflow: visible;
+        }
+
+        #catalogTabContent .data-table thead {
+            display: none;
+        }
+
+        #catalogTabContent .data-table,
+        #catalogTabContent .data-table tbody,
+        #catalogTabContent .data-table tr,
+        #catalogTabContent .data-table td {
+            display: block;
+            width: 100%;
+        }
+
+        #catalogTabContent .data-table tbody {
+            display: grid;
+            gap: 0.9rem;
+        }
+
+        #catalogTabContent .data-table tr {
+            border: 1px solid #e5edf5;
+            border-radius: 18px;
+            padding: 0.95rem 1rem;
+            background: #fff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+        }
+
+        #catalogTabContent .data-table td {
+            border: 0;
+            padding: 0;
+        }
+
+        #catalogTabContent .data-table td + td {
+            margin-top: 0.75rem;
+        }
+
+        #catalogTabContent .data-table td::before {
+            content: attr(data-label);
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.15rem;
+        }
+
+        #catalogTabContent .data-table td:last-child::before {
+            margin-bottom: 0.35rem;
+        }
+
+        #catalogTabContent .data-table .action-btns {
+            justify-content: flex-start !important;
+        }
+    }
 </style>
 
 @section Scripts {
 <script>
+    function applyCatalogMobileLabels() {
+        document.querySelectorAll('#catalogTabContent .data-table').forEach((table) => {
+            const headers = Array.from(table.querySelectorAll('thead th')).map((th) => th.textContent.trim());
+            table.querySelectorAll('tbody tr').forEach((row) => {
+                row.querySelectorAll('td').forEach((cell, index) => {
+                    cell.setAttribute('data-label', headers[index] || '');
+                });
+            });
+        });
+    }
+
+    applyCatalogMobileLabels();
+
     // =========================================
     // SIMPLE MODAL (1 field: KPIType, OKRType, KPIProperty, CheckInStatus, FailReason)
     // =========================================

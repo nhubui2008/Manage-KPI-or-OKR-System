@@ -3,6 +3,54 @@
     ViewData["Title"] = "Danh mục Chức vụ";
 }
 
+@section Styles {
+    <style>
+        .positions-mobile {
+            display: none;
+        }
+
+        @@media (max-width: 767.98px) {
+            .page-header,
+            .positions-toolbar {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 0.875rem;
+            }
+
+            .positions-toolbar form,
+            .positions-toolbar input {
+                width: 100% !important;
+            }
+
+            .positions-desktop {
+                display: none;
+            }
+
+            .positions-mobile {
+                display: grid;
+                gap: 1rem;
+            }
+
+            .position-card {
+                border: 1px solid #e5edf5;
+                border-radius: 18px;
+                padding: 1rem;
+                background: #fff;
+                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+            }
+
+            .position-card__label {
+                font-size: 0.7rem;
+                font-weight: 700;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.15rem;
+            }
+        }
+    </style>
+}
+
 <div class="container-fluid px-0">
     
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
@@ -25,7 +73,7 @@
         <div class="col-12 px-0">
             <div class="content-card w-100">
     <div class="card-body-custom">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3 positions-toolbar">
             <h5 class="mb-0">Danh sách chức vụ (@Model.Count())</h5>
             <form asp-action="Index" method="get" class="d-flex gap-2">
                 <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Tìm kiếm chức vụ..." style="width: 250px;" />
@@ -33,7 +81,7 @@
             </form>
         </div>
         
-        <div class="table-responsive w-100">
+        <div class="table-responsive w-100 positions-desktop">
             <table class="data-table w-100">
                 <thead>
                     <tr>
@@ -104,6 +152,66 @@
                     }
                 </tbody>
             </table>
+        </div>
+        <div class="positions-mobile">
+            @if (Model.Any())
+            {
+                @foreach (var position in Model)
+                {
+                    <article class="position-card">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                            <div>
+                                <div class="text-muted small">Mã CV</div>
+                                <div class="fw-semibold">@position.PositionCode</div>
+                            </div>
+                            <span class="status-badge active">
+                                <span class="status-dot"></span> Đang sử dụng
+                            </span>
+                        </div>
+                        <div class="position-card__label">Tên chức vụ</div>
+                        <div class="fw-bold text-dark mb-3">@position.PositionName</div>
+                        <div class="position-card__label">Cấp bậc</div>
+                        <div class="mb-3">
+                            @if (position.RankLevel.HasValue)
+                            {
+                                <span class="badge bg-dark bg-opacity-10 text-dark rounded-pill px-3">Cấp @position.RankLevel</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </div>
+                        <div class="action-btns">
+                            <a asp-action="Details" asp-route-code="@position.PositionCode" class="action-btn" title="Chi tiết">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a asp-action="Edit" asp-route-code="@position.PositionCode" class="action-btn" title="Chỉnh sửa">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form asp-action="Delete" asp-route-id="@position.Id" method="post" class="d-inline"
+                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa chức vụ này?')">
+                                <button type="submit" class="action-btn danger" title="Xóa">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                }
+            }
+            else
+            {
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-info-circle me-2 text-muted"></i>
+                    @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"] as string))
+                    {
+                        <span class="text-muted">Không tìm thấy chức vụ nào phù hợp với từ khóa "@ViewData["CurrentFilter"]"</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Chưa có chức vụ nào được tạo.</span>
+                    }
+                </div>
+            }
         </div>
     </div>
 </div>

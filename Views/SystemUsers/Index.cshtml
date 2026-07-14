@@ -5,7 +5,55 @@
     var roles = ViewBag.Roles as Dictionary<int, string> ?? new Dictionary<int, string>();
 }
 
-<div class="container-fluid px-0">
+@section Styles {
+    <style>
+        .systemusers-mobile-list {
+            display: none;
+        }
+
+        .systemusers-mobile-card {
+            padding: 1rem;
+            border-radius: 16px;
+            display: grid;
+            gap: 0.8rem;
+        }
+
+        .systemusers-mobile-card__title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 800;
+            color: #172033;
+        }
+
+        .systemusers-mobile-card__actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.55rem;
+        }
+
+        .systemusers-mobile-card__actions .btn {
+            min-height: 42px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            padding-inline: 0.45rem;
+        }
+
+        @@media (max-width: 767.98px) {
+            .systemusers-page .table-responsive {
+                display: none;
+            }
+
+            .systemusers-mobile-list {
+                display: grid;
+                gap: 0.9rem;
+                margin-top: 0.75rem;
+            }
+        }
+    </style>
+}
+
+<div class="container-fluid px-0 systemusers-page">
     
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -148,6 +196,70 @@
                     }
                 </tbody>
             </table>
+        </div>
+
+        <div class="systemusers-mobile-list">
+            @if (Model != null && Model.Any())
+            {
+                foreach (var user in Model)
+                {
+                    var roleName = user.RoleId.HasValue && roles.ContainsKey(user.RoleId.Value) ? roles[user.RoleId.Value] : "N/A";
+                    var statusClass = user.IsActive == true ? "active" : "pending";
+                    var statusDot = user.IsActive == true ? "" : "text-danger bg-danger";
+                    var statusText = user.IsActive == true ? "Kích hoạt" : "Bị khóa";
+                    var badgeClass = roleName.ToLower() == "admin" ? "bg-danger text-white" : "bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25";
+
+                    <article class="content-card systemusers-mobile-card">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="user-avatar" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                                @(user.Username?[0].ToString().ToUpper() ?? "U")
+                            </div>
+                            <div class="min-w-0 flex-grow-1">
+                                <h3 class="systemusers-mobile-card__title">@user.Username</h3>
+                                <div class="small text-muted">ID: @user.Id</div>
+                                <div class="small text-muted mt-1">@(string.IsNullOrWhiteSpace(user.Email) ? "Chưa có email" : user.Email)</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="badge @badgeClass rounded-pill px-3">@roleName</span>
+                            <span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span>
+                        </div>
+
+                        <div class="small text-muted">Tạo lúc: @(user.CreatedAt?.ToString("dd/MM/yyyy HH:mm"))</div>
+
+                        <div class="systemusers-mobile-card__actions">
+                            <a asp-action="Details" asp-route-id="@user.Id" class="btn btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i> Xem
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-outline-secondary">
+                                <i class="bi bi-pencil me-1"></i> Sửa
+                            </a>
+                            <a asp-action="ResetPassword" asp-route-id="@user.Id" class="btn btn-outline-warning">
+                                <i class="bi bi-key me-1"></i> Mật khẩu
+                            </a>
+                        </div>
+
+                        <div class="systemusers-mobile-card__actions">
+                            <form asp-action="ToggleLock" method="post" class="m-0">
+                                <input type="hidden" name="userId" value="@user.Id" />
+                                @if (user.IsActive == false)
+                                {
+                                    <button type="submit" class="btn btn-outline-success w-100"><i class="bi bi-unlock-fill me-1"></i> Mở khóa</button>
+                                }
+                                else
+                                {
+                                    <button type="submit" class="btn btn-outline-danger w-100"><i class="bi bi-lock-fill me-1"></i> Khóa</button>
+                                }
+                            </form>
+                            <a asp-action="Delete" asp-route-id="@user.Id" class="btn btn-outline-danger">
+                                <i class="bi bi-trash me-1"></i> Xóa
+                            </a>
+                            <span></span>
+                        </div>
+                    </article>
+                }
+            }
         </div>
     </div>
 </div>

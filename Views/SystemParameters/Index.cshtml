@@ -5,9 +5,56 @@
     var branding = Model.Branding;
 }
 
+@section Styles {
+    <style>
+        .system-params-mobile {
+            display: none;
+        }
+
+        @@media (max-width: 767.98px) {
+            .system-settings-header {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 0.875rem;
+            }
+
+            .system-settings-header form,
+            .system-settings-header button {
+                width: 100%;
+            }
+
+            .system-params-desktop {
+                display: none;
+            }
+
+            .system-params-mobile {
+                display: grid;
+                gap: 1rem;
+            }
+
+            .system-param-card {
+                border: 1px solid #e5edf5;
+                border-radius: 18px;
+                padding: 1rem;
+                background: #fff;
+                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+            }
+
+            .system-param-card__label {
+                font-size: 0.7rem;
+                font-weight: 700;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.15rem;
+            }
+        }
+    </style>
+}
+
 <div class="container-fluid p-0">
     <div class="row mb-4">
-        <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+        <div class="col-12 d-flex justify-content-between align-items-center mb-3 system-settings-header">
             <div>
                 <h3 class="mb-1 fw-bold text-dark"><i class="bi bi-sliders text-primary me-2"></i>Cài đặt hệ thống</h3>
                 <p class="text-muted mb-0">Tuỳ biến tên sản phẩm, logo, màu sắc, SEO, AI Assistant và các tham số vận hành</p>
@@ -252,7 +299,7 @@
                 </div>
             </div>
 
-            <div class="table-responsive">
+            <div class="table-responsive system-params-desktop">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
@@ -283,6 +330,25 @@
                         }
                     </tbody>
                 </table>
+            </div>
+            <div class="system-params-mobile">
+                @foreach (var item in Model.OtherParameters)
+                {
+                    <article class="system-param-card">
+                        <div class="system-param-card__label">Mã cấu hình</div>
+                        <div class="mb-3"><span class="badge bg-secondary bg-opacity-10 text-secondary">@item.ParameterCode</span></div>
+                        <div class="system-param-card__label">Mô tả</div>
+                        <div class="text-muted small mb-3">@item.Description</div>
+                        <div class="system-param-card__label">Giá trị</div>
+                        <form asp-action="Update" method="post" id="mobile-form-@item.Id">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <input type="text" name="value" class="form-control mb-3" value="@item.Value" required />
+                            <button type="submit" class="btn btn-sm btn-primary px-3 w-100">
+                                <i class="bi bi-save me-1"></i> Lưu
+                            </button>
+                        </form>
+                    </article>
+                }
             </div>
         </div>
     </div>

@@ -10,6 +10,54 @@
     var incidents = (ViewBag.Incidents as List<Manage_KPI_or_OKR_System.Models.EvaluationReportIncident>) ?? new List<Manage_KPI_or_OKR_System.Models.EvaluationReportIncident>();
 }
 
+@section Styles {
+    <style>
+        .evaluation-report-mobile-list {
+            display: none;
+        }
+
+        .evaluation-report-mobile-card {
+            padding: 1rem;
+            border-radius: 16px;
+            display: grid;
+            gap: 0.85rem;
+        }
+
+        .evaluation-report-mobile-card__title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 800;
+            color: #172033;
+        }
+
+        .evaluation-report-mobile-card__label {
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        .evaluation-report-mobile-card__grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+
+        @@media (max-width: 767.98px) {
+            .evaluation-report-page .table-responsive {
+                display: none;
+            }
+
+            .evaluation-report-mobile-list {
+                display: grid;
+                gap: 0.9rem;
+                margin-top: 0.75rem;
+            }
+        }
+    </style>
+}
+
 <div class="container-fluid px-0 evaluation-report-page">
     <div class="d-none">@Html.AntiForgeryToken()</div>
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
@@ -118,6 +166,67 @@
                     }
                 </tbody>
             </table>
+        </div>
+
+        <div class="evaluation-report-mobile-list p-3">
+            @foreach (var okr in okrs)
+            {
+                var okrKrs = krs.Where(k => k.OKRId == okr.Id).ToList();
+                foreach (var kr in okrKrs)
+                {
+                    var krAllocations = Model.Where(a => a.OKRId == okr.Id).ToList();
+                    foreach (var alloc in krAllocations)
+                    {
+                        var emp = employees.ContainsKey(alloc.EmployeeId) ? employees[alloc.EmployeeId] : null;
+                        decimal progress = kr.Progress;
+                        decimal progressWidth = Math.Min(100, progress);
+                        string status = ProgressHelper.GetResultStatus(progress);
+                        string statusColor = ProgressHelper.GetProgressTextColorClass(progress);
+                        string statusBgColor = ProgressHelper.GetProgressColorClass(progress);
+                        var reasonText = kr.FailReasonId.HasValue && failReasons.ContainsKey(kr.FailReasonId.Value)
+                            ? failReasons[kr.FailReasonId.Value]
+                            : (progress < 100 ? "Chưa rõ lý do / Đang cập nhật" : "-");
+
+                        <article class="content-card evaluation-report-mobile-card">
+                            <div>
+                                <h3 class="evaluation-report-mobile-card__title">@okr.ObjectiveName</h3>
+                                <div class="small text-muted mt-1">@kr.KeyResultName</div>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <span class="badge report-status-badge @statusBgColor @statusColor px-3">@status</span>
+                                <span class="soft-chip tone-info"><i class="bi bi-person"></i>@(emp?.FullName ?? "N/A")</span>
+                            </div>
+
+                            <div class="evaluation-report-mobile-card__grid">
+                                <div>
+                                    <div class="evaluation-report-mobile-card__label">Chỉ tiêu riêng</div>
+                                    <div class="fw-semibold mt-1">@String.Format("{0:N0}", alloc.AllocatedValue) @kr.Unit</div>
+                                </div>
+                                <div>
+                                    <div class="evaluation-report-mobile-card__label">Thực tế đạt</div>
+                                    <div class="fw-semibold mt-1">@String.Format("{0:N1}", kr.CurrentValue) @kr.Unit</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="evaluation-report-mobile-card__label">Hoàn thành</div>
+                                <div class="report-progress d-flex align-items-center gap-2 mt-1">
+                                    <span class="report-progress-value fw-bold @statusColor">@((int)progress)%</span>
+                                    <div class="progress flex-grow-1">
+                                        <div class="progress-bar @statusBgColor" style="width: @((int)progressWidth)%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="evaluation-report-mobile-card__label">Lý do / ghi chú</div>
+                                <div class="small text-muted mt-1">@reasonText</div>
+                            </div>
+                        </article>
+                    }
+                }
+            }
         </div>
     </div>
 

@@ -218,6 +218,67 @@
     .rq-alert.danger  { background: #fee2e2; color: #7f1d1d; }
     .rq-alert-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
     .rq-alert .btn-close { margin-left: auto; }
+
+    .rq-mobile-list {
+        display: none;
+    }
+
+    @@media (max-width: 767.98px) {
+        .rq-table-wrapper {
+            display: none;
+        }
+
+        .rq-mobile-list {
+            display: grid;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .rq-mobile-card {
+            border: 1px solid #e5edf5;
+            border-radius: 18px;
+            padding: 1rem;
+            background: #fff;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .rq-mobile-card__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.875rem;
+        }
+
+        .rq-mobile-card__grid {
+            display: grid;
+            gap: 0.8rem;
+        }
+
+        .rq-mobile-card__label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.15rem;
+        }
+
+        .rq-mobile-card .rq-review-form {
+            min-width: 0;
+            margin-top: 0.5rem;
+        }
+
+        .rq-mobile-card .rq-review-form .d-flex {
+            flex-direction: column;
+        }
+
+        .rq-mobile-card .rq-btn-approve,
+        .rq-mobile-card .rq-btn-reject {
+            justify-content: center;
+            width: 100%;
+        }
+    }
 </style>
 
 <div class="container-fluid px-0">
@@ -283,7 +344,7 @@
         </div>
 
         <div class="card-body-custom p-0">
-            <div class="table-responsive">
+            <div class="table-responsive rq-table-wrapper">
                 <table class="rq-table w-100 mb-0" style="border-collapse: collapse;">
                     <thead>
                         <tr>
@@ -400,6 +461,91 @@
                         }
                     </tbody>
                 </table>
+            </div>
+            <div class="rq-mobile-list">
+                @if (Model.Any())
+                {
+                    foreach (var result in Model)
+                    {
+                        var empName = result.EmployeeId.HasValue && employees.ContainsKey(result.EmployeeId.Value) ? employees[result.EmployeeId.Value] : "N/A";
+                        var periodName = result.PeriodId.HasValue && periods.ContainsKey(result.PeriodId.Value) ? periods[result.PeriodId.Value] : "N/A";
+                        var rankCode = result.RankId.HasValue && ranks.ContainsKey(result.RankId.Value) ? ranks[result.RankId.Value] : "N/A";
+
+                        string initials = string.Join("", empName.Split(' ').Select(n => n.Length > 0 ? n[0].ToString() : "")).ToUpper();
+                        if (initials.Length > 2) initials = initials.Substring(0, 2);
+
+                        <article class="rq-mobile-card">
+                            <div class="rq-mobile-card__header">
+                                <div class="d-flex align-items-center gap-2 min-w-0">
+                                    <div class="emp-avatar">@initials</div>
+                                    <div class="min-w-0">
+                                        <div class="fw-semibold text-dark">@empName</div>
+                                        <div class="text-muted small">@periodName</div>
+                                    </div>
+                                </div>
+                                <span class="score-badge">@result.TotalScore?.ToString("0.##") điểm</span>
+                            </div>
+
+                            <div class="rq-mobile-card__grid">
+                                <div>
+                                    <div class="rq-mobile-card__label">Xếp hạng</div>
+                                    <span class="rank-badge">@rankCode</span>
+                                </div>
+                                <div>
+                                    <div class="rq-mobile-card__label">Trạng thái</div>
+                                    <span class="status-badge status-pending">@StatusText(result.SubmissionStatus)</span>
+                                </div>
+                                @if (result.SubmittedAt.HasValue)
+                                {
+                                    <div>
+                                        <div class="rq-mobile-card__label">Thời gian gửi</div>
+                                        <div class="text-muted small">@result.SubmittedAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                    </div>
+                                }
+                                <div>
+                                    <div class="rq-mobile-card__label">Nhận xét trưởng phòng</div>
+                                    <div class="text-muted small">@(string.IsNullOrWhiteSpace(result.ReviewComment) ? "Chưa có nhận xét" : result.ReviewComment)</div>
+                                </div>
+                                <div>
+                                    <div class="rq-mobile-card__label">Review giám đốc</div>
+                                    @if (canDirectorReview)
+                                    {
+                                        <form asp-action="DirectorReview" method="post" class="rq-review-form">
+                                            <input type="hidden" name="id" value="@result.Id" />
+                                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                            <textarea name="directorReviewComment" class="form-control form-control-sm mb-2" rows="3" placeholder="Nhận xét của giám đốc…"></textarea>
+                                            <div class="d-flex gap-2 justify-content-end">
+                                                <button type="submit" name="decision" value="Approved" class="rq-btn-approve">
+                                                    <i class="bi bi-check2-circle"></i>Duyệt
+                                                </button>
+                                                <button type="submit" name="decision" value="Rejected" class="rq-btn-reject">
+                                                    <i class="bi bi-x-circle"></i>Từ chối
+                                                </button>
+                                            </div>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Đang chờ giám đốc review</span>
+                                    }
+                                </div>
+                            </div>
+                        </article>
+                    }
+                }
+                else
+                {
+                    <div class="rq-empty">
+                        <div class="rq-empty-icon">
+                            <i class="bi bi-clipboard-check"></i>
+                        </div>
+                        <div class="rq-empty-title">Tất cả đã được xử lý!</div>
+                        <div class="rq-empty-sub">Không có đánh giá nào đang chờ duyệt lúc này.</div>
+                        <a asp-action="Index" class="btn btn-outline-primary rounded-pill mt-3 px-4" style="font-size:.85rem;">
+                            <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
+                        </a>
+                    </div>
+                }
             </div>
         </div>
     </div>
