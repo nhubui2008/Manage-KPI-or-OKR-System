@@ -29,8 +29,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         // Sửa hàm Index để nhận thêm 2 tham số: searchString và isActive
 [HasPermission("EMPLOYEES_VIEW")]
-public async Task<IActionResult> Index(string searchString, string isActive, int? departmentId)
+public async Task<IActionResult> Index(string searchString, string isActive, int? departmentId, int? pageNumber)
 {
+    const int pageSize = 10;
+    var pageIndex = pageNumber is > 0 ? pageNumber.Value : 1;
     // Bắt đầu bằng việc lấy toàn bộ danh sách (chưa thực hiện truy vấn xuống DB vội)
     var employeesQuery = _context.Employees.AsQueryable();
 
@@ -70,9 +72,23 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
     ViewBag.CurrentSearch = searchString;
     ViewBag.CurrentStatus = isActive;
     ViewBag.CurrentDepartment = departmentId;
+    ViewBag.PageNumber = pageIndex;
 
     // 5. LẤY KẾT QUẢ CUỐI CÙNG SAU KHI LỌC VÀ TRẢ VỀ VIEW
-    var result = await employeesQuery.OrderByDescending(e => e.CreatedAt).ToListAsync();
+    var orderedQuery = employeesQuery
+        .OrderByDescending(e => e.CreatedAt)
+        .AsNoTracking();
+    var totalCount = await orderedQuery.CountAsync();
+    var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+    if (pageIndex > totalPages)
+    {
+        pageIndex = totalPages;
+    }
+
+    var result = await orderedQuery
+        .Skip((pageIndex - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync();
     
     // 5. LẤY DANH SÁCH ASSIGNMENTS VÀ CÁC TỪ ĐIỂN CHO VIEW
     var assignmentsList = await _context.EmployeeAssignments
@@ -92,7 +108,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
     ViewBag.Departments = await _context.Departments.ToDictionaryAsync(d => d.Id, d => d.DepartmentName);
     ViewBag.Positions = await _context.Positions.ToDictionaryAsync(p => p.Id, p => p.PositionName);
     
-    return View(result);
+    return View(new PaginatedList<Employee>(result, totalCount, pageIndex, pageSize));
 }
 
         [HasPermission("EMPLOYEES_CREATE")]

@@ -213,8 +213,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HasPermission("KPICHECKINS_REVIEW", "CHECKINS_EDIT")]
-        public async Task<IActionResult> ReviewQueue()
+        public async Task<IActionResult> ReviewQueue(int? pageNumber)
         {
+            const int pageSize = 10;
+            var pageIndex = pageNumber is > 0 ? pageNumber.Value : 1;
             var currentEmployee = await GetCurrentEmployeeAsync();
             var query = _context.KPICheckIns
                 .Where(c => c.ReviewStatus == ReviewStatusPending)
@@ -254,8 +256,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     (c.KPIId.HasValue && assignedByManagerKpiIds.Contains(c.KPIId.Value)));
             }
 
-            var checkIns = await query
+            var orderedQuery = query
                 .OrderBy(c => c.CheckInDate)
+                .AsNoTracking();
+
+            var totalCount = await orderedQuery.CountAsync();
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+            if (pageIndex > totalPages)
+            {
+                pageIndex = totalPages;
+            }
+
+            var checkIns = await orderedQuery
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             var checkInIds = checkIns.Select(c => c.Id).ToList();
@@ -272,7 +286,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.FailReasons = await _context.FailReasons.ToDictionaryAsync(r => r.Id, r => r.ReasonName ?? "Chưa rõ");
             ViewBag.ReturnUrl = Request.Path + Request.QueryString;
 
-            return View(checkIns);
+            ViewBag.PageNumber = pageIndex;
+            return View(new PaginatedList<KPICheckIn>(checkIns, totalCount, pageIndex, pageSize));
         }
 
         [HasPermission("KPICHECKINS_VIEW", "CHECKINS_VIEW", "KPIS_VIEW")]

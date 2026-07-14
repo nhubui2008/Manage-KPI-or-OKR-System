@@ -1,5 +1,5 @@
-@model IEnumerable<Manage_KPI_or_OKR_System.Models.KPI>
 @using Manage_KPI_or_OKR_System.Helpers
+@model Manage_KPI_or_OKR_System.Helpers.PaginatedList<Manage_KPI_or_OKR_System.Models.KPI>
 @{
     ViewData["Title"] = "Danh mục KPI";
 
@@ -22,6 +22,8 @@
     var executableKpiStatusIds = (ViewBag.ExecutableKpiStatusIds as List<int> ?? new List<int>()).ToHashSet();
     var pendingKpiStatusId = ViewBag.PendingKpiStatusId as int?;
     var allocatedKpiCount = Model?.Count(k => assignments.ContainsKey(k.Id) || departmentAssignments.ContainsKey(k.Id)) ?? 0;
+    var currentFilter = ViewData["CurrentFilter"] as string;
+    int? currentPeriodId = ViewData["PeriodId"] is int selectedPeriodId ? selectedPeriodId : null;
     var measurementUnits = new[] {
         new { Value = "%", Text = "% - Tỷ lệ phần trăm" },
         new { Value = "VNĐ", Text = "VNĐ - Tiền tệ" },
@@ -436,6 +438,245 @@
                 </tbody>
             </table>
         </div>
+
+        <div class="kpi-mobile-list">
+            @if (Model != null && Model.Any())
+            {
+                foreach (var kpi in Model)
+                {
+                    var detail = kpiDetails.ContainsKey(kpi.Id) ? kpiDetails[kpi.Id] : null;
+                    var assignedEmployees = assignments.ContainsKey(kpi.Id) ? assignments[kpi.Id] : new List<Tuple<int, decimal>>();
+                    var assignedDepartmentIds = departmentAssignments.ContainsKey(kpi.Id) ? departmentAssignments[kpi.Id] : new List<int>();
+                    var kpiProgress = latestProgress.ContainsKey(kpi.Id) ? (decimal?)latestProgress[kpi.Id] : null;
+                    string statusName = GetStatusName(kpi.StatusId, kpiProgress);
+                    string statusClass = GetStatusClass(kpi.StatusId);
+                    string statusIcon = GetStatusIcon(kpi.StatusId);
+
+                    <article class="kpi-mobile-card content-card">
+                        <div class="kpi-mobile-card__header">
+                            <div class="d-flex align-items-start gap-3 min-w-0">
+                                <div class="bg-primary bg-opacity-10 text-primary p-2 rounded flex-shrink-0">
+                                    <i class="bi bi-graph-up-arrow fs-5"></i>
+                                </div>
+                                <div class="min-w-0 flex-grow-1">
+                                    <h3 class="kpi-mobile-card__title">@kpi.KPIName</h3>
+                                    <div class="kpi-mobile-card__chips">
+                                        <span class="badge bg-light text-secondary border px-2 py-1 fw-medium">
+                                            @(kpi.KPITypeId.HasValue && kpiTypesDict.ContainsKey(kpi.KPITypeId.Value) ? kpiTypesDict[kpi.KPITypeId.Value] : "N/A")
+                                        </span>
+                                        <span class="badge bg-info bg-opacity-10 text-info px-2 py-1">
+                                            <i class="bi bi-calendar-event me-1"></i>@(kpi.PeriodId.HasValue && periodsDict.ContainsKey(kpi.PeriodId.Value) ? periodsDict[kpi.PeriodId.Value] : "N/A")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="kpi-status-badge badge rounded-pill @statusClass py-2 px-3 fw-medium">
+                                <i class="bi @statusIcon me-1"></i>
+                                @statusName
+                            </span>
+                        </div>
+
+                        @if (kpiProgress.HasValue && ShouldShowProgress(kpi.StatusId))
+                        {
+                            <div class="kpi-mobile-card__progress">
+                                <div class="d-flex justify-content-between align-items-center small text-muted mb-1">
+                                    <span>Tiến độ</span>
+                                    <strong>@Math.Round(kpiProgress.Value, 0)%</strong>
+                                </div>
+                                <div class="progress" style="height: 6px; border-radius: 999px;">
+                                    <div class="progress-bar bg-@GetProgressColor(kpiProgress.Value)"
+                                         role="progressbar"
+                                         style="width: @(Math.Min((double)kpiProgress.Value, 100))%">
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="kpi-mobile-card__section">
+                            <div class="kpi-mobile-card__label">Chỉ tiêu</div>
+                            @if (detail != null)
+                            {
+                                <div class="fw-bold text-success">@String.Format("{0:N0}", detail.TargetValue) @detail.MeasurementUnit</div>
+                                <div class="small text-muted">Ngưỡng qua: @String.Format("{0:N0}", detail.PassThreshold)</div>
+                                <div class="small text-muted">
+                                    Deadline: @(detail.DeadlineDate?.ToString("dd/MM/yyyy") ?? "Theo chu kỳ") @((detail.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0)).ToString(@"hh\:mm")) / mỗi @(detail.CheckInFrequencyDays ?? 1) ngày
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="small text-muted fst-italic">Chưa thiết lập chỉ tiêu</div>
+                            }
+                        </div>
+
+                        <div class="kpi-mobile-card__section">
+                            <div class="kpi-mobile-card__label">Liên kết</div>
+                            <div class="kpi-mobile-card__chips">
+                                @if (kpi.OKRId.HasValue && okrNamesDict.ContainsKey(kpi.OKRId.Value))
+                                {
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
+                                        <i class="bi bi-diagram-3 me-1"></i>@okrNamesDict[kpi.OKRId.Value]
+                                    </span>
+                                    @if (kpi.OKRKeyResultId.HasValue && okrKeyResultNamesDict.ContainsKey(kpi.OKRKeyResultId.Value))
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                                            <i class="bi bi-check2-circle me-1"></i>@okrKeyResultNamesDict[kpi.OKRKeyResultId.Value]
+                                        </span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-muted border px-2 py-1">
+                                        <i class="bi bi-unlink me-1"></i>KPI độc lập
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="kpi-mobile-card__section">
+                            <div class="kpi-mobile-card__label">Phân bổ cho</div>
+                            @if (assignedEmployees.Any() || assignedDepartmentIds.Any())
+                            {
+                                <div class="kpi-mobile-card__chips">
+                                    @foreach (var deptId in assignedDepartmentIds.Take(2))
+                                    {
+                                        var deptName = departmentsDict.ContainsKey(deptId) ? departmentsDict[deptId] : "Phòng ban";
+                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1">
+                                            <i class="bi bi-building me-1"></i>@deptName
+                                        </span>
+                                    }
+                                    @if (assignedDepartmentIds.Count > 2)
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">
+                                            +@(assignedDepartmentIds.Count - 2) phòng ban
+                                        </span>
+                                    }
+
+                                    @foreach (var empObj in assignedEmployees.Take(3))
+                                    {
+                                        var empId = empObj.Item1;
+                                        var name = employeesDict.ContainsKey(empId) ? employeesDict[empId] : "NV";
+                                        <span class="badge bg-light text-dark border px-2 py-1">
+                                            <i class="bi bi-person me-1"></i>@name
+                                        </span>
+                                    }
+                                    @if (assignedEmployees.Count > 3)
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">
+                                            +@(assignedEmployees.Count - 3) nhân sự
+                                        </span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill border border-warning border-opacity-25">
+                                    <i class="bi bi-exclamation-circle me-1"></i> Chưa phân bổ
+                                </span>
+                            }
+                        </div>
+
+                        <div class="kpi-mobile-card__actions">
+                            <a class="btn btn-outline-primary" asp-action="Details" asp-route-id="@kpi.Id">
+                                <i class="bi bi-info-circle me-1"></i> Chi tiết
+                            </a>
+
+                            @if (CanCheckIn(kpi.StatusId))
+                            {
+                                <a class="btn btn-success" asp-controller="KPICheckIns" asp-action="Create" asp-route-kpiId="@kpi.Id">
+                                    <i class="bi bi-calendar-check me-1"></i> Check-in
+                                </a>
+                            }
+
+                            @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
+                                  User.IsInRole("Sales") || User.IsInRole("sales")))
+                            {
+                                <a class="btn btn-outline-info" asp-action="AllocatePersonnel" asp-route-id="@kpi.Id">
+                                    <i class="bi bi-people me-1"></i> Phân bổ
+                                </a>
+                            }
+                        </div>
+                    </article>
+                }
+            }
+            else
+            {
+                <div class="content-card text-center py-5 text-muted">
+                    <div class="mb-3"><i class="bi bi-folder-x fs-1 opacity-50"></i></div>
+                    <h5>Chưa có dữ liệu KPI</h5>
+                    <p class="mb-0">Bắt đầu bằng cách thêm một KPI mới cho hệ thống.</p>
+                </div>
+            }
+        </div>
+
+        @if (Model != null && Model.TotalPages > 1)
+        {
+            <div class="d-flex justify-content-between align-items-center mt-4 px-2 flex-wrap gap-2">
+                <div class="text-muted small">
+                    Hiển thị trang <strong>@Model.PageIndex</strong> trên tổng số <strong>@Model.TotalPages</strong>
+                </div>
+                <nav aria-label="Phân trang KPI">
+                    <ul class="pagination pagination-sm mb-0 gap-1">
+                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                            @if (Model.HasPreviousPage && Model.PreviousPageNumber.HasValue)
+                            {
+                                <a class="page-link border-0 rounded-circle shadow-none text-dark"
+                                   asp-action="Index"
+                                   asp-route-pageNumber="@Model.PreviousPageNumber"
+                                   asp-route-searchString="@currentFilter"
+                                   asp-route-periodId="@currentPeriodId"
+                                   aria-label="Trang trước">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="page-link border-0 rounded-circle shadow-none text-dark" aria-disabled="true" aria-label="Trang trước">
+                                    <i class="bi bi-chevron-left"></i>
+                                </span>
+                            }
+                        </li>
+
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            if (i == 1 || i == Model.TotalPages || (i >= Model.PageIndex - 1 && i <= Model.PageIndex + 1))
+                            {
+                                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                                    <a class="page-link border-0 rounded-circle shadow-none @(i == Model.PageIndex ? "" : "text-dark")"
+                                       asp-action="Index"
+                                       asp-route-pageNumber="@i"
+                                       asp-route-searchString="@currentFilter"
+                                       asp-route-periodId="@currentPeriodId">@i</a>
+                                </li>
+                            }
+                            else if (i == Model.PageIndex - 2 || i == Model.PageIndex + 2)
+                            {
+                                <li class="page-item disabled"><span class="page-link border-0">...</span></li>
+                            }
+                        }
+
+                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                            @if (Model.HasNextPage && Model.NextPageNumber.HasValue)
+                            {
+                                <a class="page-link border-0 rounded-circle shadow-none text-dark"
+                                   asp-action="Index"
+                                   asp-route-pageNumber="@Model.NextPageNumber"
+                                   asp-route-searchString="@currentFilter"
+                                   asp-route-periodId="@currentPeriodId"
+                                   aria-label="Trang sau">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="page-link border-0 rounded-circle shadow-none text-dark" aria-disabled="true" aria-label="Trang sau">
+                                    <i class="bi bi-chevron-right"></i>
+                                </span>
+                            }
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
     </div>
 </div>
 
@@ -953,6 +1194,73 @@
         background: linear-gradient(135deg, #eef3fb, #f5f8fc);
     }
 
+    .kpi-mobile-list {
+        display: none;
+    }
+
+    .kpi-mobile-card {
+        padding: 1rem;
+        border-radius: 16px;
+        display: grid;
+        gap: 0.9rem;
+    }
+
+    .kpi-mobile-card__header {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .kpi-mobile-card__title {
+        margin: 0 0 0.45rem;
+        font-size: 1rem;
+        font-weight: 800;
+        line-height: 1.35;
+        color: #172033;
+        overflow-wrap: anywhere;
+    }
+
+    .kpi-mobile-card__section {
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .kpi-mobile-card__label {
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+
+    .kpi-mobile-card__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+
+    .kpi-mobile-card__progress {
+        padding: 0.75rem;
+        border-radius: 12px;
+        background: #f8fbff;
+        border: 1px solid #dbeafe;
+    }
+
+    .kpi-mobile-card__actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.6rem;
+    }
+
+    .kpi-mobile-card__actions .btn {
+        min-height: 42px;
+        border-radius: 12px;
+        font-weight: 700;
+        padding-inline: 0.65rem;
+        font-size: 0.92rem;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
     .kpi-actions-cell {
         min-width: var(--kpi-actions-width);
     }
@@ -966,6 +1274,110 @@
     @@media (max-width: 991.98px) {
         .kpi-table-responsive {
             padding-bottom: 4.5rem;
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .page-content {
+            padding-inline: 10px !important;
+        }
+
+        .kpi-index-page.container-fluid {
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding-inline: 0 !important;
+        }
+
+        .kpi-index-page > .content-card {
+            width: 100% !important;
+            max-width: none !important;
+            margin-inline: 0 !important;
+        }
+
+        .kpi-index-page .card-body-custom {
+            padding: 0.9rem !important;
+        }
+
+        .kpi-index-page .page-header,
+        .kpi-index-page .toolbar {
+            gap: 0.75rem;
+        }
+
+        .kpi-index-page .page-header {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .kpi-index-page .page-header > div:last-child {
+            display: grid !important;
+            grid-template-columns: 1fr;
+        }
+
+        .kpi-index-page .toolbar form,
+        .kpi-index-page .toolbar-right {
+            width: 100%;
+        }
+
+        .kpi-index-page .toolbar form {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .kpi-index-page .toolbar .toolbar-right {
+            display: grid !important;
+            grid-template-columns: 1fr;
+        }
+
+        .kpi-index-page .toolbar .toolbar-right > * {
+            width: 100%;
+        }
+
+        .kpi-index-page .toolbar .form-select {
+            width: 100% !important;
+        }
+
+        .kpi-mobile-card {
+            width: 100%;
+            max-width: none;
+            padding: 0.9rem;
+            gap: 0.8rem;
+        }
+
+        .kpi-mobile-card__header {
+            gap: 0.6rem;
+        }
+
+        .kpi-mobile-card__title {
+            font-size: 0.98rem;
+        }
+
+        .kpi-mobile-card__chips .badge,
+        .kpi-mobile-card .badge {
+            max-width: 100%;
+            white-space: normal;
+            line-height: 1.25;
+        }
+
+        .kpi-mobile-card__actions {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.55rem;
+        }
+
+        .kpi-mobile-card__actions .btn {
+            min-width: 0;
+            padding-inline: 0.45rem;
+            font-size: 0.88rem;
+        }
+
+        .kpi-table-responsive {
+            display: none;
+        }
+
+        .kpi-mobile-list {
+            display: grid;
+            gap: 0.9rem;
+            width: 100%;
         }
     }
 

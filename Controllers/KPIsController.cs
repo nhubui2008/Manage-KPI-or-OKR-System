@@ -30,10 +30,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HasPermission("KPIS_VIEW")]
-        public async Task<IActionResult> Index(string searchString, int? periodId)
+        public async Task<IActionResult> Index(string searchString, int? periodId, int? pageNumber)
         {
             ViewData["CurrentFilter"] = searchString;
             ViewData["PeriodId"] = periodId;
+            ViewData["PageNumber"] = pageNumber;
+
+            const int pageSize = 10;
+            var pageIndex = pageNumber is > 0 ? pageNumber.Value : 1;
 
             var executableKpiStatusIds = await _context.GetExecutableKpiStatusIdsAsync();
             var hiddenOwnKpiStatusIds = await _context.GetStatusIdsAsync(
@@ -156,7 +160,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
             }
 
-            var kpis = await query.OrderByDescending(k => k.CreatedAt).ToListAsync();
+            var orderedQuery = query
+                .OrderByDescending(k => k.CreatedAt)
+                .AsNoTracking();
+
+            var totalCount = await orderedQuery.CountAsync();
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+            if (pageIndex > totalPages)
+            {
+                pageIndex = totalPages;
+            }
+
+            var kpis = await orderedQuery
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
             var kpiIds = kpis.Select(k => k.Id).ToList();
 
@@ -280,7 +298,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
             ViewBag.LatestProgress = latestProgress;
 
-            return View(kpis);
+            var paginatedKpis = new Helpers.PaginatedList<KPI>(kpis, totalCount, pageIndex, pageSize);
+            return View(paginatedKpis);
         }
 
         [HasPermission("KPIS_VIEW")]

@@ -46,7 +46,55 @@
     }
 }
 
-<div class="container-fluid px-0">
+@section Styles {
+    <style>
+        .auditlog-mobile-list {
+            display: none;
+        }
+
+        .auditlog-mobile-card {
+            padding: 1rem;
+            border-radius: 16px;
+            display: grid;
+            gap: 0.8rem;
+        }
+
+        .auditlog-mobile-card__header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+        }
+
+        .auditlog-mobile-card__title {
+            margin: 0;
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: #172033;
+        }
+
+        .auditlog-mobile-card__label {
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        @@media (max-width: 767.98px) {
+            .auditlog-mobile-list {
+                display: grid;
+                gap: 0.9rem;
+                margin-top: 0.75rem;
+            }
+
+            .auditlog-page .table-responsive {
+                display: none;
+            }
+        }
+    </style>
+}
+
+<div class="container-fluid px-0 auditlog-page">
     
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -180,6 +228,60 @@
                                 }
                             </tbody>
                         </table>
+                    </div>
+
+                    <div class="auditlog-mobile-list">
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var log in Model)
+                            {
+                                var userName = log.SystemUserId.HasValue && users.ContainsKey(log.SystemUserId.Value) ? users[log.SystemUserId.Value] : "System";
+                                var roleName = "System";
+                                if (log.SystemUserId.HasValue &&
+                                    userRoleIds.TryGetValue(log.SystemUserId.Value, out var logRoleId) &&
+                                    logRoleId.HasValue &&
+                                    roles.ContainsKey(logRoleId.Value))
+                                {
+                                    roleName = roles[logRoleId.Value];
+                                }
+
+                                <article class="content-card auditlog-mobile-card">
+                                    <div class="auditlog-mobile-card__header">
+                                        <div class="user-avatar bg-dark text-white rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;font-size:0.85rem;">
+                                            @(userName.Length > 0 ? userName[0].ToString().ToUpper() : "?")
+                                        </div>
+                                        <div class="min-w-0 flex-grow-1">
+                                            <h3 class="auditlog-mobile-card__title">@userName</h3>
+                                            <div class="small text-muted">@roleName</div>
+                                            <div class="small text-muted mt-1">@(log.LogTime?.ToString("dd/MM/yyyy HH:mm:ss") ?? "")</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <span class="badge @GetActionClass(log.ActionType ?? "") px-2 py-1">@GetActionText(log.ActionType ?? "")</span>
+                                        <span class="badge bg-light text-dark border rounded-pill px-3">@(log.ImpactedTable ?? "N/A")</span>
+                                    </div>
+
+                                    <div>
+                                        <div class="auditlog-mobile-card__label">Tóm tắt thay đổi</div>
+                                        <div class="small text-muted mt-1">
+                                            @(string.IsNullOrEmpty(log.NewData) ? (string.IsNullOrEmpty(log.OldData) ? "Không có dữ liệu chi tiết" : log.OldData) : log.NewData)
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <button type="button" class="btn btn-outline-primary rounded-pill px-3 auditlog-detail-btn"
+                                                data-id="@log.Id"
+                                                data-action="@log.ActionType"
+                                                data-table="@log.ImpactedTable"
+                                                data-old="@log.OldData"
+                                                data-new="@log.NewData">
+                                            Chi tiết
+                                        </button>
+                                    </div>
+                                </article>
+                            }
+                        }
                     </div>
 
                     <!-- PAGINATION -->
