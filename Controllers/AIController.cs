@@ -72,8 +72,35 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     prompt.AppendLine("- Khong dung loi mo dau dai; khong chi tra ve 1 muc.");
                 }
 
+                var systemPrompt = $"Ban la {branding.AiAssistantName} cho he thong {branding.ProductName}. Ngan gon, thuc te, chi dua vao context duoc cap. Neu thieu du lieu, noi ro thieu du lieu. Luon ton trong dung so luong muc ma nguoi dung yeu cau.";
+                
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int userId))
+                {
+                    var user = await _context.SystemUsers.FindAsync(userId);
+                    if (user != null && !string.IsNullOrEmpty(user.PreferredLanguage))
+                    {
+                        if (user.PreferredLanguage == "Auto")
+                        {
+                            systemPrompt += " [QUY TẮC NGÔN NGỮ]: Hãy tự động phát hiện ngôn ngữ người dùng sử dụng để hỏi và BẮT BUỘC trả lời bằng chính ngôn ngữ đó.";
+                        }
+                        else
+                        {
+                            systemPrompt += $" [QUY TẮC NGÔN NGỮ]: BẮT BUỘC trả lời bằng ngôn ngữ: {user.PreferredLanguage}.";
+                        }
+                    }
+                    else
+                    {
+                        systemPrompt += " Tra loi bang tieng Viet.";
+                    }
+                }
+                else
+                {
+                    systemPrompt += " Tra loi bang tieng Viet.";
+                }
+
                 var text = await _geminiService.GenerateTextAsync(
-                    $"Ban la {branding.AiAssistantName} cho he thong {branding.ProductName}. Tra loi bang tieng Viet, ngan gon, thuc te, chi dua vao context duoc cap. Neu thieu du lieu, noi ro thieu du lieu. Luon ton trong dung so luong muc ma nguoi dung yeu cau.",
+                    systemPrompt,
                     prompt.ToString(),
                     new GeminiGenerationOptions { Temperature = 0.35 },
                     cancellationToken);

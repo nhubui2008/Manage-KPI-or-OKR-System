@@ -746,5 +746,24 @@ public async Task<IActionResult> GoogleResponse()
     return RedirectToAction("Index", "Dashboard");
 }
 
+[HttpPost]
+[Authorize]
+[IgnoreAntiforgeryToken]
+public async Task<IActionResult> UpdateLanguage(string language)
+{
+    var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (!int.TryParse(userIdStr, out int userId)) return Json(new { success = false, message = "Lỗi xác thực." });
+    
+    var user = await _context.SystemUsers.FindAsync(userId);
+    if (user != null)
+    {
+        user.PreferredLanguage = language;
+        _context.SystemUsers.Update(user);
+        await _context.SaveChangesAsync();
+        return Json(new { success = true });
+    }
+    return Json(new { success = false, message = "Không tìm thấy user." });
+}
+
     }
 }

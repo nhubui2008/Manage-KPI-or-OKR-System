@@ -18,5 +18,6 @@ namespace Manage_KPI_or_OKR_System.Models
         public DateTime? CreatedAt { get; set; } = DateTime.Now;
         public int? CreatedById { get; set; }
         public DateTime? TrialEndTime { get; set; }
+        public string PreferredLanguage { get; set; } = "Tiếng Việt"; // Mặc định
     }
 }
