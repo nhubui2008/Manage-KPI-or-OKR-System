@@ -166,6 +166,60 @@
                     }
                 </div>
             </div>
+            
+            <div class="content-card h-100 mt-4">
+                <div class="card-header-custom">
+                    <h5><i class="bi bi-gear text-primary"></i> Cài đặt AI & Hệ thống</h5>
+                </div>
+                <div class="card-body-custom">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Ngôn ngữ đầu ra (Output Language):</strong></label>
+                        <div class="input-group">
+                            <select id="language-select" class="form-select">
+                                <option value="Auto" selected="@(Model.PreferredLanguage == "Auto" ? "selected" : null)">Tự động (Theo ngôn ngữ câu hỏi)</option>
+                                <option value="Tiếng Việt" selected="@(Model.PreferredLanguage == "Tiếng Việt" ? "selected" : null)">Tiếng Việt</option>
+                                <option value="English" selected="@(Model.PreferredLanguage == "English" ? "selected" : null)">English</option>
+                                <option value="中文 (Chinese)" selected="@(Model.PreferredLanguage == "中文 (Chinese)" ? "selected" : null)">中文 (Chinese)</option>
+                            </select>
+                            <button class="btn btn-outline-primary" type="button" id="btn-save-language">Lưu ngôn ngữ</button>
+                        </div>
+                        <div class="form-text">Ngôn ngữ mà AI sẽ sử dụng để viết mục tiêu hoặc kết quả cho bạn. Chọn 'Tự động' để AI trả lời theo ngôn ngữ bạn hỏi.</div>
+                    </div>
+                </div>
+            </div>
         </div>
+        
+        <script>
+            document.getElementById('btn-save-language')?.addEventListener('click', async function() {
+                const lang = document.getElementById('language-select').value;
+                const btn = this;
+                
+                try {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang lưu...';
+                    
+                    const response = await fetch('/Auth/UpdateLanguage?language=' + encodeURIComponent(lang), { method: 'POST' });
+                    if (response.ok) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 3000,
+                                icon: 'success',
+                                title: 'Đã lưu cài đặt ngôn ngữ!'
+                            });
+                        } else {
+                            alert("Đã lưu ngôn ngữ thành công!");
+                        }
+                    }
+                } catch(e) {
+                    console.error("Lỗi khi lưu ngôn ngữ", e);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Lưu ngôn ngữ';
+                }
+            });
+        </script>
     </div>
 </div>

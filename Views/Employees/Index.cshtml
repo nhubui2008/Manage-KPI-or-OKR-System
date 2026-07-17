@@ -1,4 +1,4 @@
-@model IEnumerable<Manage_KPI_or_OKR_System.Models.Employee>
+@model Manage_KPI_or_OKR_System.Helpers.PaginatedList<Manage_KPI_or_OKR_System.Models.Employee>
 @{
     ViewData["Title"] = "Quản lý Nhân sự";
     var assignments = ViewBag.Assignments as Dictionary<int, Manage_KPI_or_OKR_System.Models.EmployeeAssignment> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.EmployeeAssignment>();
@@ -30,6 +30,65 @@
 
         .employees-page .employees-table td:nth-child(4) {
             min-width: 230px;
+        }
+
+        .employees-mobile-list {
+            display: none;
+        }
+
+        .employees-mobile-card {
+            padding: 1rem;
+            border-radius: 16px;
+            display: grid;
+            gap: 0.85rem;
+        }
+
+        .employees-mobile-card__header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+        }
+
+        .employees-mobile-card__title {
+            margin: 0 0 0.25rem;
+            font-size: 1rem;
+            font-weight: 800;
+            color: #172033;
+        }
+
+        .employees-mobile-card__meta,
+        .employees-mobile-card__chips,
+        .employees-mobile-card__actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .employees-mobile-card__label {
+            font-size: 0.76rem;
+            font-weight: 800;
+            color: #64748b;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .employees-mobile-card__actions .btn,
+        .employees-mobile-card__actions .action-btn {
+            min-height: 42px;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+
+        @@media (max-width: 767.98px) {
+            .employees-page .table-responsive {
+                display: none;
+            }
+
+            .employees-mobile-list {
+                display: grid;
+                gap: 0.9rem;
+                margin-top: 0.5rem;
+            }
         }
     </style>
 }
@@ -282,6 +341,134 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <div class="employees-mobile-list">
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var emp in Model)
+                            {
+                                var hasAssignment = assignments.TryGetValue(emp.Id, out var assign);
+                                var deptId = hasAssignment ? assign?.DepartmentId : null;
+                                var posId = hasAssignment ? assign?.PositionId : null;
+                                var deptName = deptId.HasValue && departments.ContainsKey(deptId.Value)
+                                               ? departments[deptId.Value] : "Chưa phân bổ";
+                                var posName = posId.HasValue && positions.ContainsKey(posId.Value)
+                                               ? positions[posId.Value] : "Chưa phân bổ";
+                                var statusClass = emp.IsActive == true ? "active" : "inactive";
+                                var statusDot = emp.IsActive == true ? "" : "text-danger bg-danger";
+                                var statusText = emp.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc";
+                                var avatarLetter = !string.IsNullOrEmpty(emp.FullName) ? emp.FullName[0].ToString().ToUpper() : "U";
+
+                                <article class="content-card employees-mobile-card">
+                                    <div class="employees-mobile-card__header">
+                                        <div class="record-avatar">@avatarLetter</div>
+                                        <div class="flex-grow-1 min-w-0">
+                                            <h3 class="employees-mobile-card__title">@emp.FullName</h3>
+                                            <div class="small text-muted mb-2">Mã nhân sự: @emp.EmployeeCode</div>
+                                            <div class="employees-mobile-card__chips">
+                                                <span class="soft-chip tone-info">@deptName</span>
+                                                <span class="soft-chip">@posName</span>
+                                                <span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="employees-mobile-card__label">Liên hệ</div>
+                                        <div class="inline-icon-list mt-1">
+                                            <span><i class="bi bi-envelope text-muted"></i>@(string.IsNullOrWhiteSpace(emp.Email) ? "Chưa cập nhật" : emp.Email)</span>
+                                            <span><i class="bi bi-telephone text-muted"></i>@(string.IsNullOrWhiteSpace(emp.Phone) ? "Chưa cập nhật" : emp.Phone)</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="employees-mobile-card__label">Ngày vào làm</div>
+                                        <div class="small text-dark fw-semibold mt-1">@(emp.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
+                                    </div>
+
+                                    <div class="employees-mobile-card__actions">
+                                        <a asp-action="Details" asp-route-id="@emp.Id" class="btn btn-outline-primary">
+                                            <i class="bi bi-eye me-1"></i> Chi tiết
+                                        </a>
+                                        @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@emp.Id" class="btn btn-outline-secondary">
+                                                <i class="bi bi-pencil me-1"></i> Sửa
+                                            </a>
+                                            @if (emp.IsActive == true)
+                                            {
+                                                <a asp-action="Delete" asp-route-id="@emp.Id" class="btn btn-outline-danger">
+                                                    <i class="bi bi-person-dash me-1"></i> Nghỉ việc
+                                                </a>
+                                            }
+                                        }
+                                    </div>
+                                </article>
+                            }
+                        }
+                    </div>
+
+                    @if (Model != null && Model.TotalPages > 1)
+                    {
+                        <div class="d-flex justify-content-between align-items-center mt-4 px-2 flex-wrap gap-2">
+                            <div class="text-muted small">
+                                Hiển thị trang <strong>@Model.PageIndex</strong> trên tổng số <strong>@Model.TotalPages</strong>
+                            </div>
+                            <nav aria-label="Phân trang nhân sự">
+                                <ul class="pagination pagination-sm mb-0 gap-1">
+                                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                                        @if (Model.HasPreviousPage && Model.PreviousPageNumber.HasValue)
+                                        {
+                                            <a class="page-link border-0 rounded-circle shadow-none text-dark" asp-action="Index"
+                                               asp-route-pageNumber="@Model.PreviousPageNumber"
+                                               asp-route-searchString="@ViewBag.CurrentSearch"
+                                               asp-route-isActive="@ViewBag.CurrentStatus"
+                                               asp-route-departmentId="@ViewBag.CurrentDepartment">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="page-link border-0 rounded-circle shadow-none text-dark"><i class="bi bi-chevron-left"></i></span>
+                                        }
+                                    </li>
+                                    @for (int i = 1; i <= Model.TotalPages; i++)
+                                    {
+                                        if (i == 1 || i == Model.TotalPages || (i >= Model.PageIndex - 1 && i <= Model.PageIndex + 1))
+                                        {
+                                            <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                                                <a class="page-link border-0 rounded-circle shadow-none @(i == Model.PageIndex ? "" : "text-dark")" asp-action="Index"
+                                                   asp-route-pageNumber="@i"
+                                                   asp-route-searchString="@ViewBag.CurrentSearch"
+                                                   asp-route-isActive="@ViewBag.CurrentStatus"
+                                                   asp-route-departmentId="@ViewBag.CurrentDepartment">@i</a>
+                                            </li>
+                                        }
+                                        else if (i == Model.PageIndex - 2 || i == Model.PageIndex + 2)
+                                        {
+                                            <li class="page-item disabled"><span class="page-link border-0">...</span></li>
+                                        }
+                                    }
+                                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                                        @if (Model.HasNextPage && Model.NextPageNumber.HasValue)
+                                        {
+                                            <a class="page-link border-0 rounded-circle shadow-none text-dark" asp-action="Index"
+                                               asp-route-pageNumber="@Model.NextPageNumber"
+                                               asp-route-searchString="@ViewBag.CurrentSearch"
+                                               asp-route-isActive="@ViewBag.CurrentStatus"
+                                               asp-route-departmentId="@ViewBag.CurrentDepartment">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="page-link border-0 rounded-circle shadow-none text-dark"><i class="bi bi-chevron-right"></i></span>
+                                        }
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    }
                 </div>
             </div>
         </div>

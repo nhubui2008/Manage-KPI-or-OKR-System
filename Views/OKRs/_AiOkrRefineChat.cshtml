@@ -1,0 +1,93 @@
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Kết quả Gợi ý OKR/KPI</h5>
+    </div>
+    <div class="card-body">
+        <!-- Khối hiển thị kết quả của AI -->
+        <div id="ai-output-container" class="mb-4 p-3 border rounded bg-light" style="min-height: 100px;">
+            <!-- Nội dung OKR ban đầu sẽ được render vào đây -->
+            <p>1. Tăng doanh thu quý 3 lên 20%...</p>
+        </div>
+        
+        <!-- Khung chat giao tiếp (Refine Input) -->
+        <div class="input-group">
+            <span class="input-group-text bg-light">🤖 Yêu cầu AI sửa:</span>
+            <input type="text" id="chat-input" class="form-control" placeholder="Ví dụ: Viết ngắn gọn lại, thêm số liệu cụ thể vào mục tiêu 2...">
+            <button class="btn btn-outline-primary" type="button" id="btn-send-chat">
+                Gửi yêu cầu
+            </button>
+        </div>
+        <div id="loading-indicator" class="text-muted mt-2 d-none">
+            <small><i>AI đang xử lý yêu cầu của bạn...</i></small>
+        </div>
+    </div>
+</div>
+
+<script>
+// 1. Khởi tạo bộ nhớ (Context) cho phiên làm việc
+let conversationHistory = [
+    { 
+        role: "system", 
+        content: "Bạn là chuyên gia phân tích OKR/KPI. Nhiệm vụ của bạn là chỉnh sửa bản OKR/KPI theo đúng yêu cầu của người dùng. BẮT BUỘC: Chỉ trả về nội dung OKR/KPI đã được sửa, tuyệt đối không giải thích, không kèm theo câu chào hỏi (ví dụ: không nói 'Vâng, tôi hiểu', 'Dưới đây là...')." 
+    }
+];
+
+// Giả sử AI vừa sinh ra bản OKR lần 1, ta lưu nó vào bộ nhớ với vai trò 'assistant'
+let initialOkr = "1. Tăng doanh thu quý 3 lên 20%..."; // Lấy từ kết quả thực tế
+conversationHistory.push({ role: "assistant", content: initialOkr });
+
+// 2. Lắng nghe sự kiện click nút gửi
+document.querySelector('#btn-send-chat').addEventListener('click', async function() {
+    const chatInput = document.querySelector('#chat-input');
+    const userMessage = chatInput.value.trim();
+    
+    if (!userMessage) return;
+
+    // Hiển thị trạng thái loading
+    const loadingIndicator = document.querySelector('#loading-indicator');
+    const outputContainer = document.querySelector('#ai-output-container');
+    const originalContent = outputContainer.innerHTML; // Lưu tạm phòng khi lỗi
+    
+    loadingIndicator.classList.remove('d-none');
+    chatInput.disabled = true;
+    this.disabled = true;
+
+    // 3. Đưa yêu cầu chỉnh sửa của user vào lịch sử
+    conversationHistory.push({ role: "user", content: userMessage });
+
+    try {
+        // 4. Bắn Request lên ASP.NET Core Controller
+        const response = await fetch('/OKRs/RefineAiOutput', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(conversationHistory) // Gửi toàn bộ mảng lên
+        });
+
+        if (!response.ok) throw new Error("Network response was not ok");
+
+        const data = await response.json();
+
+        // 5. Cập nhật kết quả mới lên UI (Ghi đè)
+        outputContainer.innerHTML = data.newOutput;
+        
+        // 6. Lưu kết quả mới của AI vào lịch sử để dành cho lần sửa tiếp theo
+        conversationHistory.push({ role: "assistant", content: data.newOutput });
+        
+        // Reset ô input
+        chatInput.value = '';
+
+    } catch (error) {
+        console.error("Lỗi khi gọi API AI:", error);
+        alert("Có lỗi xảy ra, vui lòng thử lại.");
+        outputContainer.innerHTML = originalContent; // Khôi phục lại bản cũ
+        conversationHistory.pop(); // Xóa tin nhắn lỗi của user ra khỏi mảng
+    } finally {
+        loadingIndicator.classList.add('d-none');
+        chatInput.disabled = false;
+        this.disabled = false;
+        chatInput.focus();
+    }
+});
+</script>

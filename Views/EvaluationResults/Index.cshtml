@@ -43,6 +43,84 @@
     };
 }
 
+@section Styles {
+    <style>
+        .evaluation-results-mobile {
+            display: none;
+        }
+
+        @@media (max-width: 767.98px) {
+            .page-header {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 1rem;
+            }
+
+            .page-header > div:last-child {
+                display: grid !important;
+                grid-template-columns: 1fr;
+                gap: 0.75rem !important;
+            }
+
+            .page-header > div:last-child > * {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .evaluation-results-desktop {
+                display: none;
+            }
+
+            .evaluation-results-mobile {
+                display: grid;
+                gap: 1rem;
+            }
+
+            .evaluation-result-card {
+                border: 1px solid #e5edf5;
+                border-radius: 20px;
+                padding: 1rem;
+                background: #fff;
+                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+            }
+
+            .evaluation-result-card__top {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 0.75rem;
+                margin-bottom: 0.875rem;
+            }
+
+            .evaluation-result-card__meta {
+                display: grid;
+                gap: 0.65rem;
+            }
+
+            .evaluation-result-card__label {
+                font-size: 0.7rem;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: #6b7280;
+                margin-bottom: 0.15rem;
+            }
+
+            .evaluation-result-card__actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                margin-top: 1rem;
+            }
+
+            .evaluation-result-card__actions .action-btn,
+            .evaluation-result-card__actions form {
+                margin: 0;
+            }
+        }
+    </style>
+}
+
 <div class="container-fluid px-0">
     
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
@@ -65,7 +143,7 @@
     <div class="col-12 px-0">
         <div class="content-card w-100">
             <div class="card-body-custom">
-                <div class="table-responsive w-100">
+                <div class="table-responsive w-100 evaluation-results-desktop">
                     <table class="data-table w-100">
                         <thead><tr><th>Nhân viên</th><th>Kỳ đánh giá</th><th>Tổng điểm</th><th>Xếp hạng</th><th>Phân loại</th><th>Trạng thái duyệt</th><th>Nhận xét</th>@if(canManage || canSubmitEvaluation || canReviewEvaluation){<th class="text-end">Thao tác</th>}</tr></thead>
                         <tbody>
@@ -142,6 +220,96 @@
                             {<tr><td colspan="@(canManage || canSubmitEvaluation || canReviewEvaluation ? "8" : "7")" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có kết quả đánh giá</p></td></tr>}
                         </tbody>
                     </table>
+                </div>
+                <div class="evaluation-results-mobile">
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var r in Model)
+                        {
+                            var empName = r.EmployeeId.HasValue && employees.ContainsKey(r.EmployeeId.Value) ? employees[r.EmployeeId.Value] : "N/A";
+                            var periodName = r.PeriodId.HasValue && periods.ContainsKey(r.PeriodId.Value) ? periods[r.PeriodId.Value] : "N/A";
+                            var rankCode = r.RankId.HasValue && ranks.ContainsKey(r.RankId.Value) ? ranks[r.RankId.Value] : "N/A";
+                            var scoreColor = r.TotalScore >= 90 ? "success" : r.TotalScore >= 70 ? "primary" : r.TotalScore >= 50 ? "warning" : "danger";
+                            var submitterName = r.SubmittedById.HasValue && workflowEmployees.ContainsKey(r.SubmittedById.Value) ? workflowEmployees[r.SubmittedById.Value] : "";
+                            var scoreForEdit = r.TotalScore?.ToString("0.##", CultureInfo.InvariantCulture) ?? "0";
+
+                            <article class="evaluation-result-card">
+                                <div class="evaluation-result-card__top">
+                                    <div class="d-flex align-items-center gap-2 min-w-0">
+                                        <div class="user-avatar" style="width:38px;height:38px;font-size:0.85rem;">@(empName.Length > 0 ? empName[0].ToString() : "?")</div>
+                                        <div class="min-w-0">
+                                            <div class="fw-semibold text-dark">@empName</div>
+                                            <div class="text-muted small">@periodName</div>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-@scoreColor bg-opacity-10 text-@scoreColor rounded-pill px-2 py-2">@(r.TotalScore % 1 == 0 ? r.TotalScore?.ToString("0") : r.TotalScore?.ToString("0.#"))đ</span>
+                                </div>
+
+                                <div class="evaluation-result-card__meta">
+                                    <div>
+                                        <div class="evaluation-result-card__label">Xếp hạng</div>
+                                        <span class="badge bg-dark text-white px-2 py-2">@rankCode</span>
+                                    </div>
+                                    <div>
+                                        <div class="evaluation-result-card__label">Phân loại</div>
+                                        <div class="fw-medium">@(r.Classification ?? "Chưa phân loại")</div>
+                                    </div>
+                                    <div>
+                                        <div class="evaluation-result-card__label">Trạng thái duyệt</div>
+                                        <span class="badge border rounded-pill px-3 py-2 @SubmissionBadge(r.SubmissionStatus)">@SubmissionText(r.SubmissionStatus)</span>
+                                        @if (!string.IsNullOrWhiteSpace(submitterName))
+                                        {
+                                            <div class="text-muted small mt-1">Gửi bởi: @submitterName</div>
+                                        }
+                                    </div>
+                                    <div>
+                                        <div class="evaluation-result-card__label">Nhận xét</div>
+                                        <div class="text-muted small">@(string.IsNullOrWhiteSpace(r.ReviewComment) ? "Chưa có nhận xét" : r.ReviewComment)</div>
+                                    </div>
+                                </div>
+
+                                @if (canManage || canSubmitEvaluation || canReviewEvaluation)
+                                {
+                                    <div class="evaluation-result-card__actions">
+                                        @if (canManage)
+                                        {
+                                            <button type="button"
+                                                    class="action-btn js-edit-result"
+                                                    title="Sửa"
+                                                    data-id="@r.Id"
+                                                    data-employee-id="@r.EmployeeId"
+                                                    data-period-id="@r.PeriodId"
+                                                    data-score="@scoreForEdit"
+                                                    data-rank-id="@r.RankId"
+                                                    data-classification="@(r.Classification ?? "")"
+                                                    data-review-comment="@(r.ReviewComment ?? "")">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                            <form asp-action="Delete" method="post">
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa kết quả này?')"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        }
+                                        @if (canSubmitEvaluation && (string.IsNullOrWhiteSpace(r.SubmissionStatus) || r.SubmissionStatus == "Draft" || r.SubmissionStatus == "Rejected"))
+                                        {
+                                            <form asp-action="SubmitForDirectorReview" method="post">
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                                <button type="submit" class="action-btn text-primary" title="Gửi giám đốc duyệt"><i class="bi bi-send-check"></i></button>
+                                            </form>
+                                        }
+                                    </div>
+                                }
+                            </article>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-inbox" style="font-size:2rem;"></i>
+                            <p class="mt-2 mb-0">Chưa có kết quả đánh giá</p>
+                        </div>
+                    }
                 </div>
             </div>
         </div>

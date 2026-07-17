@@ -277,7 +277,7 @@
                 <div class="card-body-custom p-0">
                     @if (employeeList.Any())
                     {
-                        <div class="table-responsive">
+                        <div class="table-responsive department-employees-desktop">
                             <table class="data-table w-100 mb-0">
                                 <thead>
                                     <tr>
@@ -330,6 +330,39 @@
                                     }
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="department-employees-mobile p-3">
+                            @{int mobileIdx = 0;}
+                            @foreach (var emp in employeeList)
+                            {
+                                mobileIdx++;
+                                string empName = emp.FullName ?? "—";
+                                string empInitial = empName[0].ToString().ToUpper();
+                                string empEmail = emp.Email ?? "—";
+                                string empPhone = emp.Phone ?? "—";
+                                string empPosition = emp.PositionName ?? "Chưa xác định";
+
+                                string[] colors = { "#1a73e8", "#ea4335", "#34a853", "#f9ab00", "#8e24aa", "#00897b", "#e65100", "#1565c0" };
+                                int hash = 0;
+                                foreach (char c in empName) hash = c + ((hash << 5) - hash);
+                                string avatarColor = colors[Math.Abs(hash) % colors.Length];
+
+                                <article class="department-employee-card">
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <div class="mini-avatar" style="background: @avatarColor; width: 36px; height: 36px; font-size: 0.85rem;">@empInitial</div>
+                                        <div>
+                                            <div class="text-muted small">#@mobileIdx</div>
+                                            <a asp-controller="Employees" asp-action="Details" asp-route-id="@emp.Id" class="fw-semibold text-decoration-none text-primary-hover">@empName</a>
+                                        </div>
+                                    </div>
+                                    <div class="department-employee-card__label">Chức vụ</div>
+                                    <div class="mb-3"><span class="position-chip">@empPosition</span></div>
+                                    <div class="department-employee-card__label">Email</div>
+                                    <div class="text-muted small mb-3"><i class="bi bi-envelope me-1"></i>@empEmail</div>
+                                    <div class="department-employee-card__label">Điện thoại</div>
+                                    <div class="text-muted small"><i class="bi bi-telephone me-1"></i>@empPhone</div>
+                                </article>
+                            }
                         </div>
                     }
                     else
@@ -741,5 +774,37 @@
     .empty-state-desc {
         font-size: 0.82rem;
         color: var(--text-secondary, #5f6368);
+    }
+
+    .department-employees-mobile {
+        display: none;
+    }
+
+    @@media (max-width: 767.98px) {
+        .department-employees-desktop {
+            display: none;
+        }
+
+        .department-employees-mobile {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .department-employee-card {
+            border: 1px solid var(--border-color, #e8eaed);
+            border-radius: 16px;
+            padding: 1rem;
+            background: #fff;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .department-employee-card__label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-secondary, #5f6368);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.15rem;
+        }
     }
 </style>

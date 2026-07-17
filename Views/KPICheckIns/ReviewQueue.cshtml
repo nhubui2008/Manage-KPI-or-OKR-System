@@ -1,4 +1,4 @@
-@model List<Manage_KPI_or_OKR_System.Models.KPICheckIn>
+@model Manage_KPI_or_OKR_System.Helpers.PaginatedList<Manage_KPI_or_OKR_System.Models.KPICheckIn>
 @using Manage_KPI_or_OKR_System.Helpers
 @{
     ViewData["Title"] = "Xác nhận check-in KPI";
@@ -216,6 +216,50 @@
     .rq-alert.danger  { background: #fee2e2; color: #7f1d1d; }
     .rq-alert-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
     .rq-alert .btn-close { margin-left: auto; }
+
+    .rq-mobile-list {
+        display: none;
+    }
+
+    .rq-mobile-card {
+        padding: 1rem;
+        border-radius: 16px;
+        display: grid;
+        gap: 0.8rem;
+    }
+
+    .rq-mobile-card__header {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .rq-mobile-card__title {
+        margin: 0;
+        font-size: 0.98rem;
+        font-weight: 800;
+        color: #1a2940;
+    }
+
+    .rq-mobile-card__label {
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #6b7c93;
+    }
+
+    @@media (max-width: 767.98px) {
+        .rq-mobile-list {
+            display: grid;
+            gap: 0.9rem;
+            padding: 1rem;
+        }
+
+        .rq-table {
+            display: none;
+        }
+    }
 </style>
 
 <div class="container-fluid px-0">
@@ -416,6 +460,133 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="rq-mobile-list">
+                @if (Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        var detail = details.ContainsKey(item.Id) ? details[item.Id] : null;
+                        var employee = item.EmployeeId.HasValue && employees.ContainsKey(item.EmployeeId.Value) ? employees[item.EmployeeId.Value] : null;
+                        var kpi = item.KPIId.HasValue && kpis.ContainsKey(item.KPIId.Value) ? kpis[item.KPIId.Value] : null;
+                        var progress = detail?.ProgressPercentage ?? 0;
+                        var progressWidth = Math.Min(100, progress);
+
+                        string empName = employee?.FullName ?? "N/A";
+                        string initials = string.Join("", empName.Split(' ').Select(n => n.Length > 0 ? n[0].ToString() : "")).ToUpper();
+                        if (initials.Length > 2) initials = initials.Substring(0, 2);
+
+                        string barColor = progress >= 80 ? "#10b981" : progress >= 50 ? "#f59e0b" : "#ef4444";
+                        string textColor = progress >= 80 ? "#059669" : progress >= 50 ? "#d97706" : "#dc2626";
+
+                        <article class="content-card rq-mobile-card">
+                            <div class="rq-mobile-card__header">
+                                <div class="emp-avatar">@initials</div>
+                                <div class="min-w-0 flex-grow-1">
+                                    <h3 class="rq-mobile-card__title">@empName</h3>
+                                    <div class="small text-muted">@employee?.EmployeeCode</div>
+                                    <div class="small text-dark mt-1 fw-semibold">@(kpi?.KPIName ?? "KPI")</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="rq-mobile-card__label">Ngày check-in</div>
+                                <div class="small text-muted mt-1">@item.CheckInDate?.ToString("dd/MM/yyyy HH:mm")</div>
+                            </div>
+
+                            <div>
+                                <div class="rq-mobile-card__label">Kết quả và tiến độ</div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <strong>@String.Format("{0:N2}", detail?.AchievedValue ?? 0)</strong>
+                                    <span class="fw-bold" style="color:@textColor;">@progress.ToString("0.##")%</span>
+                                </div>
+                                <div class="rq-progress-bar-track mt-2">
+                                    <div class="rq-progress-bar-fill" style="width:@progressWidth%; background:@barColor;"></div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="rq-mobile-card__label">Lý do / Ghi chú</div>
+                                @if (item.FailReasonId.HasValue && failReasons.ContainsKey(item.FailReasonId.Value))
+                                {
+                                    <span class="badge-fail-reason mt-1 mb-2 d-inline-block">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>@failReasons[item.FailReasonId.Value]
+                                    </span>
+                                }
+                                <div class="small text-muted">@(string.IsNullOrWhiteSpace(detail?.Note) ? "—" : detail.Note)</div>
+                            </div>
+
+                            <form asp-action="Review" method="post" class="rq-review-form">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                <input type="number" min="0" max="100" step="0.01" name="reviewScore"
+                                       class="form-control form-control-sm mb-2"
+                                       placeholder="Điểm đánh giá (0–100)" />
+                                <textarea name="reviewComment" class="form-control form-control-sm mb-2"
+                                          rows="2" placeholder="Nhận xét của quản lý…"></textarea>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" name="decision" value="Approved" class="rq-btn-approve flex-fill justify-content-center">
+                                        <i class="bi bi-check2-circle"></i>Xác nhận
+                                    </button>
+                                    <button type="submit" name="decision" value="Rejected" class="rq-btn-reject flex-fill justify-content-center">
+                                        <i class="bi bi-x-circle"></i>Từ chối
+                                    </button>
+                                </div>
+                            </form>
+                        </article>
+                    }
+                }
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <div class="d-flex justify-content-between align-items-center mt-4 px-3 pb-3 flex-wrap gap-2">
+                    <div class="text-muted small">
+                        Hiển thị trang <strong>@Model.PageIndex</strong> trên tổng số <strong>@Model.TotalPages</strong>
+                    </div>
+                    <nav aria-label="Phân trang duyệt check-in">
+                        <ul class="pagination pagination-sm mb-0 gap-1">
+                            <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                                @if (Model.HasPreviousPage && Model.PreviousPageNumber.HasValue)
+                                {
+                                    <a class="page-link border-0 rounded-circle shadow-none text-dark" asp-action="ReviewQueue" asp-route-pageNumber="@Model.PreviousPageNumber">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="page-link border-0 rounded-circle shadow-none text-dark"><i class="bi bi-chevron-left"></i></span>
+                                }
+                            </li>
+                            @for (int i = 1; i <= Model.TotalPages; i++)
+                            {
+                                if (i == 1 || i == Model.TotalPages || (i >= Model.PageIndex - 1 && i <= Model.PageIndex + 1))
+                                {
+                                    <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                                        <a class="page-link border-0 rounded-circle shadow-none @(i == Model.PageIndex ? "" : "text-dark")" asp-action="ReviewQueue" asp-route-pageNumber="@i">@i</a>
+                                    </li>
+                                }
+                                else if (i == Model.PageIndex - 2 || i == Model.PageIndex + 2)
+                                {
+                                    <li class="page-item disabled"><span class="page-link border-0">...</span></li>
+                                }
+                            }
+                            <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                                @if (Model.HasNextPage && Model.NextPageNumber.HasValue)
+                                {
+                                    <a class="page-link border-0 rounded-circle shadow-none text-dark" asp-action="ReviewQueue" asp-route-pageNumber="@Model.NextPageNumber">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="page-link border-0 rounded-circle shadow-none text-dark"><i class="bi bi-chevron-right"></i></span>
+                                }
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
         </div>
     </div>
 

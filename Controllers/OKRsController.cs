@@ -2248,5 +2248,63 @@ namespace Manage_KPI_or_OKR_System.Controllers
             public string CycleSortYear { get; init; } = "9999";
             public int CycleSortPeriod { get; init; }
         }
+
+        [HttpPost]
+        public async Task<JsonResult> RefineAiOutput([FromBody] List<ChatMessageModel> conversationHistory)
+        {
+            if (conversationHistory == null || conversationHistory.Count == 0)
+            {
+                return Json(new { success = false, message = "Dữ liệu không hợp lệ." });
+            }
+
+            try
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int userId))
+                {
+                    var user = await _context.SystemUsers.FindAsync(userId);
+                    if (user != null && !string.IsNullOrEmpty(user.PreferredLanguage))
+                    {
+                        var systemMessage = conversationHistory.FirstOrDefault(m => m.Role == "system");
+                        if (systemMessage != null)
+                        {
+                            if (user.PreferredLanguage == "Auto")
+                            {
+                                systemMessage.Content += $"\n\n[QUY TẮC TỐI THƯỢNG VỀ NGÔN NGỮ]: Hãy tự động phát hiện ngôn ngữ người dùng sử dụng để yêu cầu (Tiếng Việt, Tiếng Anh, Tiếng Trung, v.v...) và BẮT BUỘC phải viết lại nội dung OKR/KPI bằng chính ngôn ngữ đó. Tuyệt đối không pha trộn ngôn ngữ.";
+                            }
+                            else
+                            {
+                                systemMessage.Content += $"\n\n[QUY TẮC TỐI THƯỢNG VỀ NGÔN NGỮ]: Dù các chỉ thị trong hệ thống được viết bằng Tiếng Việt, bạn BẮT BUỘC phải viết toàn bộ nội dung OKR/KPI và trả lời bằng ngôn ngữ: {user.PreferredLanguage}. Tuyệt đối không pha trộn ngôn ngữ.";
+                            }
+                        }
+                    }
+                }
+
+                // Gọi hàm kết nối với API của nhà cung cấp AI
+                // Hàm này sẽ đưa nguyên danh sách conversationHistory gửi cho AI
+                string aiRevisedContent = await ProcessWithAiApi(conversationHistory);
+
+                // Trả về JsonResult cho phía Front-end cập nhật UI
+                return Json(new { success = true, newOutput = aiRevisedContent });
+            }
+            catch (System.Exception ex)
+            {
+                // Xử lý System.IO exceptions hoặc các lỗi mạng khác
+                // Log lỗi tại đây
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        private async Task<string> ProcessWithAiApi(List<ChatMessageModel> messages)
+        {
+            // === LOGIC GỌI API AI CỦA BẠN SẼ NẰM Ở ĐÂY ===
+            // Nếu dùng OpenAI, bạn truyền List messages này vào thuộc tính Messages của ChatCompletionRequest.
+            // Nếu dùng tự build HTTP Request, bạn serialize list này vào body.
+            
+            // Dưới đây là code giả lập thời gian AI xử lý
+            await Task.Delay(1500);
+            
+            return "<p><strong>OKR đã được tinh chỉnh:</strong></p><ul><li>Mục tiêu 1 đã được sửa ngắn gọn...</li></ul>";
+        }
     }
 }

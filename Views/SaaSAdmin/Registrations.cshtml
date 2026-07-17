@@ -5,6 +5,57 @@
     Layout = "_SaaSAdminLayout";
 }
 
+@section Styles {
+    <style>
+        .registrations-mobile {
+            display: none;
+        }
+
+        @@media (max-width: 767.98px) {
+            .page-header,
+            .toolbar,
+            .toolbar-right {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 0.875rem;
+            }
+
+            .toolbar-search,
+            .toolbar-right > *,
+            .toolbar-right .filter-select {
+                width: 100% !important;
+                max-width: none !important;
+            }
+
+            .registrations-desktop {
+                display: none;
+            }
+
+            .registrations-mobile {
+                display: grid;
+                gap: 1rem;
+            }
+
+            .registration-card {
+                border: 1px solid #e5edf5;
+                border-radius: 18px;
+                padding: 1rem;
+                background: #fff;
+                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+            }
+
+            .registration-card__label {
+                font-size: 0.7rem;
+                font-weight: 700;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.15rem;
+            }
+        }
+    </style>
+}
+
 <div class="container-fluid px-0">
     <div class="page-header d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -49,7 +100,7 @@
                         </div>
                     </form>
 
-                    <div class="table-responsive w-100">
+                    <div class="table-responsive w-100 registrations-desktop">
                         <table class="data-table w-100">
                             <thead>
                                 <tr>
@@ -181,6 +232,107 @@
                                 }
                             </tbody>
                         </table>
+                    </div>
+                    <div class="registrations-mobile">
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                var statusClass = "";
+                                var statusDot = "";
+
+                                if (!item.IsActive)
+                                {
+                                    statusClass = "pending";
+                                    statusDot = "text-danger bg-danger";
+                                }
+                                else if (!item.TrialEndTime.HasValue)
+                                {
+                                    statusClass = "active";
+                                    statusDot = "text-success bg-success";
+                                }
+                                else if (item.RemainingTrialHours > 0)
+                                {
+                                    statusClass = "active";
+                                    statusDot = "text-warning bg-warning";
+                                }
+                                else
+                                {
+                                    statusClass = "pending";
+                                    statusDot = "text-danger bg-danger";
+                                }
+
+                                <article class="registration-card">
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <div class="user-avatar" style="width: 36px; height: 36px; font-size: 0.85rem; background-color: var(--primary);">
+                                            @(item.Email?[0].ToString().ToUpper() ?? "U")
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">@item.Email</div>
+                                            <div class="text-muted small">Username: @item.Username</div>
+                                        </div>
+                                    </div>
+                                    <div class="registration-card__label">Gói dịch vụ</div>
+                                    <div class="mb-3">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3">@item.SelectedPlan</span>
+                                    </div>
+                                    <div class="registration-card__label">Trạng thái</div>
+                                    <div class="mb-3">
+                                        <span class="status-badge @statusClass">
+                                            <span class="status-dot @statusDot"></span> @item.StatusText
+                                        </span>
+                                    </div>
+                                    <div class="registration-card__label">Thời gian đăng ký</div>
+                                    <div class="text-muted small mb-3">@(item.CreatedAt?.ToString("dd/MM/yyyy HH:mm"))</div>
+                                    <div class="registration-card__label">Thời hạn</div>
+                                    <div class="mb-3">
+                                        @if (item.TrialEndTime.HasValue)
+                                        {
+                                            if (item.RemainingTrialHours > 0)
+                                            {
+                                                <div class="text-warning fw-bold"><i class="bi bi-clock-history"></i> @Math.Round(item.RemainingTrialHours, 1) giờ</div>
+                                                <div class="text-muted small">Hết hạn: @item.TrialEndTime.Value.ToString("dd/MM HH:mm")</div>
+                                            }
+                                            else
+                                            {
+                                                <div class="text-danger fw-bold"><i class="bi bi-x-circle"></i> Đã hết hạn</div>
+                                                <div class="text-muted small">@item.TrialEndTime.Value.ToString("dd/MM HH:mm")</div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div class="text-success fw-bold"><i class="bi bi-infinity"></i> Vĩnh viễn</div>
+                                            <div class="text-muted small">(Bản chính thức)</div>
+                                        }
+                                    </div>
+                                    <div class="action-btns gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" title="Cập nhật tài khoản" onclick="openUpdateModal(@item.UserId, '@item.Email')" style="border-radius: 6px; padding: 4px 8px;">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <form asp-controller="SaaSAdmin" asp-action="UpdateAccountStatus" method="post" style="display:inline;">
+                                            <input type="hidden" name="userId" value="@item.UserId" />
+                                            <input type="hidden" name="actionType" value="@(item.IsActive ? "lock" : "unlock")" />
+                                            <button type="submit" class="btn btn-sm @(item.IsActive ? "btn-outline-warning" : "btn-outline-success") shadow-sm" title="@(item.IsActive ? "Khóa tài khoản" : "Mở khóa")" style="border-radius: 6px; padding: 4px 8px;" onclick="return confirm('Bạn có chắc chắn muốn @(item.IsActive ? "KHÓA" : "MỞ KHÓA") tài khoản này?');">
+                                                <i class="bi @(item.IsActive ? "bi-lock" : "bi-unlock")"></i>
+                                            </button>
+                                        </form>
+                                        <form asp-controller="SaaSAdmin" asp-action="DeleteAccount" method="post" style="display:inline;">
+                                            <input type="hidden" name="userId" value="@item.UserId" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm" title="Xóa tài khoản" style="border-radius: 6px; padding: 4px 8px;" onclick="return confirm('CẢNH BÁO: Xóa tài khoản sẽ xóa toàn bộ dữ liệu. Bạn có chắc chắn?');">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </article>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-3" style="opacity: 0.5;"></i>
+                                Chưa có khách hàng nào đăng ký.
+                            </div>
+                        }
                     </div>
                 </div>
             </div>

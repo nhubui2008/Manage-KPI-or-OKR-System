@@ -218,6 +218,10 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<SystemAlert>().HasOne<Employee>().WithMany().HasForeignKey(sa => sa.ReceiverId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<SystemAlert>().HasOne<EvaluationPeriod>().WithMany().HasForeignKey(sa => sa.PeriodId).OnDelete(DeleteBehavior.NoAction);
             modelBuilder.Entity<AuditLog>().HasOne(al => al.SystemUser).WithMany().HasForeignKey(al => al.SystemUserId).OnDelete(DeleteBehavior.NoAction);
+
+            // Precision and Scale settings
+            modelBuilder.Entity<PaymentTransaction>().Property(p => p.Amount).HasPrecision(18, 2);
+            modelBuilder.Entity<SaaSPackage>().Property(s => s.PricePerMonth).HasPrecision(18, 2);
         }
     }
 }
