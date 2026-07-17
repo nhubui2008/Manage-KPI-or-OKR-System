@@ -1329,6 +1329,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const instantNavigationRequests = new Map();
     const instantNavigationTtlMs = 60000;
     let instantNavigationSequence = 0;
+    let instantNavigationSettleFrame = 0;
+    let instantNavigationSettleReleaseFrame = 0;
 
     function getInstantNavigationKey(url) {
         return normalizeSidebarPath(url.pathname) + url.search;
@@ -1357,12 +1359,25 @@ document.addEventListener('DOMContentLoaded', function () {
         return Date.now() - entry.fetchedAt <= instantNavigationTtlMs ? entry : null;
     }
 
-    function collectInlineScriptText(root) {
+    function isExecutablePageScript(script) {
+        const type = (script.getAttribute('type') || '').trim().toLowerCase();
+        return !type ||
+            type === 'module' ||
+            type === 'text/javascript' ||
+            type === 'application/javascript';
+    }
+
+    function collectPageScripts(root) {
         if (!root) return [];
 
-        return Array.from(root.querySelectorAll('script:not([src])'))
-            .map(script => script.textContent || '')
-            .filter(scriptText => scriptText.trim().length > 0);
+        return Array.from(root.querySelectorAll('script'))
+            .filter(isExecutablePageScript)
+            .map(script => ({
+                src: script.src || '',
+                text: script.src ? '' : (script.textContent || ''),
+                type: script.getAttribute('type') || ''
+            }))
+            .filter(script => script.src || script.text.trim().length > 0);
     }
 
     function collectStyles(root) {
@@ -1399,14 +1414,18 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const contentClone = contentElement.cloneNode(true);
-        const inlineScripts = collectInlineScriptText(contentClone)
-            .concat(collectInlineScriptText(scriptsRoot));
+        const pageScripts = collectPageScripts(contentClone)
+            .concat(collectPageScripts(scriptsRoot));
 
-        contentClone.querySelectorAll('script').forEach(script => script.remove());
+        contentClone.querySelectorAll('script').forEach(function (script) {
+            if (isExecutablePageScript(script)) {
+                script.remove();
+            }
+        });
 
         return {
             html: contentClone.innerHTML,
-            scripts: inlineScripts,
+            scripts: pageScripts,
             styles: collectStyles(stylesRoot),
             title: title || document.title,
             fetchedAt: Date.now()
@@ -1488,13 +1507,39 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.select2-container').forEach(container => container.remove());
     }
 
-    function executeInstantNavigationScripts(scripts) {
-        scripts.forEach(function (scriptText) {
+    async function executeInstantNavigationScripts(scripts) {
+        for (const descriptor of scripts) {
             const script = document.createElement('script');
-            script.text = scriptText;
+            if (descriptor.type) {
+                script.type = descriptor.type;
+            }
+
+            if (descriptor.src) {
+                script.src = descriptor.src;
+                script.async = false;
+                await new Promise((resolve, reject) => {
+                    script.addEventListener('load', resolve, { once: true });
+                    script.addEventListener('error', () => reject(new Error(`Không tải được script ${descriptor.src}.`)), { once: true });
+                    document.body.appendChild(script);
+                });
+                script.remove();
+                continue;
+            }
+
+            script.text = descriptor.text;
+            if (descriptor.type === 'module') {
+                await new Promise((resolve, reject) => {
+                    script.addEventListener('load', resolve, { once: true });
+                    script.addEventListener('error', () => reject(new Error('Không thực thi được module của trang.')), { once: true });
+                    document.body.appendChild(script);
+                });
+                script.remove();
+                continue;
+            }
+
             document.body.appendChild(script);
             script.remove();
-        });
+        }
     }
 
     function refreshDynamicPageBehaviors() {
@@ -1508,25 +1553,30 @@ document.addEventListener('DOMContentLoaded', function () {
     function setInstantNavigationLoading(link) {
         if (!pageContent) return;
 
-        const title = link?.dataset.instantTitle || link?.textContent?.trim() || 'Đang mở trang';
-        pageContent.innerHTML = `
-            <div class="instant-page-placeholder" role="status" aria-live="polite">
-                <div class="instant-page-placeholder__icon">
-                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-                </div>
-                <div>
-                    <div class="instant-page-placeholder__eyebrow">Đang mở</div>
-                    <div class="instant-page-placeholder__title">${escapeHtml(title)}</div>
-                </div>
-            </div>
-        `;
+        pageContent.setAttribute('aria-busy', 'true');
+        pageContent.classList.add('is-route-pending');
+        pageContent.dataset.loadingLabel =
+            link?.dataset.instantTitle || link?.textContent?.trim() || 'Đang mở trang';
+    }
+
+    function settleInstantNavigationContent() {
+        if (!pageContent) return;
+
+        window.cancelAnimationFrame(instantNavigationSettleFrame);
+        window.cancelAnimationFrame(instantNavigationSettleReleaseFrame);
+        pageContent.classList.add('is-route-settling');
+        instantNavigationSettleFrame = window.requestAnimationFrame(function () {
+            instantNavigationSettleReleaseFrame = window.requestAnimationFrame(function () {
+                pageContent.classList.remove('is-route-settling');
+            });
+        });
     }
 
     async function applyInstantNavigationEntry(url, entry, options = {}) {
         await ensureInstantNavigationStyles(entry.styles || []);
         cleanupDynamicPageState();
+        pageContent.setAttribute('aria-busy', 'true');
         pageContent.innerHTML = entry.html;
-        pageContent.removeAttribute('aria-busy');
 
         if (entry.title) {
             document.title = entry.title;
@@ -1542,8 +1592,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         window.scrollTo({ top: 0, left: 0 });
-        executeInstantNavigationScripts(entry.scripts);
+        await executeInstantNavigationScripts(entry.scripts || []);
         refreshDynamicPageBehaviors();
+        pageContent.classList.remove('is-route-pending');
+        pageContent.removeAttribute('aria-busy');
+        delete pageContent.dataset.loadingLabel;
+        settleInstantNavigationContent();
     }
 
     async function navigateInstantly(url, link, options = {}) {
@@ -1560,11 +1614,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        if (options.preserveContent) {
-            pageContent.setAttribute('aria-busy', 'true');
-        } else {
-            setInstantNavigationLoading(link);
-        }
+        setInstantNavigationLoading(link);
 
         try {
             const entry = await fetchInstantNavigationPage(url);
@@ -1586,22 +1636,6 @@ document.addEventListener('DOMContentLoaded', function () {
         fetchInstantNavigationPage(url).catch(error => {
             console.warn('Instant navigation prefetch failed:', error);
         });
-    }
-
-    function queueInstantNavigationPrefetch() {
-        if (!instantNavigationLinks.length || !supportsInstantNavigation()) return;
-
-        const run = function () {
-            instantNavigationLinks.forEach(function (link, index) {
-                window.setTimeout(() => prefetchInstantNavigationLink(link), index * 160);
-            });
-        };
-
-        if (typeof window.requestIdleCallback === 'function') {
-            window.requestIdleCallback(run, { timeout: 1200 });
-        } else {
-            window.setTimeout(run, 350);
-        }
     }
 
     sidebarLinks.forEach(function (link) {
@@ -1730,13 +1764,19 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // --- Handle window resize ---
-    window.addEventListener('resize', function () {
-        // Chỉ đóng 'show' (phiên bản mobile overlay) khi quay lại màn hình lớn
-        if (window.innerWidth >= 992) {
-            closeMobileSidebar();
-        }
-    });
+    // React only when crossing the mobile/desktop boundary instead of running
+    // storage and class writes on every resize event.
+    const desktopViewport = window.matchMedia('(min-width: 992px)');
+    const clearMobileOnlySidebarState = function (event) {
+        if (!event.matches) return;
+        sidebar?.classList.remove('show');
+        overlay?.classList.remove('show');
+    };
+    if (typeof desktopViewport.addEventListener === 'function') {
+        desktopViewport.addEventListener('change', clearMobileOnlySidebarState);
+    } else {
+        desktopViewport.addListener(clearMobileOnlySidebarState);
+    }
 
     // --- Gắn sự kiện cho các phần tử chưa có chức năng ---
 
@@ -1870,15 +1910,27 @@ document.addEventListener('DOMContentLoaded', function () {
             sidebarNav.scrollTop = parseInt(savedScrollPosition, 10);
         }
 
-        // 2. Lắng nghe sự kiện cuộn để lưu vị trí mới nhất vào sessionStorage
+        let sidebarScrollSaveTimer = 0;
+        let lastSavedSidebarScroll = Number.parseInt(savedScrollPosition || '0', 10) || 0;
+
+        function persistSidebarScrollPosition() {
+            window.clearTimeout(sidebarScrollSaveTimer);
+            sidebarScrollSaveTimer = 0;
+            const nextPosition = Math.round(sidebarNav.scrollTop);
+            if (nextPosition === lastSavedSidebarScroll) return;
+
+            lastSavedSidebarScroll = nextPosition;
+            sessionStorage.setItem("sidebarScrollPosition", String(nextPosition));
+        }
+
+        // Storage writes are non-critical; save after scrolling settles.
         sidebarNav.addEventListener("scroll", function () {
-            sessionStorage.setItem("sidebarScrollPosition", sidebarNav.scrollTop);
-        });
+            window.clearTimeout(sidebarScrollSaveTimer);
+            sidebarScrollSaveTimer = window.setTimeout(persistSidebarScrollPosition, 120);
+        }, { passive: true });
 
         // 3. Dự phòng: Lưu lại lần cuối trước khi trình duyệt chuyển trang
-        window.addEventListener("beforeunload", function () {
-            sessionStorage.setItem("sidebarScrollPosition", sidebarNav.scrollTop);
-        });
+        window.addEventListener("beforeunload", persistSidebarScrollPosition);
     }
 
     // =========================================================

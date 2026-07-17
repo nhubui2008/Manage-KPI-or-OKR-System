@@ -424,16 +424,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var lateCount = 0;
             if (totalTrackingRows > 0)
             {
-                var riskStatusIds = await _context.CheckInStatuses
+                var riskStatuses = await _context.CheckInStatuses
                     .AsNoTracking()
                     .Where(status => status.StatusName == CheckInStatusBlocked || status.StatusName == CheckInStatusLate)
-                    .Select(status => status.Id)
+                    .Select(status => new { status.Id, status.StatusName })
                     .ToListAsync();
-                var lateStatusIds = await _context.CheckInStatuses
-                    .AsNoTracking()
+                var riskStatusIds = riskStatuses.Select(status => status.Id).ToList();
+                var lateStatusIds = riskStatuses
                     .Where(status => status.StatusName == CheckInStatusLate)
                     .Select(status => status.Id)
-                    .ToListAsync();
+                    .ToList();
                 var officialCheckIns =
                     from candidate in candidateQuery
                     join checkIn in _context.KPICheckIns.AsNoTracking()
@@ -464,21 +464,23 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 lateCount = officialSummary?.Late ?? 0;
             }
 
-            var pendingQuery = _context.KPICheckIns
-                .AsNoTracking()
-                .Where(checkIn => checkIn.ReviewStatus == ReviewStatusPending);
-            var hasGlobalReviewScope = PermissionLookupHelper.IsAdmin(User) ||
-                                       User.IsInRole("admin") || User.IsInRole("administrator") ||
-                                       User.IsInRole("Director") || User.IsInRole("director") ||
-                                       User.IsInRole("HR") || User.IsInRole("hr") ||
-                                       User.IsInRole("Human Resources") || User.IsInRole("human resources");
+            var pendingQuery = FilterByReviewStatus(
+                _context.KPICheckIns.AsNoTracking(),
+                ReviewStatusPending);
+            var roleNames = User.Claims
+                .Where(claim => claim.Type == ClaimTypes.Role)
+                .Select(claim => claim.Value)
+                .ToList();
+            var hasGlobalReviewScope = AccessScopeHelper.IsAdmin(User) ||
+                                       AccessScopeHelper.IsDirector(User) ||
+                                       PermissionAuthorizationHelper.IsHrRole(roleNames);
             if (!canReviewCheckIns)
             {
                 pendingQuery = pendingQuery.Where(_ => false);
             }
             else if (!hasGlobalReviewScope)
             {
-                if (currentEmployee == null || !(User.IsInRole("Manager") || User.IsInRole("manager")))
+                if (currentEmployee == null || !AccessScopeHelper.IsManagerScoped(User))
                 {
                     pendingQuery = pendingQuery.Where(_ => false);
                 }
@@ -508,12 +510,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var pendingReviewCount = await pendingQuery.CountAsync();
             var pendingTotalPages = Math.Max(1, (int)Math.Ceiling(pendingReviewCount / (double)PendingReviewPageSize));
             var pendingPage = Math.Clamp(reviewPage.GetValueOrDefault(1), 1, pendingTotalPages);
-            var failReasons = await _context.FailReasons
-                .AsNoTracking()
-                .OrderBy(reason => reason.ReasonName)
-                .ToListAsync();
+            var failReasons = activeTab == "tracking" && canCreateCheckIn
+                ? await _context.FailReasons
+                    .AsNoTracking()
+                    .OrderBy(reason => reason.ReasonName)
+                    .ToListAsync()
+                : new List<FailReason>();
             var pendingReviews = activeTab == "pending"
-                ? await BuildPendingReviewPageAsync(pendingQuery, pendingPage, failReasons)
+                ? await BuildPendingReviewPageAsync(pendingQuery, pendingPage)
                 : new List<EmployeeCheckInReviewItemViewModel>();
 
             var model = new EmployeeTrackingViewModel
@@ -1411,9 +1415,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return Forbid();
             }
 
-            var currentReviewStatus = string.IsNullOrWhiteSpace(checkIn.ReviewStatus)
-                ? ReviewStatusApproved
-                : checkIn.ReviewStatus;
+            var currentReviewStatus = NormalizeReviewStatusCode(checkIn) ?? ReviewStatusApproved;
             if (!string.Equals(currentReviewStatus, ReviewStatusPending, StringComparison.OrdinalIgnoreCase))
             {
                 TempData["ErrorMessage"] = "Check-in này đã được xử lý, không thể duyệt lại.";
@@ -1439,9 +1441,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 if (_context.Database.IsRelational())
                 {
-                    var claimedRows = await _context.KPICheckIns
-                        .Where(candidate => candidate.Id == id &&
-                                            candidate.ReviewStatus == ReviewStatusPending)
+                    var claimedRows = await FilterByReviewStatus(
+                            _context.KPICheckIns.Where(candidate => candidate.Id == id),
+                            ReviewStatusPending)
                         .ExecuteUpdateAsync(setters => setters
                             .SetProperty(candidate => candidate.ReviewStatus, ReviewStatusProcessing));
                     if (claimedRows != 1)
@@ -2060,94 +2062,92 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         private async Task<List<EmployeeCheckInReviewItemViewModel>> BuildPendingReviewPageAsync(
             IQueryable<KPICheckIn> query,
-            int page,
-            IReadOnlyCollection<FailReason> failReasons)
+            int page)
         {
-            var checkIns = await query
+            var pageRows = await query
                 .OrderBy(checkIn => checkIn.CheckInDate)
                 .ThenBy(checkIn => checkIn.Id)
                 .Skip((page - 1) * PendingReviewPageSize)
                 .Take(PendingReviewPageSize)
+                .Select(checkIn => new
+                {
+                    CheckIn = checkIn,
+                    Detail = _context.CheckInDetails
+                        .AsNoTracking()
+                        .Where(detail => detail.CheckInId == checkIn.Id)
+                        .OrderBy(detail => detail.Id)
+                        .FirstOrDefault(),
+                    Employee = checkIn.EmployeeId.HasValue
+                        ? _context.Employees
+                            .AsNoTracking()
+                            .Where(employee => employee.Id == checkIn.EmployeeId.Value)
+                            .OrderBy(employee => employee.Id)
+                            .FirstOrDefault()
+                        : null,
+                    KPI = checkIn.KPIId.HasValue
+                        ? _context.KPIs
+                            .AsNoTracking()
+                            .Where(kpi => kpi.Id == checkIn.KPIId.Value)
+                            .OrderBy(kpi => kpi.Id)
+                            .FirstOrDefault()
+                        : null,
+                    Status = checkIn.StatusId.HasValue
+                        ? _context.CheckInStatuses
+                            .AsNoTracking()
+                            .Where(status => status.Id == checkIn.StatusId.Value)
+                            .OrderBy(status => status.Id)
+                            .FirstOrDefault()
+                        : null,
+                    FailReason = checkIn.FailReasonId.HasValue
+                        ? _context.FailReasons
+                            .AsNoTracking()
+                            .Where(reason => reason.Id == checkIn.FailReasonId.Value)
+                            .OrderBy(reason => reason.Id)
+                            .FirstOrDefault()
+                        : null
+                })
                 .ToListAsync();
-            if (checkIns.Count == 0)
+            if (pageRows.Count == 0)
             {
                 return new List<EmployeeCheckInReviewItemViewModel>();
             }
 
-            var checkInIds = checkIns.Select(checkIn => checkIn.Id).ToList();
-            var details = await _context.CheckInDetails
-                .AsNoTracking()
-                .Where(detail => detail.CheckInId.HasValue && checkInIds.Contains(detail.CheckInId.Value))
-                .ToListAsync();
-            var detailByCheckInId = details
-                .GroupBy(detail => detail.CheckInId!.Value)
-                .ToDictionary(group => group.Key, group => group.First());
-            var employeeIds = checkIns
-                .Where(checkIn => checkIn.EmployeeId.HasValue)
-                .Select(checkIn => checkIn.EmployeeId!.Value)
-                .Distinct()
-                .ToList();
-            var employees = await _context.Employees
-                .AsNoTracking()
-                .Where(employee => employeeIds.Contains(employee.Id))
-                .ToDictionaryAsync(employee => employee.Id);
-            var kpiIds = checkIns
-                .Where(checkIn => checkIn.KPIId.HasValue)
-                .Select(checkIn => checkIn.KPIId!.Value)
-                .Distinct()
-                .ToList();
-            var kpis = await _context.KPIs
-                .AsNoTracking()
-                .Where(kpi => kpiIds.Contains(kpi.Id))
-                .ToDictionaryAsync(kpi => kpi.Id);
-            var statusIds = checkIns
-                .Where(checkIn => checkIn.StatusId.HasValue)
-                .Select(checkIn => checkIn.StatusId!.Value)
-                .Distinct()
-                .ToList();
-            var statuses = await _context.CheckInStatuses
-                .AsNoTracking()
-                .Where(status => statusIds.Contains(status.Id))
-                .ToDictionaryAsync(status => status.Id, status => status.StatusName ?? "Chưa rõ");
-            var failReasonById = failReasons.ToDictionary(reason => reason.Id);
-
-            return checkIns.Select(checkIn =>
+            return pageRows.Select(row =>
             {
-                var detail = detailByCheckInId.GetValueOrDefault(checkIn.Id);
-                var employee = checkIn.EmployeeId.HasValue
-                    ? employees.GetValueOrDefault(checkIn.EmployeeId.Value)
-                    : null;
-                var kpi = checkIn.KPIId.HasValue
-                    ? kpis.GetValueOrDefault(checkIn.KPIId.Value)
-                    : null;
+                var checkIn = row.CheckIn;
                 var reviewStatusCode = NormalizeReviewStatusCode(checkIn) ?? ReviewStatusPending;
-                var failReason = checkIn.FailReasonId.HasValue
-                    ? failReasonById.GetValueOrDefault(checkIn.FailReasonId.Value)
-                    : null;
 
                 return new EmployeeCheckInReviewItemViewModel
                 {
                     CheckInId = checkIn.Id,
                     EmployeeId = checkIn.EmployeeId,
-                    EmployeeName = employee?.FullName ?? "Không rõ nhân viên",
-                    EmployeeCode = employee?.EmployeeCode ?? string.Empty,
+                    EmployeeName = row.Employee?.FullName ?? "Không rõ nhân viên",
+                    EmployeeCode = row.Employee?.EmployeeCode ?? string.Empty,
                     KpiId = checkIn.KPIId,
-                    KpiName = kpi?.KPIName ?? (checkIn.KPIId.HasValue ? $"KPI #{checkIn.KPIId.Value}" : "Không rõ KPI"),
+                    KpiName = row.KPI?.KPIName ?? (checkIn.KPIId.HasValue ? $"KPI #{checkIn.KPIId.Value}" : "Không rõ KPI"),
                     CheckInDate = checkIn.CheckInDate,
-                    AchievedValue = detail?.AchievedValue,
-                    ProgressPercentage = detail?.ProgressPercentage,
-                    ScheduleProgressPercentage = detail?.ScheduleProgressPercentage,
+                    AchievedValue = row.Detail?.AchievedValue,
+                    ProgressPercentage = row.Detail?.ProgressPercentage,
+                    ScheduleProgressPercentage = row.Detail?.ScheduleProgressPercentage,
                     StatusId = checkIn.StatusId,
-                    CheckInStatus = checkIn.StatusId.HasValue
-                        ? statuses.GetValueOrDefault(checkIn.StatusId.Value, "Chưa rõ")
-                        : "Chưa cập nhật",
+                    CheckInStatus = row.Status?.StatusName ?? (checkIn.StatusId.HasValue ? "Chưa rõ" : "Chưa cập nhật"),
                     ReviewStatusCode = reviewStatusCode,
                     ReviewStatus = GetReviewStatusLabel(reviewStatusCode),
                     FailReasonId = checkIn.FailReasonId,
-                    FailReasonName = failReason?.ReasonName,
-                    Note = detail?.Note
+                    FailReasonName = row.FailReason?.ReasonName,
+                    Note = row.Detail?.Note
                 };
             }).ToList();
+        }
+
+        private static IQueryable<KPICheckIn> FilterByReviewStatus(
+            IQueryable<KPICheckIn> query,
+            string reviewStatus)
+        {
+            var normalizedStatus = reviewStatus.Trim().ToUpperInvariant();
+            return query.Where(checkIn =>
+                checkIn.ReviewStatus != null &&
+                checkIn.ReviewStatus.Trim().ToUpper() == normalizedStatus);
         }
 
         private static System.Linq.Expressions.Expression<Func<KPICheckIn, bool>> BuildCheckInPairPredicate(
@@ -2181,23 +2181,24 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return null;
             }
 
-            if (string.IsNullOrWhiteSpace(checkIn.ReviewStatus) ||
-                checkIn.ReviewStatus.Equals(ReviewStatusApproved, StringComparison.OrdinalIgnoreCase))
+            var reviewStatus = checkIn.ReviewStatus?.Trim();
+            if (string.IsNullOrWhiteSpace(reviewStatus) ||
+                reviewStatus.Equals(ReviewStatusApproved, StringComparison.OrdinalIgnoreCase))
             {
                 return ReviewStatusApproved;
             }
 
-            if (checkIn.ReviewStatus.Equals(ReviewStatusPending, StringComparison.OrdinalIgnoreCase))
+            if (reviewStatus.Equals(ReviewStatusPending, StringComparison.OrdinalIgnoreCase))
             {
                 return ReviewStatusPending;
             }
 
-            if (checkIn.ReviewStatus.Equals(ReviewStatusRejected, StringComparison.OrdinalIgnoreCase))
+            if (reviewStatus.Equals(ReviewStatusRejected, StringComparison.OrdinalIgnoreCase))
             {
                 return ReviewStatusRejected;
             }
 
-            return checkIn.ReviewStatus.Trim();
+            return reviewStatus;
         }
 
         private static string GetReviewStatusLabel(string? reviewStatusCode)

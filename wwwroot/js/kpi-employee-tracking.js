@@ -3,13 +3,17 @@
 
     var page = document.querySelector("[data-employee-tracking-page]");
     if (!page) return;
+    if (page.dataset.employeeTrackingInitialized === "true") return;
+    page.dataset.employeeTrackingInitialized = "true";
 
     var liveRegion = page.querySelector("[data-employee-tracking-live]");
+    var announcementTimer = 0;
 
     function announce(message) {
         if (!liveRegion) return;
+        window.clearTimeout(announcementTimer);
         liveRegion.textContent = "";
-        window.setTimeout(function () {
+        announcementTimer = window.setTimeout(function () {
             liveRegion.textContent = message;
         }, 30);
     }
@@ -29,11 +33,19 @@
     var employeeSearchEmpty = page.querySelector("[data-employee-search-empty]");
 
     if (employeeSearch && employeeItems.length) {
-        employeeItems.forEach(function (item) {
-            item.dataset.normalizedSearchValue = normalizeSearchValue(item.dataset.searchValue);
-        });
+        var searchIndexReady = false;
+        var employeeFilterFrame = 0;
+
+        var ensureSearchIndex = function () {
+            if (searchIndexReady) return;
+            employeeItems.forEach(function (item) {
+                item.dataset.normalizedSearchValue = normalizeSearchValue(item.dataset.searchValue);
+            });
+            searchIndexReady = true;
+        };
 
         var applyEmployeeFilter = function () {
+            ensureSearchIndex();
             var query = normalizeSearchValue(employeeSearch.value);
             var visibleCount = 0;
 
@@ -54,10 +66,16 @@
             }
         };
 
-        employeeSearch.addEventListener("input", applyEmployeeFilter);
+        var scheduleEmployeeFilter = function () {
+            window.cancelAnimationFrame(employeeFilterFrame);
+            employeeFilterFrame = window.requestAnimationFrame(applyEmployeeFilter);
+        };
+
+        employeeSearch.addEventListener("input", scheduleEmployeeFilter);
         employeeSearch.addEventListener("keydown", function (event) {
             if (event.key !== "Escape" || !employeeSearch.value) return;
             employeeSearch.value = "";
+            window.cancelAnimationFrame(employeeFilterFrame);
             applyEmployeeFilter();
             announce("Đã xóa nội dung tìm kiếm nhân viên.");
         });
@@ -125,7 +143,11 @@
         });
     });
 
-    window.addEventListener("pageshow", function () {
-        localSubmitForms.forEach(resetLocalSubmitForm);
-    });
+    if (!window.__kpiEmployeeTrackingPageshowBound) {
+        window.__kpiEmployeeTrackingPageshowBound = true;
+        window.addEventListener("pageshow", function () {
+            document.querySelectorAll("[data-employee-tracking-page] [data-local-submit]")
+                .forEach(resetLocalSubmitForm);
+        });
+    }
 })();
