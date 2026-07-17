@@ -78,6 +78,13 @@ App_Data/DataProtection-Keys/
 ## Publish output
 publish/
 
+## Local QA and runtime artifacts
+artifacts/*.log
+artifacts/*.out
+artifacts/*.txt
+artifacts/*.pid
+qa-http-*.json
+
 ## Large media files
 docs/video/
 app.db

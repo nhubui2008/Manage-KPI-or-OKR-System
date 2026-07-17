@@ -86,7 +86,12 @@
                                     @if (Model.CanDeleteMission)
                                     {
                                         <li>
-                                            <form asp-action="Delete" asp-route-id="@visionStatement.Id" method="post" onsubmit="return confirm('Vô hiệu hóa Tầm nhìn này?');">
+                                            <form asp-action="Delete" asp-route-id="@visionStatement.Id" method="post"
+                                                  data-app-confirm
+                                                  data-confirm-title="Vô hiệu hóa Tầm nhìn?"
+                                                  data-confirm-message="Tầm nhìn sẽ được ẩn khỏi dữ liệu đang hoạt động nhưng lịch sử vẫn được giữ lại."
+                                                  data-confirm-tone="warning"
+                                                  data-confirm-label="Vô hiệu hóa">
                                                 <button type="submit" class="dropdown-item text-danger"><i class="bi bi-archive me-2" aria-hidden="true"></i>Vô hiệu hóa</button>
                                             </form>
                                         </li>
@@ -149,7 +154,12 @@
                                     @if (Model.CanDeleteMission)
                                     {
                                         <li>
-                                            <form asp-action="Delete" asp-route-id="@missionStatement.Id" method="post" onsubmit="return confirm('Vô hiệu hóa Sứ mệnh này?');">
+                                            <form asp-action="Delete" asp-route-id="@missionStatement.Id" method="post"
+                                                  data-app-confirm
+                                                  data-confirm-title="Vô hiệu hóa Sứ mệnh?"
+                                                  data-confirm-message="Sứ mệnh sẽ được ẩn khỏi dữ liệu đang hoạt động nhưng lịch sử vẫn được giữ lại."
+                                                  data-confirm-tone="warning"
+                                                  data-confirm-label="Vô hiệu hóa">
                                                 <button type="submit" class="dropdown-item text-danger"><i class="bi bi-archive me-2" aria-hidden="true"></i>Vô hiệu hóa</button>
                                             </form>
                                         </li>
@@ -244,7 +254,12 @@
                                                 }
                                                 else
                                                 {
-                                                    <form asp-action="Delete" asp-route-id="@goal.Id" method="post" onsubmit="return confirm('Vô hiệu hóa mục tiêu chiến lược năm @goalYear?');">
+                                                    <form asp-action="Delete" asp-route-id="@goal.Id" method="post"
+                                                          data-app-confirm
+                                                          data-confirm-title="Vô hiệu hóa mục tiêu chiến lược?"
+                                                          data-confirm-message="Mục tiêu năm @goalYear sẽ ngừng hoạt động. Hệ thống vẫn giữ dữ liệu lịch sử để đối chiếu."
+                                                          data-confirm-tone="warning"
+                                                          data-confirm-label="Vô hiệu hóa">
                                                         <button type="submit" class="dropdown-item text-danger"><i class="bi bi-archive me-2" aria-hidden="true"></i>Vô hiệu hóa</button>
                                                     </form>
                                                 }

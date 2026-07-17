@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 using System;
 using System.Security.Claims;
 using System.Globalization;
+using Manage_KPI_or_OKR_System.Models.ViewModels;
 
 
 namespace Manage_KPI_or_OKR_System.Controllers
@@ -22,265 +24,550 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private const string CheckInStatusLate = "Chậm tiến độ";
         private const string CheckInStatusAhead = "Vượt tiến độ";
         private const string CheckInStatusDone = "Hoàn thành";
+        private static readonly SemaphoreSlim KpiStatusCacheLock = new(1, 1);
+        private static IReadOnlyList<KpiStatusRow>? KpiStatusCache;
+        private static DateTime KpiStatusCacheExpiresAt;
         private readonly MiniERPDbContext _context;
+
+        private sealed record KpiStatusRow(int Id, string StatusName);
 
         public KPIsController(MiniERPDbContext context)
         {
             _context = context;
         }
 
-        [HasPermission("KPIS_VIEW")]
-        public async Task<IActionResult> Index(string searchString, int? periodId)
+        private async Task<IReadOnlyList<KpiStatusRow>> GetKpiStatusRowsAsync()
         {
-            ViewData["CurrentFilter"] = searchString;
-            ViewData["PeriodId"] = periodId;
-
-            var executableKpiStatusIds = await _context.GetExecutableKpiStatusIdsAsync();
-            var hiddenOwnKpiStatusIds = await _context.GetStatusIdsAsync(
-                WorkflowStatusHelper.StatusTypeKpi,
-                new[] { WorkflowStatusHelper.KpiRejected, WorkflowStatusHelper.KpiCanceled });
-
-            var query = _context.KPIs.Where(k => k.IsActive == true);
-
-            // Filter by Search String
-            if (!string.IsNullOrEmpty(searchString))
+            var now = DateTime.UtcNow;
+            if (KpiStatusCache != null && KpiStatusCacheExpiresAt > now)
             {
-                searchString = searchString.Trim();
-                query = query.Where(k => k.KPIName != null && k.KPIName.Contains(searchString));
+                return KpiStatusCache;
             }
 
-            // Filter by Period
+            await KpiStatusCacheLock.WaitAsync();
+            try
+            {
+                now = DateTime.UtcNow;
+                if (KpiStatusCache != null && KpiStatusCacheExpiresAt > now)
+                {
+                    return KpiStatusCache;
+                }
+
+                KpiStatusCache = await _context.Statuses
+                    .AsNoTracking()
+                    .Where(status => status.StatusType == WorkflowStatusHelper.StatusTypeKpi)
+                    .Select(status => new KpiStatusRow(status.Id, status.StatusName ?? string.Empty))
+                    .ToListAsync();
+                KpiStatusCacheExpiresAt = now.AddMinutes(2);
+                return KpiStatusCache;
+            }
+            finally
+            {
+                KpiStatusCacheLock.Release();
+            }
+        }
+
+        [HasPermission("KPIS_VIEW")]
+        public async Task<IActionResult> Index(
+            string? searchString,
+            int? periodId,
+            int? statusId = null,
+            string? quickFilter = null,
+            string? sortBy = null,
+            int? pageNumber = null)
+        {
+            searchString = string.IsNullOrWhiteSpace(searchString) ? null : searchString.Trim();
+            quickFilter = quickFilter?.Trim().ToLowerInvariant() switch
+            {
+                "mine" => "mine",
+                "assigned" => "assigned",
+                "active" => "active",
+                "pending" => "pending",
+                "unallocated" => "unallocated",
+                _ => null
+            };
+            sortBy = sortBy?.Trim().ToLowerInvariant() switch
+            {
+                "name" => "name",
+                "oldest" => "oldest",
+                _ => "recent"
+            };
+
+            var statusRows = await GetKpiStatusRowsAsync();
+            var kpiStatuses = statusRows.ToDictionary(status => status.Id, status => status.StatusName);
+            var executableKpiStatusIds = statusRows
+                .Where(status => WorkflowStatusHelper.KpiExecutableStatusNames.Contains(status.StatusName))
+                .Select(status => status.Id)
+                .ToList();
+            var pendingKpiStatusId = statusRows
+                .Where(status => status.StatusName == WorkflowStatusHelper.KpiPendingApproval)
+                .Select(status => (int?)status.Id)
+                .FirstOrDefault();
+            if (statusId.HasValue && !kpiStatuses.ContainsKey(statusId.Value))
+            {
+                statusId = null;
+            }
+
+            var hiddenOwnKpiStatusIds = statusRows
+                .Where(status => status.StatusName == WorkflowStatusHelper.KpiRejected ||
+                                 status.StatusName == WorkflowStatusHelper.KpiCanceled)
+                .Select(status => status.Id)
+                .ToList();
+            var hiddenAllocatedKpiStatusIds = statusRows
+                .Where(status => status.StatusName == WorkflowStatusHelper.KpiDraft ||
+                                 status.StatusName == WorkflowStatusHelper.KpiRejected ||
+                                 status.StatusName == WorkflowStatusHelper.KpiCanceled)
+                .Select(status => status.Id)
+                .ToList();
+
+            var isManager = User.IsInRole("Manager") || User.IsInRole("manager");
+            var isDirector = User.IsInRole("Director") || User.IsInRole("director");
+            var isEmployeeOrSales = AccessScopeHelper.IsEmployeeOrSales(User);
+            var isRestrictedRole = isManager || isDirector || isEmployeeOrSales;
+            var systemUserId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedSystemUserId)
+                ? parsedSystemUserId
+                : 0;
+            var currentEmployeeScope = systemUserId == 0
+                ? null
+                : await _context.Employees
+                    .AsNoTracking()
+                    .Where(employee => employee.SystemUserId == systemUserId && employee.IsActive == true)
+                    .Select(employee => new
+                    {
+                        Employee = employee,
+                        DepartmentIds = _context.EmployeeAssignments
+                            .Where(assignment =>
+                                assignment.EmployeeId == employee.Id &&
+                                assignment.IsActive == true &&
+                                assignment.DepartmentId.HasValue)
+                            .Select(assignment => assignment.DepartmentId!.Value)
+                            .Distinct()
+                            .ToList()
+                    })
+                    .FirstOrDefaultAsync();
+            var currentEmployee = currentEmployeeScope?.Employee;
+            var currentEmployeeId = currentEmployee?.Id ?? 0;
+            var currentEmployeeDepartmentIds = currentEmployeeScope?.DepartmentIds ?? new List<int>();
+            List<int>? progressEmployeeIds = null;
+
+            IQueryable<KPI> scopedQuery = _context.KPIs
+                .AsNoTracking()
+                .Where(k => k.IsActive == true);
+
+            if (isRestrictedRole)
+            {
+                if (currentEmployee == null)
+                {
+                    scopedQuery = scopedQuery.Where(_ => false);
+                }
+                else
+                {
+                    var targetEmployeeIds = new List<int> { currentEmployee.Id };
+                    var targetDepartmentIds = new List<int>();
+
+                    if (isManager)
+                    {
+                        targetDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, currentEmployee);
+                        targetEmployeeIds.AddRange(await AccessScopeHelper.GetEmployeeIdsInDepartmentsAsync(_context, targetDepartmentIds));
+                    }
+                    else if (isDirector)
+                    {
+                        targetEmployeeIds.AddRange(await _context.Departments
+                            .AsNoTracking()
+                            .Where(d => d.IsActive == true && d.ManagerId.HasValue)
+                            .Select(d => d.ManagerId!.Value)
+                            .ToListAsync());
+                        targetDepartmentIds = await _context.Departments
+                            .AsNoTracking()
+                            .Where(d => d.IsActive == true)
+                            .Select(d => d.Id)
+                            .ToListAsync();
+                    }
+                    else
+                    {
+                        targetDepartmentIds.AddRange(currentEmployeeDepartmentIds);
+                    }
+
+                    targetEmployeeIds = targetEmployeeIds.Distinct().ToList();
+                    targetDepartmentIds = targetDepartmentIds.Distinct().ToList();
+                    if (isManager)
+                    {
+                        progressEmployeeIds = targetEmployeeIds;
+                    }
+
+                    var employeeAllocatedKpiIds = await _context.KPI_Employee_Assignments
+                        .AsNoTracking()
+                        .Where(a => targetEmployeeIds.Contains(a.EmployeeId) &&
+                                    (a.Status == null || a.Status == "Active"))
+                        .Select(a => a.KPIId)
+                        .ToListAsync();
+                    var departmentAllocatedKpiIds = targetDepartmentIds.Count == 0
+                        ? new List<int>()
+                        : await _context.KPI_Department_Assignments
+                            .AsNoTracking()
+                            .Where(a => targetDepartmentIds.Contains(a.DepartmentId))
+                            .Select(a => a.KPIId)
+                            .ToListAsync();
+                    var allocatedKpiIds = employeeAllocatedKpiIds
+                        .Concat(departmentAllocatedKpiIds)
+                        .Distinct()
+                        .ToList();
+
+                    scopedQuery = scopedQuery.Where(k =>
+                        (allocatedKpiIds.Contains(k.Id) &&
+                         (!k.StatusId.HasValue || !hiddenAllocatedKpiStatusIds.Contains(k.StatusId.Value))) ||
+                        (k.AssignerId == currentEmployee.Id &&
+                         (!k.StatusId.HasValue || !hiddenOwnKpiStatusIds.Contains(k.StatusId.Value))));
+                }
+            }
+
+            var periodOptions = await _context.EvaluationPeriods
+                .AsNoTracking()
+                .Where(p => p.IsActive == true && scopedQuery.Any(k => k.PeriodId == p.Id))
+                .OrderByDescending(p => p.StartDate)
+                .ThenByDescending(p => p.Id)
+                .Select(p => new KpiIndexOptionViewModel
+                {
+                    Id = p.Id,
+                    Name = p.PeriodName ?? $"Kỳ #{p.Id}"
+                })
+                .ToListAsync();
+
+            var query = scopedQuery;
+            if (searchString != null)
+            {
+                query = query.Where(k =>
+                    (k.KPIName != null && k.KPIName.Contains(searchString)) ||
+                    (k.Description != null && k.Description.Contains(searchString)));
+            }
             if (periodId.HasValue)
             {
                 query = query.Where(k => k.PeriodId == periodId.Value);
             }
-
-            bool isManager = User.IsInRole("Manager");
-            bool isDirector = User.IsInRole("Director");
-            bool isRestrictedRole = isManager || isDirector ||
-                User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales");
-
-            Employee? currentEmployee = null;
-
-            if (isRestrictedRole)
+            if (statusId.HasValue)
             {
-                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (int.TryParse(userIdStr, out int userId))
-                {
-                    currentEmployee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
-                    if (currentEmployee != null)
-                    {
-                        List<int> targetEmployeeIds = new List<int>();
-                        List<int> targetDepartmentIds = new List<int>();
-
-                        if (isManager)
-                        {
-                            targetEmployeeIds.Add(currentEmployee.Id);
-
-                            // Trưởng phòng: Xem nhân viên trong phòng ban của mình
-                            var managedDeptIds = await _context.Departments
-                                .Where(d => d.ManagerId == currentEmployee.Id && d.IsActive == true)
-                                .Select(d => d.Id)
-                                .ToListAsync();
-
-                            var deptEmployeeIds = await _context.EmployeeAssignments
-                                .Where(ea => managedDeptIds.Contains(ea.DepartmentId ?? 0) && ea.IsActive == true)
-                                .Select(ea => ea.EmployeeId ?? 0)
-                                .ToListAsync();
-
-                            targetEmployeeIds.AddRange(deptEmployeeIds);
-                            targetDepartmentIds.AddRange(managedDeptIds);
-                        }
-                        else if (isDirector)
-                        {
-                            // Giám đốc: Xem toàn bộ ông trưởng phòng của từng phòng PB
-                            var allManagerIds = await _context.Departments
-                                .Where(d => d.IsActive == true && d.ManagerId != null)
-                                .Select(d => d.ManagerId!.Value)
-                                .ToListAsync();
-
-                            targetEmployeeIds.AddRange(allManagerIds);
-
-                            var allDepartmentIds = await _context.Departments
-                                .Where(d => d.IsActive == true)
-                                .Select(d => d.Id)
-                                .ToListAsync();
-
-                            targetDepartmentIds.AddRange(allDepartmentIds);
-                        }
-                        else
-                        {
-                            targetEmployeeIds.Add(currentEmployee.Id);
-                            var employeeDepartmentIds = await _context.EmployeeAssignments
-                                .Where(ea => ea.EmployeeId == currentEmployee.Id && ea.IsActive == true && ea.DepartmentId.HasValue)
-                                .Select(ea => ea.DepartmentId!.Value)
-                                .ToListAsync();
-                            targetDepartmentIds.AddRange(employeeDepartmentIds);
-                        }
-
-                        targetEmployeeIds = targetEmployeeIds.Distinct().ToList();
-                        targetDepartmentIds = targetDepartmentIds.Distinct().ToList();
-
-                        var employeeAllocatedKpiIds = await _context.KPI_Employee_Assignments
-                            .Where(a => targetEmployeeIds.Contains(a.EmployeeId) && (a.Status == null || a.Status == "Active"))
-                            .Select(a => a.KPIId)
-                            .ToListAsync();
-
-                        var departmentAllocatedKpiIds = targetDepartmentIds.Any()
-                            ? await _context.KPI_Department_Assignments
-                                .Where(a => targetDepartmentIds.Contains(a.DepartmentId))
-                                .Select(a => a.KPIId)
-                                .ToListAsync()
-                            : new List<int>();
-
-                        var allocatedKpiIds = employeeAllocatedKpiIds
-                            .Concat(departmentAllocatedKpiIds)
-                            .Distinct()
-                            .ToList();
-
-                        var hiddenKpiStatusIds = await _context.GetStatusIdsAsync(
-                            WorkflowStatusHelper.StatusTypeKpi,
-                            new[] { WorkflowStatusHelper.KpiDraft, WorkflowStatusHelper.KpiRejected, WorkflowStatusHelper.KpiCanceled });
-
-                        // Hiển thị KPI nếu thuộc phạm vi và không bị ẩn (nháp, từ chối, hủy), hoặc KPI do chính người dùng tạo chưa bị đóng/từ chối.
-                        query = query.Where(k =>
-                            (allocatedKpiIds.Contains(k.Id) && (!k.StatusId.HasValue || !hiddenKpiStatusIds.Contains(k.StatusId.Value))) ||
-                            (k.AssignerId == currentEmployee.Id && (!k.StatusId.HasValue || !hiddenOwnKpiStatusIds.Contains(k.StatusId.Value)))
-                        );
-                    }
-                    else
-                    {
-                        query = query.Where(k => false);
-                    }
-                }
+                query = query.Where(k => k.StatusId == statusId.Value);
             }
 
-            var kpis = await query.OrderByDescending(k => k.CreatedAt).ToListAsync();
+            query = quickFilter switch
+            {
+                "mine" when currentEmployeeId > 0 => query.Where(k =>
+                    _context.KPI_Employee_Assignments.Any(a =>
+                        a.KPIId == k.Id && a.EmployeeId == currentEmployeeId &&
+                        (a.Status == null || a.Status == "Active")) ||
+                    _context.KPI_Department_Assignments.Any(a =>
+                        a.KPIId == k.Id && currentEmployeeDepartmentIds.Contains(a.DepartmentId))),
+                "mine" => query.Where(_ => false),
+                "assigned" when currentEmployeeId > 0 => query.Where(k =>
+                    k.AssignerId == currentEmployeeId || k.CreatedById == currentEmployeeId),
+                "assigned" => query.Where(_ => false),
+                "active" => query.Where(k => k.StatusId.HasValue && executableKpiStatusIds.Contains(k.StatusId.Value)),
+                "pending" => query.Where(k => !k.StatusId.HasValue || k.StatusId == 0 || k.StatusId == pendingKpiStatusId),
+                "unallocated" => query.Where(k =>
+                    !_context.KPI_Employee_Assignments.Any(a =>
+                        a.KPIId == k.Id && (a.Status == null || a.Status == "Active")) &&
+                    !_context.KPI_Department_Assignments.Any(a => a.KPIId == k.Id)),
+                _ => query
+            };
 
+            const int pageSize = 12;
+            var filteredQuery = query;
+            var pageIndex = Math.Max(pageNumber ?? 1, 1);
+            var sortedQuery = sortBy switch
+            {
+                "name" => filteredQuery.OrderBy(k => k.KPIName).ThenBy(k => k.Id),
+                "oldest" => filteredQuery.OrderBy(k => k.CreatedAt).ThenBy(k => k.Id),
+                _ => filteredQuery.OrderByDescending(k => k.CreatedAt).ThenByDescending(k => k.Id)
+            };
+            var projectedQuery = sortedQuery.Select(kpi => new
+                {
+                    Kpi = kpi,
+                    TotalCount = filteredQuery.Count(),
+                    MineCount = currentEmployeeId > 0
+                        ? filteredQuery.Count(candidate =>
+                            _context.KPI_Employee_Assignments.Any(assignment =>
+                                assignment.KPIId == candidate.Id &&
+                                assignment.EmployeeId == currentEmployeeId &&
+                                (assignment.Status == null || assignment.Status == "Active")) ||
+                            _context.KPI_Department_Assignments.Any(assignment =>
+                                assignment.KPIId == candidate.Id &&
+                                currentEmployeeDepartmentIds.Contains(assignment.DepartmentId)))
+                        : 0,
+                    AllocatedCount = filteredQuery.Count(candidate =>
+                        _context.KPI_Employee_Assignments.Any(assignment =>
+                            assignment.KPIId == candidate.Id &&
+                            (assignment.Status == null || assignment.Status == "Active")) ||
+                        _context.KPI_Department_Assignments.Any(assignment =>
+                            assignment.KPIId == candidate.Id)),
+                    InProgressCount = filteredQuery.Count(candidate =>
+                        candidate.StatusId.HasValue &&
+                        executableKpiStatusIds.Contains(candidate.StatusId.Value)),
+                    PendingCount = filteredQuery.Count(candidate =>
+                        !candidate.StatusId.HasValue ||
+                        candidate.StatusId == 0 ||
+                        candidate.StatusId == pendingKpiStatusId),
+                    Detail = _context.KPIDetails
+                        .Where(detail => detail.KPIId == kpi.Id)
+                        .OrderBy(detail => detail.Id)
+                        .FirstOrDefault(),
+                    PeriodName = kpi.PeriodId.HasValue
+                        ? _context.EvaluationPeriods
+                            .Where(period => period.Id == kpi.PeriodId.Value)
+                            .Select(period => period.PeriodName)
+                            .FirstOrDefault()
+                        : null,
+                    TypeName = kpi.KPITypeId.HasValue
+                        ? _context.KPITypes
+                            .Where(type => type.Id == kpi.KPITypeId.Value)
+                            .Select(type => type.TypeName)
+                            .FirstOrDefault()
+                        : null,
+                    OkrName = kpi.OKRId.HasValue
+                        ? _context.OKRs
+                            .Where(okr => okr.Id == kpi.OKRId.Value)
+                            .Select(okr => okr.ObjectiveName)
+                            .FirstOrDefault()
+                        : null,
+                    KeyResultName = kpi.OKRKeyResultId.HasValue
+                        ? _context.OKRKeyResults
+                            .Where(keyResult => keyResult.Id == kpi.OKRKeyResultId.Value)
+                            .Select(keyResult => keyResult.KeyResultName)
+                            .FirstOrDefault()
+                        : null,
+                    AssignerName = kpi.AssignerId.HasValue
+                        ? _context.Employees
+                            .Where(employee => employee.Id == kpi.AssignerId.Value)
+                            .Select(employee => employee.FullName)
+                            .FirstOrDefault()
+                        : null
+                });
+            var pageRows = await projectedQuery
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var summary = pageRows.Count == 0
+                ? new KpiIndexSummaryViewModel()
+                : new KpiIndexSummaryViewModel
+                {
+                    TotalCount = pageRows[0].TotalCount,
+                    MineCount = pageRows[0].MineCount,
+                    AllocatedCount = pageRows[0].AllocatedCount,
+                    InProgressCount = pageRows[0].InProgressCount,
+                    PendingCount = pageRows[0].PendingCount
+                };
+            var totalPages = Math.Max(1, (int)Math.Ceiling(summary.TotalCount / (double)pageSize));
+            if (pageRows.Count == 0 && pageIndex > 1)
+            {
+                summary = await filteredQuery
+                    .GroupBy(_ => 1)
+                    .Select(group => new KpiIndexSummaryViewModel
+                    {
+                        TotalCount = group.Count(),
+                        MineCount = currentEmployeeId > 0
+                            ? group.Count(candidate =>
+                                _context.KPI_Employee_Assignments.Any(assignment =>
+                                    assignment.KPIId == candidate.Id &&
+                                    assignment.EmployeeId == currentEmployeeId &&
+                                    (assignment.Status == null || assignment.Status == "Active")) ||
+                                _context.KPI_Department_Assignments.Any(assignment =>
+                                    assignment.KPIId == candidate.Id &&
+                                    currentEmployeeDepartmentIds.Contains(assignment.DepartmentId)))
+                            : 0,
+                        AllocatedCount = group.Count(candidate =>
+                            _context.KPI_Employee_Assignments.Any(assignment =>
+                                assignment.KPIId == candidate.Id &&
+                                (assignment.Status == null || assignment.Status == "Active")) ||
+                            _context.KPI_Department_Assignments.Any(assignment =>
+                                assignment.KPIId == candidate.Id)),
+                        InProgressCount = group.Count(candidate =>
+                            candidate.StatusId.HasValue &&
+                            executableKpiStatusIds.Contains(candidate.StatusId.Value)),
+                        PendingCount = group.Count(candidate =>
+                            !candidate.StatusId.HasValue ||
+                            candidate.StatusId == 0 ||
+                            candidate.StatusId == pendingKpiStatusId)
+                    })
+                    .FirstOrDefaultAsync() ?? new KpiIndexSummaryViewModel();
+                totalPages = Math.Max(1, (int)Math.Ceiling(summary.TotalCount / (double)pageSize));
+                pageIndex = Math.Clamp(pageIndex, 1, totalPages);
+                pageRows = await projectedQuery
+                    .Skip((pageIndex - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+            }
+            var kpis = pageRows.Select(row => row.Kpi).ToList();
             var kpiIds = kpis.Select(k => k.Id).ToList();
 
-            var kpiDetails = await _context.KPIDetails
-                .Where(d => kpiIds.Contains(d.KPIId ?? 0))
-                .ToDictionaryAsync(d => d.KPIId ?? 0);
-
-            var assignments = await _context.KPI_Employee_Assignments
-                .Where(a => kpiIds.Contains(a.KPIId) && (a.Status == null || a.Status == "Active"))
-                .ToListAsync();
-
-            var assignmentDict = new Dictionary<int, List<Tuple<int, decimal>>>();
-            foreach(var a in assignments)
+            var detailByKpiId = pageRows
+                .Where(row => row.Detail != null)
+                .ToDictionary(row => row.Kpi.Id, row => row.Detail!);
+            var pageDataByKpiId = pageRows.ToDictionary(row => row.Kpi.Id);
+            var checkInQuery = _context.KPICheckIns
+                .AsNoTracking()
+                .Where(checkIn =>
+                    checkIn.KPIId.HasValue &&
+                    kpiIds.Contains(checkIn.KPIId.Value) &&
+                    (checkIn.ReviewStatus == ReviewStatusApproved || checkIn.ReviewStatus == null));
+            if (isEmployeeOrSales && currentEmployee != null)
             {
-                if (!assignmentDict.ContainsKey(a.KPIId))
-                    assignmentDict[a.KPIId] = new List<Tuple<int, decimal>>();
-                assignmentDict[a.KPIId].Add(Tuple.Create(a.EmployeeId, (a.Weight ?? 1m) * 100));
+                checkInQuery = checkInQuery.Where(checkIn => checkIn.EmployeeId == currentEmployee.Id);
+            }
+            else if (isManager && progressEmployeeIds is { Count: > 0 })
+            {
+                checkInQuery = checkInQuery.Where(checkIn =>
+                    checkIn.EmployeeId.HasValue &&
+                    progressEmployeeIds.Contains(checkIn.EmployeeId.Value));
             }
 
-            var departmentAssignments = await _context.KPI_Department_Assignments
-                .Where(a => kpiIds.Contains(a.KPIId))
-                .ToListAsync();
-
-            var departmentAssignmentDict = new Dictionary<int, List<int>>();
-            foreach (var assignment in departmentAssignments)
-            {
-                if (!departmentAssignmentDict.ContainsKey(assignment.KPIId))
-                    departmentAssignmentDict[assignment.KPIId] = new List<int>();
-                departmentAssignmentDict[assignment.KPIId].Add(assignment.DepartmentId);
-            }
-
-            var requiredEmployeeIds = kpis.Where(k => k.AssignerId.HasValue).Select(k => k.AssignerId!.Value)
-                .Concat(kpis.Where(k => k.CreatedById.HasValue).Select(k => k.CreatedById!.Value))
-                .Concat(assignments.Select(a => a.EmployeeId))
-                .Distinct()
-                .ToList();
-
-            var requiredDepartmentIds = departmentAssignments.Select(a => a.DepartmentId).Distinct().ToList();
-            var requiredPeriodIds = kpis.Where(k => k.PeriodId.HasValue).Select(k => k.PeriodId!.Value).Distinct().ToList();
-
-            var employees = await _context.Employees
-                .Where(e => requiredEmployeeIds.Contains(e.Id))
-                .ToDictionaryAsync(e => e.Id, e => e.FullName);
-            
-            var departments = await _context.Departments
-                .Where(d => requiredDepartmentIds.Contains(d.Id))
-                .ToDictionaryAsync(d => d.Id, d => d.DepartmentName ?? "N/A");
-            
-            var periods = await _context.EvaluationPeriods
-                .Where(p => requiredPeriodIds.Contains(p.Id))
-                .ToDictionaryAsync(p => p.Id, p => p.PeriodName);
-
-            ViewBag.KPIDetails = kpiDetails;
-            ViewBag.Assignments = assignmentDict;
-            ViewBag.DepartmentAssignments = departmentAssignmentDict;
-            ViewBag.Employees = employees;
-            ViewBag.Departments = departments;
-            ViewBag.AllEmployees = await _context.Employees.Where(e => e.IsActive == true).ToListAsync();
-            ViewBag.AllDepartments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
-            ViewBag.Periods = periods;
-            ViewBag.AllPeriods = await GetAvailableEvaluationPeriodsQuery().ToListAsync();
-            ViewBag.KPITypes = await _context.KPITypes.OrderBy(t => t.Id).ToListAsync();
-            ViewBag.KPIStatuses = await _context.GetKpiStatusNamesAsync();
-            ViewBag.ExecutableKpiStatusIds = executableKpiStatusIds;
-            ViewBag.PendingKpiStatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiPendingApproval);
-            await PopulateOkrLinkViewBagAsync();
-
-            // Lấy tiến độ mới nhất cho mỗi KPI (từ check-in gần nhất)
-            var latestProgress = new Dictionary<int, decimal>();
-            
-            var checkInQueryForProgress = _context.KPICheckIns
-                .Where(c => c.KPIId.HasValue && kpiIds.Contains(c.KPIId.Value) &&
-                            (c.ReviewStatus == "Approved" || c.ReviewStatus == null));
-
-            if (isRestrictedRole && currentEmployee != null)
-            {
-                checkInQueryForProgress = checkInQueryForProgress.Where(c => c.EmployeeId == currentEmployee.Id);
-            }
-
-            var allRelevantCheckIns = await checkInQueryForProgress
-                .OrderByDescending(c => c.CheckInDate)
-                .Select(c => new { c.Id, c.KPIId, c.EmployeeId })
-                .ToListAsync();
-
-            var latestCheckInIds = allRelevantCheckIns
-                .GroupBy(c => new { c.KPIId, c.EmployeeId })
-                .Select(g => g.First().Id)
-                .ToList();
-
-            if (latestCheckInIds.Any())
-            {
-                var progressValues = await _context.CheckInDetails
-                    .Where(d => d.CheckInId.HasValue && latestCheckInIds.Contains(d.CheckInId.Value) && d.ProgressPercentage.HasValue)
-                    .Select(d => new { d.CheckInId, d.ProgressPercentage })
-                    .ToListAsync();
-
-                var progressDict = progressValues.ToDictionary(p => p.CheckInId!.Value, p => p.ProgressPercentage!.Value);
-                
-                var kpiProgressSum = new Dictionary<int, decimal>();
-                var kpiProgressCount = new Dictionary<int, int>();
-
-                foreach (var checkIn in allRelevantCheckIns.Where(c => latestCheckInIds.Contains(c.Id)))
+            var assignmentAndProgressRows = await _context.KPI_Employee_Assignments
+                .AsNoTracking()
+                .Where(assignment =>
+                    kpiIds.Contains(assignment.KPIId) &&
+                    (assignment.Status == null || assignment.Status == "Active"))
+                .Select(assignment => new
                 {
-                    if (progressDict.TryGetValue(checkIn.Id, out var progress) && checkIn.KPIId.HasValue)
+                    assignment.KPIId,
+                    Kind = 1,
+                    EmployeeId = (int?)assignment.EmployeeId,
+                    DepartmentId = (int?)null,
+                    Name = _context.Employees
+                        .Where(employee => employee.Id == assignment.EmployeeId)
+                        .Select(employee => employee.FullName)
+                        .FirstOrDefault(),
+                    Weight = assignment.Weight
+                })
+                .Concat(_context.KPI_Department_Assignments
+                    .AsNoTracking()
+                    .Where(assignment => kpiIds.Contains(assignment.KPIId))
+                    .Select(assignment => new
                     {
-                        int kpiId = checkIn.KPIId.Value;
-                        if (!kpiProgressSum.ContainsKey(kpiId))
-                        {
-                            kpiProgressSum[kpiId] = 0;
-                            kpiProgressCount[kpiId] = 0;
-                        }
-                        kpiProgressSum[kpiId] += progress;
-                        kpiProgressCount[kpiId]++;
-                    }
-                }
+                        assignment.KPIId,
+                        Kind = 2,
+                        EmployeeId = (int?)null,
+                        DepartmentId = (int?)assignment.DepartmentId,
+                        Name = _context.Departments
+                            .Where(department => department.Id == assignment.DepartmentId)
+                            .Select(department => department.DepartmentName)
+                            .FirstOrDefault(),
+                        Weight = (decimal?)null
+                    }))
+                .Concat(checkInQuery
+                    .GroupBy(checkIn => new { checkIn.KPIId, checkIn.EmployeeId })
+                    .Select(group => new
+                    {
+                        KPIId = group.Key.KPIId!.Value,
+                        Kind = 3,
+                        EmployeeId = group.Key.EmployeeId,
+                        DepartmentId = (int?)null,
+                        Name = (string?)null,
+                        Weight = group
+                            .OrderByDescending(checkIn => checkIn.CheckInDate)
+                            .ThenByDescending(checkIn => checkIn.Id)
+                            .Select(checkIn => _context.CheckInDetails
+                                .Where(detail =>
+                                    detail.CheckInId == checkIn.Id &&
+                                    detail.ProgressPercentage.HasValue)
+                                .OrderBy(detail => detail.Id)
+                                .Select(detail => detail.ProgressPercentage)
+                                .FirstOrDefault())
+                            .FirstOrDefault()
+                    }))
+                .ToListAsync();
 
-                foreach (var kId in kpiProgressSum.Keys)
+            var latestProgress = assignmentAndProgressRows
+                .Where(row => row.Kind == 3 && row.Weight.HasValue)
+                .GroupBy(row => row.KPIId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => Math.Round(group.Average(row => row.Weight!.Value), 2));
+
+            var items = kpis.Select(kpi =>
+            {
+                detailByKpiId.TryGetValue(kpi.Id, out var detail);
+                var pageData = pageDataByKpiId[kpi.Id];
+                latestProgress.TryGetValue(kpi.Id, out var progressValue);
+                var itemEmployeeAssignments = assignmentAndProgressRows
+                    .Where(row => row.Kind == 1 && row.KPIId == kpi.Id && row.EmployeeId.HasValue)
+                    .Select(row => new KpiEmployeeAssignmentViewModel
+                    {
+                        EmployeeId = row.EmployeeId.GetValueOrDefault(),
+                        EmployeeName = string.IsNullOrWhiteSpace(row.Name)
+                            ? $"Nhân viên #{row.EmployeeId.GetValueOrDefault()}"
+                            : row.Name,
+                        WeightPercent = Math.Round((row.Weight ?? 1m) * 100m, 2)
+                    })
+                    .OrderBy(a => a.EmployeeName)
+                    .ToList();
+                var itemDepartmentNames = assignmentAndProgressRows
+                    .Where(row => row.Kind == 2 && row.KPIId == kpi.Id && row.DepartmentId.HasValue)
+                    .Select(row => string.IsNullOrWhiteSpace(row.Name)
+                        ? $"Phòng ban #{row.DepartmentId.GetValueOrDefault()}"
+                        : row.Name)
+                    .Distinct()
+                    .OrderBy(name => name)
+                    .ToList();
+                var statusName = WorkflowStatusHelper.ResolveKpiStatusName(kpi.StatusId, kpiStatuses);
+
+                return new KpiIndexItemViewModel
                 {
-                    latestProgress[kId] = Math.Round(kpiProgressSum[kId] / kpiProgressCount[kId], 2);
-                }
-            }
-            ViewBag.LatestProgress = latestProgress;
+                    Id = kpi.Id,
+                    Name = string.IsNullOrWhiteSpace(kpi.KPIName) ? $"KPI #{kpi.Id}" : kpi.KPIName,
+                    Description = kpi.Description,
+                    TypeName = string.IsNullOrWhiteSpace(pageData.TypeName) ? "Chưa phân loại" : pageData.TypeName,
+                    PeriodName = string.IsNullOrWhiteSpace(pageData.PeriodName) ? "Chưa chọn kỳ" : pageData.PeriodName,
+                    StatusId = kpi.StatusId,
+                    StatusName = statusName,
+                    OkrName = pageData.OkrName,
+                    KeyResultName = pageData.KeyResultName,
+                    AssignerName = pageData.AssignerName,
+                    CreatedAt = kpi.CreatedAt,
+                    TargetValue = detail?.TargetValue,
+                    PassThreshold = detail?.PassThreshold,
+                    FailThreshold = detail?.FailThreshold,
+                    MeasurementUnit = detail?.MeasurementUnit,
+                    IsInverse = detail?.IsInverse == true,
+                    DeadlineDate = detail?.DeadlineDate,
+                    CheckInFrequencyDays = detail?.CheckInFrequencyDays ?? 1,
+                    CheckInDeadlineTime = detail?.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0),
+                    Progress = latestProgress.ContainsKey(kpi.Id) ? progressValue : null,
+                    EmployeeAssignments = itemEmployeeAssignments,
+                    DepartmentNames = itemDepartmentNames,
+                    CanCheckIn = WorkflowStatusHelper.IsExecutableKpiStatus(kpi.StatusId, executableKpiStatusIds)
+                };
+            }).ToList();
 
-            return View(kpis);
+            var permissions = await PermissionLookupHelper.HasPermissionsAsync(
+                _context,
+                User,
+                new[] { "KPIS_CREATE", "KPIS_DELETE" });
+            var canManageAssignments = !isEmployeeOrSales;
+            var canCreate = canManageAssignments && permissions.GetValueOrDefault("KPIS_CREATE");
+            var hasActiveFilters = searchString != null || periodId.HasValue || statusId.HasValue || quickFilter != null;
+            var model = new KpiIndexViewModel
+            {
+                Items = new PaginatedList<KpiIndexItemViewModel>(items, summary.TotalCount, pageIndex, pageSize),
+                SearchString = searchString,
+                PeriodId = periodId,
+                StatusId = statusId,
+                QuickFilter = quickFilter,
+                SortBy = sortBy,
+                CanCreateKpi = canCreate,
+                CanDeleteKpi = canManageAssignments && permissions.GetValueOrDefault("KPIS_DELETE"),
+                CanApproveKpi = canCreate &&
+                    (PermissionLookupHelper.IsAdmin(User) || User.IsInRole("HR") || User.IsInRole("Human Resources") || isManager),
+                HasCurrentEmployee = currentEmployee != null,
+                HasActiveFilters = hasActiveFilters,
+                IsFilteredEmpty = hasActiveFilters && summary.TotalCount == 0,
+                Summary = summary,
+                PeriodOptions = periodOptions,
+                StatusOptions = kpiStatuses
+                    .OrderBy(pair => pair.Value)
+                    .Select(pair => new KpiIndexOptionViewModel { Id = pair.Key, Name = pair.Value })
+                    .ToList()
+            };
+
+            return View(model);
         }
 
         [HasPermission("KPIS_VIEW")]
@@ -508,40 +795,116 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return Forbid();
 
             await PopulateCreateKpiViewBagAsync();
-            return View(new KPI());
+            return View(new KpiCreateViewModel());
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         [HasPermission("KPIS_CREATE")]
-        public async Task<IActionResult> Create(KPI kpi, KPIDetail detail, List<int>? employeeIds, List<int>? departmentIds, List<string>? weights)
+        public async Task<IActionResult> Create(KpiCreateViewModel model)
         {
-            NormalizeDecimalFormValue("detail.TargetValue", value => detail.TargetValue = value);
-            NormalizeDecimalFormValue("detail.PassThreshold", value => detail.PassThreshold = value);
-            NormalizeDecimalFormValue("detail.FailThreshold", value => detail.FailThreshold = value);
-            NormalizeCheckInScheduleDetail(detail);
+            NormalizeDecimalFormValue(nameof(KpiCreateViewModel.TargetValue), value => model.TargetValue = value);
+            NormalizeDecimalFormValue(nameof(KpiCreateViewModel.PassThreshold), value => model.PassThreshold = value);
+            NormalizeDecimalFormValue(nameof(KpiCreateViewModel.FailThreshold), value => model.FailThreshold = value);
 
             if (AccessScopeHelper.IsEmployeeOrSales(User))
                 return Forbid();
 
-            if (!ModelState.IsValid)
+            model.KPIName = model.KPIName?.Trim();
+            model.Description = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim();
+            model.MeasurementUnit = model.MeasurementUnit?.Trim();
+            ValidateKpiCreateInput(model);
+
+            var requestedEmployeeIds = model.EmployeeIds ?? new List<int>();
+            var requestedDepartmentIds = model.DepartmentIds ?? new List<int>();
+            if (requestedEmployeeIds.Count != requestedEmployeeIds.Distinct().Count())
             {
-                var errors = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-                TempData["ErrorMessage"] = "Dữ liệu không hợp lệ: " + errors;
-                await PopulateCreateKpiViewBagAsync();
-                return View(kpi);
+                AddModelErrorOnce(nameof(model.EmployeeIds), "Danh sách nhân viên có dữ liệu trùng lặp.");
+            }
+            if (requestedDepartmentIds.Count != requestedDepartmentIds.Distinct().Count())
+            {
+                AddModelErrorOnce(nameof(model.DepartmentIds), "Danh sách phòng ban có dữ liệu trùng lặp.");
+            }
+            requestedEmployeeIds = requestedEmployeeIds.Distinct().ToList();
+            requestedDepartmentIds = requestedDepartmentIds.Distinct().ToList();
+
+            EvaluationPeriod? selectedPeriod = null;
+            if (model.PeriodId.HasValue && model.PeriodId.Value > 0)
+            {
+                selectedPeriod = await GetAvailableEvaluationPeriodsQuery()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.Id == model.PeriodId.Value);
+                if (selectedPeriod == null)
+                {
+                    AddModelErrorOnce(nameof(model.PeriodId),
+                        "Kỳ đánh giá được chọn không còn hoạt động hoặc đã đóng/hết hạn.");
+                }
+                else if (model.DeadlineDate.HasValue &&
+                         ((selectedPeriod.StartDate.HasValue && model.DeadlineDate.Value.Date < selectedPeriod.StartDate.Value.Date) ||
+                          (selectedPeriod.EndDate.HasValue && model.DeadlineDate.Value.Date > selectedPeriod.EndDate.Value.Date)))
+                {
+                    AddModelErrorOnce(nameof(model.DeadlineDate),
+                        "Deadline KPI phải nằm trong khoảng thời gian của kỳ đánh giá.");
+                }
             }
 
-            if (kpi.PeriodId.HasValue && !await IsAvailableEvaluationPeriodAsync(kpi.PeriodId.Value))
+            if (model.KPITypeId.HasValue && model.KPITypeId.Value > 0 &&
+                !await _context.KPITypes.AsNoTracking().AnyAsync(t => t.Id == model.KPITypeId.Value))
             {
-                ModelState.AddModelError(nameof(kpi.PeriodId),
-                    "Kỳ đánh giá được chọn không còn hoạt động hoặc đã đóng/hết hạn.");
-                await PopulateCreateKpiViewBagAsync();
-                return View(kpi);
+                AddModelErrorOnce(nameof(model.KPITypeId), "Loại KPI đã chọn không tồn tại.");
             }
 
-            var requestedEmployeeIds = employeeIds?.Distinct().ToList() ?? new List<int>();
-            var requestedDepartmentIds = departmentIds?.Distinct().ToList() ?? new List<int>();
+            if (model.OKRId.HasValue)
+            {
+                var okrExists = await _context.OKRs
+                    .AsNoTracking()
+                    .AnyAsync(o => o.Id == model.OKRId.Value && o.IsActive == true);
+                if (!okrExists)
+                {
+                    AddModelErrorOnce(nameof(model.OKRId), "OKR liên kết không còn hoạt động hoặc không tồn tại.");
+                }
+                else if (model.OKRKeyResultId.HasValue)
+                {
+                    var keyResultMatches = await _context.OKRKeyResults
+                        .AsNoTracking()
+                        .AnyAsync(kr => kr.Id == model.OKRKeyResultId.Value && kr.OKRId == model.OKRId.Value);
+                    if (!keyResultMatches)
+                    {
+                        AddModelErrorOnce(nameof(model.OKRKeyResultId),
+                            "Key Result không thuộc OKR đã chọn.");
+                    }
+                }
+            }
+            else if (model.OKRKeyResultId.HasValue)
+            {
+                AddModelErrorOnce(nameof(model.OKRKeyResultId), "Vui lòng chọn OKR trước khi liên kết Key Result.");
+            }
+
+            var validEmployeeIds = requestedEmployeeIds.Count == 0
+                ? new List<int>()
+                : await _context.Employees
+                    .AsNoTracking()
+                    .Where(e => e.IsActive == true && requestedEmployeeIds.Contains(e.Id))
+                    .Select(e => e.Id)
+                    .ToListAsync();
+            if (validEmployeeIds.Count != requestedEmployeeIds.Count)
+            {
+                AddModelErrorOnce(nameof(model.EmployeeIds),
+                    "Một hoặc nhiều nhân viên không còn hoạt động hoặc không tồn tại.");
+            }
+
+            var validDepartmentIds = requestedDepartmentIds.Count == 0
+                ? new List<int>()
+                : await _context.Departments
+                    .AsNoTracking()
+                    .Where(d => d.IsActive == true && requestedDepartmentIds.Contains(d.Id))
+                    .Select(d => d.Id)
+                    .ToListAsync();
+            if (validDepartmentIds.Count != requestedDepartmentIds.Count)
+            {
+                AddModelErrorOnce(nameof(model.DepartmentIds),
+                    "Một hoặc nhiều phòng ban không còn hoạt động hoặc không tồn tại.");
+            }
 
             if (AccessScopeHelper.IsManagerScoped(User))
             {
@@ -552,109 +915,94 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 if (requestedDepartmentIds.Any(id => !managedDepartmentIds.Contains(id)) ||
                     requestedEmployeeIds.Any(id => !managedEmployeeIds.Contains(id)))
                 {
-                    TempData["ErrorMessage"] = "Manager chỉ được phân bổ KPI cho phòng ban hoặc nhân viên mình quản lý.";
-                    await PopulateCreateKpiViewBagAsync();
-                    return View(kpi);
+                    AddModelErrorOnce(nameof(model.EmployeeIds),
+                        "Bạn chỉ được phân bổ KPI cho phòng ban hoặc nhân viên mình quản lý.");
                 }
             }
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            var allocationWeights = ParseKpiAllocationWeights(model, requestedEmployeeIds.Count);
+            if (!ModelState.IsValid)
+            {
+                await PopulateCreateKpiViewBagAsync();
+                return View(model);
+            }
+
+            var pendingStatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiPendingApproval);
+            var kpi = new KPI
+            {
+                KPIName = model.KPIName,
+                Description = model.Description,
+                KPITypeId = model.KPITypeId,
+                PeriodId = model.PeriodId,
+                OKRId = model.OKRId,
+                OKRKeyResultId = model.OKRKeyResultId,
+                CreatedAt = DateTime.Now,
+                IsActive = true,
+                StatusId = pendingStatusId
+            };
+            var detail = new KPIDetail
+            {
+                TargetValue = model.TargetValue,
+                PassThreshold = model.PassThreshold,
+                FailThreshold = model.FailThreshold,
+                MeasurementUnit = model.MeasurementUnit,
+                IsInverse = model.IsInverse,
+                DeadlineDate = model.DeadlineDate,
+                CheckInFrequencyDays = model.CheckInFrequencyDays,
+                CheckInDeadlineTime = model.CheckInDeadlineTime,
+                ReminderBeforeHours = model.ReminderBeforeHours
+            };
+            NormalizeCheckInScheduleDetail(detail);
+
+            var creator = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
+            if (creator != null)
+            {
+                kpi.CreatedById = creator.Id;
+                kpi.AssignerId = creator.Id;
+            }
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                kpi.CreatedAt = DateTime.Now;
-                kpi.IsActive = true;
-                kpi.StatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiPendingApproval);
-
-                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (int.TryParse(userIdStr, out int userId))
-                {
-                    var emp = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
-                    if (emp != null) 
-                    {
-                        kpi.CreatedById = emp.Id;
-                        kpi.AssignerId = emp.Id;
-                    }
-                }
-
-                await NormalizeOkrLinkAsync(kpi);
-
                 _context.KPIs.Add(kpi);
                 await _context.SaveChangesAsync();
 
                 detail.KPIId = kpi.Id;
                 _context.KPIDetails.Add(detail);
-                await _context.SaveChangesAsync();
-
-                if (requestedDepartmentIds.Any())
+                foreach (var departmentId in validDepartmentIds)
                 {
-                    var validDepartmentIds = await _context.Departments
-                        .Where(d => d.IsActive == true && requestedDepartmentIds.Contains(d.Id))
-                        .Select(d => d.Id)
-                        .ToListAsync();
-
-                    foreach (var departmentId in validDepartmentIds.Distinct())
+                    _context.KPI_Department_Assignments.Add(new KPI_Department_Assignment
                     {
-                        _context.KPI_Department_Assignments.Add(new KPI_Department_Assignment
-                        {
-                            KPIId = kpi.Id,
-                            DepartmentId = departmentId
-                        });
-                    }
+                        KPIId = kpi.Id,
+                        DepartmentId = departmentId
+                    });
                 }
 
-                if (requestedEmployeeIds.Any())
+                for (var index = 0; index < requestedEmployeeIds.Count; index++)
                 {
-                    var validEmployeeIds = await _context.Employees
-                        .Where(e => e.IsActive == true && requestedEmployeeIds.Contains(e.Id))
-                        .Select(e => e.Id)
-                        .ToListAsync();
-                    var validEmployeeIdSet = validEmployeeIds.ToHashSet();
-                    var defaultWeight = requestedEmployeeIds.Count > 0
-                        ? Math.Round(100m / requestedEmployeeIds.Count, 2)
-                        : 100m;
-
-                    for (int i = 0; i < requestedEmployeeIds.Count; i++)
+                    _context.KPI_Employee_Assignments.Add(new KPI_Employee_Assignment
                     {
-                        var employeeId = requestedEmployeeIds[i];
-                        if (!validEmployeeIdSet.Contains(employeeId))
-                        {
-                            continue;
-                        }
-
-                        var weightPercent = defaultWeight;
-                        if (weights != null && i < weights.Count && !string.IsNullOrWhiteSpace(weights[i]))
-                        {
-                            var normalizedWeight = weights[i].Replace(",", ".");
-                            if (decimal.TryParse(normalizedWeight, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedWeight))
-                            {
-                                weightPercent = parsedWeight;
-                            }
-                        }
-
-                        var weight = Math.Clamp(weightPercent, 0.01m, 100m) / 100m;
-                        _context.KPI_Employee_Assignments.Add(new KPI_Employee_Assignment
-                        {
-                            KPIId = kpi.Id,
-                            EmployeeId = employeeId,
-                            Weight = weight,
-                            Status = "Active"
-                        });
-                    }
+                        KPIId = kpi.Id,
+                        EmployeeId = requestedEmployeeIds[index],
+                        Weight = allocationWeights[index] / 100m,
+                        Status = "Active"
+                    });
                 }
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                TempData["SuccessMessage"] = "Đã tạo KPI mới thành công và đang chờ duyệt!";
+                TempData["SuccessMessage"] = "Đã tạo KPI và chuyển sang trạng thái chờ duyệt.";
+                return RedirectToAction(nameof(Index));
             }
-            catch (Exception ex)
+            catch
             {
                 await transaction.RollbackAsync();
-                var innerMsg = ex.InnerException != null ? " - Chi tiết: " + ex.InnerException.Message : "";
-                TempData["ErrorMessage"] = "Đã xảy ra lỗi hệ thống: " + ex.Message + innerMsg;
+                AddModelErrorOnce(string.Empty,
+                    "Không thể lưu KPI lúc này. Dữ liệu chưa được thay đổi; vui lòng thử lại.");
+                await PopulateCreateKpiViewBagAsync();
+                return View(model);
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         [HttpGet]
@@ -722,6 +1070,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("KPIS_CREATE")]
         public async Task<IActionResult> AssignPersonnel(int kpiId, List<int>? employeeIds, List<int>? departmentIds, List<string>? weights, string? returnUrl = null)
 
@@ -946,6 +1295,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("KPIS_CREATE")]
         public async Task<IActionResult> Approve(int id)
         {
@@ -957,14 +1307,31 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     return Forbid();
                 }
 
-                kpi.StatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiInProgress);
+                var pendingStatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiPendingApproval);
+                var isPending = !kpi.StatusId.HasValue || kpi.StatusId == 0 ||
+                    (pendingStatusId.HasValue && kpi.StatusId == pendingStatusId.Value);
+                if (!isPending)
+                {
+                    TempData["ErrorMessage"] = "Chỉ KPI đang chờ duyệt mới có thể được phê duyệt.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var inProgressStatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiInProgress);
+                if (!inProgressStatusId.HasValue)
+                {
+                    TempData["ErrorMessage"] = "Chưa cấu hình trạng thái KPI đang thực hiện.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                kpi.StatusId = inProgressStatusId.Value;
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Đã phê duyệt KPI: {kpi.KPIName}!";
+                TempData["SuccessMessage"] = $"Đã phê duyệt KPI: {kpi.KPIName}.";
             }
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("KPIS_CREATE")]
         public async Task<IActionResult> Reject(int id)
         {
@@ -976,14 +1343,31 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     return Forbid();
                 }
 
-                kpi.StatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiRejected);
+                var pendingStatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiPendingApproval);
+                var isPending = !kpi.StatusId.HasValue || kpi.StatusId == 0 ||
+                    (pendingStatusId.HasValue && kpi.StatusId == pendingStatusId.Value);
+                if (!isPending)
+                {
+                    TempData["ErrorMessage"] = "Chỉ KPI đang chờ duyệt mới có thể bị từ chối.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var rejectedStatusId = await _context.GetKpiStatusIdAsync(WorkflowStatusHelper.KpiRejected);
+                if (!rejectedStatusId.HasValue)
+                {
+                    TempData["ErrorMessage"] = "Chưa cấu hình trạng thái KPI từ chối.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                kpi.StatusId = rejectedStatusId.Value;
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Đã từ chối KPI: {kpi.KPIName}!";
+                TempData["SuccessMessage"] = $"Đã từ chối KPI: {kpi.KPIName}.";
             }
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("KPIS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -1004,6 +1388,152 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 TempData["SuccessMessage"] = "Đã xóa (vô hiệu hóa) KPI!";
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        private void ValidateKpiCreateInput(KpiCreateViewModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model.KPIName))
+            {
+                AddModelErrorOnce(nameof(model.KPIName), "Vui lòng nhập tên KPI.");
+            }
+            else if (model.KPIName.Length > 255)
+            {
+                AddModelErrorOnce(nameof(model.KPIName), "Tên KPI không được vượt quá 255 ký tự.");
+            }
+
+            if (model.Description?.Length > 1000)
+            {
+                AddModelErrorOnce(nameof(model.Description), "Mô tả KPI không được vượt quá 1000 ký tự.");
+            }
+            if (!model.KPITypeId.HasValue || model.KPITypeId.Value <= 0)
+            {
+                AddModelErrorOnce(nameof(model.KPITypeId), "Vui lòng chọn loại KPI.");
+            }
+            if (!model.PeriodId.HasValue || model.PeriodId.Value <= 0)
+            {
+                AddModelErrorOnce(nameof(model.PeriodId), "Vui lòng chọn kỳ đánh giá.");
+            }
+            if (!model.TargetValue.HasValue || model.TargetValue.Value <= 0)
+            {
+                AddModelErrorOnce(nameof(model.TargetValue), "Chỉ tiêu KPI phải lớn hơn 0.");
+            }
+            if (model.PassThreshold < 0)
+            {
+                AddModelErrorOnce(nameof(model.PassThreshold), "Ngưỡng đạt không được là số âm.");
+            }
+            if (model.FailThreshold < 0)
+            {
+                AddModelErrorOnce(nameof(model.FailThreshold), "Ngưỡng trượt không được là số âm.");
+            }
+
+            var hasAllowedMeasurementUnit = !string.IsNullOrWhiteSpace(model.MeasurementUnit) &&
+                KpiCreateViewModel.MeasurementUnitOptions.Any(option =>
+                    string.Equals(option.Value, model.MeasurementUnit, StringComparison.OrdinalIgnoreCase));
+            if (!hasAllowedMeasurementUnit)
+            {
+                AddModelErrorOnce(nameof(model.MeasurementUnit), "Vui lòng chọn đơn vị đo lường hợp lệ.");
+            }
+
+            if (model.TargetValue.HasValue && model.PassThreshold.HasValue)
+            {
+                var passIsInvalid = model.IsInverse
+                    ? model.PassThreshold.Value < model.TargetValue.Value
+                    : model.PassThreshold.Value > model.TargetValue.Value;
+                if (passIsInvalid)
+                {
+                    AddModelErrorOnce(nameof(model.PassThreshold), model.IsInverse
+                        ? "Với KPI càng thấp càng tốt, ngưỡng đạt phải lớn hơn hoặc bằng chỉ tiêu."
+                        : "Ngưỡng đạt không được lớn hơn chỉ tiêu KPI.");
+                }
+            }
+
+            if (model.FailThreshold.HasValue && model.TargetValue.HasValue)
+            {
+                var comparisonValue = model.PassThreshold ?? model.TargetValue;
+                var failIsInvalid = model.IsInverse
+                    ? model.FailThreshold.Value < comparisonValue
+                    : model.FailThreshold.Value > comparisonValue;
+                if (failIsInvalid)
+                {
+                    AddModelErrorOnce(nameof(model.FailThreshold), model.IsInverse
+                        ? "Với KPI càng thấp càng tốt, ngưỡng trượt phải lớn hơn hoặc bằng ngưỡng đạt."
+                        : "Ngưỡng trượt phải nhỏ hơn hoặc bằng ngưỡng đạt.");
+                }
+            }
+
+            if (model.CheckInFrequencyDays is < 1 or > 365)
+            {
+                AddModelErrorOnce(nameof(model.CheckInFrequencyDays),
+                    "Tần suất check-in phải từ 1 đến 365 ngày.");
+            }
+            if (model.CheckInDeadlineTime < TimeSpan.Zero || model.CheckInDeadlineTime >= TimeSpan.FromDays(1))
+            {
+                AddModelErrorOnce(nameof(model.CheckInDeadlineTime), "Giờ deadline không hợp lệ.");
+            }
+            if (model.ReminderBeforeHours is < 0 or > 8760)
+            {
+                AddModelErrorOnce(nameof(model.ReminderBeforeHours),
+                    "Thời gian nhắc trước hạn phải từ 0 đến 8760 giờ.");
+            }
+        }
+
+        private List<decimal> ParseKpiAllocationWeights(KpiCreateViewModel model, int employeeCount)
+        {
+            if (employeeCount == 0)
+            {
+                return new List<decimal>();
+            }
+
+            if (model.Weights == null || model.Weights.Count == 0)
+            {
+                var equalWeight = Math.Round(100m / employeeCount, 2, MidpointRounding.AwayFromZero);
+                var equalWeights = Enumerable.Repeat(equalWeight, employeeCount).ToList();
+                equalWeights[^1] += 100m - equalWeights.Sum();
+                model.Weights = equalWeights
+                    .Select(weight => weight.ToString("0.##", CultureInfo.InvariantCulture))
+                    .ToList();
+                return equalWeights;
+            }
+
+            if (model.Weights.Count != employeeCount)
+            {
+                AddModelErrorOnce(nameof(model.Weights),
+                    "Số tỷ trọng không khớp với số nhân viên được chọn.");
+                return new List<decimal>();
+            }
+
+            var parsedWeights = new List<decimal>(employeeCount);
+            foreach (var rawWeight in model.Weights)
+            {
+                var normalizedWeight = rawWeight?.Trim().Replace(",", ".");
+                if (!decimal.TryParse(normalizedWeight, NumberStyles.Number, CultureInfo.InvariantCulture,
+                        out var parsedWeight) || parsedWeight <= 0 || parsedWeight > 100)
+                {
+                    AddModelErrorOnce(nameof(model.Weights),
+                        "Mỗi tỷ trọng phải lớn hơn 0 và không vượt quá 100%.");
+                    return new List<decimal>();
+                }
+                parsedWeights.Add(parsedWeight);
+            }
+
+            var difference = 100m - parsedWeights.Sum();
+            if (Math.Abs(difference) > 0.05m)
+            {
+                AddModelErrorOnce(nameof(model.Weights),
+                    "Tổng tỷ trọng của các nhân viên phải bằng 100%.");
+                return new List<decimal>();
+            }
+
+            parsedWeights[^1] += difference;
+            return parsedWeights;
+        }
+
+        private void AddModelErrorOnce(string key, string message)
+        {
+            if (!ModelState.TryGetValue(key, out var entry) || entry.Errors.Count == 0)
+            {
+                ModelState.AddModelError(key, message);
+            }
         }
 
         private async Task PopulateCreateKpiViewBagAsync()

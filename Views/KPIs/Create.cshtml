@@ -1,380 +1,452 @@
-@model Manage_KPI_or_OKR_System.Models.KPI
+@model Manage_KPI_or_OKR_System.Models.ViewModels.KpiCreateViewModel
+@using System.Globalization
+@using Manage_KPI_or_OKR_System.Models
+@using Manage_KPI_or_OKR_System.Models.ViewModels
+
 @{
-    ViewData["Title"] = "Thêm KPI Mới";
+    ViewData["Title"] = "Tạo KPI";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var periodsDict = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
-    var kpiTypesList = ViewBag.KPITypes as List<Manage_KPI_or_OKR_System.Models.KPIType> ?? new List<Manage_KPI_or_OKR_System.Models.KPIType>();
-    var allEmployees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
-    var allDepartments = ViewBag.AllDepartments as List<Manage_KPI_or_OKR_System.Models.Department> ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
-    var measurementUnits = new[] {
-        new { Value = "%", Text = "% - Tỷ lệ phần trăm" },
-        new { Value = "VNĐ", Text = "VNĐ - Tiền tệ" },
-        new { Value = "Triệu VNĐ", Text = "Triệu VNĐ - Tiền tệ rút gọn" },
-        new { Value = "Điểm", Text = "Điểm - Thang điểm" },
-        new { Value = "Người", Text = "Người - Nhân sự" },
-        new { Value = "Khách hàng", Text = "Khách hàng" },
-        new { Value = "Cơ hội", Text = "Cơ hội bán hàng" },
-        new { Value = "Hợp đồng", Text = "Hợp đồng" },
-        new { Value = "Sản phẩm", Text = "Sản phẩm" },
-        new { Value = "Lần", Text = "Lần" },
-        new { Value = "Giờ", Text = "Giờ" },
-        new { Value = "Ngày", Text = "Ngày" },
-        new { Value = "Dự án", Text = "Dự án" },
-        new { Value = "Công việc", Text = "Công việc" }
-    };
+
+    var periods = (ViewBag.Periods as IDictionary<int, string> ?? new Dictionary<int, string>()).ToList();
+    var kpiTypes = (ViewBag.KPITypes as IEnumerable<KPIType> ?? Enumerable.Empty<KPIType>()).ToList();
+    var employees = (ViewBag.AllEmployees as IEnumerable<Employee> ?? Enumerable.Empty<Employee>())
+        .OrderBy(employee => employee.FullName)
+        .ToList();
+    var departments = (ViewBag.AllDepartments as IEnumerable<Department> ?? Enumerable.Empty<Department>())
+        .OrderBy(department => department.DepartmentName)
+        .ToList();
+    var okrs = (ViewBag.OKRs as IEnumerable<OKR> ?? Enumerable.Empty<OKR>()).ToList();
+    var keyResults = (ViewBag.OKRKeyResults as IEnumerable<OKRKeyResult> ?? Enumerable.Empty<OKRKeyResult>()).ToList();
+    var submittedEmployeeIds = Model.EmployeeIds ?? new List<int>();
+    var submittedWeights = Model.Weights ?? new List<string>();
+    var selectedEmployees = submittedEmployeeIds.ToHashSet();
+    var selectedDepartments = (Model.DepartmentIds ?? new List<int>()).ToHashSet();
+    var weightByEmployee = new Dictionary<int, string>();
+    for (var index = 0; index < submittedEmployeeIds.Count && index < submittedWeights.Count; index++)
+    {
+        weightByEmployee[submittedEmployeeIds[index]] = submittedWeights[index];
+    }
+    var isAiOpen = string.Equals(Context.Request.Query["ai"], "true", StringComparison.OrdinalIgnoreCase);
+    var deadlineTime = Model.CheckInDeadlineTime == default ? new TimeSpan(10, 0, 0) : Model.CheckInDeadlineTime;
+    var deadlineTimeText = deadlineTime.ToString("hh\\:mm", CultureInfo.InvariantCulture);
 }
 
-<div class="page-content">
-    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
-        <div>
-            <h1 class="mb-2 fw-800">Thêm KPI Mới</h1>
-            <div class="page-breadcrumb">
+<div class="cf-page kpi-create-page" data-create-form data-kpi-create data-create-ai="@isAiOpen.ToString().ToLowerInvariant()">
+    <header class="cf-header">
+        <div class="cf-header__content">
+            <h1>Tạo KPI mới</h1>
+            <nav class="cf-breadcrumb" aria-label="Điều hướng trang">
                 <a href="/">Trang chủ</a>
-                <span class="separator">/</span>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
                 <a asp-action="Index">Quản lý KPI</a>
-                <span class="separator">/</span>
-                <span class="text-muted">Thêm mới</span>
-            </div>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Tạo mới</span>
+            </nav>
+            <p class="cf-header__description">Đặt một chỉ tiêu có thể đo lường, gắn đúng kỳ đánh giá và phân bổ rõ người chịu trách nhiệm.</p>
         </div>
-        <div>
-            <a asp-action="Index" class="btn-outline-custom shadow-sm">
-                <i class="bi bi-arrow-left me-2"></i> Quay lại
+        <div class="kpi-create-header-actions">
+            <button type="button" class="cf-secondary-action" data-bs-toggle="modal" data-bs-target="#aiKpiSuggestModal">
+                <i class="bi bi-stars" aria-hidden="true"></i>
+                <span>Gợi ý bằng AI</span>
+            </button>
+            <a asp-action="Index" class="cf-back-action">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                <span>Quay lại</span>
             </a>
         </div>
-    </div>
+    </header>
 
-    <div class="row g-4">
-        <!-- FORM COLUMN -->
-        <div class="col-xl-8 animate__animated animate__fadeInLeft">
-            <div class="content-card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
-                <div class="card-header-custom border-bottom bg-transparent py-4">
-                    <h5 class="fw-bold fs-5 mb-0"><i class="bi bi-bullseye text-primary me-2"></i> Thông tin chỉ tiêu KPI</h5>
+    <div class="cf-layout">
+        <section class="cf-panel" aria-labelledby="kpiFormHeading">
+            <div class="cf-panel__header">
+                <div>
+                    <h2 id="kpiFormHeading">Thông tin KPI</h2>
+                    <p>Các trường có dấu <span class="cf-required" aria-hidden="true">*</span> là bắt buộc.</p>
                 </div>
-
-                <div class="card-body-custom p-4">
-                    <form asp-action="Create" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
-
-                        <!-- SECTION 1: THÔNG TIN CHUNG -->
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
-                                <span class="fw-bold">1</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Thông tin chung</h6>
-                        </div>
-
-                        <div class="row g-4 mb-5 p-3 rounded-4 bg-light bg-opacity-50 border border-white">
-                            <div class="col-md-12">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Tên KPI <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-pencil-square"></i>
-                                        <input type="text" name="kpi.KPIName" id="kpiNameInput" class="form-control shadow-sm" placeholder="VD: Doanh thu bán hàng tháng" required />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Phân loại KPI <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-tags"></i>
-                                        <select name="kpi.KPITypeId" id="kpiTypeSelect" class="form-select shadow-sm" required>
-                                            <option value="">-- Chọn loại KPI --</option>
-                                            @foreach (var t in kpiTypesList)
-                                            {
-                                                <option value="@t.Id">@t.TypeName</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Kỳ đánh giá <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-calendar3"></i>
-                                        <select name="kpi.PeriodId" id="periodSelect" class="form-select shadow-sm" required>
-                                            <option value="">-- Chọn kỳ đánh giá --</option>
-                                            @foreach (var kvp in periodsDict)
-                                            {
-                                                <option value="@kvp.Key">@kvp.Value</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 2: CHỈ TIÊU -->
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-success text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
-                                <span class="fw-bold">2</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Chi tiết chỉ tiêu</h6>
-                        </div>
-
-                        <div class="row g-4 p-3 rounded-4 bg-light bg-opacity-50 border border-white mb-4" data-measurement-scope>
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper input-group">
-                                        <i class="bi bi-graph-up-arrow"></i>
-                                        <input type="number" step="0.01" name="detail.TargetValue" id="targetInput" class="form-control shadow-sm measurement-value-input" data-measurement-role="target" placeholder="VD: 1000000" required />
-                                        <span class="input-group-text measurement-unit-suffix">đơn vị</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Đơn vị đo lường <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-rulers"></i>
-                                        <select name="detail.MeasurementUnit" id="unitInput" class="form-select shadow-sm measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
-                                            <option value="">-- Chọn đơn vị đo --</option>
-                                            @foreach (var unit in measurementUnits)
-                                            {
-                                                <option value="@unit.Value">@unit.Text</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Ngưỡng đạt (Pass Threshold)</label>
-                                    <div class="input-wrapper input-group">
-                                        <i class="bi bi-check2-circle"></i>
-                                        <input type="number" step="0.01" name="detail.PassThreshold" class="form-control shadow-sm measurement-value-input" data-measurement-role="pass" placeholder="Mức tối thiểu để Đạt" />
-                                        <span class="input-group-text measurement-unit-suffix">đơn vị</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Ngưỡng trượt (Fail Threshold)</label>
-                                    <div class="input-wrapper input-group">
-                                        <i class="bi bi-x-circle"></i>
-                                        <input type="number" step="0.01" name="detail.FailThreshold" class="form-control shadow-sm measurement-value-input" data-measurement-role="fail" placeholder="Mức xác định là Không đạt" />
-                                        <span class="input-group-text measurement-unit-suffix">đơn vị</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-12">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Mô tả KPI</label>
-                                    <textarea name="kpi.Description" id="kpiDescriptionInput" class="form-control shadow-sm" rows="3" maxlength="1000" placeholder="Mô tả phạm vi, cách tính hoặc lưu ý để nhân viên hiểu đúng KPI"></textarea>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Tần suất check-in</label>
-                                    <div class="input-wrapper input-group">
-                                        <i class="bi bi-repeat"></i>
-                                        <input type="number" min="1" step="1" name="detail.CheckInFrequencyDays" class="form-control shadow-sm" value="1" />
-                                        <span class="input-group-text">ngày/lần</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Ngày deadline</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-calendar-check"></i>
-                                        <input type="date" name="detail.DeadlineDate" class="form-control shadow-sm" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Giờ deadline</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-alarm"></i>
-                                        <input type="time" name="detail.CheckInDeadlineTime" class="form-control shadow-sm" value="10:00" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Nhắc trước hạn</label>
-                                    <div class="input-wrapper input-group">
-                                        <i class="bi bi-bell"></i>
-                                        <input type="number" min="0" step="1" name="detail.ReminderBeforeHours" class="form-control shadow-sm" value="24" />
-                                        <span class="input-group-text">giờ</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 3: PHÂN BỔ -->
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-info text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
-                                <span class="fw-bold">3</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Phân bổ KPI</h6>
-                        </div>
-
-                        <div class="row g-4 p-3 rounded-4 bg-light bg-opacity-50 border border-white mb-4">
-                            <div class="col-md-6">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <label class="form-label small text-muted text-uppercase fw-800 mb-0">Nhân viên phụ trách</label>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" id="splitCreateKpiWeights">Chia đều</button>
-                                </div>
-                                <div class="border rounded-3 bg-white p-3" style="max-height: 260px; overflow:auto;">
-                                    @if (allEmployees.Any())
-                                    {
-                                        foreach (var employee in allEmployees)
-                                        {
-                                            <div class="d-flex align-items-center gap-2 py-2 border-bottom">
-                                                <input class="form-check-input kpi-employee-check" type="checkbox" name="employeeIds" value="@employee.Id" id="employee-@employee.Id">
-                                                <label class="form-check-label flex-grow-1" for="employee-@employee.Id">@employee.FullName (@employee.EmployeeCode)</label>
-                                                <div class="input-group input-group-sm" style="width: 110px;">
-                                                    <input type="number" min="0.01" max="100" step="0.01" name="weights" class="form-control kpi-weight-input" value="100" disabled>
-                                                    <span class="input-group-text">%</span>
-                                                </div>
-                                            </div>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <div class="text-muted small">Chưa có nhân viên khả dụng để phân bổ.</div>
-                                    }
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small text-muted text-uppercase fw-800">Phòng ban nhận KPI</label>
-                                <div class="border rounded-3 bg-white p-3" style="max-height: 260px; overflow:auto;">
-                                    @if (allDepartments.Any())
-                                    {
-                                        foreach (var department in allDepartments)
-                                        {
-                                            <div class="form-check py-2 border-bottom">
-                                                <input class="form-check-input" type="checkbox" name="departmentIds" value="@department.Id" id="department-@department.Id">
-                                                <label class="form-check-label" for="department-@department.Id">@department.DepartmentName</label>
-                                            </div>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <div class="text-muted small">Chưa có phòng ban khả dụng để phân bổ.</div>
-                                    }
-                                </div>
-                                <div class="form-text mt-2">Có thể phân bổ ngay khi tạo, hoặc chỉnh lại ở trang phân bổ KPI sau.</div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
-                            <a asp-action="Index" class="btn-outline-custom">
-                                <i class="bi bi-x-lg me-2"></i> Hủy thao tác
-                            </a>
-                            <button type="submit" class="btn-primary-custom" style="padding: 12px 40px; border-radius: 12px;">
-                                <i class="bi bi-check-lg fs-5 me-2"></i> Lưu KPI mới
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                <span class="kpi-form-status"><i class="bi bi-shield-check" aria-hidden="true"></i> Kiểm tra server</span>
             </div>
-        </div>
 
-        <!-- SIDEBAR COLUMN -->
-        <div class="col-xl-4 animate__animated animate__fadeInRight">
-            <div class="sticky-top" style="top: 100px;">
-                <div class="content-card border-0 shadow-lg text-white mb-4" style="background: linear-gradient(135deg, #1a73e8, #1557b0); border-radius: 24px;">
-                    <div class="card-body-custom p-4">
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
-                                <i class="bi bi-bullseye fs-3 text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small">Chỉ tiêu mục tiêu</h6>
-                                <h4 class="mb-0 fw-800" id="previewTarget">--</h4>
-                            </div>
+            <form asp-action="Create" method="post" class="cf-form" data-create-form-element>
+                <div asp-validation-summary="All" class="cf-alert" role="alert" tabindex="-1" data-error-summary></div>
+
+                <section class="cf-section" aria-labelledby="kpiDefinitionHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-bullseye"></i></span>
+                        <div>
+                            <h3 id="kpiDefinitionHeading">Định nghĩa KPI</h3>
+                            <p>Viết ngắn gọn điều cần đạt để người thực hiện hiểu ngay cách ưu tiên.</p>
                         </div>
-                        <div class="mb-3">
-                            <div class="small opacity-75 fw-bold text-uppercase mb-1">Tên KPI</div>
-                            <div class="fw-bold fs-6" id="previewName" style="min-height: 28px;">--</div>
+                    </div>
+                    <div class="cf-field">
+                        <div class="cf-label-row">
+                            <label asp-for="KPIName">Tên KPI <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <output id="kpiNameCounter" class="cf-counter" for="KPIName" data-character-counter>0/255</output>
                         </div>
-                        <div class="row g-3 mt-1">
-                            <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
-                                    <i class="bi bi-rulers fs-4 me-3 opacity-75"></i>
-                                    <div>
-                                        <div class="small opacity-75 mb-1">Đơn vị</div>
-                                        <div class="fw-bold" id="previewUnit">--</div>
-                                    </div>
-                                </div>
+                        <input asp-for="KPIName" class="form-control cf-control" maxlength="255" placeholder="Ví dụ: Tỷ lệ giao hàng đúng hẹn" aria-describedby="kpiNameHint kpiNameCounter" required />
+                        <span asp-validation-for="KPIName" class="cf-validation"></span>
+                        <p id="kpiNameHint" class="cf-hint">Dùng một động từ và một kết quả rõ ràng; tránh gộp nhiều mục tiêu vào cùng một KPI.</p>
+                    </div>
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <label asp-for="KPITypeId">Loại KPI <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <select asp-for="KPITypeId" class="form-select cf-control no-select2" required aria-describedby="kpiTypeHint">
+                                <option value="">Chọn loại KPI</option>
+                                @foreach (var type in kpiTypes)
+                                {
+                                    <option value="@type.Id" selected="@(Model.KPITypeId == type.Id ? "selected" : null)">@type.TypeName</option>
+                                }
+                            </select>
+                            <span asp-validation-for="KPITypeId" class="cf-validation"></span>
+                            <p id="kpiTypeHint" class="cf-hint">Loại KPI giúp chuẩn hóa báo cáo và cách so sánh trong tổ chức.</p>
+                            @if (!kpiTypes.Any())
+                            {
+                                <div class="cf-empty-state" role="alert"><i class="bi bi-tags" aria-hidden="true"></i><span>Chưa có loại KPI. Hãy bổ sung cấu hình trước khi tạo.</span></div>
+                            }
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="PeriodId">Kỳ đánh giá <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <select asp-for="PeriodId" class="form-select cf-control no-select2" required aria-describedby="periodHint">
+                                <option value="">Chọn kỳ đánh giá</option>
+                                @foreach (var period in periods)
+                                {
+                                    <option value="@period.Key" selected="@(Model.PeriodId == period.Key ? "selected" : null)">@period.Value</option>
+                                }
+                            </select>
+                            <span asp-validation-for="PeriodId" class="cf-validation"></span>
+                            <p id="periodHint" class="cf-hint">Chỉ các kỳ đang mở và còn hạn nhận KPI mới xuất hiện.</p>
+                            @if (!periods.Any())
+                            {
+                                <div class="cf-empty-state" role="alert"><i class="bi bi-calendar-x" aria-hidden="true"></i><span>Chưa có kỳ đánh giá khả dụng để tạo KPI.</span></div>
+                            }
+                        </div>
+                    </div>
+                    <div class="cf-field">
+                        <div class="cf-label-row">
+                            <label asp-for="Description">Mô tả và cách tính</label>
+                            <output id="kpiDescriptionCounter" class="cf-counter" for="Description" data-character-counter>0/1000</output>
+                        </div>
+                        <textarea asp-for="Description" class="form-control cf-control" rows="3" maxlength="1000" placeholder="Mô tả phạm vi, nguồn dữ liệu hoặc lưu ý khi check-in" aria-describedby="kpiDescriptionCounter"></textarea>
+                        <span asp-validation-for="Description" class="cf-validation"></span>
+                    </div>
+                </section>
+
+                <section class="cf-section" aria-labelledby="kpiStrategyHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-signpost-split"></i></span>
+                        <div>
+                            <h3 id="kpiStrategyHeading">Liên kết chiến lược</h3>
+                            <p>Gắn KPI với OKR để nhìn thấy mối liên hệ từ mục tiêu đến kết quả đo được.</p>
+                        </div>
+                    </div>
+                    <div class="cf-field-grid" data-okr-link-scope>
+                        <div class="cf-field">
+                            <label asp-for="OKRId">Objective liên quan</label>
+                            <select asp-for="OKRId" id="okrSelect" class="form-select cf-control" data-placeholder="Không liên kết OKR" aria-describedby="okrHint">
+                                <option value="">Không liên kết OKR</option>
+                                @foreach (var okr in okrs)
+                                {
+                                    <option value="@okr.Id" selected="@(Model.OKRId == okr.Id ? "selected" : null)">@okr.ObjectiveName</option>
+                                }
+                            </select>
+                            <span asp-validation-for="OKRId" class="cf-validation"></span>
+                            <p id="okrHint" class="cf-hint">Để trống nếu KPI vận hành chưa thuộc một Objective cụ thể.</p>
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="OKRKeyResultId">Key Result</label>
+                            <select asp-for="OKRKeyResultId" id="keyResultSelect" class="form-select cf-control" data-placeholder="Chọn OKR trước" aria-describedby="keyResultHint">
+                                <option value="">Chọn OKR trước</option>
+                                @foreach (var keyResult in keyResults)
+                                {
+                                    <option value="@keyResult.Id" data-okr-id="@keyResult.OKRId" selected="@(Model.OKRKeyResultId == keyResult.Id ? "selected" : null)">@keyResult.KeyResultName</option>
+                                }
+                            </select>
+                            <span asp-validation-for="OKRKeyResultId" class="cf-validation"></span>
+                            <p id="keyResultHint" class="cf-hint">Chỉ Key Result thuộc Objective đã chọn mới được giữ lại.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cf-section" aria-labelledby="kpiMeasurementHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-rulers"></i></span>
+                        <div>
+                            <h3 id="kpiMeasurementHeading">Chỉ tiêu và nhịp check-in</h3>
+                            <p>Đặt ngưỡng hợp lệ và lịch nhắc để tiến độ có thể theo dõi đều đặn.</p>
+                        </div>
+                    </div>
+                    <div class="cf-field-grid cf-field-grid--three kpi-measurement-grid kpi-measurement-grid--primary" data-measurement-scope>
+                        <div class="cf-field">
+                            <label asp-for="TargetValue">Chỉ tiêu <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <div class="input-group kpi-input-group">
+                                <input asp-for="TargetValue" class="form-control cf-control measurement-value-input" data-measurement-role="target" type="number" min="0.01" step="0.01" placeholder="100" required />
+                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
                             </div>
-                            <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
-                                    <i class="bi bi-tags fs-4 me-3 opacity-75"></i>
-                                    <div>
-                                        <div class="small opacity-75 mb-1">Phân loại</div>
-                                        <div class="fw-bold" id="previewType">--</div>
-                                    </div>
-                                </div>
+                            <span asp-validation-for="TargetValue" class="cf-validation"></span>
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="MeasurementUnit">Đơn vị đo <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <select asp-for="MeasurementUnit" id="measurementUnit" class="form-select cf-control measurement-unit-select" required>
+                                <option value="">Chọn đơn vị</option>
+                                @foreach (var unit in KpiCreateViewModel.MeasurementUnitOptions)
+                                {
+                                    <option value="@unit.Value" selected="@(string.Equals(Model.MeasurementUnit, unit.Value, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@unit.Text</option>
+                                }
+                            </select>
+                            <span asp-validation-for="MeasurementUnit" class="cf-validation"></span>
+                        </div>
+                        <div class="cf-field kpi-inverse-field">
+                            <label class="kpi-switch-label" for="IsInverse">Chiều đánh giá</label>
+                            <div class="kpi-direction-control">
+                                <label class="kpi-switch">
+                                    <input asp-for="IsInverse" id="IsInverse" type="checkbox" />
+                                    <span class="kpi-switch__track" aria-hidden="true"></span>
+                                    <span class="kpi-switch__text" data-inverse-label>@(Model.IsInverse ? "Càng thấp càng tốt" : "Càng cao càng tốt")</span>
+                                </label>
+                                <p class="cf-hint">Bật khi giá trị thấp hơn thể hiện kết quả tốt hơn.</p>
                             </div>
                         </div>
                     </div>
-                </div>
+                    <div class="cf-field-grid cf-field-grid--three kpi-measurement-grid">
+                        <div class="cf-field">
+                            <label asp-for="PassThreshold">Ngưỡng đạt</label>
+                            <div class="input-group kpi-input-group">
+                                <input asp-for="PassThreshold" class="form-control cf-control measurement-value-input" data-measurement-role="pass" type="number" min="0" step="0.01" placeholder="Tùy chọn" />
+                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
+                            </div>
+                            <span asp-validation-for="PassThreshold" class="cf-validation"></span>
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="FailThreshold">Ngưỡng trượt</label>
+                            <div class="input-group kpi-input-group">
+                                <input asp-for="FailThreshold" class="form-control cf-control measurement-value-input" data-measurement-role="fail" type="number" min="0" step="0.01" placeholder="Tùy chọn" />
+                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
+                            </div>
+                            <span asp-validation-for="FailThreshold" class="cf-validation"></span>
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="DeadlineDate">Deadline KPI</label>
+                            <input asp-for="DeadlineDate" class="form-control cf-control" type="date" />
+                            <span asp-validation-for="DeadlineDate" class="cf-validation"></span>
+                        </div>
+                    </div>
+                    <div class="cf-field-grid cf-field-grid--three kpi-measurement-grid">
+                        <div class="cf-field">
+                            <label asp-for="CheckInFrequencyDays">Tần suất check-in</label>
+                            <div class="input-group kpi-input-group">
+                                <input asp-for="CheckInFrequencyDays" class="form-control cf-control" type="number" min="1" max="365" step="1" />
+                                <span class="input-group-text">ngày/lần</span>
+                            </div>
+                            <span asp-validation-for="CheckInFrequencyDays" class="cf-validation"></span>
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="CheckInDeadlineTime">Giờ chốt check-in</label>
+                            <input asp-for="CheckInDeadlineTime" value="@deadlineTimeText" class="form-control cf-control" type="time" />
+                            <span asp-validation-for="CheckInDeadlineTime" class="cf-validation"></span>
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="ReminderBeforeHours">Nhắc trước hạn</label>
+                            <div class="input-group kpi-input-group">
+                                <input asp-for="ReminderBeforeHours" class="form-control cf-control" type="number" min="0" max="8760" step="1" />
+                                <span class="input-group-text">giờ</span>
+                            </div>
+                            <span asp-validation-for="ReminderBeforeHours" class="cf-validation"></span>
+                        </div>
+                    </div>
+                    <div class="cf-inline-note kpi-threshold-note" data-threshold-note role="status">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span>Chọn chiều đánh giá và ngưỡng phù hợp; hệ thống sẽ kiểm tra thứ tự ngưỡng trước khi lưu.</span>
+                    </div>
+                </section>
 
-                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
-                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle text-primary me-2"></i> Lưu ý</h6>
-                    <ul class="list-unstyled mb-0 small text-muted" style="line-height: 1.8;">
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> KPI "Kết quả" đo bằng số liệu cụ thể.</li>
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> KPI "Hành vi" đo theo tiêu chí định tính.</li>
-                        <li><i class="bi bi-patch-check-fill text-success me-2"></i> Ngưỡng đạt/trượt quyết định tự động xếp loại.</li>
-                    </ul>
+                <section class="cf-section" aria-labelledby="kpiAllocationHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-people"></i></span>
+                        <div>
+                            <h3 id="kpiAllocationHeading">Phân bổ trách nhiệm</h3>
+                            <p>Chọn phòng ban và nhân viên trong phạm vi của bạn. Tổng tỷ trọng nhân viên phải bằng 100%.</p>
+                        </div>
+                    </div>
+
+                    <div class="kpi-allocation-grid">
+                        <div class="kpi-assignment-box">
+                            <div class="kpi-assignment-box__toolbar">
+                                <div>
+                                    <strong>Nhân viên</strong>
+                                    <span class="kpi-selection-count" data-selection-count="EmployeeIds">0 đã chọn</span>
+                                </div>
+                                <span class="kpi-assignment-hint">Tỷ trọng (%)</span>
+                            </div>
+                            <div class="kpi-assignment-search">
+                                <label class="visually-hidden" for="employeeSearch">Tìm nhân viên</label>
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                                <input id="employeeSearch" type="search" placeholder="Tìm theo tên hoặc mã nhân viên..." autocomplete="off" />
+                            </div>
+                            <div class="kpi-assignment-list" data-assignment-list="employees">
+                                @if (employees.Any())
+                                {
+                                    @foreach (var employee in employees)
+                                    {
+                                        var employeeName = employee.FullName ?? $"Nhân viên #{employee.Id}";
+                                        var isSelected = selectedEmployees.Contains(employee.Id);
+                                        var weightValue = weightByEmployee.TryGetValue(employee.Id, out var savedWeight) ? savedWeight : "";
+                                        var employeeSearchText = $"{employeeName} {employee.EmployeeCode}";
+                                        <label class="kpi-assignment-row @(isSelected ? "is-selected" : null)" data-search="@employeeSearchText" data-employee-row>
+                                            <input type="checkbox" name="EmployeeIds" value="@employee.Id" @(isSelected ? "checked" : null) data-employee-check />
+                                            <span class="kpi-assignment-avatar" aria-hidden="true">@EmployeeInitials(employeeName)</span>
+                                            <span class="kpi-assignment-person">
+                                                <strong>@employeeName</strong>
+                                                <small>@employee.EmployeeCode</small>
+                                            </span>
+                                            <span class="kpi-weight-input input-group input-group-sm">
+                                                <input type="text" name="Weights" value="@weightValue" inputmode="decimal" placeholder="100" aria-label="Tỷ trọng của @employeeName" @(isSelected ? null : "disabled") data-weight-input />
+                                                <span class="input-group-text">%</span>
+                                            </span>
+                                        </label>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="cf-empty-state" role="status"><i class="bi bi-person-x" aria-hidden="true"></i><span>Không có nhân viên trong phạm vi phân bổ.</span></div>
+                                }
+                                <div class="kpi-assignment-empty" data-filter-empty hidden>Không tìm thấy nhân viên phù hợp.</div>
+                            </div>
+                        </div>
+
+                        <div class="kpi-assignment-box">
+                            <div class="kpi-assignment-box__toolbar">
+                                <div>
+                                    <strong>Phòng ban</strong>
+                                    <span class="kpi-selection-count" data-selection-count="DepartmentIds">0 đã chọn</span>
+                                </div>
+                            </div>
+                            <div class="kpi-assignment-search">
+                                <label class="visually-hidden" for="departmentSearch">Tìm phòng ban</label>
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                                <input id="departmentSearch" type="search" placeholder="Tìm phòng ban..." autocomplete="off" />
+                            </div>
+                            <div class="kpi-assignment-list kpi-department-list" data-assignment-list="departments">
+                                @if (departments.Any())
+                                {
+                                    @foreach (var department in departments)
+                                    {
+                                        var departmentName = department.DepartmentName ?? $"Phòng ban #{department.Id}";
+                                        <label class="kpi-department-row" data-search="@departmentName">
+                                            <input type="checkbox" name="DepartmentIds" value="@department.Id" @(selectedDepartments.Contains(department.Id) ? "checked" : null) />
+                                            <span><i class="bi bi-building" aria-hidden="true"></i><strong>@departmentName</strong></span>
+                                        </label>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="cf-empty-state" role="status"><i class="bi bi-building-x" aria-hidden="true"></i><span>Không có phòng ban trong phạm vi phân bổ.</span></div>
+                                }
+                                <div class="kpi-assignment-empty" data-filter-empty hidden>Không tìm thấy phòng ban phù hợp.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-weight-summary" data-weight-summary role="status">
+                        <span><i class="bi bi-pie-chart" aria-hidden="true"></i> Tổng tỷ trọng</span>
+                        <strong data-weight-total>0%</strong>
+                        <small data-weight-message>Chưa phân bổ nhân viên</small>
+                    </div>
+                    <span asp-validation-for="EmployeeIds" class="cf-validation"></span>
+                    <span asp-validation-for="Weights" class="cf-validation"></span>
+                </section>
+
+                <div class="cf-actions">
+                    <a asp-action="Index" class="cf-secondary-action">Hủy</a>
+                    <button type="submit" class="cf-primary-action" data-submit-button data-default-label="Tạo KPI" data-loading-label="Đang tạo...">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        <span data-submit-label>Tạo KPI</span>
+                    </button>
                 </div>
+            </form>
+        </section>
+
+        <aside class="cf-guide kpi-create-guide" aria-labelledby="kpiGuideHeading">
+            <div class="cf-guide__identity">
+                <span class="cf-guide__icon" aria-hidden="true"><i class="bi bi-speedometer2"></i></span>
+                <div>
+                    <span class="cf-guide__eyebrow">Xem trước KPI</span>
+                    <h2 id="kpiGuideHeading" data-preview-name>Chưa đặt tên KPI</h2>
+                </div>
+            </div>
+            <div class="kpi-preview-metric">
+                <span>Chỉ tiêu</span>
+                <strong data-preview-target>—</strong>
+                <small data-preview-unit>Chọn đơn vị đo</small>
+            </div>
+            <dl class="kpi-preview-list">
+                <div><dt>Loại</dt><dd data-preview-type>Chưa chọn</dd></div>
+                <div><dt>Kỳ</dt><dd data-preview-period>Chưa chọn</dd></div>
+                <div><dt>Chiều đánh giá</dt><dd data-preview-direction>@(Model.IsInverse ? "Càng thấp càng tốt" : "Càng cao càng tốt")</dd></div>
+                <div><dt>Liên kết</dt><dd data-preview-link>Độc lập</dd></div>
+            </dl>
+            <div class="cf-guide__note">
+                <i class="bi bi-shield-check" aria-hidden="true"></i>
+                <span>Server sẽ xác minh kỳ đánh giá, liên kết OKR và phạm vi nhân sự trước khi tạo.</span>
+            </div>
+            <ul class="cf-guide__list">
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Chỉ chọn một kết quả chính cho mỗi KPI.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Giữ tổng tỷ trọng nhân viên ở mức 100%.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>KPI mới sẽ chờ duyệt trước khi check-in.</span></li>
+            </ul>
+        </aside>
+    </div>
+</div>
+
+<div class="modal fade evaluation-modal kpi-ai-modal" id="aiKpiSuggestModal" tabindex="-1" aria-labelledby="aiKpiSuggestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="evaluation-confirm-heading">
+                    <span class="evaluation-confirm-icon"><i class="bi bi-stars" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 class="modal-title" id="aiKpiSuggestModalLabel">Gợi ý KPI bằng AI</h2>
+                        <p class="evaluation-form-hint mb-0">Chọn bối cảnh để gợi ý sát với phạm vi công việc. Bạn vẫn kiểm tra lại trước khi lưu.</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body">
+                <div class="kpi-ai-filter-grid">
+                    <label><span>Nhân viên</span><select id="aiSuggestEmployeeId" class="form-select"><option value="">Không chọn cụ thể</option></select></label>
+                    <label><span>Phòng ban</span><select id="aiSuggestDepartmentId" class="form-select"><option value="">Không chọn cụ thể</option></select></label>
+                    <label><span>Kỳ đánh giá</span><select id="aiSuggestPeriodId" class="form-select"><option value="">Chọn kỳ gần nhất</option></select></label>
+                    <label><span>OKR</span><select id="aiSuggestOkrId" class="form-select"><option value="">Không bắt buộc</option></select></label>
+                    <label><span>Key Result</span><select id="aiSuggestKrId" class="form-select" disabled><option value="">Chọn OKR trước</option></select></label>
+                </div>
+                <p id="aiSuggestOptionsStatus" class="evaluation-form-hint" role="status"></p>
+                <div class="kpi-ai-toolbar">
+                    <span>AI sẽ tạo bản nháp để bạn áp dụng vào biểu mẫu.</span>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openAiHistoryModal('SuggestKPI', null, function(data){ renderKpiSuggestions(data.suggestions ? data.suggestions : data); })"><i class="bi bi-clock-history" aria-hidden="true"></i> Lịch sử</button>
+                        <button type="button" class="evaluation-primary-action" id="aiRunKpiSuggestBtn"><i class="bi bi-magic" aria-hidden="true"></i> Tạo gợi ý</button>
+                    </div>
+                </div>
+                <div id="aiKpiSuggestResults" class="kpi-ai-results"></div>
             </div>
         </div>
     </div>
 </div>
 
-<style>
-    .fw-800 { font-weight: 800; }
-    .letter-spacing-1 { letter-spacing: 0.1em; }
-    .form-select, .form-control { border: 1.5px solid #edf2f7; padding-top: 12px; padding-bottom: 12px; }
-    .form-select:focus, .form-control:focus { border-color: #a3c9f9; box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.1); }
-    .animate__animated { animation-duration: 0.8s; }
-</style>
+@functions {
+    private static string EmployeeInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var initials = string.Concat(parts.Take(2).Select(part => part[0]));
+        return string.IsNullOrWhiteSpace(initials) ? "NV" : initials.ToUpperInvariant();
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/kpi-create.css" asp-append-version="true" />
+}
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    <script>
-        const nameInput = document.getElementById('kpiNameInput');
-        const typeSelect = document.getElementById('kpiTypeSelect');
-        const targetInput = document.getElementById('targetInput');
-        const unitInput = document.getElementById('unitInput');
-        const employeeChecks = document.querySelectorAll('.kpi-employee-check');
-        function updatePreview() {
-            document.getElementById('previewName').textContent = nameInput.value.trim() || '--';
-            document.getElementById('previewTarget').textContent = targetInput.value
-                ? new Intl.NumberFormat('vi-VN').format(targetInput.value) + (unitInput.value ? ' ' + unitInput.value : '')
-                : '--';
-            document.getElementById('previewUnit').textContent = unitInput.value.trim() || '--';
-            document.getElementById('previewType').textContent = typeSelect.options[typeSelect.selectedIndex]?.text || '--';
-        }
-        [nameInput, targetInput].forEach(el => el.addEventListener('input', updatePreview));
-        unitInput.addEventListener('change', updatePreview);
-        typeSelect.addEventListener('change', updatePreview);
-        function splitCreateKpiWeights() {
-            const checked = Array.from(employeeChecks).filter(input => input.checked);
-            const weight = checked.length ? (100 / checked.length).toFixed(2) : '100';
-            employeeChecks.forEach(input => {
-                const weightInput = input.closest('.d-flex')?.querySelector('.kpi-weight-input');
-                if (!weightInput) return;
-                weightInput.disabled = !input.checked;
-                if (input.checked) weightInput.value = weight;
-            });
-        }
-        employeeChecks.forEach(input => input.addEventListener('change', splitCreateKpiWeights));
-        document.getElementById('splitCreateKpiWeights')?.addEventListener('click', splitCreateKpiWeights);
-        window.addEventListener('DOMContentLoaded', updatePreview);
-    </script>
+    <script src="~/js/create-form.js" asp-append-version="true"></script>
+    <script src="~/js/kpi-create.js" asp-append-version="true"></script>
 }

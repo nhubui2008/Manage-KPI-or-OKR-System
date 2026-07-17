@@ -52,7 +52,12 @@
                                             }
                                             @if (canDeleteRule)
                                             {
-                                                <form asp-action="Delete" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc muốn xóa quy tắc thưởng này?');">
+                                                <form asp-action="Delete" method="post" class="m-0"
+                                                      data-app-confirm
+                                                      data-confirm-title="Xóa quy tắc thưởng?"
+                                                      data-confirm-message="Quy tắc thưởng này sẽ bị xóa khỏi cấu hình. Thao tác không thể hoàn tác."
+                                                      data-confirm-tone="danger"
+                                                      data-confirm-label="Xóa quy tắc">
                                                     <input type="hidden" name="id" value="@r.Id" />
                                                     <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" title="Xóa">
                                                          <i class="bi bi-trash"></i>

@@ -1,542 +1,734 @@
-@model Manage_KPI_or_OKR_System.Helpers.PaginatedList<Manage_KPI_or_OKR_System.Models.ViewModels.EmployeeKpiTrackingRow>
-@using Manage_KPI_or_OKR_System.Helpers
+@model Manage_KPI_or_OKR_System.Models.ViewModels.EmployeeTrackingViewModel
+@using System.Globalization
 @using System.Linq
-@{
-    ViewData["Title"] = "Theo dõi KPI nhân viên";
-    var employees = ViewBag.Employees as List<Manage_KPI_or_OKR_System.Models.ViewModels.TrackableEmployeeOption> ?? new List<Manage_KPI_or_OKR_System.Models.ViewModels.TrackableEmployeeOption>();
-    var selectedEmployee = ViewBag.SelectedEmployee as Manage_KPI_or_OKR_System.Models.ViewModels.TrackableEmployeeOption;
-    var isViewingAll = selectedEmployee == null;
-    var trackedEmployeeCount = isViewingAll ? employees.Count : (selectedEmployee != null ? 1 : 0);
-    bool canReviewCheckIns = ViewBag.CanReviewCheckIns == true;
-    string progressActionLabel = canReviewCheckIns ? "Ghi nhận tiến độ" : "Cập nhật tiến độ";
-    var totalTrackingRows = ViewBag.TotalTrackingRows is int totalRows ? totalRows : Model.Count;
-    var isTrackingOverviewLimited = ViewBag.IsTrackingOverviewLimited == true;
+
+@functions {
+    private static string Initials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "NV";
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Concat(parts.TakeLast(2).Select(part => char.ToUpperInvariant(part[0])));
+    }
+
+    private static string Metric(decimal? value)
+        => value.HasValue ? value.Value.ToString("N2") : "Chưa có";
+
+    private static string Percent(decimal? value)
+        => value.HasValue ? $"{value.Value:0.#}%" : "Chưa có";
+
+    private static decimal ProgressValue(decimal? value)
+        => Math.Clamp(value ?? 0m, 0m, 100m);
+
+    private static string ReviewLabel(string? statusCode)
+        => statusCode?.Trim().ToLowerInvariant() switch
+        {
+            "pending" => "Chờ xác nhận",
+            "approved" => "Đã xác nhận",
+            "rejected" => "Bị từ chối",
+            _ => "Chưa gửi check-in"
+        };
+
+    private static string ReviewStateClass(string? statusCode)
+        => statusCode?.Trim().ToLowerInvariant() switch
+        {
+            "pending" => "ci-state ci-state--warning",
+            "approved" => "ci-state ci-state--success",
+            "rejected" => "ci-state ci-state--danger",
+            _ => "ci-state ci-state--neutral"
+        };
+
+    private static string ReviewIcon(string? statusCode)
+        => statusCode?.Trim().ToLowerInvariant() switch
+        {
+            "pending" => "bi-hourglass-split",
+            "approved" => "bi-check-circle",
+            "rejected" => "bi-x-circle",
+            _ => "bi-dash-circle"
+        };
 }
 
-<style>
-    /* ===== CARD LAYOUT STYLES ===== */
+@{
+    ViewData["Title"] = "Theo dõi thực hiện KPI";
+    var isPendingTab = Model.CanReviewCheckIns &&
+        string.Equals(Model.ActiveTab, "pending", StringComparison.OrdinalIgnoreCase);
+    var selectedEmployee = Model.SelectedEmployee;
+    var trackingPageStart = Math.Max(1, Model.Items.PageIndex - 2);
+    var trackingPageEnd = Math.Min(Model.Items.TotalPages, Model.Items.PageIndex + 2);
+    var reviewPageStart = Math.Max(1, Model.PendingReviews.PageIndex - 2);
+    var reviewPageEnd = Math.Min(Model.PendingReviews.TotalPages, Model.PendingReviews.PageIndex + 2);
+}
 
-    /* Avatar chip */
-    .emp-avatar {
-        width: 40px; height: 40px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #1a73e8, #4285f4);
-        color: #fff;
-        font-size: 0.78rem;
-        font-weight: 700;
-        display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0;
-        box-shadow: 0 4px 10px rgba(26, 115, 232, 0.25);
-    }
-
-    /* Progress bar */
-    .ci-progress-track {
-        height: 6px; border-radius: 999px;
-        background: #e9ecef; overflow: hidden;
-        margin-top: 5px;
-    }
-    .ci-progress-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
-
-    /* Status Badges */
-    .badge-on-track {
-        background: #d1fae5; color: #065f46;
-        border: 1px solid #a7f3d0;
-        border-radius: 999px; padding: 3px 10px;
-        font-size: 0.7rem; font-weight: 700;
-        letter-spacing: 0.03em; display: inline-block;
-    }
-    .badge-at-risk {
-        background: #fef3c7; color: #b45309;
-        border: 1px solid #fde68a;
-        border-radius: 999px; padding: 3px 10px;
-        font-size: 0.7rem; font-weight: 700;
-        letter-spacing: 0.03em; display: inline-block;
-    }
-    .badge-late {
-        background: #fee2e2; color: #b91c1c;
-        border: 1px solid #fecaca;
-        border-radius: 999px; padding: 3px 10px;
-        font-size: 0.7rem; font-weight: 700;
-        letter-spacing: 0.03em; display: inline-block;
-    }
-    .badge-default {
-        background: #f1f5f9; color: #475569;
-        border: 1px solid #e2e8f0;
-        border-radius: 999px; padding: 3px 10px;
-        font-size: 0.7rem; font-weight: 700;
-        letter-spacing: 0.03em; display: inline-block;
-    }
-
-    /* ===== CHECK-IN CARD ===== */
-    .ci-card {
-        background: #fff;
-        border: 1px solid #e8edf4;
-        border-radius: 14px;
-        margin-bottom: 16px;
-        box-shadow: 0 2px 8px rgba(26,60,110,0.04), 0 1px 2px rgba(0,0,0,0.04);
-        transition: box-shadow 0.2s ease, transform 0.15s ease;
-        overflow: hidden;
-    }
-    .ci-card:hover {
-        box-shadow: 0 8px 24px rgba(26,60,110,0.10), 0 2px 6px rgba(0,0,0,0.06);
-        transform: translateY(-1px);
-    }
-    .ci-card-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        padding: 16px 20px 12px;
-        border-bottom: 1px solid #f0f4f8;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-    .ci-card-header-left {
-        display: flex; align-items: center; gap: 12px;
-        flex: 1; min-width: 0;
-    }
-    .ci-card-header-right {
-        display: flex; align-items: center; gap: 8px;
-        flex-shrink: 0; flex-wrap: wrap;
-        text-align: right;
-    }
-    .ci-emp-name {
-        font-size: 0.9rem; font-weight: 700; color: #1a2940;
-        line-height: 1.2; margin-bottom: 2px;
-    }
-    .ci-date-label {
-        font-size: 0.76rem; color: #6b7c93;
-    }
-
-    /* Card body grid */
-    .ci-card-body {
-        padding: 14px 20px;
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 12px 20px;
-        align-items: start;
-    }
-    @@media (max-width: 992px) {
-        .ci-card-body { grid-template-columns: 1fr 1fr; }
-    }
-    @@media (max-width: 576px) {
-        .ci-card-body { grid-template-columns: 1fr; }
-    }
-
-    .ci-info-block { }
-    .ci-info-label {
-        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em;
-        text-transform: uppercase; color: #8fa0b8; margin-bottom: 4px;
-    }
-    .ci-info-value {
-        font-size: 0.85rem; font-weight: 600; color: #1a2940;
-        display: flex; align-items: center; gap: 5px;
-        flex-wrap: wrap;
-    }
-
-    /* Progress block */
-    .ci-progress-block {
-        grid-column: 1 / -1;
-    }
-    @@media (max-width: 576px) {
-        .ci-progress-block { grid-column: 1; }
-    }
-
-    /* Target vs Current block styling */
-    .ci-target-block {
-        display: flex; align-items: flex-end; gap: 8px;
-    }
-    .ci-target-value { font-size: 1.15rem; font-weight: 800; color: #1a73e8; line-height: 1; }
-    .ci-target-label { font-size: 0.75rem; color: #6b7c93; font-weight: 500; margin-bottom: 2px; }
-
-    /* Empty state */
-    .rq-empty { padding: 40px 24px; text-align: center; }
-    .rq-empty-icon {
-        width: 70px; height: 70px;
-        background: linear-gradient(135deg, #e8f0fe, #c5d8fb);
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        margin: 0 auto 16px;
-        font-size: 2rem; color: #1a73e8;
-    }
-    .rq-empty-title { font-size: 1.05rem; font-weight: 700; color: #1a2940; margin-bottom: 6px; }
-    .rq-empty-sub   { font-size: 0.85rem; color: #6b7c93; }
-
-    /* Loading Overlay */
-    .tracking-loader-overlay {
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        background: rgba(255, 255, 255, 0.8);
-        z-index: 9999;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(2px);
-    }
-    .tracking-loader-spinner {
-        width: 3rem; height: 3rem;
-    }
-    .tracking-loader-text {
-        margin-top: 1rem;
-        font-weight: 600;
-        color: var(--primary);
-    }
-
-    /* Scrollbar style for employee list sidebar */
-    #employeeListContainer::-webkit-scrollbar {
-        width: 6px;
-    }
-    #employeeListContainer::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 999px;
-    }
-    #employeeListContainer::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 999px;
-    }
-    #employeeListContainer::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
-    }
-</style>
-
-<!-- Loading Overlay UI -->
-<div id="trackingLoader" class="tracking-loader-overlay">
-    <div class="spinner-border text-primary tracking-loader-spinner" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
-    <div class="tracking-loader-text">Đang tải dữ liệu...</div>
-</div>
-
-<div class="container-fluid px-0">
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+<div class="evaluation-page checkins-page employee-tracking-page" data-employee-tracking-page>
+    <header class="evaluation-page-header et-page-header">
         <div>
-            <h1 class="h3 font-weight-bold mb-1">Theo dõi KPI nhân viên</h1>
-            <div class="page-breadcrumb">
-                <a href="/">Trang chủ</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <a asp-action="Index">Check-in KPI</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <span>Theo dõi cá nhân</span>
-            </div>
+            <h1>Theo dõi thực hiện KPI</h1>
+            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
+                <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                @if (Model.CanViewTracking)
+                {
+                    <a asp-action="Index">Check-in KPI</a>
+                }
+                else
+                {
+                    <span>Check-in KPI</span>
+                }
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Theo dõi thực hiện</span>
+            </nav>
         </div>
-        <div class="d-flex gap-2">
-            <a asp-action="Create" class="btn btn-primary rounded-pill px-4">
-                <i class="bi bi-calendar-check me-1"></i> @progressActionLabel
+        @if (Model.CanViewTracking)
+        {
+            <a asp-action="Index" class="evaluation-secondary-action et-history-link">
+                <i class="bi bi-clock-history" aria-hidden="true"></i>
+                <span>Lịch sử check-in</span>
             </a>
-            @if (canReviewCheckIns)
-            {
-                <a asp-action="ReviewQueue" class="btn btn-outline-primary rounded-pill px-4">
-                    <i class="bi bi-check2-square me-1"></i> Xác nhận check-in
-                </a>
-            }
-        </div>
-    </div>
+        }
+    </header>
 
-    <div class="row g-4">
-        <div class="col-lg-3">
-            <div class="content-card h-100">
-                <div class="card-header-custom border-bottom p-3">
-                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-people me-2"></i>Danh sách có thể xem</h5>
+    @if (TempData["SuccessMessage"] is string successMessage && !string.IsNullOrWhiteSpace(successMessage))
+    {
+        <div class="et-alert et-alert--success" role="status">
+            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+            <span>@successMessage</span>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] is string errorMessage && !string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="et-alert et-alert--danger" role="alert">
+            <i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i>
+            <span>@errorMessage</span>
+        </div>
+    }
+
+    <section class="evaluation-summary et-summary" aria-label="Tổng quan theo dõi KPI">
+        <article class="et-summary__urgent">
+            <span>Chờ xác nhận</span>
+            <strong>@Model.Summary.PendingReviewCount</strong>
+            <small>Cần quản lý xử lý</small>
+        </article>
+        <article class="et-summary__danger">
+            <span>Trễ hạn</span>
+            <strong>@Model.Summary.LateCount</strong>
+            <small>Check-in chính thức bị trễ</small>
+        </article>
+        <article class="et-summary__warning">
+            <span>Có rủi ro</span>
+            <strong>@Model.Summary.RiskCount</strong>
+            <small>Check-in chính thức cần chú ý</small>
+        </article>
+        <article>
+            <span>KPI trong phạm vi</span>
+            <strong>@Model.Summary.TotalKpiCount</strong>
+            <small>Chỉ tiêu đang theo dõi</small>
+        </article>
+        <article>
+            <span>Nhân sự</span>
+            <strong>@Model.Summary.EmployeeCount</strong>
+            <small>Có quyền truy cập</small>
+        </article>
+    </section>
+
+    <nav class="et-tabs" aria-label="Không gian làm việc check-in">
+        @if (Model.CanViewTracking)
+        {
+            <a asp-action="EmployeeTracking"
+               asp-route-tab="tracking"
+               asp-route-employeeId="@Model.SelectedEmployeeId"
+               asp-route-pageNumber="@Model.Items.PageIndex"
+               asp-route-reviewPage="@Model.PendingReviews.PageIndex"
+               class="et-tab @(!isPendingTab ? "is-active" : null)"
+               aria-current="@(!isPendingTab ? "page" : null)">
+                <i class="bi bi-activity" aria-hidden="true"></i>
+                Theo dõi &amp; ghi nhận tiến độ
+            </a>
+        }
+        @if (Model.CanReviewCheckIns)
+        {
+            <a asp-action="EmployeeTracking"
+               asp-route-tab="pending"
+               asp-route-employeeId="@Model.SelectedEmployeeId"
+               asp-route-pageNumber="@Model.Items.PageIndex"
+               asp-route-reviewPage="@Model.PendingReviews.PageIndex"
+               class="et-tab @(isPendingTab ? "is-active" : null)"
+               aria-current="@(isPendingTab ? "page" : null)">
+                <i class="bi bi-check2-square" aria-hidden="true"></i>
+                Xác nhận check-in
+                @if (Model.Summary.PendingReviewCount > 0)
+                {
+                    <span class="et-tab__count">@Model.Summary.PendingReviewCount</span>
+                }
+            </a>
+        }
+    </nav>
+
+    <div class="visually-hidden" role="status" aria-live="polite" aria-atomic="true" data-employee-tracking-live></div>
+
+    @if (!isPendingTab)
+    {
+        <section class="et-tab-panel" aria-label="Theo dõi và ghi nhận tiến độ KPI">
+            @if (!Model.Employees.Any())
+            {
+                <div class="et-empty et-empty--standalone">
+                    <span class="et-empty__icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+                    <h2>Chưa có nhân sự trong phạm vi theo dõi</h2>
+                    <p>Tài khoản hiện tại chưa được phân quyền xem KPI của nhân sự nào. Hãy kiểm tra vai trò hoặc phạm vi phòng ban.</p>
+                    <a asp-action="Index" class="evaluation-secondary-action">Xem lịch sử của tôi</a>
                 </div>
-                <div class="card-body-custom p-3">
-                    <form asp-action="EmployeeTracking" method="get" class="mb-3">
-                        <label class="form-label small text-muted fw-bold">Chọn nhân viên/trưởng phòng</label>
-                        <select name="employeeId" class="form-select" onchange="this.form.submit()">
-                            <option value="" selected="@(selectedEmployee == null ? "selected" : null)">Tất cả</option>
-                            @foreach (var employee in employees)
+            }
+            else
+            {
+                <form asp-action="EmployeeTracking" method="get" class="et-mobile-employee-picker" data-mobile-employee-form>
+                    <input type="hidden" name="tab" value="tracking" />
+                    <input type="hidden" name="reviewPage" value="@Model.PendingReviews.PageIndex" />
+                    <label for="mobileEmployeeSelect">Nhân viên cần theo dõi</label>
+                    <div>
+                        <select id="mobileEmployeeSelect" name="employeeId" class="form-select no-select2" data-mobile-employee-select>
+                            <option value="" selected="@(!Model.SelectedEmployeeId.HasValue ? "selected" : null)">Tất cả nhân sự</option>
+                            @foreach (var employee in Model.Employees)
                             {
-                                <option value="@employee.EmployeeId" selected="@(selectedEmployee?.EmployeeId == employee.EmployeeId ? "selected" : null)">
-                                    @employee.EmployeeName @(employee.IsDepartmentManager ? "(Trưởng phòng)" : "")
+                                <option value="@employee.EmployeeId" selected="@(Model.SelectedEmployeeId == employee.EmployeeId ? "selected" : null)">
+                                    @employee.EmployeeName (@employee.EmployeeCode)
                                 </option>
                             }
                         </select>
-                    </form>
-
-                    <!-- Realtime Search Input -->
-                    <div class="mb-3 position-relative">
-                        <input type="text" id="employeeSearchInput" class="form-control ps-4 shadow-none" placeholder="Tìm nhanh nhân viên..." />
-                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted small"></i>
+                        <button type="submit" class="evaluation-filter-button">Xem</button>
                     </div>
+                </form>
 
-                    <!-- Scrollable Container -->
-                    <div id="employeeListContainer" class="d-flex flex-column gap-2" style="max-height: 480px; overflow-y: auto; padding-right: 4px;">
-                        <a asp-action="EmployeeTracking" class="employee-list-item text-decoration-none p-3 rounded-3 border @(isViewingAll ? "bg-primary bg-opacity-10 border-primary" : "bg-light border-light")">
-                            <div class="fw-bold @(isViewingAll ? "text-primary" : "text-dark")">Tất cả</div>
-                            <div class="text-muted small">@employees.Count đối tượng trong phạm vi xem</div>
-                        </a>
-
-                        @foreach (var employee in employees)
-                        {
-                            var active = selectedEmployee?.EmployeeId == employee.EmployeeId;
-                            <a asp-action="EmployeeTracking" asp-route-employeeId="@employee.EmployeeId" class="employee-list-item text-decoration-none p-3 rounded-3 border @(active ? "bg-primary bg-opacity-10 border-primary" : "bg-light border-light")" data-fullname="@employee.EmployeeName.ToLower()" data-dept="@employee.DepartmentNames.ToLower()">
-                                <div class="fw-bold @(active ? "text-primary" : "text-dark")">@employee.EmployeeName</div>
-                                <div class="text-muted small">@employee.DepartmentNames</div>
-                                @if (employee.IsDepartmentManager)
-                                {
-                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 mt-2">Trưởng phòng</span>
-                                }
+                <div class="et-tracking-workspace">
+                    <aside class="et-employee-rail" aria-label="Danh sách nhân sự có thể theo dõi">
+                        <div class="et-rail__heading">
+                            <div>
+                                <strong>Nhân sự</strong>
+                                <span>@Model.Employees.Count trong phạm vi</span>
+                            </div>
+                            <i class="bi bi-people" aria-hidden="true"></i>
+                        </div>
+                        <label class="et-employee-search" for="employeeRailSearch">
+                            <span class="visually-hidden">Tìm nhân viên</span>
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                            <input id="employeeRailSearch" type="search" autocomplete="off" spellcheck="false"
+                                   placeholder="Tìm tên, mã, phòng ban..." aria-controls="employeeRailList"
+                                   data-employee-search />
+                        </label>
+                        <div id="employeeRailList" class="et-employee-list" data-employee-list>
+                            <a asp-action="EmployeeTracking"
+                               asp-route-tab="tracking"
+                               asp-route-pageNumber="1"
+                               asp-route-reviewPage="@Model.PendingReviews.PageIndex"
+                               class="et-employee-item @(!Model.SelectedEmployeeId.HasValue ? "is-active" : null)"
+                               aria-current="@(!Model.SelectedEmployeeId.HasValue ? "page" : null)"
+                               data-employee-item data-search-value="Tất cả nhân sự">
+                                <span class="et-employee-item__avatar"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
+                                <span class="et-employee-item__body">
+                                    <strong>Tất cả nhân sự</strong>
+                                    <small>@Model.TotalTrackingRows KPI liên quan</small>
+                                </span>
                             </a>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
+                            @foreach (var employee in Model.Employees)
+                            {
+                                var employeeIsActive = Model.SelectedEmployeeId == employee.EmployeeId;
+                                <a asp-action="EmployeeTracking"
+                                   asp-route-tab="tracking"
+                                   asp-route-employeeId="@employee.EmployeeId"
+                                   asp-route-pageNumber="1"
+                                   asp-route-reviewPage="@Model.PendingReviews.PageIndex"
+                                   class="et-employee-item @(employeeIsActive ? "is-active" : null)"
+                                   aria-current="@(employeeIsActive ? "page" : null)"
+                                   data-employee-item
+                                   data-search-value="@employee.EmployeeName @employee.EmployeeCode @employee.DepartmentNames">
+                                    <span class="et-employee-item__avatar">@Initials(employee.EmployeeName)</span>
+                                    <span class="et-employee-item__body">
+                                        <strong>@employee.EmployeeName</strong>
+                                        <small>@employee.EmployeeCode · @employee.DepartmentNames</small>
+                                        @if (employee.IsDepartmentManager)
+                                        {
+                                            <em>Trưởng phòng</em>
+                                        }
+                                    </span>
+                                </a>
+                            }
+                            <div class="et-employee-search-empty" hidden data-employee-search-empty>
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                                <span>Không tìm thấy nhân viên phù hợp.</span>
+                            </div>
+                        </div>
+                    </aside>
 
-        <div class="col-lg-9">
-            <div class="content-card mb-4">
-                <div class="card-body-custom p-4 d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small text-uppercase fw-bold">Đang theo dõi</div>
-                        @if (selectedEmployee != null)
+                    <div class="et-tracking-content">
+                        <div class="et-content-heading">
+                            <div>
+                                <span>Đang theo dõi</span>
+                                @if (selectedEmployee != null)
+                                {
+                                    <h2>@selectedEmployee.EmployeeName</h2>
+                                    <p>@selectedEmployee.EmployeeCode · @selectedEmployee.DepartmentNames</p>
+                                }
+                                else
+                                {
+                                    <h2>Tất cả nhân sự</h2>
+                                    <p>Tổng hợp KPI trong phạm vi bạn được phép xem.</p>
+                                }
+                            </div>
+                            <div class="et-content-heading__count" aria-label="@Model.TotalTrackingRows KPI">
+                                <strong>@Model.TotalTrackingRows</strong>
+                                <span>KPI</span>
+                            </div>
+                        </div>
+
+                        @if (Model.IsOverviewLimited)
                         {
-                            <h4 class="mb-1 fw-bold">@selectedEmployee.EmployeeName</h4>
-                            <div class="text-muted">@selectedEmployee.DepartmentNames</div>
+                            <div class="et-notice" role="note">
+                                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                                <span>Chế độ tổng quan đang giới hạn @Model.OverviewLimit KPI trong tổng số @Model.TotalTrackingRows. Chọn một nhân viên để xem đầy đủ.</span>
+                            </div>
+                        }
+
+                        @if (!Model.Items.Any())
+                        {
+                            <div class="et-empty">
+                                <span class="et-empty__icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
+                                <h2>Chưa có KPI để theo dõi</h2>
+                                @if (selectedEmployee != null)
+                                {
+                                    <p>@selectedEmployee.EmployeeName chưa được phân bổ KPI đang hoạt động trong kỳ hiện tại.</p>
+                                }
+                                else
+                                {
+                                    <p>Chưa có KPI đang hoạt động trong phạm vi nhân sự bạn có thể xem.</p>
+                                }
+                            </div>
                         }
                         else
                         {
-                            <h4 class="mb-1 fw-bold">Tất cả nhân viên/trưởng phòng</h4>
-                            <div class="text-muted">@trackedEmployeeCount đối tượng trong phạm vi xem</div>
-                        }
-                    </div>
-                    <div class="text-end">
-                        <div class="h3 fw-bold text-primary mb-0">@totalTrackingRows</div>
-                        <div class="text-muted small">KPI liên quan</div>
-                    </div>
-                </div>
-            </div>
+                            <div class="ci-entry-list et-kpi-list">
+                                @foreach (var row in Model.Items)
+                                {
+                                    var progress = ProgressValue(row.LatestProgress);
+                                    var operationalStateClass = row.IsLate
+                                        ? "ci-state ci-state--danger"
+                                        : row.IsRisk
+                                            ? "ci-state ci-state--warning"
+                                            : "ci-state ci-state--neutral";
+                                    var operationalIcon = row.IsLate
+                                        ? "bi-calendar-x"
+                                        : row.IsRisk
+                                            ? "bi-exclamation-triangle"
+                                            : "bi-activity";
+                                    var checkInInputId = $"achieved-{row.EmployeeId}-{row.KpiId}";
+                                    var failReasonInputId = $"reason-{row.EmployeeId}-{row.KpiId}";
+                                    var noteInputId = $"note-{row.EmployeeId}-{row.KpiId}";
+                                    var latestSubmissionIsPending = string.Equals(
+                                        row.LatestReviewStatusCode,
+                                        "Pending",
+                                        StringComparison.OrdinalIgnoreCase);
+                                    var latestSubmissionIsRejected = string.Equals(
+                                        row.LatestReviewStatusCode,
+                                        "Rejected",
+                                        StringComparison.OrdinalIgnoreCase);
+                                    var showSeparateSubmission = row.LatestSubmissionId.HasValue &&
+                                        row.LatestSubmissionId != row.LatestCheckInId &&
+                                        (latestSubmissionIsPending || latestSubmissionIsRejected);
 
-            <div class="content-card">
-                <div class="card-header-custom border-bottom p-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-speedometer2 me-2"></i>KPI và check-in mới nhất</h5>
-                </div>
-                <div class="card-body-custom p-3 bg-light bg-opacity-50">
-                    @if (isTrackingOverviewLimited)
-                    {
-                        <div class="alert alert-info border-0 rounded-3 small mb-3">
-                            Đang hiển thị @Model.Count KPI đầu tiên trong @totalTrackingRows KPI. Chọn một nhân viên bên trái để xem đầy đủ chi tiết.
-                        </div>
-                    }
-                    @if (Model.Any())
-                    {
-                        foreach (var row in Model)
-                        {
-                            var progress = row.LatestProgress ?? 0;
-                            var progressWidth = Math.Min(100, progress);
-                            var colorClass = ProgressHelper.GetProgressTextColorClass(progress);
-                            var barColor = progress >= 80 ? "#10b981" : progress >= 50 ? "#f59e0b" : "#ef4444";
-                            
-                            var reviewBadgeClass = row.ReviewStatus == "Đã xác nhận" ? "badge-on-track" :
-                                                   row.ReviewStatus == "Bị từ chối" ? "badge-late" :
-                                                   row.ReviewStatus == "Chờ quản lý xác nhận" ? "badge-at-risk" :
-                                                   "badge-default";
-                            
-                            var statusBadgeClass = row.CheckInStatus == "Đúng tiến độ" ? "badge-on-track" :
-                                                   row.CheckInStatus == "Trễ tiến độ" ? "badge-late" :
-                                                   row.CheckInStatus == "Có rủi ro" ? "badge-at-risk" :
-                                                   "badge-default";
-                                                   
-                            var kpiStatusBadgeClass = row.IsLate ? "badge-late" : "badge-on-track";
-                            var kpiStatusText = row.IsLate ? "Quá hạn" : "Đang tiến hành";
-                            
-                            var empName = row.EmployeeName ?? "Chưa gán";
-                            var initials = string.Join("", empName.Split(' ').Select(n => n.Length > 0 ? n[0].ToString() : "")).ToUpper();
-                            if (initials.Length > 2) initials = initials.Substring(0, 2);
-
-                            <div class="ci-card">
-                                <!-- Card Header -->
-                                <div class="ci-card-header">
-                                    <div class="ci-card-header-left">
-                                        <div class="emp-avatar">@initials</div>
-                                        <div style="min-width:0;">
-                                            <div class="ci-emp-name">@empName</div>
-                                            <div class="ci-date-label">
-                                                <i class="bi bi-diagram-3 me-1"></i>@row.DepartmentNames
+                                    <article class="ci-entry et-kpi-entry">
+                                        <div class="ci-entry__header et-kpi-entry__header">
+                                            <div class="ci-entry__identity et-kpi-identity">
+                                                <span class="ci-avatar">@Initials(row.EmployeeName)</span>
+                                                <div>
+                                                    <h2>@row.KpiName</h2>
+                                                    <p>
+                                                        <i class="bi bi-person" aria-hidden="true"></i>
+                                                        @row.EmployeeName · @row.EmployeeCode · @row.DepartmentNames
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="ci-entry__meta">
+                                                <div class="ci-state-group">
+                                                    <span class="@operationalStateClass">
+                                                        <i class="bi @operationalIcon" aria-hidden="true"></i>
+                                                        @row.CheckInStatus
+                                                    </span>
+                                                    <span class="@ReviewStateClass(row.LatestReviewStatusCode)">
+                                                        <i class="bi @ReviewIcon(row.LatestReviewStatusCode)" aria-hidden="true"></i>
+                                                        @ReviewLabel(row.LatestReviewStatusCode)
+                                                    </span>
+                                                </div>
+                                                @if (row.LatestSubmissionDate.HasValue)
+                                                {
+                                                    <time datetime="@row.LatestSubmissionDate.Value.ToString("yyyy-MM-ddTHH:mm:ss")">
+                                                        Gửi gần nhất @row.LatestSubmissionDate.Value.ToString("dd/MM/yyyy HH:mm")
+                                                    </time>
+                                                }
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="ci-card-header-right">
-                                        <span class="@statusBadgeClass">@row.CheckInStatus</span>
-                                        <span class="@reviewBadgeClass">@row.ReviewStatus</span>
-                                    </div>
-                                </div>
 
-                                <!-- Card Body -->
-                                <div class="ci-card-body">
-                                    <!-- KPI Name -->
-                                    <div class="ci-info-block">
-                                        <div class="ci-info-label"><i class="bi bi-speedometer2 me-1"></i>KPI Mục tiêu</div>
-                                        <div class="ci-info-value">
-                                            <span class="text-dark fw-bold">@row.KpiName</span>
-                                            <span class="text-muted ms-1" style="font-size:0.75rem;">(#@row.KpiId)</span>
+                                        <div class="ci-entry__body">
+                                            <dl class="ci-metrics et-kpi-metrics">
+                                                <div>
+                                                    <dt>Kết quả chính thức</dt>
+                                                    <dd>@Metric(row.LatestAchievedValue) <small>@row.Unit</small></dd>
+                                                </div>
+                                                <div>
+                                                    <dt>Chỉ tiêu</dt>
+                                                    <dd>@Metric(row.TargetValue) <small>@row.Unit</small></dd>
+                                                </div>
+                                                <div>
+                                                    <dt>Tiến độ chính thức</dt>
+                                                    <dd>@Percent(row.LatestProgress)</dd>
+                                                </div>
+                                                <div>
+                                                    <dt>Tiến độ kế hoạch</dt>
+                                                    <dd>@Percent(row.ScheduleProgressPercentage)</dd>
+                                                </div>
+                                                 <div>
+                                                     <dt>Hạn cập nhật tiếp theo</dt>
+                                                    <dd class="ci-metric-text">
+                                                        @(row.LatestDeadlineAt.HasValue ? row.LatestDeadlineAt.Value.ToString("dd/MM/yyyy") : "Chưa đặt")
+                                                    </dd>
+                                                </div>
+                                            </dl>
+                                             <div class="ci-progress et-progress-comparison">
+                                                <div>
+                                                    <span>Tiến độ chính thức</span>
+                                                    <strong>@Percent(row.LatestProgress)</strong>
+                                                </div>
+                                                 <progress max="100" value="@progress.ToString(CultureInfo.InvariantCulture)">@Percent(row.LatestProgress)</progress>
+                                             </div>
+                                             @if (showSeparateSubmission)
+                                             {
+                                                 <div class="et-submission-context @(latestSubmissionIsRejected ? "et-submission-context--rejected" : null)" role="note">
+                                                     <i class="bi @(latestSubmissionIsRejected ? "bi-x-circle" : "bi-hourglass-split")" aria-hidden="true"></i>
+                                                     <div>
+                                                         <strong>@(latestSubmissionIsRejected ? "Lần gửi gần nhất không được tính chính thức" : "Tiến độ đề nghị gần nhất · đang chờ xác nhận")</strong>
+                                                         <p>
+                                                             @Metric(row.LatestSubmissionAchievedValue)
+                                                             @if (!string.IsNullOrWhiteSpace(row.Unit))
+                                                             {
+                                                                 <span>@row.Unit</span>
+                                                             }
+                                                             · @Percent(row.LatestSubmissionProgress)
+                                                         </p>
+                                                     </div>
+                                                 </div>
+                                             }
+                                             @if (!string.IsNullOrWhiteSpace(row.Note))
+                                            {
+                                                <div class="et-kpi-note">
+                                                    <i class="bi bi-chat-left-text" aria-hidden="true"></i>
+                                                    <p><strong>Ghi chú gần nhất:</strong> @row.Note</p>
+                                                </div>
+                                            }
                                         </div>
-                                    </div>
 
-                                    <!-- Latest Achieved / Target -->
-                                    <div class="ci-info-block">
-                                        <div class="ci-info-label"><i class="bi bi-graph-up-arrow me-1"></i>Chỉ tiêu / Thực tế</div>
-                                        <div class="ci-target-block">
-                                            <div class="ci-target-value">@(row.LatestAchievedValue.HasValue ? String.Format("{0:N2}", row.LatestAchievedValue) : "0")</div>
-                                            <div class="ci-target-label">/ @String.Format("{0:N0}", row.TargetValue) @row.Unit</div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Progress Block -->
-                                    <div class="ci-info-block">
-                                        <div class="ci-info-label"><i class="bi bi-bar-chart me-1"></i>Tiến độ tổng hợp</div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="@colorClass fw-bold" style="font-size:0.85rem; min-width:42px;">@progress.ToString("0.##")%</span>
-                                            <div class="ci-progress-track flex-grow-1">
-                                                <div class="ci-progress-fill" style="width:@progressWidth%; background:@barColor;"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Latest Check-in Info -->
-                                    <div class="ci-info-block">
-                                        <div class="ci-info-label"><i class="bi bi-calendar-check me-1"></i>Check-in gần nhất</div>
-                                        <div class="ci-info-value" style="font-size:0.8rem;">
-                                            @(row.LatestCheckInDate?.ToString("dd/MM/yyyy HH:mm") ?? "--")
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Deadline Info -->
-                                    <div class="ci-info-block">
-                                        <div class="ci-info-label"><i class="bi bi-alarm me-1"></i>Deadline tới</div>
-                                        <div class="ci-info-value">
-                                            <span class="@(row.IsLate ? "text-danger" : "text-success") fw-bold" style="font-size:0.8rem;">
-                                                @(row.LatestDeadlineAt?.ToString("dd/MM/yyyy HH:mm") ?? "--")
-                                            </span>
-                                        </div>
-                                        @if (row.ExpectedValueAtDeadline.HasValue)
+                                        @if (Model.CanCreateCheckIn && row.CanCheckIn)
                                         {
-                                            <div class="text-muted mt-1" style="font-size: 0.72rem;">Cần đạt: @String.Format("{0:N0}", row.ExpectedValueAtDeadline) @row.Unit</div>
-                                        }
-                                    </div>
+                                            <details class="et-checkin-details">
+                                                <summary>
+                                                    <span><i class="bi bi-plus-circle" aria-hidden="true"></i> Ghi nhận tiến độ mới</span>
+                                                    <small>Nhập kết quả lũy kế hiện tại</small>
+                                                </summary>
+                                                <form asp-action="Create" method="post" class="et-checkin-form" data-local-submit data-busy-label="Đang lưu tiến độ...">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="EmployeeId" value="@row.EmployeeId" />
+                                                    <input type="hidden" name="KPIId" value="@row.KpiId" />
+                                                    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
 
-                                    <!-- Notes -->
-                                    <div class="ci-info-block">
-                                        <div class="ci-info-label"><i class="bi bi-chat-left-text me-1"></i>Ghi chú Check-in</div>
-                                        <div class="ci-info-value" style="font-size:0.8rem; font-weight: 500;">
-                                            @(string.IsNullOrWhiteSpace(row.Note) ? "--" : row.Note)
-                                        </div>
-                                    </div>
-                                </div>
+                                                    <label for="@checkInInputId">
+                                                        <span>Kết quả lũy kế <b aria-label="bắt buộc">*</b></span>
+                                                        <span class="et-input-with-unit">
+                                                            <input id="@checkInInputId" name="AchievedValue" type="number" min="0" step="0.01"
+                                                                   inputmode="decimal" required autocomplete="off" placeholder="Ví dụ: 82" />
+                                                            @if (!string.IsNullOrWhiteSpace(row.Unit))
+                                                            {
+                                                                <em>@row.Unit</em>
+                                                            }
+                                                        </span>
+                                                    </label>
+                                                    <label for="@failReasonInputId">
+                                                        <span>Lý do nếu chưa đạt</span>
+                                                        <select id="@failReasonInputId" name="FailReasonId" class="no-select2">
+                                                            <option value="">Không có / Đang đúng kế hoạch</option>
+                                                            @foreach (var reason in Model.FailReasons)
+                                                            {
+                                                                <option value="@reason.Id">@reason.ReasonName</option>
+                                                            }
+                                                        </select>
+                                                    </label>
+                                                    <label class="et-checkin-form__note" for="@noteInputId">
+                                                        <span>Ghi chú</span>
+                                                        <textarea id="@noteInputId" name="Note" rows="2" maxlength="1000"
+                                                                  placeholder="Nêu kết quả, trở ngại hoặc bước tiếp theo..."></textarea>
+                                                    </label>
+                                                    <div class="et-checkin-form__footer">
+                                                        <p><i class="bi bi-info-circle" aria-hidden="true"></i> Kết quả cần quản lý xác nhận trước khi trở thành số liệu chính thức.</p>
+                                                        <button type="submit" class="evaluation-primary-action">
+                                                            <i class="bi bi-send-check" aria-hidden="true"></i>
+                                                            <span>Gửi check-in</span>
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </details>
+                                        }
+                                        else
+                                        {
+                                            <div class="et-checkin-unavailable" role="note">
+                                                <i class="bi bi-lock" aria-hidden="true"></i>
+                                                <span>@(string.IsNullOrWhiteSpace(row.CheckInDisabledReason) ? "Bạn chưa thể ghi nhận tiến độ cho KPI này." : row.CheckInDisabledReason)</span>
+                                            </div>
+                                        }
+                                    </article>
+                                }
                             </div>
-                        }
 
-                        <!-- PAGINATION -->
-                        @if (Model != null && Model.TotalPages > 1)
-                        {
-                            <div class="d-flex justify-content-between align-items-center mt-4 px-2 no-print">
-                                <div class="text-muted small">
-                                    Hiển thị trang @Model.PageIndex trên tổng số @Model.TotalPages
-                                </div>
-                                <nav aria-label="Page navigation">
-                                    <ul class="pagination pagination-sm mb-0 gap-1">
-                                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
-                                            <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="EmployeeTracking"
-                                               asp-route-pageNumber="@(Model.PageIndex - 1)"
-                                               asp-route-employeeId="@(selectedEmployee?.EmployeeId)">
-                                                <i class="bi bi-chevron-left"></i>
-                                            </a>
-                                        </li>
+                            @if (Model.Items.TotalPages > 1)
+                            {
+                                <nav class="evaluation-pagination et-pagination" aria-label="Phân trang KPI theo dõi">
+                                    @if (Model.Items.PreviousPageNumber.HasValue)
+                                    {
+                                        <a asp-action="EmployeeTracking" asp-route-tab="tracking" asp-route-employeeId="@Model.SelectedEmployeeId"
+                                           asp-route-pageNumber="@Model.Items.PreviousPageNumber" asp-route-reviewPage="@Model.PendingReviews.PageIndex"
+                                           aria-label="Trang KPI trước"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+                                    }
+                                    else
+                                    {
+                                        <span class="is-disabled" aria-disabled="true"><i class="bi bi-chevron-left" aria-hidden="true"></i></span>
+                                    }
 
-                                        @for (int i = 1; i <= Model.TotalPages; i++)
+                                    @if (trackingPageStart > 1)
+                                    {
+                                        <a asp-action="EmployeeTracking" asp-route-tab="tracking" asp-route-employeeId="@Model.SelectedEmployeeId"
+                                           asp-route-pageNumber="1" asp-route-reviewPage="@Model.PendingReviews.PageIndex">1</a>
+                                        @if (trackingPageStart > 2)
                                         {
-                                            if (i == 1 || i == Model.TotalPages || (i >= Model.PageIndex - 1 && i <= Model.PageIndex + 1))
-                                            {
-                                                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                                                    <a class="page-link border-0 rounded-circle shadow-none @(i == Model.PageIndex ? "" : "text-dark")" asp-action="EmployeeTracking"
-                                                       asp-route-pageNumber="@i"
-                                                       asp-route-employeeId="@(selectedEmployee?.EmployeeId)">@i</a>
-                                                </li>
-                                            }
-                                            else if (i == Model.PageIndex - 2 || i == Model.PageIndex + 2)
-                                            {
-                                                <li class="page-item disabled"><span class="page-link border-0">...</span></li>
-                                            }
+                                            <span class="et-pagination__ellipsis" aria-hidden="true">…</span>
                                         }
+                                    }
+                                    @for (var pageIndex = trackingPageStart; pageIndex <= trackingPageEnd; pageIndex++)
+                                    {
+                                        <a asp-action="EmployeeTracking" asp-route-tab="tracking" asp-route-employeeId="@Model.SelectedEmployeeId"
+                                           asp-route-pageNumber="@pageIndex" asp-route-reviewPage="@Model.PendingReviews.PageIndex"
+                                           class="@(pageIndex == Model.Items.PageIndex ? "is-current" : null)"
+                                           aria-current="@(pageIndex == Model.Items.PageIndex ? "page" : null)">@pageIndex</a>
+                                    }
+                                    @if (trackingPageEnd < Model.Items.TotalPages)
+                                    {
+                                        @if (trackingPageEnd < Model.Items.TotalPages - 1)
+                                        {
+                                            <span class="et-pagination__ellipsis" aria-hidden="true">…</span>
+                                        }
+                                        <a asp-action="EmployeeTracking" asp-route-tab="tracking" asp-route-employeeId="@Model.SelectedEmployeeId"
+                                           asp-route-pageNumber="@Model.Items.TotalPages" asp-route-reviewPage="@Model.PendingReviews.PageIndex">@Model.Items.TotalPages</a>
+                                    }
 
-                                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                                            <a class="page-link border-0 rounded-circle text-dark shadow-none" asp-action="EmployeeTracking"
-                                               asp-route-pageNumber="@(Model.PageIndex + 1)"
-                                               asp-route-employeeId="@(selectedEmployee?.EmployeeId)">
-                                                <i class="bi bi-chevron-right"></i>
-                                            </a>
-                                        </li>
-                                    </ul>
+                                    @if (Model.Items.NextPageNumber.HasValue)
+                                    {
+                                        <a asp-action="EmployeeTracking" asp-route-tab="tracking" asp-route-employeeId="@Model.SelectedEmployeeId"
+                                           asp-route-pageNumber="@Model.Items.NextPageNumber" asp-route-reviewPage="@Model.PendingReviews.PageIndex"
+                                           aria-label="Trang KPI sau"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+                                    }
+                                    else
+                                    {
+                                        <span class="is-disabled" aria-disabled="true"><i class="bi bi-chevron-right" aria-hidden="true"></i></span>
+                                    }
                                 </nav>
-                            </div>
+                            }
                         }
-                    }
-                    else
-                    {
-                        <div class="rq-empty">
-                            <div class="rq-empty-icon">
-                                <i class="bi bi-inbox"></i>
-                            </div>
-                            <div class="rq-empty-title">
-                                @(isViewingAll
-                                    ? "Chưa có KPI được phân bổ hoặc chưa có dữ liệu theo dõi trong phạm vi hiện tại"
-                                    : "Nhân viên này chưa có KPI được phân bổ hoặc chưa có dữ liệu theo dõi")
-                            </div>
-                        </div>
-                    }
+                    </div>
+                </div>
+            }
+        </section>
+    }
+    else
+    {
+        <section class="et-tab-panel et-review-workspace" aria-label="Xác nhận check-in đang chờ">
+            <div class="et-review-heading">
+                <div>
+                    <span>Hàng chờ xác nhận</span>
+                    <h2>Kiểm tra trước khi ghi nhận chính thức</h2>
+                    <p>Đối chiếu kết quả, tiến độ kế hoạch và ghi chú của nhân viên trước khi xác nhận hoặc từ chối.</p>
+                </div>
+                <div class="et-review-heading__count">
+                    <strong>@Model.Summary.PendingReviewCount</strong>
+                    <span>đang chờ</span>
                 </div>
             </div>
-        </div>
-    </div>
+
+            @if (!Model.PendingReviews.Any())
+            {
+                <div class="et-empty et-empty--standalone">
+                    <span class="et-empty__icon et-empty__icon--success"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
+                    <h2>Không còn check-in chờ xác nhận</h2>
+                    <p>Các check-in trong phạm vi của bạn đã được xử lý. Danh sách sẽ tự cập nhật khi có bản ghi mới.</p>
+                    @if (Model.CanViewTracking)
+                    {
+                        <a asp-action="EmployeeTracking" asp-route-tab="tracking" asp-route-employeeId="@Model.SelectedEmployeeId"
+                           asp-route-pageNumber="@Model.Items.PageIndex" class="evaluation-secondary-action">Quay lại theo dõi KPI</a>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="et-review-list">
+                    @foreach (var item in Model.PendingReviews)
+                    {
+                        var reviewScoreId = $"review-score-{item.CheckInId}";
+                        var reviewCommentId = $"review-comment-{item.CheckInId}";
+
+                        <article class="et-review-item">
+                            <header class="et-review-item__header">
+                                <div class="et-review-person">
+                                    <span class="ci-avatar">@Initials(item.EmployeeName)</span>
+                                    <div>
+                                        <h2>@item.EmployeeName</h2>
+                                        <p>@item.EmployeeCode · Check-in #@item.CheckInId</p>
+                                    </div>
+                                </div>
+                                <div class="ci-state-group">
+                                    <span class="ci-state ci-state--warning">
+                                        <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                                        @item.ReviewStatus
+                                    </span>
+                                    <span class="ci-state ci-state--neutral">
+                                        <i class="bi bi-activity" aria-hidden="true"></i>
+                                        @item.CheckInStatus
+                                    </span>
+                                </div>
+                            </header>
+
+                            <div class="et-review-item__body">
+                                <div class="et-review-kpi">
+                                    <span>KPI đề nghị cập nhật</span>
+                                    <h3>@item.KpiName</h3>
+                                    @if (item.CheckInDate.HasValue)
+                                    {
+                                        <time datetime="@item.CheckInDate.Value.ToString("yyyy-MM-ddTHH:mm:ss")">
+                                            Gửi lúc @item.CheckInDate.Value.ToString("dd/MM/yyyy HH:mm")
+                                        </time>
+                                    }
+                                </div>
+                                <dl class="et-review-metrics">
+                                    <div>
+                                        <dt>Kết quả đề nghị</dt>
+                                        <dd>@Metric(item.AchievedValue)</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Tiến độ đề nghị</dt>
+                                        <dd>@Percent(item.ProgressPercentage)</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Tiến độ kế hoạch</dt>
+                                        <dd>@Percent(item.ScheduleProgressPercentage)</dd>
+                                    </div>
+                                </dl>
+                                @if (!string.IsNullOrWhiteSpace(item.FailReasonName) || !string.IsNullOrWhiteSpace(item.Note))
+                                {
+                                    <div class="et-review-context">
+                                        @if (!string.IsNullOrWhiteSpace(item.FailReasonName))
+                                        {
+                                            <p><strong>Lý do chưa đạt:</strong> @item.FailReasonName</p>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.Note))
+                                        {
+                                            <p><strong>Ghi chú nhân viên:</strong> @item.Note</p>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <form asp-action="Review" method="post" class="et-inline-review-form" data-local-submit data-busy-label="Đang xử lý xác nhận...">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@item.CheckInId" />
+                                <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                                <label for="@reviewScoreId">
+                                    <span>Điểm đánh giá <small>(không bắt buộc)</small></span>
+                                    <input id="@reviewScoreId" name="reviewScore" type="number" min="0" max="100" step="0.01"
+                                           inputmode="decimal" autocomplete="off" placeholder="0–100" />
+                                </label>
+                                <label class="et-inline-review-form__comment" for="@reviewCommentId">
+                                    <span>Nhận xét của quản lý</span>
+                                    <textarea id="@reviewCommentId" name="reviewComment" rows="2" maxlength="1000"
+                                              placeholder="Nêu lý do, phản hồi hoặc điều chỉnh cần thiết..."></textarea>
+                                </label>
+                                <div class="et-inline-review-form__actions">
+                                    <button type="submit" name="decision" value="Approved" class="ci-review-button ci-review-button--approve">
+                                        <i class="bi bi-check-circle" aria-hidden="true"></i>
+                                        <span>Xác nhận</span>
+                                    </button>
+                                    <button type="submit" name="decision" value="Rejected" class="ci-review-button ci-review-button--reject">
+                                        <i class="bi bi-x-circle" aria-hidden="true"></i>
+                                        <span>Từ chối</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </article>
+                    }
+                </div>
+
+                @if (Model.PendingReviews.TotalPages > 1)
+                {
+                    <nav class="evaluation-pagination et-pagination" aria-label="Phân trang check-in chờ xác nhận">
+                        @if (Model.PendingReviews.PreviousPageNumber.HasValue)
+                        {
+                            <a asp-action="EmployeeTracking" asp-route-tab="pending" asp-route-employeeId="@Model.SelectedEmployeeId"
+                               asp-route-pageNumber="@Model.Items.PageIndex" asp-route-reviewPage="@Model.PendingReviews.PreviousPageNumber"
+                               aria-label="Trang xác nhận trước"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+                        }
+                        else
+                        {
+                            <span class="is-disabled" aria-disabled="true"><i class="bi bi-chevron-left" aria-hidden="true"></i></span>
+                        }
+
+                        @if (reviewPageStart > 1)
+                        {
+                            <a asp-action="EmployeeTracking" asp-route-tab="pending" asp-route-employeeId="@Model.SelectedEmployeeId"
+                               asp-route-pageNumber="@Model.Items.PageIndex" asp-route-reviewPage="1">1</a>
+                            @if (reviewPageStart > 2)
+                            {
+                                <span class="et-pagination__ellipsis" aria-hidden="true">…</span>
+                            }
+                        }
+                        @for (var pageIndex = reviewPageStart; pageIndex <= reviewPageEnd; pageIndex++)
+                        {
+                            <a asp-action="EmployeeTracking" asp-route-tab="pending" asp-route-employeeId="@Model.SelectedEmployeeId"
+                               asp-route-pageNumber="@Model.Items.PageIndex" asp-route-reviewPage="@pageIndex"
+                               class="@(pageIndex == Model.PendingReviews.PageIndex ? "is-current" : null)"
+                               aria-current="@(pageIndex == Model.PendingReviews.PageIndex ? "page" : null)">@pageIndex</a>
+                        }
+                        @if (reviewPageEnd < Model.PendingReviews.TotalPages)
+                        {
+                            @if (reviewPageEnd < Model.PendingReviews.TotalPages - 1)
+                            {
+                                <span class="et-pagination__ellipsis" aria-hidden="true">…</span>
+                            }
+                            <a asp-action="EmployeeTracking" asp-route-tab="pending" asp-route-employeeId="@Model.SelectedEmployeeId"
+                               asp-route-pageNumber="@Model.Items.PageIndex" asp-route-reviewPage="@Model.PendingReviews.TotalPages">@Model.PendingReviews.TotalPages</a>
+                        }
+
+                        @if (Model.PendingReviews.NextPageNumber.HasValue)
+                        {
+                            <a asp-action="EmployeeTracking" asp-route-tab="pending" asp-route-employeeId="@Model.SelectedEmployeeId"
+                               asp-route-pageNumber="@Model.Items.PageIndex" asp-route-reviewPage="@Model.PendingReviews.NextPageNumber"
+                               aria-label="Trang xác nhận sau"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+                        }
+                        else
+                        {
+                            <span class="is-disabled" aria-disabled="true"><i class="bi bi-chevron-right" aria-hidden="true"></i></span>
+                        }
+                    </nav>
+                }
+            }
+        </section>
+    }
 </div>
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/kpi-checkins.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/kpi-employee-tracking.css" asp-append-version="true" />
+}
+
 @section Scripts {
-    <script>
-        (function () {
-            function initEmployeeTrackingPage() {
-                const loader = document.getElementById('trackingLoader');
-
-                // Show loader when changing select option
-                const formSelect = document.querySelector('select[name="employeeId"]');
-                if (formSelect) {
-                    formSelect.addEventListener('change', function() {
-                        if (loader) loader.style.display = 'flex';
-                    });
-                }
-
-                // Show loader when clicking employee links in the sidebar
-                const empLinks = document.querySelectorAll('a[href*="EmployeeTracking"]');
-                empLinks.forEach(link => {
-                    link.addEventListener('click', function() {
-                        if (loader) loader.style.display = 'flex';
-                    });
-                });
-
-                // Fast local search/filter for employee sidebar list
-                const searchInput = document.getElementById('employeeSearchInput');
-                const employeeItems = document.querySelectorAll('#employeeListContainer .employee-list-item');
-                if (searchInput) {
-                    searchInput.addEventListener('input', function() {
-                        const query = this.value.toLowerCase().trim();
-                        employeeItems.forEach(item => {
-                            const fullName = item.getAttribute('data-fullname');
-                            const dept = item.getAttribute('data-dept') || '';
-
-                            if (!fullName) {
-                                item.style.setProperty('display', query === '' ? 'block' : 'none', 'important');
-                                return;
-                            }
-
-                            const isMatch = fullName.includes(query) || dept.includes(query);
-                            item.style.setProperty('display', isMatch ? 'block' : 'none', 'important');
-                        });
-                    });
-                }
-            }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initEmployeeTrackingPage, { once: true });
-            } else {
-                initEmployeeTrackingPage();
-            }
-        })();
-    </script>
+    <script src="~/js/kpi-employee-tracking.js" asp-append-version="true"></script>
 }

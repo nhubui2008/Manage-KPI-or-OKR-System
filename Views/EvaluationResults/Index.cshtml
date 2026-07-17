@@ -113,7 +113,17 @@
                                                         data-review-comment="@(r.ReviewComment ?? "")">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </button>
-                                                <form asp-action="Delete" method="post" style="display:inline;"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="action-btn danger" title="Xóa" onclick="return confirm('Xóa kết quả này?')"><i class="bi bi-trash"></i></button></form>
+                                                <form asp-action="Delete" method="post" style="display:inline;"
+                                                      data-app-confirm
+                                                      data-confirm-title="Xóa vĩnh viễn kết quả đánh giá?"
+                                                      data-confirm-message="Kết quả đánh giá và lịch sử điểm liên quan sẽ bị xóa vĩnh viễn. Thao tác này không thể hoàn tác."
+                                                      data-confirm-tone="danger"
+                                                      data-confirm-label="Xóa vĩnh viễn"
+                                                      data-confirm-require-text="XÓA"
+                                                      data-confirm-require-label="Nhập “XÓA” để xác nhận xóa kết quả">
+                                                    <input type="hidden" name="id" value="@r.Id" />
+                                                    <button type="submit" class="action-btn danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                                                </form>
                                             }
                                             @if (canSubmitEvaluation && (string.IsNullOrWhiteSpace(r.SubmissionStatus) || r.SubmissionStatus == "Draft" || r.SubmissionStatus == "Rejected"))
                                             {
@@ -272,12 +282,12 @@
             const data = await response.json();
             if (!response.ok || data.success === false) {
                 const message = data.warnings?.[0] || 'Không thể sinh nhận xét AI.';
-                window.showAppToast({ tone: 'warning', eyebrow: 'AI Nhận xét', title: 'AI chưa sẵn sàng', message });
+                window.AppFeedback.toast({ tone: 'warning', eyebrow: 'AI Nhận xét', title: 'AI chưa sẵn sàng', message });
                 return;
             }
             document.getElementById('editReviewComment').value = data.text || '';
         } catch {
-            window.showAppToast({ tone: 'error', eyebrow: 'Kết nối AI', title: 'Lỗi kết nối', message: 'Không thể kết nối AI. Vui lòng thử lại sau.' });
+            window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối AI', title: 'Lỗi kết nối', message: 'Không thể kết nối AI. Vui lòng thử lại sau.' });
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalHtml;

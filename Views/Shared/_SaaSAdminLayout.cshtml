@@ -242,19 +242,6 @@
             </header>
 
             <main class="page-content" role="main">
-                @if (TempData["SuccessMessage"] != null)
-                {
-                    <div class="alert alert-success border-0 shadow-sm rounded-3 py-2 px-3 mb-4 d-flex align-items-center gap-2">
-                        <i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]
-                    </div>
-                }
-                @if (TempData["ErrorMessage"] != null)
-                {
-                    <div class="alert alert-danger border-0 shadow-sm rounded-3 py-2 px-3 mb-4 d-flex align-items-center gap-2">
-                        <i class="bi bi-exclamation-triangle-fill"></i> @TempData["ErrorMessage"]
-                    </div>
-                }
-
                 @RenderBody()
             </main>
 
@@ -270,6 +257,20 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @if (TempData["ToastErrorMessage"] != null || TempData["ToastSuccessMessage"] != null || TempData["ToastWarningMessage"] != null || TempData["ToastInfoMessage"] != null || TempData["SuccessMessage"] != null || TempData["ErrorMessage"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                [
+                    { message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastErrorMessage"] ?? TempData["ErrorMessage"])), tone: 'error', title: 'Không thể thực hiện' },
+                    { message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastSuccessMessage"] ?? TempData["SuccessMessage"])), tone: 'success', title: 'Đã hoàn tất' },
+                    { message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastWarningMessage"])), tone: 'warning', title: 'Cần chú ý' },
+                    { message: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastInfoMessage"])), tone: 'info', title: 'Thông báo' }
+                ].filter(item => item.message).forEach(item => window.AppFeedback.toast(item));
+            });
+        </script>
+    }
     
     @await RenderSectionAsync("Scripts", required: false)
 </body>

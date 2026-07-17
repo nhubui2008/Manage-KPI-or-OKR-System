@@ -76,7 +76,11 @@
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         <form asp-action="Delete" asp-route-id="@position.Id" method="post" class="d-inline"
-                                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa chức vụ này?')">
+                                              data-app-confirm
+                                              data-confirm-title="Ngưng sử dụng chức vụ?"
+                                              data-confirm-message="Chức vụ “@position.PositionName” sẽ ngừng hoạt động và có thể được khôi phục sau."
+                                              data-confirm-tone="warning"
+                                              data-confirm-label="Ngưng sử dụng">
                                             <button type="submit" class="action-btn danger" title="Xóa">
                                                 <i class="bi bi-trash"></i>
                                             </button>

@@ -12,7 +12,12 @@
                 <h3 class="mb-1 fw-bold text-dark"><i class="bi bi-sliders text-primary me-2"></i>Cài đặt hệ thống</h3>
                 <p class="text-muted mb-0">Tuỳ biến tên sản phẩm, logo, màu sắc, SEO, AI Assistant và các tham số vận hành</p>
             </div>
-            <form asp-action="ResetBranding" method="post" onsubmit="return confirm('Khôi phục cấu hình thương hiệu mặc định?');">
+            <form asp-action="ResetBranding" method="post"
+                  data-app-confirm
+                  data-confirm-title="Khôi phục nhận diện mặc định?"
+                  data-confirm-message="Tên sản phẩm, logo, màu sắc và cấu hình thương hiệu sẽ trở về giá trị mặc định."
+                  data-confirm-tone="warning"
+                  data-confirm-label="Khôi phục mặc định">
                 <button type="submit" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-counterclockwise me-1"></i> Khôi phục mặc định
                 </button>

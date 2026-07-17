@@ -3,547 +3,305 @@
 
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    
-    var employees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
-    var kpis = ViewBag.AllKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new List<Manage_KPI_or_OKR_System.Models.KPI>();
-    var statuses = ViewBag.AllStatuses as List<Manage_KPI_or_OKR_System.Models.CheckInStatus> ?? new List<Manage_KPI_or_OKR_System.Models.CheckInStatus>();
-    var failReasons = ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>();
-    var kpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
-    var kpiPeriods = ViewBag.KPIPeriods as Dictionary<int, Manage_KPI_or_OKR_System.Models.EvaluationPeriod> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.EvaluationPeriod>();
-    var assignmentWeights = ViewBag.AssignmentWeights as Dictionary<int, Dictionary<int, decimal>> ?? new Dictionary<int, Dictionary<int, decimal>>();
-    var employeeKpiIds = ViewBag.EmployeeKPIIds as Dictionary<int, List<int>> ?? new Dictionary<int, List<int>>();
-    var kpisById = kpis.ToDictionary(k => k.Id);
-    
-    // Serialize data for JS use
-    var kpiDataJson = JsonSerializer.Serialize(kpiData.ToDictionary(kvp => kvp.Key, kvp => new {
-        target = kvp.Value.TargetValue,
-        unit = kvp.Value.MeasurementUnit,
-        isInverse = kvp.Value.IsInverse,
-        frequencyDays = kvp.Value.CheckInFrequencyDays ?? 1,
-        deadlineDate = kvp.Value.DeadlineDate,
-        deadlineTime = (kvp.Value.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0)).ToString(@"hh\:mm"),
-        reminderBeforeHours = kvp.Value.ReminderBeforeHours ?? 24,
-        periodStart = kpisById.ContainsKey(kvp.Key) && kpisById[kvp.Key].PeriodId.HasValue && kpiPeriods.ContainsKey(kpisById[kvp.Key].PeriodId!.Value)
-            ? kpiPeriods[kpisById[kvp.Key].PeriodId!.Value].StartDate
+
+    var employees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new();
+    var kpis = ViewBag.AllKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new();
+    var failReasons = ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new();
+    var kpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new();
+    var kpiPeriods = ViewBag.KPIPeriods as Dictionary<int, Manage_KPI_or_OKR_System.Models.EvaluationPeriod> ?? new();
+    var assignmentWeights = ViewBag.AssignmentWeights as Dictionary<int, Dictionary<int, decimal>> ?? new();
+    var employeeKpiIds = ViewBag.EmployeeKPIIds as Dictionary<int, List<int>> ?? new();
+    var kpisById = kpis.ToDictionary(kpi => kpi.Id);
+
+    var kpiDataJson = JsonSerializer.Serialize(kpiData.ToDictionary(item => item.Key, item => new
+    {
+        target = item.Value.TargetValue,
+        unit = item.Value.MeasurementUnit,
+        isInverse = item.Value.IsInverse,
+        frequencyDays = item.Value.CheckInFrequencyDays ?? 1,
+        deadlineDate = item.Value.DeadlineDate,
+        deadlineTime = (item.Value.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0)).ToString(@"hh\:mm"),
+        reminderBeforeHours = item.Value.ReminderBeforeHours ?? 24,
+        periodStart = kpisById.ContainsKey(item.Key) && kpisById[item.Key].PeriodId.HasValue && kpiPeriods.ContainsKey(kpisById[item.Key].PeriodId!.Value)
+            ? kpiPeriods[kpisById[item.Key].PeriodId!.Value].StartDate
             : null,
-        periodEnd = kpisById.ContainsKey(kvp.Key) && kpisById[kvp.Key].PeriodId.HasValue && kpiPeriods.ContainsKey(kpisById[kvp.Key].PeriodId!.Value)
-            ? kpiPeriods[kpisById[kvp.Key].PeriodId!.Value].EndDate
+        periodEnd = kpisById.ContainsKey(item.Key) && kpisById[item.Key].PeriodId.HasValue && kpiPeriods.ContainsKey(kpisById[item.Key].PeriodId!.Value)
+            ? kpiPeriods[kpisById[item.Key].PeriodId!.Value].EndDate
             : null
     }));
     var assignmentWeightsJson = JsonSerializer.Serialize(assignmentWeights);
     var employeeKpiIdsJson = JsonSerializer.Serialize(employeeKpiIds);
-    var kpiOptionsJson = JsonSerializer.Serialize(kpis.Select(k => new {
-        id = k.Id,
-        name = k.KPIName ?? $"KPI #{k.Id}"
+    var kpiOptionsJson = JsonSerializer.Serialize(kpis.Select(kpi => new
+    {
+        id = kpi.Id,
+        name = kpi.KPIName ?? $"KPI #{kpi.Id}"
     }));
     var progressSnapshotsJson = ViewBag.ProgressSnapshotsJson as string ?? "{}";
     bool canAutoApproveCheckIn = ViewBag.CanAutoApproveCheckIn == true;
     string progressPageTitle = canAutoApproveCheckIn ? "Ghi nhận tiến độ KPI" : "Cập nhật tiến độ KPI";
     string progressActionLabel = canAutoApproveCheckIn ? "Ghi nhận tiến độ" : "Gửi check-in";
+    string? requestedReturnUrl = ViewBag.ReturnUrl as string;
+    string safeReturnUrl = !string.IsNullOrWhiteSpace(requestedReturnUrl) && Url.IsLocalUrl(requestedReturnUrl)
+        ? requestedReturnUrl
+        : Url.Action("Index") ?? "/KPICheckIns";
     ViewData["Title"] = progressPageTitle;
 }
 
-<div class="page-content">
-    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
-        <div>
-            <h1 class="mb-2 fw-800">@progressPageTitle</h1>
-            <div class="page-breadcrumb">
+<div class="cf-page checkin-create-page" data-create-form>
+    <header class="cf-header">
+        <div class="cf-header__content">
+            <h1>@progressPageTitle</h1>
+            <nav class="cf-breadcrumb" aria-label="Điều hướng trang">
                 <a href="/">Trang chủ</a>
-                <span class="separator">/</span>
-                <a asp-action="Index">Lịch sử tiến độ</a>
-                <span class="separator">/</span>
-                <span class="text-muted">@(canAutoApproveCheckIn ? "Ghi nhận mới" : "Cập nhật mới")</span>
-            </div>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <a asp-action="Index">Check-in KPI</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Cập nhật mới</span>
+            </nav>
+            <p class="cf-header__description">Ghi nhận giá trị lũy kế hiện tại, nêu rõ trở ngại và kiểm tra tiến độ trước khi gửi.</p>
         </div>
-        <div>
-            <a asp-action="Index" class="btn-outline-custom shadow-sm">
-                <i class="bi bi-arrow-left me-2"></i> Quay lại
-            </a>
-        </div>
-    </div>
+        <a href="@safeReturnUrl" class="cf-back-action">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Quay lại</span>
+        </a>
+    </header>
 
-    <div class="row g-4">
-        <!-- FORM COLUMN -->
-        <div class="col-xl-8 animate__animated animate__fadeInLeft">
-            <div class="content-card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
-                <div class="card-header-custom border-bottom bg-transparent py-4">
-                    <h5 class="fw-bold fs-5 mb-0"><i class="bi bi-calendar-check me-2"></i> Chi tiết báo cáo tiến độ</h5>
+    <div class="cf-layout">
+        <section class="cf-panel" aria-labelledby="checkInFormHeading">
+            <div class="cf-panel__header">
+                <div>
+                    <h2 id="checkInFormHeading">Thông tin check-in</h2>
+                    <p>Các trường có dấu <span class="cf-required" aria-hidden="true">*</span> là bắt buộc.</p>
                 </div>
-                
-                <div class="card-body-custom p-4">
-                    <form id="checkinForm" asp-action="Create" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
-
-                        <!-- SECTION 1: THÔNG TIN CHUNG -->
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
-                                <span class="fw-bold">1</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Cấu hình Báo cáo</h6>
-                        </div>
-
-                        <div class="row g-4 mb-5 p-3 rounded-4 bg-light bg-opacity-50 border border-white">
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Nhân viên <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-person-badge"></i>
-                                        <select asp-for="EmployeeId" id="employeeSelect" class="form-select shadow-sm" required>
-                                            @if(employees.Count != 1) { <option value="">-- Chọn nhân viên --</option> }
-                                            @foreach(var e in employees)
-                                            {
-                                                <option value="@e.Id" selected="@((Model.EmployeeId == e.Id || employees.Count == 1) ? "selected" : null)">@e.FullName (@e.EmployeeCode)</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <span asp-validation-for="EmployeeId" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">KPI Mục tiêu <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-bullseye"></i>
-                                        <select asp-for="KPIId" id="kpiSelect" class="form-select shadow-sm" required>
-                                            @if (kpis.Count != 1)
-                                            {
-                                                <option value="">-- Chọn KPI cần báo cáo --</option>
-                                            }
-                                            @foreach(var k in kpis)
-                                            {
-                                                <option value="@k.Id" selected="@((Model.KPIId == k.Id || kpis.Count == 1) ? "selected" : null)">@k.KPIName</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <span asp-validation-for="KPIId" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 2: KẾT QUẢ THỰC TẾ -->
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-success text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
-                                <span class="fw-bold">2</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Kết quả thực hiện</h6>
-                        </div>
-
-                        <div class="row g-4 p-3 rounded-4 bg-light bg-opacity-50 border border-white mb-4">
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Kết quả đạt được <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper input-group">
-                                        <i class="bi bi-pencil-square"></i>
-                                        <input type="number" step="0.01" min="0" name="AchievedValue" id="achievedInput" class="form-control shadow-sm measurement-value-input" data-measurement-role="achieved" data-measurement-suffix-target="achievedUnitSuffix" placeholder="Nhập số liệu..." required data-val="true" data-val-required="Vui lòng nhập kết quả đạt được." data-val-number="Kết quả đạt được phải là số hợp lệ." data-msg-required="Vui lòng nhập kết quả đạt được." data-msg-min="Kết quả đạt được không thể là số âm." value="@ViewBag.AchievedValue">
-                                        <span class="input-group-text measurement-unit-suffix" id="achievedUnitSuffix">đơn vị</span>
-                                    </div>
-                                    @Html.ValidationMessage("AchievedValue", null, new { @class = "text-danger small mt-1 d-block" })
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Trạng thái tự đánh giá</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-speedometer2"></i>
-                                        <select asp-for="StatusId" class="form-select shadow-sm">
-                                            @foreach(var s in statuses) { <option value="@s.Id">@s.StatusName</option> }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-12">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Chi tiết phân tích / Ghi chú</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-textarea-t" style="top: 25px;"></i>
-                                        <textarea name="Note" class="form-control shadow-sm" placeholder="Mô tả các khó khăn hoặc thuận lợi trong quá trình thực hiện..." rows="4" style="padding-left: 48px; border-radius: 12px;">@ViewBag.Note</textarea>
-                                    </div>
-                                    <span class="text-danger small mt-1 d-block">@Html.ValidationMessage("Note")</span>
-                                </div>
-                            </div>
-
-                            <div class="col-md-12">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Lý do chính (Nếu chưa đạt mục tiêu)</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-question-diamond"></i>
-                                        <select asp-for="FailReasonId" class="form-select shadow-sm">
-                                            <option value="">-- Không có / Đã hoàn thành tốt --</option>
-                                            @foreach(var r in failReasons) { <option value="@r.Id">@r.ReasonName</option> }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
-                            <a asp-action="Index" class="btn-outline-custom">
-                                <i class="bi bi-x-lg me-2"></i> Hủy thao tác
-                            </a>
-                            <button type="submit" class="btn-primary-custom" style="padding: 12px 40px; border-radius: 12px;">
-                                <i class="bi bi-check-lg fs-5 me-2"></i> @progressActionLabel
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                <span class="ci-form-status"><i class="bi bi-calculator" aria-hidden="true"></i> Tính tự động</span>
             </div>
-        </div>
 
-        <!-- STATS COLUMN -->
-        <div class="col-xl-4 animate__animated animate__fadeInRight">
-            <div class="sticky-top" style="top: 100px;">
-                <div class="content-card border-0 shadow-lg text-white mb-4" style="background: linear-gradient(135deg, #1a73e8, #1557b0); border-radius: 24px;">
-                    <div class="card-body-custom p-4">
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
-                                <i class="bi bi-graph-up-arrow fs-3 text-white"></i>
+            <form id="checkinForm" asp-action="Create" method="post" class="cf-form" data-create-form-element>
+                <input type="hidden" name="returnUrl" value="@safeReturnUrl" />
+                <div asp-validation-summary="All" class="cf-alert" role="alert" tabindex="-1" data-error-summary></div>
+
+                <section class="cf-section" aria-labelledby="checkInScopeHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-person-check"></i></span>
+                        <div>
+                            <h3 id="checkInScopeHeading">Phạm vi báo cáo</h3>
+                            <p>Chọn đúng người thực hiện; danh sách KPI sẽ tự lọc theo phân bổ hiện hành.</p>
+                        </div>
+                    </div>
+
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <label for="employeeSelect">Nhân viên <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <select asp-for="EmployeeId" id="employeeSelect" class="form-select cf-control no-select2" required aria-describedby="employeeHint">
+                                @if (employees.Count != 1)
+                                {
+                                    <option value="">Chọn nhân viên</option>
+                                }
+                                @foreach (var employee in employees)
+                                {
+                                    <option value="@employee.Id" selected="@((Model.EmployeeId == employee.Id || employees.Count == 1) ? "selected" : null)">@employee.FullName (@employee.EmployeeCode)</option>
+                                }
+                            </select>
+                            <span asp-validation-for="EmployeeId" class="cf-validation"></span>
+                            <p id="employeeHint" class="cf-hint">Bạn chỉ có thể ghi nhận cho nhân viên thuộc phạm vi được phép quản lý.</p>
+                            @if (!employees.Any())
+                            {
+                                <div class="cf-empty-state" role="alert"><i class="bi bi-person-x" aria-hidden="true"></i><span>Không có nhân viên phù hợp trong phạm vi hiện tại.</span></div>
+                            }
+                        </div>
+
+                        <div class="cf-field">
+                            <label for="kpiSelect">KPI cần cập nhật <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <select asp-for="KPIId" id="kpiSelect" class="form-select cf-control no-select2" required aria-describedby="kpiHint">
+                                @if (kpis.Count != 1)
+                                {
+                                    <option value="">Chọn nhân viên trước</option>
+                                }
+                                @foreach (var kpi in kpis)
+                                {
+                                    <option value="@kpi.Id" selected="@((Model.KPIId == kpi.Id || kpis.Count == 1) ? "selected" : null)">@kpi.KPIName</option>
+                                }
+                            </select>
+                            <span asp-validation-for="KPIId" class="cf-validation"></span>
+                            <p id="kpiHint" class="cf-hint">Chỉ KPI đang thực hiện và đã phân bổ cho nhân viên mới xuất hiện.</p>
+                            @if (!kpis.Any())
+                            {
+                                <div class="cf-empty-state" role="alert"><i class="bi bi-speedometer" aria-hidden="true"></i><span>Không có KPI đang thực hiện để check-in.</span></div>
+                            }
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cf-section" aria-labelledby="checkInResultHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-graph-up-arrow"></i></span>
+                        <div>
+                            <h3 id="checkInResultHeading">Kết quả thực hiện</h3>
+                            <p>Nhập số liệu đã đạt tới thời điểm hiện tại; hệ thống tự tính trạng thái và tiến độ.</p>
+                        </div>
+                    </div>
+
+                    <div class="cf-field-grid ci-result-grid">
+                        <div class="cf-field">
+                            <label for="achievedInput">Kết quả lũy kế <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <div class="input-group ci-measurement-input">
+                                <input type="number" step="0.01" min="0" name="AchievedValue" id="achievedInput"
+                                       class="form-control cf-control measurement-value-input" data-measurement-role="achieved"
+                                       data-measurement-suffix-target="achievedUnitSuffix" placeholder="Ví dụ: 82"
+                                       aria-describedby="achievedHint" required data-val="true"
+                                       data-val-required="Vui lòng nhập kết quả đạt được."
+                                       data-val-number="Kết quả đạt được phải là số hợp lệ."
+                                       data-msg-required="Vui lòng nhập kết quả đạt được."
+                                       data-msg-min="Kết quả đạt được không thể là số âm."
+                                       value="@ViewBag.AchievedValue" />
+                                <span class="input-group-text measurement-unit-suffix" id="achievedUnitSuffix">đơn vị</span>
                             </div>
+                            @Html.ValidationMessage("AchievedValue", null, new { @class = "cf-validation" })
+                            <p id="achievedHint" class="cf-hint">Nhập tổng giá trị hiện tại của KPI, không phải riêng phần tăng thêm từ lần trước.</p>
+                        </div>
+
+                        <div class="cf-inline-note ci-status-note" role="status">
+                            <i class="bi bi-shield-check" aria-hidden="true"></i>
                             <div>
-                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small">Tổng chỉ tiêu</h6>
-                                <h4 class="mb-0 fw-800" id="targetDisplay">--</h4>
-                            </div>
-                        </div>
-
-                        <div class="bg-white bg-opacity-10 p-3 rounded-4 mb-4 border border-white border-opacity-20 shadow-sm" id="individualTargetContainer">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="small opacity-75 text-uppercase fw-bold" style="font-size: 0.7rem;">Chỉ tiêu cá nhân (<span id="weightLabel">100%</span>)</div>
-                                    <div class="h3 mb-0 fw-bold" id="individualTargetDisplay">--</div>
-                                </div>
-                                <div class="bg-white bg-opacity-20 p-2 rounded-3">
-                                    <i class="bi bi-person-check fs-4"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white bg-opacity-10 p-3 rounded-4 mb-4 border border-white border-opacity-20 shadow-sm" id="completedProgressContext">
-                            <div class="small opacity-75 text-uppercase fw-bold mb-2" style="font-size: 0.7rem;">KPI đã thực hiện</div>
-                            <div class="d-flex justify-content-between gap-3 small mb-2">
-                                <span class="opacity-75">Cá nhân</span>
-                                <strong id="previousEmployeeAchieved">--</strong>
-                            </div>
-                            <div class="d-flex justify-content-between gap-3 small mb-2">
-                                <span class="opacity-75" id="departmentProgressLabel">Phòng ban</span>
-                                <strong id="departmentAchievedDisplay">--</strong>
-                            </div>
-                            <div class="progress" style="height: 7px; background: rgba(255,255,255,0.15); border-radius: 20px;">
-                                <div id="previousProgressBar" class="progress-bar bg-info transition-all" style="width: 0%; border-radius: 20px;"></div>
-                            </div>
-                            <div class="small opacity-75 mt-2" id="previousProgressCaption">Chưa có check-in đã xác nhận.</div>
-                        </div>
-
-                        <div class="bg-white bg-opacity-10 p-3 rounded-4 mb-4 border border-white border-opacity-20 shadow-sm">
-                            <div class="small opacity-75 text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Deadline check-in kỳ này</div>
-                            <div class="h5 mb-1 fw-bold" id="deadlineDisplay">--</div>
-                            <div class="small opacity-75">Mục tiêu cần đạt tới hạn: <strong id="deadlineTargetDisplay">--</strong></div>
-                            <div class="small opacity-75">Nhắc trước: <strong id="reminderDisplay">--</strong></div>
-                        </div>
-                         
-                        <div class="mb-4">
-                            <div class="d-flex justify-content-between align-items-end mb-2">
-                                <span class="small fw-bold opacity-75 text-uppercase" id="progressScopeLabel">Tiến độ ước tính</span>
-                                <h2 class="mb-0 fw-800" id="progressPercentage">0%</h2>
-                            </div>
-                            <div class="progress" style="height: 12px; background: rgba(255,255,255,0.15); border-radius: 20px;">
-                                <div id="liveProgressBar" class="progress-bar bg-white transition-all shadow-sm" style="width: 0%; border-radius: 20px;"></div>
-                            </div>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
-                                    <i class="bi bi-rulers fs-4 me-3 opacity-75"></i>
-                                    <div>
-                                        <div class="small opacity-75 mb-1">Đơn vị</div>
-                                        <div class="fw-bold" id="unitDisplay">--</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
-                                    <i class="bi bi-gear-wide-connected fs-4 me-3 opacity-75"></i>
-                                    <div>
-                                        <div class="small opacity-75 mb-1">Loại đo lường</div>
-                                        <div class="fw-bold" id="modeDisplay">--</div>
-                                    </div>
-                                </div>
+                                <strong>Trạng thái do hệ thống xác định</strong>
+                                <span>Dựa trên kết quả lũy kế, deadline, chiều đánh giá và lý do chưa đạt.</span>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
-                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle text-primary me-2"></i> Lưu ý báo cáo</h6>
-                    <ul class="list-unstyled mb-0 small text-muted" style="line-height: 1.8;">
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Nhập số liệu chính xác từ báo cáo thực tế.</li>
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Giải trình chi tiết nếu tiến độ dưới 80%.</li>
-                        <li><i class="bi bi-patch-check-fill text-success me-2"></i> Hệ thống tự động tính điểm xếp loại dựa trên kết quả.</li>
-                    </ul>
+                    <div class="cf-field">
+                        <div class="cf-label-row">
+                            <label for="checkInNote">Chi tiết và trở ngại</label>
+                            <span class="cf-selection-count">Tùy chọn</span>
+                        </div>
+                        <textarea id="checkInNote" name="Note" class="form-control cf-control" rows="4" maxlength="2000"
+                                  placeholder="Mô tả kết quả, nguồn số liệu, khó khăn hoặc hỗ trợ đang cần...">@ViewBag.Note</textarea>
+                        @Html.ValidationMessage("Note", null, new { @class = "cf-validation" })
+                        <p class="cf-hint">Ghi rõ nguyên nhân và hành động tiếp theo khi tiến độ thấp hơn kế hoạch.</p>
+                    </div>
+
+                    <div class="cf-field">
+                        <label asp-for="FailReasonId">Lý do chính nếu chưa đạt</label>
+                        <select asp-for="FailReasonId" class="form-select cf-control no-select2" aria-describedby="failReasonHint">
+                            <option value="">Không có / Đang đúng kế hoạch</option>
+                            @foreach (var reason in failReasons)
+                            {
+                                <option value="@reason.Id">@reason.ReasonName</option>
+                            }
+                        </select>
+                        <span asp-validation-for="FailReasonId" class="cf-validation"></span>
+                        <p id="failReasonHint" class="cf-hint">Chọn một lý do chuẩn để báo cáo rủi ro được tổng hợp chính xác.</p>
+                    </div>
+                </section>
+
+                <div class="cf-actions">
+                    <a href="@safeReturnUrl" class="cf-secondary-action">Hủy</a>
+                    <button type="submit" class="cf-primary-action" data-submit-button data-default-label="@progressActionLabel" data-loading-label="Đang lưu...">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        <span>@progressActionLabel</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="cf-guide ci-progress-guide" aria-labelledby="checkInPreviewHeading">
+            <div class="cf-guide__identity">
+                <span class="cf-guide__icon" aria-hidden="true"><i class="bi bi-activity"></i></span>
+                <div>
+                    <span class="cf-guide__eyebrow">Xem trước tiến độ</span>
+                    <h2 id="checkInPreviewHeading">Kết quả sau check-in</h2>
                 </div>
             </div>
-        </div>
+            <p>Thông tin dưới đây thay đổi theo nhân viên, KPI và giá trị lũy kế bạn nhập.</p>
+
+            <dl class="ci-preview-metrics">
+                <div>
+                    <dt>Tổng chỉ tiêu</dt>
+                    <dd id="targetDisplay">--</dd>
+                </div>
+                <div id="individualTargetContainer">
+                    <dt>Chỉ tiêu cá nhân · <span id="weightLabel">100%</span></dt>
+                    <dd id="individualTargetDisplay">--</dd>
+                </div>
+            </dl>
+
+            <section class="ci-preview-section" id="completedProgressContext" aria-labelledby="completedProgressHeading">
+                <div class="ci-preview-section__heading">
+                    <span id="completedProgressHeading">Đã ghi nhận trước đó</span>
+                    <strong id="previousEmployeeAchieved">--</strong>
+                </div>
+                <div class="ci-preview-detail">
+                    <span id="departmentProgressLabel">Phòng ban</span>
+                    <strong id="departmentAchievedDisplay">--</strong>
+                </div>
+                <div class="ci-preview-progress" aria-hidden="true">
+                    <span id="previousProgressBar" class="progress-bar bg-info transition-all" style="width: 0%"></span>
+                </div>
+                <p id="previousProgressCaption">Chưa có check-in đã xác nhận.</p>
+            </section>
+
+            <section class="ci-preview-section" aria-labelledby="deadlineHeading">
+                <div class="ci-preview-section__heading">
+                    <span id="deadlineHeading">Deadline kỳ này</span>
+                    <strong id="deadlineDisplay">--</strong>
+                </div>
+                <div class="ci-preview-detail ci-preview-detail--stacked">
+                    <span>Mục tiêu tới hạn</span>
+                    <strong id="deadlineTargetDisplay">--</strong>
+                </div>
+                <div class="ci-preview-detail">
+                    <span>Nhắc trước</span>
+                    <strong id="reminderDisplay">--</strong>
+                </div>
+            </section>
+
+            <section class="ci-live-progress" aria-labelledby="progressScopeLabel">
+                <div>
+                    <span id="progressScopeLabel">Tiến độ ước tính</span>
+                    <strong id="progressPercentage">0%</strong>
+                </div>
+                <div class="ci-live-progress__track" aria-hidden="true">
+                    <span id="liveProgressBar" class="progress-bar bg-primary transition-all" style="width: 0%"></span>
+                </div>
+            </section>
+
+            <dl class="cf-preview-list ci-preview-attributes">
+                <div>
+                    <dt>Đơn vị</dt>
+                    <dd id="unitDisplay">--</dd>
+                </div>
+                <div>
+                    <dt>Chiều đánh giá</dt>
+                    <dd id="modeDisplay">--</dd>
+                </div>
+            </dl>
+
+            <div class="cf-guide__note">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>Giá trị chỉ được tính chính thức ngay khi người có quyền ghi nhận, hoặc sau khi quản lý xác nhận.</span>
+            </div>
+            <ul class="cf-guide__list ci-guide-rules">
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Đối chiếu số liệu với nguồn báo cáo thực tế.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Nêu rõ trở ngại nếu thấp hơn kế hoạch.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Kiểm tra đúng nhân viên và KPI trước khi gửi.</span></li>
+            </ul>
+        </aside>
     </div>
 </div>
 
-<style>
-    .fw-800 { font-weight: 800; }
-    .letter-spacing-1 { letter-spacing: 0.1em; }
-    .transition-all { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-    
-    .form-select, .form-control {
-        border: 1.5px solid #edf2f7;
-        padding-top: 12px;
-        padding-bottom: 12px;
-    }
-    
-    .form-select:focus, .form-control:focus {
-        border-color: #a3c9f9;
-        box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.1);
-    }
-
-    #checkinForm .form-icon-group label.error {
-        color: #dc3545;
-        font-size: 0.8rem;
-        font-weight: 600;
-        letter-spacing: 0;
-        margin: 0.35rem 0 0;
-        text-transform: none;
-    }
-
-    #checkinForm .input-group label.error {
-        flex: 0 0 100%;
-        order: 20;
-        width: 100%;
-    }
-
-    /* Animation effects */
-    .animate__animated { animation-duration: 0.8s; }
-</style>
+@section Styles {
+    <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/kpi-checkins.css" asp-append-version="true" />
+}
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-
-    <script>
-        const kpiMap = @Html.Raw(kpiDataJson);
-        const assignmentWeights = @Html.Raw(assignmentWeightsJson);
-        const employeeKpiIds = @Html.Raw(employeeKpiIdsJson);
-        const allKpiOptions = @Html.Raw(kpiOptionsJson);
-        const progressSnapshots = @Html.Raw(progressSnapshotsJson);
-        const kpiSelect = document.getElementById('kpiSelect');
-        const employeeSelect = document.getElementById('employeeSelect');
-        const achievedInput = document.getElementById('achievedInput');
-        const targetDisplay = document.getElementById('targetDisplay');
-        const unitDisplay = document.getElementById('unitDisplay');
-        const modeDisplay = document.getElementById('modeDisplay');
-        const progressPercentage = document.getElementById('progressPercentage');
-        const progressScopeLabel = document.getElementById('progressScopeLabel');
-        const liveProgressBar = document.getElementById('liveProgressBar');
-        const deadlineDisplay = document.getElementById('deadlineDisplay');
-        const deadlineTargetDisplay = document.getElementById('deadlineTargetDisplay');
-        const reminderDisplay = document.getElementById('reminderDisplay');
-        const previousEmployeeAchieved = document.getElementById('previousEmployeeAchieved');
-        const departmentAchievedDisplay = document.getElementById('departmentAchievedDisplay');
-        const departmentProgressLabel = document.getElementById('departmentProgressLabel');
-        const previousProgressBar = document.getElementById('previousProgressBar');
-        const previousProgressCaption = document.getElementById('previousProgressCaption');
-
-        function resolveCurrentDeadline(data) {
-            const now = new Date();
-            const frequencyDays = Math.max(1, parseInt(data.frequencyDays || 1, 10));
-            const periodStart = data.periodStart ? new Date(data.periodStart) : new Date(now);
-            const periodEnd = data.periodEnd ? new Date(data.periodEnd) : null;
-            const configuredDeadline = data.deadlineDate ? new Date(data.deadlineDate) : null;
-            const baseDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const startDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
-            let targetDate = baseDate < startDate ? startDate : baseDate;
-
-            if (periodEnd) {
-                const endDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
-                if (targetDate > endDate) targetDate = endDate;
-            }
-            if (configuredDeadline) {
-                const deadlineDate = new Date(configuredDeadline.getFullYear(), configuredDeadline.getMonth(), configuredDeadline.getDate());
-                if (targetDate > deadlineDate) targetDate = deadlineDate;
-            }
-
-            const offsetDays = Math.max(0, Math.floor((targetDate - startDate) / 86400000));
-            const slotDate = new Date(startDate);
-            slotDate.setDate(startDate.getDate() + Math.floor(offsetDays / frequencyDays) * frequencyDays);
-            const [hour, minute] = String(data.deadlineTime || '10:00').split(':').map(Number);
-            slotDate.setHours(hour || 0, minute || 0, 0, 0);
-            return slotDate;
-        }
-
-        function calculateExpectedAtDeadline(individualTarget, data, deadline) {
-            if (!data.periodStart || !data.periodEnd || !individualTarget) return individualTarget;
-            const periodStart = new Date(data.periodStart);
-            const periodEnd = new Date(data.periodEnd);
-            const startDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
-            let endDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
-            if (data.deadlineDate) {
-                const configuredDeadline = new Date(data.deadlineDate);
-                const deadlineDate = new Date(configuredDeadline.getFullYear(), configuredDeadline.getMonth(), configuredDeadline.getDate());
-                if (deadlineDate < endDate) endDate = deadlineDate;
-            }
-            const dueDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
-            const totalDays = Math.max(1, Math.floor((endDate - startDate) / 86400000) + 1);
-            const elapsedDays = Math.min(totalDays, Math.max(1, Math.floor((dueDate - startDate) / 86400000) + 1));
-            return individualTarget * (elapsedDays / totalDays);
-        }
-
-        function calculateProgressValue(value, target, isInverse) {
-            if (!target) {
-                return isInverse ? (value === 0 ? 100 : 0) : (value > 0 ? 100 : 0);
-            }
-
-            if (isInverse) {
-                if (value <= target) return 100;
-                const excess = value - target;
-                return Math.max(0, 100 - ((excess / target) * 100));
-            }
-
-            return (value / target) * 100;
-        }
-
-        function formatMetric(value, unit) {
-            const numeric = Number(value || 0);
-            return new Intl.NumberFormat('vi-VN').format(numeric) + (unit ? ` ${unit}` : '');
-        }
-
-        function filterKpisByEmployee() {
-            const employeeId = employeeSelect.value;
-            const previousKpiId = kpiSelect.value;
-            const allowedKpiIds = new Set((employeeKpiIds[employeeId] || []).map(String));
-            const filteredKpis = employeeId
-                ? allKpiOptions.filter(kpi => allowedKpiIds.has(String(kpi.id)))
-                : [];
-
-            kpiSelect.innerHTML = '';
-            const placeholderText = employeeId
-                ? (filteredKpis.length ? '-- Chọn KPI cần báo cáo --' : 'Nhân viên này chưa có KPI được phân bổ')
-                : '-- Chọn nhân viên trước --';
-            kpiSelect.add(new Option(placeholderText, ''));
-
-            filteredKpis.forEach(kpi => {
-                kpiSelect.add(new Option(kpi.name, kpi.id));
-            });
-
-            if (previousKpiId && filteredKpis.some(kpi => String(kpi.id) === String(previousKpiId))) {
-                kpiSelect.value = previousKpiId;
-            } else if (filteredKpis.length === 1) {
-                kpiSelect.value = filteredKpis[0].id;
-            }
-        }
-
-        function updateStats() {
-            const kpiId = kpiSelect.value;
-            const value = parseFloat(achievedInput.value) || 0;
-            
-            if (kpiId && kpiMap[kpiId]) {
-                const data = kpiMap[kpiId];
-                const target = data.target || 0;
-                const employeeId = employeeSelect.value;
-                const employeeWeights = assignmentWeights[employeeId] || {};
-                const weight = employeeWeights[kpiId] || 100;
-                const individualTarget = target * (weight / 100);
-                const unit = data.unit || 'đơn vị';
-                const isInverse = data.isInverse;
-                const snapshot = progressSnapshots[employeeId]?.[kpiId] || {};
-                const latestAchieved = Number(snapshot.latestAchievedValue || 0);
-                const latestProgress = Number(snapshot.latestProgressPercentage || 0);
-                const departmentAchieved = Number(snapshot.departmentAchievedValue || 0);
-                const departmentProgress = Number(snapshot.departmentProgressPercentage || 0);
-                const isDepartmentScope = snapshot.isDepartmentAssigned === true;
-                const projectedDepartmentAchieved = Math.max(0, departmentAchieved - latestAchieved + value);
-                const deadline = resolveCurrentDeadline(data);
-                const expectedAtDeadline = calculateExpectedAtDeadline(individualTarget, data, deadline);
-                const unitConfig = window.applyMeasurementUnitConfigToInputs
-                    ? window.applyMeasurementUnitConfigToInputs(unit, [achievedInput])
-                    : { suffix: unit };
-
-                targetDisplay.textContent = formatMetric(target, unit);
-                document.getElementById('individualTargetDisplay').textContent = formatMetric(individualTarget, unit) + ' / 100%';
-                document.getElementById('weightLabel').textContent = weight + '%';
-                unitDisplay.textContent = unit;
-                document.getElementById('achievedUnitSuffix').textContent = unitConfig.suffix || unit;
-                modeDisplay.textContent = isInverse ? "Càng thấp càng tốt" : "Càng cao càng tốt";
-                deadlineDisplay.textContent = deadline.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                deadlineTargetDisplay.textContent = new Intl.NumberFormat('vi-VN').format(expectedAtDeadline) + ' ' + unit + ' / 100% chỉ tiêu cá nhân';
-                reminderDisplay.textContent = (data.reminderBeforeHours || 24) + ' giờ trước deadline';
-                previousEmployeeAchieved.textContent = formatMetric(latestAchieved, unit);
-                departmentAchievedDisplay.textContent = snapshot.isDepartmentAssigned
-                    ? formatMetric(departmentAchieved, unit)
-                    : 'Không phân bổ phòng ban';
-                departmentProgressLabel.textContent = snapshot.departmentName
-                    ? `Phòng ban (${snapshot.departmentName})`
-                    : 'Phòng ban';
-
-                const previousProgress = isDepartmentScope ? departmentProgress : latestProgress;
-                previousProgressBar.style.width = Math.min(100, previousProgress) + '%';
-                previousProgressCaption.textContent = previousProgress > 0
-                    ? `Đã ghi nhận ${Math.round(previousProgress * 100) / 100}% trước lần check-in này.`
-                    : 'Chưa có check-in đã xác nhận.';
-
-                const progressTarget = isDepartmentScope ? target : individualTarget;
-                const progressValue = isDepartmentScope ? projectedDepartmentAchieved : value;
-                const progress = calculateProgressValue(progressValue, progressTarget, isInverse);
-                progressScopeLabel.textContent = isDepartmentScope
-                    ? 'Tiến độ phòng ban sau check-in'
-                    : 'Tiến độ cá nhân sau check-in';
-
-                const displayProgress = Math.min(200, Math.round(progress * 100) / 100);
-                progressPercentage.textContent = displayProgress + '%';
-                liveProgressBar.style.width = Math.min(100, displayProgress) + '%';
-
-                // Update bar color based on progress
-                if (displayProgress < 50) {
-                    liveProgressBar.className = "progress-bar bg-danger transition-all shadow-sm";
-                } else if (displayProgress < 90) {
-                    liveProgressBar.className = "progress-bar bg-warning transition-all shadow-sm";
-                } else {
-                    liveProgressBar.className = "progress-bar bg-white transition-all shadow-sm";
-                }
-            } else {
-                targetDisplay.textContent = "--";
-                document.getElementById('individualTargetDisplay').textContent = "--";
-                document.getElementById('weightLabel').textContent = "100%";
-                unitDisplay.textContent = "--";
-                deadlineDisplay.textContent = "--";
-                deadlineTargetDisplay.textContent = "--";
-                reminderDisplay.textContent = "--";
-                previousEmployeeAchieved.textContent = "--";
-                departmentAchievedDisplay.textContent = "--";
-                departmentProgressLabel.textContent = "Phòng ban";
-                previousProgressBar.style.width = "0%";
-                previousProgressCaption.textContent = "Chưa có check-in đã xác nhận.";
-                if (window.applyMeasurementUnitConfigToInputs) {
-                    window.applyMeasurementUnitConfigToInputs('', [achievedInput]);
-                }
-                document.getElementById('achievedUnitSuffix').textContent = "đơn vị";
-                modeDisplay.textContent = "--";
-                progressScopeLabel.textContent = "Tiến độ ước tính";
-                progressPercentage.textContent = "0%";
-                liveProgressBar.style.width = "0%";
-                liveProgressBar.className = "progress-bar bg-white transition-all shadow-sm";
-            }
-        }
-
-        kpiSelect.addEventListener('change', updateStats);
-        employeeSelect.addEventListener('change', function () {
-            filterKpisByEmployee();
-            updateStats();
-        });
-        achievedInput.addEventListener('input', updateStats);
-
-        // Initial check if pre-filled
-        window.addEventListener('DOMContentLoaded', function () {
-            filterKpisByEmployee();
-            updateStats();
-        });
-    </script>
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script id="checkInKpiData" type="application/json">@Html.Raw(kpiDataJson)</script>
+    <script id="checkInAssignmentWeights" type="application/json">@Html.Raw(assignmentWeightsJson)</script>
+    <script id="checkInEmployeeKpiIds" type="application/json">@Html.Raw(employeeKpiIdsJson)</script>
+    <script id="checkInKpiOptions" type="application/json">@Html.Raw(kpiOptionsJson)</script>
+    <script id="checkInProgressSnapshots" type="application/json">@Html.Raw(progressSnapshotsJson)</script>
+    <script src="~/js/create-form.js" asp-append-version="true"></script>
+    <script src="~/js/kpi-checkin-create.js" asp-append-version="true"></script>
 }

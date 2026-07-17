@@ -200,8 +200,13 @@
                                         <a asp-action="Edit" asp-route-id="@dept.Id" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-semibold" title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
                                         @if (dept.IsActive == true)
                                         {
-                                            <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0" style="display:inline;">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold" title="Ngưng hoạt động" onclick="return confirm('Bạn có chắc muốn ngưng hoạt động phòng ban @dept.DepartmentName?');">
+                                            <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0" style="display:inline;"
+                                                  data-app-confirm
+                                                  data-confirm-title="Ngưng hoạt động phòng ban?"
+                                                  data-confirm-message="Phòng ban “@dept.DepartmentName” sẽ không còn xuất hiện trong các luồng đang hoạt động và có thể được khôi phục sau."
+                                                  data-confirm-tone="warning"
+                                                  data-confirm-label="Ngưng hoạt động">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold" title="Ngưng hoạt động">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>

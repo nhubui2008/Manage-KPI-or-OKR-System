@@ -57,6 +57,14 @@ public class HasPermissionFilter : IAuthorizationFilter
             return;
         }
 
+        var grantedPermissionClaims = user.Claims
+            .Where(c => string.Equals(
+                c.Type,
+                Manage_KPI_or_OKR_System.Services.PermissionClaimsTransformation.PermissionClaimType,
+                StringComparison.OrdinalIgnoreCase))
+            .Select(c => c.Value)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         // 1.5. Đặc quyền mặc định cho HR ở các màn hình nhân sự/đánh giá/thưởng cần xem nhanh.
         if (PermissionAuthorizationHelper.HasRoleDefaultPermission(userRoles, _permissions))
         {
@@ -64,6 +72,11 @@ public class HasPermissionFilter : IAuthorizationFilter
         }
 
         var requestedPermissions = PermissionAuthorizationHelper.ExpandRequestedPermissions(_permissions);
+
+        if (grantedPermissionClaims.Overlaps(requestedPermissions))
+        {
+            return;
+        }
 
         // 4. Kiểm tra quyền trong Database từ bảng Role_Permissions liên kết Role và Permission
         // Chỉ cần CÓ ÍT NHẤT 1 permission trong danh sách là đủ (OR logic)

@@ -44,18 +44,23 @@
 })();
 
 (function () {
-    const toastToneMap = {
-        success: { icon: 'bi-check-circle-fill', fallbackTitle: 'Thành công', eyebrow: 'Hoàn tất' },
-        error: { icon: 'bi-x-circle-fill', fallbackTitle: 'Có lỗi xảy ra', eyebrow: 'Lỗi' },
-        danger: { icon: 'bi-x-circle-fill', fallbackTitle: 'Có lỗi xảy ra', eyebrow: 'Lỗi' },
-        warning: { icon: 'bi-exclamation-triangle-fill', fallbackTitle: 'Lưu ý', eyebrow: 'Cảnh báo' },
-        info: { icon: 'bi-info-circle-fill', fallbackTitle: 'Thông báo', eyebrow: 'Thông tin' }
+    const feedbackToneMap = {
+        success: { icon: 'bi-check-lg', fallbackTitle: 'Đã hoàn tất', meta: 'Thành công', swalIcon: 'success' },
+        error: { icon: 'bi-x-lg', fallbackTitle: 'Không thể thực hiện', meta: 'Có lỗi xảy ra', swalIcon: 'error' },
+        warning: { icon: 'bi-exclamation-lg', fallbackTitle: 'Cần chú ý', meta: 'Cảnh báo', swalIcon: 'warning' },
+        info: { icon: 'bi-info-lg', fallbackTitle: 'Thông báo', meta: 'Thông tin', swalIcon: 'info' },
+        danger: { icon: 'bi-trash3', fallbackTitle: 'Xác nhận hành động', meta: 'Hành động nguy hiểm', swalIcon: 'warning' }
     };
+    const pendingForms = new WeakSet();
+    const approvedForms = new WeakSet();
 
     function normalizeTone(tone) {
-        const normalized = String(tone || 'info').toLowerCase();
-        if (normalized === 'danger') return 'error';
-        return toastToneMap[normalized] ? normalized : 'info';
+        const normalized = String(tone || 'info').trim().toLowerCase();
+        return feedbackToneMap[normalized] ? normalized : 'info';
+    }
+
+    function normalizeRequiredValue(value) {
+        return String(value ?? '').trim().toLocaleLowerCase('vi-VN');
     }
 
     function ensureToastContainer() {
@@ -64,8 +69,7 @@
             container = document.createElement('div');
             container.id = 'appToastContainer';
             container.className = 'app-toast-container';
-            container.setAttribute('aria-live', 'polite');
-            container.setAttribute('aria-atomic', 'true');
+            container.setAttribute('aria-label', 'Thông báo hệ thống');
             document.body.appendChild(container);
         }
 
@@ -132,29 +136,34 @@
         toast.classList.remove('is-paused');
         toast.classList.remove('is-visible');
         toast.classList.add('is-leaving');
-        window.setTimeout(() => toast.remove(), 260);
+        window.setTimeout(() => toast.remove(), 160);
     }
 
-    window.showAppToast = function (optionsOrTitle, message, tone) {
+    function showToast(optionsOrTitle, message, tone) {
         const options = typeof optionsOrTitle === 'object' && optionsOrTitle !== null
             ? optionsOrTitle
             : { title: optionsOrTitle, message, tone };
 
         const normalizedTone = normalizeTone(options.tone);
-        const toneConfig = toastToneMap[normalizedTone];
+        const toneConfig = feedbackToneMap[normalizedTone];
         const container = ensureToastContainer();
         const toast = document.createElement('div');
         const requestedTimeout = Number(options.timeout);
-        const timeout = Number.isFinite(requestedTimeout) ? Math.max(1400, requestedTimeout) : 4600;
+        const defaultTimeout = normalizedTone === 'error' ? 6000 : 4600;
+        const timeout = Number.isFinite(requestedTimeout)
+            ? (requestedTimeout <= 0 ? 0 : Math.max(1600, requestedTimeout))
+            : defaultTimeout;
 
         toast.className = `app-toast app-toast--${normalizedTone}`;
+        toast.setAttribute('role', normalizedTone === 'error' ? 'alert' : 'status');
+        toast.setAttribute('aria-atomic', 'true');
         toast.style.setProperty('--toast-duration', `${timeout}ms`);
         toast.innerHTML = `
-            <div class="app-toast__icon">
+            <div class="app-toast__icon" aria-hidden="true">
                 <i class="bi ${toneConfig.icon}"></i>
             </div>
             <div class="app-toast__body">
-                <div class="app-toast__eyebrow">${escapeHtml(options.eyebrow || toneConfig.eyebrow)}</div>
+                <div class="app-toast__meta">${escapeHtml(options.eyebrow || options.meta || toneConfig.meta)}</div>
                 <div class="app-toast__title">${escapeHtml(options.title || toneConfig.fallbackTitle)}</div>
                 <div class="app-toast__message">${escapeHtml(options.message || '')}</div>
             </div>
@@ -167,6 +176,8 @@
         toast.querySelector('.app-toast__close')?.addEventListener('click', () => dismissToast(toast));
         toast.addEventListener('mouseenter', () => pauseToast(toast));
         toast.addEventListener('mouseleave', () => resumeToast(toast));
+        toast.addEventListener('focusin', () => pauseToast(toast));
+        toast.addEventListener('focusout', () => resumeToast(toast));
         container.prepend(toast);
 
         while (container.children.length > 4) {
@@ -177,31 +188,202 @@
         if (timeout > 0) {
             scheduleToastDismiss(toast, timeout);
         }
-    };
+        return toast;
+    }
 
-    window.showComingSoonToast = function (featureName) {
-        window.showAppToast({
-            tone: 'warning',
-            eyebrow: 'Tính năng',
-            title: 'Đang phát triển',
-            message: `Chức năng "${featureName}" sẽ được cập nhật trong phiên bản tới.`
-        });
-    };
+    function mergeDialogClasses(tone) {
+        return {
+            container: 'app-dialog-layer',
+            popup: `app-dialog app-dialog--${tone}`,
+            icon: 'app-dialog__icon',
+            title: 'app-dialog__title',
+            htmlContainer: 'app-dialog__content',
+            actions: 'app-dialog__actions',
+            confirmButton: 'app-dialog__button app-dialog__button--confirm',
+            cancelButton: 'app-dialog__button app-dialog__button--cancel',
+            input: 'app-dialog__input',
+            inputLabel: 'app-dialog__input-label',
+            validationMessage: 'app-dialog__validation'
+        };
+    }
 
-    const nativeAlert = typeof window.alert === 'function' ? window.alert.bind(window) : null;
-    window.alert = function (message) {
-        if (document.body && typeof window.showAppToast === 'function') {
-            window.showAppToast({
-                tone: 'info',
-                eyebrow: 'Thông báo hệ thống',
-                title: 'Thông báo',
-                message: String(message ?? '')
+    function openDialog(options = {}) {
+        if (typeof window.Swal === 'undefined') {
+            showToast({
+                tone: 'error',
+                title: 'Không thể mở hộp thoại',
+                message: 'Thành phần giao diện chưa tải xong. Vui lòng tải lại trang.'
             });
+            return Promise.resolve({ isConfirmed: false, isDismissed: true });
+        }
+
+        const tone = normalizeTone(options.tone);
+        const toneConfig = feedbackToneMap[tone];
+        const requireText = String(options.requireText ?? '').trim();
+        const userDidOpen = options.didOpen;
+        const config = {
+            titleText: String(options.title || toneConfig.fallbackTitle),
+            text: options.trustedHtml ? undefined : String(options.message || ''),
+            html: options.trustedHtml || undefined,
+            icon: toneConfig.swalIcon,
+            iconHtml: `<i class="bi ${toneConfig.icon}" aria-hidden="true"></i>`,
+            showCancelButton: Boolean(options.showCancelButton),
+            confirmButtonText: String(options.confirmText || 'Đồng ý'),
+            cancelButtonText: String(options.cancelText || 'Hủy'),
+            buttonsStyling: false,
+            reverseButtons: true,
+            focusCancel: options.focusCancel ?? Boolean(options.showCancelButton),
+            returnFocus: options.returnFocus ?? true,
+            allowEscapeKey: options.allowEscapeKey ?? true,
+            allowOutsideClick: options.allowOutsideClick ?? true,
+            heightAuto: false,
+            customClass: mergeDialogClasses(tone),
+            showClass: {
+                popup: 'app-dialog-enter',
+                backdrop: 'app-dialog-backdrop-enter'
+            },
+            hideClass: {
+                popup: 'app-dialog-exit',
+                backdrop: 'app-dialog-backdrop-exit'
+            },
+            didOpen: (popup) => {
+                if (requireText) {
+                    const input = window.Swal.getInput();
+                    const confirmButton = window.Swal.getConfirmButton();
+                    const expected = normalizeRequiredValue(requireText);
+                    const updateState = () => {
+                        const matches = normalizeRequiredValue(input?.value) === expected;
+                        if (confirmButton) confirmButton.disabled = !matches;
+                    };
+
+                    input?.addEventListener('input', updateState);
+                    updateState();
+                }
+
+                if (typeof userDidOpen === 'function') userDidOpen(popup);
+            }
+        };
+
+        if (requireText) {
+            config.input = 'text';
+            config.inputLabel = String(options.requireTextLabel || `Nhập “${requireText}” để tiếp tục`);
+            config.inputPlaceholder = requireText;
+            config.inputAttributes = {
+                autocomplete: 'off',
+                autocapitalize: 'off',
+                spellcheck: 'false'
+            };
+            config.preConfirm = (value) => {
+                if (normalizeRequiredValue(value) !== normalizeRequiredValue(requireText)) {
+                    window.Swal.showValidationMessage(`Nội dung xác nhận phải khớp “${requireText}”.`);
+                    return false;
+                }
+                return value;
+            };
+        } else if (typeof options.preConfirm === 'function') {
+            config.preConfirm = options.preConfirm;
+        }
+
+        if (typeof options.willClose === 'function') config.willClose = options.willClose;
+        if (typeof options.didClose === 'function') config.didClose = options.didClose;
+        if (options.timer) config.timer = options.timer;
+        if (options.timerProgressBar) config.timerProgressBar = true;
+        if (options.showLoaderOnConfirm) config.showLoaderOnConfirm = true;
+
+        return window.Swal.fire(config);
+    }
+
+    async function confirmDialog(options = {}) {
+        const result = await openDialog({
+            ...options,
+            showCancelButton: true,
+            confirmText: options.confirmText || 'Xác nhận',
+            cancelText: options.cancelText || 'Hủy'
+        });
+        return Boolean(result?.isConfirmed);
+    }
+
+    async function showNotice(options = {}) {
+        return openDialog({
+            ...options,
+            showCancelButton: false,
+            focusCancel: false,
+            confirmText: options.confirmText || 'Đóng'
+        });
+    }
+
+    function showComingSoon(featureName) {
+        return showToast({
+            tone: 'warning',
+            meta: 'Tính năng',
+            title: 'Đang phát triển',
+            message: `Chức năng “${featureName}” sẽ được cập nhật trong phiên bản tới.`
+        });
+    }
+
+    window.AppFeedback = {
+        toast: showToast,
+        notice: showNotice,
+        open: openDialog,
+        confirm: confirmDialog,
+        close: () => window.Swal?.close(),
+        comingSoon: showComingSoon
+    };
+
+    window.AppDialog = {
+        open: openDialog,
+        confirm: confirmDialog,
+        close: () => window.Swal?.close()
+    };
+
+    // Backward-compatible aliases while page-level calls are migrated.
+    window.showAppToast = showToast;
+    window.showComingSoonToast = showComingSoon;
+
+    // Prevent legacy or third-party calls from opening browser-native dialogs.
+    window.alert = function (message) {
+        showToast({ tone: 'info', meta: 'Hệ thống', title: 'Thông báo', message: String(message ?? '') });
+    };
+
+    document.addEventListener('submit', async (event) => {
+        const form = event.target instanceof HTMLFormElement ? event.target : null;
+        if (!form?.hasAttribute('data-app-confirm')) return;
+
+        if (approvedForms.has(form)) {
+            approvedForms.delete(form);
             return;
         }
 
-        nativeAlert?.(message);
-    };
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (pendingForms.has(form)) return;
+
+        pendingForms.add(form);
+        const submitter = event.submitter instanceof HTMLElement ? event.submitter : null;
+        const confirmed = await confirmDialog({
+            title: form.dataset.confirmTitle,
+            message: form.dataset.confirmMessage,
+            tone: form.dataset.confirmTone,
+            confirmText: form.dataset.confirmLabel,
+            cancelText: form.dataset.confirmCancelLabel,
+            requireText: form.dataset.confirmRequireText,
+            requireTextLabel: form.dataset.confirmRequireLabel
+        });
+        pendingForms.delete(form);
+
+        if (!confirmed || !form.isConnected) return;
+
+        approvedForms.add(form);
+        if (typeof form.requestSubmit === 'function') {
+            try {
+                form.requestSubmit(submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement ? submitter : undefined);
+            } catch {
+                form.requestSubmit();
+            }
+        } else {
+            form.submit();
+        }
+    }, true);
 })();
 
 (function () {
@@ -797,7 +979,7 @@
                 state.lastLoadedAt = Date.now();
                 renderPayload();
             } catch (error) {
-                window.showAppToast({
+                window.AppFeedback.toast({
                     tone: 'warning',
                     eyebrow: 'Thông báo',
                     title: 'Thông báo',
@@ -833,7 +1015,7 @@
                 state.lastLoadedAt = Date.now();
                 renderPayload();
             } catch (error) {
-                window.showAppToast({
+                window.AppFeedback.toast({
                     tone: 'warning',
                     eyebrow: 'Thông báo',
                     title: 'Thông báo',
@@ -872,14 +1054,14 @@
 
                 await loadNotifications(true, { silent: false });
 
-                window.showAppToast({
+                window.AppFeedback.toast({
                     tone: data.warnings?.length ? 'warning' : 'success',
                     eyebrow: 'AI insights',
                     title: 'AI Insights',
                     message: data.warnings?.[0] || 'Đã cập nhật AI insights mới nhất.'
                 });
             } catch (error) {
-                window.showAppToast({
+                window.AppFeedback.toast({
                     tone: 'error',
                     eyebrow: 'AI insights',
                     title: 'AI Insights',
@@ -940,9 +1122,9 @@
         reloadButton?.addEventListener('click', () => loadNotifications(true, { silent: false }));
         refreshAiButton?.addEventListener('click', refreshAiAlerts);
 
-        const queueRefresh = typeof window.requestIdleCallback === 'function'
-            ? () => window.requestIdleCallback(() => loadNotifications(true, { silent: true }), { timeout: 1500 })
-            : () => window.setTimeout(() => loadNotifications(true, { silent: true }), 800);
+        const queueRefresh = () => window.setTimeout(
+            () => loadNotifications(true, { silent: true }),
+            5000);
 
         renderCounts(state.payload);
         queueRefresh();
@@ -1183,7 +1365,35 @@ document.addEventListener('DOMContentLoaded', function () {
             .filter(scriptText => scriptText.trim().length > 0);
     }
 
-    function createInstantNavigationEntry(contentElement, scriptsRoot, title) {
+    function collectStyles(root) {
+        if (!root) return [];
+
+        return Array.from(root.querySelectorAll('link[rel="stylesheet"][href]'))
+            .map(link => link.href || link.getAttribute('href'))
+            .filter(Boolean);
+    }
+
+    async function ensureInstantNavigationStyles(styles) {
+        if (!styles?.length) return;
+
+        const existing = new Set(Array.from(document.querySelectorAll('link[rel="stylesheet"][href]'))
+            .map(link => link.href || link.getAttribute('href')));
+        const pending = styles
+            .filter(href => !existing.has(href))
+            .map(href => new Promise(resolve => {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = href;
+                link.dataset.instantStyle = 'true';
+                link.onload = resolve;
+                link.onerror = resolve;
+                document.head.appendChild(link);
+            }));
+
+        await Promise.all(pending);
+    }
+
+    function createInstantNavigationEntry(contentElement, scriptsRoot, title, stylesRoot) {
         if (!contentElement) {
             throw new Error('Không tìm thấy vùng nội dung trang.');
         }
@@ -1197,6 +1407,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return {
             html: contentClone.innerHTML,
             scripts: inlineScripts,
+            styles: collectStyles(stylesRoot),
             title: title || document.title,
             fetchedAt: Date.now()
         };
@@ -1207,7 +1418,8 @@ document.addEventListener('DOMContentLoaded', function () {
         return createInstantNavigationEntry(
             doc.querySelector('main.page-content'),
             doc.querySelector('[data-page-scripts]'),
-            doc.title
+            doc.title,
+            doc.head
         );
     }
 
@@ -1220,7 +1432,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             instantNavigationCache.set(
                 getInstantNavigationKey(currentUrl),
-                createInstantNavigationEntry(pageContent, document.querySelector('[data-page-scripts]'), document.title)
+                createInstantNavigationEntry(pageContent, document.querySelector('[data-page-scripts]'), document.title, document.head)
             );
         } catch (error) {
             console.warn('Instant navigation cache skipped:', error);
@@ -1310,9 +1522,11 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
     }
 
-    function applyInstantNavigationEntry(url, entry, options = {}) {
+    async function applyInstantNavigationEntry(url, entry, options = {}) {
+        await ensureInstantNavigationStyles(entry.styles || []);
         cleanupDynamicPageState();
         pageContent.innerHTML = entry.html;
+        pageContent.removeAttribute('aria-busy');
 
         if (entry.title) {
             document.title = entry.title;
@@ -1342,20 +1556,21 @@ document.addEventListener('DOMContentLoaded', function () {
         const cached = getFreshInstantNavigationEntry(url);
 
         if (cached) {
-            applyInstantNavigationEntry(url, cached, { ...options, link });
-            fetchInstantNavigationPage(url, { force: true }).catch(error => {
-                console.warn('Instant navigation refresh failed:', error);
-            });
+            await applyInstantNavigationEntry(url, cached, { ...options, link });
             return;
         }
 
-        setInstantNavigationLoading(link);
+        if (options.preserveContent) {
+            pageContent.setAttribute('aria-busy', 'true');
+        } else {
+            setInstantNavigationLoading(link);
+        }
 
         try {
             const entry = await fetchInstantNavigationPage(url);
             if (sequence !== instantNavigationSequence) return;
 
-            applyInstantNavigationEntry(url, entry, { ...options, link });
+            await applyInstantNavigationEntry(url, entry, { ...options, link });
         } catch (error) {
             console.warn('Instant navigation fallback:', error);
             window.location.href = url.href;
@@ -1427,21 +1642,80 @@ document.addEventListener('DOMContentLoaded', function () {
                 const targetUrl = getSidebarUrl(link);
                 if (isInstantNavigationUrl(targetUrl)) {
                     event.preventDefault();
-                    navigateInstantly(targetUrl, link);
+                    // Keep the current screen visible while the destination is fetched.
+                    // Replacing it with a full-page placeholder made database latency
+                    // feel like a blank/frozen page.
+                    navigateInstantly(targetUrl, link, { preserveContent: true });
                 }
             }
         });
     });
 
+    pageContent?.addEventListener('click', function (event) {
+        if (event.defaultPrevented || event.button !== 0 ||
+            event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+            return;
+        }
+
+        const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+        if (!link || link.hasAttribute('download') ||
+            (link.getAttribute('target') && link.getAttribute('target') !== '_self')) {
+            return;
+        }
+
+        const url = getSidebarUrl(link);
+        if (!isInstantNavigationUrl(url) || url.hash) return;
+
+        event.preventDefault();
+        navigateInstantly(url, getInstantNavigationLink(url), { preserveContent: true });
+    });
+
+    pageContent?.addEventListener('submit', function (event) {
+        const form = event.target instanceof HTMLFormElement ? event.target : null;
+        if (!form || (form.method || 'get').toLowerCase() !== 'get') return;
+
+        const url = new URL(form.action || window.location.href, window.location.origin);
+        if (!isInstantNavigationUrl(url)) return;
+
+        const query = new URLSearchParams();
+        new FormData(form).forEach(function (value, key) {
+            const textValue = String(value).trim();
+            if (textValue) query.append(key, textValue);
+        });
+        url.search = query.toString();
+
+        event.preventDefault();
+        navigateInstantly(url, getInstantNavigationLink(url), { preserveContent: true });
+    });
+
     if (supportsInstantNavigation() && instantNavigationLinks.length) {
         captureCurrentInstantNavigationPage();
         history.replaceState({ instantNavigation: true }, document.title, window.location.href);
-        queueInstantNavigationPrefetch();
+        // Prefetch only on hover/focus; eager loading all KPI pages competes with the
+        // page the user is opening and can make the first navigation feel slow.
 
         instantNavigationLinks.forEach(function (link) {
             link.addEventListener('mouseenter', () => prefetchInstantNavigationLink(link), { once: true });
             link.addEventListener('focus', () => prefetchInstantNavigationLink(link), { once: true });
         });
+
+        // Warm only the primary KPI screen after the current page has settled.
+        // Prefetching every KPI route competes with foreground work, while warming
+        // this single high-frequency destination makes the sidebar click immediate.
+        const primaryKpiLink = instantNavigationLinks.find(function (link) {
+            const url = getSidebarUrl(link);
+            return url && normalizeSidebarPath(url.pathname) === '/KPIs';
+        });
+        if (primaryKpiLink && currentPath !== '/KPIs') {
+            const warmPrimaryKpi = () => prefetchInstantNavigationLink(primaryKpiLink);
+            window.setTimeout(function () {
+                if (typeof window.requestIdleCallback === 'function') {
+                    window.requestIdleCallback(warmPrimaryKpi, { timeout: 1500 });
+                } else {
+                    warmPrimaryKpi();
+                }
+            }, 500);
+        }
 
         window.addEventListener('popstate', function () {
             const url = new URL(window.location.href);
@@ -1452,7 +1726,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             setSidebarActiveLink(link, { pending: true });
-            navigateInstantly(url, link, { skipHistory: true });
+            navigateInstantly(url, link, { skipHistory: true, preserveContent: true });
         });
     }
 
@@ -1569,7 +1843,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.dropdown-item[data-coming-soon]').forEach(function (link) {
         link.addEventListener('click', function (e) {
             e.preventDefault();
-            showComingSoonToast(link.textContent.trim());
+            window.AppFeedback.comingSoon(link.textContent.trim());
         });
     });
 
@@ -1578,7 +1852,7 @@ document.addEventListener('DOMContentLoaded', function () {
         link.addEventListener('click', function (e) {
             e.preventDefault();
             const name = this.textContent.trim();
-            showComingSoonToast(name);
+            window.AppFeedback.comingSoon(name);
         });
     });
 

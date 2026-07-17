@@ -629,7 +629,7 @@
         const id = document.getElementById('simpleModalId').value;
         const fieldName = document.getElementById('simpleModalFieldName').value;
         const fieldValue = document.getElementById('simpleModalFieldValue').value.trim();
-        if (!fieldValue) { window.showAppToast({ tone: 'warning', eyebrow: 'Quản lý danh mục', title: 'Thiếu dữ liệu', message: 'Vui lòng nhập giá trị.' }); return; }
+        if (!fieldValue) { window.AppFeedback.toast({ tone: 'warning', eyebrow: 'Quản lý danh mục', title: 'Thiếu dữ liệu', message: 'Vui lòng nhập giá trị.' }); return; }
 
         const isEdit = id !== '';
         const url = `/Catalog/${isEdit ? 'Edit' : 'Create'}${entityType}`;
@@ -642,46 +642,42 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    window.showAppToast({ tone: 'success', eyebrow: 'Quản lý danh mục', title: 'Thành công', message: data.message });
+                    window.AppFeedback.toast({ tone: 'success', eyebrow: 'Quản lý danh mục', title: 'Thành công', message: data.message });
                     setTimeout(() => location.reload(), 1500);
                 } else {
-                    window.showAppToast({ tone: 'error', eyebrow: 'Quản lý danh mục', title: 'Không thể lưu', message: data.message });
+                    window.AppFeedback.toast({ tone: 'error', eyebrow: 'Quản lý danh mục', title: 'Không thể lưu', message: data.message });
                 }
             })
-            .catch(() => window.showAppToast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
+            .catch(() => window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
     }
 
     // =========================================
     // DELETE (Universal)
     // =========================================
-    function deleteItem(entityType, id, name) {
-        Swal.fire({
-            title: 'Xác nhận xóa?',
-            html: `Bạn có chắc chắn muốn xóa "<strong>${name}</strong>"?<br><small class="text-muted">Thao tác này không thể hoàn tác.</small>`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: '<i class="bi bi-trash me-1"></i> Xóa',
-            cancelButtonText: 'Hủy'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const formData = new FormData();
-                formData.append('id', id);
-                window.appendAntiForgeryToken?.(formData);
-                fetch(`/Catalog/Delete${entityType}`, { method: 'POST', body: formData })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
-                            window.showAppToast({ tone: 'success', eyebrow: 'Quản lý danh mục', title: 'Đã xóa', message: data.message });
-                            setTimeout(() => location.reload(), 1500);
-                        } else {
-                            window.showAppToast({ tone: 'error', eyebrow: 'Quản lý danh mục', title: 'Không thể xóa', message: data.message });
-                        }
-                    })
-                    .catch(() => window.showAppToast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
-            }
+    async function deleteItem(entityType, id, name) {
+        const confirmed = await window.AppFeedback.confirm({
+            title: 'Xóa mục khỏi danh mục?',
+            message: `“${name}” sẽ bị xóa nếu không có dữ liệu đang liên kết. Thao tác này không thể hoàn tác.`,
+            tone: 'danger',
+            confirmText: 'Xóa mục',
+            cancelText: 'Hủy'
         });
+        if (!confirmed) return;
+
+        const formData = new FormData();
+        formData.append('id', id);
+        window.appendAntiForgeryToken?.(formData);
+        fetch(`/Catalog/Delete${entityType}`, { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    window.AppFeedback.toast({ tone: 'success', eyebrow: 'Quản lý danh mục', title: 'Đã xóa', message: data.message });
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    window.AppFeedback.toast({ tone: 'error', eyebrow: 'Quản lý danh mục', title: 'Không thể xóa', message: data.message });
+                }
+            })
+            .catch(() => window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
     }
 
     // =========================================
@@ -710,7 +706,7 @@
     function submitGradingRank() {
         const id = document.getElementById('grankId').value;
         const rankCode = document.getElementById('grankCode').value.trim();
-        if (!rankCode) { window.showAppToast({ tone: 'warning', eyebrow: 'Bậc Xếp hạng', title: 'Thiếu dữ liệu', message: 'Mã hạng không được để trống.' }); return; }
+        if (!rankCode) { window.AppFeedback.toast({ tone: 'warning', eyebrow: 'Bậc Xếp hạng', title: 'Thiếu dữ liệu', message: 'Mã hạng không được để trống.' }); return; }
 
         const isEdit = id !== '';
         const formData = new FormData();
@@ -724,11 +720,11 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    window.showAppToast({ tone: 'success', eyebrow: 'Bậc Xếp hạng', title: 'Thành công', message: data.message });
+                    window.AppFeedback.toast({ tone: 'success', eyebrow: 'Bậc Xếp hạng', title: 'Thành công', message: data.message });
                     setTimeout(() => location.reload(), 1500);
-                } else { window.showAppToast({ tone: 'error', eyebrow: 'Bậc Xếp hạng', title: 'Lỗi', message: data.message }); }
+                } else { window.AppFeedback.toast({ tone: 'error', eyebrow: 'Bậc Xếp hạng', title: 'Lỗi', message: data.message }); }
             })
-            .catch(() => window.showAppToast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
+            .catch(() => window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
     }
 
     // =========================================
@@ -756,7 +752,7 @@
         const id = document.getElementById('statusId').value;
         const statusType = document.getElementById('statusType').value.trim();
         const statusName = document.getElementById('statusName').value.trim();
-        if (!statusType || !statusName) { window.showAppToast({ tone: 'warning', eyebrow: 'Trạng thái', title: 'Thiếu dữ liệu', message: 'Vui lòng điền đầy đủ thông tin.' }); return; }
+        if (!statusType || !statusName) { window.AppFeedback.toast({ tone: 'warning', eyebrow: 'Trạng thái', title: 'Thiếu dữ liệu', message: 'Vui lòng điền đầy đủ thông tin.' }); return; }
 
         const isEdit = id !== '';
         const formData = new FormData();
@@ -769,11 +765,11 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    window.showAppToast({ tone: 'success', eyebrow: 'Trạng thái', title: 'Thành công', message: data.message });
+                    window.AppFeedback.toast({ tone: 'success', eyebrow: 'Trạng thái', title: 'Thành công', message: data.message });
                     setTimeout(() => location.reload(), 1500);
-                } else { window.showAppToast({ tone: 'error', eyebrow: 'Trạng thái', title: 'Lỗi', message: data.message }); }
+                } else { window.AppFeedback.toast({ tone: 'error', eyebrow: 'Trạng thái', title: 'Lỗi', message: data.message }); }
             })
-            .catch(() => window.showAppToast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
+            .catch(() => window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
     }
 
     // Catalog now keeps KPI/OKR/HR shared data only.
@@ -804,7 +800,7 @@
     function submitSystemParameter() {
         const id = document.getElementById('sysParamId').value;
         const parameterCode = document.getElementById('sysParamCode').value.trim();
-        if (!parameterCode) { window.showAppToast({ tone: 'warning', eyebrow: 'Tham số Hệ thống', title: 'Thiếu dữ liệu', message: 'Mã tham số không được để trống.' }); return; }
+        if (!parameterCode) { window.AppFeedback.toast({ tone: 'warning', eyebrow: 'Tham số Hệ thống', title: 'Thiếu dữ liệu', message: 'Mã tham số không được để trống.' }); return; }
 
         const isEdit = id !== '';
         const formData = new FormData();
@@ -818,11 +814,11 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    window.showAppToast({ tone: 'success', eyebrow: 'Tham số Hệ thống', title: 'Thành công', message: data.message });
+                    window.AppFeedback.toast({ tone: 'success', eyebrow: 'Tham số Hệ thống', title: 'Thành công', message: data.message });
                     setTimeout(() => location.reload(), 1500);
-                } else { window.showAppToast({ tone: 'error', eyebrow: 'Tham số Hệ thống', title: 'Lỗi', message: data.message }); }
+                } else { window.AppFeedback.toast({ tone: 'error', eyebrow: 'Tham số Hệ thống', title: 'Lỗi', message: data.message }); }
             })
-            .catch(() => window.showAppToast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
+            .catch(() => window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
     }
 </script>
 }

@@ -35,6 +35,16 @@ namespace Manage_KPI_or_OKR_System.Services
                 return principal;
             }
 
+            // Admin authorization and layout visibility already have an explicit
+            // role bypass, so loading the complete permission table here only adds
+            // an unnecessary database round-trip to every request.
+            if (roleNames.Any(role =>
+                    string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(role, "Administrator", StringComparison.OrdinalIgnoreCase)))
+            {
+                return principal;
+            }
+
             var permissions = await _context.Role_Permissions
                 .Join(_context.Permissions,
                     rp => rp.PermissionId,

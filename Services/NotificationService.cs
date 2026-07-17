@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Claims;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
@@ -17,6 +18,8 @@ namespace Manage_KPI_or_OKR_System.Services
     public class NotificationService : INotificationService
     {
         private const string AiAlertType = "AI Insight";
+        private static readonly ConcurrentDictionary<int, DateTime> DeadlineAlertRefreshAt = new();
+        private static readonly TimeSpan DeadlineAlertRefreshTtl = TimeSpan.FromMinutes(2);
         private readonly MiniERPDbContext _context;
 
         public NotificationService(MiniERPDbContext context)
@@ -32,7 +35,13 @@ namespace Manage_KPI_or_OKR_System.Services
                 return new NotificationCenterViewModel();
             }
 
-            await EnsureKpiDeadlineAlertsAsync(employee, cancellationToken);
+            var nowUtc = DateTime.UtcNow;
+            var lastRefresh = DeadlineAlertRefreshAt.GetOrAdd(employee.Id, DateTime.MinValue);
+            if (nowUtc - lastRefresh >= DeadlineAlertRefreshTtl &&
+                DeadlineAlertRefreshAt.TryUpdate(employee.Id, nowUtc, lastRefresh))
+            {
+                await EnsureKpiDeadlineAlertsAsync(employee, cancellationToken);
+            }
 
             var safeTake = Math.Clamp(takePerGroup, 1, 12);
             var now = DateTime.Now;

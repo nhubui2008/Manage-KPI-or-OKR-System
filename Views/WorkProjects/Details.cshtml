@@ -369,7 +369,6 @@
         }
     </div>
 
-    <div id="kanbanFeedback" class="kanban-feedback-toast" role="status" aria-live="polite" aria-atomic="true"></div>
 </div>
 
 <!-- Modal chi tiết công việc cho từng task -->
@@ -1164,52 +1163,10 @@
         font-size: 0.8rem;
     }
 
-    .kanban-feedback-toast {
-        position: fixed;
-        left: 50%;
-        bottom: 22px;
-        z-index: 1080;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        min-height: 38px;
-        max-width: min(420px, calc(100vw - 32px));
-        padding: 8px 14px;
-        border-radius: 999px;
-        background: #0f7a4d;
-        color: #ffffff;
-        font-size: 0.84rem;
-        font-weight: 800;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
-        opacity: 0;
-        pointer-events: none;
-        transform: translate(-50%, 12px);
-        transition: opacity var(--transition-base), transform var(--transition-base);
-    }
-
-    .kanban-feedback-toast::before {
-        content: "\F26B";
-        font-family: "bootstrap-icons";
-        font-weight: 400;
-    }
-
-    .kanban-feedback-toast.is-visible {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-
-    .kanban-feedback-toast.is-warning {
-        background: #b45309;
-    }
-
     @@media (prefers-reduced-motion: reduce) {
         .task-card--saved {
             animation: none;
             box-shadow: 0 0 0 2px rgba(15, 122, 77, 0.22) !important;
-        }
-
-        .kanban-feedback-toast {
-            transition: none;
         }
     }
 
@@ -1668,7 +1625,6 @@
             const cards = document.querySelectorAll('.task-card');
             const columns = document.querySelectorAll('.kanban-column__body');
             const kanbanBoard = document.querySelector('.kanban-board');
-            const kanbanFeedback = document.getElementById('kanbanFeedback');
             const pendingStatusUpdates = new Map();
             const searchInput = document.getElementById('kanbanTaskSearch');
             const sortSelect = document.getElementById('kanbanTaskSort');
@@ -1887,11 +1843,10 @@
                             applyKanbanFilters();
                             showKanbanFeedback('Chưa lưu được thay đổi trạng thái', 'warning');
 
-                            Swal.fire({
+                            window.AppFeedback.toast({
+                                tone: 'error',
                                 title: 'Không thể chuyển trạng thái',
-                                text: 'Dữ liệu đã được đưa về vị trí cũ. Vui lòng thử lại sau.',
-                                icon: 'warning',
-                                confirmButtonText: 'Đồng ý'
+                                message: 'Dữ liệu đã được đưa về vị trí cũ. Vui lòng thử lại sau.'
                             });
                         })
                         .finally(() => {
@@ -1916,17 +1871,13 @@
                 window.setTimeout(() => card.classList.remove('task-card--saved'), 1000);
             }
 
-            let kanbanFeedbackTimer = null;
             function showKanbanFeedback(message, type = 'success') {
-                if (!kanbanFeedback) return;
-
-                window.clearTimeout(kanbanFeedbackTimer);
-                kanbanFeedback.textContent = message;
-                kanbanFeedback.classList.toggle('is-warning', type === 'warning');
-                kanbanFeedback.classList.add('is-visible');
-                kanbanFeedbackTimer = window.setTimeout(() => {
-                    kanbanFeedback.classList.remove('is-visible', 'is-warning');
-                }, 1800);
+                window.AppFeedback.toast({
+                    tone: type,
+                    meta: 'Kanban',
+                    title: type === 'warning' ? 'Chưa lưu được thay đổi' : 'Đã cập nhật công việc',
+                    message
+                });
             }
 
             function persistTaskStatus(taskId, targetStatus) {
@@ -2398,11 +2349,10 @@
                     form.reset();
                 } catch (error) {
                     console.error(error);
-                    Swal.fire({
+                    window.AppFeedback.toast({
+                        tone: 'error',
                         title: 'Không thể gửi trao đổi',
-                        text: 'Vui lòng thử lại sau.',
-                        icon: 'warning',
-                        confirmButtonText: 'Đồng ý'
+                        message: 'Vui lòng thử lại sau.'
                     });
                 } finally {
                     submitButton?.removeAttribute('disabled');

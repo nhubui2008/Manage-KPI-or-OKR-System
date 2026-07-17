@@ -416,7 +416,7 @@
             const textToCopy = `Dữ liệu cũ:\n${oldData}\n\nDữ liệu mới:\n${newData}`;
             
             navigator.clipboard.writeText(textToCopy).then(() => {
-                alert("Đã sao chép vào bộ nhớ tạm!");
+                window.AppFeedback.toast({ tone: 'success', title: 'Đã sao chép', message: 'Nội dung đã được lưu vào bộ nhớ tạm.' });
             });
         }
     </script>
