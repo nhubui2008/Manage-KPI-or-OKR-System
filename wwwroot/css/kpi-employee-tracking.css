@@ -10,6 +10,9 @@
     --et-success: #087466;
     --et-success-soft: #eaf7f3;
     --et-success-line: #c8ebe2;
+    --et-motion-fast: var(--motion-fast, 150ms);
+    --et-motion-base: var(--motion-base, 200ms);
+    --et-ease-out: var(--motion-ease-out, cubic-bezier(0.22, 1, 0.36, 1));
     min-width: 0;
 }
 
@@ -103,7 +106,11 @@
     font-size: 0.8rem;
     font-weight: 720;
     text-decoration: none;
-    transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease;
+    transition:
+        border-color var(--et-motion-base) var(--et-ease-out),
+        color var(--et-motion-base) var(--et-ease-out),
+        background-color var(--et-motion-base) var(--et-ease-out),
+        transform var(--et-motion-fast) var(--et-ease-out);
 }
 
 .et-tab:hover {
@@ -269,7 +276,10 @@
     padding: 0.58rem;
     color: var(--evaluation-ink);
     text-decoration: none;
-    transition: border-color 150ms ease, background-color 150ms ease;
+    transition:
+        border-color var(--et-motion-base) var(--et-ease-out),
+        background-color var(--et-motion-base) var(--et-ease-out),
+        transform var(--et-motion-fast) var(--et-ease-out);
 }
 
 .et-employee-item + .et-employee-item {
@@ -456,6 +466,12 @@
     overflow: hidden;
 }
 
+.et-kpi-entry,
+.et-review-item {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 320px;
+}
+
 .et-kpi-entry__header {
     padding-inline: 0.8rem;
 }
@@ -601,6 +617,9 @@
     font-size: 0.74rem;
     font-weight: 750;
     user-select: none;
+    transition:
+        background-color var(--et-motion-base) var(--et-ease-out),
+        color var(--et-motion-base) var(--et-ease-out);
 }
 
 .et-checkin-details > summary::-webkit-details-marker {
@@ -617,6 +636,10 @@
     gap: 0.42rem;
 }
 
+.et-checkin-details > summary i {
+    transition: transform var(--et-motion-base) var(--et-ease-out);
+}
+
 .et-checkin-details > summary small {
     color: var(--evaluation-muted);
     font-size: 0.66rem;
@@ -628,8 +651,8 @@
     background: var(--evaluation-brand-soft);
 }
 
-.et-checkin-details[open] > summary i::before {
-    content: "\f2ea";
+.et-checkin-details[open] > summary i {
+    transform: rotate(45deg);
 }
 
 .et-checkin-form {
@@ -638,6 +661,10 @@
     align-items: start;
     gap: 0.65rem;
     padding: 0.8rem;
+}
+
+.et-checkin-details[open] .et-checkin-form {
+    animation: etPanelReveal var(--et-motion-base) var(--et-ease-out) both;
 }
 
 .et-checkin-form label,
@@ -964,10 +991,28 @@
 
 .employee-tracking-page form[aria-busy="true"] {
     opacity: 0.78;
+    cursor: progress;
+    transition: opacity var(--et-motion-fast) var(--et-ease-out);
 }
 
 .employee-tracking-page form[aria-busy="true"] :is(input, select, textarea) {
     pointer-events: none;
+}
+
+.employee-tracking-page form[aria-busy="true"] button[aria-disabled="true"] {
+    pointer-events: none;
+    transform: none !important;
+}
+
+.employee-tracking-page :is(
+    .et-tab,
+    .et-employee-item,
+    .et-checkin-details > summary,
+    .ci-review-button,
+    .evaluation-primary-action,
+    .evaluation-secondary-action
+):active {
+    transform: translateY(1px) scale(0.99);
 }
 
 .employee-tracking-page :is(
@@ -990,6 +1035,17 @@
 .employee-tracking-page :is(button, input, select, textarea):disabled {
     cursor: not-allowed;
     opacity: 0.66;
+}
+
+@keyframes etPanelReveal {
+    from {
+        opacity: 0.7;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @media (max-width: 1100px) {
@@ -1227,5 +1283,11 @@
         transition-duration: 0.01ms !important;
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
+    }
+
+    .et-checkin-details[open] .et-checkin-form,
+    .et-checkin-details[open] > summary i {
+        animation: none !important;
+        transform: none !important;
     }
 }

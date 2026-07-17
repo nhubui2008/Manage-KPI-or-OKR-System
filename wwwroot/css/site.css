@@ -196,7 +196,10 @@ body {
     z-index: 1040;
     display: flex;
     flex-direction: column;
-    transition: width var(--transition-slow);
+    transition:
+        width var(--motion-base) var(--motion-ease-out),
+        transform var(--transition-base),
+        opacity var(--transition-fast);
     /* Bỏ overflow: hidden để bootstrap dropdown không bị clip */
     overflow: visible;
     box-shadow: 4px 0 24px rgba(13, 33, 55, 0.15);
@@ -250,7 +253,7 @@ html.sidebar-expanded .sidebar {
 .sidebar-brand .brand-info {
     display: none;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--transition-base);
 }
 
 html.sidebar-expanded .sidebar-brand .brand-info {
@@ -364,7 +367,11 @@ html.sidebar-expanded .sidebar-link span {
     text-align: center;
     flex-shrink: 0;
     opacity: 0.9;
-    transition: opacity var(--transition-fast), transform var(--transition-fast), margin 0.3s ease;
+    transition:
+        opacity var(--transition-fast),
+        transform var(--transition-fast),
+        color var(--transition-fast),
+        margin var(--motion-base) var(--motion-ease-out);
 }
 
 html.sidebar-expanded .sidebar-link i {
@@ -535,7 +542,9 @@ html.sidebar-expanded .sidebar-user .user-info {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    transition: margin-left var(--transition-slow);
+    transition:
+        margin-left var(--motion-base) var(--motion-ease-out),
+        opacity var(--transition-fast);
     overflow-x: hidden;
 }
 
@@ -2596,9 +2605,9 @@ html.sidebar-expanded .main-content {
 
 .progress-bar, .progress-bar-custom {
     height: 100%;
-    background: linear-gradient(90deg, #1a73e8, #4285f4) !important;
+    background: var(--primary) !important;
     border-radius: 0 !important;
-    transition: width 0.6s ease;
+    transition: none;
 }
 
 /* Office Palette Progress Bars */
@@ -6804,5 +6813,162 @@ body.modal-open {
 
 #addTaskCollapse [class*="col-"] {
     min-width: 0;
+}
+
+/* ============================================
+   Shared motion and route feedback
+   ============================================ */
+:root {
+    --motion-fast: 150ms;
+    --motion-base: 200ms;
+    --motion-slow: 250ms;
+    --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --transition-fast: var(--motion-fast) var(--motion-ease-out);
+    --transition-base: var(--motion-base) var(--motion-ease-out);
+    --transition-slow: var(--motion-slow) var(--motion-ease-out);
+}
+
+.page-content {
+    position: relative;
+    transition:
+        opacity var(--motion-base) var(--motion-ease-out),
+        transform var(--motion-base) var(--motion-ease-out);
+}
+
+.page-content::after {
+    content: "";
+    position: fixed;
+    z-index: 1100;
+    top: 0;
+    right: 0;
+    left: 0;
+    width: 100vw;
+    height: 3px;
+    background: var(--color-brand-violet, var(--primary, #7b68ee));
+    opacity: 0;
+    pointer-events: none;
+    transform: scaleX(0);
+    transform-origin: left center;
+}
+
+.page-content > * {
+    transition: opacity var(--motion-base) var(--motion-ease-out);
+}
+
+.page-content.is-route-pending {
+    cursor: progress;
+}
+
+.page-content.is-route-pending::after {
+    opacity: 1;
+    animation: appRouteProgress 900ms var(--motion-ease-out) infinite;
+}
+
+.page-content.is-route-pending > * {
+    opacity: 0.72;
+    pointer-events: none;
+}
+
+.page-content.is-route-settling {
+    opacity: 0.96;
+    transform: translateY(3px);
+    will-change: opacity, transform;
+}
+
+@keyframes appRouteProgress {
+    0% {
+        opacity: 0.65;
+        transform: scaleX(0.06);
+    }
+    65% {
+        opacity: 1;
+        transform: scaleX(0.76);
+    }
+    100% {
+        opacity: 0.72;
+        transform: scaleX(1);
+    }
+}
+
+:is(
+    .btn,
+    .btn-primary-custom,
+    .btn-outline-custom,
+    .sidebar-toggle,
+    .header-icon-btn,
+    .sidebar-settings-trigger
+) {
+    transition:
+        transform var(--motion-fast) var(--motion-ease-out),
+        background-color var(--motion-base) var(--motion-ease-out),
+        border-color var(--motion-base) var(--motion-ease-out),
+        color var(--motion-base) var(--motion-ease-out),
+        opacity var(--motion-fast) var(--motion-ease-out),
+        box-shadow var(--motion-base) var(--motion-ease-out) !important;
+}
+
+:is(
+    .btn,
+    .btn-primary-custom,
+    .btn-outline-custom,
+    .sidebar-toggle,
+    .header-icon-btn,
+    .sidebar-settings-trigger
+):active:not(:disabled):not(.disabled) {
+    transform: translateY(1px) scale(0.985) !important;
+}
+
+.sidebar-link {
+    transition:
+        background-color var(--motion-base) var(--motion-ease-out),
+        border-color var(--motion-base) var(--motion-ease-out),
+        color var(--motion-base) var(--motion-ease-out),
+        opacity var(--motion-fast) var(--motion-ease-out) !important;
+}
+
+.sidebar-link :is(i, span),
+.settings-panel,
+.settings-panel__item {
+    transition-duration: var(--motion-base) !important;
+    transition-timing-function: var(--motion-ease-out) !important;
+}
+
+:is(
+    .form-control,
+    .form-select,
+    textarea.form-control,
+    .select2-container--default .select2-selection--single
+) {
+    transition:
+        border-color var(--motion-base) var(--motion-ease-out),
+        background-color var(--motion-base) var(--motion-ease-out),
+        box-shadow var(--motion-base) var(--motion-ease-out),
+        opacity var(--motion-fast) var(--motion-ease-out) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto !important;
+    }
+
+    body *,
+    body *::before,
+    body *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .page-content.is-route-pending::after {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+
+    .page-content.is-route-settling {
+        opacity: 1;
+        transform: none;
+        will-change: auto;
+    }
 }
 

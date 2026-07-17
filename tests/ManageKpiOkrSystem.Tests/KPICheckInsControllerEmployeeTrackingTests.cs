@@ -200,7 +200,12 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
                 EmployeeId = employee.Id,
                 KPIId = kpi.Id,
                 CheckInDate = DateTime.Today.AddMinutes(index),
-                ReviewStatus = "Pending"
+                ReviewStatus = index switch
+                {
+                    1 => " pending ",
+                    2 => "pEnDiNg",
+                    _ => "Pending"
+                }
             };
             context.AddRange(employee, kpi, checkIn);
             context.EmployeeAssignments.Add(new EmployeeAssignment
@@ -243,7 +248,7 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
             EmployeeId = outsider.Id,
             KPIId = assignedByManagerKpi.Id,
             CheckInDate = DateTime.Today.AddHours(1),
-            ReviewStatus = "Pending"
+            ReviewStatus = " pending "
         };
         var selfAssignedKpi = new KPI
         {
@@ -260,6 +265,14 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
             CheckInDate = DateTime.Today.AddHours(3),
             ReviewStatus = "Pending"
         };
+        var legacyApprovedCheckIn = new KPICheckIn
+        {
+            Id = 103,
+            EmployeeId = 1,
+            KPIId = 1,
+            CheckInDate = DateTime.Today.AddMinutes(8),
+            ReviewStatus = null
+        };
         context.AddRange(
             outsider,
             unscopedKpi,
@@ -267,7 +280,8 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
             selfAssignedKpi,
             unscopedCheckIn,
             assignedByManagerCheckIn,
-            selfCheckIn);
+            selfCheckIn,
+            legacyApprovedCheckIn);
         await context.SaveChangesAsync();
         foreach (var checkIn in scopedCheckIns.Append(assignedByManagerCheckIn).Append(unscopedCheckIn))
         {
@@ -285,7 +299,7 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
             new[] { "manager" },
             new[] { "KPICHECKINS_REVIEW" });
 
-        var firstResult = await controller.EmployeeTracking(tab: "pending", reviewPage: 0);
+        var firstResult = await controller.EmployeeTracking(tab: "pending", reviewPage: 1);
 
         var firstModel = Assert.IsType<EmployeeTrackingViewModel>(Assert.IsType<ViewResult>(firstResult).Model);
         Assert.Equal("pending", firstModel.ActiveTab);
@@ -294,7 +308,9 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
         Assert.Equal(5, firstModel.PendingReviews.Count);
         Assert.Equal(1, firstModel.PendingReviews.PageIndex);
         Assert.Equal(2, firstModel.PendingReviews.TotalPages);
+        Assert.All(firstModel.PendingReviews, item => Assert.Equal("Pending", item.ReviewStatusCode));
         Assert.DoesNotContain(firstModel.PendingReviews, item => item.CheckInId == unscopedCheckIn.Id);
+        Assert.DoesNotContain(firstModel.PendingReviews, item => item.CheckInId == legacyApprovedCheckIn.Id);
 
         var forcedPendingResult = await controller.EmployeeTracking(tab: "tracking");
         var forcedPendingModel = Assert.IsType<EmployeeTrackingViewModel>(
@@ -310,6 +326,7 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
         Assert.Contains(lastModel.PendingReviews, item => item.CheckInId == assignedByManagerCheckIn.Id);
         Assert.DoesNotContain(lastModel.PendingReviews, item => item.CheckInId == unscopedCheckIn.Id);
         Assert.DoesNotContain(lastModel.PendingReviews, item => item.CheckInId == selfCheckIn.Id);
+        Assert.DoesNotContain(lastModel.PendingReviews, item => item.CheckInId == legacyApprovedCheckIn.Id);
 
         var reviewResult = await controller.Review(
             assignedByManagerCheckIn.Id,
@@ -326,6 +343,48 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
             null,
             "/KPICheckIns/EmployeeTracking?tab=pending");
         Assert.IsType<ForbidResult>(selfReviewResult);
+    }
+
+    [Theory]
+    [InlineData("Admin")]
+    [InlineData("Director")]
+    public async Task EmployeeTracking_PendingUrl_GlobalReviewerSeesNormalizedPendingStatus(string role)
+    {
+        await using var context = CreateContext();
+        var employee = new Employee
+        {
+            Id = 1,
+            EmployeeCode = "NV001",
+            FullName = "Nhân viên A",
+            Phone = "0900000001",
+            Email = "employee1@example.com",
+            IsActive = true
+        };
+        var kpi = new KPI { Id = 1, KPIName = "KPI cần duyệt", IsActive = true };
+        var pending = new KPICheckIn
+        {
+            Id = 1,
+            EmployeeId = employee.Id,
+            KPIId = kpi.Id,
+            CheckInDate = DateTime.Today,
+            ReviewStatus = "  pEnDiNg  "
+        };
+        context.AddRange(employee, kpi, pending);
+        await context.SaveChangesAsync();
+        var controller = CreateController(
+            context,
+            99,
+            new[] { role },
+            new[] { "KPICHECKINS_REVIEW" });
+
+        var result = await controller.EmployeeTracking(tab: "pending", reviewPage: 1);
+
+        var model = Assert.IsType<EmployeeTrackingViewModel>(Assert.IsType<ViewResult>(result).Model);
+        var item = Assert.Single(model.PendingReviews);
+        Assert.Equal("pending", model.ActiveTab);
+        Assert.Equal(1, model.Summary.PendingReviewCount);
+        Assert.Equal(pending.Id, item.CheckInId);
+        Assert.Equal("Pending", item.ReviewStatusCode);
     }
 
     [Fact]
