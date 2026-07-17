@@ -1,897 +1,453 @@
 @model IEnumerable<Manage_KPI_or_OKR_System.Models.KPICheckIn>
 @using Manage_KPI_or_OKR_System.Helpers
-@using System.Text.Json
+@using System.Globalization
+
 @{
-    var detailsDict = ViewBag.Details as Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail>();
-    var employeesDict = ViewBag.Employees as Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>();
-    var kpisDict = ViewBag.KPIs as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI>();
-    var statusesDict = ViewBag.CheckInStatuses as Dictionary<int, string> ?? new Dictionary<int, string>();
-    var commentsByCheckIn = ViewBag.CheckInComments as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.GoalComment>> ?? new Dictionary<int, List<Manage_KPI_or_OKR_System.Models.GoalComment>>();
+    var checkIns = Model?.ToList() ?? new List<Manage_KPI_or_OKR_System.Models.KPICheckIn>();
+    var detailsDict = ViewBag.Details as Dictionary<int, Manage_KPI_or_OKR_System.Models.CheckInDetail> ?? new();
+    var employeesDict = ViewBag.Employees as Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee> ?? new();
+    var kpisDict = ViewBag.KPIs as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPI> ?? new();
+    var kpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new();
+    var statusesDict = ViewBag.CheckInStatuses as Dictionary<int, string> ?? new();
+    var commentsByCheckIn = ViewBag.CheckInComments as Dictionary<int, List<Manage_KPI_or_OKR_System.Models.GoalComment>> ?? new();
+    var failReasonsDict = (ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new())
+        .ToDictionary(reason => reason.Id, reason => reason.ReasonName ?? "Chưa rõ");
+    var allStatuses = ViewBag.AllStatuses as List<Manage_KPI_or_OKR_System.Models.CheckInStatus> ?? new();
+
     bool canReviewCheckIns = ViewBag.CanReviewCheckIns == true;
     string progressPageTitle = canReviewCheckIns ? "Ghi nhận tiến độ KPI" : "Cập nhật tiến độ KPI";
     string progressActionLabel = canReviewCheckIns ? "Ghi nhận tiến độ" : "Cập nhật tiến độ";
-    ViewData["Title"] = progressPageTitle;
     string returnUrl = ViewBag.ReturnUrl as string ?? "/KPICheckIns";
-    var failReasonsDict = (ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>()).ToDictionary(r => r.Id, r => r.ReasonName ?? "Chưa rõ");
-    var kpiData = ViewBag.KPIData as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
-    var kpiPeriods = ViewBag.KPIPeriods as Dictionary<int, Manage_KPI_or_OKR_System.Models.EvaluationPeriod> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.EvaluationPeriod>();
-    var assignmentWeights = ViewBag.AssignmentWeights as Dictionary<int, Dictionary<int, decimal>> ?? new Dictionary<int, Dictionary<int, decimal>>();
-    var kpisForSchedule = (ViewBag.AllKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new List<Manage_KPI_or_OKR_System.Models.KPI>())
-        .Concat(kpisDict.Values)
-        .GroupBy(k => k.Id)
-        .ToDictionary(g => g.Key, g => g.First());
-    var kpiDataJson = JsonSerializer.Serialize(kpiData.ToDictionary(k => k.Key, v => new {
-        target = v.Value.TargetValue,
-        unit = v.Value.MeasurementUnit,
-        isInverse = v.Value.IsInverse,
-        frequencyDays = v.Value.CheckInFrequencyDays ?? 1,
-        deadlineDate = v.Value.DeadlineDate,
-        deadlineTime = (v.Value.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0)).ToString(@"hh\:mm"),
-        reminderBeforeHours = v.Value.ReminderBeforeHours ?? 24,
-        periodStart = kpisForSchedule.ContainsKey(v.Key) && kpisForSchedule[v.Key].PeriodId.HasValue && kpiPeriods.ContainsKey(kpisForSchedule[v.Key].PeriodId!.Value)
-            ? kpiPeriods[kpisForSchedule[v.Key].PeriodId!.Value].StartDate
-            : null,
-        periodEnd = kpisForSchedule.ContainsKey(v.Key) && kpisForSchedule[v.Key].PeriodId.HasValue && kpiPeriods.ContainsKey(kpisForSchedule[v.Key].PeriodId!.Value)
-            ? kpiPeriods[kpisForSchedule[v.Key].PeriodId!.Value].EndDate
-            : null
-    }));
-    var assignmentWeightsJson = JsonSerializer.Serialize(assignmentWeights);
+    var selectedStatusId = ViewBag.StatusId is int statusValue ? (int?)statusValue : null;
+    var selectedReviewStatus = ViewBag.ReviewStatus as string;
+    var selectedQuickFilter = ViewBag.QuickFilter as string;
+    var searchString = ViewBag.SearchString as string;
+    bool hasActiveFilters = !string.IsNullOrWhiteSpace(searchString)
+        || selectedStatusId.HasValue
+        || !string.IsNullOrWhiteSpace(selectedReviewStatus)
+        || !string.IsNullOrWhiteSpace(selectedQuickFilter);
 
-    string CheckInStatusName(int? statusId) =>
-        statusId.HasValue && statusesDict.ContainsKey(statusId.Value)
-            ? statusesDict[statusId.Value]
+    string StatusName(Manage_KPI_or_OKR_System.Models.KPICheckIn checkIn) =>
+        checkIn.StatusId.HasValue && statusesDict.TryGetValue(checkIn.StatusId.Value, out var statusName)
+            ? statusName
             : "Chờ cập nhật";
-    bool IsCheckInStatus(Manage_KPI_or_OKR_System.Models.KPICheckIn checkIn, string statusName) =>
-        string.Equals(CheckInStatusName(checkIn.StatusId), statusName, StringComparison.OrdinalIgnoreCase);
 
-    int inTimeCount = Model.Count(c => IsCheckInStatus(c, "Đúng tiến độ") || IsCheckInStatus(c, "Vượt tiến độ") || IsCheckInStatus(c, "Hoàn thành"));
-    int riskCount = Model.Count(c => IsCheckInStatus(c, "Gặp trở ngại"));
-    int lateCount = Model.Count(c => IsCheckInStatus(c, "Chậm tiến độ"));
-    int totalCount = Model.Count();
-    
-    int inTimePct = totalCount > 0 ? (inTimeCount * 100) / totalCount : 0;
-    int riskPct = totalCount > 0 ? (riskCount * 100) / totalCount : 0;
-    int latePct = totalCount > 0 ? (lateCount * 100) / totalCount : 0;
+    int totalCount = ViewBag.TotalCount is int totalValue ? totalValue : checkIns.Count;
+    int onTrackCount = ViewBag.OnTrackCount is int onTrackValue ? onTrackValue : 0;
+    int riskCount = ViewBag.RiskCount is int riskValue ? riskValue : 0;
+    int lateCount = ViewBag.LateCount is int lateValue ? lateValue : 0;
+    int pendingCount = ViewBag.PendingCount is int pendingValue ? pendingValue : 0;
+    int currentPage = ViewBag.Page is int pageValue ? pageValue : 1;
+    int totalPages = ViewBag.TotalPages is int totalPageValue ? totalPageValue : 1;
 
-    string GetReviewText(string? status) => status switch
+    ViewData["Title"] = progressPageTitle;
+}
+
+@functions {
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "NV";
+        var initials = string.Concat(parts.Select(part => part[0]));
+        return initials.Length > 2 ? initials[^2..].ToUpperInvariant() : initials.ToUpperInvariant();
+    }
+
+    private static string Metric(decimal? value)
+    {
+        if (!value.HasValue) return "--";
+        var format = decimal.Truncate(value.Value) == value.Value ? "N0" : "N2";
+        return value.Value.ToString(format, CultureInfo.GetCultureInfo("vi-VN"));
+    }
+
+    private static string ProgressStatusClass(string statusName) => statusName switch
+    {
+        "Đúng tiến độ" or "Vượt tiến độ" or "Hoàn thành" => "ci-state ci-state--success",
+        "Gặp trở ngại" => "ci-state ci-state--warning",
+        "Chậm tiến độ" => "ci-state ci-state--danger",
+        _ => "ci-state ci-state--neutral"
+    };
+
+    private static string ProgressStatusIcon(string statusName) => statusName switch
+    {
+        "Đúng tiến độ" => "bi-check-circle",
+        "Vượt tiến độ" => "bi-graph-up-arrow",
+        "Hoàn thành" => "bi-patch-check",
+        "Gặp trở ngại" => "bi-exclamation-triangle",
+        "Chậm tiến độ" => "bi-clock-history",
+        _ => "bi-hourglass-split"
+    };
+
+    private static string ReviewText(string? status) => status switch
     {
         "Pending" => "Chờ xác nhận",
-        "Rejected" => "Từ chối",
+        "Rejected" => "Đã từ chối",
         _ => "Đã xác nhận"
     };
 
-    string GetReviewBadgeClass(string? status) => status switch
+    private static string ReviewClass(string? status) => status switch
     {
-        "Pending" => "badge-at-risk",
-        "Rejected" => "badge-late",
-        _ => "badge-on-track"
+        "Pending" => "ci-state ci-state--warning",
+        "Rejected" => "ci-state ci-state--danger",
+        _ => "ci-state ci-state--success"
     };
+
+    private static string QuickFilterClass(string? selected, string value) =>
+        string.Equals(selected ?? string.Empty, value, StringComparison.OrdinalIgnoreCase)
+            ? "evaluation-chip is-active"
+            : "evaluation-chip";
 }
 
-<style>
-    /* ===== CARD LAYOUT STYLES ===== */
-
-    /* Avatar chip */
-    .emp-avatar {
-        width: 40px; height: 40px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #1a73e8, #4285f4);
-        color: #fff;
-        font-size: 0.78rem;
-        font-weight: 700;
-        display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0;
-        box-shadow: 0 4px 10px rgba(26, 115, 232, 0.25);
-    }
-
-    /* Progress bar */
-    .ci-progress-track {
-        height: 6px; border-radius: 999px;
-        background: #e9ecef; overflow: hidden;
-        margin-top: 5px;
-    }
-    .ci-progress-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
-
-    /* Status Badges */
-    .badge-on-track {
-        background: #d1fae5; color: #065f46;
-        border: 1px solid #a7f3d0;
-        border-radius: 999px; padding: 3px 10px;
-        font-size: 0.7rem; font-weight: 700;
-        letter-spacing: 0.03em; display: inline-block;
-    }
-    .badge-at-risk {
-        background: #fef3c7; color: #b45309;
-        border: 1px solid #fde68a;
-        border-radius: 999px; padding: 3px 10px;
-        font-size: 0.7rem; font-weight: 700;
-        letter-spacing: 0.03em; display: inline-block;
-    }
-    .badge-late {
-        background: #fee2e2; color: #b91c1c;
-        border: 1px solid #fecaca;
-        border-radius: 999px; padding: 3px 10px;
-        font-size: 0.7rem; font-weight: 700;
-        letter-spacing: 0.03em; display: inline-block;
-    }
-    .badge-fail-reason {
-        background: #fee2e2; color: #b91c1c;
-        border: 1px solid #fecaca;
-        border-radius: 6px; padding: 3px 8px;
-        font-size: 0.72rem; font-weight: 600;
-        display: inline-block;
-    }
-
-    /* ===== STAT CARDS (left column) ===== */
-    .stat-card-wrap {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        padding: 14px;
-    }
-    .stat-card {
-        border-radius: 12px;
-        padding: 14px 16px;
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        border: 1px solid transparent;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-    }
-    .stat-card.green  { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-color: #a7f3d0; }
-    .stat-card.yellow { background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #fde68a; }
-    .stat-card.red    { background: linear-gradient(135deg, #fff5f5, #fee2e2); border-color: #fecaca; }
-    .stat-card.blue   { background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #bfdbfe; }
-
-    .stat-card-icon {
-        width: 42px; height: 42px; border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.15rem; flex-shrink: 0;
-    }
-    .stat-card.green  .stat-card-icon { background: #10b981; color: #fff; box-shadow: 0 4px 10px rgba(16,185,129,0.3); }
-    .stat-card.yellow .stat-card-icon { background: #f59e0b; color: #fff; box-shadow: 0 4px 10px rgba(245,158,11,0.3); }
-    .stat-card.red    .stat-card-icon { background: #ef4444; color: #fff; box-shadow: 0 4px 10px rgba(239,68,68,0.3); }
-    .stat-card.blue   .stat-card-icon { background: linear-gradient(135deg, #1a73e8, #4285f4); color: #fff; box-shadow: 0 4px 10px rgba(26,115,232,0.3); }
-
-    .stat-card-info { flex: 1; min-width: 0; }
-    .stat-card-label {
-        font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
-        text-transform: uppercase; margin-bottom: 2px;
-    }
-    .stat-card.green  .stat-card-label { color: #065f46; }
-    .stat-card.yellow .stat-card-label { color: #92400e; }
-    .stat-card.red    .stat-card-label { color: #991b1b; }
-    .stat-card.blue   .stat-card-label { color: #1e40af; }
-
-    .stat-card-value {
-        font-size: 1.4rem; font-weight: 800; line-height: 1; margin-bottom: 3px;
-    }
-    .stat-card.green  .stat-card-value { color: #065f46; }
-    .stat-card.yellow .stat-card-value { color: #b45309; }
-    .stat-card.red    .stat-card-value { color: #b91c1c; }
-    .stat-card.blue   .stat-card-value { color: #1a73e8; }
-
-    .stat-card-pct {
-        font-size: 0.72rem; font-weight: 600; opacity: 0.75;
-    }
-
-    /* Progress mini inside stat card */
-    .stat-card-track {
-        height: 4px; border-radius: 999px;
-        background: rgba(0,0,0,0.08); overflow: hidden;
-        margin-top: 6px;
-    }
-    .stat-card-fill { height: 100%; border-radius: 999px; transition: width 0.6s ease; }
-
-    /* Alert */
-    .rq-alert {
-        display: flex; align-items: flex-start; gap: 12px;
-        border-radius: 12px; padding: 14px 18px;
-        margin-bottom: 20px; border: none;
-        font-size: 0.875rem; font-weight: 500;
-    }
-    .rq-alert.success { background: #d1fae5; color: #065f46; }
-    .rq-alert.danger  { background: #fee2e2; color: #7f1d1d; }
-    .rq-alert-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
-    .rq-alert .btn-close { margin-left: auto; }
-
-    /* ===== CHECK-IN CARD ===== */
-    .ci-card {
-        background: #fff;
-        border: 1px solid #e8edf4;
-        border-radius: 14px;
-        margin-bottom: 16px;
-        box-shadow: 0 2px 8px rgba(26,60,110,0.04), 0 1px 2px rgba(0,0,0,0.04);
-        transition: box-shadow 0.2s ease, transform 0.15s ease;
-        overflow: hidden;
-    }
-    .ci-card:hover {
-        box-shadow: 0 8px 24px rgba(26,60,110,0.10), 0 2px 6px rgba(0,0,0,0.06);
-        transform: translateY(-1px);
-    }
-    .ci-card-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        padding: 16px 20px 12px;
-        border-bottom: 1px solid #f0f4f8;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-    .ci-card-header-left {
-        display: flex; align-items: center; gap: 12px;
-        flex: 1; min-width: 0;
-    }
-    .ci-card-header-right {
-        display: flex; align-items: center; gap: 8px;
-        flex-shrink: 0; flex-wrap: wrap;
-    }
-    .ci-emp-name {
-        font-size: 0.9rem; font-weight: 700; color: #1a2940;
-        line-height: 1.2; margin-bottom: 2px;
-    }
-    .ci-date-label {
-        font-size: 0.76rem; color: #6b7c93;
-    }
-
-    /* Card body grid */
-    .ci-card-body {
-        padding: 14px 20px;
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 12px 20px;
-        align-items: start;
-    }
-    @@media (max-width: 992px) {
-        .ci-card-body { grid-template-columns: 1fr 1fr; }
-    }
-    @@media (max-width: 576px) {
-        .ci-card-body { grid-template-columns: 1fr; }
-    }
-
-    .ci-info-block { }
-    .ci-info-label {
-        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em;
-        text-transform: uppercase; color: #8fa0b8; margin-bottom: 4px;
-    }
-    .ci-info-value {
-        font-size: 0.85rem; font-weight: 600; color: #1a2940;
-        display: flex; align-items: center; gap: 5px;
-        flex-wrap: wrap;
-    }
-
-    /* Progress block */
-    .ci-progress-block {
-        grid-column: 1 / -1;
-    }
-    @@media (max-width: 576px) {
-        .ci-progress-block { grid-column: 1; }
-    }
-
-    /* Review form in card */
-    .ci-review-form .form-control-sm {
-        border-color: #e1e8f0; border-radius: 8px;
-        font-size: 0.8rem;
-        transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    .ci-review-form .form-control-sm:focus {
-        border-color: #1a73e8;
-        box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
-    }
-    .rq-btn-approve {
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: #fff; border: none; border-radius: 8px;
-        padding: 6px 14px; font-size: 0.8rem; font-weight: 600;
-        cursor: pointer; transition: all 0.2s ease;
-        display: inline-flex; align-items: center; gap: 5px;
-    }
-    .rq-btn-approve:hover {
-        background: linear-gradient(135deg, #059669, #047857);
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        transform: translateY(-1px);
-    }
-    .rq-btn-reject {
-        background: transparent; color: #dc2626;
-        border: 1.5px solid #fca5a5; border-radius: 8px;
-        padding: 6px 14px; font-size: 0.8rem; font-weight: 600;
-        cursor: pointer; transition: all 0.2s ease;
-        display: inline-flex; align-items: center; gap: 5px;
-    }
-    .rq-btn-reject:hover {
-        background: #fee2e2; border-color: #ef4444;
-        transform: translateY(-1px);
-    }
-
-    /* Comment section */
-    .ci-comment-section {
-        border-top: 1px solid #f0f4f8;
-        background: #f8fafd;
-        padding: 14px 20px;
-    }
-    .ci-comment-toggle {
-        background: none; border: none; padding: 0;
-        font-size: 0.8rem; font-weight: 600; color: #1a73e8;
-        cursor: pointer; display: flex; align-items: center; gap: 5px;
-        transition: color 0.15s;
-    }
-    .ci-comment-toggle:hover { color: #1558b7; }
-    .ci-comment-body { margin-top: 12px; }
-    .ci-comment-item {
-        background: #fff;
-        border: 1px solid #e8edf4;
-        border-radius: 10px;
-        padding: 10px 14px;
-        margin-bottom: 8px;
-    }
-
-    /* Empty state */
-    .rq-empty { padding: 72px 24px; text-align: center; }
-    .rq-empty-icon {
-        width: 80px; height: 80px;
-        background: linear-gradient(135deg, #e8f0fe, #c5d8fb);
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        margin: 0 auto 20px;
-        font-size: 2.2rem; color: #1a73e8;
-        animation: rqPulse 2.5s ease-in-out infinite;
-    }
-    @@keyframes rqPulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(26,115,232,0.25); }
-        50%       { box-shadow: 0 0 0 14px rgba(26,115,232,0); }
-    }
-    .rq-empty-title { font-size: 1.15rem; font-weight: 700; color: #1a2940; margin-bottom: 6px; }
-    .rq-empty-sub   { font-size: 0.88rem; color: #6b7c93; }
-
-    /* Review score badge */
-    .ci-score-badge {
-        background: linear-gradient(135deg, #1a73e8, #4285f4);
-        color: #fff; border-radius: 8px;
-        padding: 3px 10px; font-size: 0.78rem; font-weight: 700;
-        display: inline-block;
-    }
-</style>
-
-<div class="container-fluid px-0">
-
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+<div class="evaluation-page checkins-page">
+    <header class="evaluation-page-header">
         <div>
-            <h1 class="h3 font-weight-bold mb-1">@progressPageTitle</h1>
-            <div class="page-breadcrumb">
+            <h1>@progressPageTitle</h1>
+            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
                 <a href="/">Trang chủ</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <a href="/KPIs">KPI</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <span>@progressPageTitle</span>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <a asp-controller="KPIs" asp-action="Index">Quản lý KPI</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Check-in KPI</span>
+            </nav>
+        </div>
+        <a asp-action="Create" class="evaluation-primary-action">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            <span>@progressActionLabel</span>
+        </a>
+    </header>
+
+    <section class="evaluation-summary ci-summary" aria-label="Tổng quan check-in">
+        <article>
+            <span>Check-in hiển thị</span>
+            <strong>@totalCount</strong>
+            <small>Trong phạm vi và bộ lọc hiện tại</small>
+        </article>
+        <article>
+            <span>Đúng tiến độ</span>
+            <strong>@onTrackCount</strong>
+            <small>Đúng hạn, vượt hoặc hoàn thành</small>
+        </article>
+        <article>
+            <span>Có rủi ro</span>
+            <strong>@riskCount</strong>
+            <small>Cần trao đổi và tháo gỡ</small>
+        </article>
+        <article>
+            <span>Chậm tiến độ</span>
+            <strong>@lateCount</strong>
+            <small>Cần kế hoạch khắc phục</small>
+        </article>
+        <article>
+            <span>Chờ xác nhận</span>
+            <strong>@pendingCount</strong>
+            <small>Quản lý cần xem xét</small>
+        </article>
+    </section>
+
+    <section class="evaluation-filter-panel" aria-labelledby="checkInFiltersHeading">
+        <div class="evaluation-filter-heading">
+            <div>
+                <p class="evaluation-eyebrow" id="checkInFiltersHeading">Tìm và lọc</p>
+                <span>Thu hẹp lịch sử theo người thực hiện, KPI, tiến độ và trạng thái xác nhận.</span>
             </div>
-        </div>
-        <div class="d-flex justify-content-end gap-2">
-            <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
-                <i class="bi bi-calendar-check text-white me-1"></i> @progressActionLabel
-            </a>
-        </div>
-    </div>
-
-    <div class="row g-4 mb-4">
-        <!-- Phân tích Check-in (Stat Cards) -->
-        <div class="col-lg-3">
-            <div class="content-card h-100 shadow-sm border-0">
-                <div class="card-header-custom border-bottom p-2 px-3">
-                    <h5 class="mb-0 fw-bold" style="font-size:0.82rem;">
-                        <i class="bi bi-bar-chart-fill me-2"></i>Tổng quan
-                    </h5>
-                </div>
-                <div class="stat-card-wrap">
-
-                    <!-- Tổng check-in -->
-                    <div class="stat-card blue">
-                        <div class="stat-card-icon">
-                            <i class="bi bi-clipboard2-check-fill"></i>
-                        </div>
-                        <div class="stat-card-info">
-                            <div class="stat-card-label">Tổng Check-in</div>
-                            <div class="stat-card-value">@totalCount</div>
-                            <div class="stat-card-track">
-                                <div class="stat-card-fill" style="width:100%; background:#1a73e8;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tốt -->
-                    <div class="stat-card green">
-                        <div class="stat-card-icon">
-                            <i class="bi bi-check-circle-fill"></i>
-                        </div>
-                        <div class="stat-card-info">
-                            <div class="stat-card-label">Đúng tiến độ</div>
-                            <div class="stat-card-value">@inTimeCount</div>
-                            <div class="stat-card-pct">@inTimePct% tổng số</div>
-                            <div class="stat-card-track">
-                                <div class="stat-card-fill" style="width:@inTimePct%; background:#10b981;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Rủi ro -->
-                    <div class="stat-card yellow">
-                        <div class="stat-card-icon">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                        </div>
-                        <div class="stat-card-info">
-                            <div class="stat-card-label">Rủi ro</div>
-                            <div class="stat-card-value">@riskCount</div>
-                            <div class="stat-card-pct">@riskPct% tổng số</div>
-                            <div class="stat-card-track">
-                                <div class="stat-card-fill" style="width:@riskPct%; background:#f59e0b;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Trễ -->
-                    <div class="stat-card red">
-                        <div class="stat-card-icon">
-                            <i class="bi bi-x-circle-fill"></i>
-                        </div>
-                        <div class="stat-card-info">
-                            <div class="stat-card-label">Trễ tiến độ</div>
-                            <div class="stat-card-value">@lateCount</div>
-                            <div class="stat-card-pct">@latePct% tổng số</div>
-                            <div class="stat-card-track">
-                                <div class="stat-card-fill" style="width:@latePct%; background:#ef4444;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
+            @if (hasActiveFilters)
+            {
+                <a asp-action="Index" class="evaluation-clear-link">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i> Xóa lọc
+                </a>
+            }
         </div>
 
-        <!-- Check-in Card List -->
-        <div class="col-lg-9">
-            <div class="content-card shadow-sm border-0">
-                <div class="card-header-custom border-bottom p-3 d-flex justify-content-between align-items-center bg-light bg-opacity-50">
-                    <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-card-checklist me-2"></i> Lịch sử Check-in</h5>
-                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill" style="font-size:0.78rem;">
-                        @totalCount bản ghi
-                    </span>
-                </div>
-                <div class="card-body-custom p-3">
-                    @if (Model != null && Model.Any())
+        <form method="get" asp-action="Index" class="evaluation-filter-form ci-filter-form">
+            <label class="evaluation-search-field">
+                <span class="visually-hidden">Tìm check-in</span>
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" name="searchString" value="@searchString"
+                       placeholder="Tên, mã nhân viên hoặc tên KPI..." autocomplete="off" />
+            </label>
+            <label>
+                <span>Trạng thái tiến độ</span>
+                <select name="statusId" class="no-select2">
+                    <option value="">Tất cả</option>
+                    @foreach (var status in allStatuses)
                     {
-                        foreach (var ci in Model)
-                        {
-                            var detail = detailsDict.ContainsKey(ci.Id) ? detailsDict[ci.Id] : new Manage_KPI_or_OKR_System.Models.CheckInDetail();
-                            var employee = (ci.EmployeeId.HasValue && employeesDict.ContainsKey(ci.EmployeeId.Value)) ? employeesDict[ci.EmployeeId.Value] : null;
-                            string empName = employee?.FullName ?? "Chưa gán";
-                            string initials = string.Join("", empName.Split(' ').Select(n => n.Length > 0 ? n[0].ToString() : "")).ToUpper();
-                            if (initials.Length > 2) initials = initials.Substring(0, 2);
+                        <option value="@status.Id" selected="@(selectedStatusId == status.Id ? "selected" : null)">@status.StatusName</option>
+                    }
+                </select>
+            </label>
+            <label>
+                <span>Trạng thái xác nhận</span>
+                <select name="reviewStatus" class="no-select2">
+                    <option value="">Tất cả</option>
+                    <option value="Pending" selected="@(selectedReviewStatus == "Pending" ? "selected" : null)">Chờ xác nhận</option>
+                    <option value="Approved" selected="@(selectedReviewStatus == "Approved" ? "selected" : null)">Đã xác nhận</option>
+                    <option value="Rejected" selected="@(selectedReviewStatus == "Rejected" ? "selected" : null)">Đã từ chối</option>
+                </select>
+            </label>
+            <button type="submit" class="evaluation-filter-button">
+                <i class="bi bi-funnel" aria-hidden="true"></i> Lọc
+            </button>
+        </form>
 
-                            var kpi = (ci.KPIId.HasValue && kpisDict.ContainsKey(ci.KPIId.Value)) ? kpisDict[ci.KPIId.Value] : null;
-                            string kpiName = kpi?.KPIName ?? "KPI Đã xóa";
+        <nav class="evaluation-quick-filters" aria-label="Lọc nhanh check-in">
+            <a asp-action="Index" asp-route-searchString="@searchString" asp-route-statusId="@selectedStatusId" asp-route-reviewStatus="@selectedReviewStatus" class="@QuickFilterClass(selectedQuickFilter, "")">
+                <i class="bi bi-grid" aria-hidden="true"></i> Tất cả
+            </a>
+            <a asp-action="Index" asp-route-searchString="@searchString" asp-route-statusId="@selectedStatusId" asp-route-reviewStatus="@selectedReviewStatus" asp-route-quickFilter="pending" class="@QuickFilterClass(selectedQuickFilter, "pending")">
+                <i class="bi bi-hourglass-split" aria-hidden="true"></i> Chờ xác nhận
+            </a>
+            <a asp-action="Index" asp-route-searchString="@searchString" asp-route-statusId="@selectedStatusId" asp-route-reviewStatus="@selectedReviewStatus" asp-route-quickFilter="approved" class="@QuickFilterClass(selectedQuickFilter, "approved")">
+                <i class="bi bi-check-circle" aria-hidden="true"></i> Đã xác nhận
+            </a>
+            <a asp-action="Index" asp-route-searchString="@searchString" asp-route-statusId="@selectedStatusId" asp-route-reviewStatus="@selectedReviewStatus" asp-route-quickFilter="rejected" class="@QuickFilterClass(selectedQuickFilter, "rejected")">
+                <i class="bi bi-x-circle" aria-hidden="true"></i> Đã từ chối
+            </a>
+            <a asp-action="Index" asp-route-searchString="@searchString" asp-route-statusId="@selectedStatusId" asp-route-reviewStatus="@selectedReviewStatus" asp-route-quickFilter="risk" class="@QuickFilterClass(selectedQuickFilter, "risk")">
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Có rủi ro
+            </a>
+        </nav>
+    </section>
 
-                            decimal progressVal = detail.ProgressPercentage ?? 0;
-                            decimal progressWidth = Math.Min(100, progressVal);
-                            string colorClass = ProgressHelper.GetProgressTextColorClass(progressVal);
-                            string barColor = progressVal >= 80 ? "#10b981" : progressVal >= 50 ? "#f59e0b" : "#ef4444";
+    <section class="evaluation-results ci-results" aria-labelledby="checkInResultsHeading">
+        <div class="evaluation-results-heading">
+            <div>
+                <p class="evaluation-eyebrow" id="checkInResultsHeading">Lịch sử check-in</p>
+                <strong>@totalCount bản ghi phù hợp</strong>
+            </div>
+            <span>Trang @currentPage / @totalPages</span>
+        </div>
 
-                            var reviewStatus = string.IsNullOrWhiteSpace(ci.ReviewStatus) ? "Approved" : ci.ReviewStatus;
-                            var reviewer = (ci.ReviewedById.HasValue && employeesDict.ContainsKey(ci.ReviewedById.Value)) ? employeesDict[ci.ReviewedById.Value] : null;
+        @if (!checkIns.Any())
+        {
+            <div class="evaluation-empty">
+                <span class="evaluation-empty-icon"><i class="bi bi-journal-check" aria-hidden="true"></i></span>
+                <h2>@(hasActiveFilters ? "Không có check-in phù hợp" : "Chưa có bản ghi check-in")</h2>
+                <p>@(hasActiveFilters ? "Thử thay đổi bộ lọc hoặc xóa lọc để xem lại lịch sử." : "Bắt đầu ghi nhận số liệu thực tế để theo dõi tiến độ KPI.")</p>
+                @if (hasActiveFilters)
+                {
+                    <a asp-action="Index" class="evaluation-secondary-action">Xóa bộ lọc</a>
+                }
+                else
+                {
+                    <a asp-action="Create" class="evaluation-primary-action">Ghi nhận tiến độ</a>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="ci-entry-list">
+                @foreach (var checkIn in checkIns)
+                {
+                    var detail = detailsDict.TryGetValue(checkIn.Id, out var savedDetail) ? savedDetail : new Manage_KPI_or_OKR_System.Models.CheckInDetail();
+                    var employee = checkIn.EmployeeId.HasValue && employeesDict.TryGetValue(checkIn.EmployeeId.Value, out var savedEmployee) ? savedEmployee : null;
+                    var kpi = checkIn.KPIId.HasValue && kpisDict.TryGetValue(checkIn.KPIId.Value, out var savedKpi) ? savedKpi : null;
+                    var kpiDetail = checkIn.KPIId.HasValue && kpiData.TryGetValue(checkIn.KPIId.Value, out var savedKpiDetail) ? savedKpiDetail : null;
+                    string employeeName = employee?.FullName ?? "Chưa gán nhân viên";
+                    string kpiName = kpi?.KPIName ?? "KPI không còn khả dụng";
+                    string measurementUnit = kpiDetail?.MeasurementUnit ?? "đơn vị";
+                    string progressStatus = StatusName(checkIn);
+                    string reviewStatus = string.IsNullOrWhiteSpace(checkIn.ReviewStatus) ? "Approved" : checkIn.ReviewStatus;
+                    decimal progress = detail.ProgressPercentage ?? 0;
+                    decimal progressWidth = Math.Clamp(progress, 0, 100);
+                    var reviewer = checkIn.ReviewedById.HasValue && employeesDict.TryGetValue(checkIn.ReviewedById.Value, out var savedReviewer) ? savedReviewer : null;
+                    var comments = commentsByCheckIn.TryGetValue(checkIn.Id, out var savedComments) ? savedComments : new List<Manage_KPI_or_OKR_System.Models.GoalComment>();
 
-                            var checkInStatusName = CheckInStatusName(ci.StatusId);
-                            string badgeClass = checkInStatusName == "Gặp trở ngại" ? "badge-at-risk" :
-                                                (checkInStatusName == "Chậm tiến độ" ? "badge-late" : "badge-on-track");
-                            string badgeText = checkInStatusName switch
+                    <article class="ci-entry">
+                        <header class="ci-entry__header">
+                            <div class="ci-entry__identity">
+                                <span class="ci-avatar" aria-hidden="true">@Initials(employeeName)</span>
+                                <div>
+                                    <h2>@employeeName</h2>
+                                    <p><i class="bi bi-bullseye" aria-hidden="true"></i> @kpiName</p>
+                                </div>
+                            </div>
+                            <div class="ci-entry__meta">
+                                <time datetime="@checkIn.CheckInDate?.ToString("O")">
+                                    <i class="bi bi-clock" aria-hidden="true"></i>
+                                    @(checkIn.CheckInDate?.ToString("dd/MM/yyyy · HH:mm") ?? "Chưa có thời gian")
+                                </time>
+                                <div class="ci-state-group">
+                                    <span class="@ProgressStatusClass(progressStatus)">
+                                        <i class="bi @ProgressStatusIcon(progressStatus)" aria-hidden="true"></i>@progressStatus
+                                    </span>
+                                    <span class="@ReviewClass(reviewStatus)">@ReviewText(reviewStatus)</span>
+                                </div>
+                            </div>
+                        </header>
+
+                        <div class="ci-entry__body">
+                            <dl class="ci-metrics">
+                                <div>
+                                    <dt>Kết quả lũy kế</dt>
+                                    <dd>@Metric(detail.AchievedValue) <small>@measurementUnit</small></dd>
+                                </div>
+                                <div>
+                                    <dt>Tiến độ</dt>
+                                    <dd>@Metric(progress)%</dd>
+                                </div>
+                                <div>
+                                    <dt>Lý do chưa đạt</dt>
+                                    <dd class="ci-metric-text">
+                                        @(checkIn.FailReasonId.HasValue && failReasonsDict.TryGetValue(checkIn.FailReasonId.Value, out var failReason) ? failReason : "Không ghi nhận")
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt>Người xác nhận</dt>
+                                    <dd class="ci-metric-text">@(reviewer?.FullName ?? "Chưa xác nhận")</dd>
+                                </div>
+                                <div>
+                                    <dt>Điểm quản lý</dt>
+                                    <dd>@(checkIn.ReviewScore.HasValue ? $"{checkIn.ReviewScore.Value:0.##}/100" : "--")</dd>
+                                </div>
+                            </dl>
+
+                            <div class="ci-progress" aria-label="Tiến độ @Metric(progress) phần trăm">
+                                <div class="ci-progress__track">
+                                    <span style="width: @progressWidth%"></span>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(detail.Note) || !string.IsNullOrWhiteSpace(checkIn.ReviewComment))
                             {
-                                "Gặp trở ngại" => "Gặp trở ngại",
-                                "Chậm tiến độ" => "Chậm tiến độ",
-                                "Vượt tiến độ" => "Vượt tiến độ",
-                                "Hoàn thành" => "Hoàn thành",
-                                "Đúng tiến độ" => "Đúng tiến độ",
-                                _ => "Chờ cập nhật"
-                            };
-                            if (progressVal < 40 && checkInStatusName == "Đúng tiến độ") { badgeText = "Cần chú ý"; badgeClass = "badge-late"; }
-                            else if (progressVal >= 95 && checkInStatusName != "Hoàn thành") { badgeText = "Đúng tiến độ"; badgeClass = "badge-on-track"; }
-
-                            var comments = commentsByCheckIn.ContainsKey(ci.Id) ? commentsByCheckIn[ci.Id] : new List<Manage_KPI_or_OKR_System.Models.GoalComment>();
-
-                            <div class="ci-card">
-                                <!-- Card Header -->
-                                <div class="ci-card-header">
-                                    <div class="ci-card-header-left">
-                                        <div class="emp-avatar">@initials</div>
-                                        <div style="min-width:0;">
-                                            <div class="ci-emp-name">@empName</div>
-                                            <div class="ci-date-label">
-                                                <i class="bi bi-clock me-1"></i>@(ci.CheckInDate?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="ci-card-header-right">
-                                        <span class="@badgeClass">@badgeText</span>
-                                        <span class="@GetReviewBadgeClass(reviewStatus)">@GetReviewText(reviewStatus)</span>
-                                    </div>
+                                <div class="ci-notes">
+                                    @if (!string.IsNullOrWhiteSpace(detail.Note))
+                                    {
+                                        <p><strong>Ghi chú:</strong> @detail.Note</p>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(checkIn.ReviewComment))
+                                    {
+                                        <p><strong>Nhận xét quản lý:</strong> @checkIn.ReviewComment</p>
+                                    }
                                 </div>
+                            }
+                        </div>
 
-                                <!-- Card Body -->
-                                <div class="ci-card-body">
-                                    <!-- KPI Name -->
-                                    <div class="ci-info-block">
-                                        <div class="ci-info-label"><i class="bi bi-speedometer2 me-1"></i>KPI Mục tiêu</div>
-                                        <div class="ci-info-value">@kpiName</div>
+                        @if (canReviewCheckIns && reviewStatus == "Pending")
+                        {
+                            <div class="ci-review-panel">
+                                <div class="ci-review-panel__heading">
+                                    <div>
+                                        <strong>Xác nhận kết quả check-in</strong>
+                                        <span>Điểm và nhận xét sẽ được lưu vào lịch sử trao đổi.</span>
                                     </div>
-
-                                    <!-- Achieved Value -->
-                                    <div class="ci-info-block">
-                                        <div class="ci-info-label"><i class="bi bi-graph-up-arrow me-1"></i>Kết quả thực tế</div>
-                                        <div class="ci-info-value">
-                                            @String.Format("{0:N0}", detail.AchievedValue)
-                                            @if (!string.IsNullOrEmpty(detail.Note))
-                                            {
-                                                <span title="@detail.Note"><i class="bi bi-info-circle text-info" style="font-size:0.85rem;"></i></span>
-                                            }
-                                        </div>
-                                    </div>
-
-                                    <!-- Fail Reason -->
-                                    <div class="ci-info-block">
-                                        <div class="ci-info-label"><i class="bi bi-exclamation-triangle me-1"></i>Lý do chưa đạt</div>
-                                        <div class="ci-info-value">
-                                            @if (ci.FailReasonId.HasValue && failReasonsDict.ContainsKey(ci.FailReasonId.Value))
-                                            {
-                                                <span class="badge-fail-reason">
-                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>@failReasonsDict[ci.FailReasonId.Value]
-                                                </span>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted" style="font-size:0.8rem;">--</span>
-                                            }
-                                        </div>
-                                    </div>
-
-                                    <!-- Reviewer Info -->
-                                    <div class="ci-info-block">
-                                        <div class="ci-info-label"><i class="bi bi-person-check me-1"></i>Người xác nhận</div>
-                                        <div class="ci-info-value" style="font-size:0.8rem; color:#6b7c93;">
-                                            @if (ci.ReviewedAt.HasValue && reviewer != null)
-                                            {
-                                                <span>@reviewer.FullName</span>
-                                                <span class="text-muted" style="font-size:0.72rem;">– @ci.ReviewedAt.Value.ToString("dd/MM/yyyy")</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted">--</span>
-                                            }
-                                        </div>
-                                    </div>
-
-                                    <!-- Manager Review Score -->
-                                    <div class="ci-info-block">
-                                        <div class="ci-info-label"><i class="bi bi-star me-1"></i>Đánh giá QL</div>
-                                        <div class="ci-info-value">
-                                            @if (ci.ReviewScore.HasValue)
-                                            {
-                                                <span class="ci-score-badge">@ci.ReviewScore.Value.ToString("0.##") / 100</span>
-                                            }
-                                            @if (!string.IsNullOrWhiteSpace(ci.ReviewComment))
-                                            {
-                                                <span class="text-muted small ms-1" title="@ci.ReviewComment" style="font-size:0.78rem;">
-                                                    @(ci.ReviewComment.Length > 50 ? ci.ReviewComment.Substring(0, 50) + "…" : ci.ReviewComment)
-                                                </span>
-                                            }
-                                            @if (!ci.ReviewScore.HasValue && string.IsNullOrWhiteSpace(ci.ReviewComment))
-                                            {
-                                                <span class="text-muted" style="font-size:0.8rem;">--</span>
-                                            }
-                                        </div>
-                                    </div>
-
-                                    <!-- Progress Bar (full width) -->
-                                    <div class="ci-info-block ci-progress-block">
-                                        <div class="ci-info-label"><i class="bi bi-bar-chart me-1"></i>Tiến độ</div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="@colorClass fw-bold" style="font-size:0.85rem; min-width:42px;">@progressVal%</span>
-                                            <div class="ci-progress-track flex-grow-1">
-                                                <div class="ci-progress-fill" style="width:@progressWidth%; background:@barColor;"></div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <i class="bi bi-shield-check" aria-hidden="true"></i>
                                 </div>
-
-                                <!-- Comment Section -->
-                                <div class="ci-comment-section">
-                                    <button class="ci-comment-toggle" type="button"
-                                            data-bs-toggle="collapse"
-                                            data-bs-target="#comments-@ci.Id"
-                                            aria-expanded="false">
-                                        <i class="bi bi-chat-left-text"></i>
-                                        Trao đổi &amp; đánh giá bổ sung
-                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill ms-1" style="font-size:0.68rem;">@comments.Count</span>
-                                    </button>
-                                    <div class="collapse ci-comment-body" id="comments-@ci.Id">
-                                        @if (comments.Any())
-                                        {
-                                            <div class="d-flex flex-column gap-2 mb-3 mt-2">
-                                                @foreach (var comment in comments)
-                                                {
-                                                    var commenter = comment.CommenterId.HasValue && employeesDict.ContainsKey(comment.CommenterId.Value)
-                                                        ? employeesDict[comment.CommenterId.Value].FullName
-                                                        : "Hệ thống";
-                                                    <div class="ci-comment-item">
-                                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                                            <span class="fw-semibold small">@commenter</span>
-                                                            <span class="text-muted" style="font-size:0.72rem;">@comment.CommentTime?.ToString("dd/MM/yyyy HH:mm")</span>
-                                                        </div>
-                                                        @if (comment.Rating.HasValue)
-                                                        {
-                                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-1">
-                                                                Đánh giá: @comment.Rating.Value.ToString("0.##")/100
-                                                            </span>
-                                                        }
-                                                        <div class="text-muted small">@comment.Content</div>
-                                                    </div>
-                                                }
-                                            </div>
-                                        }
-                                        <form asp-action="AddComment" method="post" class="row g-2 align-items-start mt-2">
-                                            <input type="hidden" name="checkInId" value="@ci.Id" />
-                                            <input type="hidden" name="kpiId" value="@ci.KPIId" />
-                                            <input type="hidden" name="returnUrl" value="@returnUrl" />
-                                            <div class="col-lg-8">
-                                                <textarea name="content" class="form-control form-control-sm" rows="2"
-                                                          placeholder="Thêm bình luận về lần check-in này..." required></textarea>
-                                            </div>
-                                            <div class="col-lg-2">
-                                                <input type="number" min="0" max="100" step="0.01" name="rating"
-                                                       class="form-control form-control-sm" placeholder="Điểm" />
-                                            </div>
-                                            <div class="col-lg-2 d-grid">
-                                                <button type="submit" class="btn btn-sm btn-outline-primary">
-                                                    <i class="bi bi-send me-1"></i>Gửi
-                                                </button>
-                                            </div>
-                                        </form>
+                                <form asp-action="Review" method="post" class="ci-review-form">
+                                    <input type="hidden" name="id" value="@checkIn.Id" />
+                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    <label>
+                                        <span>Điểm (0-100)</span>
+                                        <input type="number" name="reviewScore" min="0" max="100" step="0.01" placeholder="Tùy chọn" />
+                                    </label>
+                                    <label class="ci-review-form__comment">
+                                        <span>Nhận xét</span>
+                                        <textarea name="reviewComment" rows="2" maxlength="2000" placeholder="Nêu lý do xác nhận hoặc từ chối..."></textarea>
+                                    </label>
+                                    <div class="ci-review-form__actions">
+                                        <button type="submit" name="decision" value="Rejected" class="ci-review-button ci-review-button--reject">
+                                            <i class="bi bi-x-lg" aria-hidden="true"></i> Từ chối
+                                        </button>
+                                        <button type="submit" name="decision" value="Approved" class="ci-review-button ci-review-button--approve">
+                                            <i class="bi bi-check-lg" aria-hidden="true"></i> Xác nhận
+                                        </button>
                                     </div>
-                                </div>
+                                </form>
                             </div>
                         }
+
+                        <footer class="ci-discussion">
+                            <button class="ci-discussion__toggle" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#comments-@checkIn.Id" aria-expanded="false" aria-controls="comments-@checkIn.Id">
+                                <span><i class="bi bi-chat-left-text" aria-hidden="true"></i> Trao đổi &amp; đánh giá bổ sung</span>
+                                <span>@comments.Count bình luận <i class="bi bi-chevron-down" aria-hidden="true"></i></span>
+                            </button>
+                            <div class="collapse ci-discussion__body" id="comments-@checkIn.Id">
+                                @if (comments.Any())
+                                {
+                                    <div class="ci-comment-list">
+                                        @foreach (var comment in comments)
+                                        {
+                                            var commenter = comment.CommenterId.HasValue && employeesDict.TryGetValue(comment.CommenterId.Value, out var savedCommenter)
+                                                ? savedCommenter.FullName
+                                                : "Hệ thống";
+                                            <div class="ci-comment">
+                                                <div>
+                                                    <strong>@commenter</strong>
+                                                    <time>@comment.CommentTime?.ToString("dd/MM/yyyy HH:mm")</time>
+                                                </div>
+                                                @if (comment.Rating.HasValue)
+                                                {
+                                                    <span class="ci-comment__rating">@comment.Rating.Value.ToString("0.##")/100</span>
+                                                }
+                                                <p>@comment.Content</p>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                <form asp-action="AddComment" method="post" class="ci-comment-form">
+                                    <input type="hidden" name="checkInId" value="@checkIn.Id" />
+                                    <input type="hidden" name="kpiId" value="@checkIn.KPIId" />
+                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    <label class="ci-comment-form__content">
+                                        <span class="visually-hidden">Nội dung bình luận</span>
+                                        <textarea name="content" rows="2" maxlength="2000" placeholder="Thêm bình luận về lần check-in này..." required></textarea>
+                                    </label>
+                                    <label>
+                                        <span class="visually-hidden">Điểm đánh giá</span>
+                                        <input type="number" min="0" max="100" step="0.01" name="rating" placeholder="Điểm" />
+                                    </label>
+                                    <button type="submit" class="evaluation-secondary-action">
+                                        <i class="bi bi-send" aria-hidden="true"></i> Gửi
+                                    </button>
+                                </form>
+                            </div>
+                        </footer>
+                    </article>
+                }
+            </div>
+
+            @if (totalPages > 1)
+            {
+                <nav class="evaluation-pagination" aria-label="Phân trang check-in">
+                    @if (currentPage > 1)
+                    {
+                        <a asp-action="Index" asp-route-searchString="@searchString" asp-route-statusId="@selectedStatusId" asp-route-reviewStatus="@selectedReviewStatus" asp-route-quickFilter="@selectedQuickFilter" asp-route-page="@(currentPage - 1)" aria-label="Trang trước">
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        </a>
                     }
                     else
                     {
-                        <div class="rq-empty">
-                            <div class="rq-empty-icon">
-                                <i class="bi bi-journal-x"></i>
-                            </div>
-                            <div class="rq-empty-title">Chưa có bản ghi Check-in nào</div>
-                            <div class="rq-empty-sub">Hãy bắt đầu ghi nhận dữ liệu để theo dõi tiến độ KPI.</div>
-                        </div>
+                        <span class="is-disabled"><i class="bi bi-chevron-left" aria-hidden="true"></i></span>
                     }
-                </div>
-            </div>
-        </div>
-    </div>
 
-@{
-    var allEmployeesList = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
-    var allKPIsList = ViewBag.AllKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new List<Manage_KPI_or_OKR_System.Models.KPI>();
-    var allStatusesList = ViewBag.AllStatuses as List<Manage_KPI_or_OKR_System.Models.CheckInStatus> ?? new List<Manage_KPI_or_OKR_System.Models.CheckInStatus>();
+                    @for (var pageNumber = Math.Max(1, currentPage - 2); pageNumber <= Math.Min(totalPages, currentPage + 2); pageNumber++)
+                    {
+                        if (pageNumber == currentPage)
+                        {
+                            <span class="is-current" aria-current="page">@pageNumber</span>
+                        }
+                        else
+                        {
+                            <a asp-action="Index" asp-route-searchString="@searchString" asp-route-statusId="@selectedStatusId" asp-route-reviewStatus="@selectedReviewStatus" asp-route-quickFilter="@selectedQuickFilter" asp-route-page="@pageNumber">@pageNumber</a>
+                        }
+                    }
+
+                    @if (currentPage < totalPages)
+                    {
+                        <a asp-action="Index" asp-route-searchString="@searchString" asp-route-statusId="@selectedStatusId" asp-route-reviewStatus="@selectedReviewStatus" asp-route-quickFilter="@selectedQuickFilter" asp-route-page="@(currentPage + 1)" aria-label="Trang sau">
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="is-disabled"><i class="bi bi-chevron-right" aria-hidden="true"></i></span>
+                    }
+                </nav>
+            }
+        }
+    </section>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/kpi-checkins.css" asp-append-version="true" />
 }
-
-<!-- Create Check-in Modal -->
-<div class="modal fade" id="createCheckinModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header-soft primary">
-                <h5 class="modal-title-custom">
-                    <i class="bi bi-calendar-check-fill text-white shadow-sm" style="background: linear-gradient(135deg, #1a73e8, #4285f4); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 12px;"></i>
-                    @progressPageTitle
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form asp-action="Create" asp-controller="KPICheckIns" method="post">
-                <div class="modal-body-soft">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="form-icon-group">
-                                <label>Nhân viên</label>
-                                <div class="input-wrapper">
-                                    <i class="bi bi-person"></i>
-                                    @if (allEmployeesList.Count == 1)
-                                    {
-                                        var e = allEmployeesList[0];
-                                        <input type="hidden" name="EmployeeId" id="quickEmployeeSelect" value="@e.Id" />
-                                        <input type="text" class="form-control bg-light" value="@e.FullName (@e.EmployeeCode)" readonly style="padding-left: 45px;" />
-                                    }
-                                    else
-                                    {
-                                        <select name="EmployeeId" id="quickEmployeeSelect" class="form-select" required style="padding-left: 45px;">
-                                            <option value="">-- Chọn nhân viên --</option>
-                                            @foreach(var e in allEmployeesList)
-                                            {
-                                                <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
-                                            }
-                                        </select>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-icon-group">
-                                <label>KPI Mục tiêu</label>
-                                <div class="input-wrapper">
-                                    <i class="bi bi-speedometer2"></i>
-                                    <select name="KPIId" id="quickKpiSelect" class="form-select" required>
-                                        @if (allKPIsList.Count != 1)
-                                        {
-                                            <option value="">-- Chọn KPI --</option>
-                                        }
-                                        @foreach(var k in allKPIsList)
-                                        {
-                                            <option value="@k.Id" selected="@(allKPIsList.Count == 1 ? "selected" : null)">@k.KPIName</option>
-                                        }
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="form-icon-group">
-                                <label>Trạng thái tiến độ</label>
-                                <div class="input-wrapper">
-                                    <i class="bi bi-flag-fill"></i>
-                                    <select name="StatusId" class="form-select">
-                                        @foreach(var s in allStatusesList)
-                                        {
-                                            <option value="@s.Id">@s.StatusName</option>
-                                        }
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-icon-group">
-                                <label>Kết quả thực tế</label>
-                                <div class="input-wrapper input-group">
-                                    <i class="bi bi-graph-up-arrow"></i>
-                                    <input type="number" step="0.01" min="0" name="AchievedValue" id="quickAchievedInput" class="form-control measurement-value-input" data-measurement-role="achieved" data-measurement-suffix-target="quickAchievedUnitSuffix" placeholder="0.00" required>
-                                    <span class="input-group-text measurement-unit-suffix" id="quickAchievedUnitSuffix">đơn vị</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="alert alert-info bg-info bg-opacity-10 border-0 rounded-3 py-2 px-3 mb-3">
-                        <div class="fw-semibold small"><i class="bi bi-alarm me-1"></i> Deadline: <span id="quickDeadlineDisplay">--</span></div>
-                        <div class="text-muted small">Mục tiêu tới hạn: <span id="quickDeadlineTargetDisplay">--</span></div>
-                    </div>
-
-                    <div class="form-icon-group">
-                        <label>Ghi chú / Trở ngại</label>
-                        <div class="input-wrapper">
-                            <i class="bi bi-chat-left-dots"></i>
-                            <textarea name="Note" class="form-control" placeholder="Nhập ghi chú hoặc các khó khăn gặp phải..." rows="2" style="padding-top: 12px;"></textarea>
-                        </div>
-                    </div>
-
-                    <div class="form-icon-group mb-0">
-                        <label>Lý do (Nếu chưa đạt)</label>
-                        <div class="input-wrapper">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <select name="FailReasonId" class="form-select">
-                                <option value="">-- Không có / Đã đạt --</option>
-                                @foreach(var r in (ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>())){
-                                    <option value="@r.Id">@r.ReasonName</option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-3 mt-4">
-                        <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal">Hủy bỏ</button>
-                        <button type="submit" class="btn-primary-custom px-4">@progressActionLabel</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-    (function () {
-    const quickCheckInKpiMap = @Html.Raw(kpiDataJson);
-    const quickAssignmentWeights = @Html.Raw(assignmentWeightsJson);
-
-    function resolveQuickDeadline(data) {
-        const now = new Date();
-        const frequencyDays = Math.max(1, parseInt(data?.frequencyDays || 1, 10));
-        const periodStart = data?.periodStart ? new Date(data.periodStart) : new Date(now);
-        const periodEnd = data?.periodEnd ? new Date(data.periodEnd) : null;
-        const configuredDeadline = data?.deadlineDate ? new Date(data.deadlineDate) : null;
-        const startDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
-        let targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        if (targetDate < startDate) targetDate = startDate;
-        if (periodEnd) {
-            const endDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
-            if (targetDate > endDate) targetDate = endDate;
-        }
-        if (configuredDeadline) {
-            const deadlineDate = new Date(configuredDeadline.getFullYear(), configuredDeadline.getMonth(), configuredDeadline.getDate());
-            if (targetDate > deadlineDate) targetDate = deadlineDate;
-        }
-        const offsetDays = Math.max(0, Math.floor((targetDate - startDate) / 86400000));
-        const due = new Date(startDate);
-        due.setDate(startDate.getDate() + Math.floor(offsetDays / frequencyDays) * frequencyDays);
-        const [hour, minute] = String(data?.deadlineTime || '10:00').split(':').map(Number);
-        due.setHours(hour || 0, minute || 0, 0, 0);
-        return due;
-    }
-
-    function calculateQuickExpected(data, deadline, individualTarget) {
-        const target = individualTarget || data?.target || 0;
-        if (!data?.periodStart || !data?.periodEnd || !target) return target;
-        const periodStart = new Date(data.periodStart);
-        const periodEnd = new Date(data.periodEnd);
-        const startDate = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate());
-        let endDate = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate());
-        if (data.deadlineDate) {
-            const configuredDeadline = new Date(data.deadlineDate);
-            const deadlineDate = new Date(configuredDeadline.getFullYear(), configuredDeadline.getMonth(), configuredDeadline.getDate());
-            if (deadlineDate < endDate) endDate = deadlineDate;
-        }
-        const dueDate = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
-        const totalDays = Math.max(1, Math.floor((endDate - startDate) / 86400000) + 1);
-        const elapsedDays = Math.min(totalDays, Math.max(1, Math.floor((dueDate - startDate) / 86400000) + 1));
-        return target * (elapsedDays / totalDays);
-    }
-
-    function updateQuickCheckInInput() {
-        const kpiSelect = document.getElementById('quickKpiSelect');
-        const employeeSelect = document.getElementById('quickEmployeeSelect');
-        const achievedInput = document.getElementById('quickAchievedInput');
-        if (!kpiSelect || !achievedInput) return;
-
-        const selectedKpi = quickCheckInKpiMap[kpiSelect.value];
-        const employeeId = employeeSelect?.value || '';
-        const employeeWeights = quickAssignmentWeights[employeeId] || {};
-        const weight = employeeWeights[kpiSelect.value] || 100;
-        const individualTarget = selectedKpi ? (selectedKpi.target || 0) * (weight / 100) : 0;
-        const unit = selectedKpi?.unit || '';
-        const config = window.applyMeasurementUnitConfigToInputs
-            ? window.applyMeasurementUnitConfigToInputs(unit, [achievedInput])
-            : { suffix: unit || 'đơn vị' };
-
-        const suffix = document.getElementById('quickAchievedUnitSuffix');
-        if (suffix) suffix.textContent = config.suffix || unit || 'đơn vị';
-
-        const deadlineDisplay = document.getElementById('quickDeadlineDisplay');
-        const deadlineTargetDisplay = document.getElementById('quickDeadlineTargetDisplay');
-        if (selectedKpi && deadlineDisplay && deadlineTargetDisplay) {
-            const deadline = resolveQuickDeadline(selectedKpi);
-            const expected = calculateQuickExpected(selectedKpi, deadline, individualTarget);
-            deadlineDisplay.textContent = deadline.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            deadlineTargetDisplay.textContent = new Intl.NumberFormat('vi-VN').format(expected) + (unit ? ` ${unit}` : '') + ` / 100% chỉ tiêu cá nhân (phân bổ ${weight}%)`;
-        } else {
-            if (deadlineDisplay) deadlineDisplay.textContent = '--';
-            if (deadlineTargetDisplay) deadlineTargetDisplay.textContent = '--';
-        }
-    }
-
-    function initQuickCheckInForm() {
-        document.getElementById('quickKpiSelect')?.addEventListener('change', updateQuickCheckInInput);
-        document.getElementById('quickEmployeeSelect')?.addEventListener('change', updateQuickCheckInInput);
-        updateQuickCheckInInput();
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initQuickCheckInForm, { once: true });
-    } else {
-        initQuickCheckInForm();
-    }
-    })();
-</script>
-</div>

@@ -130,7 +130,12 @@
                                                     @if (canDeleteOkr)
                                                     {
                                                         <li>
-                                                            <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận xóa OKR này?');">
+                                                            <form asp-action="Delete" asp-route-id="@okr.Id" method="post" class="m-0"
+                                                                  data-app-confirm
+                                                                  data-confirm-title="Vô hiệu hóa OKR?"
+                                                                  data-confirm-message="OKR sẽ ngừng hoạt động; dự án, công việc và lịch sử liên kết vẫn được giữ lại."
+                                                                  data-confirm-tone="warning"
+                                                                  data-confirm-label="Vô hiệu hóa">
                                                                 <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2" aria-hidden="true"></i>Xóa OKR</button>
                                                             </form>
                                                         </li>
@@ -199,7 +204,14 @@
                                                                 }
                                                                 @if (canDeleteOkr)
                                                                 {
-                                                                    <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0" onsubmit="return confirm('Xóa KR này?');">
+                                                                    <form asp-action="DeleteKeyResult" asp-route-id="@kr.Id" method="post" class="m-0"
+                                                                          data-app-confirm
+                                                                          data-confirm-title="Xóa vĩnh viễn Key Result?"
+                                                                          data-confirm-message="Key Result “@krName” sẽ bị xóa vĩnh viễn và tiến độ OKR sẽ được tính lại."
+                                                                          data-confirm-tone="danger"
+                                                                          data-confirm-label="Xóa vĩnh viễn"
+                                                                          data-confirm-require-text="XÓA"
+                                                                          data-confirm-require-label="Nhập “XÓA” để xác nhận xóa Key Result">
                                                                         <button type="submit" class="btn btn-sm okr-icon-btn okr-icon-btn--danger"
                                                                                 title="Xóa @krName"
                                                                                 aria-label="Xóa Key Result #@kr.Id: @krName">

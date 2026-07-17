@@ -120,6 +120,10 @@ namespace Manage_KPI_or_OKR_System.Services
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         private static readonly Regex HexColorRegex = new("^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$", RegexOptions.Compiled);
+        private static readonly SemaphoreSlim BrandingCacheGate = new(1, 1);
+        private static AppBrandingSettings? _cachedBranding;
+        private static DateTime _brandingCacheExpiresAtUtc;
+        private static readonly TimeSpan BrandingCacheTtl = TimeSpan.FromMinutes(5);
 
         private readonly MiniERPDbContext _context;
 
@@ -130,14 +134,30 @@ namespace Manage_KPI_or_OKR_System.Services
 
         public async Task<AppBrandingSettings> GetBrandingAsync(CancellationToken cancellationToken = default)
         {
-            var parameterRows = await _context.SystemParameters
-                .AsNoTracking()
-                .Where(p => p.ParameterCode != null)
-                .ToListAsync(cancellationToken);
+            var cachedBranding = Volatile.Read(ref _cachedBranding);
+            if (cachedBranding != null && DateTime.UtcNow < _brandingCacheExpiresAtUtc)
+            {
+                return cachedBranding;
+            }
 
-            var values = parameterRows
-                .Where(p => p.ParameterCode != null && BrandingCodes.Contains(p.ParameterCode))
-                .ToDictionary(p => p.ParameterCode!, p => p.Value ?? "", StringComparer.OrdinalIgnoreCase);
+            await BrandingCacheGate.WaitAsync(cancellationToken);
+            try
+            {
+                cachedBranding = Volatile.Read(ref _cachedBranding);
+                if (cachedBranding != null && DateTime.UtcNow < _brandingCacheExpiresAtUtc)
+                {
+                    return cachedBranding;
+                }
+
+                var brandingCodes = BrandingCodes.ToList();
+                var parameterRows = await _context.SystemParameters
+                    .AsNoTracking()
+                    .Where(p => p.ParameterCode != null && brandingCodes.Contains(p.ParameterCode))
+                    .ToListAsync(cancellationToken);
+
+                var values = parameterRows
+                    .Where(p => p.ParameterCode != null)
+                    .ToDictionary(p => p.ParameterCode!, p => p.Value ?? "", StringComparer.OrdinalIgnoreCase);
 
             string Get(string code)
             {
@@ -152,8 +172,8 @@ namespace Manage_KPI_or_OKR_System.Services
                 return HexColorRegex.IsMatch(value) ? value : GetDefaultValue(code);
             }
 
-            return new AppBrandingSettings
-            {
+                var branding = new AppBrandingSettings
+                {
                 ProductName = Get(SystemSettingCodes.ProductName),
                 ShortName = Get(SystemSettingCodes.ShortName),
                 CompanyName = Get(SystemSettingCodes.CompanyName),
@@ -178,7 +198,16 @@ namespace Manage_KPI_or_OKR_System.Services
                 Author = Get(SystemSettingCodes.Author),
                 PublicBaseUrl = Get(SystemSettingCodes.PublicBaseUrl).TrimEnd('/'),
                 CustomCss = Get(SystemSettingCodes.CustomCss)
-            };
+                };
+
+                Volatile.Write(ref _cachedBranding, branding);
+                _brandingCacheExpiresAtUtc = DateTime.UtcNow.Add(BrandingCacheTtl);
+                return branding;
+            }
+            finally
+            {
+                BrandingCacheGate.Release();
+            }
         }
 
         public async Task<IReadOnlyList<SystemParameter>> EnsureDefaultParametersAsync(CancellationToken cancellationToken = default)
@@ -205,6 +234,8 @@ namespace Manage_KPI_or_OKR_System.Services
             }
 
             await _context.SaveChangesAsync(cancellationToken);
+            Volatile.Write(ref _cachedBranding, null);
+            _brandingCacheExpiresAtUtc = DateTime.MinValue;
 
             return await _context.SystemParameters
                 .AsNoTracking()
@@ -241,6 +272,8 @@ namespace Manage_KPI_or_OKR_System.Services
             }
 
             await _context.SaveChangesAsync(cancellationToken);
+            Volatile.Write(ref _cachedBranding, null);
+            _brandingCacheExpiresAtUtc = DateTime.MinValue;
         }
 
         public string GetDefaultValue(string code)

@@ -28,3 +28,36 @@ Do not add speculative abstractions, unused configuration, wrapper services, or 
 For bug fixes, find the shared cause and fix it once where the affected flows already converge. For non-trivial logic, leave the smallest useful runnable check or test.
 
 Source inspiration: DietrichGebert/ponytail, MIT licensed.
+
+## Subagent Delegation Policy
+
+The root agent owns requirements, integration, and final verification. Use the fewest agents that can safely complete the request.
+
+- **Small task:** the root agent investigates, implements, and verifies the change. Do not spawn subagents.
+- **Medium task:** the root agent implements the change and may use `kpi_verifier` afterward when regression, security, or business-rule risk warrants an independent review.
+- **Large task:** use `kpi_explorer` and/or `kpi_planner` first. Delegate implementation to `kpi_frontend` and `kpi_backend` only when their file ownership does not overlap. Run `kpi_verifier` after implementation converges.
+- Never spawn every agent merely because the agents are available.
+- Never let multiple agents edit the same controller, view model, Razor view, JavaScript file, stylesheet, migration, or configuration file concurrently.
+- Read-only agents report concise evidence and recommendations; they do not edit files.
+- The root agent waits for relevant agents, resolves conflicts, integrates the work, and runs the final checks.
+- An explicit user instruction such as "do not use subagents" or "use only the main agent" overrides automatic delegation.
+
+See `SUBAGENTS.md` for short daily-use prompts.
+
+## Local Chrome Testing
+
+- All Chrome-based UI testing for this repository must use the existing Chrome profile `Profile 9` (`testchormecodex`).
+- Chrome executable: `C:\Program Files\Google\Chrome\Application\chrome.exe`.
+- Chrome user-data root: `C:\Users\PC\AppData\Local\Google\Chrome\User Data`.
+- Do not run or validate this application in another Chrome profile. Confirm the active profile before starting browser QA.
+
+## Skill Selection Policy
+
+All agents inherit the skills available in the current Codex session. Skills are optional helpers, not mandatory steps.
+
+- Before starting, compare the task with available skill descriptions and select only the smallest relevant set.
+- Use no skill when repository instructions and existing patterns are sufficient.
+- Never load multiple overlapping skills merely because they are available.
+- When a skill is selected, read its complete `SKILL.md`, follow its workflow, and briefly state why it applies.
+- Explicit user requests for or against a skill override automatic selection.
+- If a skill conflicts with this repository's conventions or the requested scope, follow the repository and user instructions.

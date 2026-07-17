@@ -1,2086 +1,514 @@
+@model Manage_KPI_or_OKR_System.Models.ViewModels.KpiIndexViewModel
 @using Manage_KPI_or_OKR_System.Helpers
-@model Manage_KPI_or_OKR_System.Helpers.PaginatedList<Manage_KPI_or_OKR_System.Models.KPI>
+@using System.Globalization
 @{
-    ViewData["Title"] = "Danh mục KPI";
+    ViewData["Title"] = "Giao & xem KPI cá nhân";
+    var pageItems = Model.Items;
+}
 
-    var kpiDetails = ViewBag.KPIDetails as Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.KPIDetail>();
-    var assignments = ViewBag.Assignments as Dictionary<int, List<Tuple<int, decimal>>> ?? new Dictionary<int, List<Tuple<int, decimal>>>();
-    var departmentAssignments = ViewBag.DepartmentAssignments as Dictionary<int, List<int>> ?? new Dictionary<int, List<int>>();
-    var employeesDict = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
-    var departmentsDict = ViewBag.Departments as Dictionary<int, string> ?? new Dictionary<int, string>();
-    var allEmployees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
-    var allDepartments = ViewBag.AllDepartments as List<Manage_KPI_or_OKR_System.Models.Department> ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
-    var periodsDict = ViewBag.Periods as Dictionary<int, string> ?? new Dictionary<int, string>();
-    var kpiTypesList = ViewBag.KPITypes as List<Manage_KPI_or_OKR_System.Models.KPIType> ?? new List<Manage_KPI_or_OKR_System.Models.KPIType>();
-    var kpiTypesDict = kpiTypesList.ToDictionary(t => t.Id, t => t.TypeName ?? "N/A");
-    var okrsList = ViewBag.OKRs as List<Manage_KPI_or_OKR_System.Models.OKR> ?? new List<Manage_KPI_or_OKR_System.Models.OKR>();
-    var okrKeyResultsList = ViewBag.OKRKeyResults as List<Manage_KPI_or_OKR_System.Models.OKRKeyResult> ?? new List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>();
-    var okrNamesDict = ViewBag.OKRNames as Dictionary<int, string> ?? new Dictionary<int, string>();
-    var okrKeyResultNamesDict = ViewBag.OKRKeyResultNames as Dictionary<int, string> ?? new Dictionary<int, string>();
-    var latestProgress = ViewBag.LatestProgress as Dictionary<int, decimal> ?? new Dictionary<int, decimal>();
-    var kpiStatuses = ViewBag.KPIStatuses as Dictionary<int, string> ?? new Dictionary<int, string>();
-    var executableKpiStatusIds = (ViewBag.ExecutableKpiStatusIds as List<int> ?? new List<int>()).ToHashSet();
-    var pendingKpiStatusId = ViewBag.PendingKpiStatusId as int?;
-    var allocatedKpiCount = Model?.Count(k => assignments.ContainsKey(k.Id) || departmentAssignments.ContainsKey(k.Id)) ?? 0;
-    var currentFilter = ViewData["CurrentFilter"] as string;
-    int? currentPeriodId = ViewData["PeriodId"] is int selectedPeriodId ? selectedPeriodId : null;
-    var measurementUnits = new[] {
-        new { Value = "%", Text = "% - Tỷ lệ phần trăm" },
-        new { Value = "VNĐ", Text = "VNĐ - Tiền tệ" },
-        new { Value = "Triệu VNĐ", Text = "Triệu VNĐ - Tiền tệ rút gọn" },
-        new { Value = "Điểm", Text = "Điểm - Thang điểm" },
-        new { Value = "Người", Text = "Người - Nhân sự" },
-        new { Value = "Khách hàng", Text = "Khách hàng" },
-        new { Value = "Cơ hội", Text = "Cơ hội bán hàng" },
-        new { Value = "Hợp đồng", Text = "Hợp đồng" },
-        new { Value = "Sản phẩm", Text = "Sản phẩm" },
-        new { Value = "Lần", Text = "Lần" },
-        new { Value = "Giờ", Text = "Giờ" },
-        new { Value = "Ngày", Text = "Ngày" },
-        new { Value = "Dự án", Text = "Dự án" },
-        new { Value = "Công việc", Text = "Công việc" }
+@functions {
+    private string QuickFilterClass(string value) =>
+        string.Equals(Model.QuickFilter ?? string.Empty, value, StringComparison.OrdinalIgnoreCase)
+            ? "evaluation-chip is-active"
+            : "evaluation-chip";
+
+    private static string StatusClass(string statusName) => statusName switch
+    {
+        WorkflowStatusHelper.KpiPendingApproval => "kpi-status kpi-status--pending",
+        WorkflowStatusHelper.KpiInProgress => "kpi-status kpi-status--active",
+        WorkflowStatusHelper.KpiNearTarget => "kpi-status kpi-status--near",
+        WorkflowStatusHelper.KpiCompleted => "kpi-status kpi-status--completed",
+        WorkflowStatusHelper.KpiMissed => "kpi-status kpi-status--missed",
+        WorkflowStatusHelper.KpiRejected => "kpi-status kpi-status--rejected",
+        WorkflowStatusHelper.KpiCanceled => "kpi-status kpi-status--canceled",
+        WorkflowStatusHelper.KpiDraft => "kpi-status kpi-status--draft",
+        _ => "kpi-status kpi-status--draft"
     };
 
-    string GetBaseStatusName(int? statusId) => WorkflowStatusHelper.ResolveKpiStatusName(statusId, kpiStatuses);
+    private static string StatusIcon(string statusName) => statusName switch
+    {
+        WorkflowStatusHelper.KpiPendingApproval => "bi-clock",
+        WorkflowStatusHelper.KpiInProgress => "bi-play-circle",
+        WorkflowStatusHelper.KpiNearTarget => "bi-graph-up-arrow",
+        WorkflowStatusHelper.KpiCompleted => "bi-check-circle",
+        WorkflowStatusHelper.KpiMissed => "bi-exclamation-triangle",
+        WorkflowStatusHelper.KpiRejected => "bi-x-circle",
+        WorkflowStatusHelper.KpiCanceled => "bi-slash-circle",
+        _ => "bi-file-earmark-text"
+    };
 
-    // Helper: Map workflow status to display info
-    string GetStatusName(int? statusId, decimal? progress) {
-        var statusName = GetBaseStatusName(statusId);
-        var showProgress = progress.HasValue && (
-            statusName == WorkflowStatusHelper.KpiInProgress ||
-            statusName == WorkflowStatusHelper.KpiNearTarget ||
-            statusName == WorkflowStatusHelper.KpiCompleted ||
-            statusName == WorkflowStatusHelper.KpiMissed);
-        return showProgress ? $"{statusName} ({progress:F0}%)" : statusName;
+    private static string Initials(string name)
+    {
+        var initials = string.Concat(name
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => part[0]));
+        return string.IsNullOrWhiteSpace(initials)
+            ? "NV"
+            : initials.Length > 2 ? initials[^2..].ToUpperInvariant() : initials.ToUpperInvariant();
     }
 
-    string GetStatusClass(int? statusId) {
-        return GetBaseStatusName(statusId) switch {
-            WorkflowStatusHelper.KpiDraft => "bg-secondary-subtle text-secondary-emphasis",
-            WorkflowStatusHelper.KpiPendingApproval => "bg-warning-subtle text-warning-emphasis",
-            WorkflowStatusHelper.KpiInProgress => "bg-primary-subtle text-primary-emphasis",
-            WorkflowStatusHelper.KpiNearTarget => "bg-info-subtle text-info-emphasis",
-            WorkflowStatusHelper.KpiCompleted => "bg-success-subtle text-success-emphasis",
-            WorkflowStatusHelper.KpiMissed => "bg-danger bg-opacity-10 text-danger",
-            WorkflowStatusHelper.KpiRejected => "bg-danger-subtle text-danger-emphasis",
-            WorkflowStatusHelper.KpiCanceled => "bg-dark-subtle text-dark-emphasis",
-            _ => "bg-secondary-subtle text-secondary-emphasis"
-        };
+    private static string Metric(decimal? value)
+    {
+        if (!value.HasValue) return "Chưa đặt";
+        var format = decimal.Truncate(value.Value) == value.Value ? "N0" : "N2";
+        return value.Value.ToString(format, CultureInfo.GetCultureInfo("vi-VN"));
     }
 
-    string GetStatusIcon(int? statusId) {
-        return GetBaseStatusName(statusId) switch {
-            WorkflowStatusHelper.KpiDraft => "bi-file-earmark-text",
-            WorkflowStatusHelper.KpiPendingApproval => "bi-clock-fill",
-            WorkflowStatusHelper.KpiInProgress => "bi-arrow-repeat",
-            WorkflowStatusHelper.KpiNearTarget => "bi-graph-up-arrow",
-            WorkflowStatusHelper.KpiCompleted => "bi-trophy-fill",
-            WorkflowStatusHelper.KpiMissed => "bi-exclamation-triangle-fill",
-            WorkflowStatusHelper.KpiRejected => "bi-x-circle-fill",
-            WorkflowStatusHelper.KpiCanceled => "bi-slash-circle-fill",
-            _ => "bi-question-circle"
-        };
-    }
-
-    bool CanCheckIn(int? statusId) => statusId.HasValue && executableKpiStatusIds.Contains(statusId.Value);
-    bool IsPendingKpi(int? statusId) => !statusId.HasValue || statusId == 0 || (pendingKpiStatusId.HasValue && statusId == pendingKpiStatusId.Value);
-    bool ShouldShowProgress(int? statusId) {
-        var name = GetBaseStatusName(statusId);
-        return name == WorkflowStatusHelper.KpiInProgress ||
-               name == WorkflowStatusHelper.KpiNearTarget ||
-               name == WorkflowStatusHelper.KpiCompleted ||
-               name == WorkflowStatusHelper.KpiMissed;
-    }
-
-    string GetProgressColor(decimal progress) {
-        if (progress >= 100) return "success";
-        if (progress >= 70) return "primary";
-        if (progress >= 40) return "warning";
-        return "danger";
-    }
+    private static bool IsPending(string statusName) =>
+        statusName == WorkflowStatusHelper.KpiPendingApproval;
 }
 
-@section Styles {
-    <style>
-        .kpi-table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            width: 100%;
-            margin-bottom: 1rem;
-        }
-        
-        .kpi-index-table {
-            min-width: 1200px; /* Minimum width to prevent column squashing */
-            width: 100%;
-        }
-
-        .kpi-index-table tbody tr:hover td.kpi-actions-cell,
-        .kpi-index-table tbody tr:focus-within td.kpi-actions-cell {
-            background-color: #f8f9fa; /* Slight hover effect if the row has one */
-        }
-    </style>
-}
-
-<div class="kpi-index-page container-fluid px-0">
-
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Quản lý KPI</h1>
-        <div class="page-breadcrumb">
-            <a href="/">Trang chủ</a>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Danh mục KPI</span>
+<div class="evaluation-page kpi-page">
+    <header class="evaluation-page-header">
+        <div>
+            <h1>Giao & xem KPI cá nhân</h1>
+            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Quản lý KPI</span>
+            </nav>
         </div>
-    </div>
-        @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")))
+        @if (Model.CanCreateKpi)
         {
-            <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#aiKpiSuggestModal">
-                    <i class="bi bi-stars me-1"></i> AI Gợi ý KPI
-                </button>
-                <button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createKpiModal">
-                    <i class="bi bi-plus-lg me-1"></i> Thêm KPI mới
-                </button>
+            <div class="kpi-page-actions">
+                <a asp-action="Create" asp-route-ai="true" class="evaluation-secondary-action">
+                    <i class="bi bi-stars" aria-hidden="true"></i>
+                    <span>Gợi ý bằng AI</span>
+                </a>
+                <a asp-action="Create" class="evaluation-primary-action">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                    <span>Tạo KPI</span>
+                </a>
             </div>
         }
-</div>
+    </header>
 
-<div class="row g-4 mb-4">
-    <div class="col-md-3">
-        <div class="stat-card p-3 border-start border-4 border-primary shadow-sm bg-white rounded-3">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="text-muted fw-semibold" style="font-size: 0.85rem;">Tổng số KPI</div>
-                <div class="icon-box bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                    <i class="bi bi-target"></i>
-                </div>
-            </div>
-            <div class="fw-bold text-dark fs-3">@(Model?.Count() ?? 0)</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card p-3 border-start border-4 border-success shadow-sm bg-white rounded-3">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="text-muted fw-semibold" style="font-size: 0.85rem;">Đã phân bổ</div>
-                <div class="icon-box bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                    <i class="bi bi-people-fill"></i>
-                </div>
-            </div>
-            <div class="fw-bold text-dark fs-3">@allocatedKpiCount</div>
-        </div>
-    </div>
-</div>
+    <section class="evaluation-summary kpi-summary" aria-label="Tổng quan KPI">
+        <article>
+            <span>KPI phù hợp</span>
+            <strong>@Model.Summary.TotalCount</strong>
+            <small>Trong phạm vi đang xem</small>
+        </article>
+        <article>
+            <span>KPI của tôi</span>
+            <strong>@Model.Summary.MineCount</strong>
+            <small>Giao trực tiếp hoặc qua phòng ban</small>
+        </article>
+        <article>
+            <span>Đã phân bổ</span>
+            <strong>@Model.Summary.AllocatedCount</strong>
+            <small>Có người hoặc đơn vị phụ trách</small>
+        </article>
+        <article>
+            <span>Đang thực hiện</span>
+            <strong>@Model.Summary.InProgressCount</strong>
+            <small>Có thể cập nhật check-in</small>
+        </article>
+        <article>
+            <span>Chờ duyệt</span>
+            <strong>@Model.Summary.PendingCount</strong>
+            <small>Cần xác nhận trước khi thực thi</small>
+        </article>
+    </section>
 
-<div class="content-card shadow-sm border-0">
-    <div class="card-body-custom p-4">
-        <form asp-action="Index" method="get" class="toolbar mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <div class="toolbar-left d-flex gap-2 flex-wrap">
-                <div class="toolbar-search position-relative">
-                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control rounded-pill ps-5 border-light bg-light" placeholder="Tìm kiếm KPI..." style="width: 250px;">
-                </div>
+    <section class="evaluation-filter-panel" aria-labelledby="kpi-filter-title">
+        <div class="evaluation-filter-heading">
+            <div>
+                <p class="evaluation-eyebrow" id="kpi-filter-title">Tìm và lọc</p>
+                <span>Thu hẹp danh sách theo kỳ, trạng thái và phạm vi trách nhiệm.</span>
             </div>
-            <div class="toolbar-right d-flex align-items-center gap-2">
-                <div class="d-flex align-items-center gap-2 bg-white p-1 rounded shadow-sm border">
-                    <span class="ps-2 text-muted small fw-bold text-uppercase" style="font-size: 0.7rem; white-space: nowrap;">Kỳ báo cáo:</span>
-                    <select name="periodId" class="form-select form-select-sm border-0 fw-bold text-primary" style="width: 160px; outline: none; box-shadow: none;">
-                        <option value="">Tất cả</option>
-                        @foreach(var p in periodsDict)
-                        {
-                            if (ViewData["PeriodId"] is int selectedPeriodId && selectedPeriodId == p.Key)
-                            {
-                                <option value="@p.Key" selected>@p.Value</option>
-                            }
-                            else
-                            {
-                                <option value="@p.Key">@p.Value</option>
-                            }
-                        }
-                    </select>
-                </div>
-                <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0 bg-white shadow-sm" title="Làm mới" style="padding: 0.35rem 0.6rem;">
-                    <i class="bi bi-arrow-clockwise"></i>
+            @if (Model.HasActiveFilters)
+            {
+                <a asp-action="Index" class="evaluation-clear-link">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i> Xóa lọc
                 </a>
-                <button type="submit" class="btn btn-sm btn-primary shadow-sm" title="Lọc kết quả" style="padding: 0.35rem 0.8rem;">
-                    <i class="bi bi-funnel"></i> Lọc
-                </button>
-            </div>
+            }
+        </div>
+
+        <form asp-action="Index" method="get" class="evaluation-filter-form kpi-filter-form">
+            <label class="evaluation-search-field">
+                <span class="visually-hidden">Tìm KPI</span>
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" name="searchString" value="@Model.SearchString"
+                       placeholder="Tên hoặc mô tả KPI..." autocomplete="off" />
+            </label>
+
+            <label>
+                <span>Kỳ đánh giá</span>
+                <select name="periodId" class="no-select2">
+                    <option value="">Tất cả</option>
+                    @foreach (var option in Model.PeriodOptions)
+                    {
+                        <option value="@option.Id" selected="@(Model.PeriodId == option.Id ? "selected" : null)">@option.Name</option>
+                    }
+                </select>
+            </label>
+
+            <label>
+                <span>Trạng thái</span>
+                <select name="statusId" class="no-select2">
+                    <option value="">Tất cả</option>
+                    @foreach (var option in Model.StatusOptions)
+                    {
+                        <option value="@option.Id" selected="@(Model.StatusId == option.Id ? "selected" : null)">@option.Name</option>
+                    }
+                </select>
+            </label>
+
+            <label>
+                <span>Sắp xếp</span>
+                <select name="sortBy" class="no-select2">
+                    <option value="recent" selected="@(Model.SortBy == "recent" ? "selected" : null)">Mới tạo trước</option>
+                    <option value="oldest" selected="@(Model.SortBy == "oldest" ? "selected" : null)">Cũ nhất trước</option>
+                    <option value="name" selected="@(Model.SortBy == "name" ? "selected" : null)">Tên A-Z</option>
+                </select>
+            </label>
+
+            <input type="hidden" name="quickFilter" value="@Model.QuickFilter" />
+            <button type="submit" class="evaluation-filter-button">
+                <i class="bi bi-funnel" aria-hidden="true"></i> Lọc
+            </button>
         </form>
 
-        <div class="table-responsive kpi-table-responsive w-100">
-            <table class="data-table kpi-index-table">
-                <colgroup>
-                    <col class="kpi-col-name" />
-                    <col class="kpi-col-type" />
-                    <col class="kpi-col-target" />
-                    <col class="kpi-col-period" />
-                    <col class="kpi-col-assignment" />
-                    <col class="kpi-col-status" />
-                    <col class="kpi-col-actions" />
-                </colgroup>
-                <thead>
-                    <tr>
-                        <th class="fw-medium">Tên KPI</th>
-                        <th class="fw-medium">Loại mục tiêu</th>
-                        <th class="fw-medium">Chỉ tiêu (Target)</th>
-                        <th class="fw-medium">Kỳ đánh giá</th>
-                        <th class="fw-medium">Phân bổ cho</th>
-                        <th class="kpi-status-col border-0 text-muted small text-uppercase fw-bold">Trạng thái</th>
-                        <th class="kpi-actions-col border-0 text-muted small text-uppercase fw-bold">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        foreach (var kpi in Model)
+        <nav class="evaluation-quick-filters" aria-label="Lọc nhanh KPI">
+            <a asp-action="Index" asp-route-searchString="@Model.SearchString" asp-route-periodId="@Model.PeriodId" asp-route-statusId="@Model.StatusId" asp-route-sortBy="@Model.SortBy" class="@QuickFilterClass("")">
+                <i class="bi bi-grid" aria-hidden="true"></i> Tất cả
+            </a>
+            @if (Model.HasCurrentEmployee)
+            {
+                <a asp-action="Index" asp-route-searchString="@Model.SearchString" asp-route-periodId="@Model.PeriodId" asp-route-statusId="@Model.StatusId" asp-route-sortBy="@Model.SortBy" asp-route-quickFilter="mine" class="@QuickFilterClass("mine")">
+                    <i class="bi bi-person-check" aria-hidden="true"></i> KPI của tôi
+                </a>
+                <a asp-action="Index" asp-route-searchString="@Model.SearchString" asp-route-periodId="@Model.PeriodId" asp-route-statusId="@Model.StatusId" asp-route-sortBy="@Model.SortBy" asp-route-quickFilter="assigned" class="@QuickFilterClass("assigned")">
+                    <i class="bi bi-send" aria-hidden="true"></i> Tôi đã giao
+                </a>
+            }
+            <a asp-action="Index" asp-route-searchString="@Model.SearchString" asp-route-periodId="@Model.PeriodId" asp-route-statusId="@Model.StatusId" asp-route-sortBy="@Model.SortBy" asp-route-quickFilter="active" class="@QuickFilterClass("active")">
+                <i class="bi bi-play-circle" aria-hidden="true"></i> Đang thực hiện
+            </a>
+            <a asp-action="Index" asp-route-searchString="@Model.SearchString" asp-route-periodId="@Model.PeriodId" asp-route-statusId="@Model.StatusId" asp-route-sortBy="@Model.SortBy" asp-route-quickFilter="pending" class="@QuickFilterClass("pending")">
+                <i class="bi bi-clock" aria-hidden="true"></i> Chờ duyệt
+            </a>
+            <a asp-action="Index" asp-route-searchString="@Model.SearchString" asp-route-periodId="@Model.PeriodId" asp-route-statusId="@Model.StatusId" asp-route-sortBy="@Model.SortBy" asp-route-quickFilter="unallocated" class="@QuickFilterClass("unallocated")">
+                <i class="bi bi-person-dash" aria-hidden="true"></i> Chưa phân bổ
+            </a>
+        </nav>
+    </section>
+
+    <section class="evaluation-results kpi-results" aria-labelledby="kpi-results-title">
+        <div class="evaluation-results-heading">
+            <div>
+                <p class="evaluation-eyebrow" id="kpi-results-title">Danh sách KPI</p>
+                <strong>@Model.Summary.TotalCount KPI phù hợp</strong>
+            </div>
+            <span>Trang @pageItems.PageIndex / @Math.Max(1, pageItems.TotalPages)</span>
+        </div>
+
+        @if (pageItems.Count == 0)
+        {
+            <div class="evaluation-empty">
+                <span class="evaluation-empty-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
+                <h2>@(Model.IsFilteredEmpty ? "Không có KPI phù hợp" : "Chưa có KPI trong phạm vi của bạn")</h2>
+                <p>
+                    @(Model.IsFilteredEmpty
+                        ? "Thử thay đổi bộ lọc hoặc xóa lọc để xem lại danh sách KPI."
+                        : Model.CanCreateKpi
+                            ? "Tạo KPI đầu tiên, đặt chỉ tiêu và phân bổ người hoặc phòng ban chịu trách nhiệm."
+                            : "KPI được giao trực tiếp hoặc qua phòng ban sẽ xuất hiện tại đây.")
+                </p>
+                @if (Model.IsFilteredEmpty)
+                {
+                    <a asp-action="Index" class="evaluation-secondary-action">Xóa bộ lọc</a>
+                }
+                else if (Model.CanCreateKpi)
+                {
+                    <a asp-action="Create" class="evaluation-primary-action">Tạo KPI</a>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="evaluation-table-shell">
+                <table class="evaluation-table kpi-table">
+                    <thead>
+                        <tr>
+                            <th>KPI</th>
+                            <th>Chỉ tiêu</th>
+                            <th>Phân bổ</th>
+                            <th>Kỳ & trạng thái</th>
+                            <th>Tiến độ</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in pageItems)
                         {
-                            var detail = kpiDetails.ContainsKey(kpi.Id) ? kpiDetails[kpi.Id] : null;
-                            var assignedEmployees = assignments.ContainsKey(kpi.Id) ? assignments[kpi.Id] : new List<Tuple<int, decimal>>();
-                            var assignedDepartmentIds = departmentAssignments.ContainsKey(kpi.Id) ? departmentAssignments[kpi.Id] : new List<int>();
-
-                            // Use new dynamic status helpers
-                            var kpiProgress = latestProgress.ContainsKey(kpi.Id) ? (decimal?)latestProgress[kpi.Id] : null;
-                            string statusName = GetStatusName(kpi.StatusId, kpiProgress);
-                            string statusClass = GetStatusClass(kpi.StatusId);
-                            string statusIcon = GetStatusIcon(kpi.StatusId);
-
-                            <tr class="bg-white">
+                            <tr>
                                 <td>
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="bg-primary bg-opacity-10 text-primary p-2 rounded">
-                                            <i class="bi bi-graph-up-arrow fs-5"></i>
-                                        </div>
+                                    <div class="evaluation-period-name kpi-name-cell">
+                                        <span class="evaluation-calendar-mark"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i></span>
                                         <div>
-                                            <div class="fw-bold text-dark mb-1">@kpi.KPIName</div>
-                                            @if (kpi.OKRId.HasValue && okrNamesDict.ContainsKey(kpi.OKRId.Value))
-                                            {
-                                                <div class="d-flex flex-wrap gap-1">
-                                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
-                                                        <i class="bi bi-diagram-3 me-1"></i>@okrNamesDict[kpi.OKRId.Value]
-                                                    </span>
-                                                    @if (kpi.OKRKeyResultId.HasValue && okrKeyResultNamesDict.ContainsKey(kpi.OKRKeyResultId.Value))
-                                                    {
-                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
-                                                            <i class="bi bi-check2-circle me-1"></i>@okrKeyResultNamesDict[kpi.OKRKeyResultId.Value]
-                                                        </span>
-                                                    }
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-light text-muted border px-2 py-1">
-                                                    <i class="bi bi-unlink me-1"></i>KPI độc lập
-                                                </span>
-                                            }
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="kpi-name-link">@item.Name</a>
+                                            <span>@item.TypeName</span>
+                                            <div class="kpi-alignment">
+                                                @if (!string.IsNullOrWhiteSpace(item.OkrName))
+                                                {
+                                                    <span title="@item.OkrName"><i class="bi bi-bullseye" aria-hidden="true"></i>@item.OkrName</span>
+                                                }
+                                                else
+                                                {
+                                                    <span><i class="bi bi-unlink" aria-hidden="true"></i>KPI độc lập</span>
+                                                }
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="align-middle">
-                                    <span class="badge bg-light text-secondary border px-2 py-1 fw-medium" style="font-size: 0.8rem;">
-                                        @(kpi.KPITypeId.HasValue && kpiTypesDict.ContainsKey(kpi.KPITypeId.Value) ? kpiTypesDict[kpi.KPITypeId.Value] : "N/A")
-                                    </span>
-                                </td>
                                 <td>
-                                    @if(detail != null)
-                                    {
-                                        <div class="fw-bold text-success fs-6">@String.Format("{0:N0}", detail.TargetValue) @detail.MeasurementUnit</div>
-                                        <div class="text-muted" style="font-size: 0.75rem;">Ngưỡng qua: @String.Format("{0:N0}", detail.PassThreshold)</div>
-                                        <div class="text-muted" style="font-size: 0.75rem;">
-                                            Deadline: @(detail.DeadlineDate?.ToString("dd/MM/yyyy") ?? "Theo chu kỳ") @((detail.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0)).ToString(@"hh\:mm")) / mỗi @(detail.CheckInFrequencyDays ?? 1) ngày
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted fst-italic">Chưa thiết lập chỉ tiêu</span>
-                                    }
-                                </td>
-                                <td>
-                                    <div class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">
-                                        <i class="bi bi-calendar-event me-1"></i> @(kpi.PeriodId.HasValue && periodsDict.ContainsKey(kpi.PeriodId.Value) ? periodsDict[kpi.PeriodId.Value] : "N/A")
-                                    </div>
-                                </td>
-                                <td>
-                                    @if (assignedEmployees.Any() || assignedDepartmentIds.Any())
-                                    {
-                                        <div class="d-flex flex-column gap-2">
-                                            @if (assignedDepartmentIds.Any())
-                                            {
-                                                <div class="d-flex flex-wrap gap-1">
-                                                    @foreach (var deptId in assignedDepartmentIds.Take(2))
-                                                    {
-                                                        var deptName = departmentsDict.ContainsKey(deptId) ? departmentsDict[deptId] : "Phòng ban";
-                                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1">
-                                                            <i class="bi bi-building me-1"></i>@deptName
-                                                        </span>
-                                                    }
-                                                    @if (assignedDepartmentIds.Count > 2)
-                                                    {
-                                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">
-                                                            +@(assignedDepartmentIds.Count - 2) phòng ban
-                                                        </span>
-                                                    }
-                                                </div>
-                                            }
-                                            @if (assignedEmployees.Any())
-                                            {
-                                                <div class="d-flex align-items-center">
-                                                    @foreach(var empObj in assignedEmployees.Take(3))
-                                                    {
-                                                        var empId = empObj.Item1;
-                                                        var weight = empObj.Item2;
-                                                        var name = employeesDict.ContainsKey(empId) ? employeesDict[empId] : "NV";
-                                                        var initials = string.Join("", name.Split(' ').Where(n => !string.IsNullOrWhiteSpace(n)).Select(n => n[0])).ToUpper();
-                                                        if (initials.Length > 2) initials = initials.Substring(0, 2);
-                                                        if (initials.Length == 0) initials = "NV";
-
-                                                        <div class="user-avatar bg-primary text-white border border-2 border-white position-relative rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 3;" title="@name">
-                                                            @initials
-                                                        </div>
-                                                    }
-                                                    @if (assignedEmployees.Count > 3)
-                                                    {
-                                                        <div class="user-avatar bg-secondary text-white border border-2 border-white position-relative rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 32px; font-size: 0.75rem; margin-right: -10px; z-index: 1;">
-                                                            +@(assignedEmployees.Count - 3)
-                                                        </div>
-                                                    }
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill border border-warning border-opacity-25">
-                                            <i class="bi bi-exclamation-circle me-1"></i> Chưa phân bổ
-                                        </span>
-                                    }
-                                </td>
-                                <td class="align-middle kpi-status-cell">
-                                    <div class="d-flex flex-column gap-1">
-                                        <span class="kpi-status-badge badge rounded-pill @statusClass py-2 px-3 fw-medium">
-                                            <i class="bi @statusIcon me-1"></i>
-                                            @statusName
-                                        </span>
-                                        @if (kpiProgress.HasValue && ShouldShowProgress(kpi.StatusId))
+                                    <div class="kpi-target">
+                                        <strong>@Metric(item.TargetValue) @item.MeasurementUnit</strong>
+                                        @if (item.PassThreshold.HasValue)
                                         {
-                                            <div class="progress" style="height: 5px; border-radius: 3px; width: 100%;">
-                                                <div class="progress-bar bg-@GetProgressColor(kpiProgress.Value)"
-                                                     role="progressbar"
-                                                     style="width: @(Math.Min((double)kpiProgress.Value, 100))%">
+                                            <span>Ngưỡng đạt: @Metric(item.PassThreshold)</span>
+                                        }
+                                        <small>
+                                            <i class="bi @(item.IsInverse ? "bi-arrow-down" : "bi-arrow-up")" aria-hidden="true"></i>
+                                            @(item.IsInverse ? "Càng thấp càng tốt" : "Càng cao càng tốt")
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (item.HasAssignments)
+                                    {
+                                        <div class="kpi-assignees">
+                                            @if (item.DepartmentNames.Count > 0)
+                                            {
+                                                <div class="kpi-departments">
+                                                    @foreach (var department in item.DepartmentNames.Take(2))
+                                                    {
+                                                        <span><i class="bi bi-building" aria-hidden="true"></i>@department</span>
+                                                    }
+                                                    @if (item.DepartmentNames.Count > 2)
+                                                    {
+                                                        <span>+@(item.DepartmentNames.Count - 2) phòng</span>
+                                                    }
                                                 </div>
+                                            }
+                                            @if (item.EmployeeAssignments.Count > 0)
+                                            {
+                                                <div class="kpi-avatar-stack" aria-label="@item.EmployeeAssignments.Count nhân viên phụ trách">
+                                                    @foreach (var assignment in item.EmployeeAssignments.Take(3))
+                                                    {
+                                                        var assignmentTitle = $"{assignment.EmployeeName} · {assignment.WeightPercent:0.##}%";
+                                                        <span title="@assignmentTitle">@Initials(assignment.EmployeeName)</span>
+                                                    }
+                                                    @if (item.EmployeeAssignments.Count > 3)
+                                                    {
+                                                        <span>+@(item.EmployeeAssignments.Count - 3)</span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="kpi-unallocated"><i class="bi bi-person-dash" aria-hidden="true"></i>Chưa phân bổ</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="kpi-period-status">
+                                        <strong><i class="bi bi-calendar3" aria-hidden="true"></i>@item.PeriodName</strong>
+                                        <span class="@StatusClass(item.StatusName)">
+                                            <i class="bi @StatusIcon(item.StatusName)" aria-hidden="true"></i>@item.StatusName
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="kpi-progress" aria-label="Tiến độ KPI @item.Name">
+                                        <div>
+                                            <span>Tiến độ</span>
+                                            <strong>@(item.Progress.HasValue ? $"{item.Progress.Value:0.#}%" : "Chưa check-in")</strong>
+                                        </div>
+                                        <progress max="100" value="@(Math.Clamp(item.Progress ?? 0, 0, 100))">@(item.Progress ?? 0)%</progress>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="evaluation-actions">
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="evaluation-icon-button" aria-label="Xem chi tiết @item.Name" title="Chi tiết">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                        </a>
+                                        @if (item.CanCheckIn)
+                                        {
+                                            <a asp-controller="KPICheckIns" asp-action="Create" asp-route-kpiId="@item.Id" class="evaluation-icon-button kpi-icon-button--success" aria-label="Check-in @item.Name" title="Check-in">
+                                                <i class="bi bi-check2-square" aria-hidden="true"></i>
+                                            </a>
+                                        }
+                                        @if (Model.CanCreateKpi || (Model.CanApproveKpi && IsPending(item.StatusName)) || Model.CanDeleteKpi)
+                                        {
+                                            <div class="dropdown">
+                                                <button type="button" class="evaluation-icon-button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false" aria-label="Thao tác khác cho @item.Name">
+                                                    <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                    @if (Model.CanCreateKpi)
+                                                    {
+                                                        <li>
+                                                            <a class="dropdown-item" asp-action="AllocatePersonnel" asp-route-id="@item.Id">
+                                                                <i class="bi bi-people me-2" aria-hidden="true"></i>Phân bổ trách nhiệm
+                                                            </a>
+                                                        </li>
+                                                    }
+                                                    @if (Model.CanApproveKpi && IsPending(item.StatusName))
+                                                    {
+                                                        <li><hr class="dropdown-divider" /></li>
+                                                        <li>
+                                                            <form asp-action="Approve" method="post">
+                                                                <input type="hidden" name="id" value="@item.Id" />
+                                                                <button type="submit" class="dropdown-item text-success"><i class="bi bi-check-circle me-2" aria-hidden="true"></i>Duyệt KPI</button>
+                                                            </form>
+                                                        </li>
+                                                        <li>
+                                                            <form asp-action="Reject" method="post" data-app-confirm
+                                                                  data-confirm-title="Từ chối KPI?"
+                                                                  data-confirm-message="KPI sẽ chuyển sang trạng thái từ chối và không thể check-in."
+                                                                  data-confirm-tone="warning"
+                                                                  data-confirm-label="Từ chối">
+                                                                <input type="hidden" name="id" value="@item.Id" />
+                                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-x-circle me-2" aria-hidden="true"></i>Từ chối</button>
+                                                            </form>
+                                                        </li>
+                                                    }
+                                                    @if (Model.CanDeleteKpi)
+                                                    {
+                                                        <li><hr class="dropdown-divider" /></li>
+                                                        <li>
+                                                            <form asp-action="Delete" asp-route-id="@item.Id" method="post"
+                                                                  data-app-confirm
+                                                                  data-confirm-title="Vô hiệu hóa KPI?"
+                                                                  data-confirm-message="KPI sẽ ngừng hoạt động nhưng dữ liệu lịch sử vẫn được giữ lại."
+                                                                  data-confirm-tone="warning"
+                                                                  data-confirm-label="Vô hiệu hóa">
+                                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash3 me-2" aria-hidden="true"></i>Vô hiệu hóa</button>
+                                                            </form>
+                                                        </li>
+                                                    }
+                                                </ul>
                                             </div>
                                         }
                                     </div>
                                 </td>
-                                <td class="align-middle text-end kpi-actions-cell">
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm btn-light rounded-circle shadow-sm" style="width: 32px; height: 32px;" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false">
-                                                <i class="bi bi-three-dots-vertical"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 animate__animated animate__fadeIn animate__faster" style="z-index: 1060; min-width: 180px;">
-                                                 <li><a class="dropdown-item py-2" asp-action="Details" asp-route-id="@kpi.Id"><i class="bi bi-info-circle text-primary me-2"></i> Chi tiết</a></li>
-
-                                                 @if (CanCheckIn(kpi.StatusId))
-                                                 {
-                                                     <li><a class="dropdown-item py-2 text-success fw-bold" asp-controller="KPICheckIns" asp-action="Create" asp-route-kpiId="@kpi.Id"><i class="bi bi-calendar-check me-2"></i> Thực hiện Check-in</a></li>
-                                                 }
-
-                                                 @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
-                                                       User.IsInRole("Sales") || User.IsInRole("sales")))
-                                                 {
-                                                     <li><a class="dropdown-item py-2" asp-action="AllocatePersonnel" asp-route-id="@kpi.Id" data-legacy-onclick="openAssignPersonnelModal(@kpi.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(kpi.KPIName ?? ""))', @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assignedEmployees).Replace("\"", "&quot;")))"><i class="bi bi-people text-info-emphasis me-2"></i> Phân bổ phòng ban/nhân sự</a></li>
-                                                 }
-
-                                                 @if ((User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager")) && IsPendingKpi(kpi.StatusId))
-                                                 {
-                                                     <li><hr class="dropdown-divider"></li>
-                                                     <li>
-                                                         <form asp-action="Approve" method="post" class="d-inline">
-                                                             <input type="hidden" name="id" value="@kpi.Id" />
-                                                             <button type="submit" class="dropdown-item py-2 text-success"><i class="bi bi-check-circle me-2"></i> Duyệt KPI</button>
-                                                         </form>
-                                                     </li>
-                                                     <li>
-                                                         <form asp-action="Reject" method="post" class="d-inline">
-                                                             <input type="hidden" name="id" value="@kpi.Id" />
-                                                             <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-x-circle me-2"></i> Từ chối</button>
-                                                         </form>
-                                                     </li>
-                                                 }
-
-                                                 @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
-                                                      User.IsInRole("Sales") || User.IsInRole("sales")))
-                                                 {
-                                                     <li><hr class="dropdown-divider"></li>
-                                                     <li>
-                                                         <form asp-action="Delete" asp-route-id="@kpi.Id" method="post" class="m-0" onsubmit="return confirm('Xác nhận vô hiệu hóa KPI này?');">
-                                                             <button type="submit" class="dropdown-item py-2 text-danger"><i class="bi bi-trash me-2"></i> Xóa KPI</button>
-                                                         </form>
-                                                     </li>
-                                                 }
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </td>
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
-                                <div class="mb-3"><i class="bi bi-folder-x fs-1 opacity-50"></i></div>
-                                <h5>Chưa có dữ liệu KPI</h5>
-                                <p>Bắt đầu bằng cách thêm một KPI mới cho hệ thống.</p>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="kpi-mobile-list">
-            @if (Model != null && Model.Any())
-            {
-                foreach (var kpi in Model)
+            <div class="evaluation-mobile-list kpi-mobile-list">
+                @foreach (var item in pageItems)
                 {
-                    var detail = kpiDetails.ContainsKey(kpi.Id) ? kpiDetails[kpi.Id] : null;
-                    var assignedEmployees = assignments.ContainsKey(kpi.Id) ? assignments[kpi.Id] : new List<Tuple<int, decimal>>();
-                    var assignedDepartmentIds = departmentAssignments.ContainsKey(kpi.Id) ? departmentAssignments[kpi.Id] : new List<int>();
-                    var kpiProgress = latestProgress.ContainsKey(kpi.Id) ? (decimal?)latestProgress[kpi.Id] : null;
-                    string statusName = GetStatusName(kpi.StatusId, kpiProgress);
-                    string statusClass = GetStatusClass(kpi.StatusId);
-                    string statusIcon = GetStatusIcon(kpi.StatusId);
-
-                    <article class="kpi-mobile-card content-card">
-                        <div class="kpi-mobile-card__header">
-                            <div class="d-flex align-items-start gap-3 min-w-0">
-                                <div class="bg-primary bg-opacity-10 text-primary p-2 rounded flex-shrink-0">
-                                    <i class="bi bi-graph-up-arrow fs-5"></i>
-                                </div>
-                                <div class="min-w-0 flex-grow-1">
-                                    <h3 class="kpi-mobile-card__title">@kpi.KPIName</h3>
-                                    <div class="kpi-mobile-card__chips">
-                                        <span class="badge bg-light text-secondary border px-2 py-1 fw-medium">
-                                            @(kpi.KPITypeId.HasValue && kpiTypesDict.ContainsKey(kpi.KPITypeId.Value) ? kpiTypesDict[kpi.KPITypeId.Value] : "N/A")
-                                        </span>
-                                        <span class="badge bg-info bg-opacity-10 text-info px-2 py-1">
-                                            <i class="bi bi-calendar-event me-1"></i>@(kpi.PeriodId.HasValue && periodsDict.ContainsKey(kpi.PeriodId.Value) ? periodsDict[kpi.PeriodId.Value] : "N/A")
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <span class="kpi-status-badge badge rounded-pill @statusClass py-2 px-3 fw-medium">
-                                <i class="bi @statusIcon me-1"></i>
-                                @statusName
-                            </span>
+                    <article class="evaluation-period-card kpi-card">
+                        <div class="evaluation-card-topline">
+                            <span class="@StatusClass(item.StatusName)"><i class="bi @StatusIcon(item.StatusName)" aria-hidden="true"></i>@item.StatusName</span>
+                            <span class="evaluation-config-status">@item.PeriodName</span>
                         </div>
-
-                        @if (kpiProgress.HasValue && ShouldShowProgress(kpi.StatusId))
-                        {
-                            <div class="kpi-mobile-card__progress">
-                                <div class="d-flex justify-content-between align-items-center small text-muted mb-1">
-                                    <span>Tiến độ</span>
-                                    <strong>@Math.Round(kpiProgress.Value, 0)%</strong>
-                                </div>
-                                <div class="progress" style="height: 6px; border-radius: 999px;">
-                                    <div class="progress-bar bg-@GetProgressColor(kpiProgress.Value)"
-                                         role="progressbar"
-                                         style="width: @(Math.Min((double)kpiProgress.Value, 100))%">
-                                    </div>
-                                </div>
-                            </div>
-                        }
-
-                        <div class="kpi-mobile-card__section">
-                            <div class="kpi-mobile-card__label">Chỉ tiêu</div>
-                            @if (detail != null)
-                            {
-                                <div class="fw-bold text-success">@String.Format("{0:N0}", detail.TargetValue) @detail.MeasurementUnit</div>
-                                <div class="small text-muted">Ngưỡng qua: @String.Format("{0:N0}", detail.PassThreshold)</div>
-                                <div class="small text-muted">
-                                    Deadline: @(detail.DeadlineDate?.ToString("dd/MM/yyyy") ?? "Theo chu kỳ") @((detail.CheckInDeadlineTime ?? new TimeSpan(10, 0, 0)).ToString(@"hh\:mm")) / mỗi @(detail.CheckInFrequencyDays ?? 1) ngày
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="small text-muted fst-italic">Chưa thiết lập chỉ tiêu</div>
-                            }
-                        </div>
-
-                        <div class="kpi-mobile-card__section">
-                            <div class="kpi-mobile-card__label">Liên kết</div>
-                            <div class="kpi-mobile-card__chips">
-                                @if (kpi.OKRId.HasValue && okrNamesDict.ContainsKey(kpi.OKRId.Value))
+                        <h2><a asp-action="Details" asp-route-id="@item.Id">@item.Name</a></h2>
+                        <p>@item.TypeName · @(!string.IsNullOrWhiteSpace(item.OkrName) ? "Có liên kết OKR" : "KPI độc lập")</p>
+                        <dl>
+                            <div><dt>Chỉ tiêu</dt><dd>@Metric(item.TargetValue) @item.MeasurementUnit</dd></div>
+                            <div><dt>Tiến độ</dt><dd>@(item.Progress.HasValue ? $"{item.Progress.Value:0.#}%" : "Chưa có")</dd></div>
+                            <div><dt>Nhân viên</dt><dd>@item.EmployeeAssignments.Count</dd></div>
+                            <div><dt>Phòng ban</dt><dd>@item.DepartmentNames.Count</dd></div>
+                        </dl>
+                        <div class="evaluation-card-footer">
+                            <a asp-action="Details" asp-route-id="@item.Id">Xem chi tiết</a>
+                            <div class="evaluation-actions">
+                                @if (item.CanCheckIn)
                                 {
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
-                                        <i class="bi bi-diagram-3 me-1"></i>@okrNamesDict[kpi.OKRId.Value]
-                                    </span>
-                                    @if (kpi.OKRKeyResultId.HasValue && okrKeyResultNamesDict.ContainsKey(kpi.OKRKeyResultId.Value))
-                                    {
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
-                                            <i class="bi bi-check2-circle me-1"></i>@okrKeyResultNamesDict[kpi.OKRKeyResultId.Value]
-                                        </span>
-                                    }
+                                    <a asp-controller="KPICheckIns" asp-action="Create" asp-route-kpiId="@item.Id" class="evaluation-icon-button" aria-label="Check-in @item.Name"><i class="bi bi-check2-square" aria-hidden="true"></i></a>
                                 }
-                                else
+                                @if (Model.CanCreateKpi)
                                 {
-                                    <span class="badge bg-light text-muted border px-2 py-1">
-                                        <i class="bi bi-unlink me-1"></i>KPI độc lập
-                                    </span>
+                                    <a asp-action="AllocatePersonnel" asp-route-id="@item.Id" class="evaluation-icon-button" aria-label="Phân bổ @item.Name"><i class="bi bi-people" aria-hidden="true"></i></a>
+                                }
+                                @if ((Model.CanApproveKpi && IsPending(item.StatusName)) || Model.CanDeleteKpi)
+                                {
+                                    <div class="dropdown">
+                                        <button type="button" class="evaluation-icon-button" data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false" aria-label="Thao tác khác cho @item.Name">
+                                            <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            @if (Model.CanApproveKpi && IsPending(item.StatusName))
+                                            {
+                                                <li>
+                                                    <form asp-action="Approve" method="post">
+                                                        <input type="hidden" name="id" value="@item.Id" />
+                                                        <button type="submit" class="dropdown-item text-success"><i class="bi bi-check-circle me-2" aria-hidden="true"></i>Duyệt KPI</button>
+                                                    </form>
+                                                </li>
+                                                <li>
+                                                    <form asp-action="Reject" method="post" data-app-confirm
+                                                          data-confirm-title="Từ chối KPI?"
+                                                          data-confirm-message="KPI sẽ chuyển sang trạng thái từ chối và không thể check-in."
+                                                          data-confirm-tone="warning"
+                                                          data-confirm-label="Từ chối">
+                                                        <input type="hidden" name="id" value="@item.Id" />
+                                                        <button type="submit" class="dropdown-item text-danger"><i class="bi bi-x-circle me-2" aria-hidden="true"></i>Từ chối</button>
+                                                    </form>
+                                                </li>
+                                            }
+                                            @if (Model.CanDeleteKpi)
+                                            {
+                                                <li><hr class="dropdown-divider" /></li>
+                                                <li>
+                                                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" data-app-confirm
+                                                          data-confirm-title="Vô hiệu hóa KPI?"
+                                                          data-confirm-message="KPI sẽ ngừng hoạt động nhưng dữ liệu lịch sử vẫn được giữ lại."
+                                                          data-confirm-tone="warning"
+                                                          data-confirm-label="Vô hiệu hóa">
+                                                        <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash3 me-2" aria-hidden="true"></i>Vô hiệu hóa</button>
+                                                    </form>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
                                 }
                             </div>
-                        </div>
-
-                        <div class="kpi-mobile-card__section">
-                            <div class="kpi-mobile-card__label">Phân bổ cho</div>
-                            @if (assignedEmployees.Any() || assignedDepartmentIds.Any())
-                            {
-                                <div class="kpi-mobile-card__chips">
-                                    @foreach (var deptId in assignedDepartmentIds.Take(2))
-                                    {
-                                        var deptName = departmentsDict.ContainsKey(deptId) ? departmentsDict[deptId] : "Phòng ban";
-                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1">
-                                            <i class="bi bi-building me-1"></i>@deptName
-                                        </span>
-                                    }
-                                    @if (assignedDepartmentIds.Count > 2)
-                                    {
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">
-                                            +@(assignedDepartmentIds.Count - 2) phòng ban
-                                        </span>
-                                    }
-
-                                    @foreach (var empObj in assignedEmployees.Take(3))
-                                    {
-                                        var empId = empObj.Item1;
-                                        var name = employeesDict.ContainsKey(empId) ? employeesDict[empId] : "NV";
-                                        <span class="badge bg-light text-dark border px-2 py-1">
-                                            <i class="bi bi-person me-1"></i>@name
-                                        </span>
-                                    }
-                                    @if (assignedEmployees.Count > 3)
-                                    {
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">
-                                            +@(assignedEmployees.Count - 3) nhân sự
-                                        </span>
-                                    }
-                                </div>
-                            }
-                            else
-                            {
-                                <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill border border-warning border-opacity-25">
-                                    <i class="bi bi-exclamation-circle me-1"></i> Chưa phân bổ
-                                </span>
-                            }
-                        </div>
-
-                        <div class="kpi-mobile-card__actions">
-                            <a class="btn btn-outline-primary" asp-action="Details" asp-route-id="@kpi.Id">
-                                <i class="bi bi-info-circle me-1"></i> Chi tiết
-                            </a>
-
-                            @if (CanCheckIn(kpi.StatusId))
-                            {
-                                <a class="btn btn-success" asp-controller="KPICheckIns" asp-action="Create" asp-route-kpiId="@kpi.Id">
-                                    <i class="bi bi-calendar-check me-1"></i> Check-in
-                                </a>
-                            }
-
-                            @if (!(User.IsInRole("Employee") || User.IsInRole("employee") ||
-                                  User.IsInRole("Sales") || User.IsInRole("sales")))
-                            {
-                                <a class="btn btn-outline-info" asp-action="AllocatePersonnel" asp-route-id="@kpi.Id">
-                                    <i class="bi bi-people me-1"></i> Phân bổ
-                                </a>
-                            }
                         </div>
                     </article>
                 }
-            }
-            else
-            {
-                <div class="content-card text-center py-5 text-muted">
-                    <div class="mb-3"><i class="bi bi-folder-x fs-1 opacity-50"></i></div>
-                    <h5>Chưa có dữ liệu KPI</h5>
-                    <p class="mb-0">Bắt đầu bằng cách thêm một KPI mới cho hệ thống.</p>
-                </div>
-            }
-        </div>
+            </div>
+        }
 
-        @if (Model != null && Model.TotalPages > 1)
+        @if (pageItems.TotalPages > 1)
         {
-            <div class="d-flex justify-content-between align-items-center mt-4 px-2 flex-wrap gap-2">
-                <div class="text-muted small">
-                    Hiển thị trang <strong>@Model.PageIndex</strong> trên tổng số <strong>@Model.TotalPages</strong>
-                </div>
-                <nav aria-label="Phân trang KPI">
-                    <ul class="pagination pagination-sm mb-0 gap-1">
-                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
-                            @if (Model.HasPreviousPage && Model.PreviousPageNumber.HasValue)
-                            {
-                                <a class="page-link border-0 rounded-circle shadow-none text-dark"
-                                   asp-action="Index"
-                                   asp-route-pageNumber="@Model.PreviousPageNumber"
-                                   asp-route-searchString="@currentFilter"
-                                   asp-route-periodId="@currentPeriodId"
-                                   aria-label="Trang trước">
-                                    <i class="bi bi-chevron-left"></i>
-                                </a>
-                            }
-                            else
-                            {
-                                <span class="page-link border-0 rounded-circle shadow-none text-dark" aria-disabled="true" aria-label="Trang trước">
-                                    <i class="bi bi-chevron-left"></i>
-                                </span>
-                            }
-                        </li>
+            <nav class="evaluation-pagination" aria-label="Phân trang KPI">
+                @if (pageItems.PreviousPageNumber.HasValue)
+                {
+                    <a asp-action="Index" asp-route-pageNumber="@pageItems.PreviousPageNumber" asp-route-searchString="@Model.SearchString" asp-route-periodId="@Model.PeriodId" asp-route-statusId="@Model.StatusId" asp-route-quickFilter="@Model.QuickFilter" asp-route-sortBy="@Model.SortBy" aria-label="Trang trước"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+                }
+                else
+                {
+                    <span class="is-disabled" aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
+                }
 
-                        @for (int i = 1; i <= Model.TotalPages; i++)
-                        {
-                            if (i == 1 || i == Model.TotalPages || (i >= Model.PageIndex - 1 && i <= Model.PageIndex + 1))
-                            {
-                                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                                    <a class="page-link border-0 rounded-circle shadow-none @(i == Model.PageIndex ? "" : "text-dark")"
-                                       asp-action="Index"
-                                       asp-route-pageNumber="@i"
-                                       asp-route-searchString="@currentFilter"
-                                       asp-route-periodId="@currentPeriodId">@i</a>
-                                </li>
-                            }
-                            else if (i == Model.PageIndex - 2 || i == Model.PageIndex + 2)
-                            {
-                                <li class="page-item disabled"><span class="page-link border-0">...</span></li>
-                            }
-                        }
+                @for (var pageIndex = 1; pageIndex <= pageItems.TotalPages; pageIndex++)
+                {
+                    <a asp-action="Index" asp-route-pageNumber="@pageIndex" asp-route-searchString="@Model.SearchString" asp-route-periodId="@Model.PeriodId" asp-route-statusId="@Model.StatusId" asp-route-quickFilter="@Model.QuickFilter" asp-route-sortBy="@Model.SortBy" class="@(pageIndex == pageItems.PageIndex ? "is-current" : null)" aria-current="@(pageIndex == pageItems.PageIndex ? "page" : null)">@pageIndex</a>
+                }
 
-                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                            @if (Model.HasNextPage && Model.NextPageNumber.HasValue)
-                            {
-                                <a class="page-link border-0 rounded-circle shadow-none text-dark"
-                                   asp-action="Index"
-                                   asp-route-pageNumber="@Model.NextPageNumber"
-                                   asp-route-searchString="@currentFilter"
-                                   asp-route-periodId="@currentPeriodId"
-                                   aria-label="Trang sau">
-                                    <i class="bi bi-chevron-right"></i>
-                                </a>
-                            }
-                            else
-                            {
-                                <span class="page-link border-0 rounded-circle shadow-none text-dark" aria-disabled="true" aria-label="Trang sau">
-                                    <i class="bi bi-chevron-right"></i>
-                                </span>
-                            }
-                        </li>
-                    </ul>
-                </nav>
-            </div>
+                @if (pageItems.NextPageNumber.HasValue)
+                {
+                    <a asp-action="Index" asp-route-pageNumber="@pageItems.NextPageNumber" asp-route-searchString="@Model.SearchString" asp-route-periodId="@Model.PeriodId" asp-route-statusId="@Model.StatusId" asp-route-quickFilter="@Model.QuickFilter" asp-route-sortBy="@Model.SortBy" aria-label="Trang sau"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+                }
+                else
+                {
+                    <span class="is-disabled" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                }
+            </nav>
         }
-    </div>
+    </section>
 </div>
 
-<!-- Modal Create KPI -->
-<div class="modal fade" id="createKpiModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl kpi-workspace-modal">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header modal-header-soft primary kpi-modal-header">
-                <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 w-100">
-                    <div class="d-flex align-items-start gap-3">
-                        <span class="kpi-modal-header__icon">
-                            <i class="bi bi-graph-up-arrow"></i>
-                        </span>
-                        <div>
-                            <div class="kpi-modal-eyebrow">KPI Workspace</div>
-                            <h5 class="modal-title-custom mb-1">Thêm KPI mới</h5>
-                            <p class="kpi-modal-header__desc mb-0">Thiết lập mục tiêu, chỉ số đo lường và phạm vi phân bổ theo luồng làm việc quen thuộc của hệ thống.</p>
-                        </div>
-                    </div>
-                    <div class="d-flex flex-wrap gap-2">
-                        <span class="soft-chip tone-primary"><i class="bi bi-lightning-charge"></i>Tạo nhanh trong kỳ hiện tại</span>
-                        <span class="soft-chip tone-info"><i class="bi bi-diagram-3"></i>Hỗ trợ liên kết OKR</span>
-                    </div>
-                </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body kpi-create-modal-body">
-                <form asp-controller="KPIs" asp-action="Create" method="post" id="createKpiForm" class="d-flex flex-column gap-4">
-                    <div class="row g-4 align-items-start">
-                        <div class="col-xl-8">
-                            <div class="d-grid gap-4">
-                                <section class="content-card kpi-modal-panel">
-                                    <div class="kpi-modal-panel__header">
-                                        <span class="kpi-modal-panel__badge bg-primary-subtle text-primary">1</span>
-                                        <div>
-                                            <h6 class="kpi-modal-panel__title mb-1">Thông tin chung</h6>
-                                            <p class="kpi-modal-panel__description mb-0">Đặt tên rõ nghĩa, chọn chu kỳ đánh giá và gắn với OKR nếu cần theo dõi chiến lược.</p>
-                                        </div>
-                                    </div>
-                                    <div class="row g-3" data-okr-link-scope>
-                                        <div class="col-md-12">
-                                            <label class="form-label fw-semibold">Tên KPI <span class="text-danger">*</span></label>
-                                            <input type="text" name="kpi.KPIName" id="createKpiName" class="form-control" placeholder="VD: Doanh thu bán hàng tháng" required>
-                                        </div>
-                                        <div class="col-md-12">
-                                            <label class="form-label fw-semibold">Mô tả KPI</label>
-                                            <textarea name="kpi.Description" id="createKpiDescription" class="form-control" rows="4" maxlength="1000" placeholder="Mô tả phạm vi, cách tính hoặc lưu ý để tránh hiểu sai KPI"></textarea>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold">Phân loại KPI <span class="text-danger">*</span></label>
-                                            <select name="kpi.KPITypeId" id="createKpiTypeId" class="form-select" required>
-                                                <option value="">-- Chọn loại KPI --</option>
-                                                @foreach (var t in kpiTypesList)
-                                                {
-                                                    <option value="@t.Id">@t.TypeName</option>
-                                                }
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold">Kỳ đánh giá <span class="text-danger">*</span></label>
-                                            <select name="kpi.PeriodId" id="createPeriodId" class="form-select" required>
-                                                @foreach(var kvp in periodsDict)
-                                                {
-                                                    <option value="@kvp.Key">@kvp.Value</option>
-                                                }
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold">Liên kết OKR <span class="text-muted">(tùy chọn)</span></label>
-                                            <select name="kpi.OKRId" id="createOkrId" class="form-select js-okr-select">
-                                                <option value="">-- Không liên kết OKR --</option>
-                                                @foreach (var okr in okrsList)
-                                                {
-                                                    <option value="@okr.Id">@okr.ObjectiveName</option>
-                                                }
-                                            </select>
-                                            <div class="form-text">KPI có thể độc lập nếu không gắn với OKR cụ thể.</div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold">Key Result <span class="text-muted">(tùy chọn)</span></label>
-                                            <select name="kpi.OKRKeyResultId" id="createKrId" class="form-select js-kr-select">
-                                                <option value="">-- Không liên kết Key Result --</option>
-                                                @foreach (var kr in okrKeyResultsList)
-                                                {
-                                                    var parentOkrName = kr.OKRId.HasValue && okrNamesDict.ContainsKey(kr.OKRId.Value)
-                                                        ? okrNamesDict[kr.OKRId.Value]
-                                                        : "OKR";
-                                                    <option value="@kr.Id" data-okr-id="@kr.OKRId">@parentOkrName - @kr.KeyResultName</option>
-                                                }
-                                            </select>
-                                            <div class="form-text">Danh sách Key Result sẽ đổi theo OKR đã chọn.</div>
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="kpi-inline-note">
-                                                <i class="bi bi-info-circle"></i>
-                                                <span>Nếu KPI không gắn với OKR, hệ thống vẫn theo dõi như một KPI vận hành độc lập theo kỳ đánh giá bạn chọn.</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                <section class="content-card kpi-modal-panel">
-                                    <div class="kpi-modal-panel__header">
-                                        <span class="kpi-modal-panel__badge bg-warning-subtle text-warning">2</span>
-                                        <div>
-                                            <h6 class="kpi-modal-panel__title mb-1">Chi tiết chỉ tiêu</h6>
-                                            <p class="kpi-modal-panel__description mb-0">Xác định target, ngưỡng đạt và nhịp check-in để việc đo lường luôn rõ ràng.</p>
-                                        </div>
-                                    </div>
-                                    <div class="row g-3" data-measurement-scope>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold">Chỉ tiêu (Target) <span class="text-danger">*</span></label>
-                                            <div class="input-group">
-                                                <input type="number" step="0.01" name="detail.TargetValue" id="createTarget" class="form-control measurement-value-input" data-measurement-role="target" placeholder="Nhập chỉ tiêu" required>
-                                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold">Đơn vị đo lường <span class="text-danger">*</span></label>
-                                            <select name="detail.MeasurementUnit" id="createUnit" class="form-select measurement-unit-select" data-placeholder="-- Chọn đơn vị đo --" required>
-                                                <option value="">-- Chọn đơn vị đo --</option>
-                                                @foreach (var unit in measurementUnits)
-                                                {
-                                                    <option value="@unit.Value">@unit.Text</option>
-                                                }
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold">Ngưỡng đạt (Pass Threshold)</label>
-                                            <div class="input-group">
-                                                <input type="number" step="0.01" name="detail.PassThreshold" id="createPass" class="form-control measurement-value-input" data-measurement-role="pass" placeholder="Mức tối thiểu để Đạt">
-                                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label fw-semibold text-danger">Ngưỡng trượt (Fail Threshold)</label>
-                                            <div class="input-group">
-                                                <input type="number" step="0.01" name="detail.FailThreshold" id="createFail" class="form-control measurement-value-input" data-measurement-role="fail" placeholder="Mức xác định là Không đạt">
-                                                <span class="input-group-text measurement-unit-suffix">đơn vị</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-12">
-                                            <div class="form-check form-switch p-3 bg-white rounded-4 border border-warning border-opacity-25 shadow-sm">
-                                                <input class="form-check-input ms-0 me-3" type="checkbox" name="detail.IsInverse" value="true" id="isInverseCheck">
-                                                <label class="form-check-label fw-bold text-dark cursor-pointer" for="isInverseCheck">
-                                                    <i class="bi bi-arrow-down-circle text-warning me-1"></i> Chỉ tiêu thu nhỏ (Càng thấp càng tốt)
-                                                </label>
-                                                <div class="text-muted small ms-5 ps-1 mt-1">Sử dụng cho các chỉ số như tỷ lệ lỗi, chi phí, thời gian chờ...</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label fw-semibold">Tần suất check-in</label>
-                                            <div class="input-group">
-                                                <input type="number" min="1" step="1" name="detail.CheckInFrequencyDays" class="form-control" value="1">
-                                                <span class="input-group-text">ngày/lần</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label fw-semibold">Ngày deadline</label>
-                                            <input type="date" name="detail.DeadlineDate" class="form-control">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label fw-semibold">Giờ deadline</label>
-                                            <input type="time" name="detail.CheckInDeadlineTime" class="form-control" value="10:00">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label fw-semibold">Nhắc trước deadline</label>
-                                            <div class="input-group">
-                                                <input type="number" min="0" step="1" name="detail.ReminderBeforeHours" class="form-control" value="24">
-                                                <span class="input-group-text">giờ</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                <section class="content-card kpi-modal-panel">
-                                    <div class="kpi-modal-panel__header">
-                                        <span class="kpi-modal-panel__badge bg-success-subtle text-success">3</span>
-                                        <div>
-                                            <h6 class="kpi-modal-panel__title mb-1">Phân bổ KPI</h6>
-                                            <p class="kpi-modal-panel__description mb-0">Chọn người chịu trách nhiệm chính và các phòng ban cần nhận KPI trong cùng một không gian làm việc.</p>
-                                        </div>
-                                    </div>
-                                    <div class="row g-3">
-                                        <div class="col-lg-6">
-                                            <div class="kpi-assignment-box">
-                                                <div class="kpi-assignment-box__toolbar">
-                                                    <div>
-                                                        <label class="form-label fw-semibold mb-0">Nhân viên phụ trách</label>
-                                                        <div class="small text-muted">Mỗi nhân viên có thể mang một tỷ trọng riêng.</div>
-                                                    </div>
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" id="splitCreateModalWeights">Chia đều</button>
-                                                </div>
-                                                <div class="kpi-assignment-list">
-                                                    @if (allEmployees.Any())
-                                                    {
-                                                        foreach (var employee in allEmployees)
-                                                        {
-                                                            <div class="kpi-assignment-row">
-                                                                <div class="form-check d-flex align-items-start gap-2 mb-0 flex-grow-1">
-                                                                    <input class="form-check-input modal-kpi-employee-check mt-1" type="checkbox" name="employeeIds" value="@employee.Id" id="modal-employee-@employee.Id">
-                                                                    <label class="form-check-label flex-grow-1" for="modal-employee-@employee.Id">
-                                                                        <span class="d-block fw-semibold text-dark">@employee.FullName</span>
-                                                                        <span class="small text-muted">@employee.EmployeeCode</span>
-                                                                    </label>
-                                                                </div>
-                                                                <div class="input-group input-group-sm kpi-assignment-weight">
-                                                                    <input type="number" min="0.01" max="100" step="0.01" name="weights" class="form-control modal-kpi-weight-input" value="100" disabled>
-                                                                    <span class="input-group-text">%</span>
-                                                                </div>
-                                                            </div>
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        <div class="kpi-assignment-empty">Chưa có nhân viên khả dụng để phân bổ.</div>
-                                                    }
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-6">
-                                            <div class="kpi-assignment-box">
-                                                <div class="kpi-assignment-box__toolbar">
-                                                    <div>
-                                                        <label class="form-label fw-semibold mb-0">Phòng ban nhận KPI</label>
-                                                        <div class="small text-muted">Dùng khi KPI áp dụng cho cả đơn vị hoặc nhóm chức năng.</div>
-                                                    </div>
-                                                </div>
-                                                <div class="kpi-assignment-list">
-                                                    @if (allDepartments.Any())
-                                                    {
-                                                        foreach (var department in allDepartments)
-                                                        {
-                                                            <div class="kpi-assignment-row">
-                                                                <div class="form-check d-flex align-items-start gap-2 mb-0 w-100">
-                                                                    <input class="form-check-input mt-1" type="checkbox" name="departmentIds" value="@department.Id" id="modal-department-@department.Id">
-                                                                    <label class="form-check-label flex-grow-1" for="modal-department-@department.Id">
-                                                                        <span class="d-block fw-semibold text-dark">@department.DepartmentName</span>
-                                                                        <span class="small text-muted">Nhận KPI ở cấp phòng ban</span>
-                                                                    </label>
-                                                                </div>
-                                                            </div>
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        <div class="kpi-assignment-empty">Chưa có phòng ban khả dụng để phân bổ.</div>
-                                                    }
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-                            </div>
-                        </div>
-
-                        <div class="col-xl-4">
-                            <div class="kpi-modal-sidebar">
-                                <aside class="content-card kpi-modal-panel kpi-modal-panel--summary">
-                                    <div class="kpi-modal-panel__header">
-                                        <span class="kpi-modal-panel__badge bg-info-subtle text-info"><i class="bi bi-eye"></i></span>
-                                        <div>
-                                            <h6 class="kpi-modal-panel__title mb-1">Tóm tắt nhanh</h6>
-                                            <p class="kpi-modal-panel__description mb-0">Thông tin dưới đây cập nhật theo những gì bạn vừa nhập.</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="kpi-live-summary-list">
-                                        <div class="kpi-live-summary">
-                                            <span class="kpi-live-summary__label">Tên KPI</span>
-                                            <strong class="kpi-live-summary__value" id="createSummaryName">Chưa nhập tên KPI</strong>
-                                        </div>
-                                        <div class="kpi-live-summary">
-                                            <span class="kpi-live-summary__label">Loại KPI</span>
-                                            <strong class="kpi-live-summary__value" id="createSummaryType">Chưa chọn loại KPI</strong>
-                                        </div>
-                                        <div class="kpi-live-summary">
-                                            <span class="kpi-live-summary__label">Target dự kiến</span>
-                                            <strong class="kpi-live-summary__value" id="createSummaryTarget">Chưa nhập chỉ tiêu</strong>
-                                        </div>
-                                        <div class="kpi-live-summary">
-                                            <span class="kpi-live-summary__label">Liên kết chiến lược</span>
-                                            <strong class="kpi-live-summary__value" id="createSummaryAlignment">KPI đang hoạt động độc lập</strong>
-                                        </div>
-                                    </div>
-
-                                    <div class="d-flex flex-wrap gap-2 mt-3">
-                                        <span class="soft-chip tone-primary" id="createSummaryPeriodChip"><i class="bi bi-calendar3"></i>Chưa chọn kỳ</span>
-                                        <span class="soft-chip tone-info" id="createSummaryUnitChip"><i class="bi bi-rulers"></i>Chưa chọn đơn vị</span>
-                                        <span class="soft-chip tone-success" id="createSummaryScopeChip"><i class="bi bi-bullseye"></i>KPI độc lập</span>
-                                    </div>
-
-                                    <div class="kpi-summary-stats mt-3">
-                                        <div class="kpi-summary-stat">
-                                            <span>Nhân viên</span>
-                                            <strong id="createSummaryEmployeeCount">0</strong>
-                                        </div>
-                                        <div class="kpi-summary-stat">
-                                            <span>Phòng ban</span>
-                                            <strong id="createSummaryDepartmentCount">0</strong>
-                                        </div>
-                                    </div>
-                                </aside>
-
-                                <aside class="content-card kpi-modal-panel">
-                                    <div class="kpi-modal-panel__header">
-                                        <span class="kpi-modal-panel__badge bg-warning-subtle text-warning"><i class="bi bi-lightbulb"></i></span>
-                                        <div>
-                                            <h6 class="kpi-modal-panel__title mb-1">Mẹo nhập KPI</h6>
-                                            <p class="kpi-modal-panel__description mb-0">Giữ KPI ngắn gọn, đo được và đủ rõ để người nhận hiểu ngay phải làm gì.</p>
-                                        </div>
-                                    </div>
-                                    <ul class="kpi-modal-checklist">
-                                        <li><i class="bi bi-check2-circle"></i><span>Đặt tên KPI theo kết quả hoặc hành vi có thể đo lường thay vì mô tả công việc chung chung.</span></li>
-                                        <li><i class="bi bi-check2-circle"></i><span>Chọn đơn vị đo khớp với target để khi check-in hệ thống tính tiến độ chính xác hơn.</span></li>
-                                        <li><i class="bi bi-check2-circle"></i><span>Chỉ bật “Càng thấp càng tốt” khi KPI là chi phí, tỷ lệ lỗi hoặc thời gian chờ.</span></li>
-                                    </ul>
-                                </aside>
-
-                                <aside class="content-card kpi-modal-panel">
-                                    <div class="kpi-modal-panel__header">
-                                        <span class="kpi-modal-panel__badge bg-success-subtle text-success"><i class="bi bi-shield-check"></i></span>
-                                        <div>
-                                            <h6 class="kpi-modal-panel__title mb-1">Checklist trước khi lưu</h6>
-                                            <p class="kpi-modal-panel__description mb-0">Một vài điểm nhanh để giảm sai sót khi gửi KPI đi duyệt.</p>
-                                        </div>
-                                    </div>
-                                    <ul class="kpi-modal-checklist mb-0">
-                                        <li><i class="bi bi-arrow-right-short"></i><span>Bạn đã chọn loại KPI và kỳ đánh giá phù hợp với chu kỳ cần áp dụng.</span></li>
-                                        <li><i class="bi bi-arrow-right-short"></i><span>Target, ngưỡng đạt và ngưỡng trượt không mâu thuẫn với nhau.</span></li>
-                                        <li><i class="bi bi-arrow-right-short"></i><span>Nhân viên hoặc phòng ban nhận KPI đã đúng phạm vi cần theo dõi.</span></li>
-                                    </ul>
-                                </aside>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="kpi-modal-actions">
-                        <div class="kpi-modal-actions__meta">
-                            <span class="soft-chip"><i class="bi bi-hourglass-split"></i>KPI mới sẽ được lưu ở trạng thái chờ duyệt.</span>
-                        </div>
-                        <div class="d-flex flex-wrap justify-content-end gap-2">
-                            <button type="button" class="btn-outline-custom rounded-pill px-4" data-bs-dismiss="modal">Hủy thao tác</button>
-                            <button type="submit" class="btn-primary-custom rounded-pill px-4"><i class="bi bi-save me-2"></i>Lưu KPI mới</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- Modal AI Suggest KPI -->
-<div class="modal fade" id="aiKpiSuggestModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl kpi-workspace-modal">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0 bg-light rounded-top p-4">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-stars text-primary me-2"></i>AI Gợi ý KPI</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="row g-3 mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Nhân viên</label>
-                        <select id="aiSuggestEmployeeId" class="form-select">
-                            <option value="">-- Không chọn nhân viên cụ thể --</option>
-                            @foreach (var e in allEmployees)
-                            {
-                                <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Phòng ban</label>
-                        <select id="aiSuggestDepartmentId" class="form-select">
-                            <option value="">-- Không chọn phòng ban cụ thể --</option>
-                            @foreach (var d in allDepartments)
-                            {
-                                <option value="@d.Id">@d.DepartmentName</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Kỳ đánh giá</label>
-                        <select id="aiSuggestPeriodId" class="form-select">
-                            <option value="">-- Kỳ được phân công gần nhất --</option>
-                            @foreach (var p in periodsDict)
-                            {
-                                <option value="@p.Key">@p.Value</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">OKR</label>
-                        <select id="aiSuggestOkrId" class="form-select">
-                            <option value="">-- Không bắt buộc --</option>
-                            @foreach (var okr in okrsList)
-                            {
-                                <option value="@okr.Id">@okr.ObjectiveName</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Key Result</label>
-                        <select id="aiSuggestKrId" class="form-select">
-                            <option value="">-- Không bắt buộc --</option>
-                            @foreach (var kr in okrKeyResultsList)
-                            {
-                                var parentOkrName = kr.OKRId.HasValue && okrNamesDict.ContainsKey(kr.OKRId.Value)
-                                    ? okrNamesDict[kr.OKRId.Value]
-                                    : "OKR";
-                                <option value="@kr.Id" data-okr-id="@kr.OKRId">@parentOkrName - @kr.KeyResultName</option>
-                            }
-                        </select>
-                    </div>
-                </div>
-                <div id="aiSuggestOptionsStatus" class="text-muted small mb-3"></div>
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <p class="text-muted small mb-0">AI sẽ tạo bản nháp KPI. Bạn chọn “Áp dụng” rồi kiểm tra lại trước khi lưu.</p>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-info" onclick="openAiHistoryModal('SuggestKPI', null, function(data){ renderKpiSuggestions(data.suggestions ? data.suggestions : data); })">
-                            <i class="bi bi-clock-history"></i> Lịch sử
-                        </button>
-                        <button type="button" class="btn btn-primary" id="aiRunKpiSuggestBtn">
-                            <i class="bi bi-magic me-1"></i> Tạo gợi ý
-                        </button>
-                    </div>
-                </div>
-                <div id="aiKpiSuggestResults" class="d-grid gap-2"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<style>
-    .stat-card:hover { transform: translateY(-3px); transition: all 0.3s ease; }
-    .employee-item:hover { background-color: rgba(13, 202, 240, 0.05); }
-    .cursor-pointer { cursor: pointer; }
-
-    .kpi-index-page .card-body-custom {
-        --kpi-status-width: 170px;
-        --kpi-actions-width: 88px;
-        min-width: 0;
-    }
-
-    .kpi-table-responsive {
-        max-width: 100%;
-        overflow-x: auto !important;
-        overflow-y: auto;
-        padding-bottom: 0.75rem;
-        scrollbar-gutter: stable;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(37, 99, 235, 0.55) rgba(226, 232, 240, 0.75);
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .kpi-table-responsive::-webkit-scrollbar {
-        height: 10px;
-    }
-
-    .kpi-table-responsive::-webkit-scrollbar-track {
-        background: rgba(226, 232, 240, 0.75);
-        border-radius: 999px;
-    }
-
-    .kpi-table-responsive::-webkit-scrollbar-thumb {
-        background: rgba(37, 99, 235, 0.55);
-        border-radius: 999px;
-        border: 2px solid rgba(226, 232, 240, 0.75);
-    }
-
-    .kpi-index-table {
-        width: 100%;
-        min-width: 1160px;
-        table-layout: fixed;
-    }
-
-    .kpi-index-table .kpi-col-name { width: 27%; }
-    .kpi-index-table .kpi-col-type { width: 12%; }
-    .kpi-index-table .kpi-col-target { width: 18%; }
-    .kpi-index-table .kpi-col-period { width: 13%; }
-    .kpi-index-table .kpi-col-assignment { width: 15%; }
-    .kpi-index-table .kpi-col-status { width: var(--kpi-status-width); }
-    .kpi-index-table .kpi-col-actions { width: var(--kpi-actions-width); }
-
-    .kpi-index-table th,
-    .kpi-index-table td {
-        overflow-wrap: anywhere;
-    }
-
-    .kpi-index-table .badge {
-        max-width: 100%;
-        white-space: normal;
-        line-height: 1.25;
-    }
-
-    .kpi-index-table .kpi-status-cell {
-        min-width: var(--kpi-status-width);
-    }
-
-    .kpi-status-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        min-height: 32px;
-        font-size: 0.72rem;
-        text-align: center;
-    }
-
-    .kpi-index-table thead .kpi-status-col,
-    .kpi-index-table thead .kpi-actions-col {
-        background: linear-gradient(135deg, #eef3fb, #f5f8fc);
-    }
-
-    .kpi-mobile-list {
-        display: none;
-    }
-
-    .kpi-mobile-card {
-        padding: 1rem;
-        border-radius: 16px;
-        display: grid;
-        gap: 0.9rem;
-    }
-
-    .kpi-mobile-card__header {
-        display: grid;
-        gap: 0.75rem;
-    }
-
-    .kpi-mobile-card__title {
-        margin: 0 0 0.45rem;
-        font-size: 1rem;
-        font-weight: 800;
-        line-height: 1.35;
-        color: #172033;
-        overflow-wrap: anywhere;
-    }
-
-    .kpi-mobile-card__section {
-        display: grid;
-        gap: 0.35rem;
-    }
-
-    .kpi-mobile-card__label {
-        font-size: 0.76rem;
-        font-weight: 800;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: #64748b;
-    }
-
-    .kpi-mobile-card__chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.45rem;
-    }
-
-    .kpi-mobile-card__progress {
-        padding: 0.75rem;
-        border-radius: 12px;
-        background: #f8fbff;
-        border: 1px solid #dbeafe;
-    }
-
-    .kpi-mobile-card__actions {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 0.6rem;
-    }
-
-    .kpi-mobile-card__actions .btn {
-        min-height: 42px;
-        border-radius: 12px;
-        font-weight: 700;
-        padding-inline: 0.65rem;
-        font-size: 0.92rem;
-        justify-content: center;
-        white-space: nowrap;
-    }
-
-    .kpi-actions-cell {
-        min-width: var(--kpi-actions-width);
-    }
-
-    @@media (min-width: 1440px) {
-        .kpi-index-table {
-            min-width: 100%;
-        }
-    }
-
-    @@media (max-width: 991.98px) {
-        .kpi-table-responsive {
-            padding-bottom: 4.5rem;
-        }
-    }
-
-    @@media (max-width: 767.98px) {
-        .page-content {
-            padding-inline: 10px !important;
-        }
-
-        .kpi-index-page.container-fluid {
-            width: 100% !important;
-            max-width: none !important;
-            margin: 0 !important;
-            padding-inline: 0 !important;
-        }
-
-        .kpi-index-page > .content-card {
-            width: 100% !important;
-            max-width: none !important;
-            margin-inline: 0 !important;
-        }
-
-        .kpi-index-page .card-body-custom {
-            padding: 0.9rem !important;
-        }
-
-        .kpi-index-page .page-header,
-        .kpi-index-page .toolbar {
-            gap: 0.75rem;
-        }
-
-        .kpi-index-page .page-header {
-            flex-direction: column;
-            align-items: stretch !important;
-        }
-
-        .kpi-index-page .page-header > div:last-child {
-            display: grid !important;
-            grid-template-columns: 1fr;
-        }
-
-        .kpi-index-page .toolbar form,
-        .kpi-index-page .toolbar-right {
-            width: 100%;
-        }
-
-        .kpi-index-page .toolbar form {
-            flex-direction: column;
-            align-items: stretch !important;
-        }
-
-        .kpi-index-page .toolbar .toolbar-right {
-            display: grid !important;
-            grid-template-columns: 1fr;
-        }
-
-        .kpi-index-page .toolbar .toolbar-right > * {
-            width: 100%;
-        }
-
-        .kpi-index-page .toolbar .form-select {
-            width: 100% !important;
-        }
-
-        .kpi-mobile-card {
-            width: 100%;
-            max-width: none;
-            padding: 0.9rem;
-            gap: 0.8rem;
-        }
-
-        .kpi-mobile-card__header {
-            gap: 0.6rem;
-        }
-
-        .kpi-mobile-card__title {
-            font-size: 0.98rem;
-        }
-
-        .kpi-mobile-card__chips .badge,
-        .kpi-mobile-card .badge {
-            max-width: 100%;
-            white-space: normal;
-            line-height: 1.25;
-        }
-
-        .kpi-mobile-card__actions {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 0.55rem;
-        }
-
-        .kpi-mobile-card__actions .btn {
-            min-width: 0;
-            padding-inline: 0.45rem;
-            font-size: 0.88rem;
-        }
-
-        .kpi-table-responsive {
-            display: none;
-        }
-
-        .kpi-mobile-list {
-            display: grid;
-            gap: 0.9rem;
-            width: 100%;
-        }
-    }
-
-    .kpi-index-page .dropdown-menu {
-        z-index: 1060 !important;
-    }
-
-    .kpi-create-modal-body {
-        background:
-            radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 34%),
-            linear-gradient(180deg, rgba(248, 250, 252, 0.92), rgba(255, 255, 255, 0.96));
-    }
-
-    .kpi-modal-header {
-        align-items: flex-start;
-        gap: 1rem;
-        padding: clamp(1.1rem, 2vw, 1.6rem) clamp(1.2rem, 2.3vw, 2rem);
-    }
-
-    .kpi-modal-header__icon {
-        width: 52px;
-        height: 52px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 16px;
-        background: #ffffff;
-        color: var(--primary);
-        box-shadow: 0 12px 24px rgba(26, 115, 232, 0.14);
-        font-size: 1.4rem;
-        flex: 0 0 auto;
-    }
-
-    .kpi-modal-eyebrow {
-        font-size: 0.74rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--color-slate);
-        margin-bottom: 0.2rem;
-    }
-
-    .kpi-modal-header__desc {
-        max-width: 44rem;
-        color: var(--color-slate);
-        font-size: 0.92rem;
-        line-height: 1.55;
-    }
-
-    .kpi-modal-panel {
-        padding: clamp(1rem, 1.5vw, 1.35rem);
-        border-radius: 22px !important;
-    }
-
-    .kpi-modal-panel:hover {
-        transform: none !important;
-    }
-
-    .kpi-modal-panel__header {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.95rem;
-        margin-bottom: 1.1rem;
-    }
-
-    .kpi-modal-panel__badge {
-        width: 2rem;
-        height: 2rem;
-        border-radius: 0.85rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        flex: 0 0 auto;
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
-    }
-
-    .kpi-modal-panel__title {
-        font-size: 1rem;
-        font-weight: 800;
-        color: var(--color-midnight-ink);
-    }
-
-    .kpi-modal-panel__description {
-        color: var(--color-slate);
-        font-size: 0.88rem;
-        line-height: 1.55;
-    }
-
-    .kpi-modal-panel .form-label {
-        margin-bottom: 0.45rem;
-    }
-
-    .kpi-modal-panel .form-control,
-    .kpi-modal-panel .form-select,
-    .kpi-modal-panel .input-group-text {
-        min-height: 48px;
-        border-radius: 14px;
-    }
-
-    .kpi-modal-panel textarea.form-control {
-        min-height: 120px;
-        resize: vertical;
-    }
-
-    .kpi-modal-panel .input-group > .form-control,
-    .kpi-modal-panel .input-group > .form-select {
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
-    }
-
-    .kpi-modal-panel .input-group > .input-group-text:last-child {
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
-    }
-
-    .kpi-inline-note {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.7rem;
-        padding: 0.9rem 1rem;
-        border-radius: 16px;
-        background: rgba(59, 130, 246, 0.06);
-        border: 1px dashed rgba(59, 130, 246, 0.24);
-        color: var(--color-charcoal);
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }
-
-    .kpi-inline-note i {
-        color: var(--primary);
-        margin-top: 0.05rem;
-    }
-
-    .kpi-assignment-box {
-        background: #ffffff;
-        border: 1px solid var(--color-cloud);
-        border-radius: 20px;
-        overflow: hidden;
-    }
-
-    .kpi-assignment-box__toolbar {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 0.75rem;
-        padding: 1rem 1rem 0.8rem;
-        border-bottom: 1px solid rgba(226, 232, 240, 0.9);
-    }
-
-    .kpi-assignment-list {
-        max-height: 280px;
-        overflow: auto;
-        padding: 0.85rem;
-    }
-
-    .kpi-assignment-row {
-        display: flex;
-        align-items: center;
-        gap: 0.85rem;
-        padding: 0.9rem 0.85rem;
-        border-radius: 16px;
-        border: 1px solid transparent;
-        transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .kpi-assignment-row + .kpi-assignment-row {
-        margin-top: 0.6rem;
-    }
-
-    .kpi-assignment-row:hover {
-        background: rgba(248, 250, 252, 0.88);
-    }
-
-    .kpi-assignment-row.is-selected {
-        background: rgba(37, 99, 235, 0.06);
-        border-color: rgba(37, 99, 235, 0.18);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
-    }
-
-    .kpi-assignment-weight {
-        width: 118px;
-        flex: 0 0 auto;
-    }
-
-    .kpi-assignment-empty {
-        padding: 1rem;
-        text-align: center;
-        color: var(--color-slate);
-        font-size: 0.9rem;
-    }
-
-    .kpi-modal-sidebar {
-        position: sticky;
-        top: 0;
-        display: grid;
-        gap: 1rem;
-    }
-
-    .kpi-live-summary-list {
-        display: grid;
-        gap: 0.75rem;
-    }
-
-    .kpi-live-summary {
-        padding: 0.9rem 1rem;
-        background: rgba(248, 250, 252, 0.95);
-        border-radius: 16px;
-        border: 1px solid rgba(226, 232, 240, 0.9);
-    }
-
-    .kpi-live-summary__label {
-        display: block;
-        margin-bottom: 0.28rem;
-        font-size: 0.74rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--color-slate);
-    }
-
-    .kpi-live-summary__value {
-        display: block;
-        color: var(--color-midnight-ink);
-        line-height: 1.45;
-        overflow-wrap: anywhere;
-    }
-
-    .kpi-summary-stats {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.75rem;
-    }
-
-    .kpi-summary-stat {
-        padding: 0.9rem 1rem;
-        border-radius: 16px;
-        background: #ffffff;
-        border: 1px solid rgba(226, 232, 240, 0.9);
-    }
-
-    .kpi-summary-stat span {
-        display: block;
-        margin-bottom: 0.22rem;
-        font-size: 0.74rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--color-slate);
-    }
-
-    .kpi-summary-stat strong {
-        font-size: 1.4rem;
-        color: var(--color-midnight-ink);
-    }
-
-    .kpi-modal-checklist {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: grid;
-        gap: 0.85rem;
-    }
-
-    .kpi-modal-checklist li {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.7rem;
-        color: var(--color-charcoal);
-        font-size: 0.92rem;
-        line-height: 1.55;
-    }
-
-    .kpi-modal-checklist i {
-        color: var(--primary);
-        margin-top: 0.08rem;
-        flex: 0 0 auto;
-    }
-
-    .kpi-modal-actions {
-        position: sticky;
-        bottom: -0.25rem;
-        z-index: 4;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-        padding: 1rem 1.2rem;
-        border-radius: 20px;
-        background: rgba(255, 255, 255, 0.95);
-        border: 1px solid rgba(226, 232, 240, 0.92);
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-        backdrop-filter: blur(12px);
-    }
-
-    .kpi-modal-actions__meta {
-        flex: 1 1 260px;
-    }
-
-    @@media (max-width: 1199.98px) {
-        .kpi-modal-sidebar {
-            position: static;
-        }
-    }
-
-    @@media (max-width: 767.98px) {
-        .kpi-modal-header {
-            padding: 1rem;
-        }
-
-        .kpi-modal-panel {
-            padding: 1rem;
-        }
-
-        .kpi-summary-stats {
-            grid-template-columns: 1fr;
-        }
-
-        .kpi-assignment-row {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .kpi-assignment-weight {
-            width: 100%;
-        }
-
-        .kpi-modal-actions {
-            padding: 0.9rem 1rem;
-        }
-    }
-</style>
-
-<script>
-    (function () {
-    // Empty placeholder for script segment if needed
-
-    // Search functionality for employee list
-    document.getElementById('employeeSearch')?.addEventListener('input', function(e) {
-        const searchText = e.target.value.toLowerCase();
-        const items = document.querySelectorAll('.employee-item');
-
-        items.forEach(item => {
-            const data = item.getAttribute('data-search');
-            if (data.includes(searchText)) {
-                item.style.display = 'block';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    });
-
-    function setupOkrLinkScope(scope) {
-        const okrSelect = scope.querySelector('.js-okr-select');
-        const keyResultSelect = scope.querySelector('.js-kr-select');
-        if (!okrSelect || !keyResultSelect) return;
-
-        const allKeyResults = Array.from(keyResultSelect.querySelectorAll('option[data-okr-id]')).map(option => ({
-            value: option.value,
-            text: option.textContent,
-            okrId: option.dataset.okrId
-        }));
-
-        function filterKeyResults() {
-            const selectedOkrId = okrSelect.value;
-            const selectedKeyResultId = keyResultSelect.value;
-            const matchingKeyResults = allKeyResults.filter(option => option.okrId === selectedOkrId);
-
-            keyResultSelect.innerHTML = '';
-            keyResultSelect.disabled = !selectedOkrId;
-
-            const placeholder = document.createElement('option');
-            placeholder.value = '';
-            placeholder.textContent = !selectedOkrId
-                ? '-- Chọn OKR trước --'
-                : matchingKeyResults.length
-                    ? '-- Không liên kết Key Result --'
-                    : '-- OKR này chưa có Key Result --';
-            keyResultSelect.appendChild(placeholder);
-
-            matchingKeyResults.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.value;
-                option.textContent = item.text;
-                option.dataset.okrId = item.okrId;
-                keyResultSelect.appendChild(option);
-            });
-
-            if (matchingKeyResults.some(item => item.value === selectedKeyResultId)) {
-                keyResultSelect.value = selectedKeyResultId;
-            }
-        }
-
-        okrSelect.addEventListener('change', filterKeyResults);
-        keyResultSelect.addEventListener('change', function () {
-            filterKeyResults();
-        });
-
-        filterKeyResults();
-    }
-
-    document.querySelectorAll('[data-okr-link-scope]').forEach(setupOkrLinkScope);
-
-    const aiSuggestState = {
-        keyResults: [],
-        requestId: 0
-    };
-
-    function getAiSuggestControls() {
-        return {
-            employee: document.getElementById('aiSuggestEmployeeId'),
-            department: document.getElementById('aiSuggestDepartmentId'),
-            period: document.getElementById('aiSuggestPeriodId'),
-            okr: document.getElementById('aiSuggestOkrId'),
-            kr: document.getElementById('aiSuggestKrId'),
-            status: document.getElementById('aiSuggestOptionsStatus')
-        };
-    }
-
-    function setSelectOptions(select, placeholderText, items, selectedValue, disableWhenEmpty = false) {
-        if (!select) return;
-
-        const selected = selectedValue ? String(selectedValue) : '';
-        select.innerHTML = '';
-
-        const placeholder = document.createElement('option');
-        placeholder.value = '';
-        placeholder.textContent = placeholderText;
-        select.appendChild(placeholder);
-
-        (items || []).forEach(item => {
-            const option = document.createElement('option');
-            option.value = item.id;
-            option.textContent = item.text;
-            if (item.parentId !== null && item.parentId !== undefined) {
-                option.dataset.okrId = item.parentId;
-            }
-            if (item.departmentId !== null && item.departmentId !== undefined) {
-                option.dataset.departmentId = item.departmentId;
-            }
-            select.appendChild(option);
-        });
-
-        if ((items || []).some(item => String(item.id) === selected)) {
-            select.value = selected;
-        }
-
-        select.disabled = disableWhenEmpty && !(items || []).length;
-    }
-
-    function renderAiKeyResultOptions(selectedKeyResultId) {
-        const controls = getAiSuggestControls();
-        if (!controls.kr) return;
-
-        const okrId = controls.okr?.value || '';
-        const matchingKeyResults = okrId
-            ? aiSuggestState.keyResults.filter(item => String(item.parentId) === okrId)
-            : [];
-
-        const placeholder = !okrId
-            ? '-- Chọn OKR trước --'
-            : matchingKeyResults.length
-                ? '-- Không bắt buộc --'
-                : '-- OKR này chưa có Key Result --';
-
-        setSelectOptions(controls.kr, placeholder, matchingKeyResults, selectedKeyResultId, true);
-        controls.kr.disabled = !okrId || !matchingKeyResults.length;
-    }
-
-    function setAiSuggestStatus(message) {
-        const status = getAiSuggestControls().status;
-        if (status) {
-            status.textContent = message || '';
-        }
-    }
-
-    async function refreshAiSuggestOptions(source) {
-        const controls = getAiSuggestControls();
-        if (!controls.employee || !controls.department || !controls.period || !controls.okr || !controls.kr) return;
-
-        if (source === 'department') {
-            controls.employee.value = '';
-        }
-
-        const previous = {
-            employeeId: controls.employee.value,
-            departmentId: controls.department.value,
-            periodId: controls.period.value,
-            okrId: controls.okr.value,
-            krId: controls.kr.value
-        };
-
-        const params = new URLSearchParams();
-        if (previous.employeeId) params.set('employeeId', previous.employeeId);
-        if (previous.departmentId) params.set('departmentId', previous.departmentId);
-
-        const currentRequestId = ++aiSuggestState.requestId;
-        setAiSuggestStatus('Đang lọc dữ liệu theo lựa chọn hiện tại...');
-
-        try {
-            const queryString = params.toString();
-            const response = await fetch(queryString ? `/AI/SuggestKpiOptions?${queryString}` : '/AI/SuggestKpiOptions');
-            const data = await response.json();
-
-            if (currentRequestId !== aiSuggestState.requestId) return;
-
-            if (!response.ok || data.success === false) {
-                setAiSuggestStatus('');
-                window.showAppToast({ tone: 'warning', eyebrow: 'AI Gợi ý KPI', title: 'Không thể tải dữ liệu', message: data.warnings?.[0] || 'Không thể lọc danh sách cho AI gợi ý KPI.' });
-                return;
-            }
-
-            const selectedDepartmentId = data.selectedDepartmentId ? String(data.selectedDepartmentId) : '';
-            const selectedEmployeeId = (data.employees || []).some(item => String(item.id) === previous.employeeId)
-                ? previous.employeeId
-                : '';
-            const selectedPeriodId = (data.periods || []).some(item => String(item.id) === previous.periodId)
-                ? previous.periodId
-                : '';
-            const selectedOkrId = (data.okrs || []).some(item => String(item.id) === previous.okrId)
-                ? previous.okrId
-                : '';
-
-            setSelectOptions(controls.department, '-- Không chọn phòng ban cụ thể --', data.departments || [], selectedDepartmentId);
-            setSelectOptions(controls.employee, '-- Không chọn nhân viên cụ thể --', data.employees || [], selectedEmployeeId);
-            setSelectOptions(
-                controls.period,
-                (data.periods || []).length ? '-- Kỳ được phân công gần nhất --' : '-- Chưa có kỳ được phân công --',
-                data.periods || [],
-                selectedPeriodId,
-                true);
-            setSelectOptions(
-                controls.okr,
-                (data.okrs || []).length ? '-- Không bắt buộc --' : '-- Chưa có OKR được phân công --',
-                data.okrs || [],
-                selectedOkrId,
-                true);
-
-            aiSuggestState.keyResults = data.keyResults || [];
-            renderAiKeyResultOptions(previous.krId);
-
-            if (data.warnings?.length) {
-                setAiSuggestStatus(data.warnings[0]);
-            } else if (previous.employeeId || selectedDepartmentId) {
-                setAiSuggestStatus('Dữ liệu đang được lọc theo phân công của nhân viên hoặc phòng ban đã chọn.');
-            } else {
-                setAiSuggestStatus('');
-            }
-        } catch {
-            if (currentRequestId !== aiSuggestState.requestId) return;
-            setAiSuggestStatus('');
-            window.showAppToast({ tone: 'error', eyebrow: 'Kết nối AI', title: 'Lỗi kết nối', message: 'Không thể tải danh sách cho AI gợi ý KPI.' });
-        }
-    }
-
-    function setupAiSuggestControls() {
-        const controls = getAiSuggestControls();
-        if (!controls.employee || !controls.department || !controls.okr) return;
-
-        controls.employee.addEventListener('change', function () {
-            refreshAiSuggestOptions('employee');
-        });
-
-        controls.department.addEventListener('change', function () {
-            refreshAiSuggestOptions('department');
-        });
-
-        controls.okr.addEventListener('change', function () {
-            renderAiKeyResultOptions();
-        });
-
-        document.getElementById('aiKpiSuggestModal')?.addEventListener('shown.bs.modal', function () {
-            refreshAiSuggestOptions('modal');
-        });
-
-        renderAiKeyResultOptions();
-    }
-
-    setupAiSuggestControls();
-
-    document.getElementById('aiRunKpiSuggestBtn')?.addEventListener('click', async function () {
-        const btn = this;
-        const results = document.getElementById('aiKpiSuggestResults');
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> AI đang tạo...';
-        results.innerHTML = '<div class="text-muted small">Đang phân tích dữ liệu KPI/OKR...</div>';
-
-        const payload = {
-            employeeId: numberOrNull(document.getElementById('aiSuggestEmployeeId')?.value),
-            departmentId: numberOrNull(document.getElementById('aiSuggestDepartmentId')?.value),
-            okrId: numberOrNull(document.getElementById('aiSuggestOkrId')?.value),
-            okrKeyResultId: numberOrNull(document.getElementById('aiSuggestKrId')?.value),
-            periodId: numberOrNull(document.getElementById('aiSuggestPeriodId')?.value)
-        };
-
-        try {
-            const response = await fetch('/AI/SuggestKPI', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...window.antiForgeryHeaders()
-                },
-                body: JSON.stringify(payload)
-            });
-            const data = await response.json();
-            if (!response.ok || data.success === false) {
-                results.innerHTML = '';
-                window.showAppToast({ tone: 'warning', eyebrow: 'AI Gợi ý KPI', title: 'AI chưa sẵn sàng', message: data.warnings?.[0] || 'Không thể tạo gợi ý KPI.' });
-                return;
-            }
-
-            renderKpiSuggestions(data.suggestions || []);
-        } catch {
-            results.innerHTML = '';
-            window.showAppToast({ tone: 'error', eyebrow: 'Kết nối AI', title: 'Lỗi kết nối', message: 'Không thể kết nối AI. Vui lòng thử lại sau.' });
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-        }
-    });
-
-    function renderKpiSuggestions(suggestions) {
-        const results = document.getElementById('aiKpiSuggestResults');
-        if (!suggestions.length) {
-            results.innerHTML = '<div class="text-muted small">AI chưa trả về gợi ý phù hợp.</div>';
-            return;
-        }
-
-        results.innerHTML = suggestions.map((item, index) => `
-            <div class="ai-suggestion-item">
-                <div class="d-flex justify-content-between gap-2">
-                    <div>
-                        <div class="fw-bold text-dark">${escapeHtml(item.name || 'KPI đề xuất')}</div>
-                        <div class="small text-muted mt-1">${escapeHtml(item.rationale || '')}</div>
-                        <div class="small mt-2">
-                            <span class="badge bg-primary bg-opacity-10 text-primary">Target: ${escapeHtml(item.targetValue ?? 'N/A')} ${escapeHtml(item.unit || '')}</span>
-                            <span class="badge bg-success bg-opacity-10 text-success">Đạt: ${escapeHtml(item.passThreshold ?? 'N/A')}</span>
-                            <span class="badge bg-danger bg-opacity-10 text-danger">Trượt: ${escapeHtml(item.failThreshold ?? 'N/A')}</span>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-success align-self-start" data-apply-kpi="${index}">Áp dụng</button>
-                </div>
-            </div>
-        `).join('');
-
-        results.querySelectorAll('[data-apply-kpi]').forEach(button => {
-            button.addEventListener('click', function () {
-                applyKpiSuggestion(suggestions[parseInt(button.dataset.applyKpi, 10)]);
-            });
-        });
-    }
-
-    function applyKpiSuggestion(item) {
-        document.getElementById('createKpiName').value = item.name || '';
-        document.getElementById('createTarget').value = item.targetValue ?? '';
-        document.getElementById('createPass').value = item.passThreshold ?? '';
-        document.getElementById('createFail').value = item.failThreshold ?? '';
-
-        if (window.setMeasurementUnitSelectValue) {
-            window.setMeasurementUnitSelectValue(document.getElementById('createUnit'), item.unit || '');
-        } else {
-            document.getElementById('createUnit').value = item.unit || '';
-        }
-
-        const periodId = document.getElementById('aiSuggestPeriodId')?.value;
-        const okrId = document.getElementById('aiSuggestOkrId')?.value;
-        const krId = document.getElementById('aiSuggestKrId')?.value;
-        if (periodId) document.getElementById('createPeriodId').value = periodId;
-        if (okrId) {
-            document.getElementById('createOkrId').value = okrId;
-            document.getElementById('createOkrId').dispatchEvent(new Event('change', { bubbles: true }));
-        }
-        if (krId) document.getElementById('createKrId').value = krId;
-
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('aiKpiSuggestModal')).hide();
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('createKpiModal')).show();
-    }
-
-    function numberOrNull(value) {
-        const n = parseInt(value || '', 10);
-        return Number.isFinite(n) ? n : null;
-    }
-
-    function splitCreateModalWeights() {
-        const employeeChecks = Array.from(document.querySelectorAll('.modal-kpi-employee-check'));
-        const checked = employeeChecks.filter(input => input.checked);
-        const weight = checked.length ? (100 / checked.length).toFixed(2) : '100';
-        employeeChecks.forEach(input => {
-            const weightInput = input.closest('.d-flex')?.querySelector('.modal-kpi-weight-input');
-            if (!weightInput) return;
-            weightInput.disabled = !input.checked;
-            if (input.checked) weightInput.value = weight;
-        });
-    }
-
-    document.querySelectorAll('.modal-kpi-employee-check').forEach(input => {
-        input.addEventListener('change', splitCreateModalWeights);
-    });
-    document.getElementById('splitCreateModalWeights')?.addEventListener('click', splitCreateModalWeights);
-    window.renderKpiSuggestions = renderKpiSuggestions;
-    })();
-</script>
-
-</div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/kpis-index.css" asp-append-version="true" />
+}

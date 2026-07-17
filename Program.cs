@@ -32,6 +32,10 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
     options.Filters.Add(new Manage_KPI_or_OKR_System.Filters.ForcePasswordChangeFilter());
 });
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
 
 // Đăng ký EmailService
 builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IEmailService, Manage_KPI_or_OKR_System.Services.EmailService>();
@@ -225,7 +229,21 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseResponseCompression();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context =>
+    {
+        var extension = Path.GetExtension(context.File.Name);
+        if (extension.Equals(".css", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".js", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".woff", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".woff2", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Context.Response.Headers.CacheControl = "public,max-age=604800";
+        }
+    }
+});
 app.UseRouting();
 
 app.UseAuthentication();

@@ -63,7 +63,6 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Manage-KPI-or-OKR-System.styles.css" asp-append-version="true" />
     <style id="brand-theme">
         :root {
             --color-brand-violet: #7b68ee;
@@ -666,8 +665,8 @@
                 ].filter(item => item.message);
 
                 toastQueue.forEach(item => {
-                    if (typeof window.showAppToast === 'function') {
-                        window.showAppToast(item);
+                    if (typeof window.AppFeedback?.toast === 'function') {
+                        window.AppFeedback.toast(item);
                     }
                 });
             });
@@ -677,18 +676,15 @@
     @if (TempData["RestoreEntityName"] != null)
     {
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                Swal.fire({
-                    title: 'Thông báo!',
-                    text: "Mã '@TempData["RestoreCode"]' đã từng tồn tại và bị xóa. Bạn có muốn khôi phục lại không?",
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#202023',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Khôi phục ngay',
-                    cancelButtonText: 'Bỏ qua'
-                }).then((result) => {
-                    if (result.isConfirmed) {
+            document.addEventListener('DOMContentLoaded', async function() {
+                const confirmed = await window.AppFeedback.confirm({
+                    title: 'Khôi phục dữ liệu đã xóa?',
+                    message: "Mã '@TempData["RestoreCode"]' đã tồn tại trước đây. Bản ghi sẽ được đưa trở lại trạng thái hoạt động.",
+                    tone: 'info',
+                    confirmText: 'Khôi phục ngay',
+                    cancelText: 'Bỏ qua'
+                });
+                if (confirmed) {
                         const form = document.createElement('form');
                         form.method = 'post';
                         form.action = '/@(@TempData["RestoreEntityName"])/Restore';
@@ -710,8 +706,7 @@
                         
                         document.body.appendChild(form);
                         form.submit();
-                    }
-                });
+                }
             });
         </script>
     }
@@ -732,11 +727,11 @@
                         <text>
                         (function() {
                             setTimeout(function() {
-                                Swal.fire({
+                                window.AppFeedback.notice({
                                     title: 'Hết thời gian dùng thử',
-                                    text: 'Tài khoản dùng thử của bạn đã hết hạn (30 phút). Hệ thống sẽ tự động đăng xuất.',
-                                    icon: 'warning',
-                                    confirmButtonText: 'Đóng',
+                                    message: 'Tài khoản dùng thử đã hết hạn sau 30 phút. Hệ thống sẽ đăng xuất để bảo vệ phiên làm việc.',
+                                    tone: 'warning',
+                                    confirmText: 'Đăng xuất',
                                     allowOutsideClick: false,
                                     allowEscapeKey: false
                                 }).then(function() {
@@ -790,7 +785,7 @@
                 function resetIdleTimer() {
                     if (warningShown) {
                         continuedByActivity = true;
-                        Swal.close();
+                        window.AppFeedback.close();
                         return;
                     }
                     clearTimeout(idleTimer);
@@ -805,16 +800,14 @@
 
                     let remaining = COUNTDOWN_SECS;
 
-                    Swal.fire({
+                    window.AppFeedback.open({
                         title: 'Phiên đăng nhập sắp hết hạn',
-                        html: `<p>Bạn đã không hoạt động trong một thời gian dài.</p>
-                               <p>Hệ thống sẽ tự động đăng xuất sau <b id="swal-countdown">${remaining}</b> giây.</p>`,
-                        icon: 'warning',
+                        trustedHtml: `<p>Bạn đã không hoạt động trong một thời gian dài.</p>
+                                      <p>Hệ thống sẽ tự động đăng xuất sau <strong id="swal-countdown">${remaining}</strong> giây.</p>`,
+                        tone: 'warning',
                         showCancelButton: true,
-                        confirmButtonText: 'Tiếp tục làm việc',
-                        cancelButtonText: 'Đăng xuất ngay',
-                        confirmButtonColor: '#202023',
-                        cancelButtonColor: '#dc3545',
+                        confirmText: 'Tiếp tục làm việc',
+                        cancelText: 'Đăng xuất ngay',
                         allowOutsideClick: false,
                         allowEscapeKey: false,
                         didOpen: function() {
@@ -824,7 +817,7 @@
                                 if (el) el.textContent = remaining;
                                 if (remaining <= 0) {
                                     clearInterval(countdownTimer);
-                                    Swal.close();
+                                    window.AppFeedback.close();
                                     window.location.href = '/Auth/Logout';
                                 }
                             }, 1000);

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
 using Manage_KPI_or_OKR_System.Models.ViewModels;
+using Manage_KPI_or_OKR_System.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,14 +23,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private const string ReviewStatusPending = "Pending";
         private const string ReviewStatusApproved = "Approved";
         private const string ReviewStatusRejected = "Rejected";
+        private const string ReviewStatusProcessing = "Processing";
         private const string CheckInStatusOnTrack = "Đúng tiến độ";
         private const string CheckInStatusLate = "Chậm tiến độ";
         private const string CheckInStatusAhead = "Vượt tiến độ";
         private const string CheckInStatusBlocked = "Gặp trở ngại";
         private const string CheckInStatusDone = "Hoàn thành";
         private const int TrackingOverviewRowLimit = 120;
+        private const int TrackingPageSize = 10;
+        private const int PendingReviewPageSize = 5;
 
         private readonly MiniERPDbContext _context;
+        private static readonly SemaphoreSlim IndexLookupCacheGate = new(1, 1);
+        private static List<CheckInStatus>? _cachedCheckInStatuses;
+        private static List<FailReason>? _cachedFailReasons;
+        private static DateTime _indexLookupCacheExpiresAtUtc;
 
         private sealed class KpiCheckInProgressSnapshot
         {
@@ -48,24 +56,29 @@ namespace Manage_KPI_or_OKR_System.Controllers
             public int DepartmentId { get; set; }
         }
 
+        private sealed class EmployeeKpiCandidate
+        {
+            public int EmployeeId { get; set; }
+            public int KpiId { get; set; }
+        }
+
         public KPICheckInsController(MiniERPDbContext context)
         {
             _context = context;
         }
 
         [HasPermission("KPICHECKINS_VIEW", "CHECKINS_VIEW")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? searchString, int? statusId, string? reviewStatus, string? quickFilter, int page = 1)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
-            var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
+            var employee = systemUserId.HasValue
+                ? await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.SystemUserId == systemUserId)
+                : null;
 
-            var executableKpiStatusIds = await _context.GetExecutableKpiStatusIdsAsync();
-            var checkInQuery = _context.KPICheckIns.AsQueryable();
-            var kpiQuery = _context.KPIs.Where(k => k.IsActive == true &&
-                                                    k.StatusId.HasValue &&
-                                                    executableKpiStatusIds.Contains(k.StatusId.Value));
-            var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
+            var checkInQuery = _context.KPICheckIns
+                .AsNoTracking()
+                .AsQueryable();
 
             // Phân quyền: Employee, Sales chỉ thấy dữ liệu của chính mình
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
@@ -75,108 +88,181 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 {
                     checkInQuery = checkInQuery.Where(c => c.EmployeeId == employee.Id);
 
-                    var allocatedKpiIds = await _context.KPI_Employee_Assignments
-                        .Where(a => a.EmployeeId == employee.Id && (a.Status == null || a.Status == "Active"))
-                        .Select(a => a.KPIId)
-                        .ToListAsync();
-
-                    var employeeDepartmentIds = await _context.EmployeeAssignments
-                        .Where(a => a.EmployeeId == employee.Id && a.IsActive == true && a.DepartmentId.HasValue)
-                        .Select(a => a.DepartmentId!.Value)
-                        .ToListAsync();
-
-                    var departmentAllocatedKpiIds = employeeDepartmentIds.Any()
-                        ? await _context.KPI_Department_Assignments
-                            .Where(a => employeeDepartmentIds.Contains(a.DepartmentId))
-                            .Select(a => a.KPIId)
-                            .ToListAsync()
-                        : new List<int>();
-
-                    allocatedKpiIds = allocatedKpiIds
-                        .Concat(departmentAllocatedKpiIds)
-                        .Distinct()
-                        .ToList();
-
-                    kpiQuery = kpiQuery.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
-                    employeeQuery = employeeQuery.Where(e => e.Id == employee.Id);
                 }
                 else
                 {
                     // Nếu không tìm thấy thông tin Employee tương ứng, không cho thấy gì
                     checkInQuery = checkInQuery.Where(c => false);
-                    kpiQuery = kpiQuery.Where(k => false);
-                    employeeQuery = employeeQuery.Where(e => false);
                 }
             }
             else if (AccessScopeHelper.IsManagerScoped(User))
             {
                 if (employee != null)
                 {
-                    var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, employee);
-                    var managedEmployeeIds = await AccessScopeHelper.GetEmployeeIdsInDepartmentsAsync(_context, managedDepartmentIds);
-                    var employeeAllocatedKpiIds = managedEmployeeIds.Any()
-                        ? await _context.KPI_Employee_Assignments
-                            .Where(a => managedEmployeeIds.Contains(a.EmployeeId) && (a.Status == null || a.Status == "Active"))
-                            .Select(a => a.KPIId)
-                            .ToListAsync()
-                        : new List<int>();
-                    var departmentAllocatedKpiIds = managedDepartmentIds.Any()
-                        ? await _context.KPI_Department_Assignments
-                            .Where(a => managedDepartmentIds.Contains(a.DepartmentId))
-                            .Select(a => a.KPIId)
-                            .ToListAsync()
-                        : new List<int>();
-                    var managedKpiIds = employeeAllocatedKpiIds.Concat(departmentAllocatedKpiIds).Distinct().ToList();
-
+                    var managedEmployeeIds = await _context.EmployeeAssignments
+                        .AsNoTracking()
+                        .Where(assignment => assignment.IsActive == true &&
+                                             assignment.EmployeeId.HasValue &&
+                                             assignment.DepartmentId.HasValue &&
+                                             _context.Departments.Any(department =>
+                                                 department.Id == assignment.DepartmentId.Value &&
+                                                 department.IsActive == true &&
+                                                 department.ManagerId == employee.Id))
+                        .Select(assignment => assignment.EmployeeId!.Value)
+                        .Distinct()
+                        .ToListAsync();
                     checkInQuery = managedEmployeeIds.Any()
                         ? checkInQuery.Where(c => c.EmployeeId.HasValue && managedEmployeeIds.Contains(c.EmployeeId.Value))
                         : checkInQuery.Where(c => false);
-                    kpiQuery = kpiQuery.Where(k => managedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id || k.CreatedById == employee.Id);
-                    employeeQuery = managedEmployeeIds.Any()
-                        ? employeeQuery.Where(e => managedEmployeeIds.Contains(e.Id))
-                        : employeeQuery.Where(e => false);
                 }
                 else
                 {
                     checkInQuery = checkInQuery.Where(c => false);
-                    kpiQuery = kpiQuery.Where(k => false);
-                    employeeQuery = employeeQuery.Where(e => false);
                 }
             }
 
-            var checkIns = await checkInQuery
+            searchString = searchString?.Trim();
+            reviewStatus = reviewStatus?.Trim();
+            quickFilter = quickFilter?.Trim().ToLowerInvariant();
+
+            var (allCheckInStatuses, allFailReasons) = await GetIndexLookupsAsync();
+            var onTrackStatusIds = allCheckInStatuses
+                .Where(status => status.StatusName == CheckInStatusOnTrack ||
+                                 status.StatusName == CheckInStatusAhead ||
+                                 status.StatusName == CheckInStatusDone)
+                .Select(status => status.Id)
+                .ToList();
+            var riskStatusIds = allCheckInStatuses
+                .Where(status => status.StatusName == CheckInStatusBlocked || status.StatusName == CheckInStatusLate)
+                .Select(status => status.Id)
+                .ToList();
+            var lateStatusIds = allCheckInStatuses
+                .Where(status => status.StatusName == CheckInStatusLate)
+                .Select(status => status.Id)
+                .ToList();
+
+            if (!string.IsNullOrWhiteSpace(searchString))
+            {
+                checkInQuery = checkInQuery.Where(c =>
+                    (c.EmployeeId.HasValue && _context.Employees.AsNoTracking().Any(employeeMatch =>
+                        employeeMatch.Id == c.EmployeeId.Value && employeeMatch.IsActive == true &&
+                        ((employeeMatch.FullName != null && employeeMatch.FullName.Contains(searchString)) ||
+                         (employeeMatch.EmployeeCode != null && employeeMatch.EmployeeCode.Contains(searchString))))) ||
+                    (c.KPIId.HasValue && _context.KPIs.AsNoTracking().Any(kpiMatch =>
+                        kpiMatch.Id == c.KPIId.Value && kpiMatch.IsActive == true &&
+                        kpiMatch.KPIName != null && kpiMatch.KPIName.Contains(searchString))));
+            }
+
+            if (statusId.HasValue)
+            {
+                checkInQuery = checkInQuery.Where(c => c.StatusId == statusId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(reviewStatus))
+            {
+                checkInQuery = checkInQuery.Where(c => c.ReviewStatus == reviewStatus);
+            }
+
+            if (quickFilter == "pending")
+            {
+                checkInQuery = checkInQuery.Where(c => c.ReviewStatus == ReviewStatusPending);
+            }
+            else if (quickFilter == "approved")
+            {
+                checkInQuery = checkInQuery.Where(c => c.ReviewStatus == ReviewStatusApproved || c.ReviewStatus == null);
+            }
+            else if (quickFilter == "rejected")
+            {
+                checkInQuery = checkInQuery.Where(c => c.ReviewStatus == ReviewStatusRejected);
+            }
+            else if (quickFilter == "risk")
+            {
+                checkInQuery = riskStatusIds.Any()
+                    ? checkInQuery.Where(c => c.StatusId.HasValue && riskStatusIds.Contains(c.StatusId.Value))
+                    : checkInQuery.Where(c => false);
+            }
+
+            var summary = await checkInQuery
+                .GroupBy(_ => 1)
+                .Select(group => new
+                {
+                    Total = group.Count(),
+                    OnTrack = group.Count(checkIn => checkIn.StatusId.HasValue && onTrackStatusIds.Contains(checkIn.StatusId.Value)),
+                    Risk = group.Count(checkIn => checkIn.StatusId.HasValue && riskStatusIds.Contains(checkIn.StatusId.Value)),
+                    Late = group.Count(checkIn => checkIn.StatusId.HasValue && lateStatusIds.Contains(checkIn.StatusId.Value)),
+                    Pending = group.Count(checkIn => checkIn.ReviewStatus == ReviewStatusPending)
+                })
+                .FirstOrDefaultAsync();
+            var totalCount = summary?.Total ?? 0;
+            var onTrackCount = summary?.OnTrack ?? 0;
+            var riskCount = summary?.Risk ?? 0;
+            var lateCount = summary?.Late ?? 0;
+            var pendingCount = summary?.Pending ?? 0;
+
+            const int pageSize = 10;
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+            page = Math.Clamp(page, 1, totalPages);
+
+            var pageRows = await checkInQuery
                 .OrderByDescending(c => c.CheckInDate)
-                .Take(50)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(checkIn => new
+                {
+                    CheckIn = checkIn,
+                    Detail = _context.CheckInDetails.AsNoTracking()
+                        .FirstOrDefault(detail => detail.CheckInId == checkIn.Id),
+                    Employee = checkIn.EmployeeId.HasValue
+                        ? _context.Employees.AsNoTracking()
+                            .FirstOrDefault(employeeRow => employeeRow.Id == checkIn.EmployeeId.Value)
+                        : null,
+                    Reviewer = checkIn.ReviewedById.HasValue
+                        ? _context.Employees.AsNoTracking()
+                            .FirstOrDefault(employeeRow => employeeRow.Id == checkIn.ReviewedById.Value)
+                        : null,
+                    KPI = checkIn.KPIId.HasValue
+                        ? _context.KPIs.AsNoTracking()
+                            .FirstOrDefault(kpi => kpi.Id == checkIn.KPIId.Value)
+                        : null,
+                    KPIDetail = checkIn.KPIId.HasValue
+                        ? _context.KPIDetails.AsNoTracking()
+                            .FirstOrDefault(detail => detail.KPIId == checkIn.KPIId.Value)
+                        : null
+                })
                 .ToListAsync();
+            var checkIns = pageRows.Select(row => row.CheckIn).ToList();
 
             var checkInIds = checkIns.Select(c => c.Id).ToList();
 
-            var checkInDetails = await _context.CheckInDetails
-                .Where(d => checkInIds.Contains(d.CheckInId ?? 0))
-                .ToDictionaryAsync(d => d.CheckInId ?? 0);
+            var checkInDetails = pageRows
+                .Where(row => row.Detail?.CheckInId.HasValue == true)
+                .GroupBy(row => row.Detail!.CheckInId!.Value)
+                .ToDictionary(group => group.Key, group => group.First().Detail!);
 
-            var checkInComments = await _context.GoalComments
-                .Where(c => c.CheckInId.HasValue && checkInIds.Contains(c.CheckInId.Value))
-                .OrderBy(c => c.CommentTime)
-                .ToListAsync();
+            var checkInComments = checkInIds.Count == 0
+                ? new List<GoalComment>()
+                : await _context.GoalComments
+                    .AsNoTracking()
+                    .Where(c => c.CheckInId.HasValue && checkInIds.Contains(c.CheckInId.Value))
+                    .OrderBy(c => c.CommentTime)
+                    .ToListAsync();
 
-            var employeeIds = checkIns.Where(c => c.EmployeeId.HasValue).Select(c => c.EmployeeId!.Value).Distinct().ToList();
-            var kpiIds = checkIns.Where(c => c.KPIId.HasValue).Select(c => c.KPIId!.Value).Distinct().ToList();
-
-            var employees = await _context.Employees.Where(e => employeeIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id);
-            var kpis = await _context.KPIs.Where(k => kpiIds.Contains(k.Id)).ToDictionaryAsync(k => k.Id);
-            var statuses = await _context.CheckInStatuses.ToDictionaryAsync(s => s.Id, s => s.StatusName);
-            var allEmployees = await employeeQuery.ToListAsync();
-            var allKpis = await kpiQuery.ToListAsync();
-            var allKpiIds = allKpis.Select(k => k.Id).ToList();
-            var kpiData = await _context.KPIDetails
-                .Where(d => d.KPIId.HasValue && allKpiIds.Contains(d.KPIId.Value))
-                .ToDictionaryAsync(d => d.KPIId ?? 0);
-            var periodIds = allKpis
-                .Where(k => k.PeriodId.HasValue)
-                .Select(k => k.PeriodId!.Value)
-                .Distinct()
-                .ToList();
+            var employees = pageRows
+                .SelectMany(row => new[] { row.Employee, row.Reviewer })
+                .Where(employeeRow => employeeRow != null)
+                .Select(employeeRow => employeeRow!)
+                .GroupBy(employeeRow => employeeRow.Id)
+                .ToDictionary(group => group.Key, group => group.First());
+            var kpis = pageRows
+                .Where(row => row.KPI != null)
+                .Select(row => row.KPI!)
+                .GroupBy(kpi => kpi.Id)
+                .ToDictionary(group => group.Key, group => group.First());
+            var statuses = allCheckInStatuses.ToDictionary(status => status.Id, status => status.StatusName);
+            var kpiData = pageRows
+                .Where(row => row.KPIDetail?.KPIId.HasValue == true)
+                .GroupBy(row => row.KPIDetail!.KPIId!.Value)
+                .ToDictionary(group => group.Key, group => group.First().KPIDetail!);
 
             ViewBag.Details = checkInDetails;
             ViewBag.Employees = employees;
@@ -185,208 +271,302 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.CheckInComments = checkInComments
                 .GroupBy(c => c.CheckInId ?? 0)
                 .ToDictionary(g => g.Key, g => g.ToList());
-            ViewBag.AllEmployees = allEmployees;
-            ViewBag.AllKPIs = allKpis;
             ViewBag.KPIData = kpiData;
-            ViewBag.KPIPeriods = periodIds.Any()
-                ? await _context.EvaluationPeriods
-                    .Where(p => periodIds.Contains(p.Id))
-                    .ToDictionaryAsync(p => p.Id)
-                : new Dictionary<int, EvaluationPeriod>();
-            var visibleEmployeeIds = allEmployees.Select(e => e.Id).ToList();
-            var assignmentWeights = await _context.KPI_Employee_Assignments
-                .Where(a => visibleEmployeeIds.Contains(a.EmployeeId) &&
-                            allKpiIds.Contains(a.KPIId) &&
-                            (a.Status == null || a.Status == "Active"))
-                .ToListAsync();
-            ViewBag.AssignmentWeights = assignmentWeights
-                .GroupBy(a => a.EmployeeId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.ToDictionary(a => a.KPIId, a => (a.Weight ?? 1m) * 100));
-            ViewBag.AllStatuses = await _context.CheckInStatuses.ToListAsync();
-            ViewBag.FailReasons = await _context.FailReasons.ToListAsync();
+            ViewBag.AllStatuses = allCheckInStatuses;
+            ViewBag.FailReasons = allFailReasons;
+            ViewBag.SearchString = searchString;
+            ViewBag.StatusId = statusId;
+            ViewBag.ReviewStatus = reviewStatus;
+            ViewBag.QuickFilter = quickFilter;
             ViewBag.CanReviewCheckIns = await CanCurrentUserReviewCheckInsAsync();
             ViewBag.ReturnUrl = Request.Path + Request.QueryString;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.OnTrackCount = onTrackCount;
+            ViewBag.RiskCount = riskCount;
+            ViewBag.LateCount = lateCount;
+            ViewBag.PendingCount = pendingCount;
+            ViewBag.Page = page;
+            ViewBag.TotalPages = totalPages;
 
             return View(checkIns);
         }
 
         [HasPermission("KPICHECKINS_REVIEW", "CHECKINS_EDIT")]
-        public async Task<IActionResult> ReviewQueue(int? pageNumber)
+        public IActionResult ReviewQueue(int? employeeId, int reviewPage = 1)
         {
-            const int pageSize = 10;
-            var pageIndex = pageNumber is > 0 ? pageNumber.Value : 1;
-            var currentEmployee = await GetCurrentEmployeeAsync();
-            var query = _context.KPICheckIns
-                .Where(c => c.ReviewStatus == ReviewStatusPending)
-                .AsQueryable();
-
-            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") ||
-                  User.IsInRole("Director") || User.IsInRole("HR") || User.IsInRole("Human Resources")))
+            return RedirectToAction(nameof(EmployeeTracking), new
             {
-                if (currentEmployee == null || !User.IsInRole("Manager"))
-                {
-                    return Forbid();
-                }
-
-                var managedDeptIds = await _context.Departments
-                    .Where(d => d.ManagerId == currentEmployee.Id && d.IsActive == true)
-                    .Select(d => d.Id)
-                    .ToListAsync();
-
-                var deptEmployeeIds = managedDeptIds.Any()
-                    ? await _context.EmployeeAssignments
-                        .Where(a => a.DepartmentId.HasValue &&
-                                    managedDeptIds.Contains(a.DepartmentId.Value) &&
-                                    a.EmployeeId.HasValue &&
-                                    a.IsActive == true)
-                        .Select(a => a.EmployeeId!.Value)
-                        .Distinct()
-                        .ToListAsync()
-                    : new List<int>();
-
-                var assignedByManagerKpiIds = await _context.KPIs
-                    .Where(k => k.AssignerId == currentEmployee.Id)
-                    .Select(k => k.Id)
-                    .ToListAsync();
-
-                query = query.Where(c =>
-                    (c.EmployeeId.HasValue && deptEmployeeIds.Contains(c.EmployeeId.Value)) ||
-                    (c.KPIId.HasValue && assignedByManagerKpiIds.Contains(c.KPIId.Value)));
-            }
-
-            var orderedQuery = query
-                .OrderBy(c => c.CheckInDate)
-                .AsNoTracking();
-
-            var totalCount = await orderedQuery.CountAsync();
-            var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
-            if (pageIndex > totalPages)
-            {
-                pageIndex = totalPages;
-            }
-
-            var checkIns = await orderedQuery
-                .Skip((pageIndex - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var checkInIds = checkIns.Select(c => c.Id).ToList();
-            var details = await _context.CheckInDetails
-                .Where(d => checkInIds.Contains(d.CheckInId ?? 0))
-                .ToDictionaryAsync(d => d.CheckInId ?? 0);
-
-            var employeeIds = checkIns.Where(c => c.EmployeeId.HasValue).Select(c => c.EmployeeId!.Value).Distinct().ToList();
-            var kpiIds = checkIns.Where(c => c.KPIId.HasValue).Select(c => c.KPIId!.Value).Distinct().ToList();
-
-            ViewBag.Details = details;
-            ViewBag.Employees = await _context.Employees.Where(e => employeeIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id);
-            ViewBag.KPIs = await _context.KPIs.Where(k => kpiIds.Contains(k.Id)).ToDictionaryAsync(k => k.Id);
-            ViewBag.FailReasons = await _context.FailReasons.ToDictionaryAsync(r => r.Id, r => r.ReasonName ?? "Chưa rõ");
-            ViewBag.ReturnUrl = Request.Path + Request.QueryString;
-
-            ViewBag.PageNumber = pageIndex;
-            return View(new PaginatedList<KPICheckIn>(checkIns, totalCount, pageIndex, pageSize));
+                employeeId,
+                tab = "pending",
+                reviewPage = Math.Max(1, reviewPage)
+            });
         }
 
-        [HasPermission("KPICHECKINS_VIEW", "CHECKINS_VIEW", "KPIS_VIEW")]
-        public async Task<IActionResult> EmployeeTracking(int? employeeId, int? pageNumber)
+        [HasPermission(
+            "KPICHECKINS_VIEW",
+            "CHECKINS_VIEW",
+            "KPIS_VIEW",
+            "KPICHECKINS_REVIEW",
+            "CHECKINS_EDIT")]
+        public async Task<IActionResult> EmployeeTracking(
+            int? employeeId = null,
+            int? pageNumber = null,
+            string? tab = null,
+            int? reviewPage = null)
         {
             var currentEmployee = await GetCurrentEmployeeAsync();
-            var employees = await BuildTrackableEmployeesAsync(currentEmployee);
-            if (!employees.Any())
+            var permissions = await PermissionLookupHelper.HasPermissionsAsync(_context, User, new[]
             {
-                ViewBag.Employees = employees;
-                ViewBag.SelectedEmployee = null;
-                ViewBag.CanReviewCheckIns = await CanCurrentUserReviewCheckInsAsync();
-                ViewBag.TotalTrackingRows = 0;
-                ViewBag.TotalKpisCount = 0;
-                ViewBag.TrackingOverviewRowLimit = TrackingOverviewRowLimit;
-                ViewBag.IsTrackingOverviewLimited = false;
-                return View(new PaginatedList<EmployeeKpiTrackingRow>(new List<EmployeeKpiTrackingRow>(), 0, 1, 10));
-            }
-
+                "KPICHECKINS_VIEW",
+                "CHECKINS_VIEW",
+                "KPIS_VIEW",
+                "KPICHECKINS_CREATE",
+                "CHECKINS_CREATE",
+                "EMPLOYEE_UPDATE_KPI_PROGRESS",
+                "KPICHECKINS_REVIEW",
+                "CHECKINS_EDIT"
+            });
+            var canViewTracking = permissions["KPICHECKINS_VIEW"] ||
+                                  permissions["CHECKINS_VIEW"] ||
+                                  permissions["KPIS_VIEW"];
+            var canCreateCheckIn = permissions["KPICHECKINS_CREATE"] ||
+                                   permissions["CHECKINS_CREATE"] ||
+                                   permissions["EMPLOYEE_UPDATE_KPI_PROGRESS"];
+            var canReviewCheckIns = permissions["KPICHECKINS_REVIEW"] || permissions["CHECKINS_EDIT"];
+            var employees = canViewTracking
+                ? await BuildTrackableEmployeesAsync(currentEmployee)
+                : new List<TrackableEmployeeOption>();
             var selectedEmployeeId = employeeId.HasValue && employees.Any(e => e.EmployeeId == employeeId.Value)
                 ? employeeId.Value
                 : (int?)null;
-
             var selectedEmployee = selectedEmployeeId.HasValue
                 ? employees.First(e => e.EmployeeId == selectedEmployeeId.Value)
                 : null;
+            var activeTab = canReviewCheckIns &&
+                            (!canViewTracking || string.Equals(tab, "pending", StringComparison.OrdinalIgnoreCase))
+                ? "pending"
+                : "tracking";
 
-            var rows = new List<EmployeeKpiTrackingRow>();
-            if (selectedEmployee != null)
-            {
-                rows = await BuildEmployeeKpiTrackingRowsBulkAsync(new List<int> { selectedEmployee.EmployeeId });
-                foreach (var row in rows)
-                {
-                    row.EmployeeName = selectedEmployee.EmployeeName;
-                    row.EmployeeCode = selectedEmployee.EmployeeCode;
-                    row.DepartmentNames = selectedEmployee.DepartmentNames;
-                }
-            }
-            else
-            {
-                var allEmployeeIds = employees.Select(e => e.EmployeeId).ToList();
-                rows = await BuildEmployeeKpiTrackingRowsBulkAsync(allEmployeeIds);
+            var scopedEmployeeIds = selectedEmployeeId.HasValue
+                ? new List<int> { selectedEmployeeId.Value }
+                : employees.Select(e => e.EmployeeId).ToList();
 
-                var empDict = employees.ToDictionary(e => e.EmployeeId);
-                foreach (var row in rows)
-                {
-                    if (empDict.TryGetValue(row.EmployeeId, out var emp))
+            var directCandidates =
+                from assignment in _context.KPI_Employee_Assignments.AsNoTracking()
+                join kpi in _context.KPIs.AsNoTracking() on assignment.KPIId equals kpi.Id
+                where scopedEmployeeIds.Contains(assignment.EmployeeId) &&
+                      (assignment.Status == null || assignment.Status == "Active") &&
+                      kpi.IsActive == true
+                select new { assignment.EmployeeId, KpiId = assignment.KPIId };
+
+            var departmentCandidates =
+                from employeeAssignment in _context.EmployeeAssignments.AsNoTracking()
+                join kpiAssignment in _context.KPI_Department_Assignments.AsNoTracking()
+                    on employeeAssignment.DepartmentId equals (int?)kpiAssignment.DepartmentId
+                join kpi in _context.KPIs.AsNoTracking() on kpiAssignment.KPIId equals kpi.Id
+                where employeeAssignment.EmployeeId.HasValue &&
+                      scopedEmployeeIds.Contains(employeeAssignment.EmployeeId.Value) &&
+                      employeeAssignment.IsActive == true &&
+                      kpi.IsActive == true
+                select new { EmployeeId = employeeAssignment.EmployeeId!.Value, KpiId = kpiAssignment.KPIId };
+
+            var assignerCandidates = _context.KPIs
+                .AsNoTracking()
+                .Where(kpi => kpi.IsActive == true &&
+                              kpi.AssignerId.HasValue &&
+                              scopedEmployeeIds.Contains(kpi.AssignerId.Value))
+                .Select(kpi => new { EmployeeId = kpi.AssignerId!.Value, KpiId = kpi.Id });
+
+            var candidateQuery = directCandidates
+                .Union(departmentCandidates)
+                .Union(assignerCandidates);
+            var totalTrackingRows = scopedEmployeeIds.Count == 0
+                ? 0
+                : await candidateQuery.CountAsync();
+            var isOverviewLimited = !selectedEmployeeId.HasValue && totalTrackingRows > TrackingOverviewRowLimit;
+            var effectiveTrackingCount = isOverviewLimited ? TrackingOverviewRowLimit : totalTrackingRows;
+            var trackingTotalPages = Math.Max(1, (int)Math.Ceiling(effectiveTrackingCount / (double)TrackingPageSize));
+            var trackingPage = Math.Clamp(pageNumber.GetValueOrDefault(1), 1, trackingTotalPages);
+
+            var orderedCandidates =
+                from candidate in candidateQuery
+                join employee in _context.Employees.AsNoTracking() on candidate.EmployeeId equals employee.Id
+                join kpi in _context.KPIs.AsNoTracking() on candidate.KpiId equals kpi.Id
+                orderby employee.FullName, employee.EmployeeCode, employee.Id, kpi.KPIName, kpi.Id
+                select new { candidate.EmployeeId, candidate.KpiId };
+            var pageCandidateQuery = isOverviewLimited
+                ? orderedCandidates.Take(TrackingOverviewRowLimit)
+                : orderedCandidates;
+            var pageCandidates = activeTab == "tracking" && effectiveTrackingCount > 0
+                ? await pageCandidateQuery
+                    .Skip((trackingPage - 1) * TrackingPageSize)
+                    .Take(TrackingPageSize)
+                    .Select(candidate => new EmployeeKpiCandidate
                     {
-                        row.EmployeeName = emp.EmployeeName;
-                        row.EmployeeCode = emp.EmployeeCode;
-                        row.DepartmentNames = emp.DepartmentNames;
-                    }
-                }
+                        EmployeeId = candidate.EmployeeId,
+                        KpiId = candidate.KpiId
+                    })
+                    .ToListAsync()
+                : new List<EmployeeKpiCandidate>();
 
-                rows = rows
-                    .OrderBy(r => r.EmployeeName)
-                    .ThenBy(r => r.KpiName)
-                    .ToList();
-            }
+            var employeeById = employees.ToDictionary(employee => employee.EmployeeId);
+            var trackingRows = await BuildEmployeeKpiTrackingRowsPageAsync(
+                pageCandidates,
+                employeeById,
+                canCreateCheckIn);
+            var trackingItems = new PaginatedList<EmployeeKpiTrackingRow>(
+                trackingRows,
+                effectiveTrackingCount,
+                trackingPage,
+                TrackingPageSize);
 
-            var totalTrackingRows = rows.Count;
-            var isTrackingOverviewLimited = selectedEmployee == null && totalTrackingRows > TrackingOverviewRowLimit;
-            if (isTrackingOverviewLimited)
+            var riskCount = 0;
+            var lateCount = 0;
+            if (totalTrackingRows > 0)
             {
-                rows = rows.Take(TrackingOverviewRowLimit).ToList();
+                var riskStatusIds = await _context.CheckInStatuses
+                    .AsNoTracking()
+                    .Where(status => status.StatusName == CheckInStatusBlocked || status.StatusName == CheckInStatusLate)
+                    .Select(status => status.Id)
+                    .ToListAsync();
+                var lateStatusIds = await _context.CheckInStatuses
+                    .AsNoTracking()
+                    .Where(status => status.StatusName == CheckInStatusLate)
+                    .Select(status => status.Id)
+                    .ToListAsync();
+                var officialCheckIns =
+                    from candidate in candidateQuery
+                    join checkIn in _context.KPICheckIns.AsNoTracking()
+                        on new { EmployeeId = (int?)candidate.EmployeeId, KPIId = (int?)candidate.KpiId }
+                        equals new { checkIn.EmployeeId, checkIn.KPIId }
+                    where checkIn.ReviewStatus == ReviewStatusApproved || checkIn.ReviewStatus == null
+                    select checkIn;
+                var latestOfficialIds = officialCheckIns
+                    .GroupBy(checkIn => new { checkIn.EmployeeId, checkIn.KPIId })
+                    .Select(group => group
+                        .OrderByDescending(checkIn => checkIn.CheckInDate)
+                        .ThenByDescending(checkIn => checkIn.Id)
+                        .Select(checkIn => checkIn.Id)
+                        .First());
+                var officialSummary = await _context.KPICheckIns
+                    .AsNoTracking()
+                    .Where(checkIn => latestOfficialIds.Contains(checkIn.Id))
+                    .GroupBy(_ => 1)
+                    .Select(group => new
+                    {
+                        Risk = group.Count(checkIn => checkIn.IsLate == true ||
+                            (checkIn.StatusId.HasValue && riskStatusIds.Contains(checkIn.StatusId.Value))),
+                        Late = group.Count(checkIn => checkIn.IsLate == true ||
+                            (checkIn.StatusId.HasValue && lateStatusIds.Contains(checkIn.StatusId.Value)))
+                    })
+                    .FirstOrDefaultAsync();
+                riskCount = officialSummary?.Risk ?? 0;
+                lateCount = officialSummary?.Late ?? 0;
             }
 
-            ViewBag.Employees = employees;
-            ViewBag.SelectedEmployee = selectedEmployee;
-            ViewBag.CanReviewCheckIns = await CanCurrentUserReviewCheckInsAsync();
-            ViewBag.TotalTrackingRows = totalTrackingRows;
-            ViewBag.TotalKpisCount = totalTrackingRows;
-            ViewBag.TrackingOverviewRowLimit = TrackingOverviewRowLimit;
-            ViewBag.IsTrackingOverviewLimited = isTrackingOverviewLimited;
+            var pendingQuery = _context.KPICheckIns
+                .AsNoTracking()
+                .Where(checkIn => checkIn.ReviewStatus == ReviewStatusPending);
+            var hasGlobalReviewScope = PermissionLookupHelper.IsAdmin(User) ||
+                                       User.IsInRole("admin") || User.IsInRole("administrator") ||
+                                       User.IsInRole("Director") || User.IsInRole("director") ||
+                                       User.IsInRole("HR") || User.IsInRole("hr") ||
+                                       User.IsInRole("Human Resources") || User.IsInRole("human resources");
+            if (!canReviewCheckIns)
+            {
+                pendingQuery = pendingQuery.Where(_ => false);
+            }
+            else if (!hasGlobalReviewScope)
+            {
+                if (currentEmployee == null || !(User.IsInRole("Manager") || User.IsInRole("manager")))
+                {
+                    pendingQuery = pendingQuery.Where(_ => false);
+                }
+                else
+                {
+                    var reviewerId = currentEmployee.Id;
+                    pendingQuery = pendingQuery.Where(checkIn =>
+                        checkIn.EmployeeId != reviewerId &&
+                        ((checkIn.EmployeeId.HasValue && _context.EmployeeAssignments.Any(assignment =>
+                            assignment.EmployeeId == checkIn.EmployeeId &&
+                            assignment.DepartmentId.HasValue &&
+                            assignment.IsActive == true &&
+                            _context.Departments.Any(department =>
+                                department.Id == assignment.DepartmentId.Value &&
+                                department.ManagerId == reviewerId &&
+                                department.IsActive == true))) ||
+                        (checkIn.KPIId.HasValue && _context.KPIs.Any(kpi =>
+                            kpi.Id == checkIn.KPIId.Value && kpi.AssignerId == reviewerId))));
+                }
+            }
 
-            // Apply pagination
-            int pageSize = 10;
-            int pageIdx = pageNumber ?? 1;
-            var paginatedRows = new PaginatedList<EmployeeKpiTrackingRow>(
-                rows.Skip((pageIdx - 1) * pageSize).Take(pageSize).ToList(),
-                rows.Count,
-                pageIdx,
-                pageSize
-            );
+            if (selectedEmployeeId.HasValue)
+            {
+                pendingQuery = pendingQuery.Where(checkIn => checkIn.EmployeeId == selectedEmployeeId.Value);
+            }
 
-            return View(paginatedRows);
+            var pendingReviewCount = await pendingQuery.CountAsync();
+            var pendingTotalPages = Math.Max(1, (int)Math.Ceiling(pendingReviewCount / (double)PendingReviewPageSize));
+            var pendingPage = Math.Clamp(reviewPage.GetValueOrDefault(1), 1, pendingTotalPages);
+            var failReasons = await _context.FailReasons
+                .AsNoTracking()
+                .OrderBy(reason => reason.ReasonName)
+                .ToListAsync();
+            var pendingReviews = activeTab == "pending"
+                ? await BuildPendingReviewPageAsync(pendingQuery, pendingPage, failReasons)
+                : new List<EmployeeCheckInReviewItemViewModel>();
+
+            var model = new EmployeeTrackingViewModel
+            {
+                Items = trackingItems,
+                PendingReviews = new PaginatedList<EmployeeCheckInReviewItemViewModel>(
+                    pendingReviews,
+                    pendingReviewCount,
+                    pendingPage,
+                    PendingReviewPageSize),
+                Employees = employees,
+                FailReasons = failReasons,
+                Summary = new EmployeeTrackingSummaryViewModel
+                {
+                    EmployeeCount = selectedEmployeeId.HasValue ? 1 : employees.Count,
+                    TotalKpiCount = totalTrackingRows,
+                    PendingReviewCount = pendingReviewCount,
+                    RiskCount = riskCount,
+                    LateCount = lateCount
+                },
+                SelectedEmployeeId = selectedEmployeeId,
+                SelectedEmployee = selectedEmployee,
+                ActiveTab = activeTab,
+                CanViewTracking = canViewTracking,
+                CanCreateCheckIn = canCreateCheckIn,
+                CanReviewCheckIns = canReviewCheckIns,
+                IsOverviewLimited = isOverviewLimited,
+                TotalTrackingRows = totalTrackingRows,
+                OverviewLimit = TrackingOverviewRowLimit,
+                ReturnUrl = $"{Request.PathBase}{Request.Path}{Request.QueryString}"
+            };
+
+            return View(model);
         }
 
         [HttpGet]
-        [HasPermission("KPICHECKINS_CREATE", "CHECKINS_CREATE")]
-        public async Task<IActionResult> Create(int? kpiId)
+        [HasPermission("KPICHECKINS_CREATE", "CHECKINS_CREATE", "EMPLOYEE_UPDATE_KPI_PROGRESS")]
+        public async Task<IActionResult> Create(int? kpiId, int? employeeId, string? returnUrl)
         {
             await PopulateCreateViewBag();
+            ViewBag.ReturnUrl = returnUrl;
 
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
             var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
 
             var model = new KPICheckIn();
+            var allEmployees = ViewBag.AllEmployees as List<Employee>;
+            if (employeeId.HasValue && allEmployees?.Any(candidate => candidate.Id == employeeId.Value) == true)
+            {
+                model.EmployeeId = employeeId.Value;
+            }
+
             if (kpiId.HasValue)
             {
                 model.KPIId = kpiId.Value;
@@ -443,8 +623,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                                         p.EndDate.HasValue && p.EndDate.Value.Date >= today));
             var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
 
-            bool isManager = User.IsInRole("Manager");
-            bool isDirector = User.IsInRole("Director");
+            bool isManager = User.IsInRole("Manager") || User.IsInRole("manager");
+            bool isDirector = User.IsInRole("Director") || User.IsInRole("director");
             bool isRestrictedRole = isManager || isDirector ||
                 User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales");
@@ -815,7 +995,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [HasPermission("KPICHECKINS_CREATE", "CHECKINS_CREATE", "EMPLOYEE_UPDATE_KPI_PROGRESS")]
-        public async Task<IActionResult> Create(KPICheckIn model, string AchievedValue, string Note)
+        public async Task<IActionResult> Create(
+            [Bind("EmployeeId,KPIId,FailReasonId")] KPICheckIn model,
+            string AchievedValue,
+            string Note,
+            string? returnUrl)
         {
             decimal achievedValue = 0;
             if (string.IsNullOrWhiteSpace(AchievedValue))
@@ -857,6 +1041,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 await PopulateCreateViewBag();
                 ViewBag.AchievedValue = AchievedValue;
                 ViewBag.Note = Note;
+                ViewBag.ReturnUrl = returnUrl;
                 return View(model);
             }
 
@@ -880,9 +1065,35 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 ModelState.AddModelError(nameof(model.KPIId), "KPI chưa có cấu hình chỉ tiêu nên chưa thể check-in.");
             }
 
+            if (model.FailReasonId.HasValue && !await _context.FailReasons.AnyAsync(r => r.Id == model.FailReasonId.Value))
+            {
+                ModelState.AddModelError(nameof(model.FailReasonId), "Lý do chưa đạt không hợp lệ.");
+            }
+
             if (isRestrictedRole)
             {
                 if (currentEmployee == null || model.EmployeeId != currentEmployee.Id)
+                {
+                    return Forbid();
+                }
+            }
+
+            if (User.IsInRole("Manager") || User.IsInRole("manager"))
+            {
+                if (currentEmployee == null || !model.EmployeeId.HasValue ||
+                    !await AccessScopeHelper.CanManageEmployeeAsync(_context, User, model.EmployeeId.Value))
+                {
+                    return Forbid();
+                }
+            }
+
+            if (User.IsInRole("Director") || User.IsInRole("director"))
+            {
+                var isManagerInScope = model.EmployeeId.HasValue && await _context.Departments
+                    .AsNoTracking()
+                    .AnyAsync(department => department.IsActive == true &&
+                                                department.ManagerId == model.EmployeeId.Value);
+                if (!isManagerInScope)
                 {
                     return Forbid();
                 }
@@ -939,6 +1150,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 await PopulateCreateViewBag();
                 ViewBag.AchievedValue = AchievedValue;
                 ViewBag.Note = Note;
+                ViewBag.ReturnUrl = returnUrl;
                 return View(model);
             }
 
@@ -1016,7 +1228,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     await transaction.CommitAsync();
 
                     TempData["SuccessMessage"] = "Đã gửi check-in KPI và đang chờ quản lý xác nhận trước khi cập nhật điểm chính thức.";
-                    return RedirectToAction(nameof(Index));
+                    return RedirectBack(returnUrl);
                 }
 
                 // ============================================
@@ -1176,16 +1388,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 TempData["SuccessMessage"] = "Đã thực hiện check-in KPI, cập nhật xếp hạng và quy đổi thưởng tự động thành công!";
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
-                TempData["ErrorMessage"] = "Lỗi khi lưu Check-in: " + (ex.InnerException?.Message ?? ex.Message);
+                TempData["ErrorMessage"] = "Không thể lưu check-in lúc này. Vui lòng kiểm tra lại dữ liệu và thử lại.";
             }
 
-            return RedirectToAction(nameof(Index));
+            return RedirectBack(returnUrl);
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("KPICHECKINS_REVIEW", "CHECKINS_EDIT")]
         public async Task<IActionResult> Review(int id, string decision, string? reviewComment, string? reviewScore, string? returnUrl)
         {
@@ -1224,6 +1437,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                if (_context.Database.IsRelational())
+                {
+                    var claimedRows = await _context.KPICheckIns
+                        .Where(candidate => candidate.Id == id &&
+                                            candidate.ReviewStatus == ReviewStatusPending)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(candidate => candidate.ReviewStatus, ReviewStatusProcessing));
+                    if (claimedRows != 1)
+                    {
+                        await transaction.RollbackAsync();
+                        TempData["ErrorMessage"] = "Check-in này vừa được người khác xử lý. Danh sách đã được cập nhật.";
+                        return RedirectBack(returnUrl);
+                    }
+                }
+
                 checkIn.ReviewStatus = isApproved ? ReviewStatusApproved : ReviewStatusRejected;
                 checkIn.ReviewedById = reviewer?.Id;
                 checkIn.ReviewedAt = DateTime.Now;
@@ -1272,16 +1500,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     ? "Đã xác nhận check-in KPI và cập nhật điểm chính thức."
                     : "Đã từ chối check-in KPI. Kết quả này sẽ không được tính vào đánh giá chính thức.";
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
-                TempData["ErrorMessage"] = "Lỗi khi xử lý xác nhận check-in: " + (ex.InnerException?.Message ?? ex.Message);
+                TempData["ErrorMessage"] = "Không thể xử lý xác nhận check-in lúc này. Vui lòng thử lại.";
             }
 
             return RedirectBack(returnUrl);
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("KPICHECKINS_VIEW", "CHECKINS_VIEW", "KPIS_VIEW")]
         public async Task<IActionResult> AddComment(int? kpiId, int? checkInId, string content, string? rating, string? returnUrl)
         {
@@ -1519,26 +1748,29 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         private async Task<List<TrackableEmployeeOption>> BuildTrackableEmployeesAsync(Employee? currentEmployee)
         {
-            var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
+            var employeeQuery = _context.Employees.AsNoTracking().Where(e => e.IsActive == true);
             List<int>? allowedEmployeeIds = null;
             var managerIdsByDepartment = await _context.Departments
+                .AsNoTracking()
                 .Where(d => d.IsActive == true && d.ManagerId.HasValue)
                 .Select(d => new { d.Id, d.DepartmentName, ManagerId = d.ManagerId!.Value })
                 .ToListAsync();
 
-            if (User.IsInRole("Admin") || User.IsInRole("Administrator") ||
-                User.IsInRole("HR") || User.IsInRole("Human Resources"))
+            if (PermissionLookupHelper.IsAdmin(User) ||
+                User.IsInRole("admin") || User.IsInRole("administrator") ||
+                User.IsInRole("HR") || User.IsInRole("hr") ||
+                User.IsInRole("Human Resources") || User.IsInRole("human resources"))
             {
                 allowedEmployeeIds = null;
             }
-            else if (User.IsInRole("Director"))
+            else if (User.IsInRole("Director") || User.IsInRole("director"))
             {
                 allowedEmployeeIds = managerIdsByDepartment
                     .Select(d => d.ManagerId)
                     .Distinct()
                     .ToList();
             }
-            else if (User.IsInRole("Manager") && currentEmployee != null)
+            else if ((User.IsInRole("Manager") || User.IsInRole("manager")) && currentEmployee != null)
             {
                 var managedDeptIds = managerIdsByDepartment
                     .Where(d => d.ManagerId == currentEmployee.Id)
@@ -1547,6 +1779,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 allowedEmployeeIds = managedDeptIds.Any()
                     ? await _context.EmployeeAssignments
+                        .AsNoTracking()
                         .Where(a => a.DepartmentId.HasValue &&
                                     managedDeptIds.Contains(a.DepartmentId.Value) &&
                                     a.EmployeeId.HasValue &&
@@ -1576,7 +1809,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (employeeIds.Any())
             {
                 var employeeDepartments = await (from ea in _context.EmployeeAssignments
-                                                 join d in _context.Departments on ea.DepartmentId equals d.Id
+                                                 join d in _context.Departments.AsNoTracking() on ea.DepartmentId equals d.Id
                                                  where ea.EmployeeId.HasValue &&
                                                        employeeIds.Contains(ea.EmployeeId.Value) &&
                                                        ea.IsActive == true &&
@@ -1598,6 +1831,417 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 DepartmentNames = departmentNamesByEmployee.GetValueOrDefault(e.Id, "Chưa có phòng ban"),
                 IsDepartmentManager = managerEmployeeIds.Contains(e.Id)
             }).ToList();
+        }
+
+        private async Task<List<EmployeeKpiTrackingRow>> BuildEmployeeKpiTrackingRowsPageAsync(
+            List<EmployeeKpiCandidate> candidates,
+            IReadOnlyDictionary<int, TrackableEmployeeOption> employees,
+            bool canCreateCheckIn)
+        {
+            if (candidates.Count == 0)
+            {
+                return new List<EmployeeKpiTrackingRow>();
+            }
+
+            var employeeIds = candidates.Select(candidate => candidate.EmployeeId).Distinct().ToList();
+            var kpiIds = candidates.Select(candidate => candidate.KpiId).Distinct().ToList();
+            var pairSet = candidates
+                .Select(candidate => (candidate.EmployeeId, candidate.KpiId))
+                .ToHashSet();
+            var kpis = await _context.KPIs
+                .AsNoTracking()
+                .Where(kpi => kpiIds.Contains(kpi.Id))
+                .ToListAsync();
+            var kpiById = kpis.ToDictionary(kpi => kpi.Id);
+            var kpiDetails = await _context.KPIDetails
+                .AsNoTracking()
+                .Where(detail => detail.KPIId.HasValue && kpiIds.Contains(detail.KPIId.Value))
+                .ToListAsync();
+            var kpiDetailById = kpiDetails
+                .GroupBy(detail => detail.KPIId!.Value)
+                .ToDictionary(group => group.Key, group => group.First());
+            var directAssignments = await _context.KPI_Employee_Assignments
+                .AsNoTracking()
+                .Where(assignment => employeeIds.Contains(assignment.EmployeeId) &&
+                                     kpiIds.Contains(assignment.KPIId) &&
+                                     (assignment.Status == null || assignment.Status == "Active"))
+                .ToListAsync();
+            var directWeightByPair = directAssignments
+                .Where(assignment => pairSet.Contains((assignment.EmployeeId, assignment.KPIId)))
+                .GroupBy(assignment => (assignment.EmployeeId, assignment.KPIId))
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.First().Weight.GetValueOrDefault(1m) <= 0
+                        ? 1m
+                        : group.First().Weight.GetValueOrDefault(1m));
+
+            var relevantCheckIns = _context.KPICheckIns
+                .AsNoTracking()
+                .Where(BuildCheckInPairPredicate(candidates));
+            var latestSubmissionIds = await relevantCheckIns
+                .GroupBy(checkIn => new { checkIn.EmployeeId, checkIn.KPIId })
+                .Select(group => group
+                    .OrderByDescending(checkIn => checkIn.CheckInDate)
+                    .ThenByDescending(checkIn => checkIn.Id)
+                    .Select(checkIn => checkIn.Id)
+                    .First())
+                .ToListAsync();
+            var latestOfficialIds = await relevantCheckIns
+                .Where(checkIn => checkIn.ReviewStatus == ReviewStatusApproved || checkIn.ReviewStatus == null)
+                .GroupBy(checkIn => new { checkIn.EmployeeId, checkIn.KPIId })
+                .Select(group => group
+                    .OrderByDescending(checkIn => checkIn.CheckInDate)
+                    .ThenByDescending(checkIn => checkIn.Id)
+                    .Select(checkIn => checkIn.Id)
+                    .First())
+                .ToListAsync();
+            var checkInIds = latestSubmissionIds
+                .Concat(latestOfficialIds)
+                .Distinct()
+                .ToList();
+            var checkIns = checkInIds.Count == 0
+                ? new List<KPICheckIn>()
+                : await _context.KPICheckIns
+                    .AsNoTracking()
+                    .Where(checkIn => checkInIds.Contains(checkIn.Id))
+                    .ToListAsync();
+            var latestSubmissionIdSet = latestSubmissionIds.ToHashSet();
+            var latestOfficialIdSet = latestOfficialIds.ToHashSet();
+            var latestSubmissionByPair = checkIns
+                .Where(checkIn => latestSubmissionIdSet.Contains(checkIn.Id) &&
+                                  checkIn.EmployeeId.HasValue && checkIn.KPIId.HasValue)
+                .ToDictionary(checkIn => (checkIn.EmployeeId!.Value, checkIn.KPIId!.Value));
+            var latestOfficialByPair = checkIns
+                .Where(checkIn => latestOfficialIdSet.Contains(checkIn.Id) &&
+                                  checkIn.EmployeeId.HasValue && checkIn.KPIId.HasValue)
+                .ToDictionary(checkIn => (checkIn.EmployeeId!.Value, checkIn.KPIId!.Value));
+            var latestDetails = checkInIds.Count == 0
+                ? new List<CheckInDetail>()
+                : await _context.CheckInDetails
+                    .AsNoTracking()
+                    .Where(detail => detail.CheckInId.HasValue && checkInIds.Contains(detail.CheckInId.Value))
+                    .ToListAsync();
+            var detailByCheckInId = latestDetails
+                .GroupBy(detail => detail.CheckInId!.Value)
+                .ToDictionary(group => group.Key, group => group.First());
+
+            var periodIds = kpis
+                .Where(kpi => kpi.PeriodId.HasValue)
+                .Select(kpi => kpi.PeriodId!.Value)
+                .Distinct()
+                .ToList();
+            var periods = periodIds.Count == 0
+                ? new List<EvaluationPeriod>()
+                : await _context.EvaluationPeriods
+                    .AsNoTracking()
+                    .Where(period => periodIds.Contains(period.Id))
+                    .ToListAsync();
+            var periodById = periods.ToDictionary(period => period.Id);
+            var workflowStatuses = await _context.Statuses
+                .AsNoTracking()
+                .Where(status => status.StatusType == WorkflowStatusHelper.StatusTypeKpi ||
+                                 status.StatusType == WorkflowStatusHelper.StatusTypeEvaluationPeriod)
+                .ToListAsync();
+            var workflowStatusById = workflowStatuses.ToDictionary(status => status.Id, status => status.StatusName);
+            var executableKpiStatusIds = workflowStatuses
+                .Where(status => status.StatusType == WorkflowStatusHelper.StatusTypeKpi &&
+                                 status.StatusName != null &&
+                                 WorkflowStatusHelper.KpiExecutableStatusNames.Contains(status.StatusName))
+                .Select(status => status.Id)
+                .ToHashSet();
+            var checkInStatusIds = latestOfficialByPair.Values
+                .Where(checkIn => checkIn.StatusId.HasValue)
+                .Select(checkIn => checkIn.StatusId!.Value)
+                .Distinct()
+                .ToList();
+            var checkInStatuses = checkInStatusIds.Count == 0
+                ? new Dictionary<int, string>()
+                : await _context.CheckInStatuses
+                    .AsNoTracking()
+                    .Where(status => checkInStatusIds.Contains(status.Id))
+                    .ToDictionaryAsync(status => status.Id, status => status.StatusName ?? "Chưa rõ");
+
+            var now = DateTime.Now;
+            var today = now.Date;
+            var rows = new List<EmployeeKpiTrackingRow>(candidates.Count);
+            foreach (var candidate in candidates)
+            {
+                if (!kpiById.TryGetValue(candidate.KpiId, out var kpi) ||
+                    !employees.TryGetValue(candidate.EmployeeId, out var employee))
+                {
+                    continue;
+                }
+
+                var pair = (candidate.EmployeeId, candidate.KpiId);
+                latestSubmissionByPair.TryGetValue(pair, out var latestSubmission);
+                latestOfficialByPair.TryGetValue(pair, out var officialCheckIn);
+                var officialDetail = officialCheckIn != null
+                    ? detailByCheckInId.GetValueOrDefault(officialCheckIn.Id)
+                    : null;
+                var latestSubmissionDetail = latestSubmission != null
+                    ? detailByCheckInId.GetValueOrDefault(latestSubmission.Id)
+                    : null;
+                var kpiDetail = kpiDetailById.GetValueOrDefault(candidate.KpiId);
+                var assignmentWeight = directWeightByPair.GetValueOrDefault(pair, 1m);
+                var period = kpi.PeriodId.HasValue
+                    ? periodById.GetValueOrDefault(kpi.PeriodId.Value)
+                    : null;
+                var periodStatusName = period?.StatusId.HasValue == true
+                    ? workflowStatusById.GetValueOrDefault(period.StatusId.Value)
+                    : null;
+                var individualTarget = KpiCheckInScheduleHelper.CalculateIndividualTarget(kpiDetail, assignmentWeight);
+                var deadlineAt = kpiDetail != null
+                    ? KpiCheckInScheduleHelper.ResolveNextDeadline(now, kpiDetail, period)
+                    : officialCheckIn?.DeadlineAt;
+                var expectedValueAtDeadline = kpiDetail != null && deadlineAt.HasValue
+                    ? KpiCheckInScheduleHelper.CalculateExpectedValueAtDeadline(
+                        kpiDetail,
+                        period,
+                        deadlineAt.Value,
+                        assignmentWeight)
+                    : officialDetail?.ExpectedValueAtDeadline;
+                var scheduleProgress = officialDetail?.AchievedValue.HasValue == true &&
+                                       expectedValueAtDeadline.HasValue &&
+                                       kpiDetail != null
+                    ? KpiCheckInScheduleHelper.CalculateScheduleProgress(
+                        officialDetail.AchievedValue.Value,
+                        expectedValueAtDeadline.Value,
+                        kpiDetail.IsInverse)
+                    : officialDetail?.ScheduleProgressPercentage;
+                var checkInStatus = officialCheckIn?.StatusId.HasValue == true &&
+                                    checkInStatuses.TryGetValue(officialCheckIn.StatusId.Value, out var statusName)
+                    ? statusName
+                    : "Chưa cập nhật";
+                var isLate = officialCheckIn?.IsLate == true || checkInStatus == CheckInStatusLate;
+                var reviewStatusCode = NormalizeReviewStatusCode(latestSubmission);
+                var checkInDisabledReason = ResolveCheckInDisabledReason(
+                    canCreateCheckIn,
+                    kpi,
+                    kpiDetail,
+                    period,
+                    periodStatusName,
+                    executableKpiStatusIds,
+                    today);
+
+                rows.Add(new EmployeeKpiTrackingRow
+                {
+                    EmployeeId = candidate.EmployeeId,
+                    EmployeeName = employee.EmployeeName,
+                    EmployeeCode = employee.EmployeeCode,
+                    DepartmentNames = employee.DepartmentNames,
+                    KpiId = candidate.KpiId,
+                    KpiName = kpi.KPIName ?? $"KPI #{kpi.Id}",
+                    TargetValue = individualTarget,
+                    Unit = kpiDetail?.MeasurementUnit ?? string.Empty,
+                    LatestAchievedValue = officialDetail?.AchievedValue,
+                    LatestProgress = officialDetail?.ProgressPercentage,
+                    ExpectedValueAtDeadline = expectedValueAtDeadline,
+                    ScheduleProgressPercentage = scheduleProgress,
+                    LatestCheckInDate = officialCheckIn?.CheckInDate,
+                    LatestDeadlineAt = deadlineAt,
+                    IsLate = isLate,
+                    LatestCheckInId = officialCheckIn?.Id,
+                    LatestSubmissionId = latestSubmission?.Id,
+                    LatestSubmissionDate = latestSubmission?.CheckInDate,
+                    LatestSubmissionAchievedValue = latestSubmissionDetail?.AchievedValue,
+                    LatestSubmissionProgress = latestSubmissionDetail?.ProgressPercentage,
+                    LatestReviewStatusCode = reviewStatusCode,
+                    ReviewStatus = GetReviewStatusLabel(reviewStatusCode),
+                    CheckInStatus = checkInStatus,
+                    Note = officialDetail?.Note,
+                    CanCheckIn = checkInDisabledReason == null,
+                    CheckInDisabledReason = checkInDisabledReason,
+                    IsRisk = isLate || checkInStatus == CheckInStatusBlocked || checkInStatus == CheckInStatusLate
+                });
+            }
+
+            return rows;
+        }
+
+        private async Task<List<EmployeeCheckInReviewItemViewModel>> BuildPendingReviewPageAsync(
+            IQueryable<KPICheckIn> query,
+            int page,
+            IReadOnlyCollection<FailReason> failReasons)
+        {
+            var checkIns = await query
+                .OrderBy(checkIn => checkIn.CheckInDate)
+                .ThenBy(checkIn => checkIn.Id)
+                .Skip((page - 1) * PendingReviewPageSize)
+                .Take(PendingReviewPageSize)
+                .ToListAsync();
+            if (checkIns.Count == 0)
+            {
+                return new List<EmployeeCheckInReviewItemViewModel>();
+            }
+
+            var checkInIds = checkIns.Select(checkIn => checkIn.Id).ToList();
+            var details = await _context.CheckInDetails
+                .AsNoTracking()
+                .Where(detail => detail.CheckInId.HasValue && checkInIds.Contains(detail.CheckInId.Value))
+                .ToListAsync();
+            var detailByCheckInId = details
+                .GroupBy(detail => detail.CheckInId!.Value)
+                .ToDictionary(group => group.Key, group => group.First());
+            var employeeIds = checkIns
+                .Where(checkIn => checkIn.EmployeeId.HasValue)
+                .Select(checkIn => checkIn.EmployeeId!.Value)
+                .Distinct()
+                .ToList();
+            var employees = await _context.Employees
+                .AsNoTracking()
+                .Where(employee => employeeIds.Contains(employee.Id))
+                .ToDictionaryAsync(employee => employee.Id);
+            var kpiIds = checkIns
+                .Where(checkIn => checkIn.KPIId.HasValue)
+                .Select(checkIn => checkIn.KPIId!.Value)
+                .Distinct()
+                .ToList();
+            var kpis = await _context.KPIs
+                .AsNoTracking()
+                .Where(kpi => kpiIds.Contains(kpi.Id))
+                .ToDictionaryAsync(kpi => kpi.Id);
+            var statusIds = checkIns
+                .Where(checkIn => checkIn.StatusId.HasValue)
+                .Select(checkIn => checkIn.StatusId!.Value)
+                .Distinct()
+                .ToList();
+            var statuses = await _context.CheckInStatuses
+                .AsNoTracking()
+                .Where(status => statusIds.Contains(status.Id))
+                .ToDictionaryAsync(status => status.Id, status => status.StatusName ?? "Chưa rõ");
+            var failReasonById = failReasons.ToDictionary(reason => reason.Id);
+
+            return checkIns.Select(checkIn =>
+            {
+                var detail = detailByCheckInId.GetValueOrDefault(checkIn.Id);
+                var employee = checkIn.EmployeeId.HasValue
+                    ? employees.GetValueOrDefault(checkIn.EmployeeId.Value)
+                    : null;
+                var kpi = checkIn.KPIId.HasValue
+                    ? kpis.GetValueOrDefault(checkIn.KPIId.Value)
+                    : null;
+                var reviewStatusCode = NormalizeReviewStatusCode(checkIn) ?? ReviewStatusPending;
+                var failReason = checkIn.FailReasonId.HasValue
+                    ? failReasonById.GetValueOrDefault(checkIn.FailReasonId.Value)
+                    : null;
+
+                return new EmployeeCheckInReviewItemViewModel
+                {
+                    CheckInId = checkIn.Id,
+                    EmployeeId = checkIn.EmployeeId,
+                    EmployeeName = employee?.FullName ?? "Không rõ nhân viên",
+                    EmployeeCode = employee?.EmployeeCode ?? string.Empty,
+                    KpiId = checkIn.KPIId,
+                    KpiName = kpi?.KPIName ?? (checkIn.KPIId.HasValue ? $"KPI #{checkIn.KPIId.Value}" : "Không rõ KPI"),
+                    CheckInDate = checkIn.CheckInDate,
+                    AchievedValue = detail?.AchievedValue,
+                    ProgressPercentage = detail?.ProgressPercentage,
+                    ScheduleProgressPercentage = detail?.ScheduleProgressPercentage,
+                    StatusId = checkIn.StatusId,
+                    CheckInStatus = checkIn.StatusId.HasValue
+                        ? statuses.GetValueOrDefault(checkIn.StatusId.Value, "Chưa rõ")
+                        : "Chưa cập nhật",
+                    ReviewStatusCode = reviewStatusCode,
+                    ReviewStatus = GetReviewStatusLabel(reviewStatusCode),
+                    FailReasonId = checkIn.FailReasonId,
+                    FailReasonName = failReason?.ReasonName,
+                    Note = detail?.Note
+                };
+            }).ToList();
+        }
+
+        private static System.Linq.Expressions.Expression<Func<KPICheckIn, bool>> BuildCheckInPairPredicate(
+            IReadOnlyCollection<EmployeeKpiCandidate> candidates)
+        {
+            var checkIn = System.Linq.Expressions.Expression.Parameter(typeof(KPICheckIn), "checkIn");
+            var employeeId = System.Linq.Expressions.Expression.Property(checkIn, nameof(KPICheckIn.EmployeeId));
+            var kpiId = System.Linq.Expressions.Expression.Property(checkIn, nameof(KPICheckIn.KPIId));
+            System.Linq.Expressions.Expression body = System.Linq.Expressions.Expression.Constant(false);
+
+            foreach (var candidate in candidates)
+            {
+                var employeeMatch = System.Linq.Expressions.Expression.Equal(
+                    employeeId,
+                    System.Linq.Expressions.Expression.Constant((int?)candidate.EmployeeId, typeof(int?)));
+                var kpiMatch = System.Linq.Expressions.Expression.Equal(
+                    kpiId,
+                    System.Linq.Expressions.Expression.Constant((int?)candidate.KpiId, typeof(int?)));
+                body = System.Linq.Expressions.Expression.OrElse(
+                    body,
+                    System.Linq.Expressions.Expression.AndAlso(employeeMatch, kpiMatch));
+            }
+
+            return System.Linq.Expressions.Expression.Lambda<Func<KPICheckIn, bool>>(body, checkIn);
+        }
+
+        private static string? NormalizeReviewStatusCode(KPICheckIn? checkIn)
+        {
+            if (checkIn == null)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(checkIn.ReviewStatus) ||
+                checkIn.ReviewStatus.Equals(ReviewStatusApproved, StringComparison.OrdinalIgnoreCase))
+            {
+                return ReviewStatusApproved;
+            }
+
+            if (checkIn.ReviewStatus.Equals(ReviewStatusPending, StringComparison.OrdinalIgnoreCase))
+            {
+                return ReviewStatusPending;
+            }
+
+            if (checkIn.ReviewStatus.Equals(ReviewStatusRejected, StringComparison.OrdinalIgnoreCase))
+            {
+                return ReviewStatusRejected;
+            }
+
+            return checkIn.ReviewStatus.Trim();
+        }
+
+        private static string GetReviewStatusLabel(string? reviewStatusCode)
+        {
+            return reviewStatusCode switch
+            {
+                ReviewStatusPending => "Chờ quản lý xác nhận",
+                ReviewStatusRejected => "Bị từ chối",
+                ReviewStatusApproved => "Đã xác nhận",
+                null => "Chưa check-in",
+                _ => reviewStatusCode
+            };
+        }
+
+        private static string? ResolveCheckInDisabledReason(
+            bool canCreateCheckIn,
+            KPI kpi,
+            KPIDetail? detail,
+            EvaluationPeriod? period,
+            string? periodStatusName,
+            IReadOnlySet<int> executableKpiStatusIds,
+            DateTime today)
+        {
+            if (!canCreateCheckIn)
+            {
+                return "Bạn không có quyền ghi nhận tiến độ KPI.";
+            }
+
+            if (detail == null)
+            {
+                return "KPI chưa có cấu hình chỉ tiêu.";
+            }
+
+            if (!WorkflowStatusHelper.IsExecutableKpiStatus(kpi.StatusId, executableKpiStatusIds))
+            {
+                return "KPI không ở trạng thái có thể cập nhật tiến độ.";
+            }
+
+            if (!EvaluationPeriodRules.CanCheckIn(period, periodStatusName, today))
+            {
+                return "Kỳ đánh giá chưa mở, đã đóng hoặc nằm ngoài thời gian check-in.";
+            }
+
+            return null;
         }
 
         private async Task<List<EmployeeKpiTrackingRow>> BuildEmployeeKpiTrackingRowsBulkAsync(List<int> employeeIds)
@@ -1876,22 +2520,55 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }).ToList();
         }
 
-        private async Task<bool> CanCurrentUserReviewCheckInsAsync()
+        private async Task<(List<CheckInStatus> Statuses, List<FailReason> FailReasons)> GetIndexLookupsAsync()
         {
-            if (PermissionLookupHelper.IsAdmin(User))
+            if (_cachedCheckInStatuses != null && _cachedFailReasons != null &&
+                DateTime.UtcNow < _indexLookupCacheExpiresAtUtc)
             {
-                return true;
+                return (_cachedCheckInStatuses, _cachedFailReasons);
             }
 
-            return await PermissionLookupHelper.HasPermissionAsync(_context, User, "KPICHECKINS_REVIEW") ||
-                   await PermissionLookupHelper.HasPermissionAsync(_context, User, "CHECKINS_EDIT");
+            await IndexLookupCacheGate.WaitAsync();
+            try
+            {
+                if (_cachedCheckInStatuses != null && _cachedFailReasons != null &&
+                    DateTime.UtcNow < _indexLookupCacheExpiresAtUtc)
+                {
+                    return (_cachedCheckInStatuses, _cachedFailReasons);
+                }
+
+                _cachedCheckInStatuses = await _context.CheckInStatuses
+                    .AsNoTracking()
+                    .ToListAsync();
+                _cachedFailReasons = await _context.FailReasons
+                    .AsNoTracking()
+                    .ToListAsync();
+                _indexLookupCacheExpiresAtUtc = DateTime.UtcNow.AddMinutes(2);
+
+                return (_cachedCheckInStatuses, _cachedFailReasons);
+            }
+            finally
+            {
+                IndexLookupCacheGate.Release();
+            }
+        }
+
+        private async Task<bool> CanCurrentUserReviewCheckInsAsync()
+        {
+            var permissions = await PermissionLookupHelper.HasPermissionsAsync(
+                _context,
+                User,
+                new[] { "KPICHECKINS_REVIEW", "CHECKINS_EDIT" });
+            return permissions["KPICHECKINS_REVIEW"] || permissions["CHECKINS_EDIT"];
         }
 
         private async Task<bool> CanAccessCheckInAsync(KPICheckIn checkIn, Employee? currentEmployee)
         {
-            if (User.IsInRole("Admin") || User.IsInRole("Administrator") ||
-                User.IsInRole("HR") || User.IsInRole("Human Resources") ||
-                User.IsInRole("Director"))
+            if (PermissionLookupHelper.IsAdmin(User) ||
+                User.IsInRole("admin") || User.IsInRole("administrator") ||
+                User.IsInRole("HR") || User.IsInRole("hr") ||
+                User.IsInRole("Human Resources") || User.IsInRole("human resources") ||
+                User.IsInRole("Director") || User.IsInRole("director"))
             {
                 return true;
             }
@@ -1911,14 +2588,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         private async Task<bool> CanReviewCheckInAsync(KPICheckIn checkIn, Employee? reviewer)
         {
-            if (User.IsInRole("Admin") || User.IsInRole("Administrator") ||
-                User.IsInRole("HR") || User.IsInRole("Human Resources") ||
-                User.IsInRole("Director"))
+            if (PermissionLookupHelper.IsAdmin(User) ||
+                User.IsInRole("admin") || User.IsInRole("administrator") ||
+                User.IsInRole("HR") || User.IsInRole("hr") ||
+                User.IsInRole("Human Resources") || User.IsInRole("human resources") ||
+                User.IsInRole("Director") || User.IsInRole("director"))
             {
                 return true;
             }
 
-            if (reviewer == null || !User.IsInRole("Manager") || checkIn.EmployeeId == reviewer.Id)
+            if (reviewer == null ||
+                !(User.IsInRole("Manager") || User.IsInRole("manager")) ||
+                checkIn.EmployeeId == reviewer.Id)
             {
                 return false;
             }

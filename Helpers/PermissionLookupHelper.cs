@@ -46,6 +46,24 @@ namespace Manage_KPI_or_OKR_System.Helpers
                 return result;
             }
 
+            // PermissionClaimsTransformation has already expanded role permissions into
+            // claims for authenticated requests. Reuse them instead of repeating the
+            // same Role_Permissions join on every page request. Test/background principals
+            // without these claims continue through the database fallback below.
+            var permissionClaims = user.Claims
+                .Where(claim => string.Equals(claim.Type, "Permission", StringComparison.OrdinalIgnoreCase))
+                .Select(claim => claim.Value)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (permissionClaims.Count > 0)
+            {
+                foreach (var code in requestedCodes)
+                {
+                    result[code] = permissionClaims.Contains(code);
+                }
+
+                return result;
+            }
+
             var userRoles = user.Claims
                 .Where(c => c.Type == ClaimTypes.Role)
                 .Select(c => c.Value)

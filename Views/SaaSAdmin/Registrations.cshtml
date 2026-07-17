@@ -191,16 +191,28 @@
                                                     <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" title="Cập nhật tài khoản" onclick="openUpdateModal(@item.UserId, '@item.Email')" style="border-radius: 6px; padding: 4px 8px;">
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
-                                                    <form asp-controller="SaaSAdmin" asp-action="UpdateAccountStatus" method="post" style="display:inline;">
+                                                    <form asp-controller="SaaSAdmin" asp-action="UpdateAccountStatus" method="post" style="display:inline;"
+                                                          data-app-confirm
+                                                          data-confirm-title="@(item.IsActive ? "Khóa tài khoản?" : "Mở khóa tài khoản?")"
+                                                          data-confirm-message="@(item.IsActive ? $"Tài khoản “{item.Username}” sẽ không thể đăng nhập cho đến khi được mở khóa." : $"Tài khoản “{item.Username}” sẽ được phép đăng nhập trở lại.")"
+                                                          data-confirm-tone="@(item.IsActive ? "warning" : "info")"
+                                                          data-confirm-label="@(item.IsActive ? "Khóa tài khoản" : "Mở khóa")">
                                                         <input type="hidden" name="userId" value="@item.UserId" />
                                                         <input type="hidden" name="actionType" value="@(item.IsActive ? "lock" : "unlock")" />
-                                                        <button type="submit" class="btn btn-sm @(item.IsActive ? "btn-outline-warning" : "btn-outline-success") shadow-sm" title="@(item.IsActive ? "Khóa tài khoản" : "Mở khóa")" style="border-radius: 6px; padding: 4px 8px;" onclick="return confirm('Bạn có chắc chắn muốn @(item.IsActive ? "KHÓA" : "MỞ KHÓA") tài khoản này?');">
+                                                        <button type="submit" class="btn btn-sm @(item.IsActive ? "btn-outline-warning" : "btn-outline-success") shadow-sm" title="@(item.IsActive ? "Khóa tài khoản" : "Mở khóa")" style="border-radius: 6px; padding: 4px 8px;">
                                                             <i class="bi @(item.IsActive ? "bi-lock" : "bi-unlock")"></i>
                                                         </button>
                                                     </form>
-                                                    <form asp-controller="SaaSAdmin" asp-action="DeleteAccount" method="post" style="display:inline;">
+                                                    <form asp-controller="SaaSAdmin" asp-action="DeleteAccount" method="post" style="display:inline;"
+                                                          data-app-confirm
+                                                          data-confirm-title="Xóa vĩnh viễn tài khoản?"
+                                                          data-confirm-message="Tài khoản “@item.Username” và toàn bộ đăng ký mua gói liên quan sẽ bị xóa vĩnh viễn."
+                                                          data-confirm-tone="danger"
+                                                          data-confirm-label="Xóa vĩnh viễn"
+                                                          data-confirm-require-text="@item.Username"
+                                                          data-confirm-require-label="Nhập đúng username “@item.Username” để xác nhận">
                                                         <input type="hidden" name="userId" value="@item.UserId" />
-                                                        <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm" title="Xóa tài khoản" style="border-radius: 6px; padding: 4px 8px;" onclick="return confirm('CẢNH BÁO: Xóa tài khoản sẽ xóa toàn bộ dữ liệu. Bạn có chắc chắn?');">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm" title="Xóa tài khoản" style="border-radius: 6px; padding: 4px 8px;">
                                                             <i class="bi bi-trash"></i>
                                                         </button>
                                                     </form>

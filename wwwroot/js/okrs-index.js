@@ -434,11 +434,11 @@
             });
 
             if (invalid) {
-                alert('Mỗi KR được chọn cần có tên, đơn vị và chỉ tiêu > 0.');
+                window.AppFeedback.toast({ tone: 'warning', title: 'Key Result chưa hợp lệ', message: 'Mỗi KR được chọn cần có tên, đơn vị và chỉ tiêu lớn hơn 0.' });
                 return;
             }
             if (payload.length === 0) {
-                alert('Vui lòng chọn ít nhất 1 Key Result hợp lệ.');
+                window.AppFeedback.toast({ tone: 'warning', title: 'Chưa chọn Key Result', message: 'Vui lòng chọn ít nhất một Key Result hợp lệ.' });
                 return;
             }
 
@@ -468,7 +468,7 @@
                     }
                 })
                 .catch(error => {
-                    alert(error.message || 'Không lưu được Key Result');
+                    window.AppFeedback.toast({ tone: 'error', title: 'Không lưu được Key Result', message: error.message || 'Vui lòng thử lại sau.' });
                     setSubmitLoading(btn, false);
                 });
         });

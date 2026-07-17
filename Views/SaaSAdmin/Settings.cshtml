@@ -27,13 +27,6 @@
         </div>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success border-0 shadow-sm rounded-3 py-3 px-4 mb-4">
-            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
-        </div>
-    }
-
     <div class="row g-4">
         <div class="col-md-3">
             <div class="list-group shadow-sm" style="border-radius: 12px; overflow: hidden;">
@@ -122,7 +115,7 @@
                                     <h6 class="fw-bold mb-1 text-danger">Xóa toàn bộ Cache & Dữ liệu tạm</h6>
                                     <span class="text-muted small">Giải phóng bộ nhớ bằng cách xóa cache hệ thống.</span>
                                 </div>
-                                <button class="btn btn-outline-danger" onclick="alert('Tính năng đang được phát triển')">Xóa Cache</button>
+                                <button class="btn btn-outline-danger" onclick="window.AppFeedback.comingSoon('Xóa cache')">Xóa Cache</button>
                             </div>
                         </div>
                     </div>

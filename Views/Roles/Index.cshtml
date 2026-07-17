@@ -209,7 +209,11 @@
                                       asp-route-id="@role.Id"
                                       method="post"
                                       class="m-0"
-                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa quyền này?');">
+                                      data-app-confirm
+                                      data-confirm-title="Xóa nhóm quyền?"
+                                      data-confirm-message="Nhóm quyền “@role.RoleName” sẽ bị xóa nếu không còn tài khoản sử dụng."
+                                      data-confirm-tone="danger"
+                                      data-confirm-label="Xóa nhóm quyền">
                                     <button type="submit"
                                             class="role-action-btn role-action-danger"
                                             title="Xóa role"
