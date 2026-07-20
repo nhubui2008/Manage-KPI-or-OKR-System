@@ -1,6 +1,8 @@
 @model Manage_KPI_or_OKR_System.Helpers.PaginatedList<Manage_KPI_or_OKR_System.Models.AuditLog>
 @{
-    ViewData["Title"] = "Nhật ký Hệ thống (Audit Logs)";
+    ViewData["Title"] = "Nhật ký Hệ thống";
+
+    var logs = Model?.ToList() ?? new List<Manage_KPI_or_OKR_System.Models.AuditLog>();
     var users = ViewBag.Users as Dictionary<int, string> ?? new Dictionary<int, string>();
     var userRoleIds = ViewBag.UserRoleIds as Dictionary<int, int?> ?? new Dictionary<int, int?>();
     var roles = ViewBag.Roles as Dictionary<int, string> ?? new Dictionary<int, string>();
@@ -8,26 +10,24 @@
     int? currentRoleId = ViewData["CurrentRoleId"] is int selectedRoleId ? selectedRoleId : null;
     var startDate = ViewData["StartDate"] as string;
     var endDate = ViewData["EndDate"] as string;
+    var hasFilters = !string.IsNullOrWhiteSpace(currentFilter) || currentRoleId.HasValue || !string.IsNullOrWhiteSpace(startDate) || !string.IsNullOrWhiteSpace(endDate);
+    var currentPage = Model?.PageIndex ?? 1;
+    var totalPages = Model?.TotalPages ?? 0;
 
-    string GetActionClass(string action)
+    string GetActionClass(string? action)
     {
         return action switch
         {
-            "CREATE" => "bg-success",
-            "CREATE_APPROVED" => "bg-success",
-            "UPDATE" => "bg-warning text-dark",
-            "DELETE" => "bg-danger",
-            "APPROVE" => "bg-success",
-            "REJECT" => "bg-danger",
-            "COMMENT" => "bg-info",
-            "SUBMIT_REVIEW" => "bg-primary",
-            "DIRECTOR_APPROVE" => "bg-success",
-            "DIRECTOR_REJECT" => "bg-danger",
-            _ => "bg-secondary"
+            "CREATE" or "CREATE_APPROVED" or "APPROVE" or "DIRECTOR_APPROVE" => "audit-action--success",
+            "UPDATE" => "audit-action--warning",
+            "DELETE" or "REJECT" or "DIRECTOR_REJECT" => "audit-action--danger",
+            "COMMENT" => "audit-action--info",
+            "SUBMIT_REVIEW" => "audit-action--primary",
+            _ => "audit-action--neutral"
         };
     }
 
-    string GetActionText(string action)
+    string GetActionText(string? action)
     {
         return action switch
         {
@@ -41,485 +41,622 @@
             "SUBMIT_REVIEW" => "Gửi duyệt",
             "DIRECTOR_APPROVE" => "GĐ duyệt",
             "DIRECTOR_REJECT" => "GĐ từ chối",
-            _ => action ?? "N/A"
+            _ => string.IsNullOrWhiteSpace(action) ? "Không xác định" : action
         };
     }
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
     <style>
-        .auditlog-mobile-list {
-            display: none;
-        }
-
-        .auditlog-mobile-card {
-            padding: 1rem;
-            border-radius: 16px;
-            display: grid;
-            gap: 0.8rem;
-        }
-
-        .auditlog-mobile-card__header {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.8rem;
-        }
-
-        .auditlog-mobile-card__title {
+        .auditlog-page .auditlog-header-copy {
+            max-width: 720px;
             margin: 0;
-            font-size: 0.98rem;
-            font-weight: 800;
-            color: #172033;
+            color: var(--evaluation-muted);
+            font-size: 0.88rem;
         }
 
-        .auditlog-mobile-card__label {
+        .auditlog-page .auditlog-filter-form {
+            grid-template-columns: minmax(240px, 1.4fr) minmax(170px, 0.8fr) minmax(150px, 0.7fr) minmax(150px, 0.7fr) auto auto;
+        }
+
+        .auditlog-page .auditlog-table {
+            min-width: 1100px;
+        }
+
+        .auditlog-page .auditlog-user {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            min-width: 145px;
+        }
+
+        .auditlog-page .auditlog-avatar {
+            display: inline-grid;
+            width: 34px;
+            height: 34px;
+            flex: 0 0 34px;
+            place-items: center;
+            border-radius: 8px;
+            background: var(--evaluation-brand-soft);
+            color: var(--evaluation-brand);
+            font-size: 0.75rem;
+            font-weight: 800;
+        }
+
+        .auditlog-page .auditlog-user strong,
+        .auditlog-page .auditlog-user small,
+        .auditlog-page .auditlog-time strong,
+        .auditlog-page .auditlog-time small {
+            display: block;
+        }
+
+        .auditlog-page .auditlog-user strong,
+        .auditlog-page .auditlog-time strong {
+            color: var(--evaluation-ink);
+            font-size: 0.8rem;
+        }
+
+        .auditlog-page .auditlog-user small,
+        .auditlog-page .auditlog-time small {
+            margin-top: 0.12rem;
+            color: var(--evaluation-muted);
+            font-size: 0.72rem;
+        }
+
+        .auditlog-page .auditlog-role {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            border: 1px solid var(--evaluation-line);
+            border-radius: 7px;
+            padding: 0.3rem 0.55rem;
+            background: var(--evaluation-soft);
+            color: #475467;
+            font-size: 0.72rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .auditlog-page .audit-action {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            border: 1px solid transparent;
+            border-radius: 7px;
+            padding: 0.3rem 0.55rem;
+            font-size: 0.72rem;
+            font-weight: 750;
+            white-space: nowrap;
+        }
+
+        .auditlog-page .audit-action--success { border-color: #b8dfcc; background: #edf8f2; color: #126b38; }
+        .auditlog-page .audit-action--warning { border-color: #f5dfaa; background: #fff6df; color: #98620e; }
+        .auditlog-page .audit-action--danger { border-color: #f4c8c3; background: #fff0ee; color: #b42318; }
+        .auditlog-page .audit-action--info { border-color: #c9e0f4; background: #eef6fd; color: #245f92; }
+        .auditlog-page .audit-action--primary { border-color: var(--evaluation-brand-border); background: var(--evaluation-brand-soft); color: var(--evaluation-brand); }
+        .auditlog-page .audit-action--neutral { border-color: var(--evaluation-line); background: var(--evaluation-soft); color: #596273; }
+
+        .auditlog-page .auditlog-table-name {
+            color: var(--evaluation-brand);
             font-size: 0.76rem;
-            font-weight: 800;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            color: #64748b;
+            font-weight: 750;
         }
 
-        @@media (max-width: 767.98px) {
-            .auditlog-mobile-list {
-                display: grid;
-                gap: 0.9rem;
-                margin-top: 0.75rem;
+        .auditlog-page .auditlog-summary {
+            max-width: 330px;
+            overflow: hidden;
+            color: var(--evaluation-muted);
+            font-size: 0.75rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .auditlog-page .auditlog-detail-button {
+            min-height: 36px;
+            padding: 0.5rem 0.7rem;
+            font-size: 0.75rem;
+        }
+
+        .auditlog-page .auditlog-card > p {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .auditlog-page .auditlog-card-summary {
+            margin: 0 0 0.85rem;
+            color: var(--evaluation-muted);
+            font-size: 0.76rem;
+            line-height: 1.55;
+            overflow-wrap: anywhere;
+        }
+
+        .auditlog-page .auditlog-pagination-meta {
+            margin: 0;
+            color: var(--evaluation-muted);
+            font-size: 0.78rem;
+        }
+
+        .auditlog-page .auditlog-pagination-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            border-top: 1px solid var(--evaluation-line);
+            margin-top: 0.9rem;
+            padding-top: 0.9rem;
+        }
+
+        .auditlog-page .auditlog-pagination-row .evaluation-pagination {
+            padding-top: 0;
+        }
+
+        .auditlog-modal .auditlog-modal-facts {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+
+        .auditlog-modal .auditlog-modal-fact {
+            min-width: 0;
+            border: 1px solid var(--evaluation-line);
+            border-radius: 8px;
+            padding: 0.8rem;
+            background: var(--evaluation-soft);
+        }
+
+        .auditlog-modal .auditlog-modal-fact > span:first-child,
+        .auditlog-modal .auditlog-data-heading span {
+            display: block;
+            margin-bottom: 0.35rem;
+            color: var(--evaluation-muted);
+            font-size: 0.7rem;
+            font-weight: 750;
+        }
+
+        .auditlog-modal .auditlog-data-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .auditlog-modal .auditlog-data-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+
+        .auditlog-modal .auditlog-data-grid.is-single {
+            grid-template-columns: 1fr;
+        }
+
+        .auditlog-modal .auditlog-data-panel > span {
+            display: block;
+            margin-bottom: 0.35rem;
+            color: var(--evaluation-muted);
+            font-size: 0.68rem;
+            font-weight: 750;
+        }
+
+        .auditlog-modal pre {
+            max-height: 320px;
+            margin: 0;
+            overflow: auto;
+            border-radius: 8px;
+            padding: 0.85rem;
+            background: #172033;
+            color: #f8fafc;
+            font-size: 0.74rem;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        @@media (max-width: 1100px) {
+            .auditlog-page .auditlog-filter-form {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
-            .auditlog-page .table-responsive {
-                display: none;
+            .auditlog-page .auditlog-filter-form .evaluation-search-field {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @@media (max-width: 700px) {
+            .auditlog-page .auditlog-filter-form {
+                grid-template-columns: 1fr;
+            }
+
+            .auditlog-page .auditlog-filter-form .evaluation-search-field {
+                grid-column: auto;
+            }
+
+            .auditlog-page .auditlog-filter-form .evaluation-secondary-action,
+            .auditlog-page .auditlog-filter-form .evaluation-filter-button {
+                width: 100%;
+            }
+
+            .auditlog-page .auditlog-pagination-row {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .auditlog-page .auditlog-pagination-row .evaluation-pagination {
+                justify-content: center;
+            }
+
+            .auditlog-modal .auditlog-modal-facts,
+            .auditlog-modal .auditlog-data-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 }
 
-<div class="container-fluid px-0 auditlog-page">
-    
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+<div class="evaluation-page auditlog-page">
+    <header class="evaluation-page-header">
         <div>
-            <h1 class="h3 font-weight-bold mb-1">Nhật ký Hệ thống</h1>
-            <div class="page-breadcrumb">
-                <a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i>
-                <span>Hệ thống</span><i class="bi bi-chevron-right separator"></i>
-                <span>Audit Logs</span>
-            </div>
+            <h1>Nhật ký Hệ thống</h1>
+            <p class="auditlog-header-copy">Theo dõi người thực hiện, hành động và dữ liệu thay đổi trong các luồng nghiệp vụ quan trọng.</p>
+            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span>Hệ thống</span>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span>Nhật ký</span>
+            </nav>
         </div>
-    </div>
+    </header>
 
-    <div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <div class="content-card w-100">
-                <div class="card-body-custom p-4">
-                    <!-- ADVANCED SEARCH FORM -->
-                    <form asp-action="Index" method="get" class="mb-4">
-                        <div class="row g-3 align-items-end">
-                            <div class="col-md-3">
-                                <label class="form-label small fw-bold text-muted">Tìm kiếm từ khóa</label>
-                                <div class="position-relative">
-                                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                                    <input type="text" name="searchString" value="@currentFilter" class="form-control ps-5" placeholder="Tên user, role, hành động..." />
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Role thao tác</label>
-                                <select name="roleId" class="form-select no-select2">
-                                    <option value="">Tất cả role</option>
-                                    @foreach (var role in roles)
-                                    {
-                                        <option value="@role.Key" selected="@(currentRoleId == role.Key ? "selected" : null)">@role.Value</option>
-                                    }
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Từ ngày</label>
-                                <input type="date" name="startDate" value="@startDate" class="form-control" />
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Đến ngày</label>
-                                <input type="date" name="endDate" value="@endDate" class="form-control" />
-                            </div>
-                            <div class="col-md-3 d-flex gap-2">
-                                <button type="submit" class="btn-primary-custom auditlog-filter-btn flex-grow-1 d-flex align-items-center justify-content-center shadow-none">
-                                    <i class="bi bi-filter me-2"></i> Lọc dữ liệu
-                                </button>
-                                <a asp-action="Index" class="btn btn-outline-secondary auditlog-refresh-btn d-flex align-items-center justify-content-center px-3" title="Làm mới">
-                                    <i class="bi bi-arrow-clockwise"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </form>
-
-                    <div class="table-responsive w-100 border rounded">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th class="ps-4" style="width:18%;">Thời gian</th>
-                                    <th style="width:14%;">Tài khoản</th>
-                                    <th style="width:12%;">Role</th>
-                                    <th style="width:11%;">Hành động</th>
-                                    <th style="width:14%;">Bảng tác động</th>
-                                    <th style="width:25%;">Tóm tắt thay đổi</th>
-                                    <th class="text-end pe-4" style="width:10%;">Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (Model != null && Model.Any())
-                                {
-                                    @foreach (var log in Model)
-                                    {
-                                        var userName = log.SystemUserId.HasValue && users.ContainsKey(log.SystemUserId.Value) ? users[log.SystemUserId.Value] : "System";
-                                        var roleName = "System";
-                                        if (log.SystemUserId.HasValue &&
-                                            userRoleIds.TryGetValue(log.SystemUserId.Value, out var logRoleId) &&
-                                            logRoleId.HasValue &&
-                                            roles.ContainsKey(logRoleId.Value))
-                                        {
-                                            roleName = roles[logRoleId.Value];
-                                        }
-                                        <tr>
-                                            <td class="ps-4">
-                                                <div class="text-dark fw-medium">@(log.LogTime?.ToString("dd/MM/yyyy") ?? "")</div>
-                                                <div class="text-muted small">@(log.LogTime?.ToString("HH:mm:ss") ?? "")</div>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <div class="user-avatar bg-dark text-white rounded-circle d-flex align-items-center justify-content-center" style="width:28px;height:28px;font-size:0.75rem;">
-                                                        @(userName.Length > 0 ? userName[0].ToString().ToUpper() : "?")
-                                                    </div>
-                                                    <span class="fw-medium text-dark">@userName</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-light text-dark border rounded-pill px-3">@roleName</span>
-                                            </td>
-                                            <td>
-                                                <span class="badge @GetActionClass(log.ActionType ?? "") px-2 py-1">
-                                                    @GetActionText(log.ActionType ?? "")
-                                                </span>
-                                            </td>
-                                            <td><code class="text-primary fw-bold">@(log.ImpactedTable ?? "N/A")</code></td>
-                                            <td>
-                                                <div class="text-muted text-truncate mb-0 small" style="max-width:350px;">
-                                                    @(string.IsNullOrEmpty(log.NewData) ? (string.IsNullOrEmpty(log.OldData) ? "Không có dữ liệu chi tiết" : log.OldData) : log.NewData)
-                                                </div>
-                                            </td>
-                                            <td class="text-end pe-4">
-                                                <button type="button" class="btn btn-sm btn-outline-primary auditlog-detail-btn rounded-pill px-3" 
-                                                        data-id="@log.Id"
-                                                        data-action="@log.ActionType"
-                                                        data-table="@log.ImpactedTable"
-                                                        data-old="@log.OldData"
-                                                        data-new="@log.NewData">
-                                                    Chi tiết
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                                else
-                                {
-                                    <tr class="auditlog-empty-row">
-                                        <td colspan="7" class="text-center text-muted py-5">
-                                            <i class="bi bi-inbox auditlog-empty-icon mb-3 d-block"></i>
-                                            <p class="mb-0">Không tìm thấy nhật ký phù hợp trong khoảng thời gian này.</p>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="auditlog-mobile-list">
-                        @if (Model != null && Model.Any())
-                        {
-                            @foreach (var log in Model)
-                            {
-                                var userName = log.SystemUserId.HasValue && users.ContainsKey(log.SystemUserId.Value) ? users[log.SystemUserId.Value] : "System";
-                                var roleName = "System";
-                                if (log.SystemUserId.HasValue &&
-                                    userRoleIds.TryGetValue(log.SystemUserId.Value, out var logRoleId) &&
-                                    logRoleId.HasValue &&
-                                    roles.ContainsKey(logRoleId.Value))
-                                {
-                                    roleName = roles[logRoleId.Value];
-                                }
-
-                                <article class="content-card auditlog-mobile-card">
-                                    <div class="auditlog-mobile-card__header">
-                                        <div class="user-avatar bg-dark text-white rounded-circle d-flex align-items-center justify-content-center" style="width:36px;height:36px;font-size:0.85rem;">
-                                            @(userName.Length > 0 ? userName[0].ToString().ToUpper() : "?")
-                                        </div>
-                                        <div class="min-w-0 flex-grow-1">
-                                            <h3 class="auditlog-mobile-card__title">@userName</h3>
-                                            <div class="small text-muted">@roleName</div>
-                                            <div class="small text-muted mt-1">@(log.LogTime?.ToString("dd/MM/yyyy HH:mm:ss") ?? "")</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <span class="badge @GetActionClass(log.ActionType ?? "") px-2 py-1">@GetActionText(log.ActionType ?? "")</span>
-                                        <span class="badge bg-light text-dark border rounded-pill px-3">@(log.ImpactedTable ?? "N/A")</span>
-                                    </div>
-
-                                    <div>
-                                        <div class="auditlog-mobile-card__label">Tóm tắt thay đổi</div>
-                                        <div class="small text-muted mt-1">
-                                            @(string.IsNullOrEmpty(log.NewData) ? (string.IsNullOrEmpty(log.OldData) ? "Không có dữ liệu chi tiết" : log.OldData) : log.NewData)
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <button type="button" class="btn btn-outline-primary rounded-pill px-3 auditlog-detail-btn"
-                                                data-id="@log.Id"
-                                                data-action="@log.ActionType"
-                                                data-table="@log.ImpactedTable"
-                                                data-old="@log.OldData"
-                                                data-new="@log.NewData">
-                                            Chi tiết
-                                        </button>
-                                    </div>
-                                </article>
-                            }
-                        }
-                    </div>
-
-                    <!-- PAGINATION -->
-                    @if (Model != null && Model.TotalPages > 1)
+    <section class="evaluation-filter-panel" aria-labelledby="auditLogFilterHeading">
+        <div class="evaluation-filter-heading">
+            <div>
+                <strong id="auditLogFilterHeading">Tra cứu nhật ký</strong>
+                <span>Lọc theo nội dung, vai trò hoặc khoảng thời gian cần kiểm tra.</span>
+            </div>
+            @if (hasFilters)
+            {
+                <a asp-action="Index" class="evaluation-clear-link">
+                    <i class="bi bi-x-circle" aria-hidden="true"></i>Xóa bộ lọc
+                </a>
+            }
+        </div>
+        <form asp-action="Index" method="get" class="evaluation-filter-form auditlog-filter-form">
+            <label class="evaluation-search-field">
+                <span>Từ khóa</span>
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" name="searchString" value="@currentFilter" placeholder="Tài khoản, bảng hoặc hành động" />
+            </label>
+            <label>
+                <span>Vai trò thao tác</span>
+                <select name="roleId" class="no-select2">
+                    <option value="">Tất cả vai trò</option>
+                    @foreach (var role in roles)
                     {
-                        <div class="d-flex justify-content-between align-items-center mt-4 px-2">
-                            <div class="text-muted small">
-                                Hiển thị trang <strong>@Model.PageIndex</strong> trên tổng số <strong>@Model.TotalPages</strong>
-                            </div>
-                            <nav aria-label="Page navigation">
-                                <ul class="pagination pagination-sm mb-0 gap-1">
-                                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
-                                        <a class="page-link border-0 rounded-circle shadow-none text-dark" asp-action="Index" 
-                                           asp-route-pageNumber="@(Model.PageIndex - 1)" 
-                                           asp-route-searchString="@currentFilter"
-                                           asp-route-roleId="@currentRoleId"
-                                           asp-route-startDate="@startDate"
-                                           asp-route-endDate="@endDate">
-                                            <i class="bi bi-chevron-left"></i>
-                                        </a>
-                                    </li>
-                                    
-                                    @for (int i = 1; i <= Model.TotalPages; i++)
-                                    {
-                                        if (i == 1 || i == Model.TotalPages || (i >= Model.PageIndex - 2 && i <= Model.PageIndex + 2))
-                                        {
-                                            <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                                                <a class="page-link border-0 rounded-circle shadow-none @(i == Model.PageIndex ? "" : "text-dark")" asp-action="Index" 
-                                                   asp-route-pageNumber="@i" 
-                                                   asp-route-searchString="@currentFilter"
-                                                   asp-route-roleId="@currentRoleId"
-                                                   asp-route-startDate="@startDate"
-                                                   asp-route-endDate="@endDate">@i</a>
-                                            </li>
-                                        }
-                                        else if (i == Model.PageIndex - 3 || i == Model.PageIndex + 3)
-                                        {
-                                            <li class="page-item disabled"><span class="page-link border-0">...</span></li>
-                                        }
-                                    }
-
-                                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                                        <a class="page-link border-0 rounded-circle shadow-none text-dark" asp-action="Index" 
-                                           asp-route-pageNumber="@(Model.PageIndex + 1)" 
-                                           asp-route-searchString="@currentFilter"
-                                           asp-route-roleId="@currentRoleId"
-                                           asp-route-startDate="@startDate"
-                                           asp-route-endDate="@endDate">
-                                            <i class="bi bi-chevron-right"></i>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
+                        <option value="@role.Key" selected="@(currentRoleId == role.Key ? "selected" : null)">@role.Value</option>
                     }
-                </div>
-            </div>
+                </select>
+            </label>
+            <label>
+                <span>Từ ngày</span>
+                <input type="date" name="startDate" value="@startDate" />
+            </label>
+            <label>
+                <span>Đến ngày</span>
+                <input type="date" name="endDate" value="@endDate" />
+            </label>
+            <a asp-action="Index" class="evaluation-secondary-action" aria-label="Đặt lại bộ lọc">
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Đặt lại
+            </a>
+            <button type="submit" class="evaluation-filter-button">
+                <i class="bi bi-funnel" aria-hidden="true"></i>Lọc
+            </button>
+        </form>
+    </section>
+
+    <section class="evaluation-results" aria-labelledby="auditLogResultsHeading">
+        <div class="evaluation-results-heading">
+            <strong id="auditLogResultsHeading">Lịch sử thay đổi</strong>
+            <span>@logs.Count bản ghi trên trang @currentPage@(totalPages > 0 ? $"/{totalPages}" : string.Empty)</span>
         </div>
-    </div>
+
+        @if (!logs.Any())
+        {
+            <div class="evaluation-empty" role="status">
+                <span class="evaluation-empty-icon"><i class="bi bi-journal-x" aria-hidden="true"></i></span>
+                <h2>@(hasFilters ? "Không tìm thấy nhật ký phù hợp" : "Chưa có nhật ký hệ thống")</h2>
+                <p>@(hasFilters ? "Hãy điều chỉnh từ khóa hoặc khoảng thời gian để xem thêm kết quả." : "Các thay đổi quan trọng sẽ xuất hiện tại đây khi hệ thống ghi nhận hoạt động.")</p>
+                @if (hasFilters)
+                {
+                    <a asp-action="Index" class="evaluation-secondary-action">Xóa bộ lọc</a>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="evaluation-table-shell">
+                <table class="evaluation-table auditlog-table" aria-label="Danh sách nhật ký hệ thống">
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Tài khoản</th>
+                            <th>Vai trò</th>
+                            <th>Hành động</th>
+                            <th>Bảng tác động</th>
+                            <th>Tóm tắt thay đổi</th>
+                            <th class="text-end">Chi tiết</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in logs)
+                        {
+                            var userName = log.SystemUserId.HasValue && users.TryGetValue(log.SystemUserId.Value, out var mappedUserName) ? mappedUserName : "Hệ thống";
+                            var roleName = "Hệ thống";
+                            if (log.SystemUserId.HasValue && userRoleIds.TryGetValue(log.SystemUserId.Value, out var logRoleId) && logRoleId.HasValue && roles.TryGetValue(logRoleId.Value, out var mappedRoleName))
+                            {
+                                roleName = mappedRoleName;
+                            }
+                            var initial = userName.Length > 0 ? userName[0].ToString().ToUpperInvariant() : "?";
+                            var changeSummary = string.IsNullOrEmpty(log.NewData) ? (string.IsNullOrEmpty(log.OldData) ? "Không có dữ liệu chi tiết" : log.OldData) : log.NewData;
+                            <tr>
+                                <td>
+                                    <div class="auditlog-time">
+                                        <strong>@(log.LogTime?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</strong>
+                                        <small>@(log.LogTime?.ToString("HH:mm:ss") ?? string.Empty)</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="auditlog-user">
+                                        <span class="auditlog-avatar" aria-hidden="true">@initial</span>
+                                        <div><strong>@userName</strong><small>ID nhật ký #@log.Id</small></div>
+                                    </div>
+                                </td>
+                                <td><span class="auditlog-role">@roleName</span></td>
+                                <td><span class="audit-action @GetActionClass(log.ActionType)">@GetActionText(log.ActionType)</span></td>
+                                <td><code class="auditlog-table-name">@(log.ImpactedTable ?? "Không xác định")</code></td>
+                                <td><div class="auditlog-summary" title="@changeSummary">@changeSummary</div></td>
+                                <td class="text-end">
+                                    <button type="button" class="evaluation-secondary-action auditlog-detail-button auditlog-detail-btn"
+                                            data-id="@log.Id"
+                                            data-action="@log.ActionType"
+                                            data-table="@log.ImpactedTable"
+                                            data-old="@log.OldData"
+                                            data-new="@log.NewData"
+                                            aria-label="Xem chi tiết nhật ký #@log.Id">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>Chi tiết
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="evaluation-mobile-list">
+                @foreach (var log in logs)
+                {
+                    var userName = log.SystemUserId.HasValue && users.TryGetValue(log.SystemUserId.Value, out var mappedUserName) ? mappedUserName : "Hệ thống";
+                    var roleName = "Hệ thống";
+                    if (log.SystemUserId.HasValue && userRoleIds.TryGetValue(log.SystemUserId.Value, out var logRoleId) && logRoleId.HasValue && roles.TryGetValue(logRoleId.Value, out var mappedRoleName))
+                    {
+                        roleName = mappedRoleName;
+                    }
+                    var changeSummary = string.IsNullOrEmpty(log.NewData) ? (string.IsNullOrEmpty(log.OldData) ? "Không có dữ liệu chi tiết" : log.OldData) : log.NewData;
+                    <article class="evaluation-period-card auditlog-card">
+                        <div class="evaluation-card-topline">
+                            <span class="audit-action @GetActionClass(log.ActionType)">@GetActionText(log.ActionType)</span>
+                            <span class="auditlog-role">@roleName</span>
+                        </div>
+                        <h2>@userName</h2>
+                        <p>@(log.LogTime?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Chưa xác định")</p>
+                        <dl>
+                            <div><dt>Bảng tác động</dt><dd>@(log.ImpactedTable ?? "Không xác định")</dd></div>
+                            <div><dt>Mã nhật ký</dt><dd>#@log.Id</dd></div>
+                        </dl>
+                        <p class="auditlog-card-summary">@changeSummary</p>
+                        <div class="evaluation-card-footer">
+                            <span class="evaluation-no-action">Dữ liệu chỉ đọc</span>
+                            <button type="button" class="evaluation-secondary-action auditlog-detail-button auditlog-detail-btn"
+                                    data-id="@log.Id"
+                                    data-action="@log.ActionType"
+                                    data-table="@log.ImpactedTable"
+                                    data-old="@log.OldData"
+                                    data-new="@log.NewData"
+                                    aria-label="Xem chi tiết nhật ký #@log.Id trên thẻ di động">
+                                <i class="bi bi-eye" aria-hidden="true"></i>Chi tiết
+                            </button>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+
+        @if (Model != null && Model.TotalPages > 1)
+        {
+            <div class="auditlog-pagination-row">
+                <p class="auditlog-pagination-meta">Trang <strong>@Model.PageIndex</strong> trên <strong>@Model.TotalPages</strong></p>
+                <nav class="evaluation-pagination" aria-label="Phân trang nhật ký hệ thống">
+                    @if (Model.PreviousPageNumber.HasValue)
+                    {
+                        <a asp-action="Index" asp-route-pageNumber="@Model.PreviousPageNumber" asp-route-searchString="@currentFilter" asp-route-roleId="@currentRoleId" asp-route-startDate="@startDate" asp-route-endDate="@endDate" aria-label="Trang trước"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+                    }
+                    else
+                    {
+                        <span class="is-disabled" aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
+                    }
+
+                    @for (var pageIndex = 1; pageIndex <= Model.TotalPages; pageIndex++)
+                    {
+                        if (pageIndex == 1 || pageIndex == Model.TotalPages || (pageIndex >= Model.PageIndex - 2 && pageIndex <= Model.PageIndex + 2))
+                        {
+                            <a asp-action="Index" asp-route-pageNumber="@pageIndex" asp-route-searchString="@currentFilter" asp-route-roleId="@currentRoleId" asp-route-startDate="@startDate" asp-route-endDate="@endDate" class="@(pageIndex == Model.PageIndex ? "is-current" : string.Empty)" aria-current="@(pageIndex == Model.PageIndex ? "page" : null)">@pageIndex</a>
+                        }
+                        else if (pageIndex == Model.PageIndex - 3 || pageIndex == Model.PageIndex + 3)
+                        {
+                            <span class="is-disabled" aria-hidden="true">…</span>
+                        }
+                    }
+
+                    @if (Model.NextPageNumber.HasValue)
+                    {
+                        <a asp-action="Index" asp-route-pageNumber="@Model.NextPageNumber" asp-route-searchString="@currentFilter" asp-route-roleId="@currentRoleId" asp-route-startDate="@startDate" asp-route-endDate="@endDate" aria-label="Trang sau"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+                    }
+                    else
+                    {
+                        <span class="is-disabled" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                    }
+                </nav>
+            </div>
+        }
+    </section>
 </div>
 
-<!-- Modal Chi tiết Nhật ký -->
-<div class="modal fade" id="logDetailsModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="logDetailsModal" tabindex="-1" aria-labelledby="logDetailsModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark">
-                    <i class="bi bi-clock-history text-primary me-2"></i>Chi tiết Nhật ký Hệ thống
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content evaluation-modal auditlog-modal">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title" id="logDetailsModalTitle">Chi tiết Nhật ký Hệ thống</h2>
+                    <p class="evaluation-form-hint">Đối chiếu dữ liệu trước và sau thao tác được ghi nhận.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng cửa sổ chi tiết"></button>
             </div>
-            <div class="modal-body p-4">
-                <div class="row mb-3 g-3">
-                    <div class="col-md-6">
-                        <div class="p-3 bg-light rounded border-start border-primary border-4">
-                            <label class="small text-muted fw-bold d-block mb-1 text-uppercase">Hành động</label>
-                            <span id="modalAction" class="badge"></span>
-                        </div>
+            <div class="modal-body">
+                <div class="auditlog-modal-facts">
+                    <div class="auditlog-modal-fact">
+                        <span>Hành động</span>
+                        <span id="modalAction" class="audit-action audit-action--neutral"></span>
                     </div>
-                    <div class="col-md-6">
-                        <div class="p-3 bg-light rounded border-start border-info border-4">
-                            <label class="small text-muted fw-bold d-block mb-1 text-uppercase">Bảng dữ liệu</label>
-                            <span id="modalTable" class="fw-bold text-dark"></span>
-                        </div>
+                    <div class="auditlog-modal-fact">
+                        <span>Bảng dữ liệu</span>
+                        <strong id="modalTable">Không xác định</strong>
                     </div>
                 </div>
-
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="small text-muted fw-bold text-uppercase">Dữ liệu Thay đổi</label>
-                        <button type="button" class="btn btn-sm btn-outline-secondary auditlog-copy-btn border-0" onclick="copyLogData()">
-                            <i class="bi bi-clipboard me-1"></i> Sao chép
+                <div>
+                    <div class="auditlog-data-heading">
+                        <span>Dữ liệu thay đổi</span>
+                        <button type="button" class="evaluation-secondary-action auditlog-detail-button" id="copyLogDataButton">
+                            <i class="bi bi-clipboard" aria-hidden="true"></i>Sao chép
                         </button>
                     </div>
-                    <div class="row g-3">
-                        <div class="col-md-6" id="oldDataContainer">
-                            <div class="small text-muted mb-1 fw-bold">DỮ LIỆU CŨ</div>
-                            <pre id="modalOldData" class="bg-dark text-light p-3 rounded small mb-0" style="max-height: 300px; overflow-y: auto;"></pre>
+                    <div class="auditlog-data-grid" id="auditlogDataGrid">
+                        <div class="auditlog-data-panel" id="oldDataContainer">
+                            <span>Dữ liệu cũ</span>
+                            <pre id="modalOldData"></pre>
                         </div>
-                        <div class="col-md-6" id="newDataContainer">
-                            <div class="small text-muted mb-1 fw-bold">DỮ LIỆU MỚI</div>
-                            <pre id="modalNewData" class="bg-dark text-light p-3 rounded small mb-0" style="max-height: 300px; overflow-y: auto;"></pre>
+                        <div class="auditlog-data-panel" id="newDataContainer">
+                            <span>Dữ liệu mới</span>
+                            <pre id="modalNewData"></pre>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+            <div class="modal-footer">
+                <button type="button" class="evaluation-secondary-action" data-bs-dismiss="modal">Đóng</button>
             </div>
         </div>
     </div>
 </div>
-
-<style>
-    pre {
-        white-space: pre-wrap;
-        word-break: break-all;
-    }
-
-    .page-link:hover {
-        background-color: #f8f9fa;
-    }
-
-    .bg-warning.text-dark {
-        background-color: #ffc107 !important;
-    }
-
-    .auditlog-filter-btn i,
-    .auditlog-refresh-btn i,
-    .auditlog-detail-btn i,
-    .auditlog-copy-btn i {
-        color: currentColor !important;
-        opacity: 1 !important;
-    }
-
-    .auditlog-refresh-btn {
-        min-width: 48px;
-    }
-
-    .auditlog-empty-row:hover > td {
-        background-color: transparent !important;
-    }
-
-    .auditlog-empty-icon {
-        font-size: 3rem;
-        color: #9aa8b8;
-        opacity: 0.55;
-    }
-</style>
 
 @section Scripts {
     <script>
-        $(document).ready(function () {
-            $('.auditlog-detail-btn').on('click', function () {
-                var id = $(this).data('id');
-                var action = $(this).data('action');
-                var table = $(this).data('table');
-                var oldData = $(this).attr('data-old');
-                var newData = $(this).attr('data-new');
-                
-                showLogDetails(id, action, table, oldData, newData);
+        (function () {
+            const modalElement = document.getElementById('logDetailsModal');
+            const actionElement = document.getElementById('modalAction');
+            const tableElement = document.getElementById('modalTable');
+            const oldDataElement = document.getElementById('modalOldData');
+            const newDataElement = document.getElementById('modalNewData');
+            const oldDataContainer = document.getElementById('oldDataContainer');
+            const newDataContainer = document.getElementById('newDataContainer');
+            const dataGrid = document.getElementById('auditlogDataGrid');
+
+            if (!modalElement || !actionElement || !tableElement || !oldDataElement || !newDataElement || !oldDataContainer || !newDataContainer || !dataGrid) {
+                return;
+            }
+
+            document.querySelectorAll('.auditlog-detail-btn').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    showLogDetails(button.dataset.action || '', button.dataset.table || '', button.dataset.old || '', button.dataset.new || '');
+                });
             });
-        });
 
-        function showLogDetails(id, action, table, oldData, newData) {
-            $('#modalAction').text(translateAction(action));
-            $('#modalAction').attr('class', 'badge ' + getActionBadgeClass(action));
-            $('#modalTable').text(table);
+            document.getElementById('copyLogDataButton')?.addEventListener('click', copyLogData);
 
-            try {
-                // Try to format JSON for readability
-                const oldObj = oldData ? JSON.parse(oldData) : null;
-                const newObj = newData ? JSON.parse(newData) : null;
-                
-                $('#modalOldData').text(oldObj ? JSON.stringify(oldObj, null, 2) : "Không có dữ liệu");
-                $('#modalNewData').text(newObj ? JSON.stringify(newObj, null, 2) : "Không có dữ liệu");
-            } catch (e) {
-                // If not JSON, show as plain text
-                $('#modalOldData').text(oldData || "Không có dữ liệu");
-                $('#modalNewData').text(newData || "Không có dữ liệu");
+            function showLogDetails(action, table, oldData, newData) {
+                actionElement.textContent = translateAction(action);
+                actionElement.className = 'audit-action ' + getActionBadgeClass(action);
+                tableElement.textContent = table || 'Không xác định';
+
+                oldDataElement.textContent = formatLogData(oldData);
+                newDataElement.textContent = formatLogData(newData);
+
+                // Reset the modal every time before applying the action-specific layout.
+                oldDataContainer.hidden = false;
+                newDataContainer.hidden = false;
+                dataGrid.classList.remove('is-single');
+
+                if (action === 'CREATE' || action === 'CREATE_APPROVED') {
+                    oldDataContainer.hidden = true;
+                    dataGrid.classList.add('is-single');
+                } else if (action === 'DELETE') {
+                    newDataContainer.hidden = true;
+                    dataGrid.classList.add('is-single');
+                }
+
+                bootstrap.Modal.getOrCreateInstance(modalElement).show();
             }
 
-            // Adjust layout based on action
-            if (action === "CREATE") {
-                $('#oldDataContainer').hide();
-                $('#newDataContainer').attr('class', 'col-12');
-            } else if (action === "DELETE") {
-                $('#newDataContainer').hide();
-                $('#oldDataContainer').attr('class', 'col-12');
-            } else {
-                $('#oldDataContainer').show().attr('class', 'col-md-6');
-                $('#newDataContainer').show().attr('class', 'col-md-6');
+            function formatLogData(value) {
+                if (!value) return 'Không có dữ liệu';
+                try {
+                    return JSON.stringify(JSON.parse(value), null, 2);
+                } catch (_) {
+                    return value;
+                }
             }
 
-            const modal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
-            modal.show();
-        }
-
-        function translateAction(action) {
-            switch(action) {
-                case "CREATE": return "Tạo mới";
-                case "CREATE_APPROVED": return "Tạo & duyệt";
-                case "UPDATE": return "Cập nhật";
-                case "DELETE": return "Xóa";
-                case "APPROVE": return "Duyệt";
-                case "REJECT": return "Từ chối";
-                case "COMMENT": return "Bình luận";
-                case "SUBMIT_REVIEW": return "Gửi duyệt";
-                case "DIRECTOR_APPROVE": return "GĐ duyệt";
-                case "DIRECTOR_REJECT": return "GĐ từ chối";
-                default: return action;
+            function translateAction(action) {
+                switch (action) {
+                    case 'CREATE': return 'Tạo mới';
+                    case 'CREATE_APPROVED': return 'Tạo & duyệt';
+                    case 'UPDATE': return 'Cập nhật';
+                    case 'DELETE': return 'Xóa';
+                    case 'APPROVE': return 'Duyệt';
+                    case 'REJECT': return 'Từ chối';
+                    case 'COMMENT': return 'Bình luận';
+                    case 'SUBMIT_REVIEW': return 'Gửi duyệt';
+                    case 'DIRECTOR_APPROVE': return 'GĐ duyệt';
+                    case 'DIRECTOR_REJECT': return 'GĐ từ chối';
+                    default: return action || 'Không xác định';
+                }
             }
-        }
 
-        function getActionBadgeClass(action) {
-            switch(action) {
-                case "CREATE": return "bg-success";
-                case "CREATE_APPROVED": return "bg-success";
-                case "UPDATE": return "bg-warning text-dark";
-                case "DELETE": return "bg-danger";
-                case "APPROVE": return "bg-success";
-                case "REJECT": return "bg-danger";
-                case "COMMENT": return "bg-info";
-                case "SUBMIT_REVIEW": return "bg-primary";
-                case "DIRECTOR_APPROVE": return "bg-success";
-                case "DIRECTOR_REJECT": return "bg-danger";
-                default: return "bg-secondary";
+            function getActionBadgeClass(action) {
+                switch (action) {
+                    case 'CREATE':
+                    case 'CREATE_APPROVED':
+                    case 'APPROVE':
+                    case 'DIRECTOR_APPROVE': return 'audit-action--success';
+                    case 'UPDATE': return 'audit-action--warning';
+                    case 'DELETE':
+                    case 'REJECT':
+                    case 'DIRECTOR_REJECT': return 'audit-action--danger';
+                    case 'COMMENT': return 'audit-action--info';
+                    case 'SUBMIT_REVIEW': return 'audit-action--primary';
+                    default: return 'audit-action--neutral';
+                }
             }
-        }
 
-        function copyLogData() {
-            const oldData = $('#modalOldData').text();
-            const newData = $('#modalNewData').text();
-            const textToCopy = `Dữ liệu cũ:\n${oldData}\n\nDữ liệu mới:\n${newData}`;
-            
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                window.AppFeedback.toast({ tone: 'success', title: 'Đã sao chép', message: 'Nội dung đã được lưu vào bộ nhớ tạm.' });
-            });
-        }
+            function copyLogData() {
+                const text = `Dữ liệu cũ:\n${oldDataElement.textContent}\n\nDữ liệu mới:\n${newDataElement.textContent}`;
+                navigator.clipboard.writeText(text)
+                    .then(function () {
+                        window.AppFeedback?.toast({ tone: 'success', title: 'Đã sao chép', message: 'Nội dung đã được lưu vào bộ nhớ tạm.' });
+                    })
+                    .catch(function () {
+                        window.AppFeedback?.toast({ tone: 'error', title: 'Không thể sao chép', message: 'Trình duyệt chưa cấp quyền truy cập bộ nhớ tạm.' });
+                    });
+            }
+        })();
     </script>
 }

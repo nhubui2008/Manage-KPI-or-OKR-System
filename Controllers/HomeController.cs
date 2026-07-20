@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Manage_KPI_or_OKR_System.Services;
 using Microsoft.Data.SqlClient;
 using System.Security.Claims;
+using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 
 namespace Manage_KPI_or_OKR_System.Controllers;
 
@@ -74,6 +76,18 @@ public class HomeController : Controller
         return ex.GetBaseException() is SqlException { Number: 2601 or 2627 };
     }
 
+    private async Task<bool> IsValidPlanAsync(string plan)
+    {
+        if (string.IsNullOrWhiteSpace(plan))
+        {
+            return true;
+        }
+
+        var normalizedPlan = plan.Trim();
+        return await _context.SaaSPackages.AnyAsync(package =>
+            package.IsActive && package.PackageName == normalizedPlan);
+    }
+
     private async Task<string> SignInSystemUserAsync(SystemUser user, string fallbackName)
     {
         var role = await AuthRoleHelper.EnsureUserHasLoginRoleAsync(_context, user);
@@ -84,7 +98,10 @@ public class HomeController : Controller
             new Claim(ClaimTypes.Name, user.Username ?? fallbackName),
             new Claim(ClaimTypes.Role, roleName),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim("SystemUserId", user.Id.ToString())
+            new Claim("SystemUserId", user.Id.ToString()),
+            new Claim(
+                AuthRoleHelper.PasswordChangedClaimType,
+                (user.LastPasswordChange?.Ticks ?? 0L).ToString(CultureInfo.InvariantCulture))
         };
 
         if (!string.IsNullOrWhiteSpace(user.Email))
@@ -111,7 +128,7 @@ public class HomeController : Controller
 
     [HttpPost]
     [AllowAnonymous]
-    [IgnoreAntiforgeryToken]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> RegisterPurchase(
         string email, 
         string plan,
@@ -125,6 +142,11 @@ public class HomeController : Controller
             return Json(new { success = false, message = "Vui lòng nhập Email." });
         }
 
+        if (!new EmailAddressAttribute().IsValid(normalizedEmail))
+        {
+            return Json(new { success = false, message = "Email không đúng định dạng." });
+        }
+
         if (normalizedEmail.Length > 255)
         {
             return Json(new { success = false, message = "Email không được vượt quá 255 ký tự." });
@@ -133,6 +155,11 @@ public class HomeController : Controller
         if (selectedPlan.Length > 100)
         {
             return Json(new { success = false, message = "Tên gói đăng ký không hợp lệ." });
+        }
+
+        if (!await IsValidPlanAsync(selectedPlan))
+        {
+            return Json(new { success = false, message = "Gói đăng ký không tồn tại hoặc đã ngừng cung cấp." });
         }
 
         try
@@ -148,7 +175,6 @@ public class HomeController : Controller
             var rawPassword = GenerateSecurePassword();
             var passwordHash = Manage_KPI_or_OKR_System.Helpers.PasswordHelper.HashPassword(rawPassword);
             var userRole = await AuthRoleHelper.EnsureDefaultSelfServiceRoleAsync(_context);
-            var adminRole = await AuthRoleHelper.EnsureAdminRoleAsync(_context);
             await using var transaction = await _context.Database.BeginTransactionAsync();
 
             bool isPurchase = !string.IsNullOrEmpty(selectedPlan);
@@ -158,7 +184,7 @@ public class HomeController : Controller
                 Username = normalizedEmail,
                 Email = normalizedEmail,
                 PasswordHash = passwordHash,
-                RoleId = isPurchase ? adminRole.Id : (int?)null, // Pure customer if not purchasing
+                RoleId = isPurchase ? userRole.Id : (int?)null, // Gói dịch vụ không được thay đổi quyền quản trị
                 IsActive = true,
                 CreatedAt = DateTime.Now,
                 TrialEndTime = null // Trial is not started automatically upon registration
@@ -223,7 +249,7 @@ public class HomeController : Controller
 
     [HttpPost]
     [AllowAnonymous]
-    [IgnoreAntiforgeryToken]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> LoginAndPurchase(string plan, string username, string password)
     {
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
@@ -231,27 +257,53 @@ public class HomeController : Controller
             return Json(new { success = false, message = "Vui lòng nhập tên đăng nhập và mật khẩu." });
         }
 
+        var selectedPlan = plan?.Trim() ?? string.Empty;
+        if (!await IsValidPlanAsync(selectedPlan))
+        {
+            return Json(new { success = false, message = "Gói đăng ký không tồn tại hoặc đã ngừng cung cấp." });
+        }
+
         try
         {
             var normalizedUsername = username.Trim().ToLowerInvariant();
 
             var user = await _context.SystemUsers.FirstOrDefaultAsync(u =>
-                u.Username != null && u.Username.ToLower() == normalizedUsername);
+                u.Username != null &&
+                u.Username.ToLower() == normalizedUsername &&
+                u.IsActive == true);
             if (user == null || user.PasswordHash == null || !Manage_KPI_or_OKR_System.Helpers.PasswordHelper.VerifyPassword(password, user.PasswordHash))
             {
                 return Json(new { success = false, message = "Tên đăng nhập hoặc mật khẩu không chính xác." });
             }
 
-            if (!string.IsNullOrEmpty(plan))
+            if (user.TrialEndTime.HasValue && DateTime.Now > user.TrialEndTime.Value)
             {
-                var reg = CreatePendingPurchaseRegistration(user.Email ?? normalizedUsername, plan.Trim());
+                return Json(new { success = false, message = "Tài khoản dùng thử đã hết hạn." });
+            }
+
+            var passwordHashUpgraded = false;
+            if (Manage_KPI_or_OKR_System.Helpers.PasswordHelper.NeedsRehash(user.PasswordHash))
+            {
+                user.PasswordHash = Manage_KPI_or_OKR_System.Helpers.PasswordHelper.HashPassword(password);
+                passwordHashUpgraded = true;
+            }
+
+            if (!string.IsNullOrEmpty(selectedPlan))
+            {
+                var reg = CreatePendingPurchaseRegistration(user.Email ?? normalizedUsername, selectedPlan);
                 reg.Status = "Đã kích hoạt";
                 _context.PurchaseRegistrations.Add(reg);
                 
                 user.TrialEndTime = null;
-                var adminRole = await AuthRoleHelper.EnsureAdminRoleAsync(_context);
-                user.RoleId = adminRole.Id;
-                
+                if (!user.RoleId.HasValue)
+                {
+                    var selfServiceRole = await AuthRoleHelper.EnsureDefaultSelfServiceRoleAsync(_context);
+                    user.RoleId = selfServiceRole.Id;
+                }
+                await _context.SaveChangesAsync();
+            }
+            else if (passwordHashUpgraded)
+            {
                 await _context.SaveChangesAsync();
             }
 
@@ -272,27 +324,36 @@ public class HomeController : Controller
     }
     [HttpPost]
     [Authorize]
-    [IgnoreAntiforgeryToken]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> PurchasePlanLoggedIn(string plan)
     {
         try
         {
+            var selectedPlan = plan?.Trim() ?? string.Empty;
+            if (!await IsValidPlanAsync(selectedPlan))
+            {
+                return Json(new { success = false, message = "Gói đăng ký không tồn tại hoặc đã ngừng cung cấp." });
+            }
+
             var username = User.Identity?.Name;
             if (string.IsNullOrEmpty(username)) return Json(new { success = false, message = "Không thể xác thực người dùng." });
 
             var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == username);
             if (user == null) return Json(new { success = false, message = "Người dùng không tồn tại." });
 
-            if (!string.IsNullOrEmpty(plan))
+            if (!user.RoleId.HasValue)
             {
-                var reg = CreatePendingPurchaseRegistration(user.Email ?? username, plan.Trim());
+                var selfServiceRole = await AuthRoleHelper.EnsureDefaultSelfServiceRoleAsync(_context);
+                user.RoleId = selfServiceRole.Id;
+            }
+
+            if (!string.IsNullOrEmpty(selectedPlan))
+            {
+                var reg = CreatePendingPurchaseRegistration(user.Email ?? username, selectedPlan);
                 reg.Status = "Đã kích hoạt";
                 _context.PurchaseRegistrations.Add(reg);
                 
                 user.TrialEndTime = null;
-                var adminRole = await AuthRoleHelper.EnsureAdminRoleAsync(_context);
-                user.RoleId = adminRole.Id;
-                
                 await _context.SaveChangesAsync();
                 await SignInSystemUserAsync(user, username);
             }
@@ -300,16 +361,13 @@ public class HomeController : Controller
             {
                 // Start 30m test
                 user.TrialEndTime = DateTime.Now.AddMinutes(30);
-                var adminRole = await AuthRoleHelper.EnsureAdminRoleAsync(_context);
-                user.RoleId = adminRole.Id;
-                
                 await _context.SaveChangesAsync();
                 await SignInSystemUserAsync(user, username);
             }
 
-            var successMsg = string.IsNullOrEmpty(plan)
+            var successMsg = string.IsNullOrEmpty(selectedPlan)
                 ? "Đã kích hoạt 30 phút dùng thử thành công! Hệ thống sẽ tải lại để bạn bắt đầu trải nghiệm."
-                : $"Bạn đã đăng ký gói {plan} thành công! Tài khoản của bạn đã được kích hoạt vĩnh viễn với đầy đủ tính năng.";
+                : $"Bạn đã đăng ký gói {selectedPlan} thành công! Tài khoản của bạn đã được kích hoạt vĩnh viễn với đầy đủ tính năng.";
 
             return Json(new { success = true, message = successMsg });
         }

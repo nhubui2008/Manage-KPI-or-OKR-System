@@ -7,6 +7,7 @@
     var roleName = Model.RoleId.HasValue && roles.ContainsKey(Model.RoleId.Value) ? roles[Model.RoleId.Value] : "N/A";
     var statusClass = Model.IsActive == true ? "bg-success" : "bg-danger";
     var statusText = Model.IsActive == true ? "Đang hoạt động" : "Bị khóa";
+    var canEditSystemUser = ViewBag.CanEditSystemUser is bool canEdit && canEdit;
 }
 
 <div class="container-fluid px-4 mt-4">
@@ -33,18 +34,21 @@
                     <h4 class="fw-bold mb-1">@Model.Username</h4>
                     <span class="badge @statusClass mb-3 px-3 py-2 rounded-pill">@statusText</span>
                     
-                    <div class="d-flex justify-content-center gap-2 mt-2">
-                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                            <i class="bi bi-pencil me-1"></i> Chỉnh sửa
-                        </a>
-                        @if (Model.IsActive == false)
-                        {
-                            <form asp-action="ToggleLock" method="post" class="d-inline m-0">
-                                <input type="hidden" name="userId" value="@Model.Id" />
-                                <button type="submit" class="btn btn-outline-success btn-sm rounded-pill px-3"><i class="bi bi-unlock-fill me-1"></i> Mở khóa</button>
-                            </form>
-                        }
-                    </div>
+                    @if (canEditSystemUser)
+                    {
+                        <div class="d-flex justify-content-center gap-2 mt-2">
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                <i class="bi bi-pencil me-1"></i> Chỉnh sửa
+                            </a>
+                            @if (Model.IsActive == false)
+                            {
+                                <form asp-action="ToggleLock" method="post" class="d-inline m-0">
+                                    <input type="hidden" name="userId" value="@Model.Id" />
+                                    <button type="submit" class="btn btn-outline-success btn-sm rounded-pill px-3"><i class="bi bi-unlock-fill me-1"></i> Mở khóa</button>
+                                </form>
+                            }
+                        </div>
+                    }
                 </div>
             </div>
         </div>

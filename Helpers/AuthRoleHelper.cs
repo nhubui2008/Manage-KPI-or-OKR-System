@@ -9,6 +9,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
         public const string AdminRoleName = "Admin";
         public const string DefaultSelfServiceRoleName = "Employee";
         public const string DashboardPermissionCode = "DASHBOARD_VIEW";
+        public const string PasswordChangedClaimType = "PasswordChangedTicks";
 
         public static async Task<Role> EnsureDefaultSelfServiceRoleAsync(MiniERPDbContext context)
         {

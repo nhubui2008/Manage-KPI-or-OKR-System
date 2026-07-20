@@ -4,161 +4,275 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="page-content">
-    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
-        <div>
-            <h1 class="mb-2 fw-800">Thêm Chức vụ Mới</h1>
-            <div class="page-breadcrumb">
+<div class="cf-page position-create-page" data-create-form>
+    <header class="cf-header">
+        <div class="cf-header__content">
+            <h1>Thêm chức vụ mới</h1>
+            <nav class="cf-breadcrumb" aria-label="Điều hướng trang">
                 <a href="/">Trang chủ</a>
-                <span class="separator">/</span>
-                <a asp-action="Index">Danh mục Chức vụ</a>
-                <span class="separator">/</span>
-                <span class="text-muted">Thêm mới</span>
-            </div>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <a asp-action="Index">Chức vụ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Thêm mới</span>
+            </nav>
+            <p class="cf-header__description">Tạo chức vụ mới và xác định thứ tự cấp bậc để sử dụng khi phân bổ nhân sự trong tổ chức.</p>
         </div>
-        <div>
-            <a asp-action="Index" class="btn-outline-custom shadow-sm">
-                <i class="bi bi-arrow-left me-2"></i> Quay lại
-            </a>
-        </div>
-    </div>
+        <a asp-action="Index" class="cf-back-action">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Quay lại</span>
+        </a>
+    </header>
 
-    <div class="row g-4">
-        <div class="col-xl-8 animate__animated animate__fadeInLeft">
-            <div class="content-card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
-                <div class="card-header-custom border-bottom bg-transparent py-4">
-                    <h5 class="fw-bold fs-5 mb-0"><i class="bi bi-person-badge me-2"></i> Thông tin Chức vụ</h5>
-                </div>
-
-                <div class="card-body-custom p-4">
-                    <form asp-action="Create" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
-
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
-                                <span class="fw-bold">1</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Thông tin định danh</h6>
-                        </div>
-
-                        <div class="row g-4 mb-5 p-3 rounded-4 bg-light bg-opacity-50 border border-white">
-                            <div class="col-md-4">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Mã chức vụ <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-hash"></i>
-                                        <input asp-for="PositionCode" class="form-control shadow-sm" placeholder="VD: CV01, MGR..." required />
-                                    </div>
-                                    <span asp-validation-for="PositionCode" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-
-                            <div class="col-md-8">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Tên chức vụ <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-person-workspace"></i>
-                                        <input asp-for="PositionName" class="form-control shadow-sm" placeholder="VD: Trưởng phòng, Nhân viên..." required />
-                                    </div>
-                                    <span asp-validation-for="PositionName" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-success text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
-                                <span class="fw-bold">2</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Thứ bậc</h6>
-                        </div>
-
-                        <div class="row g-4 p-3 rounded-4 bg-light bg-opacity-50 border border-white mb-4">
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Cấp bậc (Số càng nhỏ cấp càng cao)</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-sort-numeric-up"></i>
-                                        <input asp-for="RankLevel" type="number" class="form-control shadow-sm" placeholder="VD: 1, 2, 3..." />
-                                    </div>
-                                    <span asp-validation-for="RankLevel" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
-                            <a asp-action="Index" class="btn-outline-custom">
-                                <i class="bi bi-x-lg me-2"></i> Hủy thao tác
-                            </a>
-                            <button type="submit" class="btn-primary-custom" style="padding: 12px 40px; border-radius: 12px;">
-                                <i class="bi bi-check-lg fs-5 me-2"></i> Lưu Chức vụ
-                            </button>
-                        </div>
-                    </form>
+    <div class="cf-layout">
+        <section class="cf-panel" aria-labelledby="positionCreateHeading">
+            <div class="cf-panel__header">
+                <div>
+                    <h2 id="positionCreateHeading">Thông tin chức vụ</h2>
+                    <p>Các trường có dấu <span class="cf-required" aria-hidden="true">*</span> là bắt buộc.</p>
                 </div>
             </div>
-        </div>
 
-        <div class="col-xl-4 animate__animated animate__fadeInRight">
-            <div class="sticky-top" style="top: 100px;">
-                <div class="content-card border-0 shadow-lg text-white mb-4" style="background: linear-gradient(135deg, #1a73e8, #1557b0); border-radius: 24px;">
-                    <div class="card-body-custom p-4">
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
-                                <i class="bi bi-person-badge fs-3 text-white"></i>
-                            </div>
-                            <div>
-                                <div class="small opacity-75 fw-bold text-uppercase">Mã chức vụ</div>
-                                <h4 class="mb-0 fw-800" id="previewCode">--</h4>
-                            </div>
+            <form asp-action="Create"
+                  method="post"
+                  class="cf-form"
+                  id="positionForm"
+                  data-create-form-element>
+                <div asp-validation-summary="All" class="cf-alert" role="alert" tabindex="-1" data-error-summary></div>
+
+                <section class="cf-section" aria-labelledby="positionIdentityHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-person-badge"></i></span>
+                        <div>
+                            <h3 id="positionIdentityHeading">Thông tin định danh</h3>
+                            <p>Nhập mã ngắn và tên đầy đủ để nhận diện chức vụ trong toàn hệ thống.</p>
                         </div>
-                        <div class="mb-3">
-                            <div class="small opacity-75 fw-bold text-uppercase mb-1">Tên chức vụ</div>
-                            <div class="fw-bold fs-6" id="previewName" style="min-height: 28px;">--</div>
+                    </div>
+
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <div class="cf-label-row">
+                                <label asp-for="PositionCode">Mã chức vụ <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                                <span class="cf-counter" for="PositionCode" data-character-counter></span>
+                            </div>
+                            <input asp-for="PositionCode"
+                                   class="form-control cf-control position-code-input"
+                                   maxlength="20"
+                                   autocomplete="off"
+                                   spellcheck="false"
+                                   placeholder="Ví dụ: MGR, LEAD, CV01"
+                                   aria-describedby="positionCodeHint"
+                                   required />
+                            <span asp-validation-for="PositionCode" class="cf-validation"></span>
+                            <p id="positionCodeHint" class="cf-hint">Tối đa 20 ký tự; nên viết hoa và không dùng khoảng trắng.</p>
                         </div>
-                        <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
-                            <i class="bi bi-sort-numeric-up fs-4 me-3 opacity-75"></i>
+
+                        <div class="cf-field">
+                            <div class="cf-label-row">
+                                <label asp-for="PositionName">Tên chức vụ <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                                <span class="cf-counter" for="PositionName" data-character-counter></span>
+                            </div>
+                            <input asp-for="PositionName"
+                                   class="form-control cf-control"
+                                   maxlength="100"
+                                   autocomplete="organization-title"
+                                   placeholder="Ví dụ: Trưởng phòng Kinh doanh"
+                                   required />
+                            <span asp-validation-for="PositionName" class="cf-validation"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cf-section" aria-labelledby="positionRankHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-bar-chart-steps"></i></span>
+                        <div>
+                            <h3 id="positionRankHeading">Thứ tự cấp bậc</h3>
+                            <p>Thiết lập mức rank để danh mục được sắp xếp đúng theo cơ cấu tổ chức.</p>
+                        </div>
+                    </div>
+
+                    <div class="cf-field-grid position-rank-grid">
+                        <div class="cf-field">
+                            <label asp-for="RankLevel">Cấp bậc</label>
+                            <input asp-for="RankLevel"
+                                   type="number"
+                                   class="form-control cf-control"
+                                   min="1"
+                                   max="100"
+                                   step="1"
+                                   inputmode="numeric"
+                                   placeholder="Ví dụ: 1"
+                                   aria-describedby="positionRankHint" />
+                            <span asp-validation-for="RankLevel" class="cf-validation"></span>
+                            <p id="positionRankHint" class="cf-hint">Nhập số từ 1 đến 100; số càng nhỏ thể hiện cấp càng cao.</p>
+                        </div>
+
+                        <div class="position-rank-rule" aria-label="Quy tắc cấp bậc">
+                            <span class="position-rank-rule__icon" aria-hidden="true"><i class="bi bi-sort-numeric-up"></i></span>
                             <div>
-                                <div class="small opacity-75 mb-1">Cấp bậc</div>
-                                <div class="fw-bold" id="previewRank">--</div>
+                                <strong>Quy tắc sắp xếp</strong>
+                                <p>Cấp 1 được hiển thị trước cấp 2, cấp 2 trước cấp 3 và tiếp tục tương tự.</p>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
-                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle text-primary me-2"></i> Lưu ý</h6>
-                    <ul class="list-unstyled mb-0 small text-muted" style="line-height: 1.8;">
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Mã chức vụ nên viết tắt, viết hoa.</li>
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Cấp bậc 1 là cao nhất trong hệ thống.</li>
-                        <li><i class="bi bi-patch-check-fill text-success me-2"></i> Chức vụ được dùng khi phân công nhân viên.</li>
-                    </ul>
+                    <div class="cf-inline-note">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span>Chức vụ mới sẽ được kích hoạt ngay và có thể sử dụng khi phân công vị trí cho nhân viên.</span>
+                    </div>
+                </section>
+
+                <div class="cf-actions">
+                    <a asp-action="Index" class="cf-secondary-action">Hủy</a>
+                    <button type="submit"
+                            class="cf-primary-action"
+                            data-submit-button
+                            data-default-label="Lưu chức vụ"
+                            data-loading-label="Đang lưu...">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        <span data-submit-label>Lưu chức vụ</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="cf-guide position-create-guide" aria-labelledby="positionPreviewHeading">
+            <div class="cf-guide__identity">
+                <span class="cf-guide__icon" aria-hidden="true"><i class="bi bi-person-check"></i></span>
+                <div>
+                    <span class="cf-guide__eyebrow">Xem trước</span>
+                    <h2 id="positionPreviewHeading">Chức vụ sắp tạo</h2>
                 </div>
             </div>
-        </div>
+            <p>Thông tin được cập nhật theo dữ liệu đang nhập để bạn kiểm tra trước khi lưu.</p>
+
+            <dl class="cf-preview-list position-preview-list">
+                <div>
+                    <dt>Mã chức vụ</dt>
+                    <dd id="previewCode">Chưa nhập</dd>
+                </div>
+                <div>
+                    <dt>Tên chức vụ</dt>
+                    <dd id="previewName">Chưa nhập</dd>
+                </div>
+                <div>
+                    <dt>Cấp bậc</dt>
+                    <dd id="previewRank">Chưa thiết lập</dd>
+                </div>
+                <div>
+                    <dt>Trạng thái ban đầu</dt>
+                    <dd>Đang sử dụng</dd>
+                </div>
+            </dl>
+
+            <ul class="cf-guide__list position-create-guide__list">
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Dùng mã ngắn, dễ tìm kiếm và thống nhất với quy ước nội bộ.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Cấp bậc 1 là mức cao nhất trong danh mục chức vụ.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Tên và cấp bậc vẫn có thể cập nhật sau khi tạo.</span></li>
+            </ul>
+
+            <div class="cf-guide__note">
+                <i class="bi bi-shield-check" aria-hidden="true"></i>
+                <span>Hệ thống sẽ kiểm tra mã chức vụ trùng và giới hạn cấp bậc trước khi lưu.</span>
+            </div>
+        </aside>
     </div>
 </div>
 
-<style>
-    .fw-800 { font-weight: 800; }
-    .letter-spacing-1 { letter-spacing: 0.1em; }
-    .form-select, .form-control { border: 1.5px solid #edf2f7; padding-top: 12px; padding-bottom: 12px; }
-    .form-select:focus, .form-control:focus { border-color: #a3c9f9; box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.1); }
-    .animate__animated { animation-duration: 0.8s; }
-</style>
+@section Styles {
+    <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
+    <style>
+        .position-create-page {
+            --cf-accent: #2563eb;
+            --cf-accent-dark: #1d4ed8;
+            --cf-soft-accent: #eff6ff;
+        }
+
+        .position-code-input {
+            font-weight: 750;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .position-rank-grid {
+            align-items: stretch;
+        }
+
+        .position-rank-rule {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            min-height: 44px;
+            border: 1px solid var(--cf-border);
+            border-radius: 8px;
+            padding: 0.75rem;
+            background: var(--cf-soft);
+        }
+
+        .position-rank-rule__icon {
+            display: inline-grid;
+            width: 2rem;
+            height: 2rem;
+            flex: 0 0 2rem;
+            place-items: center;
+            border-radius: 7px;
+            background: var(--cf-soft-accent);
+            color: var(--cf-accent-dark);
+        }
+
+        .position-rank-rule strong {
+            display: block;
+            color: var(--cf-text);
+            font-size: 0.8rem;
+        }
+
+        .position-rank-rule p {
+            margin: 0.2rem 0 0;
+            color: var(--cf-muted);
+            font-size: 0.74rem;
+            line-height: 1.5;
+        }
+
+        .position-preview-list dd {
+            min-height: 1.15rem;
+        }
+
+        .position-create-guide__list {
+            margin-top: 1rem;
+        }
+    </style>
+}
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/create-form.js" asp-append-version="true"></script>
     <script>
-        const codeInput = document.getElementById('PositionCode');
-        const nameInput = document.getElementById('PositionName');
-        const rankInput = document.getElementById('RankLevel');
-        function updatePreview() {
-            document.getElementById('previewCode').textContent = codeInput.value.trim().toUpperCase() || '--';
-            document.getElementById('previewName').textContent = nameInput.value.trim() || '--';
-            document.getElementById('previewRank').textContent = rankInput.value ? 'Cấp ' + rankInput.value : '--';
-        }
-        [codeInput, nameInput, rankInput].forEach(el => el.addEventListener('input', updatePreview));
-        window.addEventListener('DOMContentLoaded', updatePreview);
+        (function () {
+            "use strict";
+
+            const codeInput = document.getElementById("PositionCode");
+            const nameInput = document.getElementById("PositionName");
+            const rankInput = document.getElementById("RankLevel");
+            const previewCode = document.getElementById("previewCode");
+            const previewName = document.getElementById("previewName");
+            const previewRank = document.getElementById("previewRank");
+
+            function updatePreview() {
+                if (previewCode && codeInput) {
+                    previewCode.textContent = codeInput.value.trim().toUpperCase() || "Chưa nhập";
+                }
+
+                if (previewName && nameInput) {
+                    previewName.textContent = nameInput.value.trim() || "Chưa nhập";
+                }
+
+                if (previewRank && rankInput) {
+                    previewRank.textContent = rankInput.value ? `Cấp ${rankInput.value}` : "Chưa thiết lập";
+                }
+            }
+
+            [codeInput, nameInput, rankInput].forEach(input => input?.addEventListener("input", updatePreview));
+            updatePreview();
+        })();
     </script>
 }

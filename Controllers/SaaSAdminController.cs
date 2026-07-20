@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Models;
 using System.Threading.Tasks;
 using System.Linq;
@@ -82,12 +83,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 case "upgrade":
                     user.TrialEndTime = null;
-                    var adminRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Admin" || r.RoleName == "Administrator");
-                    if (adminRole != null)
+                    if (!user.RoleId.HasValue)
                     {
-                        user.RoleId = adminRole.Id;
+                        var selfServiceRole = await AuthRoleHelper.EnsureDefaultSelfServiceRoleAsync(_context);
+                        user.RoleId = selfServiceRole.Id;
                     }
-                    
                     var reg = await _context.PurchaseRegistrations.FirstOrDefaultAsync(r => r.Email == user.Email);
                     if (reg != null)
                     {

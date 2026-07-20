@@ -1,225 +1,374 @@
 @model IEnumerable<Manage_KPI_or_OKR_System.Models.Position>
 @{
     ViewData["Title"] = "Danh mục Chức vụ";
+    var positionItems = Model?.ToList() ?? new List<Manage_KPI_or_OKR_System.Models.Position>();
+    var currentSearch = ViewData["CurrentFilter"]?.ToString();
+    var hasActiveFilters = !string.IsNullOrWhiteSpace(currentSearch);
+    var rankedPositionCount = positionItems.Count(item => item.RankLevel.HasValue);
+    var unrankedPositionCount = positionItems.Count - rankedPositionCount;
+    var distinctRankCount = positionItems
+        .Where(item => item.RankLevel.HasValue)
+        .Select(item => item.RankLevel!.Value)
+        .Distinct()
+        .Count();
+    var isPositionAdminRole = User.IsInRole("Admin") || User.IsInRole("Administrator");
+    var canCreatePosition = isPositionAdminRole || User.HasClaim("Permission", "POSITIONS_CREATE");
+    var canEditPosition = isPositionAdminRole || User.HasClaim("Permission", "POSITIONS_EDIT");
+    var canDeletePosition = isPositionAdminRole || User.HasClaim("Permission", "POSITIONS_DELETE");
 }
 
-@section Styles {
-    <style>
-        .positions-mobile {
-            display: none;
-        }
-
-        @@media (max-width: 767.98px) {
-            .page-header,
-            .positions-toolbar {
-                flex-direction: column;
-                align-items: stretch !important;
-                gap: 0.875rem;
-            }
-
-            .positions-toolbar form,
-            .positions-toolbar input {
-                width: 100% !important;
-            }
-
-            .positions-desktop {
-                display: none;
-            }
-
-            .positions-mobile {
-                display: grid;
-                gap: 1rem;
-            }
-
-            .position-card {
-                border: 1px solid #e5edf5;
-                border-radius: 18px;
-                padding: 1rem;
-                background: #fff;
-                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-            }
-
-            .position-card__label {
-                font-size: 0.7rem;
-                font-weight: 700;
-                color: #6b7280;
-                text-transform: uppercase;
-                letter-spacing: 0.04em;
-                margin-bottom: 0.15rem;
-            }
-        }
-    </style>
-}
-
-<div class="container-fluid px-0">
-    
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Chức vụ & Vị trí</h1>
-        <div class="page-breadcrumb">
-            <a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a>
-            <i class="bi bi-chevron-right separator"></i>
-            <span class="text-dark fw-bold">Chức vụ</span>
+<div class="evaluation-page positions-page">
+    <header class="evaluation-page-header">
+        <div>
+            <h1>Chức vụ &amp; vị trí</h1>
+            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Chức vụ</span>
+            </nav>
         </div>
-    </div>
-    <div class="d-flex justify-content-end gap-2">
-        <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
-            <i class="bi bi-plus-lg me-1"></i> Thêm chức vụ
-        </a>
-    </div>
-</div>
+        @if (canCreatePosition)
+        {
+            <a asp-action="Create" class="evaluation-primary-action">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                <span>Thêm chức vụ</span>
+            </a>
+        }
+    </header>
 
-<div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <div class="content-card w-100">
-    <div class="card-body-custom">
-        <div class="d-flex justify-content-between align-items-center mb-3 positions-toolbar">
-            <h5 class="mb-0">Danh sách chức vụ (@Model.Count())</h5>
-            <form asp-action="Index" method="get" class="d-flex gap-2">
-                <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="Tìm kiếm chức vụ..." style="width: 250px;" />
-                <button type="submit" class="btn-primary-custom" style="padding: 0 16px;"><i class="bi bi-search"></i></button>
-            </form>
+    <section class="evaluation-summary positions-summary" aria-label="Tổng quan chức vụ">
+        <article>
+            <span>Chức vụ phù hợp</span>
+            <strong>@positionItems.Count</strong>
+            <small>Theo từ khóa hiện tại</small>
+        </article>
+        <article>
+            <span>Đã có cấp bậc</span>
+            <strong>@rankedPositionCount</strong>
+            <small>Sẵn sàng sắp xếp thứ tự</small>
+        </article>
+        <article>
+            <span>Cấp bậc đang dùng</span>
+            <strong>@distinctRankCount</strong>
+            <small>Số mức rank khác nhau</small>
+        </article>
+        <article>
+            <span>Chưa có cấp bậc</span>
+            <strong>@unrankedPositionCount</strong>
+            <small>Cần hoàn thiện cấu hình</small>
+        </article>
+    </section>
+
+    <section class="evaluation-filter-panel positions-filter-panel" aria-labelledby="positionFilterHeading">
+        <div class="evaluation-filter-heading">
+            <div>
+                <p class="evaluation-eyebrow" id="positionFilterHeading">Tìm chức vụ</p>
+                <span>Tìm nhanh theo mã hoặc tên chức vụ.</span>
+            </div>
+            @if (hasActiveFilters)
+            {
+                <a asp-action="Index" class="evaluation-clear-link">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    Xóa lọc
+                </a>
+            }
         </div>
-        
-        <div class="table-responsive w-100 positions-desktop">
-            <table class="data-table w-100">
-                <thead>
-                    <tr>
-                        <th style="width: 80px;">Mã CV</th>
-                        <th>Tên chức vụ</th>
-                        <th>Cấp bậc (Rank)</th>
-                        <th>Trạng thái</th>
-                        <th class="text-end">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.Any())
-                    {
-                        @foreach (var position in Model)
+
+        <form asp-action="Index" method="get" class="evaluation-filter-form positions-filter-form">
+            <label class="evaluation-search-field">
+                <span class="visually-hidden">Tìm theo mã hoặc tên chức vụ</span>
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search"
+                       name="searchString"
+                       value="@currentSearch"
+                       placeholder="Mã hoặc tên chức vụ..."
+                       autocomplete="off" />
+            </label>
+            <button type="submit" class="evaluation-filter-button">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <span>Tìm kiếm</span>
+            </button>
+        </form>
+    </section>
+
+    <section class="evaluation-results" aria-labelledby="positionResultsHeading">
+        <div class="evaluation-results-heading">
+            <div>
+                <p class="evaluation-eyebrow" id="positionResultsHeading">Danh sách chức vụ</p>
+                <strong>@positionItems.Count chức vụ phù hợp</strong>
+            </div>
+            <span>Sắp xếp theo cấp bậc và tên chức vụ</span>
+        </div>
+
+        @if (positionItems.Count == 0)
+        {
+            <div class="evaluation-empty" role="status">
+                <span class="evaluation-empty-icon"><i class="bi bi-person-badge" aria-hidden="true"></i></span>
+                <h2>@(hasActiveFilters ? "Không có chức vụ phù hợp" : "Chưa có chức vụ trong hệ thống")</h2>
+                <p>@(hasActiveFilters ? "Thử đổi từ khóa hoặc xóa bộ lọc để xem toàn bộ danh mục chức vụ." : "Tạo chức vụ đầu tiên để bắt đầu phân cấp và phân bổ nhân sự.")</p>
+                @if (hasActiveFilters)
+                {
+                    <a asp-action="Index" class="evaluation-secondary-action">Xóa bộ lọc</a>
+                }
+                else if (canCreatePosition)
+                {
+                    <a asp-action="Create" class="evaluation-primary-action">Thêm chức vụ</a>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="evaluation-table-shell">
+                <table class="evaluation-table positions-table">
+                    <thead>
+                        <tr>
+                            <th>Chức vụ</th>
+                            <th>Cấp bậc</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var position in positionItems)
                         {
                             <tr>
-                                <td class="fw-semibold">@position.PositionCode</td>
-                                <td class="fw-bold text-dark">@position.PositionName</td>
+                                <td>
+                                    <div class="position-name-cell">
+                                        <span class="position-mark" aria-hidden="true"><i class="bi bi-person-badge"></i></span>
+                                        <div>
+                                            <strong>@position.PositionName</strong>
+                                            <small>@position.PositionCode</small>
+                                        </div>
+                                    </div>
+                                </td>
                                 <td>
                                     @if (position.RankLevel.HasValue)
                                     {
-                                        <span class="badge bg-dark bg-opacity-10 text-dark rounded-pill px-3">Cấp @position.RankLevel</span>
+                                        <span class="position-rank"><i class="bi bi-bar-chart-steps" aria-hidden="true"></i>Cấp @position.RankLevel</span>
                                     }
                                     else
                                     {
-                                        <span class="text-muted">-</span>
+                                        <span class="position-rank position-rank--empty">Chưa thiết lập</span>
                                     }
                                 </td>
                                 <td>
-                                    <span class="status-badge active">
-                                        <span class="status-dot"></span> Đang sử dụng
-                                    </span>
+                                    <span class="evaluation-status evaluation-status--running"><span aria-hidden="true"></span>Đang sử dụng</span>
                                 </td>
                                 <td>
-                                    <div class="action-btns justify-content-end">
-                                        <a asp-action="Details" asp-route-code="@position.PositionCode" class="action-btn" title="Chi tiết">
-                                            <i class="bi bi-eye"></i>
+                                    <div class="evaluation-actions">
+                                        <a asp-action="Details"
+                                           asp-route-code="@position.PositionCode"
+                                           class="evaluation-icon-button"
+                                           title="Xem chi tiết"
+                                           aria-label="Xem chi tiết @position.PositionName">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
                                         </a>
-                                        <a asp-action="Edit" asp-route-code="@position.PositionCode" class="action-btn" title="Chỉnh sửa">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <form asp-action="Delete" asp-route-id="@position.Id" method="post" class="d-inline"
-                                              data-app-confirm
-                                              data-confirm-title="Ngưng sử dụng chức vụ?"
-                                              data-confirm-message="Chức vụ “@position.PositionName” sẽ ngừng hoạt động và có thể được khôi phục sau."
-                                              data-confirm-tone="warning"
-                                              data-confirm-label="Ngưng sử dụng">
-                                            <button type="submit" class="action-btn danger" title="Xóa">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
+                                        @if (canEditPosition)
+                                        {
+                                            <a asp-action="Edit"
+                                               asp-route-code="@position.PositionCode"
+                                               class="evaluation-icon-button"
+                                               title="Chỉnh sửa"
+                                               aria-label="Chỉnh sửa @position.PositionName">
+                                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                                            </a>
+                                        }
+                                        @if (canDeletePosition)
+                                        {
+                                            <form asp-action="Delete"
+                                                  asp-route-id="@position.Id"
+                                                  method="post"
+                                                  data-app-confirm
+                                                  data-confirm-title="Ngưng sử dụng chức vụ?"
+                                                  data-confirm-message="Chức vụ “@position.PositionName” sẽ ngừng hoạt động và có thể được khôi phục sau."
+                                                  data-confirm-tone="warning"
+                                                  data-confirm-label="Ngưng sử dụng">
+                                                <button type="submit"
+                                                        class="evaluation-icon-button evaluation-icon-button--danger"
+                                                        title="Ngưng sử dụng"
+                                                        aria-label="Ngưng sử dụng @position.PositionName">
+                                                    <i class="bi bi-power" aria-hidden="true"></i>
+                                                </button>
+                                            </form>
+                                        }
                                     </div>
                                 </td>
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
-                                    <i class="bi bi-info-circle me-2 text-muted"></i>
-                                    @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"] as string))
-                                    {
-                                        <span class="text-muted">Không tìm thấy chức vụ nào phù hợp với từ khóa "@ViewData["CurrentFilter"]"</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">Chưa có chức vụ nào được tạo.</span>
-                                    }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-        <div class="positions-mobile">
-            @if (Model.Any())
-            {
-                @foreach (var position in Model)
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="evaluation-mobile-list positions-mobile-list">
+                @foreach (var position in positionItems)
                 {
-                    <article class="position-card">
-                        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                    <article class="evaluation-period-card position-card">
+                        <div class="evaluation-card-topline">
+                            <span class="evaluation-status evaluation-status--running"><span aria-hidden="true"></span>Đang sử dụng</span>
+                            <span class="evaluation-config-status">@position.PositionCode</span>
+                        </div>
+                        <h2>@position.PositionName</h2>
+                        <p>Chức vụ đang hoạt động trong hệ thống.</p>
+                        <dl>
                             <div>
-                                <div class="text-muted small">Mã CV</div>
-                                <div class="fw-semibold">@position.PositionCode</div>
+                                <dt>Cấp bậc</dt>
+                                <dd>@(position.RankLevel.HasValue ? $"Cấp {position.RankLevel}" : "Chưa thiết lập")</dd>
                             </div>
-                            <span class="status-badge active">
-                                <span class="status-dot"></span> Đang sử dụng
-                            </span>
-                        </div>
-                        <div class="position-card__label">Tên chức vụ</div>
-                        <div class="fw-bold text-dark mb-3">@position.PositionName</div>
-                        <div class="position-card__label">Cấp bậc</div>
-                        <div class="mb-3">
-                            @if (position.RankLevel.HasValue)
-                            {
-                                <span class="badge bg-dark bg-opacity-10 text-dark rounded-pill px-3">Cấp @position.RankLevel</span>
-                            }
-                            else
-                            {
-                                <span class="text-muted">-</span>
-                            }
-                        </div>
-                        <div class="action-btns">
-                            <a asp-action="Details" asp-route-code="@position.PositionCode" class="action-btn" title="Chi tiết">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            <a asp-action="Edit" asp-route-code="@position.PositionCode" class="action-btn" title="Chỉnh sửa">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <form asp-action="Delete" asp-route-id="@position.Id" method="post" class="d-inline"
-                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa chức vụ này?')">
-                                <button type="submit" class="action-btn danger" title="Xóa">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
+                            <div>
+                                <dt>Mã chức vụ</dt>
+                                <dd>@position.PositionCode</dd>
+                            </div>
+                        </dl>
+                        <div class="evaluation-card-footer">
+                            <a asp-action="Details" asp-route-code="@position.PositionCode">Xem chi tiết</a>
+                            <div class="evaluation-actions">
+                                @if (canEditPosition)
+                                {
+                                    <a asp-action="Edit"
+                                       asp-route-code="@position.PositionCode"
+                                       class="evaluation-icon-button"
+                                       title="Chỉnh sửa"
+                                       aria-label="Chỉnh sửa @position.PositionName">
+                                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                                    </a>
+                                }
+                                @if (canDeletePosition)
+                                {
+                                    <form asp-action="Delete"
+                                          asp-route-id="@position.Id"
+                                          method="post"
+                                          data-app-confirm
+                                          data-confirm-title="Ngưng sử dụng chức vụ?"
+                                          data-confirm-message="Chức vụ “@position.PositionName” sẽ ngừng hoạt động và có thể được khôi phục sau."
+                                          data-confirm-tone="warning"
+                                          data-confirm-label="Ngưng sử dụng">
+                                        <button type="submit"
+                                                class="evaluation-icon-button evaluation-icon-button--danger"
+                                                title="Ngưng sử dụng"
+                                                aria-label="Ngưng sử dụng @position.PositionName">
+                                            <i class="bi bi-power" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
                         </div>
                     </article>
                 }
-            }
-            else
-            {
-                <div class="text-center text-muted py-4">
-                    <i class="bi bi-info-circle me-2 text-muted"></i>
-                    @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"] as string))
-                    {
-                        <span class="text-muted">Không tìm thấy chức vụ nào phù hợp với từ khóa "@ViewData["CurrentFilter"]"</span>
-                    }
-                    else
-                    {
-                        <span class="text-muted">Chưa có chức vụ nào được tạo.</span>
-                    }
-                </div>
-            }
-        </div>
-    </div>
+            </div>
+        }
+    </section>
 </div>
 
-        </div>
-    </div>
-</div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
+    <style>
+        .positions-page {
+            --evaluation-brand: #2563eb;
+            --evaluation-brand-dark: #1d4ed8;
+            --evaluation-brand-soft: #eff6ff;
+            --evaluation-brand-border: #bfdbfe;
+        }
+
+        .positions-page .positions-summary {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .positions-page .positions-summary article {
+            border-right: 1px solid var(--evaluation-line);
+            border-bottom: 0;
+        }
+
+        .positions-page .positions-summary article:last-child {
+            border-right: 0;
+        }
+
+        .positions-page .positions-summary article:nth-child(1) strong { color: #1d4ed8; }
+        .positions-page .positions-summary article:nth-child(2) strong { color: #15803d; }
+        .positions-page .positions-summary article:nth-child(3) strong { color: #7c3aed; }
+        .positions-page .positions-summary article:nth-child(4) strong { color: #a15c07; }
+
+        .positions-page .positions-filter-form {
+            grid-template-columns: minmax(260px, 1fr) auto;
+        }
+
+        .positions-page .positions-table {
+            min-width: 720px;
+        }
+
+        .positions-page .position-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            min-width: 230px;
+        }
+
+        .positions-page .position-mark {
+            display: inline-grid;
+            width: 36px;
+            height: 36px;
+            flex: 0 0 36px;
+            place-items: center;
+            border-radius: 8px;
+            background: var(--evaluation-brand-soft);
+            color: var(--evaluation-brand-dark);
+        }
+
+        .positions-page .position-name-cell strong,
+        .positions-page .position-name-cell small {
+            display: block;
+        }
+
+        .positions-page .position-name-cell strong {
+            font-size: 0.88rem;
+        }
+
+        .positions-page .position-name-cell small {
+            margin-top: 0.15rem;
+            color: var(--evaluation-muted);
+            font-size: 0.72rem;
+            font-weight: 650;
+        }
+
+        .positions-page .position-rank {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            min-height: 30px;
+            border: 1px solid #d8d3f4;
+            border-radius: 7px;
+            padding: 0.32rem 0.55rem;
+            background: #f6f4ff;
+            color: #6653a8;
+            font-size: 0.74rem;
+            font-weight: 750;
+            white-space: nowrap;
+        }
+
+        .positions-page .position-rank--empty {
+            border-color: var(--evaluation-line);
+            background: var(--evaluation-soft);
+            color: var(--evaluation-muted);
+        }
+
+        @@media (max-width: 900px) {
+            .positions-page .positions-summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .positions-page .positions-summary article {
+                border-right: 1px solid var(--evaluation-line);
+                border-bottom: 0;
+            }
+
+            .positions-page .positions-summary article:nth-child(2n) { border-right: 0; }
+            .positions-page .positions-summary article:nth-child(-n + 2) { border-bottom: 1px solid var(--evaluation-line); }
+            .positions-page .positions-summary article:last-child { grid-column: auto; }
+        }
+
+        @@media (max-width: 420px) {
+            .positions-page .positions-filter-form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}

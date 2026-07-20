@@ -1,6 +1,7 @@
 @model List<Manage_KPI_or_OKR_System.Models.BonusRule>
 @{
     ViewData["Title"] = "Chính sách Thưởng/Phạt";
+    var rules = Model ?? new List<Manage_KPI_or_OKR_System.Models.BonusRule>();
     var ranks = ViewBag.Ranks as Dictionary<int, string> ?? new Dictionary<int, string>();
     var rankDescriptions = ViewBag.RankDescriptions as Dictionary<int, string> ?? new Dictionary<int, string>();
     var allRanks = ViewBag.AllRanks as List<Manage_KPI_or_OKR_System.Models.GradingRank> ?? new List<Manage_KPI_or_OKR_System.Models.GradingRank>();
@@ -9,87 +10,287 @@
     var canEditRule = isAdminRole || User.HasClaim("Permission", "BONUSRULES_EDIT");
     var canDeleteRule = isAdminRole || User.HasClaim("Permission", "BONUSRULES_DELETE");
     var canManageRule = canEditRule || canDeleteRule;
+    var percentageRuleCount = rules.Count(rule => rule.BonusPercentage.GetValueOrDefault() > 0);
+    var fixedRuleCount = rules.Count(rule => rule.FixedAmount.GetValueOrDefault() > 0);
+    var coveredRankCount = rules.Where(rule => rule.RankId.HasValue).Select(rule => rule.RankId).Distinct().Count();
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
     <style>
-        .bonus-rules-mobile {
-            display: none;
+        .bonus-rules-page .bonus-rules-summary {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
         }
 
-        @@media (max-width: 767.98px) {
-            .page-header {
-                flex-direction: column;
-                align-items: stretch !important;
-                gap: 1rem;
+        .bonus-rules-page .bonus-rules-summary article {
+            border-right: 1px solid var(--evaluation-line);
+            border-bottom: 0;
+        }
+
+        .bonus-rules-page .bonus-rules-summary article:last-child {
+            border-right: 0;
+        }
+
+        .bonus-rules-page .bonus-rules-summary article:nth-child(1) strong {
+            color: #1d4ed8;
+        }
+
+        .bonus-rules-page .bonus-rules-summary article:nth-child(2) strong {
+            color: #15803d;
+        }
+
+        .bonus-rules-page .bonus-rules-summary article:nth-child(3) strong {
+            color: #a15c07;
+        }
+
+        .bonus-rules-page .bonus-rules-summary article:nth-child(4) strong {
+            color: #7c3aed;
+        }
+
+        .bonus-rules-page .bonus-rules-table {
+            min-width: 760px;
+        }
+
+        .bonus-rules-page .bonus-rule-rank {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 220px;
+        }
+
+        .bonus-rules-page .bonus-rule-rank__mark {
+            display: inline-grid;
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            place-items: center;
+            border-radius: 8px;
+            background: var(--evaluation-brand-soft);
+            color: var(--evaluation-brand);
+        }
+
+        .bonus-rules-page .bonus-rule-rank strong,
+        .bonus-rules-page .bonus-rule-rank small {
+            display: block;
+        }
+
+        .bonus-rules-page .bonus-rule-rank small {
+            max-width: 360px;
+            margin-top: 0.15rem;
+            color: var(--evaluation-muted);
+            font-size: 0.75rem;
+        }
+
+        .bonus-rules-page .bonus-rule-percentage {
+            display: inline-flex;
+            align-items: center;
+            min-height: 30px;
+            border: 1px solid #b8dfcc;
+            border-radius: 7px;
+            padding: 0.3rem 0.6rem;
+            background: #edf8f2;
+            color: #126b38;
+            font-size: 0.78rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .bonus-rules-page .bonus-rule-amount {
+            color: #172033;
+            font-size: 0.86rem;
+            font-weight: 750;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .bonus-rules-page .bonus-rule-card h2 {
+            margin-bottom: 0.2rem;
+        }
+
+        .bonus-rules-page .bonus-rule-card .evaluation-card-footer {
+            justify-content: flex-end;
+        }
+
+        .bonus-rule-modal .bonus-rule-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.85rem;
+        }
+
+        .bonus-rule-modal .bonus-rule-form-grid label {
+            min-width: 0;
+        }
+
+        .bonus-rule-modal .input-group {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        .bonus-rule-modal .input-group > input {
+            width: 1%;
+            min-width: 0;
+            flex: 1 1 auto;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .bonus-rule-modal .bonus-rule-form-field--full {
+            grid-column: 1 / -1;
+        }
+
+        .bonus-rule-modal .input-group-text {
+            display: inline-flex;
+            min-width: 58px;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: center;
+            border-color: #d7dbe2;
+            border-left: 0;
+            border-radius: 0 8px 8px 0;
+            background: #f7f9fc;
+            color: #64748b;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .bonus-rule-modal .evaluation-form-hint {
+            margin-top: 0.35rem;
+        }
+
+        @@media (max-width: 900px) {
+            .bonus-rules-page .bonus-rules-summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
-            .bonus-rules-desktop {
-                display: none;
+            .bonus-rules-page .bonus-rules-summary article:last-child {
+                grid-column: auto;
             }
 
-            .bonus-rules-mobile {
-                display: grid;
-                gap: 1rem;
+            .bonus-rules-page .bonus-rules-summary article {
+                border-right: 1px solid var(--evaluation-line);
+                border-bottom: 0;
             }
 
-            .bonus-rule-card {
-                border: 1px solid #e5edf5;
-                border-radius: 18px;
-                padding: 1rem;
-                background: #fff;
-                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+            .bonus-rules-page .bonus-rules-summary article:nth-child(2n) {
+                border-right: 0;
             }
 
-            .bonus-rule-card__label {
-                font-size: 0.7rem;
-                font-weight: 700;
-                color: #6b7280;
-                text-transform: uppercase;
-                letter-spacing: 0.04em;
-                margin-bottom: 0.15rem;
+            .bonus-rules-page .bonus-rules-summary article:nth-child(-n + 2) {
+                border-bottom: 1px solid var(--evaluation-line);
+            }
+
+            .bonus-rules-page .bonus-rule-card .evaluation-actions {
+                justify-content: flex-end;
+            }
+        }
+
+        @@media (max-width: 575.98px) {
+            .bonus-rule-modal .bonus-rule-form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .bonus-rule-modal .bonus-rule-form-field--full {
+                grid-column: auto;
             }
         }
     </style>
 }
 
-<div class="container-fluid px-0">
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div><h1 class="h3 font-weight-bold mb-1">Quy định Thưởng & Phạt KPI</h1><div class="page-breadcrumb"><a href="/">Trang chủ</a><i class="bi bi-chevron-right separator"></i><span>Chính sách thưởng/phạt</span></div></div>
-    @if (canCreateRule)
-    {
-        <div class="d-flex justify-content-end gap-2"><button class="btn-primary-custom d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg me-1"></i> Thêm quy định mới</button></div>
-    }
-</div>
+<div class="evaluation-page bonus-rules-page">
+    <header class="evaluation-page-header">
+        <div>
+            <h1>Quy định Thưởng &amp; Phạt KPI</h1>
+            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Chính sách thưởng/phạt</span>
+            </nav>
+        </div>
+        @if (canCreateRule)
+        {
+            <button type="button" class="evaluation-primary-action" data-bs-toggle="modal" data-bs-target="#createModal">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                <span>Thêm quy định mới</span>
+            </button>
+        }
+    </header>
 
-    <div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <div class="content-card w-100">
-    <div class="card-body-custom">
-        <div class="table-responsive w-100 bonus-rules-desktop">
-            <table class="data-table w-100">
-                <thead><tr><th>Xếp loại áp dụng</th><th>% Thưởng</th><th>Số tiền cố định (VNĐ)</th>@if (canManageRule) { <th class="text-end">Thao tác</th> }</tr></thead>
+    <section class="evaluation-summary bonus-rules-summary" aria-label="Tổng quan quy tắc thưởng">
+        <article>
+            <span>Tổng quy tắc</span>
+            <strong>@rules.Count</strong>
+            <small>Chính sách đang cấu hình</small>
+        </article>
+        <article>
+            <span>Thưởng theo tỷ lệ</span>
+            <strong>@percentageRuleCount</strong>
+            <small>Có phần trăm thưởng</small>
+        </article>
+        <article>
+            <span>Thưởng cố định</span>
+            <strong>@fixedRuleCount</strong>
+            <small>Có mức tiền cụ thể</small>
+        </article>
+        <article>
+            <span>Xếp loại đã áp dụng</span>
+            <strong>@coveredRankCount/@allRanks.Count</strong>
+            <small>Mức xếp hạng đã có quy tắc</small>
+        </article>
+    </section>
+
+    <section class="evaluation-results bonus-rules-results" aria-labelledby="bonusRulesHeading">
+        <div class="evaluation-results-heading">
+            <div>
+                <p class="evaluation-eyebrow" id="bonusRulesHeading">Danh sách quy định</p>
+                <strong>@rules.Count quy tắc thưởng đang áp dụng</strong>
+            </div>
+            <span>Thưởng theo xếp loại đánh giá KPI</span>
+        </div>
+
+        <div class="evaluation-table-shell bonus-rules-desktop">
+            <table class="evaluation-table bonus-rules-table" aria-label="Danh sách quy tắc thưởng KPI">
+                <thead>
+                    <tr>
+                        <th>Xếp loại áp dụng</th>
+                        <th>% Thưởng</th>
+                        <th>Số tiền cố định (VNĐ)</th>
+                        @if (canManageRule)
+                        {
+                            <th class="text-end">Thao tác</th>
+                        }
+                    </tr>
+                </thead>
                 <tbody>
-                    @if (Model != null && Model.Any())
+                    @if (rules.Count > 0)
                     {
-                        @foreach (var r in Model)
+                        @foreach (var r in rules)
                         {
                             var rankCode = r.RankId.HasValue && ranks.ContainsKey(r.RankId.Value) ? ranks[r.RankId.Value] : "N/A";
                             var rankDesc = r.RankId.HasValue && rankDescriptions.ContainsKey(r.RankId.Value) ? rankDescriptions[r.RankId.Value] : "";
                             <tr>
-                                <td><div class="fw-semibold text-dark">Xếp loại @rankCode</div><div class="text-muted" style="font-size:0.75rem;">@rankDesc</div></td>
-                                <td><span class="badge bg-success bg-opacity-10 text-success px-2 py-1">@(r.BonusPercentage?.ToString("N2") ?? "0")%</span></td>
-                                <td class="fw-medium">@(r.FixedAmount?.ToString("N0") ?? "0") VNĐ</td>
+                                <td>
+                                    <div class="bonus-rule-rank">
+                                        <span class="bonus-rule-rank__mark"><i class="bi bi-award" aria-hidden="true"></i></span>
+                                        <div>
+                                            <strong>Xếp loại @rankCode</strong>
+                                            <small>@(string.IsNullOrWhiteSpace(rankDesc) ? "Chưa có mô tả xếp hạng" : rankDesc)</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="bonus-rule-percentage">@(r.BonusPercentage?.ToString("N2") ?? "0")%</span></td>
+                                <td><span class="bonus-rule-amount">@(r.FixedAmount?.ToString("N0") ?? "0") VNĐ</span></td>
                                 @if (canManageRule)
                                 {
-                                    <td class="text-end pe-4">
-                                        <div class="d-flex justify-content-end gap-2">
+                                    <td>
+                                        <div class="evaluation-actions">
                                             @if (canEditRule)
                                             {
-                                                <button type="button" class="btn btn-sm btn-outline-info rounded-circle" 
-                                                        title="Chỉnh sửa" 
+                                                <button type="button" class="evaluation-icon-button"
+                                                        title="Chỉnh sửa" aria-label="Chỉnh sửa quy tắc xếp loại @rankCode"
                                                         onclick="showEditModal('@r.Id', '@r.RankId', '@(r.BonusPercentage?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")', '@(r.FixedAmount?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")')">
-                                                    <i class="bi bi-pencil-square"></i>
+                                                    <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                                 </button>
                                             }
                                             @if (canDeleteRule)
@@ -101,8 +302,8 @@
                                                       data-confirm-tone="danger"
                                                       data-confirm-label="Xóa quy tắc">
                                                     <input type="hidden" name="id" value="@r.Id" />
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" title="Xóa">
-                                                         <i class="bi bi-trash"></i>
+                                                    <button type="submit" class="evaluation-icon-button evaluation-icon-button--danger" title="Xóa" aria-label="Xóa quy tắc xếp loại @rankCode">
+                                                         <i class="bi bi-trash3" aria-hidden="true"></i>
                                                     </button>
                                                 </form>
                                             }
@@ -113,44 +314,70 @@
                         }
                     }
                     else
-                    {<tr><td colspan="@(canManageRule ? "4" : "3")" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">Chưa có quy tắc thưởng nào</p></td></tr>}
+                    {
+                        <tr>
+                            <td colspan="@(canManageRule ? "4" : "3")" class="p-0">
+                                <div class="evaluation-empty" role="status">
+                                    <span class="evaluation-empty-icon"><i class="bi bi-cash-coin" aria-hidden="true"></i></span>
+                                    <h2>Chưa có quy tắc thưởng nào</h2>
+                                    <p>Tạo quy tắc đầu tiên để liên kết mức xếp loại với tỷ lệ hoặc số tiền thưởng.</p>
+                                    @if (canCreateRule)
+                                    {
+                                        <button type="button" class="evaluation-primary-action" data-bs-toggle="modal" data-bs-target="#createModal">Thêm quy định mới</button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
-        <div class="bonus-rules-mobile">
-            @if (Model != null && Model.Any())
+
+        <div class="evaluation-mobile-list bonus-rules-mobile">
+            @if (rules.Count > 0)
             {
-                @foreach (var r in Model)
+                @foreach (var r in rules)
                 {
                     var rankCode = r.RankId.HasValue && ranks.ContainsKey(r.RankId.Value) ? ranks[r.RankId.Value] : "N/A";
                     var rankDesc = r.RankId.HasValue && rankDescriptions.ContainsKey(r.RankId.Value) ? rankDescriptions[r.RankId.Value] : "";
-                    <article class="bonus-rule-card">
-                        <div class="fw-semibold text-dark mb-1">Xếp loại @rankCode</div>
-                        <div class="text-muted small mb-3">@rankDesc</div>
-                        <div class="bonus-rule-card__label">Phần trăm thưởng</div>
-                        <div class="mb-3"><span class="badge bg-success bg-opacity-10 text-success px-2 py-1">@(r.BonusPercentage?.ToString("N2") ?? "0")%</span></div>
-                        <div class="bonus-rule-card__label">Số tiền cố định</div>
-                        <div class="fw-medium mb-3">@(r.FixedAmount?.ToString("N0") ?? "0") VNĐ</div>
+                    <article class="evaluation-period-card bonus-rule-card">
+                        <div class="evaluation-card-topline">
+                            <span class="bonus-rule-percentage">@(r.BonusPercentage?.ToString("N2") ?? "0")%</span>
+                            <span class="evaluation-config-status">Quy tắc thưởng KPI</span>
+                        </div>
+                        <h2>Xếp loại @rankCode</h2>
+                        <p>@(string.IsNullOrWhiteSpace(rankDesc) ? "Chưa có mô tả xếp hạng" : rankDesc)</p>
+                        <dl>
+                            <div><dt>Phần trăm thưởng</dt><dd>@(r.BonusPercentage?.ToString("N2") ?? "0")%</dd></div>
+                            <div><dt>Số tiền cố định</dt><dd>@(r.FixedAmount?.ToString("N0") ?? "0") VNĐ</dd></div>
+                        </dl>
                         @if (canManageRule)
                         {
-                            <div class="d-flex gap-2">
-                                @if (canEditRule)
-                                {
-                                    <button type="button" class="btn btn-sm btn-outline-info rounded-circle"
-                                            title="Chỉnh sửa"
-                                            onclick="showEditModal('@r.Id', '@r.RankId', '@(r.BonusPercentage?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")', '@(r.FixedAmount?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")')">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </button>
-                                }
-                                @if (canDeleteRule)
-                                {
-                                    <form asp-action="Delete" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc muốn xóa quy tắc thưởng này?');">
-                                        <input type="hidden" name="id" value="@r.Id" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" title="Xóa">
-                                            <i class="bi bi-trash"></i>
+                            <div class="evaluation-card-footer">
+                                <div class="evaluation-actions">
+                                    @if (canEditRule)
+                                    {
+                                        <button type="button" class="evaluation-icon-button"
+                                                title="Chỉnh sửa" aria-label="Chỉnh sửa quy tắc xếp loại @rankCode"
+                                                onclick="showEditModal('@r.Id', '@r.RankId', '@(r.BonusPercentage?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")', '@(r.FixedAmount?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")')">
+                                            <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                         </button>
-                                    </form>
-                                }
+                                    }
+                                    @if (canDeleteRule)
+                                    {
+                                        <form asp-action="Delete" method="post" class="m-0"
+                                              data-app-confirm
+                                              data-confirm-title="Xóa quy tắc thưởng?"
+                                              data-confirm-message="Quy tắc thưởng này sẽ bị xóa khỏi cấu hình. Thao tác không thể hoàn tác."
+                                              data-confirm-tone="danger"
+                                              data-confirm-label="Xóa quy tắc">
+                                            <input type="hidden" name="id" value="@r.Id" />
+                                            <button type="submit" class="evaluation-icon-button evaluation-icon-button--danger" title="Xóa" aria-label="Xóa quy tắc xếp loại @rankCode">
+                                                <i class="bi bi-trash3" aria-hidden="true"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
                             </div>
                         }
                     </article>
@@ -158,102 +385,112 @@
             }
             else
             {
-                <div class="text-center text-muted py-4">
-                    <i class="bi bi-inbox" style="font-size:2rem;"></i>
-                    <p class="mt-2 mb-0">Chưa có quy tắc thưởng nào</p>
+                <div class="evaluation-empty" role="status">
+                    <span class="evaluation-empty-icon"><i class="bi bi-cash-coin" aria-hidden="true"></i></span>
+                    <h2>Chưa có quy tắc thưởng nào</h2>
+                    <p>Tạo quy tắc đầu tiên để liên kết mức xếp loại với tỷ lệ hoặc số tiền thưởng.</p>
+                    @if (canCreateRule)
+                    {
+                        <button type="button" class="evaluation-primary-action" data-bs-toggle="modal" data-bs-target="#createModal">Thêm quy định mới</button>
+                    }
                 </div>
             }
         </div>
-    </div>
+    </section>
 </div>
 
 <!-- Modal Thêm Mới -->
-<div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold"><i class="bi bi-cash-coin text-primary me-2"></i>Thêm Quy tắc Thưởng</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content evaluation-modal bonus-rule-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="createModalTitle"><i class="bi bi-cash-coin text-primary me-2" aria-hidden="true"></i>Thêm quy tắc thưởng</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <form asp-action="Create" method="post">
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted text-uppercase">Mã xếp hạng <span class="text-danger">*</span></label>
-                        <input type="text" name="rankCode" class="form-control shadow-none" required placeholder="VD: A, B, C, EXCELLENT..." maxlength="10" />
-                        <div class="form-text small">Mã ngắn để định danh mức độ (tối đa 10 ký tự).</div>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label fw-bold small text-muted text-uppercase">Mô tả xếp hạng</label>
-                        <input type="text" name="rankDescription" class="form-control shadow-none" placeholder="VD: Hoàn thành xuất sắc nhiệm vụ" />
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Phần trăm thưởng (%)</label>
+                <div class="modal-body">
+                    <div class="bonus-rule-form-grid">
+                        <label class="bonus-rule-form-field--full" for="createRankCode">
+                            <span>Mã xếp hạng <span class="text-danger">*</span></span>
+                            <input type="text" id="createRankCode" name="rankCode" required placeholder="VD: A, B, C, EXCELLENT..." maxlength="10" autocomplete="off" />
+                            <small class="evaluation-form-hint">Mã ngắn để định danh mức độ, tối đa 10 ký tự.</small>
+                        </label>
+                        <label class="bonus-rule-form-field--full" for="createRankDescription">
+                            <span>Mô tả xếp hạng</span>
+                            <input type="text" id="createRankDescription" name="rankDescription" placeholder="VD: Hoàn thành xuất sắc nhiệm vụ" autocomplete="off" />
+                        </label>
+                        <label for="createBonusPercentage">
+                            <span>Phần trăm thưởng</span>
                             <div class="input-group">
-                                <input type="number" name="BonusPercentage" class="form-control shadow-none" step="0.01" placeholder="0.00" />
-                                <span class="input-group-text bg-light border-start-0">%</span>
+                                <input type="number" id="createBonusPercentage" name="BonusPercentage" step="0.01" min="0" max="100" placeholder="0.00" />
+                                <span class="input-group-text">%</span>
                             </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Số tiền cố định</label>
+                        </label>
+                        <label for="createFixedAmount">
+                            <span>Số tiền cố định</span>
                             <div class="input-group">
-                                <input type="text" name="FixedAmount" class="form-control shadow-none number-format" placeholder="0" />
-                                <span class="input-group-text bg-light border-start-0">VNĐ</span>
+                                <input type="text" id="createFixedAmount" name="FixedAmount" class="number-format" inputmode="numeric" placeholder="0" />
+                                <span class="input-group-text">VNĐ</span>
                             </div>
-                        </div>
+                        </label>
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn-primary-custom rounded-pill px-4">Tạo mới</button>
+                <div class="modal-footer">
+                    <button type="button" class="evaluation-secondary-action" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="evaluation-primary-action">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        <span>Tạo mới</span>
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-</div>
 
 <!-- Modal Chỉnh sửa -->
-<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-info me-2"></i>Chỉnh sửa Quy tắc</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content evaluation-modal bonus-rule-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="editModalTitle"><i class="bi bi-pencil-square text-primary me-2" aria-hidden="true"></i>Chỉnh sửa quy tắc</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <form asp-action="Edit" method="post">
                 <input type="hidden" name="Id" id="editId" />
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted text-uppercase">Xếp hạng áp dụng</label>
-                        <select name="RankId" id="editRankId" class="form-select shadow-none" required>
+                <div class="modal-body">
+                    <div class="bonus-rule-form-grid">
+                        <label class="bonus-rule-form-field--full" for="editRankId">
+                            <span>Xếp hạng áp dụng</span>
+                            <select name="RankId" id="editRankId" required>
                             <option value="">-- Chọn xếp hạng --</option>
                             @foreach (var rk in allRanks)
                             {
                                 <option value="@rk.Id">@rk.RankCode - @rk.Description</option>
                             }
-                        </select>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Phần trăm thưởng (%)</label>
+                            </select>
+                        </label>
+                        <label for="editBonusPercentage">
+                            <span>Phần trăm thưởng</span>
                             <div class="input-group">
-                                <input type="number" name="BonusPercentage" id="editBonusPercentage" class="form-control shadow-none" step="0.01" />
-                                <span class="input-group-text bg-light border-start-0">%</span>
+                                <input type="number" name="BonusPercentage" id="editBonusPercentage" step="0.01" min="0" max="100" />
+                                <span class="input-group-text">%</span>
                             </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Số tiền cố định</label>
+                        </label>
+                        <label for="editFixedAmount">
+                            <span>Số tiền cố định</span>
                             <div class="input-group">
-                                <input type="text" name="FixedAmount" id="editFixedAmount" class="form-control shadow-none number-format" />
-                                <span class="input-group-text bg-light border-start-0">VNĐ</span>
+                                <input type="text" name="FixedAmount" id="editFixedAmount" class="number-format" inputmode="numeric" />
+                                <span class="input-group-text">VNĐ</span>
                             </div>
-                        </div>
+                        </label>
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu thay đổi</button>
+                <div class="modal-footer">
+                    <button type="button" class="evaluation-secondary-action" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="evaluation-primary-action">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        <span>Lưu thay đổi</span>
+                    </button>
                 </div>
             </form>
         </div>

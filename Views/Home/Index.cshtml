@@ -1084,7 +1084,7 @@
             <p>Trải nghiệm hệ thống Quản trị Hiệu suất Toàn diện (OKR/KPI) tốt nhất.</p>
             <ul class="reg-modal-benefits">
                 <li><i class="bi bi-check2"></i> Kích hoạt ngay lập tức</li>
-                <li><i class="bi bi-check2"></i> Toàn quyền Admin trong 30 phút</li>
+                <li><i class="bi bi-check2"></i> Quyền trải nghiệm phù hợp trong 30 phút</li>
                 <li><i class="bi bi-check2"></i> Không yêu cầu thẻ tín dụng</li>
             </ul>
             <div class="reg-modal-bg-blob"></div>
@@ -1102,6 +1102,7 @@
 
                 <!-- REGISTER FORM -->
                 <form id="regForm" onsubmit="submitRegistration(event)">
+                    @Html.AntiForgeryToken()
                     <input type="hidden" id="regPlanInput" name="plan" />
                     
                     <div class="form-group">
@@ -1120,6 +1121,7 @@
 
                 <!-- LOGIN FORM -->
                 <form id="loginBuyForm" onsubmit="submitLoginBuy(event)" style="display:none;">
+                    @Html.AntiForgeryToken()
                     <input type="hidden" id="loginPlanInput" name="plan" />
                     
                     <div class="form-group" style="margin-bottom: 1rem;">
@@ -1188,11 +1190,12 @@
                 </div>
 
                 <form id="changePasswordAjaxForm" onsubmit="submitChangePasswordAjax(event)">
+                    @Html.AntiForgeryToken()
                     <div class="form-group">
                         <label for="oldPasswordAjax">Mật khẩu hiện tại</label>
                         <div class="input-icon-wrapper">
                             <i class="bi bi-unlock"></i>
-                            <input type="password" id="oldPasswordAjax" name="oldPassword" required placeholder="Nhập mật khẩu hiện tại" />
+                            <input type="password" id="oldPasswordAjax" name="oldPassword" required maxlength="128" autocomplete="current-password" placeholder="Nhập mật khẩu hiện tại" />
                         </div>
                     </div>
                     
@@ -1200,7 +1203,7 @@
                         <label for="newPasswordAjax">Mật khẩu mới</label>
                         <div class="input-icon-wrapper">
                             <i class="bi bi-key"></i>
-                            <input type="password" id="newPasswordAjax" name="newPassword" required placeholder="Nhập mật khẩu mới" />
+                            <input type="password" id="newPasswordAjax" name="newPassword" required minlength="6" maxlength="128" autocomplete="new-password" placeholder="Nhập mật khẩu mới" />
                         </div>
                     </div>
                     
@@ -1208,7 +1211,7 @@
                         <label for="confirmPasswordAjax">Xác nhận mật khẩu mới</label>
                         <div class="input-icon-wrapper">
                             <i class="bi bi-shield-lock"></i>
-                            <input type="password" id="confirmPasswordAjax" name="confirmPassword" required placeholder="Nhập lại mật khẩu mới" />
+                            <input type="password" id="confirmPasswordAjax" name="confirmPassword" required minlength="6" maxlength="128" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" />
                         </div>
                     </div>
                     
@@ -1483,7 +1486,7 @@
             const confirmed = await window.AppFeedback.confirm({
                 title: isTest ? 'Bắt đầu Test 30 phút' : 'Xác nhận đăng ký gói',
                 message: isTest
-                    ? 'Phiên trải nghiệm 30 phút sẽ bắt đầu với quyền Quản trị để bạn khám phá đầy đủ tính năng.'
+                    ? 'Phiên trải nghiệm 30 phút sẽ bắt đầu với quyền truy cập phù hợp để bạn khám phá hệ thống.'
                     : `Gửi yêu cầu đăng ký ${planNameStr}. Đội ngũ hỗ trợ sẽ liên hệ để kích hoạt gói.`,
                 tone: 'info',
                 confirmText: isTest ? 'Bắt đầu trải nghiệm' : 'Gửi đăng ký',
@@ -1492,9 +1495,14 @@
             if (!confirmed) return;
 
             try {
+                const token = document.querySelector('#regForm input[name="__RequestVerificationToken"]')?.value;
+                if (!token) throw new Error('Không thể xác thực yêu cầu. Vui lòng tải lại trang.');
                 const response = await fetch('/Home/PurchasePlanLoggedIn', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
                     body: new URLSearchParams({ plan: plan })
                 });
                 const data = await response.json();
@@ -1573,6 +1581,9 @@
             const formData = new FormData();
             formData.append('email', email);
             formData.append('plan', plan);
+            const token = regForm.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (!token) throw new Error('Không thể xác thực yêu cầu. Vui lòng tải lại trang.');
+            formData.append('__RequestVerificationToken', token);
 
             const response = await fetch('/Home/RegisterPurchase', {
                 method: 'POST',
@@ -1758,7 +1769,8 @@
         btn.disabled = true;
 
         try {
-            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const token = document.querySelector('#changePasswordAjaxForm input[name="__RequestVerificationToken"]')?.value;
+            if (!token) throw new Error('Không thể xác thực yêu cầu. Vui lòng tải lại trang.');
             const response = await fetch('/Auth/ChangePasswordAjax', {
                 method: 'POST',
                 headers: {

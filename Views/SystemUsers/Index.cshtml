@@ -2,268 +2,402 @@
 @model IEnumerable<SystemUser>
 @{
     ViewData["Title"] = "Tài khoản Hệ thống";
+
+    var users = Model?.ToList() ?? new List<SystemUser>();
     var roles = ViewBag.Roles as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var isAdminRole = User.IsInRole("Admin") || User.IsInRole("Administrator");
+    var canCreateUser = isAdminRole || User.HasClaim("Permission", "SYSUSERS_CREATE");
+    var canEditUser = isAdminRole || User.HasClaim("Permission", "SYSUSERS_EDIT");
+    var canDeleteUser = isAdminRole || User.HasClaim("Permission", "SYSUSERS_DELETE");
+    var activeUserCount = users.Count(user => user.IsActive == true);
+    var lockedUserCount = users.Count - activeUserCount;
+    var unassignedRoleCount = users.Count(user => !user.RoleId.HasValue || !roles.ContainsKey(user.RoleId.Value));
+    var hasFilters = !string.IsNullOrWhiteSpace(ViewBag.SearchString as string) || ViewBag.RoleId != null || !string.IsNullOrWhiteSpace(ViewBag.Status as string);
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
     <style>
-        .systemusers-mobile-list {
-            display: none;
-        }
-
-        .systemusers-mobile-card {
-            padding: 1rem;
-            border-radius: 16px;
-            display: grid;
-            gap: 0.8rem;
-        }
-
-        .systemusers-mobile-card__title {
+        .system-users-page .system-users-header-copy {
+            max-width: 680px;
             margin: 0;
-            font-size: 1rem;
-            font-weight: 800;
-            color: #172033;
-        }
-
-        .systemusers-mobile-card__actions {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 0.55rem;
-        }
-
-        .systemusers-mobile-card__actions .btn {
-            min-height: 42px;
-            border-radius: 12px;
-            font-weight: 700;
+            color: var(--evaluation-muted);
             font-size: 0.88rem;
-            padding-inline: 0.45rem;
         }
 
-        @@media (max-width: 767.98px) {
-            .systemusers-page .table-responsive {
-                display: none;
+        .system-users-page .system-users-summary {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .system-users-page .system-users-summary article:nth-child(1) strong { color: #1d4ed8; }
+        .system-users-page .system-users-summary article:nth-child(2) strong { color: #087466; }
+        .system-users-page .system-users-summary article:nth-child(3) strong { color: #b42318; }
+        .system-users-page .system-users-summary article:nth-child(4) strong { color: #6b6478; }
+
+        .system-users-page .system-users-filter-form {
+            grid-template-columns: minmax(240px, 1.6fr) minmax(180px, 0.8fr) minmax(180px, 0.8fr) auto auto;
+        }
+
+        .system-users-page .system-users-table {
+            min-width: 930px;
+        }
+
+        .system-users-page .system-user-identity {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            min-width: 180px;
+        }
+
+        .system-users-page .system-user-avatar {
+            display: inline-grid;
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            place-items: center;
+            border-radius: 8px;
+            background: var(--evaluation-brand-soft);
+            color: var(--evaluation-brand);
+            font-size: 0.8rem;
+            font-weight: 800;
+        }
+
+        .system-users-page .system-user-identity strong,
+        .system-users-page .system-user-identity small {
+            display: block;
+        }
+
+        .system-users-page .system-user-identity strong {
+            font-size: 0.9rem;
+        }
+
+        .system-users-page .system-user-identity small,
+        .system-users-page .system-user-email,
+        .system-users-page .system-user-created {
+            color: var(--evaluation-muted);
+            font-size: 0.78rem;
+        }
+
+        .system-users-page .system-user-email {
+            max-width: 260px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .system-users-page .system-user-role {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            border: 1px solid var(--evaluation-line);
+            border-radius: 7px;
+            padding: 0.3rem 0.55rem;
+            background: var(--evaluation-soft);
+            color: #475467;
+            font-size: 0.72rem;
+            font-weight: 750;
+            white-space: nowrap;
+        }
+
+        .system-users-page .system-user-role--admin {
+            border-color: #f4c8c3;
+            background: #fff0ee;
+            color: #b42318;
+        }
+
+        .system-users-page .system-user-card .evaluation-actions {
+            flex-wrap: wrap;
+        }
+
+        .system-users-page .system-user-card .evaluation-card-footer {
+            align-items: flex-end;
+        }
+
+        .system-users-page .system-user-card .evaluation-card-footer > a {
+            white-space: nowrap;
+        }
+
+        @@media (max-width: 1100px) {
+            .system-users-page .system-users-filter-form {
+                grid-template-columns: 1fr 1fr;
             }
 
-            .systemusers-mobile-list {
+            .system-users-page .system-users-filter-form .evaluation-search-field {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @@media (max-width: 900px) {
+            .system-users-page .system-users-summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .system-users-page .system-users-summary article:last-child {
+                grid-column: auto;
+            }
+        }
+
+        @@media (max-width: 575.98px) {
+            .system-users-page .system-users-filter-form {
+                grid-template-columns: 1fr;
+            }
+
+            .system-users-page .system-users-filter-form .evaluation-search-field {
+                grid-column: auto;
+            }
+
+            .system-users-page .system-users-filter-form .evaluation-secondary-action,
+            .system-users-page .system-users-filter-form .evaluation-filter-button {
+                width: 100%;
+            }
+
+            .system-users-page .system-user-card .evaluation-card-footer {
                 display: grid;
-                gap: 0.9rem;
-                margin-top: 0.75rem;
+            }
+
+            .system-users-page .system-user-card .evaluation-card-footer > a {
+                justify-self: start;
             }
         }
     </style>
 }
 
-<div class="container-fluid px-0 systemusers-page">
-    
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Tài khoản Hệ thống</h1>
-        <div class="page-breadcrumb">
-            <a href="/" class="text-dark text-decoration-none opacity-75">Trang chủ</a>
-            <i class="bi bi-chevron-right separator"></i>
-            <span class="text-dark opacity-75">Hệ thống</span>
-            <i class="bi bi-chevron-right separator"></i>
-            <span class="text-dark fw-bold">Tài khoản users</span>
+<div class="evaluation-page system-users-page">
+    <header class="evaluation-page-header">
+        <div>
+            <h1>Tài khoản Hệ thống</h1>
+            <p class="system-users-header-copy">Quản lý tài khoản đăng nhập, vai trò và trạng thái truy cập của người dùng.</p>
+            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span>Hệ thống</span>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span>Tài khoản</span>
+            </nav>
         </div>
-    </div>
-    <div class="d-flex justify-content-end gap-2">
-        <a asp-action="Create" class="btn-primary-custom text-decoration-none">
-            <i class="bi bi-person-plus-fill me-1"></i> Tạo tài khoản mới
-        </a>
-    </div>
-</div>
+        @if (canCreateUser)
+        {
+            <a asp-action="Create" class="evaluation-primary-action">
+                <i class="bi bi-person-plus" aria-hidden="true"></i>
+                <span>Tạo tài khoản</span>
+            </a>
+        }
+    </header>
 
-<div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <div class="content-card w-100">
-    <div class="card-body-custom">
-        <form asp-action="Index" method="get" class="toolbar">
-            <div class="toolbar-left">
-                <div class="toolbar-search" style="max-width: 300px;">
-                    <i class="bi bi-search"></i>
-                    <input type="text" name="searchString" value="@ViewBag.SearchString" class="form-control" placeholder="Tìm tên đăng nhập, email..." />
-                </div>
+    <section class="evaluation-summary system-users-summary" aria-label="Tổng quan tài khoản">
+        <article>
+            <span>Tổng tài khoản</span>
+            <strong>@users.Count</strong>
+            <small>Theo bộ lọc hiện tại</small>
+        </article>
+        <article>
+            <span>Đang hoạt động</span>
+            <strong>@activeUserCount</strong>
+            <small>Có thể đăng nhập</small>
+        </article>
+        <article>
+            <span>Đang bị khóa</span>
+            <strong>@lockedUserCount</strong>
+            <small>Tạm ngừng truy cập</small>
+        </article>
+        <article>
+            <span>Chưa gán vai trò</span>
+            <strong>@unassignedRoleCount</strong>
+            <small>Cần kiểm tra quyền hạn</small>
+        </article>
+    </section>
+
+    <section class="evaluation-filter-panel" aria-labelledby="systemUserFilterHeading">
+        <div class="evaluation-filter-heading">
+            <div>
+                <strong id="systemUserFilterHeading">Tìm kiếm và lọc</strong>
+                <span>Thu hẹp danh sách theo tài khoản, vai trò hoặc trạng thái.</span>
             </div>
-            <div class="toolbar-right d-flex align-items-center gap-2">
-                <select name="roleId" class="filter-select">
-                    <option value="">Phân quyền (Role)</option>
-                    @foreach (var role in roles)
+            @if (hasFilters)
+            {
+                <a asp-action="Index" class="evaluation-clear-link">
+                    <i class="bi bi-x-circle" aria-hidden="true"></i>Xóa bộ lọc
+                </a>
+            }
+        </div>
+        <form asp-action="Index" method="get" class="evaluation-filter-form system-users-filter-form">
+            <label class="evaluation-search-field">
+                <span>Tài khoản hoặc email</span>
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" name="searchString" value="@ViewBag.SearchString" placeholder="Nhập tên đăng nhập hoặc email" />
+            </label>
+            <label>
+                <span>Vai trò</span>
+                <select name="roleId">
+                    <option value="">Tất cả vai trò</option>
+                    @foreach (var role in roles.OrderBy(role => role.Value))
                     {
-                        if (ViewBag.RoleId != null && ViewBag.RoleId == role.Key)
-                        {
-                            <option value="@role.Key" selected>@role.Value</option>
-                        }
-                        else
-                        {
-                            <option value="@role.Key">@role.Value</option>
-                        }
+                        <option value="@role.Key" selected="@(ViewBag.RoleId != null && ViewBag.RoleId == role.Key ? "selected" : null)">@role.Value</option>
                     }
                 </select>
-                <select name="status" class="filter-select">
-                    <option value="">Trạng thái tài khoản</option>
-                    @if(ViewBag.Status == "active") { <option value="active" selected>Đang hoạt động</option> } else { <option value="active">Đang hoạt động</option> }
-                    @if(ViewBag.Status == "locked") { <option value="locked" selected>Bị khóa</option> } else { <option value="locked">Bị khóa</option> }
+            </label>
+            <label>
+                <span>Trạng thái</span>
+                <select name="status">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="active" selected="@(ViewBag.Status == "active" ? "selected" : null)">Đang hoạt động</option>
+                    <option value="locked" selected="@(ViewBag.Status == "locked" ? "selected" : null)">Bị khóa</option>
                 </select>
-                <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0 text-muted" title="Làm mới">
-                    <i class="bi bi-arrow-clockwise fs-5"></i>
-                </a>
-                <button type="submit" class="btn-primary-custom d-flex align-items-center gap-2" style="padding: 8px;">
-                    <i class="bi bi-funnel"></i> <span>Lọc</span>
-                </button>
-            </div>
+            </label>
+            <a asp-action="Index" class="evaluation-secondary-action" aria-label="Đặt lại bộ lọc">
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Đặt lại
+            </a>
+            <button type="submit" class="evaluation-filter-button">
+                <i class="bi bi-funnel" aria-hidden="true"></i>Lọc
+            </button>
         </form>
+    </section>
 
-        <div class="table-responsive w-100">
-            <table class="data-table w-100">
-                <thead>
-                    <tr>
-                        <th>Tài khoản</th>
-                        <th>Thông tin Email</th>
-                        <th>Phân quyền</th>
-                        <th>Ngày tạo</th>
-                        <th>Trạng thái</th>
-                        <th class="text-end">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        foreach (var user in Model)
+    <section class="evaluation-results" aria-labelledby="systemUserResultsHeading">
+        <div class="evaluation-results-heading">
+            <strong id="systemUserResultsHeading">Danh sách tài khoản</strong>
+            <span>@users.Count tài khoản được hiển thị</span>
+        </div>
+
+        @if (!users.Any())
+        {
+            <div class="evaluation-empty" role="status">
+                <span class="evaluation-empty-icon"><i class="bi bi-person-x" aria-hidden="true"></i></span>
+                <h2>@(hasFilters ? "Không tìm thấy tài khoản phù hợp" : "Chưa có tài khoản hệ thống")</h2>
+                <p>@(hasFilters ? "Hãy điều chỉnh từ khóa hoặc bộ lọc để xem thêm kết quả." : "Tạo tài khoản đầu tiên để bắt đầu phân quyền truy cập hệ thống.")</p>
+                @if (hasFilters)
+                {
+                    <a asp-action="Index" class="evaluation-secondary-action">Xóa bộ lọc</a>
+                }
+                else if (canCreateUser)
+                {
+                    <a asp-action="Create" class="evaluation-primary-action">Tạo tài khoản</a>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="evaluation-table-shell">
+                <table class="evaluation-table system-users-table" aria-label="Danh sách tài khoản hệ thống">
+                    <thead>
+                        <tr>
+                            <th>Tài khoản</th>
+                            <th>Email</th>
+                            <th>Vai trò</th>
+                            <th>Ngày tạo</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in users)
                         {
-                            var roleName = user.RoleId.HasValue && roles.ContainsKey(user.RoleId.Value) ? roles[user.RoleId.Value] : "N/A";
-                            var statusClass = user.IsActive == true ? "active" : "pending";
-                            var statusDot = user.IsActive == true ? "" : "text-danger bg-danger";
-                            var statusText = user.IsActive == true ? "Kích hoạt" : "Bị khóa";
-                            
+                            var roleName = user.RoleId.HasValue && roles.TryGetValue(user.RoleId.Value, out var assignedRoleName) ? assignedRoleName : "Chưa phân quyền";
+                            var isAdminUser = string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase) || string.Equals(roleName, "Administrator", StringComparison.OrdinalIgnoreCase);
+                            var isActive = user.IsActive == true;
+                            var displayName = string.IsNullOrWhiteSpace(user.Username) ? $"Tài khoản #{user.Id}" : user.Username;
+                            var initial = !string.IsNullOrWhiteSpace(user.Username) ? user.Username[0].ToString().ToUpperInvariant() : "U";
                             <tr>
                                 <td>
-                                    <div class="fw-bold text-dark">@user.Username</div>
-                                    <div class="text-muted" style="font-size: 0.75rem;">ID: @user.Id</div>
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="user-avatar" style="width: 28px; height: 28px; font-size: 0.7rem;">
-                                            @(user.Username?[0].ToString().ToUpper() ?? "U")
-                                        </div>
+                                    <div class="system-user-identity">
+                                        <span class="system-user-avatar" aria-hidden="true">@initial</span>
                                         <div>
-                                            <div class="text-muted" style="font-size: 0.85rem;">@user.Email</div>
+                                            <strong>@displayName</strong>
+                                            <small>ID: @user.Id</small>
                                         </div>
                                     </div>
                                 </td>
+                                <td><div class="system-user-email" title="@user.Email">@(string.IsNullOrWhiteSpace(user.Email) ? "Chưa có email" : user.Email)</div></td>
+                                <td><span class="system-user-role @(isAdminUser ? "system-user-role--admin" : string.Empty)">@roleName</span></td>
+                                <td><span class="system-user-created">@(user.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa xác định")</span></td>
                                 <td>
-                                    @{
-                                        var badgeClass = roleName.ToLower() == "admin" ? "bg-danger text-white" : "bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25";
-                                    }
-                                    <span class="badge @badgeClass rounded-pill px-3">@roleName</span>
-                                </td>
-                                <td class="text-muted" style="font-size: 0.85rem;">@(user.CreatedAt?.ToString("dd/MM/yyyy HH:mm"))</td>
-                                <td>
-                                    <span class="status-badge @statusClass">
-                                        <span class="status-dot @statusDot"></span> @statusText
+                                    <span class="evaluation-status @(isActive ? "evaluation-status--running" : "evaluation-status--closed")">
+                                        <span aria-hidden="true"></span>@(isActive ? "Đang hoạt động" : "Bị khóa")
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="action-btns justify-content-end">
-                                        <a asp-action="Details" asp-route-id="@user.Id" class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
-                                        <a asp-action="Edit" asp-route-id="@user.Id" class="action-btn" title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
-                                        
-                                        <form asp-action="ToggleLock" method="post" class="d-inline m-0">
-                                            <input type="hidden" name="userId" value="@user.Id" />
-                                            @if (user.IsActive == false)
-                                            {
-                                                <button type="submit" class="action-btn" title="Mở khóa tài khoản"><i class="bi bi-unlock-fill"></i></button>
-                                            }
-                                            else
-                                            {
-                                                <button type="submit" class="action-btn danger" title="Khóa tài khoản"><i class="bi bi-lock-fill"></i></button>
-                                            }
-                                        </form>
-
-                                        <a asp-action="ResetPassword" asp-route-id="@user.Id" class="action-btn" title="Đổi mật khẩu"><i class="bi bi-key"></i></a>
-                                        <a asp-action="Delete" asp-route-id="@user.Id" class="action-btn danger" title="Xóa tài khoản"><i class="bi bi-trash"></i></a>
+                                    <div class="evaluation-actions">
+                                        <a asp-action="Details" asp-route-id="@user.Id" class="evaluation-icon-button" title="Xem chi tiết" aria-label="Xem chi tiết tài khoản @displayName">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                        </a>
+                                        @if (canEditUser && (isAdminRole || !isAdminUser))
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@user.Id" class="evaluation-icon-button" title="Chỉnh sửa" aria-label="Chỉnh sửa tài khoản @displayName">
+                                                <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                            </a>
+                                            <form asp-action="ToggleLock" method="post" data-app-confirm
+                                                  data-confirm-title="@(isActive ? "Khóa tài khoản?" : "Mở khóa tài khoản?")"
+                                                  data-confirm-message="@(isActive ? $"Tài khoản “{displayName}” sẽ không thể đăng nhập cho đến khi được mở khóa." : $"Tài khoản “{displayName}” sẽ được phép đăng nhập trở lại.")"
+                                                  data-confirm-tone="@(isActive ? "warning" : "info")"
+                                                  data-confirm-label="@(isActive ? "Khóa tài khoản" : "Mở khóa")">
+                                                <input type="hidden" name="userId" value="@user.Id" />
+                                                <button type="submit" class="evaluation-icon-button @(isActive ? "evaluation-icon-button--danger" : string.Empty)" title="@(isActive ? "Khóa tài khoản" : "Mở khóa tài khoản")" aria-label="@(isActive ? $"Khóa tài khoản {displayName}" : $"Mở khóa tài khoản {displayName}")">
+                                                    <i class="bi @(isActive ? "bi-lock" : "bi-unlock")" aria-hidden="true"></i>
+                                                </button>
+                                            </form>
+                                            <a asp-action="ResetPassword" asp-route-id="@user.Id" class="evaluation-icon-button" title="Đặt lại mật khẩu" aria-label="Đặt lại mật khẩu cho @displayName">
+                                                <i class="bi bi-key" aria-hidden="true"></i>
+                                            </a>
+                                        }
+                                        @if (canDeleteUser && (isAdminRole || !isAdminUser))
+                                        {
+                                            <a asp-action="Delete" asp-route-id="@user.Id" class="evaluation-icon-button evaluation-icon-button--danger" title="Xóa tài khoản" aria-label="Xóa tài khoản @displayName">
+                                                <i class="bi bi-trash3" aria-hidden="true"></i>
+                                            </a>
+                                        }
                                     </div>
                                 </td>
                             </tr>
-
-
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">Không có dữ liệu tài khoản nào.</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="systemusers-mobile-list">
-            @if (Model != null && Model.Any())
-            {
-                foreach (var user in Model)
+            <div class="evaluation-mobile-list">
+                @foreach (var user in users)
                 {
-                    var roleName = user.RoleId.HasValue && roles.ContainsKey(user.RoleId.Value) ? roles[user.RoleId.Value] : "N/A";
-                    var statusClass = user.IsActive == true ? "active" : "pending";
-                    var statusDot = user.IsActive == true ? "" : "text-danger bg-danger";
-                    var statusText = user.IsActive == true ? "Kích hoạt" : "Bị khóa";
-                    var badgeClass = roleName.ToLower() == "admin" ? "bg-danger text-white" : "bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25";
-
-                    <article class="content-card systemusers-mobile-card">
-                        <div class="d-flex align-items-start gap-3">
-                            <div class="user-avatar" style="width: 36px; height: 36px; font-size: 0.85rem;">
-                                @(user.Username?[0].ToString().ToUpper() ?? "U")
-                            </div>
-                            <div class="min-w-0 flex-grow-1">
-                                <h3 class="systemusers-mobile-card__title">@user.Username</h3>
-                                <div class="small text-muted">ID: @user.Id</div>
-                                <div class="small text-muted mt-1">@(string.IsNullOrWhiteSpace(user.Email) ? "Chưa có email" : user.Email)</div>
-                            </div>
+                    var roleName = user.RoleId.HasValue && roles.TryGetValue(user.RoleId.Value, out var assignedRoleName) ? assignedRoleName : "Chưa phân quyền";
+                    var isAdminUser = string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase) || string.Equals(roleName, "Administrator", StringComparison.OrdinalIgnoreCase);
+                    var isActive = user.IsActive == true;
+                    var displayName = string.IsNullOrWhiteSpace(user.Username) ? $"Tài khoản #{user.Id}" : user.Username;
+                    <article class="evaluation-period-card system-user-card">
+                        <div class="evaluation-card-topline">
+                            <span class="evaluation-status @(isActive ? "evaluation-status--running" : "evaluation-status--closed")"><span aria-hidden="true"></span>@(isActive ? "Đang hoạt động" : "Bị khóa")</span>
+                            <span class="system-user-role">@roleName</span>
                         </div>
-
-                        <div class="d-flex flex-wrap gap-2 align-items-center">
-                            <span class="badge @badgeClass rounded-pill px-3">@roleName</span>
-                            <span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span>
-                        </div>
-
-                        <div class="small text-muted">Tạo lúc: @(user.CreatedAt?.ToString("dd/MM/yyyy HH:mm"))</div>
-
-                        <div class="systemusers-mobile-card__actions">
-                            <a asp-action="Details" asp-route-id="@user.Id" class="btn btn-outline-primary">
-                                <i class="bi bi-eye me-1"></i> Xem
-                            </a>
-                            <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-outline-secondary">
-                                <i class="bi bi-pencil me-1"></i> Sửa
-                            </a>
-                            <a asp-action="ResetPassword" asp-route-id="@user.Id" class="btn btn-outline-warning">
-                                <i class="bi bi-key me-1"></i> Mật khẩu
-                            </a>
-                        </div>
-
-                        <div class="systemusers-mobile-card__actions">
-                            <form asp-action="ToggleLock" method="post" class="m-0">
-                                <input type="hidden" name="userId" value="@user.Id" />
-                                @if (user.IsActive == false)
+                        <h2>@displayName</h2>
+                        <p>@(string.IsNullOrWhiteSpace(user.Email) ? "Chưa có email" : user.Email)</p>
+                        <dl>
+                            <div><dt>Mã tài khoản</dt><dd>#@user.Id</dd></div>
+                            <div><dt>Ngày tạo</dt><dd>@(user.CreatedAt?.ToString("dd/MM/yyyy") ?? "Chưa xác định")</dd></div>
+                        </dl>
+                        <div class="evaluation-card-footer">
+                            <a asp-action="Details" asp-route-id="@user.Id">Xem chi tiết</a>
+                            <div class="evaluation-actions">
+                                @if (canEditUser && (isAdminRole || !isAdminUser))
                                 {
-                                    <button type="submit" class="btn btn-outline-success w-100"><i class="bi bi-unlock-fill me-1"></i> Mở khóa</button>
+                                    <a asp-action="Edit" asp-route-id="@user.Id" class="evaluation-icon-button" aria-label="Chỉnh sửa tài khoản @displayName trên thẻ di động"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
+                                    <form asp-action="ToggleLock" method="post" data-app-confirm
+                                          data-confirm-title="@(isActive ? "Khóa tài khoản?" : "Mở khóa tài khoản?")"
+                                          data-confirm-message="@(isActive ? $"Tài khoản “{displayName}” sẽ không thể đăng nhập cho đến khi được mở khóa." : $"Tài khoản “{displayName}” sẽ được phép đăng nhập trở lại.")"
+                                          data-confirm-tone="@(isActive ? "warning" : "info")"
+                                          data-confirm-label="@(isActive ? "Khóa tài khoản" : "Mở khóa")">
+                                        <input type="hidden" name="userId" value="@user.Id" />
+                                        <button type="submit" class="evaluation-icon-button @(isActive ? "evaluation-icon-button--danger" : string.Empty)" aria-label="@(isActive ? $"Khóa tài khoản {displayName}" : $"Mở khóa tài khoản {displayName}") trên thẻ di động">
+                                            <i class="bi @(isActive ? "bi-lock" : "bi-unlock")" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                    <a asp-action="ResetPassword" asp-route-id="@user.Id" class="evaluation-icon-button" aria-label="Đặt lại mật khẩu cho @displayName trên thẻ di động"><i class="bi bi-key" aria-hidden="true"></i></a>
                                 }
-                                else
+                                @if (canDeleteUser && (isAdminRole || !isAdminUser))
                                 {
-                                    <button type="submit" class="btn btn-outline-danger w-100"><i class="bi bi-lock-fill me-1"></i> Khóa</button>
+                                    <a asp-action="Delete" asp-route-id="@user.Id" class="evaluation-icon-button evaluation-icon-button--danger" aria-label="Xóa tài khoản @displayName trên thẻ di động"><i class="bi bi-trash3" aria-hidden="true"></i></a>
                                 }
-                            </form>
-                            <a asp-action="Delete" asp-route-id="@user.Id" class="btn btn-outline-danger">
-                                <i class="bi bi-trash me-1"></i> Xóa
-                            </a>
-                            <span></span>
+                            </div>
                         </div>
                     </article>
                 }
-            }
-        </div>
-    </div>
-</div>
-
-        </div>
-    </div>
+            </div>
+        }
+    </section>
 </div>

@@ -1,7 +1,9 @@
 @model IEnumerable<Manage_KPI_or_OKR_System.Models.Permission>
+@using System.Globalization
 @{
     var role = ViewBag.Role as Manage_KPI_or_OKR_System.Models.Role;
     var rolePermissionIds = ViewBag.RolePermissionIds as List<int> ?? new List<int>();
+    var canEditPermissions = ViewBag.CanEditPermissions is bool canEdit && canEdit;
     ViewData["Title"] = $"Cấu hình quyền cho {role?.RoleName}";
 
     (string Key, string Title, string Icon, string Accent, string SoftBg, string SoftBorder) GetGroupMeta(string? code)
@@ -115,7 +117,7 @@
                     <span id="selectedPermissionHero">@selectedPermissions</span>/<span>@totalPermissions</span>
                 </div>
                 <div class="permissions-hero-progress">
-                    <div id="selectedPermissionHeroBar" style="width:@selectionPercent%;"></div>
+                    <div id="selectedPermissionHeroBar" style="transform:scaleX(@((selectionPercent / 100d).ToString(CultureInfo.InvariantCulture)));transform-origin:left;"></div>
                 </div>
                 <div class="permissions-hero-summary-meta">@selectionPercent% permission đã được gán</div>
             </div>
@@ -181,10 +183,10 @@
                            autocomplete="off">
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <button type="button" id="selectVisiblePermissions" class="btn btn-outline-primary rounded-pill px-3">
+                    <button type="button" id="selectVisiblePermissions" class="btn btn-outline-primary rounded-pill px-3" disabled="@(canEditPermissions ? null : "disabled")">
                         <i class="bi bi-check2-all me-2"></i> Chọn đang hiển thị
                     </button>
-                    <button type="button" id="clearAllPermissions" class="btn btn-outline-secondary rounded-pill px-3">
+                    <button type="button" id="clearAllPermissions" class="btn btn-outline-secondary rounded-pill px-3" disabled="@(canEditPermissions ? null : "disabled")">
                         <i class="bi bi-eraser me-2"></i> Bỏ chọn tất cả
                     </button>
                 </div>
@@ -219,7 +221,8 @@
                                 </div>
                                 <button type="button"
                                         class="btn btn-sm btn-link text-decoration-none p-0 fw-semibold select-all-group"
-                                        data-group="@group.Key">
+                                        data-group="@group.Key"
+                                        disabled="@(canEditPermissions ? null : "disabled")">
                                     @(isFullyChecked ? "Bỏ chọn tất cả" : "Chọn tất cả")
                                 </button>
                             </div>
@@ -241,6 +244,7 @@
                                                name="permissionIds"
                                                value="@permission.Id"
                                                data-group-key="@group.Key"
+                                               disabled="@(canEditPermissions ? null : "disabled")"
                                                @(isChecked ? "checked" : string.Empty)>
                                         <div class="permission-item-content">
                                             <div class="permission-item-top">
@@ -264,15 +268,22 @@
                     Đã chọn <strong id="selectedPermissionFooter">@selectedPermissions</strong> trên <strong>@totalPermissions</strong> permission
                 </div>
                 <div class="permission-save-progress">
-                    <div id="selectedPermissionFooterBar" style="width:@selectionPercent%;"></div>
+                    <div id="selectedPermissionFooterBar" style="transform:scaleX(@((selectionPercent / 100d).ToString(CultureInfo.InvariantCulture)));transform-origin:left;"></div>
                 </div>
             </div>
-            <div class="d-flex justify-content-end gap-3 flex-wrap">
-                <button type="reset" class="btn btn-outline-secondary rounded-pill px-4">Hoàn tác</button>
-                <button type="submit" class="btn-primary-custom rounded-pill px-5 shadow-sm">
-                    <i class="bi bi-save me-2"></i> Lưu cấu hình quyền
-                </button>
-            </div>
+            @if (canEditPermissions)
+            {
+                <div class="d-flex justify-content-end gap-3 flex-wrap">
+                    <button type="reset" class="btn btn-outline-secondary rounded-pill px-4">Hoàn tác</button>
+                    <button type="submit" class="btn-primary-custom rounded-pill px-5 shadow-sm">
+                        <i class="bi bi-save me-2"></i> Lưu cấu hình quyền
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="text-muted small"><i class="bi bi-eye me-1" aria-hidden="true"></i>Chế độ chỉ xem</div>
+            }
         </div>
     </form>
 </div>
@@ -364,7 +375,9 @@
         height: 100%;
         border-radius: inherit;
         background: linear-gradient(90deg, #ffffff, #d6e4ff);
-        transition: width 0.2s ease;
+        width: 100%;
+        transform-origin: left;
+        transition: transform 0.2s ease-out;
     }
 
     .permissions-page .permissions-hero-summary-meta {
@@ -718,8 +731,9 @@
                 selectedPermissionFooter.textContent = checkedCount;
                 selectedPermissionHero.textContent = checkedCount;
                 selectedGroupCount.textContent = activeGroups;
-                selectedPermissionHeroBar.style.width = percentage + '%';
-                selectedPermissionFooterBar.style.width = percentage + '%';
+                const scale = percentage / 100;
+                selectedPermissionHeroBar.style.transform = `scaleX(${scale})`;
+                selectedPermissionFooterBar.style.transform = `scaleX(${scale})`;
             }
 
             function updateAllStates() {

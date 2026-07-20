@@ -2,8 +2,12 @@
     ViewData["Title"] = "Quản lý Danh mục";
     Layout = "~/Views/Shared/_Layout.cshtml";
     
-    var activeTab = ViewBag.ActiveTab as string ?? "kpitype";
-    
+    var requestedTab = ViewBag.ActiveTab as string ?? "kpitype";
+    var availableTabs = new[] { "kpitype", "okrtype", "kpiproperty", "checkinstatus", "failreason", "gradingrank", "status" };
+    var activeTab = availableTabs.Contains(requestedTab, StringComparer.OrdinalIgnoreCase)
+        ? requestedTab.ToLowerInvariant()
+        : "kpitype";
+
     var kpiTypes = ViewBag.KPITypes as List<Manage_KPI_or_OKR_System.Models.KPIType> ?? new List<Manage_KPI_or_OKR_System.Models.KPIType>();
     var okrTypes = ViewBag.OKRTypes as List<Manage_KPI_or_OKR_System.Models.OKRType> ?? new List<Manage_KPI_or_OKR_System.Models.OKRType>();
     var kpiProperties = ViewBag.KPIProperties as List<Manage_KPI_or_OKR_System.Models.KPIProperty> ?? new List<Manage_KPI_or_OKR_System.Models.KPIProperty>();
@@ -11,159 +15,146 @@
     var failReasons = ViewBag.FailReasons as List<Manage_KPI_or_OKR_System.Models.FailReason> ?? new List<Manage_KPI_or_OKR_System.Models.FailReason>();
     var gradingRanks = ViewBag.GradingRanks as List<Manage_KPI_or_OKR_System.Models.GradingRank> ?? new List<Manage_KPI_or_OKR_System.Models.GradingRank>();
     var statuses = ViewBag.Statuses as List<Manage_KPI_or_OKR_System.Models.Status> ?? new List<Manage_KPI_or_OKR_System.Models.Status>();
-    var systemParameters = ViewBag.SystemParameters as List<Manage_KPI_or_OKR_System.Models.SystemParameter> ?? new List<Manage_KPI_or_OKR_System.Models.SystemParameter>();
+    var totalCatalogEntries = kpiTypes.Count + okrTypes.Count + kpiProperties.Count + checkInStatuses.Count + failReasons.Count + gradingRanks.Count + statuses.Count;
 }
 
-<div class="container-fluid px-0">
-    <!-- Header -->
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+@section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/catalog.css" asp-append-version="true" />
+}
+
+<div class="evaluation-page catalog-page">
+    <header class="evaluation-page-header">
         <div>
-            <h1 class="h3 fw-bold mb-1">Quản lý Danh mục Hệ thống</h1>
-            <div class="page-breadcrumb">
-                <a href="/" class="text-decoration-none opacity-75">Trang chủ</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <span class="fw-bold">Danh mục</span>
-            </div>
+            <h1>Danh mục hệ thống</h1>
+            <p class="catalog-header-copy">Quản lý dữ liệu nền được sử dụng xuyên suốt quy trình KPI, OKR, Check-in và đánh giá nhân viên.</p>
+            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span>Cài đặt</span>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span>Danh mục hệ thống</span>
+            </nav>
         </div>
-        <div class="d-flex gap-2 align-items-center">
-            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
-                <i class="bi bi-database-fill me-1"></i> Quản lý cấu hình dữ liệu
-            </span>
-        </div>
-    </div>
+        <a asp-controller="SystemParameters" asp-action="Index" class="evaluation-secondary-action catalog-system-link">
+            <i class="bi bi-sliders" aria-hidden="true"></i>
+            <span>Tham số hệ thống</span>
+        </a>
+    </header>
 
-    <!-- Stats Row -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-2 col-sm-4 col-6">
-            <div class="stat-card p-3 border-start border-3 border-primary bg-white rounded-3 shadow-sm h-100">
-                <div class="text-muted" style="font-size:0.75rem;">Loại KPI</div>
-                <div class="fw-bold text-dark fs-5 mt-1">@kpiTypes.Count</div>
-            </div>
-        </div>
-        <div class="col-md-2 col-sm-4 col-6">
-            <div class="stat-card p-3 border-start border-3 border-info bg-white rounded-3 shadow-sm h-100">
-                <div class="text-muted" style="font-size:0.75rem;">Loại OKR</div>
-                <div class="fw-bold text-dark fs-5 mt-1">@okrTypes.Count</div>
-            </div>
-        </div>
-        <div class="col-md-2 col-sm-4 col-6">
-            <div class="stat-card p-3 border-start border-3 border-success bg-white rounded-3 shadow-sm h-100">
-                <div class="text-muted" style="font-size:0.75rem;">Xếp hạng</div>
-                <div class="fw-bold text-dark fs-5 mt-1">@gradingRanks.Count</div>
-            </div>
-        </div>
-        <div class="col-md-2 col-sm-4 col-6">
-            <div class="stat-card p-3 border-start border-3 border-warning bg-white rounded-3 shadow-sm h-100">
-                <div class="text-muted" style="font-size:0.75rem;">Trạng thái</div>
-                <div class="fw-bold text-dark fs-5 mt-1">@statuses.Count</div>
-            </div>
-        </div>
-        <div class="col-md-2 col-sm-4 col-6">
-            <div class="stat-card p-3 border-start border-3 border-danger bg-white rounded-3 shadow-sm h-100">
-                <div class="text-muted" style="font-size:0.75rem;">Lý do TB</div>
-                <div class="fw-bold text-dark fs-5 mt-1">@failReasons.Count</div>
-            </div>
-        </div>
-        <div class="col-md-2 col-sm-4 col-6">
-            <div class="stat-card p-3 border-start border-3 border-secondary bg-white rounded-3 shadow-sm h-100">
-                <div class="text-muted" style="font-size:0.75rem;">Tham số HT</div>
-                <div class="fw-bold text-dark fs-5 mt-1">@systemParameters.Count</div>
-            </div>
-        </div>
-    </div>
+    <section class="evaluation-summary catalog-summary" aria-label="Tổng quan danh mục">
+        <article>
+            <span>Nhóm danh mục</span>
+            <strong>@availableTabs.Length</strong>
+            <small>Nhóm dữ liệu nền đang quản lý</small>
+        </article>
+        <article>
+            <span>Tổng dữ liệu</span>
+            <strong>@totalCatalogEntries</strong>
+            <small>Bản ghi cấu hình toàn hệ thống</small>
+        </article>
+        <article>
+            <span>Trạng thái chung</span>
+            <strong>@statuses.Count</strong>
+            <small>Dùng cho các quy trình nghiệp vụ</small>
+        </article>
+        <article>
+            <span>Bậc xếp hạng</span>
+            <strong>@gradingRanks.Count</strong>
+            <small>Mức đánh giá nhân viên</small>
+        </article>
+    </section>
 
-    <!-- Main Content Card with Tabs -->
-    <div class="content-card shadow-sm border-0">
-        <div class="card-body-custom p-0">
-            <!-- Tab Navigation -->
-            <div class="catalog-tabs-wrapper border-bottom" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                <ul class="nav nav-tabs catalog-tabs border-0 px-4 pt-3 flex-nowrap" id="catalogTabs" role="tablist">
+    <section class="evaluation-results catalog-workspace" aria-label="Dữ liệu danh mục">
+            <div class="catalog-tabs-wrapper">
+                <ul class="nav nav-tabs catalog-tabs flex-nowrap" id="catalogTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link catalog-tab @(activeTab=="kpitype"?"active":"")" id="tab-kpitype" data-bs-toggle="tab" data-bs-target="#pane-kpitype" type="button" role="tab">
-                            <i class="bi bi-speedometer2 me-1"></i> Loại KPI
-                            <span class="badge bg-primary bg-opacity-10 text-primary ms-1 rounded-pill" style="font-size:0.7rem;">@kpiTypes.Count</span>
+                        <button class="nav-link catalog-tab @(activeTab == "kpitype" ? "active" : "")" id="tab-kpitype" data-bs-toggle="tab" data-bs-target="#pane-kpitype" type="button" role="tab" aria-controls="pane-kpitype" aria-selected="@(activeTab == "kpitype" ? "true" : "false")">
+                            <i class="bi bi-speedometer2" aria-hidden="true"></i> Loại KPI
+                            <span class="catalog-tab-count">@kpiTypes.Count</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link catalog-tab @(activeTab=="okrtype"?"active":"")" id="tab-okrtype" data-bs-toggle="tab" data-bs-target="#pane-okrtype" type="button" role="tab">
-                            <i class="bi bi-bullseye me-1"></i> Loại OKR
-                            <span class="badge bg-info bg-opacity-10 text-info ms-1 rounded-pill" style="font-size:0.7rem;">@okrTypes.Count</span>
+                        <button class="nav-link catalog-tab @(activeTab == "okrtype" ? "active" : "")" id="tab-okrtype" data-bs-toggle="tab" data-bs-target="#pane-okrtype" type="button" role="tab" aria-controls="pane-okrtype" aria-selected="@(activeTab == "okrtype" ? "true" : "false")">
+                            <i class="bi bi-bullseye" aria-hidden="true"></i> Loại OKR
+                            <span class="catalog-tab-count">@okrTypes.Count</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link catalog-tab @(activeTab=="kpiproperty"?"active":"")" id="tab-kpiproperty" data-bs-toggle="tab" data-bs-target="#pane-kpiproperty" type="button" role="tab">
-                            <i class="bi bi-sliders me-1"></i> Thuộc tính KPI
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary ms-1 rounded-pill" style="font-size:0.7rem;">@kpiProperties.Count</span>
+                        <button class="nav-link catalog-tab @(activeTab == "kpiproperty" ? "active" : "")" id="tab-kpiproperty" data-bs-toggle="tab" data-bs-target="#pane-kpiproperty" type="button" role="tab" aria-controls="pane-kpiproperty" aria-selected="@(activeTab == "kpiproperty" ? "true" : "false")">
+                            <i class="bi bi-sliders" aria-hidden="true"></i> Thuộc tính KPI
+                            <span class="catalog-tab-count">@kpiProperties.Count</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link catalog-tab @(activeTab=="checkinstatus"?"active":"")" id="tab-checkinstatus" data-bs-toggle="tab" data-bs-target="#pane-checkinstatus" type="button" role="tab">
-                            <i class="bi bi-check2-square me-1"></i> TT Check-in
-                            <span class="badge bg-success bg-opacity-10 text-success ms-1 rounded-pill" style="font-size:0.7rem;">@checkInStatuses.Count</span>
+                        <button class="nav-link catalog-tab @(activeTab == "checkinstatus" ? "active" : "")" id="tab-checkinstatus" data-bs-toggle="tab" data-bs-target="#pane-checkinstatus" type="button" role="tab" aria-controls="pane-checkinstatus" aria-selected="@(activeTab == "checkinstatus" ? "true" : "false")">
+                            <i class="bi bi-check2-square" aria-hidden="true"></i> Trạng thái Check-in
+                            <span class="catalog-tab-count">@checkInStatuses.Count</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link catalog-tab @(activeTab=="failreason"?"active":"")" id="tab-failreason" data-bs-toggle="tab" data-bs-target="#pane-failreason" type="button" role="tab">
-                            <i class="bi bi-exclamation-triangle me-1"></i> Lý do thất bại
-                            <span class="badge bg-danger bg-opacity-10 text-danger ms-1 rounded-pill" style="font-size:0.7rem;">@failReasons.Count</span>
+                        <button class="nav-link catalog-tab @(activeTab == "failreason" ? "active" : "")" id="tab-failreason" data-bs-toggle="tab" data-bs-target="#pane-failreason" type="button" role="tab" aria-controls="pane-failreason" aria-selected="@(activeTab == "failreason" ? "true" : "false")">
+                            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Lý do thất bại
+                            <span class="catalog-tab-count">@failReasons.Count</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link catalog-tab @(activeTab=="gradingrank"?"active":"")" id="tab-gradingrank" data-bs-toggle="tab" data-bs-target="#pane-gradingrank" type="button" role="tab">
-                            <i class="bi bi-trophy me-1"></i> Bậc xếp hạng
-                            <span class="badge bg-warning bg-opacity-10 text-warning ms-1 rounded-pill" style="font-size:0.7rem;">@gradingRanks.Count</span>
+                        <button class="nav-link catalog-tab @(activeTab == "gradingrank" ? "active" : "")" id="tab-gradingrank" data-bs-toggle="tab" data-bs-target="#pane-gradingrank" type="button" role="tab" aria-controls="pane-gradingrank" aria-selected="@(activeTab == "gradingrank" ? "true" : "false")">
+                            <i class="bi bi-trophy" aria-hidden="true"></i> Bậc xếp hạng
+                            <span class="catalog-tab-count">@gradingRanks.Count</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link catalog-tab @(activeTab=="status"?"active":"")" id="tab-status" data-bs-toggle="tab" data-bs-target="#pane-status" type="button" role="tab">
-                            <i class="bi bi-toggle-on me-1"></i> Trạng thái chung
-                            <span class="badge bg-dark bg-opacity-10 text-dark ms-1 rounded-pill" style="font-size:0.7rem;">@statuses.Count</span>
+                        <button class="nav-link catalog-tab @(activeTab == "status" ? "active" : "")" id="tab-status" data-bs-toggle="tab" data-bs-target="#pane-status" type="button" role="tab" aria-controls="pane-status" aria-selected="@(activeTab == "status" ? "true" : "false")">
+                            <i class="bi bi-toggle-on" aria-hidden="true"></i> Trạng thái chung
+                            <span class="catalog-tab-count">@statuses.Count</span>
                         </button>
                     </li>
 
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link catalog-tab @(activeTab=="systemparameter"?"active":"")" id="tab-systemparameter" data-bs-toggle="tab" data-bs-target="#pane-systemparameter" type="button" role="tab">
-                            <i class="bi bi-gear me-1"></i> Tham số HT
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary ms-1 rounded-pill" style="font-size:0.7rem;">@systemParameters.Count</span>
-                        </button>
+                        <a class="nav-link catalog-tab" asp-controller="SystemParameters" asp-action="Index">
+                            <i class="bi bi-gear" aria-hidden="true"></i> Tham số hệ thống
+                        </a>
                     </li>
                 </ul>
             </div>
 
-            <!-- Tab Content -->
-            <div class="tab-content p-4" id="catalogTabContent">
+            <div class="tab-content catalog-tab-content" id="catalogTabContent">
 
                 <!-- TAB: KPI Type -->
-                <div class="tab-pane fade @(activeTab=="kpitype"?"show active":"")" id="pane-kpitype" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h5 class="fw-bold mb-1"><i class="bi bi-speedometer2 text-primary me-2"></i>Loại KPI</h5>
-                            <p class="text-muted small mb-0">Quản lý danh sách phân loại KPI (ví dụ: Kết quả, Hành vi)</p>
+                <div class="tab-pane fade @(activeTab == "kpitype" ? "show active" : "")" id="pane-kpitype" role="tabpanel" aria-labelledby="tab-kpitype">
+                    <div class="catalog-pane-header">
+                        <div class="catalog-pane-title">
+                            <span class="catalog-pane-icon" aria-hidden="true"><i class="bi bi-speedometer2"></i></span>
+                            <div>
+                                <h2>Loại KPI</h2>
+                                <p>Phân loại KPI theo mục đích đo lường, chẳng hạn kết quả, hành vi hoặc năng lực.</p>
+                            </div>
                         </div>
-                        <button class="btn-primary-custom d-flex align-items-center" onclick="showAddSimpleModal('KPIType', 'Loại KPI', 'typeName', 'Tên loại KPI', 'VD: Kết quả, Hành vi...')">
-                            <i class="bi bi-plus-lg me-1"></i> Thêm mới
+                        <button type="button" class="evaluation-primary-action catalog-add-action" onclick="showAddSimpleModal('KPIType', 'Loại KPI', 'typeName', 'Tên loại KPI', 'Ví dụ: Kết quả, Hành vi')">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Thêm loại KPI
                         </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="data-table w-100" id="tbl-kpitype">
-                            <thead><tr><th style="width:60px;">ID</th><th>Tên loại KPI</th><th style="width:120px;" class="text-end">Thao tác</th></tr></thead>
+                    <div class="catalog-table-shell">
+                        <table class="evaluation-table catalog-table" id="tbl-kpitype" aria-label="Danh sách loại KPI">
+                            <thead><tr><th class="catalog-id-column">ID</th><th>Tên loại KPI</th><th class="catalog-action-column text-end">Thao tác</th></tr></thead>
                             <tbody>
                                 @foreach (var item in kpiTypes)
                                 {
                                     <tr data-id="@item.Id">
-                                        <td><span class="badge bg-light text-dark border">@item.Id</span></td>
+                                        <td><span class="catalog-id">@item.Id</span></td>
                                         <td class="fw-medium text-dark">@item.TypeName</td>
                                         <td>
-                                            <div class="action-btns justify-content-end">
-                                                <button class="action-btn" title="Sửa" onclick="showEditSimpleModal('KPIType', 'Loại KPI', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.TypeName ?? ""))', 'typeName', 'Tên loại KPI')"><i class="bi bi-pencil-square"></i></button>
-                                                <button class="action-btn danger" title="Xóa" onclick="deleteItem('KPIType', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.TypeName ?? ""))')"><i class="bi bi-trash"></i></button>
+                                            <div class="evaluation-actions">
+                                                <button type="button" class="evaluation-icon-button" title="Sửa" aria-label="Sửa loại KPI @item.TypeName" onclick="showEditSimpleModal('KPIType', 'Loại KPI', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.TypeName ?? ""))', 'typeName', 'Tên loại KPI')"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
+                                                <button type="button" class="evaluation-icon-button evaluation-icon-button--danger" title="Xóa" aria-label="Xóa loại KPI @item.TypeName" onclick="deleteItem('KPIType', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.TypeName ?? ""))')"><i class="bi bi-trash3" aria-hidden="true"></i></button>
                                             </div>
                                         </td>
                                     </tr>
                                 }
                                 @if (!kpiTypes.Any())
                                 {
-                                    <tr><td colspan="3" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p class="mt-2 mb-0">Chưa có dữ liệu</p></td></tr>
+                                    <tr class="catalog-empty-row"><td colspan="3" class="catalog-empty-cell"><i class="bi bi-inbox" aria-hidden="true"></i><span>Chưa có loại KPI nào.</span></td></tr>
                                 }
                             </tbody>
                         </table>
@@ -171,36 +162,39 @@
                 </div>
 
                 <!-- TAB: OKR Type -->
-                <div class="tab-pane fade @(activeTab=="okrtype"?"show active":"")" id="pane-okrtype" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h5 class="fw-bold mb-1"><i class="bi bi-bullseye text-info me-2"></i>Loại OKR</h5>
-                            <p class="text-muted small mb-0">Quản lý danh sách loại mục tiêu OKR</p>
+                <div class="tab-pane fade @(activeTab == "okrtype" ? "show active" : "")" id="pane-okrtype" role="tabpanel" aria-labelledby="tab-okrtype">
+                    <div class="catalog-pane-header">
+                        <div class="catalog-pane-title">
+                            <span class="catalog-pane-icon" aria-hidden="true"><i class="bi bi-bullseye"></i></span>
+                            <div>
+                                <h2>Loại OKR</h2>
+                                <p>Phân loại mục tiêu theo phạm vi áp dụng như công ty, phòng ban hoặc cá nhân.</p>
+                            </div>
                         </div>
-                        <button class="btn-primary-custom d-flex align-items-center" onclick="showAddSimpleModal('OKRType', 'Loại OKR', 'typeName', 'Tên loại OKR', 'VD: Cấp công ty, Cấp phòng ban...')">
-                            <i class="bi bi-plus-lg me-1"></i> Thêm mới
+                        <button type="button" class="evaluation-primary-action catalog-add-action" onclick="showAddSimpleModal('OKRType', 'Loại OKR', 'typeName', 'Tên loại OKR', 'Ví dụ: Cấp công ty, Cấp phòng ban')">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Thêm loại OKR
                         </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="data-table w-100" id="tbl-okrtype">
-                            <thead><tr><th style="width:60px;">ID</th><th>Tên loại OKR</th><th style="width:120px;" class="text-end">Thao tác</th></tr></thead>
+                    <div class="catalog-table-shell">
+                        <table class="evaluation-table catalog-table" id="tbl-okrtype" aria-label="Danh sách loại OKR">
+                            <thead><tr><th class="catalog-id-column">ID</th><th>Tên loại OKR</th><th class="catalog-action-column text-end">Thao tác</th></tr></thead>
                             <tbody>
                                 @foreach (var item in okrTypes)
                                 {
                                     <tr data-id="@item.Id">
-                                        <td><span class="badge bg-light text-dark border">@item.Id</span></td>
+                                        <td><span class="catalog-id">@item.Id</span></td>
                                         <td class="fw-medium text-dark">@item.TypeName</td>
                                         <td>
-                                            <div class="action-btns justify-content-end">
-                                                <button class="action-btn" title="Sửa" onclick="showEditSimpleModal('OKRType', 'Loại OKR', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.TypeName ?? ""))', 'typeName', 'Tên loại OKR')"><i class="bi bi-pencil-square"></i></button>
-                                                <button class="action-btn danger" title="Xóa" onclick="deleteItem('OKRType', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.TypeName ?? ""))')"><i class="bi bi-trash"></i></button>
+                                            <div class="evaluation-actions">
+                                                <button type="button" class="evaluation-icon-button" title="Sửa" aria-label="Sửa loại OKR @item.TypeName" onclick="showEditSimpleModal('OKRType', 'Loại OKR', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.TypeName ?? ""))', 'typeName', 'Tên loại OKR')"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
+                                                <button type="button" class="evaluation-icon-button evaluation-icon-button--danger" title="Xóa" aria-label="Xóa loại OKR @item.TypeName" onclick="deleteItem('OKRType', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.TypeName ?? ""))')"><i class="bi bi-trash3" aria-hidden="true"></i></button>
                                             </div>
                                         </td>
                                     </tr>
                                 }
                                 @if (!okrTypes.Any())
                                 {
-                                    <tr><td colspan="3" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p class="mt-2 mb-0">Chưa có dữ liệu</p></td></tr>
+                                    <tr class="catalog-empty-row"><td colspan="3" class="catalog-empty-cell"><i class="bi bi-inbox" aria-hidden="true"></i><span>Chưa có loại OKR nào.</span></td></tr>
                                 }
                             </tbody>
                         </table>
@@ -208,36 +202,39 @@
                 </div>
 
                 <!-- TAB: KPI Property -->
-                <div class="tab-pane fade @(activeTab=="kpiproperty"?"show active":"")" id="pane-kpiproperty" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h5 class="fw-bold mb-1"><i class="bi bi-sliders text-secondary me-2"></i>Thuộc tính KPI</h5>
-                            <p class="text-muted small mb-0">Quản lý các thuộc tính bổ sung cho KPI</p>
+                <div class="tab-pane fade @(activeTab == "kpiproperty" ? "show active" : "")" id="pane-kpiproperty" role="tabpanel" aria-labelledby="tab-kpiproperty">
+                    <div class="catalog-pane-header">
+                        <div class="catalog-pane-title">
+                            <span class="catalog-pane-icon" aria-hidden="true"><i class="bi bi-sliders"></i></span>
+                            <div>
+                                <h2>Thuộc tính KPI</h2>
+                                <p>Quản lý đặc điểm dùng để mô tả cách KPI được đo lường hoặc đánh giá.</p>
+                            </div>
                         </div>
-                        <button class="btn-primary-custom d-flex align-items-center" onclick="showAddSimpleModal('KPIProperty', 'Thuộc tính KPI', 'propertyName', 'Tên thuộc tính', 'VD: Định lượng, Định tính...')">
-                            <i class="bi bi-plus-lg me-1"></i> Thêm mới
+                        <button type="button" class="evaluation-primary-action catalog-add-action" onclick="showAddSimpleModal('KPIProperty', 'Thuộc tính KPI', 'propertyName', 'Tên thuộc tính', 'Ví dụ: Định lượng, Định tính')">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Thêm thuộc tính
                         </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="data-table w-100">
-                            <thead><tr><th style="width:60px;">ID</th><th>Tên thuộc tính</th><th style="width:120px;" class="text-end">Thao tác</th></tr></thead>
+                    <div class="catalog-table-shell">
+                        <table class="evaluation-table catalog-table" aria-label="Danh sách thuộc tính KPI">
+                            <thead><tr><th class="catalog-id-column">ID</th><th>Tên thuộc tính</th><th class="catalog-action-column text-end">Thao tác</th></tr></thead>
                             <tbody>
                                 @foreach (var item in kpiProperties)
                                 {
                                     <tr>
-                                        <td><span class="badge bg-light text-dark border">@item.Id</span></td>
+                                        <td><span class="catalog-id">@item.Id</span></td>
                                         <td class="fw-medium text-dark">@item.PropertyName</td>
                                         <td>
-                                            <div class="action-btns justify-content-end">
-                                                <button class="action-btn" title="Sửa" onclick="showEditSimpleModal('KPIProperty', 'Thuộc tính KPI', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.PropertyName ?? ""))', 'propertyName', 'Tên thuộc tính')"><i class="bi bi-pencil-square"></i></button>
-                                                <button class="action-btn danger" title="Xóa" onclick="deleteItem('KPIProperty', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.PropertyName ?? ""))')"><i class="bi bi-trash"></i></button>
+                                            <div class="evaluation-actions">
+                                                <button type="button" class="evaluation-icon-button" title="Sửa" aria-label="Sửa thuộc tính KPI @item.PropertyName" onclick="showEditSimpleModal('KPIProperty', 'Thuộc tính KPI', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.PropertyName ?? ""))', 'propertyName', 'Tên thuộc tính')"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
+                                                <button type="button" class="evaluation-icon-button evaluation-icon-button--danger" title="Xóa" aria-label="Xóa thuộc tính KPI @item.PropertyName" onclick="deleteItem('KPIProperty', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.PropertyName ?? ""))')"><i class="bi bi-trash3" aria-hidden="true"></i></button>
                                             </div>
                                         </td>
                                     </tr>
                                 }
                                 @if (!kpiProperties.Any())
                                 {
-                                    <tr><td colspan="3" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p class="mt-2 mb-0">Chưa có dữ liệu</p></td></tr>
+                                    <tr class="catalog-empty-row"><td colspan="3" class="catalog-empty-cell"><i class="bi bi-inbox" aria-hidden="true"></i><span>Chưa có thuộc tính KPI nào.</span></td></tr>
                                 }
                             </tbody>
                         </table>
@@ -245,36 +242,39 @@
                 </div>
 
                 <!-- TAB: Check-in Status -->
-                <div class="tab-pane fade @(activeTab=="checkinstatus"?"show active":"")" id="pane-checkinstatus" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h5 class="fw-bold mb-1"><i class="bi bi-check2-square text-success me-2"></i>Trạng thái Check-in</h5>
-                            <p class="text-muted small mb-0">Quản lý trạng thái cho quy trình check-in KPI</p>
+                <div class="tab-pane fade @(activeTab == "checkinstatus" ? "show active" : "")" id="pane-checkinstatus" role="tabpanel" aria-labelledby="tab-checkinstatus">
+                    <div class="catalog-pane-header">
+                        <div class="catalog-pane-title">
+                            <span class="catalog-pane-icon" aria-hidden="true"><i class="bi bi-check2-square"></i></span>
+                            <div>
+                                <h2>Trạng thái Check-in</h2>
+                                <p>Quản lý các trạng thái phản ánh tiến trình cập nhật và rà soát KPI.</p>
+                            </div>
                         </div>
-                        <button class="btn-primary-custom d-flex align-items-center" onclick="showAddSimpleModal('CheckInStatus', 'Trạng thái Check-in', 'statusName', 'Tên trạng thái', 'VD: Đang thực hiện, Hoàn thành...')">
-                            <i class="bi bi-plus-lg me-1"></i> Thêm mới
+                        <button type="button" class="evaluation-primary-action catalog-add-action" onclick="showAddSimpleModal('CheckInStatus', 'Trạng thái Check-in', 'statusName', 'Tên trạng thái', 'Ví dụ: Đang thực hiện, Hoàn thành')">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Thêm trạng thái
                         </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="data-table w-100">
-                            <thead><tr><th style="width:60px;">ID</th><th>Tên trạng thái</th><th style="width:120px;" class="text-end">Thao tác</th></tr></thead>
+                    <div class="catalog-table-shell">
+                        <table class="evaluation-table catalog-table" aria-label="Danh sách trạng thái Check-in">
+                            <thead><tr><th class="catalog-id-column">ID</th><th>Tên trạng thái</th><th class="catalog-action-column text-end">Thao tác</th></tr></thead>
                             <tbody>
                                 @foreach (var item in checkInStatuses)
                                 {
                                     <tr>
-                                        <td><span class="badge bg-light text-dark border">@item.Id</span></td>
+                                        <td><span class="catalog-id">@item.Id</span></td>
                                         <td class="fw-medium text-dark">@item.StatusName</td>
                                         <td>
-                                            <div class="action-btns justify-content-end">
-                                                <button class="action-btn" title="Sửa" onclick="showEditSimpleModal('CheckInStatus', 'Trạng thái Check-in', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.StatusName ?? ""))', 'statusName', 'Tên trạng thái')"><i class="bi bi-pencil-square"></i></button>
-                                                <button class="action-btn danger" title="Xóa" onclick="deleteItem('CheckInStatus', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.StatusName ?? ""))')"><i class="bi bi-trash"></i></button>
+                                            <div class="evaluation-actions">
+                                                <button type="button" class="evaluation-icon-button" title="Sửa" aria-label="Sửa trạng thái Check-in @item.StatusName" onclick="showEditSimpleModal('CheckInStatus', 'Trạng thái Check-in', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.StatusName ?? ""))', 'statusName', 'Tên trạng thái')"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
+                                                <button type="button" class="evaluation-icon-button evaluation-icon-button--danger" title="Xóa" aria-label="Xóa trạng thái Check-in @item.StatusName" onclick="deleteItem('CheckInStatus', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.StatusName ?? ""))')"><i class="bi bi-trash3" aria-hidden="true"></i></button>
                                             </div>
                                         </td>
                                     </tr>
                                 }
                                 @if (!checkInStatuses.Any())
                                 {
-                                    <tr><td colspan="3" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p class="mt-2 mb-0">Chưa có dữ liệu</p></td></tr>
+                                    <tr class="catalog-empty-row"><td colspan="3" class="catalog-empty-cell"><i class="bi bi-inbox" aria-hidden="true"></i><span>Chưa có trạng thái Check-in nào.</span></td></tr>
                                 }
                             </tbody>
                         </table>
@@ -282,36 +282,39 @@
                 </div>
 
                 <!-- TAB: Fail Reason -->
-                <div class="tab-pane fade @(activeTab=="failreason"?"show active":"")" id="pane-failreason" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h5 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Lý do Thất bại</h5>
-                            <p class="text-muted small mb-0">Danh sách các lý do thất bại khi check-in KPI</p>
+                <div class="tab-pane fade @(activeTab == "failreason" ? "show active" : "")" id="pane-failreason" role="tabpanel" aria-labelledby="tab-failreason">
+                    <div class="catalog-pane-header">
+                        <div class="catalog-pane-title">
+                            <span class="catalog-pane-icon" aria-hidden="true"><i class="bi bi-exclamation-triangle"></i></span>
+                            <div>
+                                <h2>Lý do thất bại</h2>
+                                <p>Chuẩn hóa nguyên nhân được sử dụng khi KPI không đạt mục tiêu hoặc bị gián đoạn.</p>
+                            </div>
                         </div>
-                        <button class="btn-primary-custom d-flex align-items-center" onclick="showAddSimpleModal('FailReason', 'Lý do Thất bại', 'reasonName', 'Tên lý do', 'VD: Thiếu nguồn lực, Chậm tiến độ...')">
-                            <i class="bi bi-plus-lg me-1"></i> Thêm mới
+                        <button type="button" class="evaluation-primary-action catalog-add-action" onclick="showAddSimpleModal('FailReason', 'Lý do thất bại', 'reasonName', 'Tên lý do', 'Ví dụ: Thiếu nguồn lực, Chậm tiến độ')">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Thêm lý do
                         </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="data-table w-100">
-                            <thead><tr><th style="width:60px;">ID</th><th>Tên lý do</th><th style="width:120px;" class="text-end">Thao tác</th></tr></thead>
+                    <div class="catalog-table-shell">
+                        <table class="evaluation-table catalog-table" aria-label="Danh sách lý do thất bại">
+                            <thead><tr><th class="catalog-id-column">ID</th><th>Tên lý do</th><th class="catalog-action-column text-end">Thao tác</th></tr></thead>
                             <tbody>
                                 @foreach (var item in failReasons)
                                 {
                                     <tr>
-                                        <td><span class="badge bg-light text-dark border">@item.Id</span></td>
+                                        <td><span class="catalog-id">@item.Id</span></td>
                                         <td class="fw-medium text-dark">@item.ReasonName</td>
                                         <td>
-                                            <div class="action-btns justify-content-end">
-                                                <button class="action-btn" title="Sửa" onclick="showEditSimpleModal('FailReason', 'Lý do Thất bại', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ReasonName ?? ""))', 'reasonName', 'Tên lý do')"><i class="bi bi-pencil-square"></i></button>
-                                                <button class="action-btn danger" title="Xóa" onclick="deleteItem('FailReason', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ReasonName ?? ""))')"><i class="bi bi-trash"></i></button>
+                                            <div class="evaluation-actions">
+                                                <button type="button" class="evaluation-icon-button" title="Sửa" aria-label="Sửa lý do thất bại @item.ReasonName" onclick="showEditSimpleModal('FailReason', 'Lý do thất bại', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ReasonName ?? ""))', 'reasonName', 'Tên lý do')"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
+                                                <button type="button" class="evaluation-icon-button evaluation-icon-button--danger" title="Xóa" aria-label="Xóa lý do thất bại @item.ReasonName" onclick="deleteItem('FailReason', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ReasonName ?? ""))')"><i class="bi bi-trash3" aria-hidden="true"></i></button>
                                             </div>
                                         </td>
                                     </tr>
                                 }
                                 @if (!failReasons.Any())
                                 {
-                                    <tr><td colspan="3" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p class="mt-2 mb-0">Chưa có dữ liệu</p></td></tr>
+                                    <tr class="catalog-empty-row"><td colspan="3" class="catalog-empty-cell"><i class="bi bi-inbox" aria-hidden="true"></i><span>Chưa có lý do thất bại nào.</span></td></tr>
                                 }
                             </tbody>
                         </table>
@@ -319,38 +322,41 @@
                 </div>
 
                 <!-- TAB: Grading Rank -->
-                <div class="tab-pane fade @(activeTab=="gradingrank"?"show active":"")" id="pane-gradingrank" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h5 class="fw-bold mb-1"><i class="bi bi-trophy text-warning me-2"></i>Bậc Xếp hạng</h5>
-                            <p class="text-muted small mb-0">Cấu hình bậc xếp hạng đánh giá nhân viên (A, B, C, D...)</p>
+                <div class="tab-pane fade @(activeTab == "gradingrank" ? "show active" : "")" id="pane-gradingrank" role="tabpanel" aria-labelledby="tab-gradingrank">
+                    <div class="catalog-pane-header">
+                        <div class="catalog-pane-title">
+                            <span class="catalog-pane-icon" aria-hidden="true"><i class="bi bi-trophy"></i></span>
+                            <div>
+                                <h2>Bậc xếp hạng</h2>
+                                <p>Thiết lập mã hạng, ngưỡng điểm tối thiểu và mô tả cho kết quả đánh giá nhân viên.</p>
+                            </div>
                         </div>
-                        <button class="btn-primary-custom d-flex align-items-center" onclick="showAddGradingRankModal()">
-                            <i class="bi bi-plus-lg me-1"></i> Thêm mới
+                        <button type="button" class="evaluation-primary-action catalog-add-action" onclick="showAddGradingRankModal()">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Thêm bậc xếp hạng
                         </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="data-table w-100">
-                            <thead><tr><th style="width:60px;">ID</th><th>Mã hạng</th><th>Điểm tối thiểu</th><th>Mô tả</th><th style="width:120px;" class="text-end">Thao tác</th></tr></thead>
+                    <div class="catalog-table-shell">
+                        <table class="evaluation-table catalog-table" aria-label="Danh sách bậc xếp hạng">
+                            <thead><tr><th class="catalog-id-column">ID</th><th>Mã hạng</th><th>Điểm tối thiểu</th><th>Mô tả</th><th class="catalog-action-column text-end">Thao tác</th></tr></thead>
                             <tbody>
                                 @foreach (var item in gradingRanks)
                                 {
                                     <tr>
-                                        <td><span class="badge bg-light text-dark border">@item.Id</span></td>
-                                        <td><span class="badge bg-dark text-white px-3 py-2 rounded-pill fw-bold">@item.RankCode</span></td>
+                                        <td><span class="catalog-id">@item.Id</span></td>
+                                        <td><span class="catalog-value-tag catalog-value-tag--rank">@item.RankCode</span></td>
                                         <td class="fw-medium text-dark">@(item.MinScore?.ToString("0.##") ?? "—")</td>
-                                        <td class="text-muted">@(item.Description ?? "—")</td>
+                                        <td class="catalog-muted-value">@(item.Description ?? "—")</td>
                                         <td>
-                                            <div class="action-btns justify-content-end">
-                                                <button class="action-btn" title="Sửa" onclick="showEditGradingRankModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.RankCode ?? ""))', @(item.MinScore?.ToString() ?? "null"), '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Description ?? ""))')"><i class="bi bi-pencil-square"></i></button>
-                                                <button class="action-btn danger" title="Xóa" onclick="deleteItem('GradingRank', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.RankCode ?? ""))')"><i class="bi bi-trash"></i></button>
+                                            <div class="evaluation-actions">
+                                                <button type="button" class="evaluation-icon-button" title="Sửa" aria-label="Sửa bậc xếp hạng @item.RankCode" onclick="showEditGradingRankModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.RankCode ?? ""))', @(item.MinScore?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "null"), '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Description ?? ""))')"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
+                                                <button type="button" class="evaluation-icon-button evaluation-icon-button--danger" title="Xóa" aria-label="Xóa bậc xếp hạng @item.RankCode" onclick="deleteItem('GradingRank', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.RankCode ?? ""))')"><i class="bi bi-trash3" aria-hidden="true"></i></button>
                                             </div>
                                         </td>
                                     </tr>
                                 }
                                 @if (!gradingRanks.Any())
                                 {
-                                    <tr><td colspan="5" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p class="mt-2 mb-0">Chưa có dữ liệu</p></td></tr>
+                                    <tr class="catalog-empty-row"><td colspan="5" class="catalog-empty-cell"><i class="bi bi-inbox" aria-hidden="true"></i><span>Chưa có bậc xếp hạng nào.</span></td></tr>
                                 }
                             </tbody>
                         </table>
@@ -358,333 +364,146 @@
                 </div>
 
                 <!-- TAB: Status -->
-                <div class="tab-pane fade @(activeTab=="status"?"show active":"")" id="pane-status" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h5 class="fw-bold mb-1"><i class="bi bi-toggle-on text-dark me-2"></i>Trạng thái Chung</h5>
-                            <p class="text-muted small mb-0">Quản lý trạng thái cho các module: KPI, OKR, EvaluationPeriod...</p>
+                <div class="tab-pane fade @(activeTab == "status" ? "show active" : "")" id="pane-status" role="tabpanel" aria-labelledby="tab-status">
+                    <div class="catalog-pane-header">
+                        <div class="catalog-pane-title">
+                            <span class="catalog-pane-icon" aria-hidden="true"><i class="bi bi-toggle-on"></i></span>
+                            <div>
+                                <h2>Trạng thái chung</h2>
+                                <p>Quản lý trạng thái dùng chung cho các module KPI, OKR và kỳ đánh giá.</p>
+                            </div>
                         </div>
-                        <button class="btn-primary-custom d-flex align-items-center" onclick="showAddStatusModal()">
-                            <i class="bi bi-plus-lg me-1"></i> Thêm mới
+                        <button type="button" class="evaluation-primary-action catalog-add-action" onclick="showAddStatusModal()">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Thêm trạng thái
                         </button>
                     </div>
-                    <div class="table-responsive">
-                        <table class="data-table w-100">
-                            <thead><tr><th style="width:60px;">ID</th><th>Loại trạng thái</th><th>Tên trạng thái</th><th style="width:120px;" class="text-end">Thao tác</th></tr></thead>
+                    <div class="catalog-table-shell">
+                        <table class="evaluation-table catalog-table" aria-label="Danh sách trạng thái chung">
+                            <thead><tr><th class="catalog-id-column">ID</th><th>Loại trạng thái</th><th>Tên trạng thái</th><th class="catalog-action-column text-end">Thao tác</th></tr></thead>
                             <tbody>
                                 @foreach (var item in statuses)
                                 {
                                     <tr>
-                                        <td><span class="badge bg-light text-dark border">@item.Id</span></td>
-                                        <td><span class="badge bg-info bg-opacity-10 text-info px-2 py-1 rounded-pill">@(item.StatusType ?? "—")</span></td>
+                                        <td><span class="catalog-id">@item.Id</span></td>
+                                        <td><span class="catalog-value-tag">@(item.StatusType ?? "—")</span></td>
                                         <td class="fw-medium text-dark">@(item.StatusName ?? "—")</td>
                                         <td>
-                                            <div class="action-btns justify-content-end">
-                                                <button class="action-btn" title="Sửa" onclick="showEditStatusModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.StatusType ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.StatusName ?? ""))')"><i class="bi bi-pencil-square"></i></button>
-                                                <button class="action-btn danger" title="Xóa" onclick="deleteItem('Status', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.StatusName ?? ""))')"><i class="bi bi-trash"></i></button>
+                                            <div class="evaluation-actions">
+                                                <button type="button" class="evaluation-icon-button" title="Sửa" aria-label="Sửa trạng thái @item.StatusName" onclick="showEditStatusModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.StatusType ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.StatusName ?? ""))')"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
+                                                <button type="button" class="evaluation-icon-button evaluation-icon-button--danger" title="Xóa" aria-label="Xóa trạng thái @item.StatusName" onclick="deleteItem('Status', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.StatusName ?? ""))')"><i class="bi bi-trash3" aria-hidden="true"></i></button>
                                             </div>
                                         </td>
                                     </tr>
                                 }
                                 @if (!statuses.Any())
                                 {
-                                    <tr><td colspan="4" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p class="mt-2 mb-0">Chưa có dữ liệu</p></td></tr>
+                                    <tr class="catalog-empty-row"><td colspan="4" class="catalog-empty-cell"><i class="bi bi-inbox" aria-hidden="true"></i><span>Chưa có trạng thái chung nào.</span></td></tr>
                                 }
                             </tbody>
                         </table>
                     </div>
                 </div>
-
-
-
-                <!-- TAB: System Parameter -->
-                <div class="tab-pane fade @(activeTab=="systemparameter"?"show active":"")" id="pane-systemparameter" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h5 class="fw-bold mb-1"><i class="bi bi-gear text-secondary me-2"></i>Tham số Hệ thống</h5>
-                            <p class="text-muted small mb-0">Cấu hình các tham số hoạt động chung của hệ thống</p>
-                        </div>
-                        <button class="btn-primary-custom d-flex align-items-center" onclick="showAddSystemParameterModal()">
-                            <i class="bi bi-plus-lg me-1"></i> Thêm mới
-                        </button>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="data-table w-100">
-                            <thead><tr><th style="width:60px;">ID</th><th>Mã tham số</th><th>Giá trị</th><th>Mô tả</th><th style="width:120px;" class="text-end">Thao tác</th></tr></thead>
-                            <tbody>
-                                @foreach (var item in systemParameters)
-                                {
-                                    <tr>
-                                        <td><span class="badge bg-light text-dark border">@item.Id</span></td>
-                                        <td><code class="text-primary fw-bold">@item.ParameterCode</code></td>
-                                        <td class="fw-medium text-dark">@(item.Value ?? "—")</td>
-                                        <td class="text-muted">@(item.Description ?? "—")</td>
-                                        <td>
-                                            <div class="action-btns justify-content-end">
-                                                <button class="action-btn" title="Sửa" onclick="showEditSystemParameterModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ParameterCode ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Value ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Description ?? ""))')"><i class="bi bi-pencil-square"></i></button>
-                                                <button class="action-btn danger" title="Xóa" onclick="deleteItem('SystemParameter', @item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ParameterCode ?? ""))')"><i class="bi bi-trash"></i></button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                                @if (!systemParameters.Any())
-                                {
-                                    <tr><td colspan="5" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:1.5rem;"></i><p class="mt-2 mb-0">Chưa có dữ liệu</p></td></tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
             </div>
-        </div>
-    </div>
+    </section>
 </div>
 
 <!-- MODAL: Simple Add/Edit (1 field) -->
-<div class="modal fade" id="simpleModal" tabindex="-1">
+<div class="modal fade" id="simpleModal" tabindex="-1" aria-labelledby="simpleModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 pb-0 p-4">
-                <h5 class="modal-title fw-bold" id="simpleModalTitle"><i class="bi bi-plus-circle text-primary me-2"></i>Thêm mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <form class="modal-content evaluation-modal catalog-modal" id="simpleCatalogForm" onsubmit="submitSimpleModal(event)">
+            <div class="modal-header">
+                <h2 class="modal-title" id="simpleModalTitle"><i class="bi bi-plus-circle" aria-hidden="true"></i><span id="simpleModalTitleText">Thêm mới</span></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
-            <div class="modal-body p-4">
+            <div class="modal-body">
                 <input type="hidden" id="simpleModalEntityType" />
                 <input type="hidden" id="simpleModalId" />
                 <input type="hidden" id="simpleModalFieldName" />
-                <div class="mb-3">
-                    <label class="form-label fw-semibold" id="simpleModalFieldLabel">Tên</label>
-                    <input type="text" class="form-control shadow-sm" id="simpleModalFieldValue" placeholder="" required />
+                <div class="catalog-modal-field">
+                    <label id="simpleModalFieldLabel" for="simpleModalFieldValue">Tên</label>
+                    <input type="text" class="form-control" id="simpleModalFieldValue" placeholder="" autocomplete="off" required />
                 </div>
             </div>
-            <div class="modal-footer border-0 p-4 pt-0">
-                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn-primary-custom rounded-pill px-4" onclick="submitSimpleModal()">
-                    <i class="bi bi-check-lg me-1"></i> <span id="simpleModalBtnText">Lưu</span>
+            <div class="modal-footer">
+                <button type="button" class="evaluation-secondary-action" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="evaluation-primary-action" id="simpleModalSubmit">
+                    <i class="bi bi-check-lg" aria-hidden="true"></i> <span id="simpleModalBtnText">Lưu</span>
                 </button>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
 <!-- MODAL: Grading Rank -->
-<div class="modal fade" id="gradingRankModal" tabindex="-1">
+<div class="modal fade" id="gradingRankModal" tabindex="-1" aria-labelledby="gradingRankModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 pb-0 p-4">
-                <h5 class="modal-title fw-bold" id="gradingRankModalTitle"><i class="bi bi-trophy text-warning me-2"></i>Bậc Xếp hạng</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <form class="modal-content evaluation-modal catalog-modal" id="gradingRankForm" onsubmit="submitGradingRank(event)">
+            <div class="modal-header">
+                <h2 class="modal-title" id="gradingRankModalTitle"><i class="bi bi-trophy" aria-hidden="true"></i><span id="gradingRankModalTitleText">Bậc xếp hạng</span></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
-            <div class="modal-body p-4">
+            <div class="modal-body">
                 <input type="hidden" id="grankId" />
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Mã hạng <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control shadow-sm" id="grankCode" placeholder="VD: A, B, C..." required />
+                    <div class="col-md-6 catalog-modal-field">
+                        <label for="grankCode">Mã hạng <span class="text-danger" aria-label="bắt buộc">*</span></label>
+                        <input type="text" class="form-control" id="grankCode" placeholder="Ví dụ: A, B, C" autocomplete="off" required />
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Điểm tối thiểu</label>
-                        <input type="number" step="0.01" class="form-control shadow-sm" id="grankMinScore" placeholder="VD: 90" />
+                    <div class="col-md-6 catalog-modal-field">
+                        <label for="grankMinScore">Điểm tối thiểu</label>
+                        <input type="number" step="0.01" class="form-control" id="grankMinScore" placeholder="Ví dụ: 90" inputmode="decimal" />
                     </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Mô tả</label>
-                        <input type="text" class="form-control shadow-sm" id="grankDescription" placeholder="VD: Xuất sắc, Giỏi, Khá..." />
+                    <div class="col-12 catalog-modal-field">
+                        <label for="grankDescription">Mô tả</label>
+                        <input type="text" class="form-control" id="grankDescription" placeholder="Ví dụ: Xuất sắc, Giỏi, Khá" />
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-0 p-4 pt-0">
-                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn-primary-custom rounded-pill px-4" onclick="submitGradingRank()">
-                    <i class="bi bi-check-lg me-1"></i> <span id="grankBtnText">Lưu</span>
+            <div class="modal-footer">
+                <button type="button" class="evaluation-secondary-action" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="evaluation-primary-action" id="gradingRankSubmit">
+                    <i class="bi bi-check-lg" aria-hidden="true"></i> <span id="grankBtnText">Lưu</span>
                 </button>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
 <!-- MODAL: Status -->
-<div class="modal fade" id="statusModal" tabindex="-1">
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 pb-0 p-4">
-                <h5 class="modal-title fw-bold" id="statusModalTitle"><i class="bi bi-toggle-on text-primary me-2"></i>Trạng thái</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <form class="modal-content evaluation-modal catalog-modal" id="statusCatalogForm" onsubmit="submitStatus(event)">
+            <div class="modal-header">
+                <h2 class="modal-title" id="statusModalTitle"><i class="bi bi-toggle-on" aria-hidden="true"></i><span id="statusModalTitleText">Trạng thái</span></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
-            <div class="modal-body p-4">
+            <div class="modal-body">
                 <input type="hidden" id="statusId" />
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Loại trạng thái <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control shadow-sm" id="statusType" placeholder="VD: KPI, OKR, EvaluationPeriod..." required />
+                    <div class="col-md-6 catalog-modal-field">
+                        <label for="statusType">Loại trạng thái <span class="text-danger" aria-label="bắt buộc">*</span></label>
+                        <input type="text" class="form-control" id="statusType" placeholder="Ví dụ: KPI, OKR, EvaluationPeriod" autocomplete="off" required />
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Tên trạng thái <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control shadow-sm" id="statusName" placeholder="VD: Active, Completed..." required />
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer border-0 p-4 pt-0">
-                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn-primary-custom rounded-pill px-4" onclick="submitStatus()">
-                    <i class="bi bi-check-lg me-1"></i> <span id="statusBtnText">Lưu</span>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-
-<!-- MODAL: System Parameter -->
-<div class="modal fade" id="sysParamModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header border-0 pb-0 p-4">
-                <h5 class="modal-title fw-bold" id="sysParamModalTitle"><i class="bi bi-gear text-secondary me-2"></i>Tham số Hệ thống</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <input type="hidden" id="sysParamId" />
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Mã tham số <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control shadow-sm" id="sysParamCode" placeholder="VD: MAX_LOGIN_ATTEMPTS" required />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Giá trị</label>
-                        <input type="text" class="form-control shadow-sm" id="sysParamValue" placeholder="VD: 5" />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Mô tả</label>
-                        <input type="text" class="form-control shadow-sm" id="sysParamDescription" placeholder="Giải thích tham số này" />
+                    <div class="col-md-6 catalog-modal-field">
+                        <label for="statusName">Tên trạng thái <span class="text-danger" aria-label="bắt buộc">*</span></label>
+                        <input type="text" class="form-control" id="statusName" placeholder="Ví dụ: Active, Completed" autocomplete="off" required />
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-0 p-4 pt-0">
-                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn-primary-custom rounded-pill px-4" onclick="submitSystemParameter()">
-                    <i class="bi bi-check-lg me-1"></i> <span id="sysParamBtnText">Lưu</span>
+            <div class="modal-footer">
+                <button type="button" class="evaluation-secondary-action" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="evaluation-primary-action" id="statusModalSubmit">
+                    <i class="bi bi-check-lg" aria-hidden="true"></i> <span id="statusBtnText">Lưu</span>
                 </button>
             </div>
-        </div>
+        </form>
     </div>
 </div>
-
-<style>
-    .catalog-tabs-wrapper { background: #fafbfc; }
-    .catalog-tabs { gap: 4px; }
-    .catalog-tab {
-        border: none !important;
-        background: transparent !important;
-        color: #64748b;
-        border-radius: 10px 10px 0 0 !important;
-        padding: 10px 16px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        white-space: nowrap;
-        transition: all 0.2s;
-    }
-    .catalog-tab:hover { background: #e2e8f0 !important; color: #334155; }
-    .catalog-tab.active {
-        background: #fff !important;
-        color: #1a73e8 !important;
-        box-shadow: 0 -2px 0 0 #1a73e8 inset;
-    }
-    .stat-card { transition: transform 0.2s ease; }
-    .stat-card:hover { transform: translateY(-2px); }
-
-    @@media (max-width: 767.98px) {
-        .page-header {
-            flex-direction: column;
-            align-items: stretch !important;
-            gap: 1rem;
-        }
-
-        .catalog-tabs {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-        }
-
-        #catalogTabContent {
-            padding: 1rem !important;
-        }
-
-        #catalogTabContent .tab-pane > .d-flex:first-child {
-            flex-direction: column;
-            align-items: stretch !important;
-            gap: 0.875rem;
-        }
-
-        #catalogTabContent .tab-pane > .d-flex:first-child > button {
-            width: 100%;
-            justify-content: center;
-        }
-
-        #catalogTabContent .table-responsive {
-            overflow: visible;
-        }
-
-        #catalogTabContent .data-table thead {
-            display: none;
-        }
-
-        #catalogTabContent .data-table,
-        #catalogTabContent .data-table tbody,
-        #catalogTabContent .data-table tr,
-        #catalogTabContent .data-table td {
-            display: block;
-            width: 100%;
-        }
-
-        #catalogTabContent .data-table tbody {
-            display: grid;
-            gap: 0.9rem;
-        }
-
-        #catalogTabContent .data-table tr {
-            border: 1px solid #e5edf5;
-            border-radius: 18px;
-            padding: 0.95rem 1rem;
-            background: #fff;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
-        }
-
-        #catalogTabContent .data-table td {
-            border: 0;
-            padding: 0;
-        }
-
-        #catalogTabContent .data-table td + td {
-            margin-top: 0.75rem;
-        }
-
-        #catalogTabContent .data-table td::before {
-            content: attr(data-label);
-            display: block;
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            margin-bottom: 0.15rem;
-        }
-
-        #catalogTabContent .data-table td:last-child::before {
-            margin-bottom: 0.35rem;
-        }
-
-        #catalogTabContent .data-table .action-btns {
-            justify-content: flex-start !important;
-        }
-    }
-</style>
 
 @section Scripts {
 <script>
     function applyCatalogMobileLabels() {
-        document.querySelectorAll('#catalogTabContent .data-table').forEach((table) => {
+        document.querySelectorAll('#catalogTabContent .catalog-table').forEach((table) => {
             const headers = Array.from(table.querySelectorAll('thead th')).map((th) => th.textContent.trim());
             table.querySelectorAll('tbody tr').forEach((row) => {
                 row.querySelectorAll('td').forEach((cell, index) => {
@@ -696,6 +515,47 @@
 
     applyCatalogMobileLabels();
 
+    document.querySelectorAll('#catalogTabs [data-bs-toggle="tab"]').forEach((tabButton) => {
+        tabButton.addEventListener('shown.bs.tab', (event) => {
+            const tab = event.target.id.replace('tab-', '');
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', tab);
+            window.history.replaceState({}, '', url);
+        });
+    });
+
+    function showCatalogModal(modalId, focusId) {
+        const modalElement = document.getElementById(modalId);
+        modalElement.addEventListener('shown.bs.modal', () => document.getElementById(focusId)?.focus(), { once: true });
+        bootstrap.Modal.getOrCreateInstance(modalElement).show();
+    }
+
+    function resetCatalogSubmit(buttonId, labelId, readyLabel) {
+        const button = document.getElementById(buttonId);
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        button.dataset.readyLabel = readyLabel;
+        document.getElementById(labelId).textContent = readyLabel;
+    }
+
+    function setCatalogSubmitBusy(buttonId, labelId, isBusy) {
+        const button = document.getElementById(buttonId);
+        button.disabled = isBusy;
+        button.toggleAttribute('aria-busy', isBusy);
+        document.getElementById(labelId).textContent = isBusy ? 'Đang lưu...' : button.dataset.readyLabel;
+    }
+
+    async function sendCatalogRequest(url, formData) {
+        const response = await fetch(url, { method: 'POST', body: formData });
+        const data = await response.json();
+
+        if (!response.ok) {
+            return { success: false, message: data.message || 'Không thể xử lý yêu cầu.' };
+        }
+
+        return data;
+    }
+
     // =========================================
     // SIMPLE MODAL (1 field: KPIType, OKRType, KPIProperty, CheckInStatus, FailReason)
     // =========================================
@@ -703,26 +563,30 @@
         document.getElementById('simpleModalEntityType').value = entityType;
         document.getElementById('simpleModalId').value = '';
         document.getElementById('simpleModalFieldName').value = fieldName;
-        document.getElementById('simpleModalTitle').innerHTML = '<i class="bi bi-plus-circle text-primary me-2"></i>Thêm ' + title;
+        document.getElementById('simpleModalTitleText').textContent = `Thêm ${title}`;
         document.getElementById('simpleModalFieldLabel').textContent = fieldLabel;
         document.getElementById('simpleModalFieldValue').value = '';
         document.getElementById('simpleModalFieldValue').placeholder = placeholder;
-        document.getElementById('simpleModalBtnText').textContent = 'Thêm mới';
-        new bootstrap.Modal(document.getElementById('simpleModal')).show();
+        resetCatalogSubmit('simpleModalSubmit', 'simpleModalBtnText', 'Thêm mới');
+        showCatalogModal('simpleModal', 'simpleModalFieldValue');
     }
 
     function showEditSimpleModal(entityType, title, id, currentValue, fieldName, fieldLabel) {
         document.getElementById('simpleModalEntityType').value = entityType;
         document.getElementById('simpleModalId').value = id;
         document.getElementById('simpleModalFieldName').value = fieldName;
-        document.getElementById('simpleModalTitle').innerHTML = '<i class="bi bi-pencil-square text-warning me-2"></i>Sửa ' + title;
+        document.getElementById('simpleModalTitleText').textContent = `Sửa ${title}`;
         document.getElementById('simpleModalFieldLabel').textContent = fieldLabel;
         document.getElementById('simpleModalFieldValue').value = currentValue;
-        document.getElementById('simpleModalBtnText').textContent = 'Cập nhật';
-        new bootstrap.Modal(document.getElementById('simpleModal')).show();
+        resetCatalogSubmit('simpleModalSubmit', 'simpleModalBtnText', 'Cập nhật');
+        showCatalogModal('simpleModal', 'simpleModalFieldValue');
     }
 
-    function submitSimpleModal() {
+    async function submitSimpleModal(event) {
+        event?.preventDefault();
+        const form = document.getElementById('simpleCatalogForm');
+        if (!form.reportValidity()) return;
+
         const entityType = document.getElementById('simpleModalEntityType').value;
         const id = document.getElementById('simpleModalId').value;
         const fieldName = document.getElementById('simpleModalFieldName').value;
@@ -736,17 +600,21 @@
         formData.append(fieldName, fieldValue);
         window.appendAntiForgeryToken?.(formData);
 
-        fetch(url, { method: 'POST', body: formData })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    window.AppFeedback.toast({ tone: 'success', eyebrow: 'Quản lý danh mục', title: 'Thành công', message: data.message });
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    window.AppFeedback.toast({ tone: 'error', eyebrow: 'Quản lý danh mục', title: 'Không thể lưu', message: data.message });
-                }
-            })
-            .catch(() => window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
+        setCatalogSubmitBusy('simpleModalSubmit', 'simpleModalBtnText', true);
+        try {
+            const data = await sendCatalogRequest(url, formData);
+            if (data.success) {
+                window.AppFeedback.toast({ tone: 'success', eyebrow: 'Quản lý danh mục', title: 'Đã lưu', message: data.message });
+                setTimeout(() => location.reload(), 900);
+                return;
+            }
+
+            window.AppFeedback.toast({ tone: 'error', eyebrow: 'Quản lý danh mục', title: 'Không thể lưu', message: data.message });
+        } catch {
+            window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' });
+        }
+
+        setCatalogSubmitBusy('simpleModalSubmit', 'simpleModalBtnText', false);
     }
 
     // =========================================
@@ -786,9 +654,9 @@
         document.getElementById('grankCode').value = '';
         document.getElementById('grankMinScore').value = '';
         document.getElementById('grankDescription').value = '';
-        document.getElementById('gradingRankModalTitle').innerHTML = '<i class="bi bi-trophy text-warning me-2"></i>Thêm Bậc Xếp hạng';
-        document.getElementById('grankBtnText').textContent = 'Thêm mới';
-        new bootstrap.Modal(document.getElementById('gradingRankModal')).show();
+        document.getElementById('gradingRankModalTitleText').textContent = 'Thêm bậc xếp hạng';
+        resetCatalogSubmit('gradingRankSubmit', 'grankBtnText', 'Thêm mới');
+        showCatalogModal('gradingRankModal', 'grankCode');
     }
 
     function showEditGradingRankModal(id, code, minScore, description) {
@@ -796,12 +664,16 @@
         document.getElementById('grankCode').value = code;
         document.getElementById('grankMinScore').value = minScore !== null ? minScore : '';
         document.getElementById('grankDescription').value = description;
-        document.getElementById('gradingRankModalTitle').innerHTML = '<i class="bi bi-pencil-square text-warning me-2"></i>Sửa Bậc Xếp hạng';
-        document.getElementById('grankBtnText').textContent = 'Cập nhật';
-        new bootstrap.Modal(document.getElementById('gradingRankModal')).show();
+        document.getElementById('gradingRankModalTitleText').textContent = 'Sửa bậc xếp hạng';
+        resetCatalogSubmit('gradingRankSubmit', 'grankBtnText', 'Cập nhật');
+        showCatalogModal('gradingRankModal', 'grankCode');
     }
 
-    function submitGradingRank() {
+    async function submitGradingRank(event) {
+        event?.preventDefault();
+        const form = document.getElementById('gradingRankForm');
+        if (!form.reportValidity()) return;
+
         const id = document.getElementById('grankId').value;
         const rankCode = document.getElementById('grankCode').value.trim();
         if (!rankCode) { window.AppFeedback.toast({ tone: 'warning', eyebrow: 'Bậc Xếp hạng', title: 'Thiếu dữ liệu', message: 'Mã hạng không được để trống.' }); return; }
@@ -814,15 +686,21 @@
         formData.append('description', document.getElementById('grankDescription').value.trim());
         window.appendAntiForgeryToken?.(formData);
 
-        fetch(`/Catalog/${isEdit ? 'Edit' : 'Create'}GradingRank`, { method: 'POST', body: formData })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    window.AppFeedback.toast({ tone: 'success', eyebrow: 'Bậc Xếp hạng', title: 'Thành công', message: data.message });
-                    setTimeout(() => location.reload(), 1500);
-                } else { window.AppFeedback.toast({ tone: 'error', eyebrow: 'Bậc Xếp hạng', title: 'Lỗi', message: data.message }); }
-            })
-            .catch(() => window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
+        setCatalogSubmitBusy('gradingRankSubmit', 'grankBtnText', true);
+        try {
+            const data = await sendCatalogRequest(`/Catalog/${isEdit ? 'Edit' : 'Create'}GradingRank`, formData);
+            if (data.success) {
+                window.AppFeedback.toast({ tone: 'success', eyebrow: 'Bậc xếp hạng', title: 'Đã lưu', message: data.message });
+                setTimeout(() => location.reload(), 900);
+                return;
+            }
+
+            window.AppFeedback.toast({ tone: 'error', eyebrow: 'Bậc xếp hạng', title: 'Không thể lưu', message: data.message });
+        } catch {
+            window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' });
+        }
+
+        setCatalogSubmitBusy('gradingRankSubmit', 'grankBtnText', false);
     }
 
     // =========================================
@@ -832,21 +710,25 @@
         document.getElementById('statusId').value = '';
         document.getElementById('statusType').value = '';
         document.getElementById('statusName').value = '';
-        document.getElementById('statusModalTitle').innerHTML = '<i class="bi bi-toggle-on text-primary me-2"></i>Thêm Trạng thái';
-        document.getElementById('statusBtnText').textContent = 'Thêm mới';
-        new bootstrap.Modal(document.getElementById('statusModal')).show();
+        document.getElementById('statusModalTitleText').textContent = 'Thêm trạng thái';
+        resetCatalogSubmit('statusModalSubmit', 'statusBtnText', 'Thêm mới');
+        showCatalogModal('statusModal', 'statusType');
     }
 
     function showEditStatusModal(id, type, name) {
         document.getElementById('statusId').value = id;
         document.getElementById('statusType').value = type;
         document.getElementById('statusName').value = name;
-        document.getElementById('statusModalTitle').innerHTML = '<i class="bi bi-pencil-square text-warning me-2"></i>Sửa Trạng thái';
-        document.getElementById('statusBtnText').textContent = 'Cập nhật';
-        new bootstrap.Modal(document.getElementById('statusModal')).show();
+        document.getElementById('statusModalTitleText').textContent = 'Sửa trạng thái';
+        resetCatalogSubmit('statusModalSubmit', 'statusBtnText', 'Cập nhật');
+        showCatalogModal('statusModal', 'statusType');
     }
 
-    function submitStatus() {
+    async function submitStatus(event) {
+        event?.preventDefault();
+        const form = document.getElementById('statusCatalogForm');
+        if (!form.reportValidity()) return;
+
         const id = document.getElementById('statusId').value;
         const statusType = document.getElementById('statusType').value.trim();
         const statusName = document.getElementById('statusName').value.trim();
@@ -859,64 +741,22 @@
         formData.append('statusName', statusName);
         window.appendAntiForgeryToken?.(formData);
 
-        fetch(`/Catalog/${isEdit ? 'Edit' : 'Create'}Status`, { method: 'POST', body: formData })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    window.AppFeedback.toast({ tone: 'success', eyebrow: 'Trạng thái', title: 'Thành công', message: data.message });
-                    setTimeout(() => location.reload(), 1500);
-                } else { window.AppFeedback.toast({ tone: 'error', eyebrow: 'Trạng thái', title: 'Lỗi', message: data.message }); }
-            })
-            .catch(() => window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
+        setCatalogSubmitBusy('statusModalSubmit', 'statusBtnText', true);
+        try {
+            const data = await sendCatalogRequest(`/Catalog/${isEdit ? 'Edit' : 'Create'}Status`, formData);
+            if (data.success) {
+                window.AppFeedback.toast({ tone: 'success', eyebrow: 'Trạng thái', title: 'Đã lưu', message: data.message });
+                setTimeout(() => location.reload(), 900);
+                return;
+            }
+
+            window.AppFeedback.toast({ tone: 'error', eyebrow: 'Trạng thái', title: 'Không thể lưu', message: data.message });
+        } catch {
+            window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' });
+        }
+
+        setCatalogSubmitBusy('statusModalSubmit', 'statusBtnText', false);
     }
 
-    // Catalog now keeps KPI/OKR/HR shared data only.
-
-    // =========================================
-    // SYSTEM PARAMETER MODAL
-    // =========================================
-    function showAddSystemParameterModal() {
-        document.getElementById('sysParamId').value = '';
-        document.getElementById('sysParamCode').value = '';
-        document.getElementById('sysParamValue').value = '';
-        document.getElementById('sysParamDescription').value = '';
-        document.getElementById('sysParamModalTitle').innerHTML = '<i class="bi bi-gear text-secondary me-2"></i>Thêm Tham số';
-        document.getElementById('sysParamBtnText').textContent = 'Thêm mới';
-        new bootstrap.Modal(document.getElementById('sysParamModal')).show();
-    }
-
-    function showEditSystemParameterModal(id, code, value, description) {
-        document.getElementById('sysParamId').value = id;
-        document.getElementById('sysParamCode').value = code;
-        document.getElementById('sysParamValue').value = value;
-        document.getElementById('sysParamDescription').value = description;
-        document.getElementById('sysParamModalTitle').innerHTML = '<i class="bi bi-pencil-square text-warning me-2"></i>Sửa Tham số';
-        document.getElementById('sysParamBtnText').textContent = 'Cập nhật';
-        new bootstrap.Modal(document.getElementById('sysParamModal')).show();
-    }
-
-    function submitSystemParameter() {
-        const id = document.getElementById('sysParamId').value;
-        const parameterCode = document.getElementById('sysParamCode').value.trim();
-        if (!parameterCode) { window.AppFeedback.toast({ tone: 'warning', eyebrow: 'Tham số Hệ thống', title: 'Thiếu dữ liệu', message: 'Mã tham số không được để trống.' }); return; }
-
-        const isEdit = id !== '';
-        const formData = new FormData();
-        if (isEdit) formData.append('id', id);
-        formData.append('parameterCode', parameterCode);
-        formData.append('value', document.getElementById('sysParamValue').value.trim());
-        formData.append('description', document.getElementById('sysParamDescription').value.trim());
-        window.appendAntiForgeryToken?.(formData);
-
-        fetch(`/Catalog/${isEdit ? 'Edit' : 'Create'}SystemParameter`, { method: 'POST', body: formData })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    window.AppFeedback.toast({ tone: 'success', eyebrow: 'Tham số Hệ thống', title: 'Thành công', message: data.message });
-                    setTimeout(() => location.reload(), 1500);
-                } else { window.AppFeedback.toast({ tone: 'error', eyebrow: 'Tham số Hệ thống', title: 'Lỗi', message: data.message }); }
-            })
-            .catch(() => window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối', title: 'Lỗi kết nối', message: 'Đã xảy ra lỗi kết nối.' }));
-    }
 </script>
 }

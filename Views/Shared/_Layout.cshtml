@@ -1,4 +1,5 @@
 @inject Manage_KPI_or_OKR_System.Services.ISystemSettingsService SystemSettingsService
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostingEnvironment
 @{
     var appBranding = await SystemSettingsService.GetBrandingAsync();
     var canonicalUrl = SeoHelper.GetCanonicalUrl(ViewContext, appBranding.PublicBaseUrl);
@@ -94,7 +95,7 @@
             --body-bg: @appBranding.BodyBackgroundColor;
             --card-bg: @appBranding.CardBackgroundColor;
         }
-        @Html.Raw(appBranding.CustomCss)
+        @Html.Raw(Manage_KPI_or_OKR_System.Services.SystemSettingsService.EncodeCustomCssForStyleBlock(appBranding.CustomCss))
     </style>
     
     <!-- Restore sidebar state immediately to prevent layout shift -->
@@ -366,12 +367,23 @@
                         <ul class="dropdown-menu sidebar-user-menu shadow-sm border-0 mb-2">
                             <li><a class="dropdown-item py-2 fw-medium" href="/Auth/MyProfile"><i class="bi bi-person me-2 text-muted"></i> Hồ sơ cá nhân</a></li>
                             <li><a class="dropdown-item py-2 fw-medium" href="/Auth/ChangePassword"><i class="bi bi-shield-lock me-2 text-muted"></i> Đổi mật khẩu</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header text-primary fw-bold"><i class="bi bi-people-fill"></i> TÀI KHOẢN DÙNG THỬ (1 CLICK)</h6></li>
-                            <li><a class="dropdown-item py-2 fw-medium" href="/Auth/SwitchDemo?username=director"><i class="bi bi-person-badge text-warning me-2"></i> Director (Giám đốc)</a></li>
-                            <li><a class="dropdown-item py-2 fw-medium" href="/Auth/SwitchDemo?username=manager"><i class="bi bi-person-fill-gear text-success me-2"></i> Manager (Trưởng phòng)</a></li>
-                            <li><a class="dropdown-item py-2 fw-medium" href="/Auth/SwitchDemo?username=hr"><i class="bi bi-person-hearts text-danger me-2"></i> HR (Nhân sự)</a></li>
-                            <li><a class="dropdown-item py-2 fw-medium" href="/Auth/SwitchDemo?username=employee"><i class="bi bi-person text-info me-2"></i> Employee (Nhân viên)</a></li>
+                            @if (HostingEnvironment.IsDevelopment())
+                            {
+                                <li><hr class="dropdown-divider"></li>
+                                <li><h6 class="dropdown-header text-primary fw-bold"><i class="bi bi-people-fill"></i> TÀI KHOẢN DÙNG THỬ</h6></li>
+                                <li>
+                                    <form asp-controller="Auth" asp-action="SwitchDemo" method="post"><input type="hidden" name="username" value="director" /><button type="submit" class="dropdown-item py-2 fw-medium"><i class="bi bi-person-badge text-warning me-2"></i> Director (Giám đốc)</button></form>
+                                </li>
+                                <li>
+                                    <form asp-controller="Auth" asp-action="SwitchDemo" method="post"><input type="hidden" name="username" value="manager" /><button type="submit" class="dropdown-item py-2 fw-medium"><i class="bi bi-person-fill-gear text-success me-2"></i> Manager (Trưởng phòng)</button></form>
+                                </li>
+                                <li>
+                                    <form asp-controller="Auth" asp-action="SwitchDemo" method="post"><input type="hidden" name="username" value="hr" /><button type="submit" class="dropdown-item py-2 fw-medium"><i class="bi bi-person-hearts text-danger me-2"></i> HR (Nhân sự)</button></form>
+                                </li>
+                                <li>
+                                    <form asp-controller="Auth" asp-action="SwitchDemo" method="post"><input type="hidden" name="username" value="employee" /><button type="submit" class="dropdown-item py-2 fw-medium"><i class="bi bi-person text-info me-2"></i> Employee (Nhân viên)</button></form>
+                                </li>
+                            }
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item py-2 text-danger fw-medium" href="/Auth/Logout"><i class="bi bi-box-arrow-right me-2 text-danger"></i> Đăng xuất</a></li>
                         </ul>

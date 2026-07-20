@@ -72,7 +72,7 @@
                                     <label class="form-label small text-muted text-uppercase fw-800">Mật khẩu <span class="text-danger">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="bi bi-key"></i>
-                                        <input asp-for="PasswordHash" type="password" class="form-control shadow-sm" placeholder="Nhập ít nhất 6 ký tự" required minlength="6" />
+                                        <input asp-for="PasswordHash" type="password" class="form-control shadow-sm" placeholder="Nhập từ 6 đến 128 ký tự" required minlength="6" maxlength="128" pattern="\S{6,128}" autocomplete="new-password" title="Mật khẩu từ 6 đến 128 ký tự và không chứa khoảng trắng" />
                                     </div>
                                     <span asp-validation-for="PasswordHash" class="text-danger small mt-1 d-block"></span>
                                 </div>

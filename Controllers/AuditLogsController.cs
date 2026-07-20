@@ -67,9 +67,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var roles = await _context.Roles
                 .OrderBy(r => r.RoleName)
                 .ToDictionaryAsync(r => r.Id, r => r.RoleName ?? "N/A");
-            var systemUsers = await _context.SystemUsers.AsNoTracking().ToListAsync();
-            var users = systemUsers.ToDictionary(u => u.Id, u => u.Username ?? "N/A");
-            var userRoleIds = systemUsers.ToDictionary(u => u.Id, u => u.RoleId);
+            var pageUsers = paginatedLogs
+                .Where(log => log.SystemUser != null)
+                .Select(log => log.SystemUser!)
+                .GroupBy(user => user.Id)
+                .Select(group => group.First())
+                .ToList();
+            var users = pageUsers.ToDictionary(u => u.Id, u => u.Username ?? "N/A");
+            var userRoleIds = pageUsers.ToDictionary(u => u.Id, u => u.RoleId);
             ViewBag.Users = users;
             ViewBag.UserRoleIds = userRoleIds;
             ViewBag.Roles = roles;

@@ -6,6 +6,7 @@ using Manage_KPI_or_OKR_System.Models;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using System.Text.Json;
+using System.ComponentModel.DataAnnotations;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -58,26 +59,36 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> AssignRole(int userId, int roleId)
         {
             var user = await _context.SystemUsers.FindAsync(userId);
-            if (user != null)
+            var requestedRole = await _context.Roles.FindAsync(roleId);
+            if (user == null || requestedRole == null || requestedRole.IsActive != true)
             {
-                var oldData = new
-                {
-                    user.Id,
-                    user.Username,
-                    user.RoleId
-                };
-
-                user.RoleId = roleId;
-                await _context.SaveChangesAsync();
-                await LogSystemUserAuditAsync("UPDATE", oldData, new
-                {
-                    user.Id,
-                    user.Username,
-                    user.RoleId
-                });
-
-                TempData["SuccessMessage"] = $"Đã cập nhật phân quyền cho tài khoản {user.Username}!";
+                TempData["ToastErrorMessage"] = "Tài khoản hoặc vai trò không tồn tại.";
+                return RedirectToAction(nameof(Index));
             }
+
+            if (!CanManageAdministrators() &&
+                (await IsAdministratorRoleAsync(user.RoleId) || AuthRoleHelper.IsAdminRoleName(requestedRole.RoleName)))
+            {
+                return Forbid();
+            }
+
+            var oldData = new
+            {
+                user.Id,
+                user.Username,
+                user.RoleId
+            };
+
+            user.RoleId = roleId;
+            await _context.SaveChangesAsync();
+            await LogSystemUserAuditAsync("UPDATE", oldData, new
+            {
+                user.Id,
+                user.Username,
+                user.RoleId
+            });
+
+            TempData["SuccessMessage"] = $"Đã cập nhật phân quyền cho tài khoản {user.Username}!";
             return RedirectToAction(nameof(Index));
         }
 
@@ -95,6 +106,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var user = await _context.SystemUsers.FindAsync(userId);
             if (user != null)
             {
+                if (!CanManageAdministrators() && await IsAdministratorRoleAsync(user.RoleId))
+                {
+                    return Forbid();
+                }
+
                 var oldData = new
                 {
                     user.Id,
@@ -122,6 +138,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (id == null) return NotFound();
             var user = await _context.SystemUsers.FindAsync(id);
             if (user == null) return NotFound();
+            if (!CanManageAdministrators() && await IsAdministratorRoleAsync(user.RoleId)) return Forbid();
 
             return View(user);
         }
@@ -132,10 +149,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             var user = await _context.SystemUsers.FindAsync(userId);
             if (user == null) return NotFound();
+            if (!CanManageAdministrators() && await IsAdministratorRoleAsync(user.RoleId)) return Forbid();
 
-            if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
+            var passwordValidation = ValidateManagedPassword(newPassword, required: true);
+            if (passwordValidation != null)
             {
-                ModelState.AddModelError("newPassword", "Mật khẩu phải có ít nhất 6 ký tự.");
+                ModelState.AddModelError("newPassword", passwordValidation);
                 return View(user);
             }
 
@@ -165,32 +184,66 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("SYSUSERS_CREATE")]
         public async Task<IActionResult> Create()
         {
-            ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+            ViewBag.Roles = await GetAssignableRolesAsync();
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         [HasPermission("SYSUSERS_CREATE")]
-        public async Task<IActionResult> Create(SystemUser user)
+        public async Task<IActionResult> Create([Bind("Username,Email,PasswordHash,RoleId")] SystemUser user)
         {
-            if (string.IsNullOrEmpty(user.PasswordHash) || user.PasswordHash.Length < 6)
+            user.Username = user.Username?.Trim();
+            user.Email = user.Email?.Trim().ToLowerInvariant();
+
+            if (string.IsNullOrWhiteSpace(user.Username))
             {
-                ModelState.AddModelError(nameof(user.PasswordHash), "Mật khẩu phải có ít nhất 6 ký tự.");
+                ModelState.AddModelError(nameof(user.Username), "Vui lòng nhập tên đăng nhập.");
+            }
+
+            if (string.IsNullOrWhiteSpace(user.Email) || !new EmailAddressAttribute().IsValid(user.Email))
+            {
+                ModelState.AddModelError(nameof(user.Email), "Vui lòng nhập email hợp lệ.");
+            }
+
+            if (!user.RoleId.HasValue)
+            {
+                ModelState.AddModelError(nameof(user.RoleId), "Vui lòng chọn vai trò.");
+            }
+
+            var passwordValidation = ValidateManagedPassword(user.PasswordHash, required: true);
+            if (passwordValidation != null)
+            {
+                ModelState.AddModelError(nameof(user.PasswordHash), passwordValidation);
+            }
+
+            if (user.RoleId.HasValue)
+            {
+                var requestedRole = await _context.Roles.FindAsync(user.RoleId.Value);
+                if (requestedRole == null || requestedRole.IsActive != true)
+                {
+                    ModelState.AddModelError(nameof(user.RoleId), "Vai trò được chọn không tồn tại hoặc đã ngừng hoạt động.");
+                }
+                else if (!CanManageAdministrators() && AuthRoleHelper.IsAdminRoleName(requestedRole.RoleName))
+                {
+                    return Forbid();
+                }
             }
 
             if (ModelState.IsValid)
             {
-                bool duplicateUsername = !string.IsNullOrWhiteSpace(user.Username) &&
-                    await _context.SystemUsers.AnyAsync(u => u.Username == user.Username);
-                bool duplicateEmail = !string.IsNullOrWhiteSpace(user.Email) &&
-                    await _context.SystemUsers.AnyAsync(u => u.Email == user.Email);
+                var normalizedUsername = user.Username!.ToLowerInvariant();
+                var normalizedEmail = user.Email!.ToLowerInvariant();
+                bool duplicateUsername = await _context.SystemUsers.AnyAsync(u =>
+                    u.Username != null && u.Username.ToLower() == normalizedUsername);
+                bool duplicateEmail = await _context.SystemUsers.AnyAsync(u =>
+                    u.Email != null && u.Email.ToLower() == normalizedEmail);
 
                 if (duplicateUsername || duplicateEmail)
                 {
                     if (duplicateUsername) ModelState.AddModelError(nameof(user.Username), "Tên đăng nhập đã tồn tại.");
                     if (duplicateEmail) ModelState.AddModelError(nameof(user.Email), "Email đã tồn tại.");
-                    ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+                    ViewBag.Roles = await GetAssignableRolesAsync();
                     return View(user);
                 }
 
@@ -214,7 +267,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 TempData["SuccessMessage"] = $"Đã tạo tài khoản {user.Username} thành công!";
                 return RedirectToAction(nameof(Index));
             }
-            ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+            ViewBag.Roles = await GetAssignableRolesAsync();
             return View(user);
         }
 
@@ -225,21 +278,43 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (id == null) return NotFound();
             var user = await _context.SystemUsers.FindAsync(id);
             if (user == null) return NotFound();
+            if (!CanManageAdministrators() && await IsAdministratorRoleAsync(user.RoleId)) return Forbid();
 
-            ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+            ViewBag.Roles = await GetAssignableRolesAsync();
             return View(user);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         [HasPermission("SYSUSERS_EDIT")]
-        public async Task<IActionResult> Edit(int id, SystemUser user, string? newPassword)
+        public async Task<IActionResult> Edit(
+            int id,
+            [Bind("Id,Username,Email,RoleId,IsActive")] SystemUser user,
+            string? newPassword)
         {
             if (id != user.Id) return NotFound();
 
-            if (!string.IsNullOrEmpty(newPassword) && newPassword.Length < 6)
+            user.Username = user.Username?.Trim();
+            user.Email = user.Email?.Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(user.Username))
             {
-                ModelState.AddModelError(nameof(newPassword), "Mật khẩu phải có ít nhất 6 ký tự.");
+                ModelState.AddModelError(nameof(user.Username), "Vui lòng nhập tên đăng nhập.");
+            }
+
+            if (string.IsNullOrWhiteSpace(user.Email) || !new EmailAddressAttribute().IsValid(user.Email))
+            {
+                ModelState.AddModelError(nameof(user.Email), "Vui lòng nhập email hợp lệ.");
+            }
+
+            if (!user.RoleId.HasValue)
+            {
+                ModelState.AddModelError(nameof(user.RoleId), "Vui lòng chọn vai trò.");
+            }
+
+            var passwordValidation = ValidateManagedPassword(newPassword, required: false);
+            if (passwordValidation != null)
+            {
+                ModelState.AddModelError(nameof(newPassword), passwordValidation);
             }
 
             if (ModelState.IsValid)
@@ -247,28 +322,37 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var existingUser = await _context.SystemUsers.FindAsync(id);
                 if (existingUser != null)
                 {
-                    user.Username = user.Username?.Trim();
-                    user.Email = user.Email?.Trim();
-
-                    if (string.IsNullOrWhiteSpace(user.Username))
+                    var requestedRole = user.RoleId.HasValue
+                        ? await _context.Roles.FindAsync(user.RoleId.Value)
+                        : null;
+                    if (user.RoleId.HasValue && (requestedRole == null || requestedRole.IsActive != true))
                     {
-                        ModelState.AddModelError(nameof(user.Username), "Tên đăng nhập không được để trống.");
-                        ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+                        ModelState.AddModelError(nameof(user.RoleId), "Vai trò được chọn không tồn tại hoặc đã ngừng hoạt động.");
+                        ViewBag.Roles = await GetAssignableRolesAsync();
                         return View(user);
                     }
 
-                    if (await _context.SystemUsers.AnyAsync(u => u.Id != id && u.Username == user.Username))
+                    if (!CanManageAdministrators() &&
+                        (await IsAdministratorRoleAsync(existingUser.RoleId) || AuthRoleHelper.IsAdminRoleName(requestedRole?.RoleName)))
+                    {
+                        return Forbid();
+                    }
+
+                    var normalizedUsername = user.Username!.ToLowerInvariant();
+                    var normalizedEmail = user.Email!.ToLowerInvariant();
+                    if (await _context.SystemUsers.AnyAsync(u =>
+                        u.Id != id && u.Username != null && u.Username.ToLower() == normalizedUsername))
                     {
                         ModelState.AddModelError(nameof(user.Username), "Tên đăng nhập đã tồn tại.");
-                        ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+                        ViewBag.Roles = await GetAssignableRolesAsync();
                         return View(user);
                     }
 
-                    if (!string.IsNullOrWhiteSpace(user.Email) &&
-                        await _context.SystemUsers.AnyAsync(u => u.Id != id && u.Email == user.Email))
+                    if (await _context.SystemUsers.AnyAsync(u =>
+                        u.Id != id && u.Email != null && u.Email.ToLower() == normalizedEmail))
                     {
                         ModelState.AddModelError(nameof(user.Email), "Email đã tồn tại.");
-                        ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+                        ViewBag.Roles = await GetAssignableRolesAsync();
                         return View(user);
                     }
 
@@ -311,7 +395,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     return RedirectToAction(nameof(Index));
                 }
             }
-            ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+            ViewBag.Roles = await GetAssignableRolesAsync();
             return View(user);
         }
 
@@ -324,6 +408,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (user == null) return NotFound();
 
             ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+            ViewBag.CanEditSystemUser =
+                await PermissionLookupHelper.HasPermissionAsync(_context, User, "SYSUSERS_EDIT") &&
+                (CanManageAdministrators() || !await IsAdministratorRoleAsync(user.RoleId));
             return View(user);
         }
 
@@ -334,6 +421,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (id == null) return NotFound();
             var user = await _context.SystemUsers.FindAsync(id);
             if (user == null) return NotFound();
+            if (!CanManageAdministrators() && await IsAdministratorRoleAsync(user.RoleId)) return Forbid();
 
             ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
             return View(user);
@@ -354,6 +442,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var user = await _context.SystemUsers.FindAsync(id);
             if (user != null)
             {
+                if (!CanManageAdministrators() && await IsAdministratorRoleAsync(user.RoleId))
+                {
+                    return Forbid();
+                }
+
                 var oldData = new
                 {
                     user.Id,
@@ -379,6 +472,56 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
             }
             return RedirectToAction(nameof(Index));
+        }
+
+        private bool CanManageAdministrators() =>
+            User.IsInRole("Admin") || User.IsInRole("Administrator");
+
+        private async Task<bool> IsAdministratorRoleAsync(int? roleId)
+        {
+            if (!roleId.HasValue)
+            {
+                return false;
+            }
+
+            var roleName = await _context.Roles
+                .Where(role => role.Id == roleId.Value)
+                .Select(role => role.RoleName)
+                .FirstOrDefaultAsync();
+            return AuthRoleHelper.IsAdminRoleName(roleName);
+        }
+
+        private async Task<Dictionary<int, string>> GetAssignableRolesAsync()
+        {
+            var roles = await _context.Roles
+                .Where(role => role.IsActive == true)
+                .OrderBy(role => role.RoleName)
+                .ToListAsync();
+            if (!CanManageAdministrators())
+            {
+                roles = roles
+                    .Where(role => !AuthRoleHelper.IsAdminRoleName(role.RoleName))
+                    .ToList();
+            }
+
+            return roles.ToDictionary(role => role.Id, role => role.RoleName ?? "Chưa đặt tên");
+        }
+
+        private static string? ValidateManagedPassword(string? password, bool required)
+        {
+            if (string.IsNullOrEmpty(password))
+            {
+                return required ? "Vui lòng nhập mật khẩu." : null;
+            }
+
+            if (password.Length is < 6 or > 128)
+            {
+                return "Mật khẩu phải có từ 6 đến 128 ký tự.";
+            }
+
+            return password.Any(char.IsWhiteSpace)
+                ? "Mật khẩu không được chứa khoảng trắng."
+                : null;
         }
 
         private async Task LogSystemUserAuditAsync(string actionType, object? oldData, object? newData)
