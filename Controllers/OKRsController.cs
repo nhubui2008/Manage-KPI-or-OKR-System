@@ -479,7 +479,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [HasPermission("OKRS_EDIT")]
-        public async Task<IActionResult> Edit(OKR model, int? missionId, int? departmentId, int? employeeId)
+        public async Task<IActionResult> Edit(
+            [Bind("Id,ObjectiveName,OKRTypeId,Cycle")] OKR model,
+            int? missionId,
+            int? departmentId,
+            int? employeeId)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales"))
@@ -531,7 +535,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             existingOkr.ObjectiveName = model.ObjectiveName;
             existingOkr.OKRTypeId = model.OKRTypeId;
             existingOkr.Cycle = model.Cycle;
-            existingOkr.StatusId = model.StatusId;
+            // Status is workflow-owned; never accept it from the edit form (prevents overposting).
 
             var existingMissions = await _context.OKR_Mission_Mappings
                 .Where(m => m.OKRId == model.Id)
@@ -598,6 +602,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 TempData["ErrorMessage"] = "Không tìm thấy OKR cần thêm KR.";
                 return RedirectToAction(nameof(Index));
             }
+
+            var activeOkr = await _context.OKRs
+                .AsNoTracking()
+                .AnyAsync(o => o.Id == kr.OKRId.Value && o.IsActive == true);
+            if (!activeOkr)
+            {
+                TempData["ErrorMessage"] = "OKR không tồn tại hoặc đã bị vô hiệu hóa.";
+                return RedirectToAction(nameof(Index));
+            }
             if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(kr.OKRId.Value))
             {
                 return Forbid();
@@ -640,7 +653,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return Forbid();
 
             var okr = await _context.OKRs.FindAsync(id);
-            if (okr == null) return NotFound(new { success = false, message = "Không tìm thấy OKR." });
+            if (okr == null || okr.IsActive != true)
+                return NotFound(new { success = false, message = "Không tìm thấy OKR đang hoạt động." });
 
             if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(id))
             {
@@ -717,6 +731,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             int okrId = keyResults.First().OKRId ?? 0;
             if (okrId == 0) return BadRequest("OkrId không hợp lệ.");
 
+            var activeOkr = await _context.OKRs
+                .AsNoTracking()
+                .AnyAsync(o => o.Id == okrId && o.IsActive == true);
+            if (!activeOkr) return NotFound("OKR không tồn tại hoặc đã bị vô hiệu hóa.");
+
             if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(okrId))
             {
                 return Forbid();
@@ -780,6 +799,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            if (!kr.OKRId.HasValue || !await _context.OKRs
+                    .AsNoTracking()
+                    .AnyAsync(o => o.Id == kr.OKRId.Value && o.IsActive == true))
+            {
+                return NotFound("OKR không tồn tại hoặc đã bị vô hiệu hóa.");
+            }
+
             if (!kr.OKRId.HasValue || !await CanCurrentUserUpdateOkrProgressAsync(kr.OKRId.Value))
             {
                 return Forbid();
@@ -827,7 +853,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var kr = await _context.OKRKeyResults.FindAsync(model.Id);
             if (kr != null)
             {
-                if (!kr.OKRId.HasValue || (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(kr.OKRId.Value)))
+                if (!kr.OKRId.HasValue || !await _context.OKRs.AsNoTracking()
+                    .AnyAsync(o => o.Id == kr.OKRId.Value && o.IsActive == true) ||
+                    (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(kr.OKRId.Value)))
                 {
                     return Forbid();
                 }
@@ -869,8 +897,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var okr = await _context.OKRs.FindAsync(okrId);
+            var okr = await _context.OKRs.FirstOrDefaultAsync(o => o.Id == okrId && o.IsActive == true);
             if (okr == null) return NotFound();
+
+            var employeeExists = await _context.Employees
+                .AsNoTracking()
+                .AnyAsync(e => e.Id == employeeId && e.IsActive == true);
+            if (!employeeExists)
+            {
+                TempData["ErrorMessage"] = "Nhân viên không tồn tại hoặc đã ngừng hoạt động.";
+                return RedirectToAction(nameof(Index));
+            }
+
             if (IsManagerScopedRole())
             {
                 if (!await CanCurrentManagerAccessOkrAsync(okrId) ||
@@ -971,9 +1009,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (kr != null)
             {
                 int? okrId = kr.OKRId;
-                if (!okrId.HasValue || (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(okrId.Value)))
+                if (!okrId.HasValue ||
+                    !await _context.OKRs.AsNoTracking()
+                        .AnyAsync(o => o.Id == okrId.Value && o.IsActive == true) ||
+                    (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(okrId.Value)))
                 {
-                    return Forbid();
+                    return NotFound();
                 }
 
                 var linkedActiveTasks = await _context.WorkItems
@@ -1624,7 +1665,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 User.IsInRole("Sales") || User.IsInRole("sales")) 
                 return Forbid();
 
-            var okr = await _context.OKRs.FindAsync(id);
+            var okr = await _context.OKRs
+                .FirstOrDefaultAsync(o => o.Id == id && o.IsActive == true);
             if (okr != null)
             {
                 if (IsManagerScopedRole() && !await CanCurrentManagerAccessOkrAsync(id))

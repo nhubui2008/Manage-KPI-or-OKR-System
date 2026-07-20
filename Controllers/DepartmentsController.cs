@@ -238,11 +238,25 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("DEPARTMENTS_CREATE")]
         public async Task<IActionResult> Create(Department dept)
         {
+            // Normalize user input before uniqueness checks and persistence.  Do
+            // not let a client submit an arbitrary identity/soft-delete state.
+            dept.DepartmentCode = string.IsNullOrWhiteSpace(dept.DepartmentCode)
+                ? null
+                : dept.DepartmentCode.Trim();
+            dept.DepartmentName = string.IsNullOrWhiteSpace(dept.DepartmentName)
+                ? null
+                : dept.DepartmentName.Trim();
+            dept.Id = 0;
+            dept.IsActive = true;
+
+            await ValidateDepartmentReferencesAsync(dept, null);
+
             // Kiểm tra tính duy nhất của DepartmentCode (bao gồm cả mã đã bị xóa mềm)
             if (!string.IsNullOrEmpty(dept.DepartmentCode))
             {
+                var normalizedCode = dept.DepartmentCode.ToLower();
                 var existing = await _context.Departments
-                    .FirstOrDefaultAsync(d => d.DepartmentCode != null && d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower());
+                    .FirstOrDefaultAsync(d => d.DepartmentCode != null && d.DepartmentCode.ToLower() == normalizedCode);
 
                 if (existing != null)
                 {
@@ -300,12 +314,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (id != dept.Id) return NotFound();
 
+            dept.DepartmentCode = string.IsNullOrWhiteSpace(dept.DepartmentCode)
+                ? null
+                : dept.DepartmentCode.Trim();
+            dept.DepartmentName = string.IsNullOrWhiteSpace(dept.DepartmentName)
+                ? null
+                : dept.DepartmentName.Trim();
+
+            await ValidateDepartmentReferencesAsync(dept, id);
+
             // Kiểm tra tính duy nhất của DepartmentCode (exclude bản ghi hiện tại)
             if (!string.IsNullOrEmpty(dept.DepartmentCode))
             {
+                var normalizedCode = dept.DepartmentCode.ToLower();
                 var existingCode = await _context.Departments
-                    .AnyAsync(d => d.DepartmentCode != null && d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower() 
-                                && d.Id != id && d.IsActive == true);
+                    .AnyAsync(d => d.DepartmentCode != null && d.DepartmentCode.ToLower() == normalizedCode
+                                && d.Id != id);
                 if (existingCode)
                 {
                     ModelState.AddModelError("DepartmentCode", "Mã phòng ban này đã tồn tại trong hệ thống");
@@ -314,7 +338,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (ModelState.IsValid)
             {
-                // 1. Kiểm tra tham chiếu vòng
+                // 1. Kiểm tra tham chiếu vòng (đã kiểm tra parent tồn tại ở trên)
                 if (await IsCircularReference(id, dept.ParentDepartmentId))
                 {
                     ModelState.AddModelError("ParentDepartmentId", "Phòng ban không thể trực thuộc cấp dưới của mình!");
@@ -401,11 +425,30 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Restore(int id)
         {
             var dept = await _context.Departments.FindAsync(id);
-            if (dept != null)
+            if (dept != null && dept.IsActive != true)
             {
+                if (dept.ParentDepartmentId.HasValue &&
+                    !await _context.Departments.AnyAsync(d => d.Id == dept.ParentDepartmentId.Value && d.IsActive == true))
+                {
+                    TempData["ErrorMessage"] = "Không thể khôi phục phòng ban khi phòng ban cấp trên vẫn đang ngưng hoạt động.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                if (!string.IsNullOrWhiteSpace(dept.DepartmentCode) &&
+                    await _context.Departments.AnyAsync(d => d.Id != id && d.IsActive == true &&
+                        d.DepartmentCode != null && d.DepartmentCode.ToLower() == dept.DepartmentCode.ToLower()))
+                {
+                    TempData["ErrorMessage"] = "Không thể khôi phục vì mã phòng ban đã được sử dụng bởi phòng ban khác.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 dept.IsActive = true;
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã khôi phục phòng ban thành công!";
+            }
+            else if (dept != null)
+            {
+                TempData["ErrorMessage"] = "Phòng ban này đang hoạt động.";
             }
             else
             {
@@ -442,6 +485,47 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 currentCheckId = parentDept.ParentDepartmentId;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Validates references supplied by the client.  The create/edit forms
+        /// expose IDs, so relying on the dropdown alone would allow inactive or
+        /// nonexistent parents/managers to be persisted through a crafted POST.
+        /// </summary>
+        private async Task ValidateDepartmentReferencesAsync(Department dept, int? currentId)
+        {
+            if (string.IsNullOrWhiteSpace(dept.DepartmentName))
+            {
+                ModelState.AddModelError(nameof(Department.DepartmentName), "Tên phòng ban không được để trống.");
+            }
+
+            if (dept.ParentDepartmentId.HasValue)
+            {
+                if (dept.ParentDepartmentId.Value <= 0 ||
+                    (currentId.HasValue && dept.ParentDepartmentId.Value == currentId.Value))
+                {
+                    ModelState.AddModelError(nameof(Department.ParentDepartmentId), "Phòng ban cấp trên không hợp lệ.");
+                }
+                else
+                {
+                    var parent = await _context.Departments
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(d => d.Id == dept.ParentDepartmentId.Value);
+                    if (parent == null || parent.IsActive != true)
+                    {
+                        ModelState.AddModelError(nameof(Department.ParentDepartmentId), "Phòng ban cấp trên không tồn tại hoặc đã ngưng hoạt động.");
+                    }
+                }
+            }
+
+            if (dept.ManagerId.HasValue)
+            {
+                if (dept.ManagerId.Value <= 0 ||
+                    !await _context.Employees.AsNoTracking().AnyAsync(e => e.Id == dept.ManagerId.Value && e.IsActive == true))
+                {
+                    ModelState.AddModelError(nameof(Department.ManagerId), "Quản lý phải là nhân viên đang hoạt động.");
+                }
+            }
         }
 
         // ==========================================

@@ -127,6 +127,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(string username, string password, bool remember = false, string returnUrl = null)
         {
             ViewData["IsLoginPage"] = true;
@@ -151,8 +152,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
+            username = username.Trim();
             var user = await _context.SystemUsers
-                .FirstOrDefaultAsync(u => u.Username == username && u.IsActive == true);
+                .FirstOrDefaultAsync(u => u.Username != null &&
+                    u.Username.ToLower() == username.ToLower() && u.IsActive == true);
 
             if (user == null || user.PasswordHash == null || !PasswordHelper.VerifyPassword(password, user.PasswordHash))
             {
@@ -226,6 +229,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(string username, string email, string password, string confirmPassword)
         {
             ViewData["IsLoginPage"] = true;
@@ -236,13 +240,24 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
+            username = username.Trim();
+            email = email.Trim().ToLowerInvariant();
+            if (username.Length > 255 || email.Length > 255)
+            {
+                ViewBag.Error = "Tên đăng nhập và Email không được vượt quá 255 ký tự.";
+                return View();
+            }
+
             if (password != confirmPassword)
             {
                 ViewBag.Error = "Mật khẩu xác nhận không khớp.";
                 return View();
             }
 
-            if (await _context.SystemUsers.AnyAsync(u => u.Username == username || u.Email == email))
+            var normalizedUsername = username.ToLowerInvariant();
+            if (await _context.SystemUsers.AnyAsync(u =>
+                    (u.Username != null && u.Username.ToLower() == normalizedUsername) ||
+                    (u.Email != null && u.Email.ToLower() == email)))
             {
                 ViewBag.Error = "Tên đăng nhập hoặc Email đã tồn tại trong hệ thống.";
                 return View();
@@ -294,6 +309,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForgotPassword(string email)
         {
             ViewData["IsLoginPage"] = true;
@@ -304,7 +320,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
-            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email == email);
+            email = email.Trim().ToLowerInvariant();
+
+            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == email);
 
             if (user == null)
             {
@@ -354,10 +372,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> ForgotPasswordAjax([FromBody] ForgotPasswordAjaxDto model)
         {
-            if (model == null || string.IsNullOrEmpty(model.email))
+            if (model == null || string.IsNullOrWhiteSpace(model.email))
                 return Json(new { success = false, message = "Vui lòng nhập email." });
 
-            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email == model.email);
+            var normalizedEmail = model.email.Trim().ToLowerInvariant();
+
+            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == normalizedEmail);
             if (user == null)
                 return Json(new { success = false, message = "Không tìm thấy tài khoản với email này." });
 
@@ -370,7 +390,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // Let's use HttpContext.Session if available, or just update the user record temporarily.
             // Actually, we can just save it to TempData, but return it in response (encrypted) or rely on TempData if cookies work.
             // Since this is a simple app, let's use TempData but make sure to Keep() it.
-            TempData["AjaxResetCode_" + model.email] = resetCode;
+            TempData["AjaxResetCode_" + normalizedEmail] = resetCode;
 
             try
             {
@@ -381,7 +401,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     <p>Mã xác nhận (OTP) của bạn là: <strong style='color:#0d6efd; font-size:24px; letter-spacing: 3px;'>{resetCode}</strong></p>
                     <p>Vui lòng nhập mã này để tạo mật khẩu mới.</p>";
 
-                await _emailService.SendEmailAsync(user.Email ?? "", subject, body);
+                await _emailService.SendEmailAsync(user.Email ?? normalizedEmail, subject, body);
                 return Json(new { success = true, message = "Mã OTP đã được gửi đến email!" });
             }
             catch
@@ -406,6 +426,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult VerifyOTP(string code)
         {
             ViewData["IsLoginPage"] = true;
@@ -445,8 +466,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (model == null || string.IsNullOrEmpty(model.email) || string.IsNullOrEmpty(model.code))
                 return Json(new { success = false, message = "Thiếu thông tin." });
 
-            string savedCode = TempData["AjaxResetCode_" + model.email] as string;
-            TempData.Keep("AjaxResetCode_" + model.email);
+            var normalizedEmail = model.email.Trim().ToLowerInvariant();
+
+            string savedCode = TempData["AjaxResetCode_" + normalizedEmail] as string;
+            TempData.Keep("AjaxResetCode_" + normalizedEmail);
 
             if (string.IsNullOrEmpty(savedCode) || model.code != savedCode)
             {
@@ -475,6 +498,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> SetNewPassword(string newPassword, string confirmPassword)
         {
             ViewData["IsLoginPage"] = true;
@@ -486,15 +510,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return RedirectToAction("ForgotPassword");
             }
 
-            if (string.IsNullOrEmpty(newPassword) || string.IsNullOrEmpty(confirmPassword))
+            var newPasswordValidation = ValidateNewPassword(newPassword, confirmPassword);
+            if (newPasswordValidation != null)
             {
-                ViewBag.Error = "Vui lòng điền đầy đủ mật khẩu.";
-                return View();
-            }
-
-            if (newPassword != confirmPassword)
-            {
-                ViewBag.Error = "Mật khẩu xác nhận không khớp.";
+                ViewBag.Error = newPasswordValidation;
                 return View();
             }
 
@@ -533,15 +552,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (model == null || string.IsNullOrEmpty(model.email) || string.IsNullOrEmpty(model.code) || string.IsNullOrEmpty(model.newPassword))
                 return Json(new { success = false, message = "Thiếu thông tin." });
 
-            string savedCode = TempData["AjaxResetCode_" + model.email] as string;
+            var normalizedEmail = model.email.Trim().ToLowerInvariant();
+
+            string savedCode = TempData["AjaxResetCode_" + normalizedEmail] as string;
 
             if (string.IsNullOrEmpty(savedCode) || model.code != savedCode)
                 return Json(new { success = false, message = "Xác thực không hợp lệ." });
 
-            if (model.newPassword != model.confirmPassword)
-                return Json(new { success = false, message = "Mật khẩu không khớp." });
+            var newPasswordValidation = ValidateNewPassword(model.newPassword, model.confirmPassword);
+            if (newPasswordValidation != null)
+                return Json(new { success = false, message = newPasswordValidation });
 
-            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email == model.email);
+            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == normalizedEmail);
             if (user == null)
                 return Json(new { success = false, message = "Người dùng không tồn tại." });
 
@@ -550,7 +572,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context.SystemUsers.Update(user);
             await _context.SaveChangesAsync();
 
-            TempData.Remove("AjaxResetCode_" + model.email);
+            TempData.Remove("AjaxResetCode_" + normalizedEmail);
 
             return Json(new { success = true, message = "Khôi phục mật khẩu thành công! Vui lòng đăng nhập." });
         }
@@ -714,6 +736,28 @@ namespace Manage_KPI_or_OKR_System.Controllers
             return string.Equals(newPassword, confirmPassword, StringComparison.Ordinal)
                 ? null
                 : "Mật khẩu mới không khớp.";
+        }
+
+        private static string? ValidateNewPassword(string? newPassword, string? confirmPassword)
+        {
+            if (string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+            {
+                return "Vui lòng điền đầy đủ mật khẩu.";
+            }
+
+            if (newPassword.Length < 6 || newPassword.Length > 128)
+            {
+                return "Mật khẩu mới phải có từ 6 đến 128 ký tự.";
+            }
+
+            if (newPassword.Any(char.IsWhiteSpace))
+            {
+                return "Mật khẩu mới không được chứa khoảng trắng.";
+            }
+
+            return string.Equals(newPassword, confirmPassword, StringComparison.Ordinal)
+                ? null
+                : "Mật khẩu xác nhận không khớp.";
         }
 
         [AllowAnonymous]

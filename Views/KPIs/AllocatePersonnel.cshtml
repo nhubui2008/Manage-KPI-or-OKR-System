@@ -141,7 +141,7 @@
                                              data-dept="@group.Key"
                                              onclick="handleItemClick(event, @emp.Id)">
                                             <div class="form-check m-0 d-flex align-items-center">
-                                                <input class="form-check-input ms-0 me-3 employee-cb" type="checkbox" name="employeeIds" value="@emp.Id" id="cb-@emp.Id" @(isAssigned ? "checked" : "") data-dept="@group.Key">
+                                                <input class="form-check-input ms-0 me-3 employee-cb" type="checkbox" name="employeeSelectorIds" value="@emp.Id" id="cb-@emp.Id" @(isAssigned ? "checked" : "") data-dept="@group.Key">
                                                 <div class="flex-grow-1 cursor-pointer">
                                                     <div class="fw-bold text-dark">@emp.FullName</div>
                                                     <div class="text-muted smaller">@emp.EmployeeCode</div>
@@ -187,6 +187,10 @@
 
 <template id="allocationCardTemplate">
     <div class="allocation-card card border-0 shadow-sm rounded-4 animate__animated animate__fadeInUp animate__faster" id="card-{id}">
+        <!-- Keep the posted employee ID adjacent to its weight.  The selector
+             list and allocation cards can be in different orders when users
+             select employees interactively. -->
+        <input type="hidden" name="employeeIds" value="{id}" />
         <div class="card-body p-3">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="d-flex align-items-center gap-3">
@@ -361,6 +365,10 @@
     function removeEmployee(empId, updateCheckbox = true) {
         const card = document.getElementById('card-' + empId);
         if (card) {
+            // Disable the paired hidden ID immediately; the fade-out animation
+            // keeps the card in the DOM for a moment and must not submit a
+            // removed employee together with its weight.
+            card.querySelector('input[name="employeeIds"]')?.setAttribute('disabled', 'disabled');
             card.classList.replace('animate__fadeInUp', 'animate__fadeOutDown');
             setTimeout(() => {
                 card.remove();

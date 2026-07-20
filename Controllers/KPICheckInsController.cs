@@ -160,20 +160,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (!string.IsNullOrWhiteSpace(reviewStatus))
             {
-                checkInQuery = checkInQuery.Where(c => c.ReviewStatus == reviewStatus);
+                checkInQuery = FilterByReviewStatus(checkInQuery, reviewStatus);
             }
 
             if (quickFilter == "pending")
             {
-                checkInQuery = checkInQuery.Where(c => c.ReviewStatus == ReviewStatusPending);
+                checkInQuery = FilterByReviewStatus(checkInQuery, ReviewStatusPending);
             }
             else if (quickFilter == "approved")
             {
-                checkInQuery = checkInQuery.Where(c => c.ReviewStatus == ReviewStatusApproved || c.ReviewStatus == null);
+                checkInQuery = checkInQuery.Where(c => c.ReviewStatus == null ||
+                    (c.ReviewStatus != null &&
+                     c.ReviewStatus.Trim().ToUpper() == ReviewStatusApproved.ToUpper()));
             }
             else if (quickFilter == "rejected")
             {
-                checkInQuery = checkInQuery.Where(c => c.ReviewStatus == ReviewStatusRejected);
+                checkInQuery = FilterByReviewStatus(checkInQuery, ReviewStatusRejected);
             }
             else if (quickFilter == "risk")
             {
@@ -190,7 +192,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     OnTrack = group.Count(checkIn => checkIn.StatusId.HasValue && onTrackStatusIds.Contains(checkIn.StatusId.Value)),
                     Risk = group.Count(checkIn => checkIn.StatusId.HasValue && riskStatusIds.Contains(checkIn.StatusId.Value)),
                     Late = group.Count(checkIn => checkIn.StatusId.HasValue && lateStatusIds.Contains(checkIn.StatusId.Value)),
-                    Pending = group.Count(checkIn => checkIn.ReviewStatus == ReviewStatusPending)
+                    Pending = group.Count(checkIn => checkIn.ReviewStatus != null &&
+                        checkIn.ReviewStatus.Trim().ToUpper() == ReviewStatusPending.ToUpper())
                 })
                 .FirstOrDefaultAsync();
             var totalCount = summary?.Total ?? 0;
@@ -1541,6 +1544,29 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
 
                 kpiId = checkIn.KPIId;
+            }
+            else if (!kpiId.HasValue)
+            {
+                // A comment must be attached to a KPI or a concrete check-in;
+                // otherwise callers could create orphan GoalComments that are
+                // never visible from any KPI page.
+                TempData["ErrorMessage"] = "Bình luận phải gắn với KPI hoặc lần check-in cụ thể.";
+                return RedirectBack(returnUrl);
+            }
+            else
+            {
+                var kpi = await _context.KPIs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(candidate => candidate.Id == kpiId.Value);
+                if (kpi == null)
+                {
+                    return NotFound();
+                }
+
+                if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, kpi))
+                {
+                    return Forbid();
+                }
             }
 
             _context.GoalComments.Add(new GoalComment

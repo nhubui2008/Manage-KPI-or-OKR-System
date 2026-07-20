@@ -125,12 +125,18 @@ namespace Manage_KPI_or_OKR_System.Services
         {
             if (period?.StartDate != null)
             {
-                query = query.Where(c => c.CheckInDate >= period.StartDate.Value);
+                var startDate = period.StartDate.Value.Date;
+                query = query.Where(c => c.CheckInDate >= startDate);
             }
 
             if (period?.EndDate != null)
             {
-                query = query.Where(c => c.CheckInDate <= period.EndDate.Value);
+                // Evaluation periods are date-based.  Use an exclusive next-day
+                // boundary so check-ins at any time on the final day remain in
+                // the AI context (an EndDate stored at midnight would otherwise
+                // drop the rest of that day).
+                var endExclusive = period.EndDate.Value.Date.AddDays(1);
+                query = query.Where(c => c.CheckInDate < endExclusive);
             }
 
             return query;

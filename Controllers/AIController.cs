@@ -555,6 +555,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                     query = query.Where(h => systemUserIdsInDepts.Contains(h.SystemUserId));
                 }
+                else
+                {
+                    // A manager account without an active employee record has no
+                    // department scope.  Keep the history endpoint least
+                    // privilege instead of leaving the query unfiltered (which
+                    // would expose every user's AI history).
+                    query = query.Where(h => h.SystemUserId == systemUserId);
+                }
             }
             else
             {
