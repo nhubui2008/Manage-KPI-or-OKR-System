@@ -276,6 +276,8 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
                 return NotFound();
             }
 
+            var previousSystemUserId = existingEmp.SystemUserId;
+
             // Cập nhật các trường
             existingEmp.FullName = employee.FullName;
             existingEmp.DateOfBirth = employee.DateOfBirth;
@@ -289,23 +291,55 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             // SỬA ĐIỂM 2: Lấy IsActive từ model gửi lên thay vì tham số phụ
             existingEmp.IsActive = employee.IsActive;
 
+            // Keep deactivation consistent with the dedicated Delete flow.  The
+            // edit form can also change IsActive; leaving assignments and the
+            // linked login active would keep an inactive employee in KPI scopes
+            // and allow the linked account to remain usable.
+            if (employee.IsActive != true)
+            {
+                var activeAssignments = await _context.EmployeeAssignments
+                    .Where(a => a.EmployeeId == id && a.IsActive == true)
+                    .ToListAsync();
+                foreach (var activeAssignment in activeAssignments)
+                {
+                    activeAssignment.IsActive = false;
+                }
+
+                var systemUserIdsToDeactivate = new[] { previousSystemUserId, existingEmp.SystemUserId }
+                    .Where(userId => userId.HasValue)
+                    .Select(userId => userId!.Value)
+                    .Distinct()
+                    .ToList();
+                if (systemUserIdsToDeactivate.Any())
+                {
+                    var linkedUsers = await _context.SystemUsers
+                        .Where(user => systemUserIdsToDeactivate.Contains(user.Id))
+                        .ToListAsync();
+                    foreach (var linkedUser in linkedUsers)
+                    {
+                        linkedUser.IsActive = false;
+                    }
+                }
+            }
+
             _context.Update(existingEmp);
             await _context.SaveChangesAsync();
 
-            // Cập nhật hoặc tạo EmployeeAssignment
+            // Cập nhật hoặc tạo EmployeeAssignment (only active employees can
+            // receive a current assignment).
             var assignment = await _context.EmployeeAssignments
                 .Where(a => a.EmployeeId == id && a.IsActive == true)
                 .OrderByDescending(a => a.EffectiveDate)
                 .FirstOrDefaultAsync();
 
-            if (assignment != null)
+            if (existingEmp.IsActive == true && assignment != null)
             {
                 assignment.DepartmentId = departmentId;
                 assignment.PositionId = positionId;
                 assignment.EffectiveDate = DateTime.Now;
                 _context.Update(assignment);
             }
-            else if (departmentId.HasValue || positionId.HasValue)
+            else if (existingEmp.IsActive == true && (departmentId.HasValue || positionId.HasValue))
             {
                 var newAssignment = new EmployeeAssignment
                 {
@@ -454,6 +488,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("EMPLOYEES_DELETE")]
         public async Task<IActionResult> Delete(int id, bool confirm = false)
         {

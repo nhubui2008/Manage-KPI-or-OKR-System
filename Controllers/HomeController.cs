@@ -28,7 +28,12 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var packages = await _context.SaaSPackages.ToListAsync();
+        // Public pricing must match the plans accepted by the purchase
+        // endpoints; inactive packages are for admin history only.
+        var packages = await _context.SaaSPackages
+            .Where(package => package.IsActive)
+            .OrderBy(package => package.PricePerMonth)
+            .ToListAsync();
         return View(packages);
     }
 

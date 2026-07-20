@@ -735,6 +735,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 var existingKpi = await _context.KPIs.FindAsync(id);
                 if (existingKpi == null) return NotFound();
+                if (existingKpi.IsActive != true) return NotFound();
                 if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, existingKpi))
                 {
                     return Forbid();
@@ -744,6 +745,35 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 {
                     TempData["ErrorMessage"] = "Kỳ đánh giá được chọn không còn hoạt động hoặc đã đóng/hết hạn.";
                     return RedirectToAction(nameof(Details), new { id });
+                }
+
+                kpi.KPIName = kpi.KPIName?.Trim();
+                kpi.Description = string.IsNullOrWhiteSpace(kpi.Description) ? null : kpi.Description.Trim();
+                detail.MeasurementUnit = detail.MeasurementUnit?.Trim();
+                var editValidationError = ValidateKpiEditInput(kpi, detail);
+                if (editValidationError != null)
+                {
+                    TempData["ErrorMessage"] = editValidationError;
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (kpi.KPITypeId.HasValue && !await _context.KPITypes.AsNoTracking()
+                        .AnyAsync(type => type.Id == kpi.KPITypeId.Value))
+                {
+                    TempData["ErrorMessage"] = "Loại KPI đã chọn không tồn tại.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (kpi.PeriodId.HasValue && detail.DeadlineDate.HasValue)
+                {
+                    var period = await _context.EvaluationPeriods.AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.Id == kpi.PeriodId.Value);
+                    if ((period?.StartDate.HasValue == true && detail.DeadlineDate.Value.Date < period.StartDate.Value.Date) ||
+                        (period?.EndDate.HasValue == true && detail.DeadlineDate.Value.Date > period.EndDate.Value.Date))
+                    {
+                        TempData["ErrorMessage"] = "Deadline KPI phải nằm trong khoảng thời gian của kỳ đánh giá.";
+                        return RedirectToAction(nameof(Details), new { id });
+                    }
                 }
 
                 // Update base KPI
@@ -1081,24 +1111,94 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var kpi = await _context.KPIs.FindAsync(kpiId);
             if (kpi == null) return NotFound();
+            if (kpi.IsActive != true) return NotFound();
             if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, kpi))
             {
                 return Forbid();
             }
+
+            var requestedDepartmentIds = departmentIds?.Distinct().ToList() ?? new List<int>();
+            var requestedEmployeeIds = employeeIds?.Distinct().ToList() ?? new List<int>();
 
             if (AccessScopeHelper.IsManagerScoped(User))
             {
                 var manager = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
                 var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, manager);
                 var managedEmployeeIds = await AccessScopeHelper.GetEmployeeIdsInDepartmentsAsync(_context, managedDepartmentIds);
-                var requestedDepartmentIds = departmentIds?.Distinct().ToList() ?? new List<int>();
-                var requestedEmployeeIds = employeeIds?.Distinct().ToList() ?? new List<int>();
-
                 if (requestedDepartmentIds.Any(id => !managedDepartmentIds.Contains(id)) ||
                     requestedEmployeeIds.Any(id => !managedEmployeeIds.Contains(id)))
                 {
                     TempData["ErrorMessage"] = "Manager chỉ được phân bổ KPI cho phòng ban hoặc nhân viên mình quản lý.";
                     return RedirectBack(returnUrl, kpiId);
+                }
+            }
+
+            // Validate all posted IDs and weights before deleting existing assignments.  Invalid
+            // values must not be silently dropped (otherwise a typo can clear a valid allocation).
+            var validDepartmentIdsForRequest = requestedDepartmentIds.Count == 0
+                ? new List<int>()
+                : await _context.Departments
+                    .AsNoTracking()
+                    .Where(d => d.IsActive == true && requestedDepartmentIds.Contains(d.Id))
+                    .Select(d => d.Id)
+                    .ToListAsync();
+            if (validDepartmentIdsForRequest.Count != requestedDepartmentIds.Count)
+            {
+                TempData["ErrorMessage"] = "Một hoặc nhiều phòng ban không còn hoạt động hoặc không tồn tại.";
+                return RedirectBack(returnUrl, kpiId);
+            }
+
+            var validEmployeeIdsForRequest = requestedEmployeeIds.Count == 0
+                ? new List<int>()
+                : await _context.Employees
+                    .AsNoTracking()
+                    .Where(e => e.IsActive == true && requestedEmployeeIds.Contains(e.Id))
+                    .Select(e => e.Id)
+                    .ToListAsync();
+            if (validEmployeeIdsForRequest.Count != requestedEmployeeIds.Count)
+            {
+                TempData["ErrorMessage"] = "Một hoặc nhiều nhân viên không còn hoạt động hoặc không tồn tại.";
+                return RedirectBack(returnUrl, kpiId);
+            }
+
+            var weightPercents = new List<decimal>();
+            if (requestedEmployeeIds.Count > 0)
+            {
+                if (weights == null || weights.Count == 0)
+                {
+                    var equalWeight = Math.Round(100m / requestedEmployeeIds.Count, 2, MidpointRounding.AwayFromZero);
+                    weightPercents = Enumerable.Repeat(equalWeight, requestedEmployeeIds.Count).ToList();
+                    weightPercents[^1] += 100m - weightPercents.Sum();
+                }
+                else
+                {
+                    if (weights.Count != requestedEmployeeIds.Count)
+                    {
+                        TempData["ErrorMessage"] = "Số tỷ trọng không khớp với số nhân viên được chọn.";
+                        return RedirectBack(returnUrl, kpiId);
+                    }
+
+                    foreach (var rawWeight in weights)
+                    {
+                        var normalizedWeight = rawWeight?.Trim().Replace(",", ".");
+                        if (!decimal.TryParse(normalizedWeight, NumberStyles.Number, CultureInfo.InvariantCulture,
+                                out var parsedWeight) || parsedWeight <= 0 || parsedWeight > 100)
+                        {
+                            TempData["ErrorMessage"] = "Mỗi tỷ trọng phải lớn hơn 0 và không vượt quá 100%.";
+                            return RedirectBack(returnUrl, kpiId);
+                        }
+
+                        weightPercents.Add(parsedWeight);
+                    }
+
+                    var difference = 100m - weightPercents.Sum();
+                    if (Math.Abs(difference) > 0.05m)
+                    {
+                        TempData["ErrorMessage"] = "Tổng tỷ trọng của các nhân viên phải bằng 100%.";
+                        return RedirectBack(returnUrl, kpiId);
+                    }
+
+                    weightPercents[^1] += difference;
                 }
             }
 
@@ -1121,14 +1221,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .ToListAsync();
                 _context.KPI_Department_Assignments.RemoveRange(existingDepartmentAssignments);
 
-                if (departmentIds != null && departmentIds.Any())
+                if (requestedDepartmentIds.Any())
                 {
-                    var validDepartmentIds = await _context.Departments
-                        .Where(d => d.IsActive == true && departmentIds.Contains(d.Id))
-                        .Select(d => d.Id)
-                        .ToListAsync();
-
-                    foreach (var departmentId in validDepartmentIds.Distinct())
+                    foreach (var departmentId in requestedDepartmentIds)
                     {
                         _context.KPI_Department_Assignments.Add(new KPI_Department_Assignment
                         {
@@ -1138,39 +1233,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     }
                 }
 
-                var requestedEmployeeIds = employeeIds?.Distinct().ToList() ?? new List<int>();
-                var validEmployeeIds = requestedEmployeeIds.Any()
-                    ? await _context.Employees
-                        .Where(e => e.IsActive == true && requestedEmployeeIds.Contains(e.Id))
-                        .Select(e => e.Id)
-                        .ToListAsync()
-                    : new List<int>();
-                var validEmployeeIdSet = validEmployeeIds.ToHashSet();
                 var newAssignments = new List<KPI_Employee_Assignment>();
                 var addedEmployeeOrder = new HashSet<int>();
 
                 // Thêm các phân bổ mới
-                if (employeeIds != null && employeeIds.Any())
+                if (requestedEmployeeIds.Count > 0)
                 {
-                    for (int i = 0; i < employeeIds.Count; i++)
+                    for (var i = 0; i < requestedEmployeeIds.Count; i++)
                     {
-                        var empId = employeeIds[i];
-                        if (!validEmployeeIdSet.Contains(empId) || !addedEmployeeOrder.Add(empId))
+                        var empId = requestedEmployeeIds[i];
+                        if (!addedEmployeeOrder.Add(empId))
                         {
                             continue;
                         }
 
-                        decimal weightValue = 100m;
-                        if (weights != null && i < weights.Count)
-                        {
-                            string normalizedWeight = weights[i].Replace(",", ".");
-                            if (decimal.TryParse(normalizedWeight, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal parsedWeight))
-                            {
-                                weightValue = parsedWeight;
-                            }
-                        }
-                        var weight = weightValue / 100m;
-                        if (weight <= 0) weight = 0.01m; // Bảo đảm trọng số dương nhỏ nhất
+                        var weight = weightPercents[i] / 100m;
 
                         var assignment = new KPI_Employee_Assignment
                         {
@@ -1300,7 +1377,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Approve(int id)
         {
             var kpi = await _context.KPIs.FindAsync(id);
-            if (kpi != null)
+            if (kpi != null && kpi.IsActive == true)
             {
                 if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, kpi))
                 {
@@ -1336,7 +1413,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Reject(int id)
         {
             var kpi = await _context.KPIs.FindAsync(id);
-            if (kpi != null)
+            if (kpi != null && kpi.IsActive == true)
             {
                 if (!await AccessScopeHelper.CanAccessKpiAsync(_context, User, kpi))
                 {
@@ -1475,6 +1552,70 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 AddModelErrorOnce(nameof(model.ReminderBeforeHours),
                     "Thời gian nhắc trước hạn phải từ 0 đến 8760 giờ.");
             }
+        }
+
+        private static string? ValidateKpiEditInput(KPI kpi, KPIDetail detail)
+        {
+            if (string.IsNullOrWhiteSpace(kpi.KPIName) || kpi.KPIName.Length > 255)
+            {
+                return "Tên KPI không được để trống và không vượt quá 255 ký tự.";
+            }
+
+            if (kpi.Description?.Length > 1000)
+            {
+                return "Mô tả KPI không được vượt quá 1000 ký tự.";
+            }
+
+            if (!detail.TargetValue.HasValue || detail.TargetValue.Value <= 0)
+            {
+                return "Chỉ tiêu KPI phải lớn hơn 0.";
+            }
+
+            if (detail.PassThreshold < 0 || detail.FailThreshold < 0)
+            {
+                return "Ngưỡng KPI không được là số âm.";
+            }
+
+            if (string.IsNullOrWhiteSpace(detail.MeasurementUnit) ||
+                !KpiCreateViewModel.MeasurementUnitOptions.Any(option =>
+                    string.Equals(option.Value, detail.MeasurementUnit, StringComparison.OrdinalIgnoreCase)))
+            {
+                return "Vui lòng chọn đơn vị đo lường hợp lệ.";
+            }
+
+            if (detail.PassThreshold.HasValue &&
+                (detail.IsInverse
+                    ? detail.PassThreshold.Value < detail.TargetValue.Value
+                    : detail.PassThreshold.Value > detail.TargetValue.Value))
+            {
+                return detail.IsInverse
+                    ? "Với KPI càng thấp càng tốt, ngưỡng đạt phải lớn hơn hoặc bằng chỉ tiêu."
+                    : "Ngưỡng đạt không được lớn hơn chỉ tiêu KPI.";
+            }
+
+            if (detail.FailThreshold.HasValue)
+            {
+                var comparisonValue = detail.PassThreshold ?? detail.TargetValue.Value;
+                if (detail.IsInverse
+                    ? detail.FailThreshold.Value < comparisonValue
+                    : detail.FailThreshold.Value > comparisonValue)
+                {
+                    return detail.IsInverse
+                        ? "Với KPI càng thấp càng tốt, ngưỡng trượt phải lớn hơn hoặc bằng ngưỡng đạt."
+                        : "Ngưỡng trượt phải nhỏ hơn hoặc bằng ngưỡng đạt.";
+                }
+            }
+
+            if (detail.CheckInFrequencyDays is < 1 or > 365 ||
+                (detail.CheckInDeadlineTime.HasValue &&
+                 (detail.CheckInDeadlineTime.Value < TimeSpan.Zero ||
+                  detail.CheckInDeadlineTime.Value >= TimeSpan.FromDays(1))) ||
+                detail.ReminderBeforeHours is < 0 or > 8760)
+            {
+                return "Thông tin lịch check-in không hợp lệ.";
+            }
+
+            return null;
         }
 
         private List<decimal> ParseKpiAllocationWeights(KpiCreateViewModel model, int employeeCount)

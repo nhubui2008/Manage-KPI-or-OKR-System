@@ -70,6 +70,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateAccountStatus(int userId, string actionType)
         {
             var user = await _context.SystemUsers.FindAsync(userId);
@@ -107,6 +108,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     user.IsActive = true;
                     TempData["SuccessMessage"] = "Đã mở khóa tài khoản khách hàng.";
                     break;
+                default:
+                    TempData["ErrorMessage"] = "Thao tác tài khoản không hợp lệ.";
+                    return RedirectToAction(nameof(Registrations));
             }
 
             await _context.SaveChangesAsync();
@@ -114,6 +118,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAccount(int userId)
         {
             var user = await _context.SystemUsers.FindAsync(userId);
@@ -146,6 +151,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> SavePackage(SaaSPackage model)
         {
             if (ModelState.IsValid)
@@ -169,6 +175,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         existing.IsPopular = model.IsPopular;
                         TempData["SuccessMessage"] = "Cập nhật gói dịch vụ thành công.";
                     }
+                    else
+                    {
+                        TempData["ErrorMessage"] = "Không tìm thấy gói dịch vụ cần cập nhật.";
+                    }
                 }
                 await _context.SaveChangesAsync();
             }
@@ -179,9 +189,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             ViewData["IsSaaSAdmin"] = true;
             var transactions = await _context.PaymentTransactions.Include(t => t.Package).Include(t => t.Registration).ToListAsync();
-            
+
+            var now = DateTime.Now;
             ViewBag.TotalRevenue = transactions.Where(t => t.Status == "Thành công").Sum(t => t.Amount);
-            ViewBag.MRR = transactions.Where(t => t.Status == "Thành công" && t.TransactionDate.Month == DateTime.Now.Month).Sum(t => t.Amount);
+            ViewBag.MRR = transactions.Where(t => t.Status == "Thành công" &&
+                                                   t.TransactionDate.Year == now.Year &&
+                                                   t.TransactionDate.Month == now.Month)
+                .Sum(t => t.Amount);
             var activeUsersCount = await _context.SystemUsers.CountAsync(u => u.IsActive == true);
             ViewBag.ARPU = activeUsersCount > 0 ? ViewBag.TotalRevenue / activeUsersCount : 0;
             
@@ -219,6 +233,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateSettings(string brandName, string supportEmail, string trialTime, string allowRegistration, string maintenanceMode)
         {
             var p1 = await _context.SystemParameters.FirstOrDefaultAsync(p => p.ParameterCode == "SaaS_BrandName"); if(p1 != null) p1.Value = brandName;

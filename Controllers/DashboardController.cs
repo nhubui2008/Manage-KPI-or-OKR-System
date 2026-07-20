@@ -43,8 +43,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.SelectedPeriod = selectedPeriod;
 
             // Xác định khoảng thời gian lọc
-            DateTime? startDate = selectedPeriod?.StartDate;
-            DateTime? endDate = selectedPeriod?.EndDate;
+            // Period dates are date-only values in the UI.  Treat the end date as
+            // an exclusive boundary so check-ins/records created later on the
+            // final day are not silently dropped by a comparison against
+            // midnight (e.g. 31/08 14:00 must belong to an August period).
+            DateTime? startDate = selectedPeriod?.StartDate?.Date;
+            DateTime? endDate = selectedPeriod?.EndDate?.Date;
+            DateTime? endExclusive = endDate?.AddDays(1);
 
             // ========================================
             // 2. DỮ LIỆU CƠ BẢN (User-aware)
@@ -75,13 +80,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     okrQuery = okrQuery.Where(o =>
                         (!string.IsNullOrWhiteSpace(periodName) && o.Cycle == periodName) ||
                         (!string.IsNullOrWhiteSpace(inferredCycle) && o.Cycle == inferredCycle) ||
-                        (startDate.HasValue && endDate.HasValue && o.CreatedAt >= startDate.Value && o.CreatedAt <= endDate.Value));
+                        (startDate.HasValue && endExclusive.HasValue && o.CreatedAt >= startDate.Value && o.CreatedAt < endExclusive.Value));
                 }
             }
 
-            if (startDate.HasValue && endDate.HasValue)
+            if (startDate.HasValue && endExclusive.HasValue)
             {
-                checkInQuery = checkInQuery.Where(c => c.CheckInDate >= startDate.Value && c.CheckInDate <= endDate.Value);
+                checkInQuery = checkInQuery.Where(c => c.CheckInDate >= startDate.Value && c.CheckInDate < endExclusive.Value);
             }
 
             // Phân quyền dữ liệu theo Role
@@ -306,7 +311,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                         && ea.IsActive == true
                                         && (ci.ReviewStatus == "Approved" || ci.ReviewStatus == null)
                                         && (!startDate.HasValue || ci.CheckInDate >= startDate.Value)
-                                       && (!endDate.HasValue || ci.CheckInDate <= endDate.Value)
+                                       && (!endExclusive.HasValue || ci.CheckInDate < endExclusive.Value)
                                        && (!isEmployeeRole || ci.EmployeeId == scopedEmployeeId)
                                        && (!isManagerScoped || (ci.EmployeeId.HasValue && scopedEmployeeIds.Contains(ci.EmployeeId.Value)))
                                  group cd by d.DepartmentName into g
@@ -397,9 +402,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // ========================================
             var topCheckInQuery = _context.KPICheckIns
                 .Where(c => c.ReviewStatus == "Approved" || c.ReviewStatus == null);
-            if (startDate.HasValue && endDate.HasValue)
+            if (startDate.HasValue && endExclusive.HasValue)
             {
-                topCheckInQuery = topCheckInQuery.Where(c => c.CheckInDate >= startDate.Value && c.CheckInDate <= endDate.Value);
+                topCheckInQuery = topCheckInQuery.Where(c => c.CheckInDate >= startDate.Value && c.CheckInDate < endExclusive.Value);
             }
 
             if (isEmployeeRole)
