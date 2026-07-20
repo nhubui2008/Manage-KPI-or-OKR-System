@@ -70,7 +70,7 @@
                 <button type="button" class="btn btn-outline-primary rounded-pill px-4" onclick="openAiTaskDecomposeModal('KPI', @Model.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(Model.KPIName ?? ""))', '')">
                     <i class="bi bi-stars me-1"></i> AI Chia task
                 </button>
-                <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#editKpiModal">
+                <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#editKpiModal">
                     <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa
                 </button>
             }

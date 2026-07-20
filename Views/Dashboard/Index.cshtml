@@ -61,7 +61,7 @@
         <form method="get" asp-action="Index" class="dashboard-period-filter d-flex align-items-center flex-nowrap bg-white p-1 px-3 rounded-pill shadow-sm border border-light">
             <i class="bi bi-funnel-fill text-primary me-2" style="font-size: 0.9rem;"></i>
             <span class="text-muted small fw-bold text-uppercase me-2 d-none d-sm-inline-block" style="font-size: 0.7rem; white-space: nowrap; letter-spacing: 0.5px;">Kỳ báo cáo:</span>
-            <select name="periodId" class="form-select form-select-sm border-0 fw-bold text-primary no-select2" style="outline: none; box-shadow: none; width: auto; min-width: 140px; max-width: 250px; background-color: transparent; cursor: pointer; font-size: 0.85rem;" onchange="this.form.submit()">
+            <select name="periodId" aria-label="Chọn kỳ báo cáo" class="form-select form-select-sm border-0 fw-bold text-primary no-select2" style="outline: none; box-shadow: none; width: auto; min-width: 140px; max-width: 250px; background-color: transparent; cursor: pointer; font-size: 0.85rem;" onchange="this.form.submit()">
                 <option value="" selected="@(selectedPeriod == null ? "selected" : null)">-- Tất cả kỳ --</option>
                 @foreach (var period in allPeriods)
                 {

@@ -81,11 +81,11 @@
                         <div class="toolbar-left">
                             <div class="toolbar-search" style="max-width: 300px;">
                                 <i class="bi bi-search"></i>
-                                <input type="text" name="searchString" class="form-control" placeholder="Tìm email, gói đăng ký..." />
+                                <input type="search" name="searchString" aria-label="Tìm email hoặc gói đăng ký" class="form-control" placeholder="Tìm email, gói đăng ký..." autocomplete="off" />
                             </div>
                         </div>
                         <div class="toolbar-right d-flex align-items-center gap-2">
-                            <select name="status" class="filter-select">
+                            <select name="status" aria-label="Lọc theo trạng thái tài khoản" class="filter-select">
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="trial">Đang dùng thử</option>
                                 <option value="active">Khách hàng chính thức</option>
@@ -359,7 +359,7 @@
 
                     <div class="mb-3">
                         <label class="form-label text-muted fw-semibold small">Hành động</label>
-                        <select class="form-select" name="actionType" id="modalActionSelect">
+                        <select class="form-select" name="actionType" id="modalActionSelect" aria-label="Chọn hành động tài khoản">
                             <option value="none">-- Chọn hành động --</option>
                             <option value="upgrade">Kích hoạt Gói chính thức (Bỏ giới hạn Trial)</option>
                             <option value="extend">Gia hạn thêm 24 giờ dùng thử</option>
