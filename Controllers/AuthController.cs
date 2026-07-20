@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Globalization;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Models;
@@ -21,15 +22,32 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly MiniERPDbContext _context;
         private readonly IEmailService _emailService;
         private readonly ISystemSettingsService _settingsService;
+        private readonly IWebHostEnvironment _environment;
+        private static readonly HashSet<string> AllowedPreferredLanguages = new(StringComparer.Ordinal)
+        {
+            "Auto",
+            "Tiếng Việt",
+            "English",
+            "中文 (Chinese)"
+        };
+        private static readonly HashSet<string> AllowedDemoUsernames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "director",
+            "manager",
+            "hr",
+            "employee"
+        };
 
         public AuthController(
             MiniERPDbContext context,
             IEmailService emailService,
-            ISystemSettingsService settingsService)
+            ISystemSettingsService settingsService,
+            IWebHostEnvironment environment)
         {
             _context = context;
             _emailService = emailService;
             _settingsService = settingsService;
+            _environment = environment;
         }
 
         private async Task<string> SignInSystemUserAsync(
@@ -45,7 +63,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim("SystemUserId", user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username ?? "Unknown"),
-                new Claim(ClaimTypes.Role, roleName)
+                new Claim(ClaimTypes.Role, roleName),
+                new Claim(AuthRoleHelper.PasswordChangedClaimType, GetPasswordChangedStamp(user))
             };
 
             var resolvedEmail = email ?? user.Email;
@@ -76,6 +95,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
             return roleName;
         }
+
+        private static string GetPasswordChangedStamp(SystemUser user) =>
+            (user.LastPasswordChange?.Ticks ?? 0L).ToString(CultureInfo.InvariantCulture);
 
         public IActionResult Login(string returnUrl = null, string username = null, string password = null)
         {
@@ -148,6 +170,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
+            if (PasswordHelper.NeedsRehash(user.PasswordHash))
+            {
+                user.PasswordHash = PasswordHelper.HashPassword(password);
+                await _context.SaveChangesAsync();
+            }
+
             await SignInSystemUserAsync(user, remember);
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -172,12 +200,23 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewData["IsLoginPage"] = true;
             return View();
         }
-        [HttpGet]
-        [AllowAnonymous]
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> SwitchDemo(string username)
         {
-            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == username);
-            if (user == null) return RedirectToAction("Index", "Dashboard");
+            if (!_environment.IsDevelopment() || !AllowedDemoUsernames.Contains(username))
+            {
+                return NotFound();
+            }
+
+            var user = await _context.SystemUsers
+                .FirstOrDefaultAsync(u => u.Username == username && u.IsActive == true);
+            if (user == null)
+            {
+                TempData["ToastErrorMessage"] = "Không tìm thấy tài khoản demo đang hoạt động.";
+                return RedirectToAction("Index", "Dashboard");
+            }
 
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
@@ -532,18 +571,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [Authorize]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(string oldPassword, string newPassword, string confirmPassword)
         {
             ViewData["IsLoginPage"] = true;
-            if (string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword) || string.IsNullOrEmpty(confirmPassword))
+            var validationMessage = ValidatePasswordChange(oldPassword, newPassword, confirmPassword);
+            if (validationMessage != null)
             {
-                ViewBag.Error = "Vui lòng điền đầy đủ thông tin.";
-                return View();
-            }
-
-            if (newPassword != confirmPassword)
-            {
-                ViewBag.Error = "Mật khẩu mới không khớp.";
+                ViewBag.Error = validationMessage;
                 return View();
             }
 
@@ -561,6 +596,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return View();
             }
 
+            if (string.Equals(oldPassword, newPassword, StringComparison.Ordinal))
+            {
+                ViewBag.Error = "Mật khẩu mới phải khác mật khẩu hiện tại.";
+                return View();
+            }
+
             // Lưu mật khẩu mới
             user.PasswordHash = PasswordHelper.HashPassword(newPassword);
             user.LastPasswordChange = DateTime.Now;
@@ -575,6 +616,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 claims.Remove(requiresChangeClaim);
             }
+            claims.RemoveAll(c => c.Type == AuthRoleHelper.PasswordChangedClaimType);
+            claims.Add(new Claim(AuthRoleHelper.PasswordChangedClaimType, GetPasswordChangedStamp(user)));
             var newIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var newPrincipal = new ClaimsPrincipal(newIdentity);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, newPrincipal);
@@ -584,35 +627,47 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public class ChangePasswordAjaxDto
         {
-            public string oldPassword { get; set; }
-            public string newPassword { get; set; }
-            public string confirmPassword { get; set; }
+            public string oldPassword { get; set; } = string.Empty;
+            public string newPassword { get; set; } = string.Empty;
+            public string confirmPassword { get; set; } = string.Empty;
         }
 
         [HttpPost]
         [Authorize]
-        [IgnoreAntiforgeryToken] // Depending on if we send the token correctly from JS
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePasswordAjax([FromBody] ChangePasswordAjaxDto model)
         {
-            if (model == null || string.IsNullOrEmpty(model.oldPassword) || string.IsNullOrEmpty(model.newPassword) || string.IsNullOrEmpty(model.confirmPassword))
+            if (model == null)
             {
-                return Json(new { success = false, message = "Vui lòng điền đầy đủ thông tin." });
+                return BadRequest(new { success = false, message = "Vui lòng điền đầy đủ thông tin." });
             }
 
-            if (model.newPassword != model.confirmPassword)
+            var validationMessage = ValidatePasswordChange(model.oldPassword, model.newPassword, model.confirmPassword);
+            if (validationMessage != null)
             {
-                return Json(new { success = false, message = "Mật khẩu mới không khớp." });
+                return BadRequest(new { success = false, message = validationMessage });
             }
 
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(userIdStr, out int userId)) return Json(new { success = false, message = "Lỗi xác thực người dùng." });
+            if (!int.TryParse(userIdStr, out int userId))
+            {
+                return Unauthorized(new { success = false, message = "Không thể xác thực tài khoản." });
+            }
 
             var user = await _context.SystemUsers.FindAsync(userId);
-            if (user == null) return Json(new { success = false, message = "Không tìm thấy người dùng." });
+            if (user == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy tài khoản." });
+            }
 
             if (user.PasswordHash == null || !PasswordHelper.VerifyPassword(model.oldPassword, user.PasswordHash))
             {
-                return Json(new { success = false, message = "Mật khẩu cũ không chính xác." });
+                return BadRequest(new { success = false, message = "Mật khẩu cũ không chính xác." });
+            }
+
+            if (string.Equals(model.oldPassword, model.newPassword, StringComparison.Ordinal))
+            {
+                return BadRequest(new { success = false, message = "Mật khẩu mới phải khác mật khẩu hiện tại." });
             }
 
             user.PasswordHash = PasswordHelper.HashPassword(model.newPassword);
@@ -627,12 +682,38 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (requiresChangeClaim != null)
             {
                 claims.Remove(requiresChangeClaim);
-                var newIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                var newPrincipal = new ClaimsPrincipal(newIdentity);
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, newPrincipal);
+            }
+            claims.RemoveAll(c => c.Type == AuthRoleHelper.PasswordChangedClaimType);
+            claims.Add(new Claim(AuthRoleHelper.PasswordChangedClaimType, GetPasswordChangedStamp(user)));
+            var newIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var newPrincipal = new ClaimsPrincipal(newIdentity);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, newPrincipal);
+
+            return Ok(new { success = true, message = "Đổi mật khẩu thành công!" });
+        }
+
+        private static string? ValidatePasswordChange(string? oldPassword, string? newPassword, string? confirmPassword)
+        {
+            if (string.IsNullOrWhiteSpace(oldPassword) ||
+                string.IsNullOrWhiteSpace(newPassword) ||
+                string.IsNullOrWhiteSpace(confirmPassword))
+            {
+                return "Vui lòng điền đầy đủ thông tin.";
             }
 
-            return Json(new { success = true, message = "Đổi mật khẩu thành công!" });
+            if (newPassword.Length < 6 || newPassword.Length > 128)
+            {
+                return "Mật khẩu mới phải có từ 6 đến 128 ký tự.";
+            }
+
+            if (newPassword.Any(char.IsWhiteSpace))
+            {
+                return "Mật khẩu mới không được chứa khoảng trắng.";
+            }
+
+            return string.Equals(newPassword, confirmPassword, StringComparison.Ordinal)
+                ? null
+                : "Mật khẩu mới không khớp.";
         }
 
         [AllowAnonymous]
@@ -655,7 +736,7 @@ public async Task<IActionResult> MyProfile()
     if (user == null) return NotFound();
 
     // 3. Lấy tên Quyền (Role)
-    var roleName = AuthRoleHelper.DefaultSelfServiceRoleName;
+    var roleName = AuthRoleHelper.GetRoleNameOrDefault(null);
     if (user.RoleId.HasValue)
     {
         var role = await _context.Roles.FindAsync(user.RoleId);
@@ -746,24 +827,33 @@ public async Task<IActionResult> GoogleResponse()
     return RedirectToAction("Index", "Dashboard");
 }
 
-[HttpPost]
-[Authorize]
-[IgnoreAntiforgeryToken]
-public async Task<IActionResult> UpdateLanguage(string language)
-{
-    var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if (!int.TryParse(userIdStr, out int userId)) return Json(new { success = false, message = "Lỗi xác thực." });
-    
-    var user = await _context.SystemUsers.FindAsync(userId);
-    if (user != null)
-    {
-        user.PreferredLanguage = language;
-        _context.SystemUsers.Update(user);
-        await _context.SaveChangesAsync();
-        return Json(new { success = true });
-    }
-    return Json(new { success = false, message = "Không tìm thấy user." });
-}
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateLanguage(string language)
+        {
+            if (string.IsNullOrWhiteSpace(language) || !AllowedPreferredLanguages.Contains(language))
+            {
+                return BadRequest(new { success = false, message = "Ngôn ngữ được chọn không hợp lệ." });
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out int userId))
+            {
+                return Unauthorized(new { success = false, message = "Không thể xác thực tài khoản." });
+            }
+
+            var user = await _context.SystemUsers.FindAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy tài khoản." });
+            }
+
+            user.PreferredLanguage = language;
+            _context.SystemUsers.Update(user);
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true, message = "Đã lưu ngôn ngữ đầu ra." });
+        }
 
     }
 }

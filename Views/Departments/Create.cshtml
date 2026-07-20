@@ -1,260 +1,259 @@
 @model Manage_KPI_or_OKR_System.Models.Department
 
 @{
-    ViewData["Title"] = "Thêm mới Phòng ban";
+    ViewData["Title"] = "Thêm Phòng Ban";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
     var departments = ViewBag.Departments as List<Manage_KPI_or_OKR_System.Models.Department> ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
 }
 
-<div class="page-content">
-    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
-        <div>
-            <h1 class="mb-2 fw-800">Thêm Phòng Ban Mới</h1>
-            <div class="page-breadcrumb">
+<div class="cf-page department-create-page" data-create-form>
+    <header class="cf-header">
+        <div class="cf-header__content">
+            <h1>Thêm phòng ban mới</h1>
+            <nav class="cf-breadcrumb" aria-label="Điều hướng trang">
                 <a href="/">Trang chủ</a>
-                <span class="separator">/</span>
-                <a asp-action="Index">Hệ thống phòng ban</a>
-                <span class="separator">/</span>
-                <span class="text-muted">Thêm mới</span>
-            </div>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <a asp-action="Index">Phòng ban</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Thêm mới</span>
+            </nav>
+            <p class="cf-header__description">Thiết lập thông tin định danh, vị trí trong cơ cấu tổ chức và người phụ trách phòng ban.</p>
         </div>
-        <div>
-            <a asp-action="Index" class="btn-outline-custom shadow-sm">
-                <i class="bi bi-arrow-left me-2"></i> Quay lại
-            </a>
-        </div>
-    </div>
+        <a asp-action="Index" class="cf-back-action">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Quay lại</span>
+        </a>
+    </header>
 
-    <div class="row g-4">
-        <!-- FORM COLUMN -->
-        <div class="col-xl-8 animate__animated animate__fadeInLeft">
-            <div class="content-card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
-                <div class="card-header-custom border-bottom bg-transparent py-4">
-                    <h5 class="fw-bold fs-5 mb-0">
-                        <i class="bi bi-diagram-3-fill me-2"></i> Thông tin phòng ban
-                    </h5>
-                </div>
-
-                <div class="card-body-custom p-4">
-                    <form id="departmentForm" asp-action="Create" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
-
-                        <!-- SECTION 1: THÔNG TIN CƠ BẢN -->
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center shadow"
-                                 style="width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;">
-                                <span class="fw-bold">1</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Thông tin định danh</h6>
-                        </div>
-
-                        <div class="row g-4 mb-5 p-3 rounded-4 bg-light bg-opacity-50 border border-white">
-                            <div class="col-md-5">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">
-                                        Mã phòng ban <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-hash"></i>
-                                        <input asp-for="DepartmentCode"
-                                               class="form-control shadow-sm"
-                                               placeholder="VD: PKT, PNS, PBH..."
-                                               required />
-                                    </div>
-                                    <span asp-validation-for="DepartmentCode" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-
-                            <div class="col-md-7">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">
-                                        Tên phòng ban <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-building"></i>
-                                        <input asp-for="DepartmentName"
-                                               class="form-control shadow-sm"
-                                               placeholder="VD: Phòng Kinh doanh"
-                                               required />
-                                    </div>
-                                    <span asp-validation-for="DepartmentName" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 2: CẤU TRÚC TỔ CHỨC -->
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-success text-white me-3 d-flex align-items-center justify-content-center shadow"
-                                 style="width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;">
-                                <span class="fw-bold">2</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Cấu trúc tổ chức</h6>
-                        </div>
-
-                        <div class="row g-4 p-3 rounded-4 bg-light bg-opacity-50 border border-white mb-4">
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Phòng ban cấp trên</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-diagram-3"></i>
-                                        <select asp-for="ParentDepartmentId" class="form-select shadow-sm">
-                                            <option value="">-- Là phòng ban cấp cao nhất --</option>
-                                            @foreach (var d in departments)
-                                            {
-                                                <option value="@d.Id">@d.DepartmentName (@d.DepartmentCode)</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <span asp-validation-for="ParentDepartmentId" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Người quản lý (Trưởng bộ phận)</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-person-badge"></i>
-                                        <select asp-for="ManagerId" class="form-select shadow-sm">
-                                            <option value="">-- Chưa chỉ định --</option>
-                                            @foreach (var emp in employees)
-                                            {
-                                                <option value="@emp.Key">@emp.Value</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <span asp-validation-for="ManagerId" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
-                            <a asp-action="Index" class="btn-outline-custom">
-                                <i class="bi bi-x-lg me-2"></i> Hủy thao tác
-                            </a>
-                            <button type="submit" class="btn-primary-custom" style="padding: 12px 40px; border-radius: 12px;">
-                                <i class="bi bi-check-lg fs-5 me-2"></i> Lưu phòng ban
-                            </button>
-                        </div>
-                    </form>
+    <div class="cf-layout">
+        <section class="cf-panel" aria-labelledby="departmentCreateHeading">
+            <div class="cf-panel__header">
+                <div>
+                    <h2 id="departmentCreateHeading">Thông tin phòng ban</h2>
+                    <p>Các trường có dấu <span class="cf-required" aria-hidden="true">*</span> là bắt buộc.</p>
                 </div>
             </div>
-        </div>
 
-        <!-- SIDEBAR COLUMN -->
-        <div class="col-xl-4 animate__animated animate__fadeInRight">
-            <div class="sticky-top" style="top: 100px;">
+            <form id="departmentForm"
+                  asp-action="Create"
+                  method="post"
+                  class="cf-form"
+                  data-create-form-element>
+                <div asp-validation-summary="All" class="cf-alert" role="alert" tabindex="-1" data-error-summary></div>
 
-                <!-- Preview Card -->
-                <div class="content-card border-0 shadow-lg text-white mb-4"
-                     style="background: linear-gradient(135deg, #1a73e8, #1557b0); border-radius: 24px;">
-                    <div class="card-body-custom p-4">
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
-                                <i class="bi bi-diagram-3-fill fs-3 text-white"></i>
-                            </div>
-                            <div>
-                                <div class="small opacity-75 fw-bold text-uppercase">Mã phòng ban</div>
-                                <h4 class="mb-0 fw-800" id="previewCode">--</h4>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="small opacity-75 fw-bold text-uppercase mb-1">Tên phòng ban</div>
-                            <div class="fw-bold fs-6" id="previewName" style="min-height: 28px;">--</div>
-                        </div>
-
-                        <div class="row g-3 mt-1">
-                            <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
-                                    <i class="bi bi-diagram-3 fs-4 me-3 opacity-75"></i>
-                                    <div>
-                                        <div class="small opacity-75 mb-1">Phòng ban cha</div>
-                                        <div class="fw-bold small" id="previewParent">Cấp cao nhất</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
-                                    <i class="bi bi-person-badge fs-4 me-3 opacity-75"></i>
-                                    <div>
-                                        <div class="small opacity-75 mb-1">Trưởng bộ phận</div>
-                                        <div class="fw-bold small" id="previewManager">Chưa chỉ định</div>
-                                    </div>
-                                </div>
-                            </div>
+                <section class="cf-section" aria-labelledby="departmentIdentityHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-building"></i></span>
+                        <div>
+                            <h3 id="departmentIdentityHeading">Thông tin định danh</h3>
+                            <p>Nhập mã ngắn gọn và tên đầy đủ để nhận diện phòng ban trong toàn hệ thống.</p>
                         </div>
                     </div>
-                </div>
 
-                <!-- Tips Card -->
-                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
-                    <h6 class="fw-bold text-dark mb-3">
-                        <i class="bi bi-info-circle text-primary me-2"></i> Lưu ý khi thêm phòng ban
-                    </h6>
-                    <ul class="list-unstyled mb-0 small text-muted" style="line-height: 1.8;">
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Mã phòng ban nên ngắn gọn, viết hoa (VD: PKT, PBH).</li>
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Để trống "Phòng ban cấp trên" nếu đây là phòng ban gốc.</li>
-                        <li><i class="bi bi-patch-check-fill text-success me-2"></i> Trưởng bộ phận có thể được chỉ định sau trong phần chỉnh sửa.</li>
-                    </ul>
-                </div>
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <div class="cf-label-row">
+                                <label asp-for="DepartmentCode">Mã phòng ban <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                                <span class="cf-counter" for="DepartmentCode" data-character-counter></span>
+                            </div>
+                            <input asp-for="DepartmentCode"
+                                   class="form-control cf-control department-code-input"
+                                   maxlength="20"
+                                   autocomplete="off"
+                                   spellcheck="false"
+                                   placeholder="Ví dụ: PKD, PNS, PKT"
+                                   aria-describedby="departmentCodeHint"
+                                   required />
+                            <span asp-validation-for="DepartmentCode" class="cf-validation"></span>
+                            <p id="departmentCodeHint" class="cf-hint">Tối đa 20 ký tự; nên viết hoa và không dùng khoảng trắng.</p>
+                        </div>
 
+                        <div class="cf-field">
+                            <div class="cf-label-row">
+                                <label asp-for="DepartmentName">Tên phòng ban <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                                <span class="cf-counter" for="DepartmentName" data-character-counter></span>
+                            </div>
+                            <input asp-for="DepartmentName"
+                                   class="form-control cf-control"
+                                   maxlength="100"
+                                   autocomplete="organization-title"
+                                   placeholder="Ví dụ: Phòng Kinh doanh"
+                                   required />
+                            <span asp-validation-for="DepartmentName" class="cf-validation"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cf-section" aria-labelledby="departmentStructureHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-diagram-3"></i></span>
+                        <div>
+                            <h3 id="departmentStructureHeading">Cấu trúc tổ chức</h3>
+                            <p>Xác định đơn vị cấp trên và người chịu trách nhiệm quản lý phòng ban.</p>
+                        </div>
+                    </div>
+
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <label asp-for="ParentDepartmentId">Phòng ban cấp trên</label>
+                            <select asp-for="ParentDepartmentId" class="form-select cf-control" aria-describedby="parentDepartmentHint">
+                                <option value="">-- Là phòng ban cấp cao nhất --</option>
+                                @foreach (var department in departments.OrderBy(item => item.DepartmentName))
+                                {
+                                    <option value="@department.Id">@department.DepartmentName (@department.DepartmentCode)</option>
+                                }
+                            </select>
+                            <span asp-validation-for="ParentDepartmentId" class="cf-validation"></span>
+                            <p id="parentDepartmentHint" class="cf-hint">Để trống nếu đây là đơn vị cấp cao nhất trong cơ cấu.</p>
+                        </div>
+
+                        <div class="cf-field">
+                            <label asp-for="ManagerId">Người quản lý</label>
+                            <select asp-for="ManagerId" class="form-select cf-control" aria-describedby="departmentManagerHint">
+                                <option value="">-- Chưa chỉ định --</option>
+                                @foreach (var employee in employees.OrderBy(item => item.Value))
+                                {
+                                    <option value="@employee.Key">@employee.Value</option>
+                                }
+                            </select>
+                            <span asp-validation-for="ManagerId" class="cf-validation"></span>
+                            <p id="departmentManagerHint" class="cf-hint">Có thể để trống và phân công trưởng bộ phận sau.</p>
+                        </div>
+                    </div>
+
+                    <div class="cf-inline-note">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span>Phòng ban mới sẽ được kích hoạt ngay và có thể nhận phân bổ nhân sự, KPI hoặc OKR sau khi lưu.</span>
+                    </div>
+                </section>
+
+                <div class="cf-actions">
+                    <a asp-action="Index" class="cf-secondary-action">Hủy</a>
+                    <button type="submit"
+                            class="cf-primary-action"
+                            data-submit-button
+                            data-default-label="Lưu phòng ban"
+                            data-loading-label="Đang lưu...">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        <span data-submit-label>Lưu phòng ban</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="cf-guide department-create-guide" aria-labelledby="departmentPreviewHeading">
+            <div class="cf-guide__identity">
+                <span class="cf-guide__icon" aria-hidden="true"><i class="bi bi-building-check"></i></span>
+                <div>
+                    <span class="cf-guide__eyebrow">Xem trước</span>
+                    <h2 id="departmentPreviewHeading">Phòng ban sắp tạo</h2>
+                </div>
             </div>
-        </div>
+            <p>Thông tin được cập nhật theo dữ liệu đang nhập để bạn kiểm tra nhanh trước khi lưu.</p>
+
+            <dl class="cf-preview-list department-preview-list">
+                <div>
+                    <dt>Mã phòng ban</dt>
+                    <dd id="previewCode">Chưa nhập</dd>
+                </div>
+                <div>
+                    <dt>Tên phòng ban</dt>
+                    <dd id="previewName">Chưa nhập</dd>
+                </div>
+                <div>
+                    <dt>Trực thuộc</dt>
+                    <dd id="previewParent">Cấp cao nhất</dd>
+                </div>
+                <div>
+                    <dt>Người quản lý</dt>
+                    <dd id="previewManager">Chưa chỉ định</dd>
+                </div>
+            </dl>
+
+            <ul class="cf-guide__list department-create-guide__list">
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Dùng mã ngắn, dễ tìm kiếm và thống nhất với quy ước nội bộ.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Chọn đúng phòng ban cấp trên để cây tổ chức hiển thị chính xác.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Người quản lý và cơ cấu trực thuộc vẫn có thể cập nhật sau.</span></li>
+            </ul>
+
+            <div class="cf-guide__note">
+                <i class="bi bi-shield-check" aria-hidden="true"></i>
+                <span>Hệ thống sẽ kiểm tra mã phòng ban trùng trước khi tạo dữ liệu mới.</span>
+            </div>
+        </aside>
     </div>
 </div>
 
-<style>
-    .fw-800 { font-weight: 800; }
-    .letter-spacing-1 { letter-spacing: 0.1em; }
-    .transition-all { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-
-    .form-select, .form-control {
-        border: 1.5px solid #edf2f7;
-        padding-top: 12px;
-        padding-bottom: 12px;
-    }
-
-    .form-select:focus, .form-control:focus {
-        border-color: #a3c9f9;
-        box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.1);
-    }
-
-    .animate__animated { animation-duration: 0.8s; }
-</style>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
-
-    <script>
-        const codeInput = document.getElementById('DepartmentCode');
-        const nameInput = document.getElementById('DepartmentName');
-        const parentSelect = document.getElementById('ParentDepartmentId');
-        const managerSelect = document.getElementById('ManagerId');
-
-        const previewCode = document.getElementById('previewCode');
-        const previewName = document.getElementById('previewName');
-        const previewParent = document.getElementById('previewParent');
-        const previewManager = document.getElementById('previewManager');
-
-        function updatePreview() {
-            previewCode.textContent = codeInput.value.trim().toUpperCase() || '--';
-            previewName.textContent = nameInput.value.trim() || '--';
-
-            const parentOpt = parentSelect.options[parentSelect.selectedIndex];
-            previewParent.textContent = parentOpt && parentOpt.value ? parentOpt.text : 'Cấp cao nhất';
-
-            const managerOpt = managerSelect.options[managerSelect.selectedIndex];
-            previewManager.textContent = managerOpt && managerOpt.value ? managerOpt.text : 'Chưa chỉ định';
+@section Styles {
+    <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
+    <style>
+        .department-create-page {
+            --cf-accent: #2563eb;
+            --cf-accent-dark: #1d4ed8;
+            --cf-soft-accent: #eff6ff;
         }
 
-        codeInput.addEventListener('input', updatePreview);
-        nameInput.addEventListener('input', updatePreview);
-        parentSelect.addEventListener('change', updatePreview);
-        managerSelect.addEventListener('change', updatePreview);
+        .department-code-input {
+            font-weight: 750;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
 
-        window.addEventListener('DOMContentLoaded', updatePreview);
+        .department-preview-list dd {
+            min-height: 1.15rem;
+        }
+
+        .department-create-guide__list {
+            margin-top: 1rem;
+        }
+    </style>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/create-form.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            "use strict";
+
+            const codeInput = document.getElementById("DepartmentCode");
+            const nameInput = document.getElementById("DepartmentName");
+            const parentSelect = document.getElementById("ParentDepartmentId");
+            const managerSelect = document.getElementById("ManagerId");
+            const previewCode = document.getElementById("previewCode");
+            const previewName = document.getElementById("previewName");
+            const previewParent = document.getElementById("previewParent");
+            const previewManager = document.getElementById("previewManager");
+
+            function selectedLabel(select, fallback) {
+                if (!select) return fallback;
+
+                const option = select.options[select.selectedIndex];
+                return option && option.value ? option.text.trim() : fallback;
+            }
+
+            function updatePreview() {
+                if (previewCode && codeInput) {
+                    previewCode.textContent = codeInput.value.trim().toUpperCase() || "Chưa nhập";
+                }
+
+                if (previewName && nameInput) {
+                    previewName.textContent = nameInput.value.trim() || "Chưa nhập";
+                }
+
+                if (previewParent) {
+                    previewParent.textContent = selectedLabel(parentSelect, "Cấp cao nhất");
+                }
+
+                if (previewManager) {
+                    previewManager.textContent = selectedLabel(managerSelect, "Chưa chỉ định");
+                }
+            }
+
+            [codeInput, nameInput].forEach(input => input?.addEventListener("input", updatePreview));
+            [parentSelect, managerSelect].forEach(select => select?.addEventListener("change", updatePreview));
+            updatePreview();
+        })();
     </script>
 }

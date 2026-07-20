@@ -21,6 +21,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // =========================================
         public async Task<IActionResult> Index(string tab = "kpitype")
         {
+            if (string.Equals(tab, "systemparameter", StringComparison.OrdinalIgnoreCase))
+            {
+                return RedirectToAction("Index", "SystemParameters");
+            }
+
             ViewBag.ActiveTab = tab;
 
             ViewBag.KPITypes = await _context.KPITypes.OrderBy(x => x.Id).ToListAsync();
@@ -30,8 +35,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.FailReasons = await _context.FailReasons.OrderBy(x => x.Id).ToListAsync();
             ViewBag.GradingRanks = await _context.GradingRanks.OrderBy(x => x.MinScore).ToListAsync();
             ViewBag.Statuses = await _context.Statuses.OrderBy(x => x.StatusType).ThenBy(x => x.Id).ToListAsync();
-
-            ViewBag.SystemParameters = await _context.SystemParameters.OrderBy(x => x.Id).ToListAsync();
 
             return View();
         }
@@ -297,38 +300,33 @@ namespace Manage_KPI_or_OKR_System.Controllers
         // SYSTEM PARAMETER CRUD
         // =========================================
         [HttpPost]
-        public async Task<IActionResult> CreateSystemParameter(string parameterCode, string value, string description)
+        public IActionResult CreateSystemParameter(string parameterCode, string value, string description)
         {
-            if (string.IsNullOrWhiteSpace(parameterCode))
-                return Json(new { success = false, message = "Mã tham số không được để trống." });
-
-            if (await _context.SystemParameters.AnyAsync(x => x.ParameterCode == parameterCode))
-                return Json(new { success = false, message = "Mã tham số này đã tồn tại." });
-
-            var entity = new SystemParameter { ParameterCode = parameterCode, Value = value, Description = description };
-            _context.SystemParameters.Add(entity);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, id = entity.Id, message = "Thêm tham số hệ thống thành công." });
+            return Json(new
+            {
+                success = false,
+                message = "Tham số hệ thống chỉ được quản lý tại trang Cài đặt hệ thống."
+            });
         }
 
         [HttpPost]
-        public async Task<IActionResult> EditSystemParameter(int id, string parameterCode, string value, string description)
+        public IActionResult EditSystemParameter(int id, string parameterCode, string value, string description)
         {
-            var entity = await _context.SystemParameters.FindAsync(id);
-            if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            entity.ParameterCode = parameterCode;
-            entity.Value = value;
-            entity.Description = description;
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Cập nhật thành công." });
+            return Json(new
+            {
+                success = false,
+                message = "Vui lòng cập nhật tham số tại trang Cài đặt hệ thống để áp dụng đúng kiểm tra an toàn."
+            });
         }
 
         [HttpPost]
-        public async Task<IActionResult> DeleteSystemParameter(int id)
+        public IActionResult DeleteSystemParameter(int id)
         {
-            var entity = await _context.SystemParameters.FindAsync(id);
-            if (entity == null) return Json(new { success = false, message = "Không tìm thấy dữ liệu." });
-            return await DeleteEntityAsync(_context.SystemParameters, entity);
+            return Json(new
+            {
+                success = false,
+                message = "Không thể xóa tham số hệ thống từ danh mục chung."
+            });
         }
 
         private async Task<IActionResult> DeleteEntityAsync<TEntity>(DbSet<TEntity> dbSet, TEntity entity) where TEntity : class

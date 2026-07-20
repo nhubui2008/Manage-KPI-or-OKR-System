@@ -2,224 +2,464 @@
 @{
     ViewData["Title"] = "Hồ sơ cá nhân";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    
-    // Lấy thông tin nhân viên và quyền từ ViewBag
+
     var employee = ViewBag.EmployeeInfo as Manage_KPI_or_OKR_System.Models.Employee;
-    var roleName = ViewBag.RoleName as string;
-    
-    // Tạo chữ cái đầu làm Avatar
-    var avatarLetter = !string.IsNullOrEmpty(Model.Username) ? Model.Username[0].ToString().ToUpper() : "U";
+    var roleName = ViewBag.RoleName as string ?? "Người dùng";
+    var displayName = !string.IsNullOrWhiteSpace(employee?.FullName)
+        ? employee.FullName
+        : !string.IsNullOrWhiteSpace(Model.Username) ? Model.Username : "Người dùng";
+    var displayEmail = string.IsNullOrWhiteSpace(Model.Email) ? "Chưa cập nhật email" : Model.Email;
+    var avatarLetter = !string.IsNullOrWhiteSpace(displayName)
+        ? displayName[0].ToString().ToUpperInvariant()
+        : "U";
 }
 
-<style>
-    /* Style avatar giống class .logo-circle trong login.css */
-    .profile-avatar-circle {
-        background: linear-gradient(135deg, var(--primary-bg) 0%, var(--accent-light) 100%);
-        border-radius: 50%;
-        width: 100px;
-        height: 100px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: var(--primary);
-        box-shadow: 0 0 24px 0 rgba(248, 187, 208, 0.4);
-        position: relative;
-    }
-    
-    .profile-avatar-circle::after {
-        content: '';
-        position: absolute;
-        top: -6px; left: -6px; right: -6px; bottom: -6px;
-        border-radius: 50%;
-        border: 2px dashed var(--accent);
-        opacity: 0.5;
-    }
+@section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
+    <style>
+        .account-profile-page {
+            --profile-blue: var(--evaluation-brand, #5b42d6);
+            --profile-blue-soft: var(--evaluation-brand-soft, #f1efff);
+        }
 
-    /* Style các field thông tin giống field-container trong login */
-    .info-label {
-        color: var(--text-secondary);
-        font-size: var(--font-size-sm);
-        font-weight: 600;
-        margin-bottom: 6px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    
-    .info-value {
-        color: var(--text-primary);
-        font-size: var(--font-size-md);
-        font-weight: 600;
-        background: rgba(255, 255, 255, 0.5); /* Glassy background */
-        backdrop-filter: blur(4px);
-        padding: 12px 16px;
-        border-radius: var(--radius-md);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 1.5px 6px rgba(140, 106, 133, 0.04);
-        transition: all 0.2s;
-    }
-    
-    .info-value:hover {
-        box-shadow: 0 0 10px rgba(248, 187, 208, 0.2);
-        border-color: var(--accent);
-        background: rgba(255, 255, 255, 0.7);
-    }
-</style>
+        .account-profile-layout {
+            display: grid;
+            grid-template-columns: minmax(260px, 0.8fr) minmax(0, 2fr);
+            gap: 1rem;
+            margin-top: 1rem;
+            align-items: start;
+        }
 
-<div class="container-fluid px-4 mt-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h3 class="fw-bold m-0" style="color: var(--text-primary); font-size: var(--font-size-2xl);">
-                <i class="bi bi-person-badge me-2" style="color: var(--primary);"></i>Hồ sơ cá nhân
-            </h3>
+        .account-summary,
+        .account-panel {
+            border: 1px solid var(--evaluation-line);
+            border-radius: var(--evaluation-radius);
+            background: var(--evaluation-surface);
+        }
+
+        .account-summary {
+            padding: 1.35rem;
+            text-align: center;
+        }
+
+        .account-avatar {
+            display: grid;
+            place-items: center;
+            width: 76px;
+            height: 76px;
+            margin: 0 auto 0.9rem;
+            border: 1px solid var(--evaluation-brand-border);
+            border-radius: 18px;
+            background: var(--profile-blue-soft);
+            color: var(--profile-blue);
+            font-size: 1.75rem;
+            font-weight: 800;
+        }
+
+        .account-summary h2 {
+            margin: 0;
+            color: var(--evaluation-ink);
+            font-size: 1.1rem;
+            font-weight: 800;
+            line-height: 1.35;
+        }
+
+        .account-summary > p {
+            margin: 0.3rem 0 1rem;
+            color: var(--evaluation-muted);
+            font-size: 0.8rem;
+            overflow-wrap: anywhere;
+        }
+
+        .account-role {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            min-height: 30px;
+            border: 1px solid var(--evaluation-brand-border);
+            border-radius: 7px;
+            padding: 0.35rem 0.6rem;
+            background: var(--profile-blue-soft);
+            color: var(--profile-blue);
+            font-size: 0.73rem;
+            font-weight: 750;
+        }
+
+        .account-meta {
+            display: grid;
+            gap: 0.7rem;
+            margin: 1.2rem 0 0;
+            padding-top: 1rem;
+            border-top: 1px solid var(--evaluation-line);
+            text-align: left;
+        }
+
+        .account-meta > div {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.8rem;
+        }
+
+        .account-meta dt,
+        .account-meta dd {
+            margin: 0;
+            font-size: 0.76rem;
+        }
+
+        .account-meta dt {
+            color: var(--evaluation-muted);
+            font-weight: 650;
+        }
+
+        .account-meta dd {
+            color: var(--evaluation-ink);
+            font-weight: 750;
+            text-align: right;
+        }
+
+        .account-content {
+            display: grid;
+            gap: 1rem;
+            min-width: 0;
+        }
+
+        .account-panel {
+            padding: 1rem;
+        }
+
+        .account-panel-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid var(--evaluation-line);
+        }
+
+        .account-panel-heading > div {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .account-panel-icon {
+            display: grid;
+            place-items: center;
+            width: 38px;
+            height: 38px;
+            flex: 0 0 auto;
+            border-radius: 8px;
+            background: var(--profile-blue-soft);
+            color: var(--profile-blue);
+        }
+
+        .account-panel-heading h2 {
+            margin: 0;
+            color: var(--evaluation-ink);
+            font-size: 0.98rem;
+            font-weight: 800;
+        }
+
+        .account-panel-heading p {
+            margin: 0.18rem 0 0;
+            color: var(--evaluation-muted);
+            font-size: 0.75rem;
+            line-height: 1.45;
+        }
+
+        .account-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin: 1rem 0 0;
+        }
+
+        .account-info-grid > div {
+            min-width: 0;
+            border: 1px solid var(--evaluation-line);
+            border-radius: 8px;
+            padding: 0.8rem;
+            background: var(--evaluation-soft);
+        }
+
+        .account-info-grid dt,
+        .account-info-grid dd {
+            margin: 0;
+        }
+
+        .account-info-grid dt {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--evaluation-muted);
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .account-info-grid dd {
+            margin-top: 0.3rem;
+            color: var(--evaluation-ink);
+            font-size: 0.86rem;
+            font-weight: 750;
+            overflow-wrap: anywhere;
+        }
+
+        .account-language-form {
+            display: grid;
+            gap: 0.75rem;
+            padding-top: 1rem;
+        }
+
+        .account-language-form label > span {
+            display: block;
+            margin-bottom: 0.4rem;
+            color: var(--evaluation-muted);
+            font-size: 0.73rem;
+            font-weight: 700;
+        }
+
+        .account-language-control {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 0.65rem;
+        }
+
+        .account-language-control select {
+            width: 100%;
+            min-height: 44px;
+            border: 1px solid #d7dbe2;
+            border-radius: 8px;
+            background: #fff;
+            color: var(--evaluation-ink);
+            padding: 0.65rem 0.75rem;
+            outline: none;
+        }
+
+        .account-language-control select:focus {
+            border-color: var(--profile-blue);
+            box-shadow: 0 0 0 3px rgba(91, 66, 214, 0.18);
+        }
+
+        .account-language-hint,
+        .account-language-feedback {
+            margin: 0;
+            color: var(--evaluation-muted);
+            font-size: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .account-language-feedback:empty {
+            display: none;
+        }
+
+        .account-language-feedback.is-success { color: #087466; }
+        .account-language-feedback.is-error { color: #b42318; }
+
+        .account-empty {
+            padding-block: 2.2rem;
+        }
+
+        @@media (max-width: 900px) {
+            .account-profile-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .account-summary {
+                text-align: left;
+            }
+
+            .account-avatar {
+                margin-inline: 0;
+            }
+        }
+
+        @@media (max-width: 575.98px) {
+            .account-info-grid,
+            .account-language-control {
+                grid-template-columns: 1fr;
+            }
+
+            .account-language-control .evaluation-primary-action {
+                width: 100%;
+            }
+        }
+    </style>
+}
+
+<div class="evaluation-page account-profile-page">
+    <header class="evaluation-page-header">
+        <div>
+            <h1>Hồ sơ cá nhân</h1>
+            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Hồ sơ cá nhân</span>
+            </nav>
         </div>
-    </div>
 
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="content-card h-100">
-                <div class="card-body-custom text-center">
-                    <div class="profile-avatar-circle mb-3">
-                        @avatarLetter
-                    </div>
-                    <h4 class="fw-bold mb-1" style="color: var(--text-primary);">@Model.Username</h4>
-                    <p style="color: var(--text-secondary);" class="mb-3">@Model.Email</p>
-                    
-                    <span class="status-badge" style="background: var(--info-bg); color: var(--primary);">
-                        <i class="bi bi-shield-lock-fill me-1"></i> Quyền: @roleName
-                    </span>
-                    
-                    <hr style="border-color: var(--border-color); opacity: 1; margin: 24px 0;" />
-                    
-                    <div class="d-flex justify-content-between align-items-center text-start mb-3">
-                        <span class="info-label mb-0">Trạng thái:</span>
+        <a asp-action="ChangePassword" asp-controller="Auth" class="evaluation-primary-action">
+            <i class="bi bi-key" aria-hidden="true"></i>
+            <span>Đổi mật khẩu</span>
+        </a>
+    </header>
+
+    <div class="account-profile-layout">
+        <aside class="account-summary" aria-labelledby="accountSummaryHeading">
+            <div class="account-avatar" aria-hidden="true">@avatarLetter</div>
+            <h2 id="accountSummaryHeading">@displayName</h2>
+            <p>@displayEmail</p>
+            <span class="account-role"><i class="bi bi-shield-check" aria-hidden="true"></i>@roleName</span>
+
+            <dl class="account-meta">
+                <div>
+                    <dt>Trạng thái</dt>
+                    <dd>
                         @if (Model.IsActive == true)
                         {
-                            <span class="status-badge active"><i class="status-dot"></i> Đang hoạt động</span>
+                            <span class="evaluation-status evaluation-status--running"><span aria-hidden="true"></span>Đang hoạt động</span>
                         }
                         else
                         {
-                            <span class="status-badge inactive"><i class="status-dot"></i> Bị khóa</span>
+                            <span class="evaluation-status evaluation-status--closed"><span aria-hidden="true"></span>Bị khóa</span>
                         }
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center text-start mb-4">
-                        <span class="info-label mb-0">Ngày tham gia:</span>
-                        <span style="color: var(--text-primary); font-weight: 600;">@(Model.CreatedAt?.ToString("dd/MM/yyyy"))</span>
-                    </div>
-                    
-                    <a href="/Auth/ChangePassword" class="btn-primary-custom w-100 justify-content-center" style="padding: 12px 0; border-radius: var(--radius-lg);">
-                        <i class="bi bi-key me-1"></i> Đổi mật khẩu
-                    </a>
+                    </dd>
                 </div>
-            </div>
-        </div>
+                <div>
+                    <dt>Tên đăng nhập</dt>
+                    <dd>@(string.IsNullOrWhiteSpace(Model.Username) ? "Chưa cập nhật" : Model.Username)</dd>
+                </div>
+                <div>
+                    <dt>Ngày tham gia</dt>
+                    <dd>@(Model.CreatedAt?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</dd>
+                </div>
+            </dl>
+        </aside>
 
-        <div class="col-md-8 mb-4">
-            <div class="content-card h-100">
-                <div class="card-header-custom">
-                    <h5><i class="bi bi-person-vcard text-primary"></i> Thông tin hồ sơ nhân sự</h5>
-                </div>
-                <div class="card-body-custom">
-                    @if (employee != null)
-                    {
-                        <div class="row g-4">
-                            <div class="col-sm-6">
-                                <div class="info-label"><i class="bi bi-qr-code"></i> Mã nhân viên</div>
-                                <div class="info-value">@employee.EmployeeCode</div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="info-label"><i class="bi bi-person-bounding-box"></i> Họ và tên</div>
-                                <div class="info-value">@employee.FullName</div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="info-label"><i class="bi bi-telephone"></i> Số điện thoại</div>
-                                <div class="info-value">@(string.IsNullOrEmpty(employee.Phone) ? "Chưa cập nhật" : employee.Phone)</div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="info-label"><i class="bi bi-envelope-at"></i> Email công việc</div>
-                                <div class="info-value">@(string.IsNullOrEmpty(employee.Email) ? "Chưa cập nhật" : employee.Email)</div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="info-label"><i class="bi bi-calendar-event"></i> Ngày sinh</div>
-                                <div class="info-value">@(employee.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="info-label"><i class="bi bi-building-check"></i> Ngày vào làm</div>
-                                <div class="info-value">@(employee.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
-                            </div>
+        <div class="account-content">
+            <section class="account-panel" aria-labelledby="employeeProfileHeading">
+                <div class="account-panel-heading">
+                    <div>
+                        <span class="account-panel-icon"><i class="bi bi-person-vcard" aria-hidden="true"></i></span>
+                        <div>
+                            <h2 id="employeeProfileHeading">Thông tin hồ sơ nhân sự</h2>
+                            <p>Dữ liệu công việc được liên kết với tài khoản của bạn.</p>
                         </div>
-                    }
-                    else
-                    {
-                        <div class="text-center py-5">
-                            <div class="mb-3" style="font-size: 4rem; color: var(--primary-bg);">
-                                <i class="bi bi-person-exclamation"></i>
-                            </div>
-                            <h5 style="color: var(--text-primary); font-weight: 700;" class="mb-2">Chưa liên kết hồ sơ nhân viên</h5>
-                            <p style="color: var(--text-secondary);" class="mb-0">Tài khoản này hiện chưa được gắn với bất kỳ hồ sơ nhân sự nào trên hệ thống.</p>
-                            <p style="color: var(--text-muted); font-size: var(--font-size-sm);" class="mt-3">
-                                <em>*Admin có thể cập nhật việc này trong phần "Quản lý nhân sự" -> "Sửa nhân viên" -> Chọn tài khoản ở mục "Liên kết".</em>
-                            </p>
-                        </div>
-                    }
-                </div>
-            </div>
-            
-            <div class="content-card h-100 mt-4">
-                <div class="card-header-custom">
-                    <h5><i class="bi bi-gear text-primary"></i> Cài đặt AI & Hệ thống</h5>
-                </div>
-                <div class="card-body-custom">
-                    <div class="mb-3">
-                        <label class="form-label"><strong>Ngôn ngữ đầu ra (Output Language):</strong></label>
-                        <div class="input-group">
-                            <select id="language-select" class="form-select">
-                                <option value="Auto" selected="@(Model.PreferredLanguage == "Auto" ? "selected" : null)">Tự động (Theo ngôn ngữ câu hỏi)</option>
-                                <option value="Tiếng Việt" selected="@(Model.PreferredLanguage == "Tiếng Việt" ? "selected" : null)">Tiếng Việt</option>
-                                <option value="English" selected="@(Model.PreferredLanguage == "English" ? "selected" : null)">English</option>
-                                <option value="中文 (Chinese)" selected="@(Model.PreferredLanguage == "中文 (Chinese)" ? "selected" : null)">中文 (Chinese)</option>
-                            </select>
-                            <button class="btn btn-outline-primary" type="button" id="btn-save-language">Lưu ngôn ngữ</button>
-                        </div>
-                        <div class="form-text">Ngôn ngữ mà AI sẽ sử dụng để viết mục tiêu hoặc kết quả cho bạn. Chọn 'Tự động' để AI trả lời theo ngôn ngữ bạn hỏi.</div>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <script>
-            document.getElementById('btn-save-language')?.addEventListener('click', async function() {
-                const lang = document.getElementById('language-select').value;
-                const btn = this;
-                
-                try {
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang lưu...';
-                    
-                    const response = await fetch('/Auth/UpdateLanguage?language=' + encodeURIComponent(lang), { method: 'POST' });
-                    if (response.ok) {
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({
-                                toast: true,
-                                position: 'top-end',
-                                showConfirmButton: false,
-                                timer: 3000,
-                                icon: 'success',
-                                title: 'Đã lưu cài đặt ngôn ngữ!'
-                            });
-                        } else {
-                            alert("Đã lưu ngôn ngữ thành công!");
-                        }
-                    }
-                } catch(e) {
-                    console.error("Lỗi khi lưu ngôn ngữ", e);
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = 'Lưu ngôn ngữ';
+
+                @if (employee != null)
+                {
+                    <dl class="account-info-grid">
+                        <div>
+                            <dt><i class="bi bi-qr-code" aria-hidden="true"></i>Mã nhân viên</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(employee.EmployeeCode) ? "Chưa cập nhật" : employee.EmployeeCode)</dd>
+                        </div>
+                        <div>
+                            <dt><i class="bi bi-person" aria-hidden="true"></i>Họ và tên</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(employee.FullName) ? "Chưa cập nhật" : employee.FullName)</dd>
+                        </div>
+                        <div>
+                            <dt><i class="bi bi-telephone" aria-hidden="true"></i>Số điện thoại</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(employee.Phone) ? "Chưa cập nhật" : employee.Phone)</dd>
+                        </div>
+                        <div>
+                            <dt><i class="bi bi-envelope" aria-hidden="true"></i>Email công việc</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(employee.Email) ? "Chưa cập nhật" : employee.Email)</dd>
+                        </div>
+                        <div>
+                            <dt><i class="bi bi-calendar-event" aria-hidden="true"></i>Ngày sinh</dt>
+                            <dd>@(employee.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</dd>
+                        </div>
+                        <div>
+                            <dt><i class="bi bi-building-check" aria-hidden="true"></i>Ngày vào làm</dt>
+                            <dd>@(employee.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</dd>
+                        </div>
+                    </dl>
                 }
-            });
-        </script>
+                else
+                {
+                    <div class="evaluation-empty account-empty" role="status">
+                        <span class="evaluation-empty-icon"><i class="bi bi-person-exclamation" aria-hidden="true"></i></span>
+                        <h2>Chưa liên kết hồ sơ nhân viên</h2>
+                        <p>Liên hệ quản trị viên để liên kết tài khoản với hồ sơ nhân sự tương ứng.</p>
+                    </div>
+                }
+            </section>
+
+            <section class="account-panel" aria-labelledby="languageSettingsHeading">
+                <div class="account-panel-heading">
+                    <div>
+                        <span class="account-panel-icon"><i class="bi bi-translate" aria-hidden="true"></i></span>
+                        <div>
+                            <h2 id="languageSettingsHeading">Ngôn ngữ AI</h2>
+                            <p>Chọn ngôn ngữ mặc định cho nội dung do trợ lý AI tạo.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form asp-action="UpdateLanguage" asp-controller="Auth" method="post" id="language-preference-form" class="account-language-form">
+                    <label for="language-select"><span>Ngôn ngữ đầu ra</span></label>
+                    <div class="account-language-control">
+                        <select id="language-select" name="language" class="no-select2">
+                            <option value="Auto" selected="@(Model.PreferredLanguage == "Auto" ? "selected" : null)">Tự động theo câu hỏi</option>
+                            <option value="Tiếng Việt" selected="@(Model.PreferredLanguage == "Tiếng Việt" ? "selected" : null)">Tiếng Việt</option>
+                            <option value="English" selected="@(Model.PreferredLanguage == "English" ? "selected" : null)">English</option>
+                            <option value="中文 (Chinese)" selected="@(Model.PreferredLanguage == "中文 (Chinese)" ? "selected" : null)">中文 (Chinese)</option>
+                        </select>
+                        <button class="evaluation-primary-action" type="submit" id="btn-save-language">
+                            <i class="bi bi-check-lg" aria-hidden="true"></i>
+                            <span>Lưu thay đổi</span>
+                        </button>
+                    </div>
+                    <p class="account-language-hint">Chế độ tự động sẽ phản hồi bằng ngôn ngữ bạn sử dụng trong câu hỏi.</p>
+                    <p id="language-feedback" class="account-language-feedback" role="status" aria-live="polite"></p>
+                </form>
+            </section>
+        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const form = document.getElementById('language-preference-form');
+            const button = document.getElementById('btn-save-language');
+            const feedback = document.getElementById('language-feedback');
+            if (!form || !button || !feedback) return;
+
+            const originalButtonHtml = button.innerHTML;
+
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                feedback.textContent = '';
+                feedback.className = 'account-language-feedback';
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>Đang lưu...</span>';
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const result = await response.json().catch(() => ({}));
+
+                    if (!response.ok || result.success !== true) {
+                        throw new Error(result.message || 'Không thể lưu ngôn ngữ lúc này.');
+                    }
+
+                    feedback.textContent = result.message || 'Đã lưu ngôn ngữ đầu ra.';
+                    feedback.classList.add('is-success');
+                } catch (error) {
+                    feedback.textContent = error.message || 'Không thể lưu ngôn ngữ lúc này.';
+                    feedback.classList.add('is-error');
+                } finally {
+                    button.disabled = false;
+                    button.innerHTML = originalButtonHtml;
+                }
+            });
+        })();
+    </script>
+}

@@ -1,6 +1,6 @@
 @model Manage_KPI_or_OKR_System.Models.EvaluationResult
 @{
-    ViewData["Title"] = "Thêm Kết quả Đánh giá";
+    ViewData["Title"] = "Thêm kết quả đánh giá";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var allEmployees = ViewBag.AllEmployees as List<Manage_KPI_or_OKR_System.Models.Employee> ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
     var allPeriods = ViewBag.AllPeriods as List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod> ?? new List<Manage_KPI_or_OKR_System.Models.EvaluationPeriod>();
@@ -17,200 +17,306 @@
         }));
 }
 
-<div class="page-content">
-    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
-        <div>
-            <h1 class="mb-2 fw-800">Thêm Kết quả Đánh giá</h1>
-            <div class="page-breadcrumb">
+<div class="cf-page evaluation-result-create" data-create-form>
+    <header class="cf-header">
+        <div class="cf-header__content">
+            <h1>Thêm kết quả đánh giá</h1>
+            <nav class="cf-breadcrumb" aria-label="Điều hướng trang">
                 <a href="/">Trang chủ</a>
-                <span class="separator">/</span>
-                <a asp-action="Index">Kết quả Đánh giá</a>
-                <span class="separator">/</span>
-                <span class="text-muted">Thêm mới</span>
-            </div>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <a asp-action="Index">Kết quả đánh giá</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Thêm mới</span>
+            </nav>
+            <p class="cf-header__description">Chọn đúng nhân viên và kỳ đánh giá, sau đó nhập tổng điểm để hệ thống tự xác định xếp hạng và phân loại.</p>
         </div>
-        <div>
-            <a asp-action="Index" class="btn-outline-custom shadow-sm">
-                <i class="bi bi-arrow-left me-2"></i> Quay lại
-            </a>
-        </div>
-    </div>
+        <a asp-action="Index" class="cf-back-action">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Quay lại</span>
+        </a>
+    </header>
 
-    <div class="row g-4">
-        <div class="col-xl-8 animate__animated animate__fadeInLeft">
-            <div class="content-card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
-                <div class="card-header-custom border-bottom bg-transparent py-4">
-                    <h5 class="fw-bold fs-5 mb-0"><i class="bi bi-award me-2"></i> Thông tin Đánh giá</h5>
-                </div>
-
-                <div class="card-body-custom p-4">
-                    <form asp-action="Create" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
-
-                        <!-- SECTION 1 -->
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
-                                <span class="fw-bold">1</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Đối tượng đánh giá</h6>
-                        </div>
-
-                        <div class="row g-4 mb-5 p-3 rounded-4 bg-light bg-opacity-50 border border-white">
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Nhân viên <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-person-badge"></i>
-                                        <select asp-for="EmployeeId" class="form-select shadow-sm" required>
-                                            <option value="">-- Chọn nhân viên --</option>
-                                            @foreach (var e in allEmployees)
-                                            {
-                                                <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <span asp-validation-for="EmployeeId" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Kỳ đánh giá <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-calendar3"></i>
-                                        <select asp-for="PeriodId" class="form-select shadow-sm" required>
-                                            <option value="">-- Chọn kỳ --</option>
-                                            @foreach (var p in allPeriods)
-                                            {
-                                                <option value="@p.Id">@p.PeriodName</option>
-                                            }
-                                        </select>
-                                    </div>
-                                    <span asp-validation-for="PeriodId" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 2 -->
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="icon-circle bg-success text-white me-3 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px; border-radius: 12px;">
-                                <span class="fw-bold">2</span>
-                            </div>
-                            <h6 class="mb-0 fw-bold text-dark text-uppercase letter-spacing-1">Kết quả đánh giá</h6>
-                        </div>
-
-                        <div class="row g-4 p-3 rounded-4 bg-light bg-opacity-50 border border-white mb-4">
-                            <div class="col-md-4">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Tổng điểm <span class="text-danger">*</span></label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-123"></i>
-                                        <input asp-for="TotalScore" type="number" class="form-control shadow-sm" step="0.01" min="0" max="100" required />
-                                    </div>
-                                    <span asp-validation-for="TotalScore" class="text-danger small mt-1 d-block"></span>
-                                </div>
-                            </div>
-
-                            <div class="col-md-4">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Xếp hạng</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-trophy"></i>
-                                        <input type="text" id="rankDisplay" class="form-control shadow-sm bg-light" value="Tự động theo tổng điểm" readonly />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-4">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Phân loại</label>
-                                    <div class="input-wrapper">
-                                        <i class="bi bi-bar-chart-steps"></i>
-                                        <input type="text" id="classificationDisplay" class="form-control shadow-sm bg-light" value="Tự động theo tổng điểm" readonly />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-12">
-                                <div class="form-icon-group mb-0">
-                                    <label class="form-label small text-muted text-uppercase fw-800">Nhận xét đánh giá</label>
-                                    <textarea asp-for="ReviewComment" class="form-control shadow-sm" rows="4" maxlength="2000" placeholder="Nhập nhận xét đánh giá hoặc bổ sung sau"></textarea>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
-                            <a asp-action="Index" class="btn-outline-custom">
-                                <i class="bi bi-x-lg me-2"></i> Hủy thao tác
-                            </a>
-                            <button type="submit" class="btn-primary-custom" style="padding: 12px 40px; border-radius: 12px;">
-                                <i class="bi bi-check-lg fs-5 me-2"></i> Lưu Kết quả
-                            </button>
-                        </div>
-                    </form>
+    <div class="cf-layout">
+        <section class="cf-panel" aria-labelledby="evaluationResultFormHeading">
+            <div class="cf-panel__header">
+                <div>
+                    <h2 id="evaluationResultFormHeading">Thông tin kết quả</h2>
+                    <p>Các trường có dấu <span class="cf-required" aria-hidden="true">*</span> là bắt buộc.</p>
                 </div>
             </div>
-        </div>
 
-        <div class="col-xl-4 animate__animated animate__fadeInRight">
-            <div class="sticky-top" style="top: 100px;">
-                <div class="content-card border-0 shadow-lg text-white mb-4" style="background: linear-gradient(135deg, #1a73e8, #1557b0); border-radius: 24px;">
-                    <div class="card-body-custom p-4">
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
-                                <i class="bi bi-award fs-3 text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small">Tổng điểm</h6>
-                                <h2 class="mb-0 fw-800" id="previewScore">--</h2>
-                            </div>
-                        </div>
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
-                                    <i class="bi bi-trophy fs-4 me-3 opacity-75"></i>
-                                    <div>
-                                        <div class="small opacity-75 mb-1">Xếp hạng</div>
-                                        <div class="fw-bold small" id="previewRank">--</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="bg-white bg-opacity-10 p-3 rounded-4 d-flex align-items-center">
-                                    <i class="bi bi-bar-chart-steps fs-4 me-3 opacity-75"></i>
-                                    <div>
-                                        <div class="small opacity-75 mb-1">Phân loại</div>
-                                        <div class="fw-bold small" id="previewClass">--</div>
-                                    </div>
-                                </div>
-                            </div>
+            <form asp-action="Create" method="post" class="cf-form" data-create-form-element>
+                <div asp-validation-summary="All" class="cf-alert" role="alert" tabindex="-1" data-error-summary></div>
+
+                <section class="cf-section" aria-labelledby="evaluationSubjectHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-person-check"></i></span>
+                        <div>
+                            <h3 id="evaluationSubjectHeading">Đối tượng đánh giá</h3>
+                            <p>Liên kết kết quả với nhân viên và kỳ đánh giá tương ứng.</p>
                         </div>
                     </div>
-                </div>
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <label asp-for="EmployeeId">Nhân viên <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <select asp-for="EmployeeId" class="form-select cf-control no-select2" aria-describedby="employeeHint" aria-required="true" required>
+                                <option value="">-- Chọn nhân viên --</option>
+                                @foreach (var e in allEmployees)
+                                {
+                                    <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
+                                }
+                            </select>
+                            <span asp-validation-for="EmployeeId" class="cf-validation"></span>
+                            <p id="employeeHint" class="cf-hint">Mỗi nhân viên chỉ có một kết quả trong cùng một kỳ.</p>
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="PeriodId">Kỳ đánh giá <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <select asp-for="PeriodId" class="form-select cf-control no-select2" aria-describedby="periodHint" aria-required="true" required>
+                                <option value="">-- Chọn kỳ đánh giá --</option>
+                                @foreach (var p in allPeriods)
+                                {
+                                    <option value="@p.Id">@p.PeriodName</option>
+                                }
+                            </select>
+                            <span asp-validation-for="PeriodId" class="cf-validation"></span>
+                            <p id="periodHint" class="cf-hint">Chỉ chọn kỳ đang áp dụng cho việc ghi nhận kết quả.</p>
+                        </div>
+                    </div>
+                </section>
 
-                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
-                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle text-primary me-2"></i> Lưu ý</h6>
-                    <ul class="list-unstyled mb-0 small text-muted" style="line-height: 1.8;">
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Tổng điểm thang 100, không âm.</li>
-                        <li class="mb-2"><i class="bi bi-patch-check-fill text-success me-2"></i> Xếp hạng quyết định mức thưởng áp dụng.</li>
-                        <li><i class="bi bi-patch-check-fill text-success me-2"></i> Mỗi nhân viên có một kết quả/kỳ.</li>
-                    </ul>
+                <section class="cf-section" aria-labelledby="evaluationScoreHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-bar-chart-line"></i></span>
+                        <div>
+                            <h3 id="evaluationScoreHeading">Kết quả đánh giá</h3>
+                            <p>Nhập tổng điểm trên thang 100; xếp hạng và phân loại được tính tự động.</p>
+                        </div>
+                    </div>
+                    <div class="cf-field-grid cf-field-grid--three">
+                        <div class="cf-field">
+                            <label asp-for="TotalScore">Tổng điểm <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <input asp-for="TotalScore" type="number" class="form-control cf-control" step="0.01" min="0" max="100" inputmode="decimal" placeholder="0 - 100" aria-describedby="scoreHint" aria-required="true" required />
+                            <span asp-validation-for="TotalScore" class="cf-validation"></span>
+                            <p id="scoreHint" class="cf-hint">Giá trị hợp lệ từ 0 đến 100.</p>
+                        </div>
+                        <div class="cf-field">
+                            <label for="rankDisplay">Xếp hạng</label>
+                            <input type="text" id="rankDisplay" class="form-control cf-control" value="Tự động theo tổng điểm" readonly aria-live="polite" />
+                        </div>
+                        <div class="cf-field">
+                            <label for="classificationDisplay">Phân loại</label>
+                            <input type="text" id="classificationDisplay" class="form-control cf-control" value="Tự động theo tổng điểm" readonly aria-live="polite" />
+                        </div>
+                        <div class="cf-field cf-field--full">
+                            <label asp-for="ReviewComment">Nhận xét đánh giá</label>
+                            <textarea asp-for="ReviewComment" class="form-control cf-control" rows="4" maxlength="2000" aria-describedby="reviewHint" placeholder="Nhập nhận xét đánh giá hoặc bổ sung sau"></textarea>
+                            <span asp-validation-for="ReviewComment" class="cf-validation"></span>
+                            <p id="reviewHint" class="cf-hint">Tối đa 2.000 ký tự, có thể bổ sung sau khi lưu.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="cf-actions">
+                    <a asp-action="Index" class="cf-secondary-action">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                        <span>Hủy</span>
+                    </a>
+                    <button type="submit" class="cf-primary-action" data-submit-button data-default-label="Lưu kết quả" data-loading-label="Đang lưu...">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        <span class="cf-submit-spinner" aria-hidden="true"></span>
+                        <span data-submit-label aria-live="polite">Lưu kết quả</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="cf-guide evaluation-result-preview" aria-labelledby="evaluationResultPreviewHeading">
+            <div class="cf-guide__identity">
+                <span class="cf-guide__icon" aria-hidden="true"><i class="bi bi-award"></i></span>
+                <div>
+                    <span class="cf-guide__eyebrow">Xem trước</span>
+                    <h2 id="evaluationResultPreviewHeading">Kết quả hiện tại</h2>
                 </div>
             </div>
-        </div>
+            <p id="previewStatus" role="status" aria-live="polite" aria-atomic="true">Nhập tổng điểm để xem xếp hạng dự kiến.</p>
+            <dl class="cf-preview-list">
+                <div>
+                    <dt>Tổng điểm</dt>
+                    <dd id="previewScore">--</dd>
+                </div>
+                <div>
+                    <dt>Xếp hạng</dt>
+                    <dd id="previewRank">--</dd>
+                </div>
+                <div>
+                    <dt>Phân loại</dt>
+                    <dd id="previewClass">--</dd>
+                </div>
+            </dl>
+            <ul class="cf-guide__list">
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Điểm được giới hạn trong thang 100.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Xếp hạng lấy theo ngưỡng điểm đã cấu hình.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Kết quả chỉ được ghi nhận sau khi lưu.</span></li>
+            </ul>
+            <div class="cf-guide__note">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>Xem trước giúp kiểm tra nhanh dữ liệu nhập; validation phía server vẫn là kết quả cuối cùng.</span>
+            </div>
+        </aside>
     </div>
 </div>
 
-<style>
-    .fw-800 { font-weight: 800; }
-    .letter-spacing-1 { letter-spacing: 0.1em; }
-    .form-select, .form-control { border: 1.5px solid #edf2f7; padding-top: 12px; padding-bottom: 12px; }
-    .form-select:focus, .form-control:focus { border-color: #a3c9f9; box-shadow: 0 0 0 4px rgba(163, 201, 249, 0.1); }
-    .animate__animated { animation-duration: 0.8s; }
-</style>
+@section Styles {
+    <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
+    <style>
+        .evaluation-result-create {
+            --cf-accent: #1a73e8 !important;
+            --cf-accent-dark: #1557b0 !important;
+            --cf-soft-accent: #eef4ff !important;
+            --cf-border: #e5edf5;
+            --cf-border-strong: #cbd5e1;
+            --cf-text: #172033;
+            --cf-muted: #64748b;
+            max-width: 1440px;
+            padding: 0 0 2.5rem;
+        }
+
+        .evaluation-result-create .cf-header {
+            align-items: center;
+            margin-bottom: 1.25rem;
+            padding: 0.25rem 0 1.125rem;
+        }
+
+        .evaluation-result-create .cf-header h1 {
+            font-size: 1.75rem;
+            letter-spacing: -0.02em;
+        }
+
+        .evaluation-result-create .cf-panel,
+        .evaluation-result-create .cf-guide {
+            border-color: var(--cf-border);
+            border-radius: 8px;
+        }
+
+        .evaluation-result-create .cf-panel {
+            overflow: hidden;
+        }
+
+        .evaluation-result-create .cf-section__icon,
+        .evaluation-result-create .cf-guide__icon {
+            background: #eef4ff;
+            color: #1557b0;
+        }
+
+        .evaluation-result-create .cf-control[readonly] {
+            background: #f8fafc;
+            color: #334155;
+            cursor: default;
+        }
+
+        .evaluation-result-create .cf-primary-action {
+            background: #1a73e8 !important;
+            border-color: #1a73e8 !important;
+            color: #ffffff !important;
+            box-shadow: none !important;
+        }
+
+        .evaluation-result-create .cf-primary-action:hover,
+        .evaluation-result-create .cf-primary-action:focus-visible {
+            background: #1557b0 !important;
+            border-color: #1557b0 !important;
+            color: #ffffff !important;
+        }
+
+        .evaluation-result-create .cf-primary-action:disabled {
+            background: #5a9aee !important;
+            border-color: #5a9aee !important;
+            color: #ffffff !important;
+        }
+
+        .evaluation-result-create :is(.cf-primary-action, .cf-secondary-action, .cf-back-action):focus-visible,
+        .evaluation-result-create .cf-control:focus,
+        .evaluation-result-create .cf-control:focus-visible {
+            border-color: #1a73e8 !important;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2) !important;
+            outline: none;
+        }
+
+        .evaluation-result-create .cf-guide {
+            background: #ffffff;
+        }
+
+        .evaluation-result-create .cf-guide__eyebrow,
+        .evaluation-result-create .cf-preview-list dd {
+            color: #1557b0;
+        }
+
+        .evaluation-result-create .cf-submit-spinner {
+            display: none;
+            width: 0.9rem;
+            height: 0.9rem;
+            border: 2px solid rgba(255, 255, 255, 0.45);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: evaluation-submit-spin 700ms linear infinite;
+        }
+
+        .evaluation-result-create .cf-primary-action[aria-busy="true"] > i {
+            display: none;
+        }
+
+        .evaluation-result-create .cf-primary-action[aria-busy="true"] .cf-submit-spinner {
+            display: inline-block;
+        }
+
+        @@keyframes evaluation-submit-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @@media (max-width: 991.98px) {
+            .evaluation-result-create .cf-preview-list {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @@media (max-width: 767.98px) {
+            .evaluation-result-create {
+                padding: 0 0 2rem;
+            }
+
+            .evaluation-result-create .cf-header {
+                align-items: stretch;
+                padding-top: 0;
+            }
+        }
+
+        @@media (max-width: 575.98px) {
+            .evaluation-result-create .cf-header h1 {
+                font-size: 1.42rem;
+            }
+
+            .evaluation-result-create .cf-back-action {
+                align-self: stretch;
+            }
+
+            .evaluation-result-create .cf-preview-list {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        @@media (prefers-reduced-motion: reduce) {
+            .evaluation-result-create .cf-submit-spinner {
+                animation-duration: 1.4s;
+            }
+        }
+    </style>
+}
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/create-form.js" asp-append-version="true"></script>
     <script>
         const evaluationRankScale = @Html.Raw(rankScaleJson);
         const scoreInput = document.getElementById('TotalScore');
@@ -222,14 +328,19 @@
             return evaluationRankScale.find(rank => numericScore >= Number(rank.minScore));
         }
         function updatePreview() {
-            document.getElementById('previewScore').textContent = scoreInput.value ? scoreInput.value + ' đ' : '--';
-            const rank = resolveRank(scoreInput.value);
+            if (!scoreInput) return;
+            const score = scoreInput.value;
+            document.getElementById('previewScore').textContent = score ? score + ' điểm' : '--';
+            const rank = resolveRank(score);
             rankDisplay.value = rank ? rank.rankCode : 'Chưa có hạng phù hợp';
             classificationDisplay.value = rank ? rank.description : 'Chưa phân loại';
             document.getElementById('previewRank').textContent = rank ? rank.rankCode : '--';
             document.getElementById('previewClass').textContent = rank ? rank.description : '--';
+            document.getElementById('previewStatus').textContent = rank
+                ? 'Xếp hạng dự kiến theo tổng điểm đã nhập.'
+                : 'Nhập tổng điểm để xem xếp hạng dự kiến.';
         }
-        scoreInput.addEventListener('input', updatePreview);
+        scoreInput?.addEventListener('input', updatePreview);
         window.addEventListener('DOMContentLoaded', updatePreview);
     </script>
 }

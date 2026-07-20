@@ -3,242 +3,317 @@
     ViewData["Title"] = "Quản lý Phòng ban";
     var employees = ViewBag.Employees as Dictionary<int, string> ?? new Dictionary<int, string>();
     var employeeCounts = ViewBag.EmployeeCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+    var departmentItems = Model?.ToList() ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
+    var currentSearch = ViewData["CurrentFilter"]?.ToString();
+    var currentStatus = ViewBag.CurrentStatus?.ToString();
+    var hasActiveFilters = !string.IsNullOrWhiteSpace(currentSearch) || !string.IsNullOrWhiteSpace(currentStatus);
+    var activeDepartmentCount = departmentItems.Count(department => department.IsActive == true);
+    var inactiveDepartmentCount = departmentItems.Count - activeDepartmentCount;
+    var rootDepartmentCount = departmentItems.Count(department => !department.ParentDepartmentId.HasValue);
+    var visibleEmployeeCount = departmentItems.Sum(department => employeeCounts.TryGetValue(department.Id, out var count) ? count : 0);
+    var isDepartmentAdminRole = User.IsInRole("Admin") || User.IsInRole("Administrator");
+    var canCreateDepartment = isDepartmentAdminRole || User.HasClaim("Permission", "DEPARTMENTS_CREATE");
+    var canEditDepartment = isDepartmentAdminRole || User.HasClaim("Permission", "DEPARTMENTS_EDIT");
+    var canDeleteDepartment = isDepartmentAdminRole || User.HasClaim("Permission", "DEPARTMENTS_DELETE");
 
-    // SỬ DỤNG LOCAL FUNCTION THAY CHO @functions
     void RenderDeptTree(IEnumerable<Manage_KPI_or_OKR_System.Models.Department> allDepts, int? parentId, int depth, Dictionary<int, int> counts)
     {
         var children = allDepts.Where(d => d.ParentDepartmentId == parentId).ToList();
         if (!children.Any()) return;
-        
-        string indent = depth > 0 ? "ps-3 ms-1 border-start" : "";
-        <div class="@indent">
+
+        <div class="department-tree-children @(depth > 0 ? "department-tree-children--nested" : "")">
             @foreach (var child in children)
             {
-                var icon = depth == 0 ? "bi-folder-fill text-warning" : "bi-files text-secondary";
                 var count = counts.ContainsKey(child.Id) ? counts[child.Id] : 0;
-                <div class="org-tree-item border rounded-3 p-2 mb-2 d-flex justify-content-between align-items-center shadow-sm bg-white" 
-                     data-dept-id="@child.Id" 
-                     onclick="loadDepartmentDetail(@child.Id)"
-                     style="cursor: pointer; transition: all 0.2s ease;">
-                    <span class="d-flex align-items-center gap-2 fw-semibold text-dark" style="font-size: 0.85rem;"><i class="bi @icon fs-6 text-opacity-75"></i> @child.DepartmentName</span>
-                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill">@count NV</span>
-                </div>
-                
-                // Gọi đệ quy trực tiếp, không dùng await
+                <button type="button"
+                        class="org-tree-item department-tree-item @(child.IsActive == true ? "" : "department-tree-item--inactive")"
+                        data-dept-id="@child.Id"
+                        onclick="@(child.IsActive == true ? $"loadDepartmentDetail({child.Id})" : null)"
+                        disabled="@(child.IsActive == true ? null : "disabled")"
+                        aria-label="@(child.IsActive == true ? $"Xem phòng ban {child.DepartmentName}" : $"Phòng ban {child.DepartmentName} đã ngừng hoạt động")">
+                    <span class="department-tree-item__icon" aria-hidden="true"><i class="bi bi-folder"></i></span>
+                    <span class="department-tree-item__content">
+                        <strong>@child.DepartmentName</strong>
+                        <small>@child.DepartmentCode</small>
+                    </span>
+                    <span class="department-tree-item__count">@count NV</span>
+                </button>
+
                 RenderDeptTree(allDepts, child.Id, depth + 1, counts);
             }
         </div>
     }
 }
 
-<div class="container-fluid px-0">
-    
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Cơ cấu tổ chức</h1>
-        <div class="page-breadcrumb">
-            <a href="/">Trang chủ</a>
-            <i class="bi bi-chevron-right separator"></i>
-            <span>Phòng ban</span>
+<div class="evaluation-page departments-page">
+    <header class="evaluation-page-header">
+        <div>
+            <h1>Cơ cấu tổ chức</h1>
+            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Phòng ban</span>
+            </nav>
         </div>
-    </div>
-    <div class="d-flex justify-content-end gap-2">
-        <a class="btn-primary-custom d-flex align-items-center" asp-action="Create" asp-controller="Departments">
-            <i class="bi bi-plus-lg me-1"></i> Thêm phòng ban mới
-        </a>
-    </div>
-</div>
+        @if (canCreateDepartment)
+        {
+            <a class="evaluation-primary-action" asp-action="Create" asp-controller="Departments">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                <span>Thêm phòng ban</span>
+            </a>
+        }
+    </header>
 
-<div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <div class="row g-4 w-100">
-    <div class="col-lg-3">
-        <div class="content-card h-100">
-            <div class="card-header-custom border-bottom">
-                <h5 class="mb-0 fw-bold"><i class="bi bi-diagram-3 me-2"></i> Cây tổ chức</h5>
+    <section class="evaluation-summary departments-summary" aria-label="Tổng quan phòng ban">
+        <article>
+            <span>Phòng ban phù hợp</span>
+            <strong>@departmentItems.Count</strong>
+            <small>Theo bộ lọc hiện tại</small>
+        </article>
+        <article>
+            <span>Đang hoạt động</span>
+            <strong>@activeDepartmentCount</strong>
+            <small>Sẵn sàng nhận phân bổ</small>
+        </article>
+        <article>
+            <span>Phòng ban cấp cao</span>
+            <strong>@rootDepartmentCount</strong>
+            <small>Không trực thuộc đơn vị khác</small>
+        </article>
+        <article>
+            <span>Nhân sự phân bổ</span>
+            <strong>@visibleEmployeeCount</strong>
+            <small>Trong các phòng ban đang hiển thị</small>
+        </article>
+    </section>
+
+    <div class="departments-workspace">
+        <aside class="department-tree-panel" aria-labelledby="departmentTreeHeading">
+            <div class="department-tree-panel__header">
+                <div>
+                    <p class="evaluation-eyebrow">Cấu trúc phân cấp</p>
+                    <h2 id="departmentTreeHeading">Cây tổ chức</h2>
+                </div>
             </div>
-            <div class="card-body-custom pt-3">
-                <div class="org-tree-item org-tree-company border rounded-3 p-2 mb-3 d-flex align-items-center gap-2 shadow-sm bg-white active" 
-                     onclick="showTableView()" style="cursor: pointer; transition: all 0.2s ease;">
-                    <div class="d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #1a73e8, #4285f4); color: white;">
-                        <i class="bi bi-building fs-6"></i>
-                    </div>
-                    <span class="fw-bold text-dark">Tổ Chức / Công Ty</span>
-                </div>
-                
-                <div class="ps-3 ms-2 border-start">
-                    @{
-                        if (Model != null && Model.Any())
-                        {
-                            // Gọi hàm in cây đa cấp không cần await
-                            RenderDeptTree(Model, null, 0, employeeCounts);
-                        }
-                        else
-                        {
-                            <div class="text-muted fst-italic py-2">Chưa có phòng ban nào trong hệ thống</div>
-                        }
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
+            <div class="department-tree-panel__body">
+                <button type="button" class="org-tree-item org-tree-company department-tree-item active" onclick="showTableView()" aria-label="Xem toàn bộ cơ cấu tổ chức">
+                    <span class="department-tree-item__icon department-tree-item__icon--company" aria-hidden="true"><i class="bi bi-building"></i></span>
+                    <span class="department-tree-item__content">
+                        <strong>Tổ chức / Công ty</strong>
+                        <small>@departmentItems.Count phòng ban</small>
+                    </span>
+                </button>
 
-    <div class="col-lg-9">
-        <div class="content-card h-100">
-            <div class="card-body-custom" id="detail-panel">
-                <!-- Default: Hiển thị bảng danh sách phòng ban -->
-                <div id="detail-loading" style="display:none;" class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Đang tải...</span>
-                    </div>
-                    <div class="mt-2 text-muted">Đang tải dữ liệu...</div>
-                </div>
-
-                <div id="detail-content" style="display:none;">
-                </div>
-
-                <!-- Bảng danh sách phòng ban (mặc định ẩn, hiện khi cần) -->
-                <div id="dept-table-view">
-                    <form asp-action="Index" method="get" class="toolbar">
-                    <div class="toolbar-left">
-                        <div class="toolbar-search">
-                            <i class="bi bi-search"></i>
-                            <input type="text" name="searchString" value="@(ViewData["CurrentFilter"] ?? "")" class="form-control" placeholder="Tìm kiếm mã hoặc tên phòng ban..." />
-                        </div>
-                    </div>
-                    <div class="toolbar-right">
-                        <select name="isActive" class="filter-select">
-                            @if (string.IsNullOrEmpty(ViewBag.CurrentStatus))
-                            {
-                                <option value="" selected>Tất cả trạng thái</option>
-                            }
-                            else
-                            {
-                                <option value="">Tất cả trạng thái</option>
-                            }
-
-                            @if (ViewBag.CurrentStatus == "true")
-                            {
-                                <option value="true" selected>Hoạt động</option>
-                            }
-                            else
-                            {
-                                <option value="true">Hoạt động</option>
-                            }
-
-                            @if (ViewBag.CurrentStatus == "false")
-                            {
-                                <option value="false" selected>Ngừng HĐ</option>
-                            }
-                            else
-                            {
-                                <option value="false">Ngừng HĐ</option>
-                            }
-                        </select>
-                        <a asp-action="Index" class="btn btn-sm btn-outline-secondary border-0" title="Làm mới">
-                            <i class="bi bi-arrow-clockwise"></i>
-                        </a>
-                        <button type="submit" class="btn btn-sm btn-outline-secondary border-0" title="Lọc kết quả">
-                            <i class="bi bi-funnel"></i>
-                        </button>
-                    </div>
-                </form>
-
-                <div class="row g-3">
-                    @if (Model != null && Model.Any())
+                @if (departmentItems.Count > 0)
+                {
+                    RenderDeptTree(departmentItems, null, 0, employeeCounts);
+                    foreach (var missingParentId in departmentItems
+                        .Where(item => item.ParentDepartmentId.HasValue && departmentItems.All(parent => parent.Id != item.ParentDepartmentId.Value))
+                        .Select(item => item.ParentDepartmentId)
+                        .Distinct())
                     {
-                        foreach (var dept in Model)
+                        RenderDeptTree(departmentItems, missingParentId, 0, employeeCounts);
+                    }
+                }
+                else
+                {
+                    <div class="department-tree-empty">Chưa có phòng ban phù hợp.</div>
+                }
+            </div>
+        </aside>
+
+        <section class="evaluation-results department-main-panel" id="detail-panel" aria-live="polite">
+            <div id="detail-loading" class="department-detail-loading" hidden>
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                <span>Đang tải dữ liệu...</span>
+            </div>
+
+            <div id="detail-content" hidden></div>
+
+            <div id="dept-table-view">
+                <div class="evaluation-results-heading">
+                    <div>
+                        <p class="evaluation-eyebrow" id="departmentListHeading">Danh sách phòng ban</p>
+                        <strong>@departmentItems.Count đơn vị phù hợp</strong>
+                    </div>
+                    <span>Chọn một mục trong cây để xem chi tiết</span>
+                </div>
+
+                <div class="evaluation-filter-panel department-filter-panel">
+                    <div class="evaluation-filter-heading">
+                        <div><span>Tìm theo mã, tên và trạng thái hoạt động.</span></div>
+                        @if (hasActiveFilters)
                         {
-                            var managerName = dept.ManagerId.HasValue && employees.ContainsKey(dept.ManagerId.Value) 
-                                              ? employees[dept.ManagerId.Value] : "Chưa cập nhật";
-                            var count = employeeCounts.ContainsKey(dept.Id) ? employeeCounts[dept.Id] : 0;
-                            var statusBadgeClass = dept.IsActive == true ? "badge bg-success bg-opacity-10 text-success border border-success px-3 py-2 rounded-pill" : "badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2 rounded-pill";
-                            var statusText = dept.IsActive == true ? "Hoạt động" : "Ngừng HĐ";
-                            var avatarLetter = managerName != "Chưa cập nhật" ? managerName[0].ToString().ToUpper() : "?";
+                            <a asp-action="Index" class="evaluation-clear-link"><i class="bi bi-x-lg" aria-hidden="true"></i>Xóa lọc</a>
+                        }
+                    </div>
+                    <form asp-action="Index" method="get" class="evaluation-filter-form departments-filter-form">
+                        <label class="evaluation-search-field">
+                            <span class="visually-hidden">Tìm phòng ban</span>
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                            <input type="search" name="searchString" value="@currentSearch" placeholder="Mã hoặc tên phòng ban..." autocomplete="off" />
+                        </label>
+                        <label>
+                            <span>Trạng thái</span>
+                            <select name="isActive" class="no-select2">
+                                <option value="" selected="@(string.IsNullOrEmpty(currentStatus) ? "selected" : null)">Tất cả trạng thái</option>
+                                <option value="true" selected="@(currentStatus == "true" ? "selected" : null)">Hoạt động</option>
+                                <option value="false" selected="@(currentStatus == "false" ? "selected" : null)">Ngừng hoạt động</option>
+                            </select>
+                        </label>
+                        <button type="submit" class="evaluation-filter-button">
+                            <i class="bi bi-funnel" aria-hidden="true"></i>
+                            <span>Lọc dữ liệu</span>
+                        </button>
+                    </form>
+                </div>
 
-                            <div class="col-12">
-                                <div class="bg-white border rounded-3 p-3 position-relative shadow-sm d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3" style="transition: all 0.2s ease;">
-                                    <!-- Dept Info -->
-                                    <div class="d-flex align-items-center gap-3" style="flex: 2; min-width: 250px;">
-                                        <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; background: linear-gradient(135deg, #f9ab00, #fbbc04); color: white; font-size: 1.4rem;">
-                                            <i class="bi bi-folder-fill"></i>
-                                        </div>
-                                        <div style="min-width: 0;">
-                                            <h6 class="mb-1 fw-bold text-dark text-truncate" title="@dept.DepartmentName">@dept.DepartmentName</h6>
-                                            <div class="text-muted small"><i class="bi bi-hash"></i> @dept.DepartmentCode</div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Manager Info -->
-                                    <div class="d-flex align-items-center gap-2" style="flex: 1.5; min-width: 180px;">
-                                        <div class="text-muted small fw-semibold me-1 d-none d-md-block">Quản lý:</div>
-                                        @if (managerName != "Chưa cập nhật")
-                                        {
-                                            <div class="bg-secondary text-white fw-bold d-flex justify-content-center align-items-center rounded-circle flex-shrink-0" style="width: 30px; height: 30px; font-size: 0.8rem;">
-                                                @avatarLetter
+                @if (departmentItems.Count == 0)
+                {
+                    <div class="evaluation-empty" role="status">
+                        <span class="evaluation-empty-icon"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
+                        <h2>@(hasActiveFilters ? "Không có phòng ban phù hợp" : "Chưa có phòng ban trong hệ thống")</h2>
+                        <p>@(hasActiveFilters ? "Thử đổi từ khóa hoặc trạng thái để mở rộng kết quả." : "Tạo phòng ban đầu tiên để bắt đầu xây dựng cơ cấu tổ chức.")</p>
+                        @if (hasActiveFilters)
+                        {
+                            <a asp-action="Index" class="evaluation-secondary-action">Xóa bộ lọc</a>
+                        }
+                        else if (canCreateDepartment)
+                        {
+                            <a asp-action="Create" class="evaluation-primary-action">Thêm phòng ban</a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="evaluation-table-shell">
+                        <table class="evaluation-table departments-table" aria-labelledby="departmentListHeading">
+                            <thead>
+                                <tr>
+                                    <th>Phòng ban</th>
+                                    <th>Trực thuộc</th>
+                                    <th>Quản lý</th>
+                                    <th>Nhân sự</th>
+                                    <th>Trạng thái</th>
+                                    <th class="text-end">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var dept in departmentItems)
+                                {
+                                    var managerName = dept.ManagerId.HasValue && employees.ContainsKey(dept.ManagerId.Value) ? employees[dept.ManagerId.Value] : "Chưa phân công";
+                                    var parentName = dept.ParentDepartmentId.HasValue
+                                        ? departmentItems.FirstOrDefault(item => item.Id == dept.ParentDepartmentId.Value)?.DepartmentName ?? "Phòng ban khác"
+                                        : "Cấp cao nhất";
+                                    var count = employeeCounts.ContainsKey(dept.Id) ? employeeCounts[dept.Id] : 0;
+                                    var statusClass = dept.IsActive == true ? "evaluation-status evaluation-status--running" : "evaluation-status evaluation-status--closed";
+                                    var statusText = dept.IsActive == true ? "Hoạt động" : "Ngừng hoạt động";
+
+                                    <tr>
+                                        <td>
+                                            <div class="department-name-cell">
+                                                <span class="department-mark" aria-hidden="true"><i class="bi bi-folder"></i></span>
+                                                <div>
+                                                    <strong>@dept.DepartmentName</strong>
+                                                    <small>@dept.DepartmentCode</small>
+                                                </div>
                                             </div>
-                                            <span class="fw-bold fs-6 text-dark text-truncate" title="@managerName">@managerName</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted fst-italic small">@managerName</span>
-                                        }
-                                    </div>
-                                    
-                                    <!-- Employee Count & Status -->
-                                    <div class="d-flex align-items-center gap-4" style="flex: 1; min-width: 150px;">
-                                        <div class="d-flex align-items-center gap-2" title="Nhân sự">
-                                            <i class="bi bi-people text-muted fs-5"></i>
-                                            <span class="fw-bold fs-6 text-primary">@count</span>
-                                        </div>
-                                        <span class="@statusBadgeClass" style="font-size: 0.75rem; white-space: nowrap;">@statusText</span>
-                                    </div>
+                                        </td>
+                                        <td><span class="department-parent-chip"><i class="bi bi-diagram-2" aria-hidden="true"></i>@parentName</span></td>
+                                        <td><span class="department-manager"><i class="bi bi-person" aria-hidden="true"></i>@managerName</span></td>
+                                        <td><span class="department-count"><i class="bi bi-people" aria-hidden="true"></i>@count</span></td>
+                                        <td><span class="@statusClass"><span aria-hidden="true"></span>@statusText</span></td>
+                                        <td>
+                                            <div class="evaluation-actions">
+                                                <a asp-action="Details" asp-route-id="@dept.Id" class="evaluation-icon-button" title="Xem chi tiết" aria-label="Xem chi tiết @dept.DepartmentName"><i class="bi bi-eye" aria-hidden="true"></i></a>
+                                                @if (canEditDepartment && dept.IsActive == true)
+                                                {
+                                                    <a asp-action="Edit" asp-route-id="@dept.Id" class="evaluation-icon-button" title="Chỉnh sửa" aria-label="Chỉnh sửa @dept.DepartmentName"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                                }
+                                                @if (canDeleteDepartment && dept.IsActive == true)
+                                                {
+                                                    <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0"
+                                                          data-app-confirm
+                                                          data-confirm-title="Ngưng hoạt động phòng ban?"
+                                                          data-confirm-message="Phòng ban “@dept.DepartmentName” sẽ ngừng xuất hiện trong các luồng hoạt động và có thể được khôi phục sau."
+                                                          data-confirm-tone="warning"
+                                                          data-confirm-label="Ngưng hoạt động">
+                                                        <button type="submit" class="evaluation-icon-button evaluation-icon-button--danger" title="Ngưng hoạt động" aria-label="Ngưng hoạt động @dept.DepartmentName"><i class="bi bi-power" aria-hidden="true"></i></button>
+                                                    </form>
+                                                }
+                                                else if (canDeleteDepartment && dept.IsActive != true)
+                                                {
+                                                    <form asp-action="Restore" asp-route-id="@dept.Id" method="post" class="m-0">
+                                                        <button type="submit" class="evaluation-icon-button department-restore-button" title="Kích hoạt lại" aria-label="Kích hoạt lại @dept.DepartmentName"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i></button>
+                                                    </form>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
 
-                                    <!-- Actions -->
-                                    <div class="d-flex gap-2 justify-content-md-end mt-2 mt-md-0" style="flex: 1; min-width: 120px;">
-                                        <a asp-action="Details" asp-route-id="@dept.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
-                                        <a asp-action="Edit" asp-route-id="@dept.Id" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-semibold" title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
-                                        @if (dept.IsActive == true)
+                    <div class="evaluation-mobile-list departments-mobile-list">
+                        @foreach (var dept in departmentItems)
+                        {
+                            var managerName = dept.ManagerId.HasValue && employees.ContainsKey(dept.ManagerId.Value) ? employees[dept.ManagerId.Value] : "Chưa phân công";
+                            var parentName = dept.ParentDepartmentId.HasValue
+                                ? departmentItems.FirstOrDefault(item => item.Id == dept.ParentDepartmentId.Value)?.DepartmentName ?? "Phòng ban khác"
+                                : "Cấp cao nhất";
+                            var count = employeeCounts.ContainsKey(dept.Id) ? employeeCounts[dept.Id] : 0;
+                            var statusClass = dept.IsActive == true ? "evaluation-status evaluation-status--running" : "evaluation-status evaluation-status--closed";
+                            var statusText = dept.IsActive == true ? "Hoạt động" : "Ngừng hoạt động";
+
+                            <article class="evaluation-period-card department-card">
+                                <div class="evaluation-card-topline">
+                                    <span class="@statusClass"><span aria-hidden="true"></span>@statusText</span>
+                                    <span class="evaluation-config-status">@dept.DepartmentCode</span>
+                                </div>
+                                <h2>@dept.DepartmentName</h2>
+                                <p>Trực thuộc: @parentName</p>
+                                <dl>
+                                    <div><dt>Quản lý</dt><dd>@managerName</dd></div>
+                                    <div><dt>Nhân sự</dt><dd>@count người</dd></div>
+                                </dl>
+                                <div class="evaluation-card-footer">
+                                    <a asp-action="Details" asp-route-id="@dept.Id">Xem chi tiết</a>
+                                    <div class="evaluation-actions">
+                                        @if (canEditDepartment && dept.IsActive == true)
                                         {
-                                            <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0" style="display:inline;"
+                                            <a asp-action="Edit" asp-route-id="@dept.Id" class="evaluation-icon-button" title="Chỉnh sửa" aria-label="Chỉnh sửa @dept.DepartmentName"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                        }
+                                        @if (canDeleteDepartment && dept.IsActive == true)
+                                        {
+                                            <form asp-action="Delete" asp-route-id="@dept.Id" method="post" class="m-0"
                                                   data-app-confirm
                                                   data-confirm-title="Ngưng hoạt động phòng ban?"
-                                                  data-confirm-message="Phòng ban “@dept.DepartmentName” sẽ không còn xuất hiện trong các luồng đang hoạt động và có thể được khôi phục sau."
+                                                  data-confirm-message="Phòng ban “@dept.DepartmentName” sẽ ngừng xuất hiện trong các luồng hoạt động và có thể được khôi phục sau."
                                                   data-confirm-tone="warning"
                                                   data-confirm-label="Ngưng hoạt động">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold" title="Ngưng hoạt động">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
+                                                <button type="submit" class="evaluation-icon-button evaluation-icon-button--danger" title="Ngưng hoạt động" aria-label="Ngưng hoạt động @dept.DepartmentName"><i class="bi bi-power" aria-hidden="true"></i></button>
                                             </form>
                                         }
-                                        else
+                                        else if (canDeleteDepartment && dept.IsActive != true)
                                         {
-                                            <form asp-action="Restore" asp-route-id="@dept.Id" method="post" class="m-0" style="display:inline;">
-                                                <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold" title="Kích hoạt lại"><i class="bi bi-arrow-clockwise"></i></button>
+                                            <form asp-action="Restore" asp-route-id="@dept.Id" method="post" class="m-0">
+                                                <button type="submit" class="evaluation-icon-button department-restore-button" title="Kích hoạt lại" aria-label="Kích hoạt lại @dept.DepartmentName"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i></button>
                                             </form>
                                         }
                                     </div>
                                 </div>
-                            </div>
+                            </article>
                         }
-                    }
-                    else
-                    {
-                        <div class="col-12 text-center py-5 text-muted">
-                            <i class="bi bi-diagram-3 fs-1 opacity-50 mb-3 d-block"></i>
-                            <p>Chưa có phòng ban nào trong hệ thống.</p>
-                        </div>
-                    }
-                </div>
-                </div>
+                    </div>
+                }
             </div>
-        </div>
-    </div>
-
-        </div>
+        </section>
     </div>
 </div>
 
+@section Styles {
+<link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
 <style>
     .org-tree-item {
         border: 1px solid transparent;
@@ -509,10 +584,419 @@
     .detail-animate {
         animation: fadeInUp 0.3s ease forwards;
     }
+
+    .departments-page .departments-summary {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .departments-page .departments-summary article {
+        border-right: 1px solid var(--evaluation-line);
+        border-bottom: 0;
+    }
+
+    .departments-page .departments-summary article:last-child {
+        border-right: 0;
+    }
+
+    .departments-page .departments-summary article:nth-child(1) strong { color: #1d4ed8; }
+    .departments-page .departments-summary article:nth-child(2) strong { color: #15803d; }
+    .departments-page .departments-summary article:nth-child(3) strong { color: #a15c07; }
+    .departments-page .departments-summary article:nth-child(4) strong { color: #7c3aed; }
+
+    .departments-page .departments-workspace {
+        display: grid;
+        grid-template-columns: minmax(250px, 290px) minmax(0, 1fr);
+        align-items: start;
+        gap: 1rem;
+    }
+
+    .departments-page .department-tree-panel {
+        position: sticky;
+        top: 88px;
+        min-width: 0;
+        max-height: calc(100vh - 112px);
+        overflow: hidden;
+        border: 1px solid var(--evaluation-line);
+        border-radius: var(--evaluation-radius);
+        background: #fff;
+    }
+
+    .departments-page .department-tree-panel__header {
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid var(--evaluation-line);
+    }
+
+    .departments-page .department-tree-panel__header h2 {
+        margin: 0.1rem 0 0;
+        font-size: 0.95rem;
+        font-weight: 800;
+    }
+
+    .departments-page .department-tree-panel__body {
+        max-height: calc(100vh - 190px);
+        overflow-y: auto;
+        padding: 0.75rem;
+        scrollbar-width: thin;
+    }
+
+    .departments-page .department-tree-children {
+        display: grid;
+        gap: 0.4rem;
+        margin-top: 0.4rem;
+    }
+
+    .departments-page .department-tree-children--nested {
+        margin-left: 0.85rem;
+        padding-left: 0.65rem;
+        border-left: 1px solid var(--evaluation-line);
+    }
+
+    .departments-page .department-tree-item {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.55rem;
+        width: 100%;
+        margin: 0;
+        border: 1px solid var(--evaluation-line) !important;
+        border-radius: 8px !important;
+        padding: 0.55rem;
+        background: #fff !important;
+        color: #172033;
+        text-align: left;
+        cursor: pointer;
+        box-shadow: none !important;
+        transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+    }
+
+    .departments-page .department-tree-item:hover,
+    .departments-page .department-tree-item.active {
+        border-color: var(--evaluation-brand-border) !important;
+        background: var(--evaluation-brand-soft) !important;
+        color: var(--evaluation-brand-dark);
+    }
+
+    .departments-page .department-tree-item:focus-visible {
+        outline: 3px solid color-mix(in srgb, var(--evaluation-brand) 22%, transparent);
+        outline-offset: 2px;
+    }
+
+    .departments-page .department-tree-item--inactive {
+        opacity: 0.58;
+        cursor: not-allowed;
+    }
+
+    .departments-page .department-tree-item__icon {
+        display: inline-grid;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border-radius: 7px;
+        background: #fff6df;
+        color: #98620e;
+    }
+
+    .departments-page .department-tree-item__icon--company {
+        background: var(--evaluation-brand-soft);
+        color: var(--evaluation-brand);
+    }
+
+    .departments-page .department-tree-item__content {
+        min-width: 0;
+    }
+
+    .departments-page .department-tree-item__content strong,
+    .departments-page .department-tree-item__content small {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .departments-page .department-tree-item__content strong { font-size: 0.78rem; }
+    .departments-page .department-tree-item__content small { margin-top: 0.1rem; color: var(--evaluation-muted); font-size: 0.66rem; }
+
+    .departments-page .department-tree-item__count {
+        border-radius: 999px;
+        padding: 0.2rem 0.42rem;
+        background: var(--evaluation-soft);
+        color: var(--evaluation-muted);
+        font-size: 0.65rem;
+        font-weight: 750;
+        white-space: nowrap;
+    }
+
+    .departments-page .department-tree-empty {
+        padding: 1rem 0.4rem;
+        color: var(--evaluation-muted);
+        font-size: 0.76rem;
+        text-align: center;
+    }
+
+    .departments-page .department-main-panel {
+        min-width: 0;
+        min-height: 420px;
+        margin-top: 0;
+    }
+
+    .departments-page .department-detail-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        min-height: 280px;
+        color: var(--evaluation-muted);
+        font-size: 0.82rem;
+    }
+
+    .departments-page [hidden] {
+        display: none !important;
+    }
+
+    .departments-page .department-filter-panel {
+        margin-top: 0.9rem;
+        padding: 0.85rem;
+    }
+
+    .departments-page .departments-filter-form {
+        grid-template-columns: minmax(240px, 1.4fr) minmax(170px, 0.75fr) auto;
+    }
+
+    .departments-page .departments-table {
+        min-width: 920px;
+    }
+
+    .departments-page .department-name-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        min-width: 200px;
+    }
+
+    .departments-page .department-mark {
+        display: inline-grid;
+        width: 36px;
+        height: 36px;
+        flex: 0 0 36px;
+        place-items: center;
+        border-radius: 8px;
+        background: #fff6df;
+        color: #98620e;
+    }
+
+    .departments-page .department-name-cell strong,
+    .departments-page .department-name-cell small {
+        display: block;
+    }
+
+    .departments-page .department-name-cell strong { font-size: 0.86rem; }
+    .departments-page .department-name-cell small { margin-top: 0.15rem; color: var(--evaluation-muted); font-size: 0.72rem; }
+
+    .departments-page .department-parent-chip,
+    .departments-page .department-manager,
+    .departments-page .department-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: #475467;
+        font-size: 0.75rem;
+        font-weight: 650;
+    }
+
+    .departments-page .department-parent-chip {
+        min-height: 30px;
+        border: 1px solid var(--evaluation-line);
+        border-radius: 7px;
+        padding: 0.32rem 0.52rem;
+        background: var(--evaluation-soft);
+        white-space: nowrap;
+    }
+
+    .departments-page .department-manager { min-width: 135px; }
+    .departments-page .department-count { color: var(--evaluation-brand-dark); font-weight: 800; }
+
+    .departments-page .department-restore-button {
+        border-color: #b8dfcc;
+        color: #126b38;
+    }
+
+    .departments-page .department-restore-button:hover {
+        border-color: #15803d;
+        background: #edf8f2;
+        color: #126b38;
+    }
+
+    .departments-page .detail-header {
+        gap: 0.8rem;
+        padding: 0 0 1rem;
+        border-bottom: 1px solid var(--evaluation-line);
+        background: transparent;
+    }
+
+    .departments-page .detail-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        box-shadow: none;
+    }
+
+    .departments-page .detail-icon.company,
+    .departments-page .detail-icon.dept {
+        background: var(--evaluation-brand-soft);
+        color: var(--evaluation-brand-dark);
+        box-shadow: none;
+    }
+
+    .departments-page .detail-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0;
+        margin-top: 1rem;
+        padding: 0;
+        border: 1px solid var(--evaluation-line);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .departments-page .stat-card {
+        border: 0;
+        border-right: 1px solid var(--evaluation-line);
+        border-radius: 0;
+        padding: 0.85rem;
+        background: #fff;
+    }
+
+    .departments-page .stat-card:last-child { border-right: 0; }
+    .departments-page .stat-card:hover { transform: none; box-shadow: none; }
+
+    .departments-page .detail-section {
+        padding: 1rem 0;
+    }
+
+    .departments-page .info-item,
+    .departments-page .emp-list-item,
+    .departments-page .dept-overview-row {
+        border-color: var(--evaluation-line);
+        border-radius: 8px;
+        background: var(--evaluation-soft);
+        box-shadow: none;
+    }
+
+    .departments-page .dept-overview-row:hover {
+        border-color: var(--evaluation-brand-border);
+        background: var(--evaluation-brand-soft);
+        transform: none;
+    }
+
+    .departments-page .dept-overview-row > div:first-child {
+        border-radius: 8px !important;
+        background: var(--evaluation-brand-soft) !important;
+        color: var(--evaluation-brand-dark) !important;
+    }
+
+    .departments-page .detail-action-btns {
+        gap: 0.55rem;
+        padding: 1rem 0 0;
+        border-top: 1px solid var(--evaluation-line);
+    }
+
+    .departments-page .detail-action-btns a {
+        min-height: 40px;
+        border-radius: 8px;
+        padding: 0.6rem 0.85rem;
+    }
+
+    .departments-page .detail-btn-primary {
+        border: 1px solid var(--evaluation-brand);
+        background: var(--evaluation-brand);
+        box-shadow: none;
+    }
+
+    .departments-page .detail-btn-primary:hover {
+        background: var(--evaluation-brand-dark);
+        transform: none;
+        box-shadow: none;
+    }
+
+    .departments-page .detail-btn-outline {
+        border-color: var(--evaluation-line);
+        background: var(--evaluation-soft);
+    }
+
+    @@media (max-width: 1100px) {
+        .departments-page .departments-summary {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .departments-page .departments-summary article {
+            border-bottom: 0;
+        }
+
+        .departments-page .departments-summary article:nth-child(3) {
+            border-right: 1px solid var(--evaluation-line);
+        }
+
+        .departments-page .departments-workspace {
+            grid-template-columns: 1fr;
+        }
+
+        .departments-page .department-tree-panel {
+            position: static;
+            max-height: none;
+        }
+
+        .departments-page .department-tree-panel__body {
+            max-height: 360px;
+        }
+    }
+
+    @@media (max-width: 900px) {
+        .departments-page .departments-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .departments-page .departments-summary article {
+            border-right: 1px solid var(--evaluation-line);
+            border-bottom: 0;
+        }
+
+        .departments-page .departments-summary article:nth-child(2n) { border-right: 0; }
+        .departments-page .departments-summary article:nth-child(-n + 2) { border-bottom: 1px solid var(--evaluation-line); }
+        .departments-page .departments-summary article:last-child { grid-column: auto; }
+
+        .departments-page .departments-filter-form {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .departments-page .departments-filter-form .evaluation-search-field,
+        .departments-page .departments-filter-form .evaluation-filter-button {
+            grid-column: 1 / -1;
+        }
+    }
+
+    @@media (max-width: 700px) {
+        .departments-page .departments-filter-form {
+            grid-template-columns: 1fr;
+        }
+
+        .departments-page .info-grid,
+        .departments-page .detail-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .departments-page .stat-card {
+            border-right: 0;
+            border-bottom: 1px solid var(--evaluation-line);
+        }
+
+        .departments-page .stat-card:last-child { border-bottom: 0; }
+    }
 </style>
+}
 
 @section Scripts {
 <script>
+    const canEditDepartmentFromPage = @(canEditDepartment.ToString().ToLowerInvariant());
+
     // Avatar color palette
     const avatarColors = [
         '#1a73e8', '#ea4335', '#34a853', '#f9ab00', '#8e24aa',
@@ -527,27 +1011,43 @@
         return avatarColors[Math.abs(hash) % avatarColors.length];
     }
 
+    function escapeDepartmentHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, character => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[character]);
+    }
+
     function setActiveTreeItem(element) {
         document.querySelectorAll('.org-tree-item').forEach(el => el.classList.remove('active'));
         if (element) element.classList.add('active');
     }
 
+    function setDetailView(view) {
+        const loading = document.getElementById('detail-loading');
+        const content = document.getElementById('detail-content');
+        const table = document.getElementById('dept-table-view');
+
+        if (!loading || !content || !table) return;
+
+        loading.hidden = view !== 'loading';
+        content.hidden = view !== 'content';
+        table.hidden = view !== 'table';
+    }
+
     function showLoading() {
-        document.getElementById('detail-loading').style.display = 'block';
-        document.getElementById('detail-content').style.display = 'none';
-        document.getElementById('dept-table-view').style.display = 'none';
+        setDetailView('loading');
     }
 
     function showContent() {
-        document.getElementById('detail-loading').style.display = 'none';
-        document.getElementById('detail-content').style.display = 'block';
-        document.getElementById('dept-table-view').style.display = 'none';
+        setDetailView('content');
     }
 
     function showTable() {
-        document.getElementById('detail-loading').style.display = 'none';
-        document.getElementById('detail-content').style.display = 'none';
-        document.getElementById('dept-table-view').style.display = 'block';
+        setDetailView('table');
     }
 
     function showTableView() {
@@ -586,26 +1086,33 @@
         const rootDepts = data.departments.filter(d => !d.parentDepartmentId);
         
         rootDepts.forEach(dept => {
+            const departmentId = Number(dept.id);
+            if (!Number.isInteger(departmentId)) return;
+
             const childDepts = data.departments.filter(d => d.parentDepartmentId === dept.id);
             const childCount = childDepts.length;
+            const departmentName = escapeDepartmentHtml(dept.departmentName || '—');
+            const departmentCode = escapeDepartmentHtml(dept.departmentCode || '—');
+            const managerName = escapeDepartmentHtml(dept.managerName || 'Chưa phân công');
+            const employeeCount = escapeDepartmentHtml(dept.employeeCount ?? 0);
             
             deptListHtml += `
-                <div class="dept-overview-row" onclick="loadDepartmentDetail(${dept.id})">
+                <div class="dept-overview-row" onclick="loadDepartmentDetail(${departmentId})">
                     <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #f9ab00, #fbbc04); 
                                 display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0;">
                         <i class="bi bi-folder-fill"></i>
                     </div>
                     <div style="flex: 1; min-width: 0;">
                         <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary, #1a1a2e);">
-                            ${dept.departmentName || '—'}
+                            ${departmentName}
                         </div>
                         <div style="font-size: 0.75rem; color: var(--text-secondary, #5f6368);">
-                            ${dept.departmentCode || '—'} · Quản lý: ${dept.managerName || 'Chưa phân công'}
+                            ${departmentCode} · Quản lý: ${managerName}
                             ${childCount > 0 ? ' · ' + childCount + ' đơn vị trực thuộc' : ''}
                         </div>
                     </div>
                     <div>
-                        <span class="badge bg-secondary rounded-pill">${dept.employeeCount} NV</span>
+                        <span class="badge bg-secondary rounded-pill">${employeeCount} NV</span>
                     </div>
                     <i class="bi bi-chevron-right text-muted"></i>
                 </div>
@@ -626,15 +1133,15 @@
 
                 <div class="detail-stats">
                     <div class="stat-card">
-                        <div class="stat-value" style="color: #1a73e8;">${data.totalDepartments}</div>
+                        <div class="stat-value" style="color: #1a73e8;">${escapeDepartmentHtml(data.totalDepartments ?? 0)}</div>
                         <div class="stat-label">Tổng phòng ban</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value" style="color: #34a853;">${data.totalEmployees}</div>
+                        <div class="stat-value" style="color: #34a853;">${escapeDepartmentHtml(data.totalEmployees ?? 0)}</div>
                         <div class="stat-label">Tổng nhân viên</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value" style="color: #f9ab00;">${data.rootDepartments}</div>
+                        <div class="stat-value" style="color: #f9ab00;">${escapeDepartmentHtml(data.rootDepartments ?? 0)}</div>
                         <div class="stat-label">Phòng ban gốc</div>
                     </div>
                 </div>
@@ -662,7 +1169,7 @@
             .then(data => {
                 if (data.error) {
                     document.getElementById('detail-content').innerHTML = 
-                        '<div class="text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><div class="mt-2">' + data.error + '</div></div>';
+                        '<div class="text-center text-danger py-5"><i class="bi bi-exclamation-triangle fs-1"></i><div class="mt-2">' + escapeDepartmentHtml(data.error) + '</div></div>';
                 } else {
                     renderDepartmentDetail(data);
                 }
@@ -683,18 +1190,25 @@
         let empListHtml = '';
         if (data.employees && data.employees.length > 0) {
             data.employees.forEach(emp => {
-                const initial = (emp.fullName || '?')[0].toUpperCase();
+                const employeeId = Number(emp.id);
+                if (!Number.isInteger(employeeId)) return;
+
+                const fullName = escapeDepartmentHtml(emp.fullName || '—');
+                const initial = escapeDepartmentHtml((emp.fullName || '?')[0].toUpperCase());
                 const color = getAvatarColor(emp.fullName);
+                const positionName = escapeDepartmentHtml(emp.positionName || 'Chưa xác định chức vụ');
+                const email = emp.email ? escapeDepartmentHtml(emp.email) : '';
+                const phone = emp.phone ? escapeDepartmentHtml(emp.phone) : '';
                 empListHtml += `
                     <div class="emp-list-item">
                         <div class="emp-avatar" style="background: ${color};">${initial}</div>
                         <div class="emp-info">
-                            <div class="emp-name"><a href="/Employees/Details/${emp.id}" class="text-decoration-none text-primary-hover fw-bold">${emp.fullName || '—'}</a></div>
-                            <div class="emp-position">${emp.positionName || 'Chưa xác định chức vụ'}</div>
+                            <div class="emp-name"><a href="/Employees/Details/${employeeId}" class="text-decoration-none text-primary-hover fw-bold">${fullName}</a></div>
+                            <div class="emp-position">${positionName}</div>
                         </div>
                         <div class="emp-contact text-end">
-                            ${emp.email ? '<div><i class="bi bi-envelope me-1"></i>' + emp.email + '</div>' : ''}
-                            ${emp.phone ? '<div><i class="bi bi-telephone me-1"></i>' + emp.phone + '</div>' : ''}
+                            ${email ? '<div><i class="bi bi-envelope me-1"></i>' + email + '</div>' : ''}
+                            ${phone ? '<div><i class="bi bi-telephone me-1"></i>' + phone + '</div>' : ''}
                         </div>
                     </div>
                 `;
@@ -713,9 +1227,12 @@
         let childDeptHtml = '';
         if (data.childDepartments && data.childDepartments.length > 0) {
             data.childDepartments.forEach(child => {
+                const childDepartmentId = Number(child.id);
+                if (!Number.isInteger(childDepartmentId)) return;
+
                 childDeptHtml += `
-                    <span class="child-dept-chip" onclick="loadDepartmentDetail(${child.id})">
-                        <i class="bi bi-folder text-warning"></i> ${child.departmentName || '—'}
+                    <span class="child-dept-chip" onclick="loadDepartmentDetail(${childDepartmentId})">
+                        <i class="bi bi-folder text-warning"></i> ${escapeDepartmentHtml(child.departmentName || '—')}
                     </span>
                 `;
             });
@@ -725,8 +1242,20 @@
         let createdDate = '—';
         if (data.createdAt) {
             const d = new Date(data.createdAt);
-            createdDate = d.toLocaleDateString('vi-VN');
+            createdDate = Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('vi-VN');
         }
+
+        const departmentId = Number(data.id);
+        const managerId = Number(data.managerId);
+        const departmentName = escapeDepartmentHtml(data.departmentName || '—');
+        const departmentCode = escapeDepartmentHtml(data.departmentCode || '—');
+        const employeeCount = escapeDepartmentHtml(data.employeeCount ?? 0);
+        const managerName = data.managerName ? escapeDepartmentHtml(data.managerName) : '';
+        const parentName = data.parentName ? escapeDepartmentHtml(data.parentName) : '';
+        const childDepartmentCount = data.childDepartments ? data.childDepartments.length : 0;
+        const editActionHtml = canEditDepartmentFromPage && Number.isInteger(departmentId)
+            ? `<a href="/Departments/Edit/${departmentId}" class="detail-btn-outline"><i class="bi bi-pencil"></i> Chỉnh sửa</a>`
+            : '';
 
         container.innerHTML = `
             <div class="detail-animate">
@@ -735,18 +1264,18 @@
                         <i class="bi bi-folder-fill"></i>
                     </div>
                     <div style="flex: 1;">
-                        <div class="detail-title">${data.departmentName || '—'}</div>
-                        <div class="detail-subtitle">${data.departmentCode || '—'} · ${data.employeeCount} nhân viên</div>
+                        <div class="detail-title">${departmentName}</div>
+                        <div class="detail-subtitle">${departmentCode} · ${employeeCount} nhân viên</div>
                     </div>
                 </div>
 
                 <div class="detail-stats">
                     <div class="stat-card">
-                        <div class="stat-value" style="color: #1a73e8;">${data.employeeCount}</div>
+                        <div class="stat-value" style="color: #1a73e8;">${employeeCount}</div>
                         <div class="stat-label">Nhân viên</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value" style="color: #f9ab00;">${data.childDepartments ? data.childDepartments.length : 0}</div>
+                        <div class="stat-value" style="color: #f9ab00;">${childDepartmentCount}</div>
                         <div class="stat-label">Đơn vị trực thuộc</div>
                     </div>
                 </div>
@@ -758,15 +1287,15 @@
                     <div class="info-grid">
                         <div class="info-item">
                             <div class="info-label">Mã phòng ban</div>
-                            <div class="info-value">${data.departmentCode || '—'}</div>
+                            <div class="info-value">${departmentCode}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">Trưởng phòng</div>
-                            <div class="info-value">${data.managerName ? `<a href="/Employees/Details/${data.managerId}" class="text-decoration-none text-primary-hover fw-bold">${data.managerName}</a>` : '<span class="text-muted fst-italic">Chưa phân công</span>'}</div>
+                            <div class="info-value">${managerName && Number.isInteger(managerId) ? `<a href="/Employees/Details/${managerId}" class="text-decoration-none text-primary-hover fw-bold">${managerName}</a>` : '<span class="text-muted fst-italic">Chưa phân công</span>'}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">Trực thuộc</div>
-                            <div class="info-value">${data.parentName || '<span class="text-muted fst-italic">Cấp cao nhất</span>'}</div>
+                            <div class="info-value">${parentName || '<span class="text-muted fst-italic">Cấp cao nhất</span>'}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">Ngày tạo</div>
@@ -785,18 +1314,16 @@
 
                 <div class="detail-section" style="border-top: 1px solid var(--border-color, #e8eaed);">
                     <div class="detail-section-title">
-                        <i class="bi bi-people"></i> Danh sách nhân viên (${data.employeeCount})
+                        <i class="bi bi-people"></i> Danh sách nhân viên (${employeeCount})
                     </div>
                     ${empListHtml}
                 </div>
 
                 <div class="detail-action-btns">
-                    <a href="/Departments/Details/${data.id}" class="detail-btn-primary">
+                    <a href="/Departments/Details/${departmentId}" class="detail-btn-primary">
                         <i class="bi bi-eye"></i> Xem đầy đủ
                     </a>
-                    <a href="/Departments/Edit/${data.id}" class="detail-btn-outline">
-                        <i class="bi bi-pencil"></i> Chỉnh sửa
-                    </a>
+                    ${editActionHtml}
                 </div>
             </div>
         `;

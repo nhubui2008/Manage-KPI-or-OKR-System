@@ -2,35 +2,160 @@
 @using Manage_KPI_or_OKR_System.Helpers
 @{
     ViewData["Title"] = "Báo cáo Đánh giá Chi tiết (Director's View)";
+    var allocations = Model?.ToList() ?? new List<Manage_KPI_or_OKR_System.Models.OKR_Employee_Allocation>();
     var okrs = (ViewBag.OKRs as List<Manage_KPI_or_OKR_System.Models.OKR>) ?? new List<Manage_KPI_or_OKR_System.Models.OKR>();
     var krs = (ViewBag.KRs as List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>) ?? new List<Manage_KPI_or_OKR_System.Models.OKRKeyResult>();
     var employees = (ViewBag.Employees as Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>) ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.Employee>();
     var failReasons = (ViewBag.FailReasons as Dictionary<int, string>) ?? new Dictionary<int, string>();
     var departments = (ViewBag.Departments as List<Manage_KPI_or_OKR_System.Models.Department>) ?? new List<Manage_KPI_or_OKR_System.Models.Department>();
     var incidents = (ViewBag.Incidents as List<Manage_KPI_or_OKR_System.Models.EvaluationReportIncident>) ?? new List<Manage_KPI_or_OKR_System.Models.EvaluationReportIncident>();
+    var completedKeyResults = krs.Count(item => item.Progress >= 100);
+    var averageProgress = krs.Count == 0 ? 0 : krs.Average(item => Math.Clamp(item.Progress, 0m, 100m));
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
     <style>
-        .evaluation-report-mobile-list {
+        .evaluation-report-page {
+            --report-line: #dfe5ee;
+            --report-muted: #64748b;
+            --report-soft: #f7f9fc;
+        }
+
+        .evaluation-report-page .evaluation-page-header {
+            align-items: flex-start;
+        }
+
+        .evaluation-report-page .evaluation-report-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .evaluation-report-page .evaluation-report-actions button {
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .evaluation-report-page .evaluation-report-summary {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .evaluation-report-page .evaluation-report-summary article:nth-child(1) strong {
+            color: #1d4ed8;
+        }
+
+        .evaluation-report-page .evaluation-report-summary article:nth-child(2) strong {
+            color: #15803d;
+        }
+
+        .evaluation-report-page .evaluation-report-summary article:nth-child(3) strong {
+            color: #a15c07;
+        }
+
+        .evaluation-report-page .evaluation-report-summary article:nth-child(4) strong {
+            color: #b42318;
+        }
+
+        .evaluation-report-page .evaluation-report-filter-form {
+            grid-template-columns: minmax(220px, 1.25fr) minmax(180px, 1fr) auto;
+        }
+
+        .evaluation-report-page .evaluation-report-filter-form select {
+            min-width: 0;
+        }
+
+        .evaluation-report-page .evaluation-report-table-card {
+            overflow: hidden;
+        }
+
+        .evaluation-report-page .evaluation-report-table-shell {
+            max-height: calc(100vh - 360px);
+            overflow: auto;
+        }
+
+        .evaluation-report-page .evaluation-report-table {
+            min-width: 1120px;
+        }
+
+        .evaluation-report-page .evaluation-report-table th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: var(--report-soft);
+            color: #475467;
+            border-bottom: 1px solid #cbd5e1;
+        }
+
+        .evaluation-report-page .evaluation-report-table td {
+            color: #243244;
+        }
+
+        .evaluation-report-page .evaluation-report-table tbody tr:nth-child(even) td {
+            background: #fbfdff;
+        }
+
+        .evaluation-report-page .evaluation-report-table tbody tr:hover td {
+            background: #eef5ff;
+        }
+
+        .evaluation-report-page .report-progress {
+            min-width: 124px;
+        }
+
+        .evaluation-report-page .report-progress .progress {
+            width: 72px;
+            height: 6px;
+            background: #e7edf5;
+        }
+
+        .evaluation-report-page .report-progress-value {
+            min-width: 44px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .evaluation-report-page .report-status-badge {
+            min-width: 104px;
+            justify-content: center;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            font-weight: 800;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+
+        .evaluation-report-page .report-status-badge.bg-soft-success {
+            border-color: rgba(15, 157, 88, 0.28);
+        }
+
+        .evaluation-report-page .report-status-badge.bg-soft-primary {
+            border-color: rgba(26, 115, 232, 0.28);
+        }
+
+        .evaluation-report-page .evaluation-report-mobile-list {
             display: none;
         }
 
-        .evaluation-report-mobile-card {
+        .evaluation-report-page .evaluation-report-mobile-card {
             padding: 1rem;
-            border-radius: 16px;
+            border: 1px solid var(--report-line);
+            border-radius: 9px;
+            background: #fff;
             display: grid;
             gap: 0.85rem;
         }
 
-        .evaluation-report-mobile-card__title {
+        .evaluation-report-page .evaluation-report-mobile-card__title {
             margin: 0;
             font-size: 1rem;
             font-weight: 800;
             color: #172033;
         }
 
-        .evaluation-report-mobile-card__label {
+        .evaluation-report-page .evaluation-report-mobile-card__label {
             font-size: 0.76rem;
             font-weight: 800;
             letter-spacing: 0.04em;
@@ -38,83 +163,299 @@
             color: #64748b;
         }
 
-        .evaluation-report-mobile-card__grid {
+        .evaluation-report-page .evaluation-report-mobile-card__grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 0.75rem;
         }
 
-        @@media (max-width: 767.98px) {
-            .evaluation-report-page .table-responsive {
+        .evaluation-report-page .evaluation-report-bottom-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+
+        .evaluation-report-page .evaluation-report-panel {
+            min-width: 0;
+            margin-top: 1rem;
+        }
+
+        .evaluation-report-page .evaluation-report-panel .evaluation-results-heading {
+            margin-bottom: 0.9rem;
+        }
+
+        .evaluation-report-page .evaluation-report-panel h2 {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 800;
+        }
+
+        .evaluation-report-page .director-summary-input {
+            min-height: 132px;
+            resize: vertical;
+        }
+
+        .evaluation-report-page .evaluation-report-incidents {
+            display: grid;
+            gap: 0.7rem;
+        }
+
+        .evaluation-report-page .evaluation-report-incidents li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.55rem;
+            margin: 0 !important;
+            padding-bottom: 0.7rem;
+            border-bottom: 1px solid #edf0f3;
+            line-height: 1.45;
+        }
+
+        .evaluation-report-page .evaluation-report-incidents li:last-child {
+            padding-bottom: 0;
+            border-bottom: 0;
+        }
+
+        .evaluation-report-page .evaluation-report-incidents__add {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.2rem;
+            color: var(--evaluation-brand);
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .evaluation-report-page .evaluation-report-incidents__add:hover {
+            color: var(--evaluation-brand-dark);
+        }
+
+        .evaluation-report-page .evaluation-report-mobile-card .report-progress {
+            min-width: 0;
+        }
+
+        .evaluation-report-page .evaluation-report-mobile-card .report-progress .progress {
+            width: auto;
+        }
+
+        .evaluation-report-page .evaluation-report-empty {
+            padding: 3rem 1rem;
+        }
+
+        .evaluation-modal textarea {
+            width: 100%;
+            min-height: 110px;
+            border: 1px solid #d7dbe2;
+            border-radius: 8px;
+            padding: 0.65rem 0.75rem;
+            resize: vertical;
+        }
+
+        .evaluation-modal textarea:focus {
+            border-color: var(--evaluation-brand);
+            box-shadow: 0 0 0 3px rgba(91, 66, 214, 0.18);
+            outline: none;
+        }
+
+        @@media (max-width: 900px) {
+            .evaluation-report-page .evaluation-report-table-shell {
                 display: none;
             }
 
-            .evaluation-report-mobile-list {
+            .evaluation-report-page .evaluation-report-mobile-list {
                 display: grid;
                 gap: 0.9rem;
                 margin-top: 0.75rem;
+            }
+
+            .evaluation-report-page .evaluation-report-bottom-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @@media (max-width: 700px) {
+            .evaluation-report-page .evaluation-page-header,
+            .evaluation-report-page .evaluation-report-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .evaluation-report-page .evaluation-report-actions > * {
+                width: 100%;
+            }
+
+            .evaluation-report-page .evaluation-report-filter-form {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @@media (max-width: 575.98px) {
+            .evaluation-report-page .evaluation-report-summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .evaluation-report-page .evaluation-report-summary article:nth-child(2) {
+                border-right: 0;
+            }
+
+            .evaluation-report-page .evaluation-report-summary article:nth-child(-n + 2) {
+                border-bottom: 1px solid var(--evaluation-line);
+            }
+
+            .evaluation-report-page .evaluation-report-mobile-card__grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @@media print {
+            .evaluation-report-page {
+                max-width: none;
+                padding: 0;
+            }
+
+            .evaluation-report-page .evaluation-page-header {
+                padding-bottom: 0.75rem;
+            }
+
+            .evaluation-report-page .evaluation-filter-panel,
+            .evaluation-report-page .no-print {
+                display: none !important;
+            }
+
+            .evaluation-report-page .evaluation-results {
+                margin-top: 0.75rem;
+                border: 0;
+                padding: 0;
+            }
+
+            .evaluation-report-page .evaluation-report-table-shell {
+                max-height: none;
+                overflow: visible;
+            }
+
+            .evaluation-report-page .evaluation-report-table {
+                min-width: 0;
+                font-size: 10px;
+            }
+
+            .evaluation-report-page .evaluation-report-table th {
+                position: static;
+                padding: 0.45rem;
+            }
+
+            .evaluation-report-page .evaluation-report-table td {
+                padding: 0.45rem;
+            }
+
+            .evaluation-report-page .evaluation-report-mobile-list {
+                display: none !important;
+            }
+
+            .evaluation-report-page .evaluation-report-bottom-grid {
+                grid-template-columns: 1fr 1fr;
             }
         }
     </style>
 }
 
-<div class="container-fluid px-0 evaluation-report-page">
+<div class="evaluation-page evaluation-report-page">
     <div class="d-none">@Html.AntiForgeryToken()</div>
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <header class="evaluation-page-header">
         <div>
-            <h1 class="h3 font-weight-bold mb-1">Báo cáo Phân bổ & Đánh giá Chỉ tiêu</h1>
-            <div class="page-breadcrumb no-print">
+            <h1>Báo cáo Phân bổ &amp; Đánh giá Chỉ tiêu</h1>
+            <nav class="evaluation-breadcrumb no-print" aria-label="Điều hướng trang">
                 <a href="/">Trang chủ</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <span class="text-primary fw-medium">@ViewBag.CurrentDeptName</span>
-                <i class="bi bi-chevron-right separator"></i>
-                <span class="text-muted small">Chu kỳ: @ViewBag.CurrentCycle</span>
-            </div>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span>@ViewBag.CurrentDeptName</span>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Chu kỳ: @ViewBag.CurrentCycle</span>
+            </nav>
         </div>
-        <div class="d-flex gap-2 no-print">
-            <button class="btn btn-outline-custom" onclick="window.print()"><i class="bi bi-printer me-1"></i> In báo cáo</button>
-            <a asp-action="ExportExcel" asp-route-departmentId="@ViewBag.CurrentDeptId" asp-route-cycle="@ViewBag.CurrentCycle" class="btn-primary-custom text-decoration-none">
-                <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel
+        <div class="evaluation-report-actions no-print">
+            <button type="button" class="evaluation-secondary-action" onclick="window.print()">
+                <i class="bi bi-printer" aria-hidden="true"></i>
+                <span>In báo cáo</span>
+            </button>
+            <a asp-action="ExportExcel" asp-route-departmentId="@ViewBag.CurrentDeptId" asp-route-cycle="@ViewBag.CurrentCycle" class="evaluation-primary-action">
+                <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+                <span>Xuất Excel</span>
             </a>
         </div>
-    </div>
+    </header>
+
+    <section class="evaluation-summary evaluation-report-summary" aria-label="Tổng quan báo cáo đánh giá">
+        <article>
+            <span>Mục tiêu</span>
+            <strong>@okrs.Count</strong>
+            <small>Đang xem trong @ViewBag.CurrentDeptName</small>
+        </article>
+        <article>
+            <span>Kết quả then chốt</span>
+            <strong>@krs.Count</strong>
+            <small>Các chỉ tiêu thuộc chu kỳ</small>
+        </article>
+        <article>
+            <span>Tiến độ trung bình</span>
+            <strong>@averageProgress.ToString("0.#")%</strong>
+            <small>@completedKeyResults/@krs.Count KR đã hoàn thành</small>
+        </article>
+        <article>
+            <span>Rủi ro vận hành</span>
+            <strong>@incidents.Count</strong>
+            <small>Ghi nhận trong chu kỳ này</small>
+        </article>
+    </section>
 
     <!-- Filter Bar -->
-    <div class="content-card mb-4 shadow-sm border-0 no-print">
-        <div class="card-body-custom">
-            <form asp-action="Index" asp-controller="EvaluationReports" method="get" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Phòng ban</label>
-                    <select name="departmentId" class="form-select no-select2">
-                        @foreach(var d in departments){
-                            <option value="@d.Id" selected="@(ViewBag.CurrentDeptId == d.Id ? "selected" : null)">@d.DepartmentName</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Chu kỳ (Quý/Năm)</label>
-                    <select name="cycle" class="form-select no-select2">
-                        @if (ViewBag.Cycles != null)
-                        {
-                            foreach (var c in (List<string>)ViewBag.Cycles)
-                            {
-                                <option value="@c" selected="@(ViewBag.CurrentCycle == c ? "selected" : null)">@c</option>
-                            }
-                        }
-                    </select>
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn-primary-custom w-100">Lọc dữ liệu</button>
-                </div>
-            </form>
+    <section class="evaluation-filter-panel no-print" aria-labelledby="evaluationReportFilterHeading">
+        <div class="evaluation-filter-heading">
+            <div>
+                <p class="evaluation-eyebrow" id="evaluationReportFilterHeading">Bộ lọc báo cáo</p>
+                <span>Chọn phòng ban và chu kỳ để xem phân bổ, tiến độ và rủi ro liên quan.</span>
+            </div>
         </div>
-    </div>
+        <form asp-action="Index" asp-controller="EvaluationReports" method="get" class="evaluation-filter-form evaluation-report-filter-form">
+            <label>
+                <span>Phòng ban</span>
+                <select name="departmentId" class="no-select2">
+                    @foreach (var d in departments)
+                    {
+                        <option value="@d.Id" selected="@(ViewBag.CurrentDeptId == d.Id ? "selected" : null)">@d.DepartmentName</option>
+                    }
+                </select>
+            </label>
+            <label>
+                <span>Chu kỳ (Quý/Năm)</span>
+                <select name="cycle" class="no-select2">
+                    @if (ViewBag.Cycles != null)
+                    {
+                        foreach (var c in (List<string>)ViewBag.Cycles)
+                        {
+                            <option value="@c" selected="@(ViewBag.CurrentCycle == c ? "selected" : null)">@c</option>
+                        }
+                    }
+                </select>
+            </label>
+            <button type="submit" class="evaluation-filter-button">
+                <i class="bi bi-funnel" aria-hidden="true"></i>
+                <span>Lọc dữ liệu</span>
+            </button>
+        </form>
+    </section>
 
     <!-- Report Table -->
-    <div class="content-card evaluation-report-table-card shadow-sm border-0">
-        <div class="table-responsive">
-            <table class="data-table evaluation-report-table w-100">
-                <thead class="bg-light">
+    <section class="evaluation-results evaluation-report-table-card" aria-labelledby="evaluationReportTableHeading">
+        <div class="evaluation-results-heading">
+            <div>
+                <p class="evaluation-eyebrow" id="evaluationReportTableHeading">Chi tiết phân bổ &amp; đánh giá</p>
+                <strong>@allocations.Count dòng phân bổ trong báo cáo</strong>
+            </div>
+            <span>@ViewBag.CurrentDeptName · @ViewBag.CurrentCycle</span>
+        </div>
+
+        <div class="evaluation-table-shell evaluation-report-table-shell">
+            <table class="evaluation-table evaluation-report-table" aria-label="Chi tiết phân bổ và đánh giá">
+                <thead>
                     <tr>
                         <th>Bộ phận / Mục tiêu</th>
                         <th>Kết quả then chốt</th>
@@ -127,40 +468,55 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var okr in okrs)
+                    @if (okrs.Count == 0 || krs.Count == 0 || allocations.Count == 0)
                     {
-                        var okrKrs = krs.Where(k => k.OKRId == okr.Id).ToList();
-                        foreach (var kr in okrKrs)
+                        <tr>
+                            <td colspan="8" class="p-0">
+                                <div class="evaluation-empty evaluation-report-empty" role="status">
+                                    <span class="evaluation-empty-icon"><i class="bi bi-bar-chart-line" aria-hidden="true"></i></span>
+                                    <h2>Chưa có dữ liệu báo cáo</h2>
+                                    <p>Hãy chọn phòng ban hoặc chu kỳ khác để xem các mục tiêu và kết quả then chốt.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var okr in okrs)
                         {
-                            var krAllocations = Model.Where(a => a.OKRId == okr.Id).ToList(); // Simplifying allocation link
-                            bool first = true;
-                            foreach (var alloc in krAllocations)
+                            var okrKrs = krs.Where(k => k.OKRId == okr.Id).ToList();
+                            foreach (var kr in okrKrs)
                             {
-                                var emp = employees.ContainsKey(alloc.EmployeeId) ? employees[alloc.EmployeeId] : null;
-                                decimal progress = kr.Progress;
-                                decimal progressWidth = Math.Min(100, progress);
-                                string status = ProgressHelper.GetResultStatus(progress);
-                                string statusColor = ProgressHelper.GetProgressTextColorClass(progress);
-                                string statusBgColor = ProgressHelper.GetProgressColorClass(progress);
-                                
-                                <tr>
-                                    @if(first){ <td rowspan="@krAllocations.Count" class="fw-bold align-middle">@okr.ObjectiveName</td> }
-                                    @if(first){ <td rowspan="@krAllocations.Count" class="align-middle">@kr.KeyResultName</td> }
-                                    <td>@(emp?.FullName ?? "N/A")</td>
-                                    <td class="text-end">@String.Format("{0:N0}", alloc.AllocatedValue) @kr.Unit</td>
-                                    <td class="text-end fw-bold">@String.Format("{0:N1}", kr.CurrentValue) @kr.Unit</td>
-                                    <td class="text-center">
-                                        <div class="report-progress d-flex align-items-center gap-2 justify-content-center">
-                                            <span class="report-progress-value fw-bold @statusColor">@((int)progress)%</span>
-                                            <div class="progress">
-                                                <div class="progress-bar @statusBgColor" style="width: @((int)progressWidth)%"></div>
+                                var krAllocations = allocations.Where(a => a.OKRId == okr.Id).ToList(); // Simplifying allocation link
+                                bool first = true;
+                                foreach (var alloc in krAllocations)
+                                {
+                                    var emp = employees.ContainsKey(alloc.EmployeeId) ? employees[alloc.EmployeeId] : null;
+                                    decimal progress = kr.Progress;
+                                    decimal progressWidth = Math.Min(100, progress);
+                                    string status = ProgressHelper.GetResultStatus(progress);
+                                    string statusColor = ProgressHelper.GetProgressTextColorClass(progress);
+                                    string statusBgColor = ProgressHelper.GetProgressColorClass(progress);
+
+                                    <tr>
+                                        @if(first){ <td rowspan="@krAllocations.Count" class="fw-bold align-middle">@okr.ObjectiveName</td> }
+                                        @if(first){ <td rowspan="@krAllocations.Count" class="align-middle">@kr.KeyResultName</td> }
+                                        <td>@(emp?.FullName ?? "N/A")</td>
+                                        <td class="text-end">@String.Format("{0:N0}", alloc.AllocatedValue) @kr.Unit</td>
+                                        <td class="text-end fw-bold">@String.Format("{0:N1}", kr.CurrentValue) @kr.Unit</td>
+                                        <td class="text-center">
+                                            <div class="report-progress d-flex align-items-center gap-2 justify-content-center">
+                                                <span class="report-progress-value fw-bold @statusColor">@((int)progress)%</span>
+                                                <div class="progress" role="progressbar" aria-label="Tiến độ @kr.KeyResultName" aria-valuenow="@((int)Math.Clamp(progress, 0m, 100m))" aria-valuemin="0" aria-valuemax="100">
+                                                    <div class="progress-bar @statusBgColor" style="width: @((int)progressWidth)%"></div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td class="text-center"><span class="badge report-status-badge @statusBgColor @statusColor px-3">@status</span></td>
-                                    <td class="report-reason small">@(kr.FailReasonId.HasValue && failReasons.ContainsKey(kr.FailReasonId.Value) ? failReasons[kr.FailReasonId.Value] : (progress < 100 ? "Chưa rõ lý do / Đang cập nhật" : "-"))</td>
-                                </tr>
-                                first = false;
+                                        </td>
+                                        <td class="text-center"><span class="badge report-status-badge @statusBgColor @statusColor px-3">@status</span></td>
+                                        <td class="report-reason small">@(kr.FailReasonId.HasValue && failReasons.ContainsKey(kr.FailReasonId.Value) ? failReasons[kr.FailReasonId.Value] : (progress < 100 ? "Chưa rõ lý do / Đang cập nhật" : "-"))</td>
+                                    </tr>
+                                    first = false;
+                                }
                             }
                         }
                     }
@@ -168,135 +524,162 @@
             </table>
         </div>
 
-        <div class="evaluation-report-mobile-list p-3">
-            @foreach (var okr in okrs)
+        <div class="evaluation-mobile-list evaluation-report-mobile-list">
+            @if (okrs.Count == 0 || krs.Count == 0 || allocations.Count == 0)
             {
-                var okrKrs = krs.Where(k => k.OKRId == okr.Id).ToList();
-                foreach (var kr in okrKrs)
+                <div class="evaluation-empty evaluation-report-empty" role="status">
+                    <span class="evaluation-empty-icon"><i class="bi bi-bar-chart-line" aria-hidden="true"></i></span>
+                    <h2>Chưa có dữ liệu báo cáo</h2>
+                    <p>Hãy chọn phòng ban hoặc chu kỳ khác để xem các mục tiêu và kết quả then chốt.</p>
+                </div>
+            }
+            else
+            {
+                foreach (var okr in okrs)
                 {
-                    var krAllocations = Model.Where(a => a.OKRId == okr.Id).ToList();
-                    foreach (var alloc in krAllocations)
+                    var okrKrs = krs.Where(k => k.OKRId == okr.Id).ToList();
+                    foreach (var kr in okrKrs)
                     {
-                        var emp = employees.ContainsKey(alloc.EmployeeId) ? employees[alloc.EmployeeId] : null;
-                        decimal progress = kr.Progress;
-                        decimal progressWidth = Math.Min(100, progress);
-                        string status = ProgressHelper.GetResultStatus(progress);
-                        string statusColor = ProgressHelper.GetProgressTextColorClass(progress);
-                        string statusBgColor = ProgressHelper.GetProgressColorClass(progress);
-                        var reasonText = kr.FailReasonId.HasValue && failReasons.ContainsKey(kr.FailReasonId.Value)
-                            ? failReasons[kr.FailReasonId.Value]
-                            : (progress < 100 ? "Chưa rõ lý do / Đang cập nhật" : "-");
+                        var krAllocations = allocations.Where(a => a.OKRId == okr.Id).ToList();
+                        foreach (var alloc in krAllocations)
+                        {
+                            var emp = employees.ContainsKey(alloc.EmployeeId) ? employees[alloc.EmployeeId] : null;
+                            decimal progress = kr.Progress;
+                            decimal progressWidth = Math.Min(100, progress);
+                            string status = ProgressHelper.GetResultStatus(progress);
+                            string statusColor = ProgressHelper.GetProgressTextColorClass(progress);
+                            string statusBgColor = ProgressHelper.GetProgressColorClass(progress);
+                            var reasonText = kr.FailReasonId.HasValue && failReasons.ContainsKey(kr.FailReasonId.Value)
+                                ? failReasons[kr.FailReasonId.Value]
+                                : (progress < 100 ? "Chưa rõ lý do / Đang cập nhật" : "-");
 
-                        <article class="content-card evaluation-report-mobile-card">
-                            <div>
-                                <h3 class="evaluation-report-mobile-card__title">@okr.ObjectiveName</h3>
-                                <div class="small text-muted mt-1">@kr.KeyResultName</div>
-                            </div>
-
-                            <div class="d-flex flex-wrap gap-2 align-items-center">
-                                <span class="badge report-status-badge @statusBgColor @statusColor px-3">@status</span>
-                                <span class="soft-chip tone-info"><i class="bi bi-person"></i>@(emp?.FullName ?? "N/A")</span>
-                            </div>
-
-                            <div class="evaluation-report-mobile-card__grid">
+                            <article class="evaluation-report-mobile-card">
                                 <div>
-                                    <div class="evaluation-report-mobile-card__label">Chỉ tiêu riêng</div>
-                                    <div class="fw-semibold mt-1">@String.Format("{0:N0}", alloc.AllocatedValue) @kr.Unit</div>
+                                    <h3 class="evaluation-report-mobile-card__title">@okr.ObjectiveName</h3>
+                                    <div class="small text-muted mt-1">@kr.KeyResultName</div>
                                 </div>
-                                <div>
-                                    <div class="evaluation-report-mobile-card__label">Thực tế đạt</div>
-                                    <div class="fw-semibold mt-1">@String.Format("{0:N1}", kr.CurrentValue) @kr.Unit</div>
-                                </div>
-                            </div>
 
-                            <div>
-                                <div class="evaluation-report-mobile-card__label">Hoàn thành</div>
-                                <div class="report-progress d-flex align-items-center gap-2 mt-1">
-                                    <span class="report-progress-value fw-bold @statusColor">@((int)progress)%</span>
-                                    <div class="progress flex-grow-1">
-                                        <div class="progress-bar @statusBgColor" style="width: @((int)progressWidth)%"></div>
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                    <span class="badge report-status-badge @statusBgColor @statusColor px-3">@status</span>
+                                    <span class="soft-chip tone-info"><i class="bi bi-person" aria-hidden="true"></i>@(emp?.FullName ?? "N/A")</span>
+                                </div>
+
+                                <div class="evaluation-report-mobile-card__grid">
+                                    <div>
+                                        <div class="evaluation-report-mobile-card__label">Chỉ tiêu riêng</div>
+                                        <div class="fw-semibold mt-1">@String.Format("{0:N0}", alloc.AllocatedValue) @kr.Unit</div>
+                                    </div>
+                                    <div>
+                                        <div class="evaluation-report-mobile-card__label">Thực tế đạt</div>
+                                        <div class="fw-semibold mt-1">@String.Format("{0:N1}", kr.CurrentValue) @kr.Unit</div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div>
-                                <div class="evaluation-report-mobile-card__label">Lý do / ghi chú</div>
-                                <div class="small text-muted mt-1">@reasonText</div>
-                            </div>
-                        </article>
+                                <div>
+                                    <div class="evaluation-report-mobile-card__label">Hoàn thành</div>
+                                    <div class="report-progress d-flex align-items-center gap-2 mt-1">
+                                        <span class="report-progress-value fw-bold @statusColor">@((int)progress)%</span>
+                                        <div class="progress flex-grow-1" role="progressbar" aria-label="Tiến độ @kr.KeyResultName" aria-valuenow="@((int)Math.Clamp(progress, 0m, 100m))" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-bar @statusBgColor" style="width: @((int)progressWidth)%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="evaluation-report-mobile-card__label">Lý do / ghi chú</div>
+                                    <div class="small text-muted mt-1">@reasonText</div>
+                                </div>
+                            </article>
+                        }
                     }
                 }
             }
         </div>
-    </div>
+    </section>
 
     <!-- Director's Summative Analysis Section -->
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="content-card">
-                <div class="card-header-custom"><i class="bi bi-chat-left-text me-2"></i>Tổng hợp của Giám đốc</div>
-                <div class="card-body-custom">
-                    <textarea id="directorSummaryText" class="form-control director-summary-input" rows="4" placeholder="Nhập nhận định chung về tình hình thực hiện OKR/KPI của Sale Q1...">@ViewBag.DirectorSummary</textarea>
-                    <div class="print-director-summary">@(!string.IsNullOrWhiteSpace(ViewBag.DirectorSummary as string) ? ViewBag.DirectorSummary : "Chưa có nhận xét.")</div>
-                    <div class="d-flex justify-content-end mt-3 no-print">
-                        <button id="btnSaveSummary" class="btn-primary-custom"><i class="bi bi-save me-1"></i> Lưu nhận xét</button>
-                    </div>
+    <section class="evaluation-report-bottom-grid">
+        <section class="evaluation-results evaluation-report-panel" aria-labelledby="directorSummaryHeading">
+            <div class="evaluation-results-heading">
+                <div>
+                    <p class="evaluation-eyebrow" id="directorSummaryHeading">Tổng hợp của Giám đốc</p>
+                    <strong>Nhận định chung cho @ViewBag.CurrentDeptName</strong>
                 </div>
             </div>
-        </div>
-        <div class="col-md-6">
-            <div class="content-card h-100">
-                <div class="card-header-custom"><i class="bi bi-exclamation-triangle me-2"></i>Các rủi ro vận hành (P.S.)</div>
-                <div class="card-body-custom">
-                    <ul class="list-unstyled mb-0" id="incidentList">
-                        @if (incidents.Any())
-                        {
-                            foreach (var incident in incidents)
-                            {
-                                var badgeClass = incident.Severity == "Critical" ? "bg-danger" : "bg-warning text-dark";
-                                var severityText = incident.Severity == "Critical" ? "Nghiêm trọng" : "Cảnh báo";
-                                <li class="mb-2">
-                                    <span class="badge @badgeClass rounded-pill me-2">!</span>
-                                    <span class="fw-semibold">@severityText:</span> @incident.Content
-                                    <span class="text-muted small">(@incident.CreatedAt.ToString("dd/MM/yyyy HH:mm"))</span>
-                                </li>
-                            }
-                        }
-                        else
-                        {
-                            <li class="text-muted mb-2" id="emptyIncidentText">Chưa có sự cố vận hành nào được ghi nhận.</li>
-                        }
-                        <li style="cursor: pointer;" class="text-primary hover-opacity no-print" data-bs-toggle="modal" data-bs-target="#incidentModal"><i class="bi bi-plus-circle me-2"></i> Thêm sự cố vận hành năm nay</li>
-                    </ul>
+            <textarea id="directorSummaryText" class="form-control director-summary-input" rows="4" placeholder="Nhập nhận định chung về tình hình thực hiện OKR/KPI...">@ViewBag.DirectorSummary</textarea>
+            <div class="print-director-summary">@(!string.IsNullOrWhiteSpace(ViewBag.DirectorSummary as string) ? ViewBag.DirectorSummary : "Chưa có nhận xét.")</div>
+            <div class="d-flex justify-content-end mt-3 no-print">
+                <button id="btnSaveSummary" type="button" class="evaluation-primary-action">
+                    <i class="bi bi-save" aria-hidden="true"></i>
+                    <span>Lưu nhận xét</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="evaluation-results evaluation-report-panel" aria-labelledby="incidentHeading">
+            <div class="evaluation-results-heading">
+                <div>
+                    <p class="evaluation-eyebrow" id="incidentHeading">Rủi ro vận hành</p>
+                    <strong>Các sự cố cần theo dõi (P.S.)</strong>
                 </div>
             </div>
-        </div>
-    </div>
+            <ul class="list-unstyled mb-0 evaluation-report-incidents" id="incidentList">
+                @if (incidents.Any())
+                {
+                    foreach (var incident in incidents)
+                    {
+                        var badgeClass = incident.Severity == "Critical" ? "bg-danger" : "bg-warning text-dark";
+                        var severityText = incident.Severity == "Critical" ? "Nghiêm trọng" : "Cảnh báo";
+                        <li>
+                            <span class="badge @badgeClass rounded-pill">@severityText</span>
+                            <div>
+                                <span class="fw-semibold">@incident.Content</span>
+                                <span class="text-muted small d-block">@incident.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                            </div>
+                        </li>
+                    }
+                }
+                else
+                {
+                    <li class="text-muted" id="emptyIncidentText">Chưa có sự cố vận hành nào được ghi nhận.</li>
+                }
+                <li>
+                    <button type="button" class="evaluation-report-incidents__add no-print border-0 bg-transparent p-0" data-bs-toggle="modal" data-bs-target="#incidentModal">
+                        <i class="bi bi-plus-circle" aria-hidden="true"></i>
+                        <span>Thêm sự cố vận hành năm nay</span>
+                    </button>
+                </li>
+            </ul>
+        </section>
+    </section>
 </div>
 
 <div class="modal fade" id="incidentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content evaluation-modal">
             <div class="modal-header border-0">
-                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Thêm sự cố vận hành</h5>
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2 text-warning" aria-hidden="true"></i>Thêm sự cố vận hành</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Mức độ</label>
-                    <select id="incidentSeverity" class="form-select">
+                    <label class="form-label"><span>Mức độ</span></label>
+                    <select id="incidentSeverity" class="form-select evaluation-modal-control">
                         <option value="Warning">Cảnh báo (vàng)</option>
                         <option value="Critical">Nghiêm trọng (đỏ)</option>
                     </select>
                 </div>
                 <div>
-                    <label class="form-label fw-semibold">Nội dung sự cố</label>
-                    <textarea id="incidentContent" class="form-control" rows="4" maxlength="1000" placeholder="Nhập chi tiết sự cố và mức độ ảnh hưởng..."></textarea>
+                    <label class="form-label"><span>Nội dung sự cố</span></label>
+                    <textarea id="incidentContent" class="form-control evaluation-modal-control" rows="4" maxlength="1000" placeholder="Nhập chi tiết sự cố và mức độ ảnh hưởng..."></textarea>
                 </div>
             </div>
             <div class="modal-footer border-0">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn-primary-custom" id="btnSaveIncident"><i class="bi bi-save me-1"></i> Lưu sự cố</button>
+                <button type="button" class="evaluation-secondary-action" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="evaluation-primary-action" id="btnSaveIncident">
+                    <i class="bi bi-save" aria-hidden="true"></i>
+                    <span>Lưu sự cố</span>
+                </button>
             </div>
         </div>
     </div>

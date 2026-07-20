@@ -1,483 +1,192 @@
 @model Manage_KPI_or_OKR_System.Models.Role
+
 @{
-    ViewData["Title"] = "Tạo Nhóm Quyền Mới";
+    ViewData["Title"] = "Tạo Vai Trò Mới";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="page-content py-4 container-fluid px-4">
-    <!-- HEADER -->
-    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
-        <div>
-            <h1 class="mb-2 fw-800 text-dark text-gradient" style="font-size: 2.2rem;">Tạo Nhóm Quyền Mới</h1>
-            <div class="page-breadcrumb">
-                <a href="/" class="text-decoration-none opacity-75 hover-primary transition-all">Trang chủ</a>
-                <span class="separator mx-2 text-muted">/</span>
-                <a asp-action="Index" class="text-decoration-none opacity-75 hover-primary transition-all">Phân quyền Hệ thống</a>
-                <span class="separator mx-2 text-muted">/</span>
-                <span class="text-primary fw-bold">Tạo mới nhân tố</span>
-            </div>
+<div class="cf-page role-create-page" data-create-form>
+    <header class="cf-header">
+        <div class="cf-header__content">
+            <h1>Tạo vai trò mới</h1>
+            <nav class="cf-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <a asp-action="Index">Vai trò &amp; phân quyền</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Tạo mới</span>
+            </nav>
+            <p class="cf-header__description">Tạo nhóm vai trò để phân quyền truy cập phù hợp cho người dùng trong hệ thống.</p>
         </div>
-        <div>
-            <a asp-action="Index" class="btn btn-light shadow-sm border-0 bg-white px-4 py-2 hover-translate-y" style="border-radius: 12px; font-weight: 600; color: #475569; transition: all 0.3s;">
-                <i class="bi bi-arrow-left me-2"></i> Quay lại danh sách
-            </a>
-        </div>
-    </div>
+        <a asp-action="Index" class="cf-back-action">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Quay lại</span>
+        </a>
+    </header>
 
-    <div class="row g-4">
-        <!-- ======== FORM COLUMN ======== -->
-        <div class="col-xl-8 animate__animated animate__fadeInLeft">
-            <div class="content-card border-0 shadow-lg overflow-visible" style="background: rgba(255,255,255,0.97); backdrop-filter: blur(20px); border-radius: 24px;">
-                <!-- Card Header -->
-                <div class="card-header-custom border-bottom bg-white bg-opacity-50 py-4 px-4 position-relative overflow-hidden" style="border-radius: 24px 24px 0 0;">
-                    <div class="d-flex align-items-center position-relative" style="z-index: 2;">
-                        <div class="bg-primary bg-opacity-10 p-3 rounded-4 me-3 shadow-sm border border-primary border-opacity-10">
-                            <i class="bi bi-shield-plus-fill text-primary fs-4"></i>
-                        </div>
+    <div class="cf-layout">
+        <section class="cf-panel" aria-labelledby="roleCreateHeading">
+            <div class="cf-panel__header">
+                <div>
+                    <h2 id="roleCreateHeading">Thông tin vai trò</h2>
+                    <p>Các trường có dấu <span class="cf-required" aria-hidden="true">*</span> là bắt buộc.</p>
+                </div>
+            </div>
+
+            <form id="roleCreateForm"
+                  asp-action="Create"
+                  method="post"
+                  class="cf-form"
+                  data-create-form-element>
+                <div asp-validation-summary="All" class="cf-alert" role="alert" tabindex="-1" data-error-summary></div>
+
+                <section class="cf-section" aria-labelledby="roleIdentityHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-shield-check"></i></span>
                         <div>
-                            <h5 class="fw-bold fs-5 mb-0 text-dark">Định nghĩa Nhóm Quyền</h5>
-                            <p class="text-muted small mb-0 opacity-75">Thiết lập cấu trúc và mô tả chi tiết cho vai trò mới</p>
+                            <h3 id="roleIdentityHeading">Thông tin định danh</h3>
+                            <p>Đặt tên rõ ràng và mô tả ngắn gọn phạm vi sử dụng của vai trò.</p>
                         </div>
                     </div>
+
+                    <div class="cf-field-grid">
+                        <div class="cf-field cf-field--full">
+                            <div class="cf-label-row">
+                                <label asp-for="RoleName">Tên vai trò <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                                <span class="cf-counter" for="RoleName" data-character-counter></span>
+                            </div>
+                            <input asp-for="RoleName"
+                                   class="form-control cf-control role-name-input"
+                                   maxlength="50"
+                                   autocomplete="off"
+                                   spellcheck="false"
+                                   placeholder="Ví dụ: Manager, Sales, ContentEditor"
+                                   aria-describedby="roleNameHint"
+                                   required />
+                            <span asp-validation-for="RoleName" class="cf-validation"></span>
+                            <p id="roleNameHint" class="cf-hint">Tối đa 50 ký tự và không được trùng với vai trò đã có.</p>
+                        </div>
+
+                        <div class="cf-field cf-field--full">
+                            <div class="cf-label-row">
+                                <label asp-for="Description">Mô tả vai trò</label>
+                                <span class="cf-counter" for="Description" data-character-counter></span>
+                            </div>
+                            <textarea asp-for="Description"
+                                      class="form-control cf-control"
+                                      rows="5"
+                                      maxlength="255"
+                                      placeholder="Mô tả trách nhiệm hoặc phạm vi quyền hạn của vai trò..."
+                                      aria-describedby="roleDescriptionHint"></textarea>
+                            <span asp-validation-for="Description" class="cf-validation"></span>
+                            <p id="roleDescriptionHint" class="cf-hint">Mô tả giúp quản trị viên chọn đúng vai trò khi gán cho người dùng.</p>
+                        </div>
+                    </div>
+
+                    <div class="cf-inline-note">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span>Vai trò sẽ được kích hoạt ngay sau khi tạo. Bạn có thể cấu hình quyền chi tiết ở bước tiếp theo.</span>
+                    </div>
+                </section>
+
+                <div class="cf-actions">
+                    <a asp-action="Index" class="cf-secondary-action">Hủy</a>
+                    <button type="submit"
+                            class="cf-primary-action"
+                            data-submit-button
+                            data-default-label="Tạo vai trò"
+                            data-loading-label="Đang tạo...">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        <span data-submit-label>Tạo vai trò</span>
+                    </button>
                 </div>
+            </form>
+        </section>
 
-                <!-- Card Body -->
-                <div class="card-body-custom p-4 p-md-5">
-                    @if (ViewBag.ErrorMessage != null)
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 rounded-4 mb-4" role="alert">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-exclamation-octagon-fill fs-4 me-3"></i>
-                                <div>
-                                    <strong>Lỗi!</strong> @ViewBag.ErrorMessage
-                                </div>
-                            </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    }
-
-                    <form asp-action="Create" method="post" id="createRoleForm">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
-
-                        <!-- SECTION 1: ĐỊNH NGHĨA QUYỀN -->
-                        <div class="form-section mb-4">
-                            <div class="d-flex align-items-center mb-4">
-                                <span class="badge bg-primary me-2" style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">1</span>
-                                <h6 class="text-uppercase fw-800 text-muted small mb-0 tracking-wider">Thông tin nhận diện</h6>
-                            </div>
-
-                            <div class="row g-4">
-                                <!-- Tên nhóm quyền -->
-                                <div class="col-md-12">
-                                    <div class="form-icon-group text-dark">
-                                        <label class="form-label small fw-bold text-secondary">
-                                            Tên nhóm quyền <span class="text-danger">*</span>
-                                        </label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-shield"></i>
-                                            <input type="text"
-                                                   id="roleName"
-                                                   name="roleName"
-                                                   class="form-control border-0"
-                                                   placeholder="VD: HR, Sales, Manager..."
-                                                   required
-                                                   autocomplete="off"
-                                                   style="padding-left: 45px; height: 50px;" />
-                                        </div>
-                                        <div class="form-text mt-2 small text-muted">
-                                            <i class="bi bi-info-circle me-1"></i>
-                                            Dùng tên tiếng Anh, không dấu, viết liền (VD: <strong>HR</strong>, <strong>Sales</strong>, <strong>Manager</strong>). Tên phải là duy nhất trong hệ thống.
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Mô tả -->
-                                <div class="col-md-12">
-                                    <div class="form-icon-group text-dark">
-                                        <label class="form-label small fw-bold text-secondary">Mô tả chức năng & phạm vi quyền hạn</label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border textarea-wrapper" style="height: auto;">
-                                            <i class="bi bi-text-left"></i>
-                                            <textarea id="description"
-                                                      name="description"
-                                                      class="form-control border-0"
-                                                      rows="5"
-                                                      placeholder="Mô tả chi tiết các chức năng mà nhóm quyền này có thể thực hiện trong hệ thống..."
-                                                      style="padding-left: 45px;"></textarea>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 2: CẤU HÌNH BỔ SUNG -->
-                        <div class="form-section mb-4">
-                            <div class="d-flex align-items-center mb-4">
-                                <span class="badge bg-success me-2" style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">2</span>
-                                <h6 class="text-uppercase fw-800 text-muted small mb-0 tracking-wider">Cấu hình trạng thái</h6>
-                            </div>
-
-                            <div class="row g-4 align-items-center">
-                                <div class="col-md-12">
-                                    <div class="d-flex align-items-center gap-3 p-3 bg-success bg-opacity-10 rounded-4 border border-success border-opacity-10">
-                                        <div class="form-check form-switch fs-5 mb-0">
-                                            <input type="checkbox"
-                                                   class="form-check-input"
-                                                   id="isActiveSwitch"
-                                                   name="IsActive"
-                                                   value="true"
-                                                   checked />
-                                        </div>
-                                        <div>
-                                            <label class="form-check-label fw-bold text-dark d-block" for="isActiveSwitch">
-                                                Kích hoạt nhóm quyền ngay
-                                            </label>
-                                            <span class="small text-muted">Nhóm quyền sẽ có hiệu lực ngay sau khi được tạo và có thể gán cho tài khoản người dùng.</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-12">
-                                    <div class="d-flex align-items-start gap-3 p-3 bg-warning bg-opacity-10 rounded-4 border border-warning border-opacity-10">
-                                        <i class="bi bi-lightbulb-fill text-warning fs-4 mt-1 flex-shrink-0"></i>
-                                        <div class="small text-muted">
-                                            <strong class="text-dark">Bước tiếp theo:</strong> Sau khi tạo nhóm quyền, bạn có thể vào <strong>"Cấu hình Quyền chi tiết"</strong> để gán các mã quyền cụ thể (Permission Codes) cho nhóm này, kiểm soát chính xác từng tính năng mà nhóm được phép truy cập.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- ACTIONS -->
-                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
-                            <a asp-action="Index" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 12px; font-weight: 600; border: 1.5px solid #e2e8f0;">
-                                <i class="bi bi-x-lg me-2"></i> Hủy bỏ
-                            </a>
-                            <button type="submit" class="btn btn-primary px-5 py-2 shadow-lg" style="border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%); border: none;">
-                                <i class="bi bi-shield-plus me-2"></i> Tạo Nhóm Quyền
-                            </button>
-                        </div>
-                    </form>
+        <aside class="cf-guide role-create-guide" aria-labelledby="rolePreviewHeading">
+            <div class="cf-guide__identity">
+                <span class="cf-guide__icon" aria-hidden="true"><i class="bi bi-person-badge"></i></span>
+                <div>
+                    <h2 id="rolePreviewHeading">Vai trò sắp tạo</h2>
                 </div>
             </div>
-        </div>
+            <p>Thông tin được cập nhật theo dữ liệu đang nhập để bạn kiểm tra nhanh trước khi lưu.</p>
 
-        <!-- ======== SIDEBAR COLUMN ======== -->
-        <div class="col-xl-4 animate__animated animate__fadeInRight">
-            <div class="sticky-top" style="top: 100px;">
-
-                <!-- LIVE PREVIEW CARD -->
-                <div class="content-card border-0 shadow-lg text-white mb-4 position-relative overflow-hidden card-preview-glass"
-                     style="background: linear-gradient(135deg, #1a73e8, #1557b0); border-radius: 24px; border: 1px solid rgba(255,255,255,0.1);">
-                    <!-- Decorative elements -->
-                    <div class="preview-blob-1"></div>
-                    <div class="preview-blob-2"></div>
-
-                    <div class="card-body-custom p-4 position-relative" style="z-index: 2;">
-                        <div class="d-flex align-items-center mb-4 pb-3 border-bottom border-white border-opacity-10">
-                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3 blur-sm">
-                                <i class="bi bi-shield-check fs-3 text-white"></i>
-                            </div>
-                            <div>
-                                <div class="small opacity-75 fw-bold text-uppercase tracking-wider">Thẻ xem trước</div>
-                                <h4 class="mb-0 fw-800" id="previewName" style="transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">--</h4>
-                            </div>
-                        </div>
-
-                        <div class="bg-white bg-opacity-10 p-3 rounded-4 mb-4 border border-white border-opacity-10">
-                            <div class="small opacity-75 mb-2 d-flex align-items-center">
-                                <i class="bi bi-text-paragraph me-2"></i> Mô tả chức năng
-                            </div>
-                            <div class="fw-500 small text-light" id="previewDesc" style="min-height: 48px; line-height: 1.6; transition: all 0.3s ease; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">--</div>
-                        </div>
-
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <div class="bg-white bg-opacity-10 px-3 py-3 rounded-4 border border-white border-opacity-10 h-100 transition-all hover-white-5">
-                                    <div class="small opacity-75 mb-1">Trạng thái</div>
-                                    <div class="fw-bold small" id="previewStatus">
-                                        <i class="bi bi-check-circle-fill text-warning"></i> Hoạt động
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="bg-white bg-opacity-10 px-3 py-3 rounded-4 border border-white border-opacity-10 h-100 transition-all hover-white-5">
-                                    <div class="small opacity-75 mb-1">Quyền hạn</div>
-                                    <div class="fw-bold small">
-                                        <i class="bi bi-lightning-fill text-warning"></i> Sơ khởi
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <dl class="cf-preview-list role-preview-list">
+                <div>
+                    <dt>Tên vai trò</dt>
+                    <dd id="previewRoleName">Chưa nhập</dd>
                 </div>
-
-                <!-- INFO / NOTES CARD -->
-                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
-                    <h6 class="fw-bold text-dark mb-4">
-                        <i class="bi bi-info-circle text-primary me-2"></i> Lưu ý quan trọng
-                    </h6>
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item px-0 py-3 border-0">
-                            <div class="d-flex align-items-start">
-                                <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3 me-3 flex-shrink-0">
-                                    <i class="bi bi-keyboard"></i>
-                                </div>
-                                <p class="small text-muted mb-0">
-                                    <strong>Tên nhóm quyền</strong> phải là duy nhất — không được trùng với nhóm quyền đã có trong hệ thống.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="list-group-item px-0 py-3 border-0">
-                            <div class="d-flex align-items-start">
-                                <div class="bg-success bg-opacity-10 text-success p-2 rounded-3 me-3 flex-shrink-0">
-                                    <i class="bi bi-translate"></i>
-                                </div>
-                                <p class="small text-muted mb-0">
-                                    <strong>Dùng tiếng Anh</strong>, viết liền, không dấu, không khoảng trắng (VD: <code>Manager</code>).
-                                </p>
-                            </div>
-                        </div>
-                        <div class="list-group-item px-0 py-3 border-0">
-                            <div class="d-flex align-items-start">
-                                <div class="bg-warning bg-opacity-10 text-warning p-2 rounded-3 me-3 flex-shrink-0">
-                                    <i class="bi bi-people"></i>
-                                </div>
-                                <p class="small text-muted mb-0">
-                                    Quyền này sẽ được <strong>gán cho Tài khoản Người dùng</strong> để kiểm soát quyền truy cập vào từng tính năng.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="list-group-item px-0 py-3 border-0">
-                            <div class="d-flex align-items-start">
-                                <div class="bg-info bg-opacity-10 text-info p-2 rounded-3 me-3 flex-shrink-0">
-                                    <i class="bi bi-gear"></i>
-                                </div>
-                                <p class="small text-muted mb-0">
-                                    Sau khi tạo, vào <strong>"Cấu hình Quyền"</strong> để thiết lập chi tiết các permission code.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                    <dt>Mô tả</dt>
+                    <dd id="previewRoleDescription">Chưa có mô tả</dd>
                 </div>
-
-                <!-- QUICK ROLES REFERENCE -->
-                <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4">
-                    <h6 class="fw-bold text-dark mb-3">
-                        <i class="bi bi-bookmark-star text-warning me-2"></i> Gợi ý tên phổ biến
-                    </h6>
-                    <div class="d-flex flex-wrap gap-2">
-                        @foreach (var role in new[] { "Admin", "Director", "Manager", "HR", "Sales", "Employee" })
-                        {
-                            <span class="badge rounded-pill px-3 py-2 role-suggestion"
-                                  style="background: #f1f5f9; color: #475569; font-size: 0.78rem; cursor: pointer; border: 1px solid #e2e8f0; transition: all 0.2s;"
-                                  data-role="@role">
-                                @role
-                            </span>
-                        }
-                    </div>
-                    <div class="form-text mt-2 small text-muted">
-                        <i class="bi bi-hand-index me-1"></i> Click để điền vào ô nhập tên.
-                    </div>
+                <div>
+                    <dt>Trạng thái</dt>
+                    <dd>Đang hoạt động</dd>
                 </div>
+                <div>
+                    <dt>Bước tiếp theo</dt>
+                    <dd>Cấu hình quyền</dd>
+                </div>
+            </dl>
+
+            <ul class="cf-guide__list role-create-guide__list">
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Dùng tên ngắn gọn, dễ nhận biết và thống nhất với quy ước nội bộ.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Mỗi tên vai trò phải là duy nhất trong hệ thống.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Quyền truy cập chi tiết vẫn có thể điều chỉnh sau khi tạo.</span></li>
+            </ul>
+
+            <div class="cf-guide__note">
+                <i class="bi bi-shield-check" aria-hidden="true"></i>
+                <span>Hệ thống sẽ kiểm tra tên trùng trước khi lưu vai trò mới.</span>
             </div>
-        </div>
+        </aside>
     </div>
 </div>
 
-<style>
-    /* ======== TYPOGRAPHY ======== */
-    .fw-800 { font-weight: 800; }
-    .fw-500 { font-weight: 500; }
-    .tracking-wider { letter-spacing: 0.08em; }
-    .text-gradient {
-        background: linear-gradient(135deg, #1e293b 0%, #1a73e8 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    /* ======== FORM SECTIONS ======== */
-    .form-section {
-        background: rgba(248, 250, 252, 0.4);
-        padding: 28px;
-        border-radius: 20px;
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .form-section:hover {
-        background: rgba(248, 250, 252, 0.8);
-        border-color: #cbd5e1;
-        box-shadow: 0 10px 25px -10px rgba(0,0,0,0.05);
-        transform: translateY(-2px);
-    }
-
-    /* ======== ICON INPUT GROUPS ======== */
-    .form-icon-group { position: relative; }
-
-    .form-icon-group .input-wrapper {
-        position: relative;
-        transition: all 0.3s ease;
-        background: #fff;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 14px !important;
-    }
-    .form-icon-group .input-wrapper:focus-within {
-        border-color: #1a73e8 !important;
-        box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1) !important;
-        transform: translateY(-1px);
-    }
-    .form-icon-group .input-wrapper i {
-        position: absolute;
-        left: 18px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #94a3b8;
-        font-size: 1.15rem;
-        z-index: 10;
-        transition: all 0.3s;
-        pointer-events: none;
-    }
-    .form-icon-group .input-wrapper:focus-within i {
-        color: #1a73e8;
-        transform: translateY(-50%) scale(1.1);
-    }
-
-    /* ======== PREVIEW CARD ENHANCEMENTS ======== */
-    .card-preview-glass {
-        box-shadow: 0 20px 40px -15px rgba(26, 115, 232, 0.3) !important;
-    }
-    .preview-blob-1 {
-        position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; 
-        background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%); border-radius: 50%;
-    }
-    .preview-blob-2 {
-        position: absolute; bottom: -30px; left: -30px; width: 100px; height: 100px; 
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); border-radius: 50%;
-    }
-    .blur-sm { backdrop-filter: blur(4px); }
-    .hover-white-5:hover { background: rgba(255,255,255,0.15) !important; }
-
-    /* ======== TEXTAREA ICON FIX ======== */
-    .textarea-wrapper i {
-        top: 22px !important;
-        transform: translateY(0) !important;
-    }
-    .textarea-wrapper:focus-within i {
-        transform: translateY(0) scale(1.1) !important;
-    }
-
-    /* ======== FORM SWITCH ======== */
-    .form-check-input {
-        cursor: pointer;
-        width: 3.2em !important;
-        height: 1.7em !important;
-        margin-top: 0 !important;
-        border-radius: 2rem !important;
-    }
-    .form-check-input:checked {
-        background-color: #1a73e8 !important;
-        border-color: #1a73e8 !important;
-    }
-
-    /* ======== ROLE SUGGESTION BADGE ======== */
-    .role-suggestion {
-        background: #f8fafc;
-        color: #64748b;
-        font-weight: 600;
-        border: 1px solid #e2e8f0;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .role-suggestion:hover {
-        background: #1a73e8 !important;
-        color: #fff !important;
-        border-color: #1a73e8 !important;
-        transform: translateY(-3px) scale(1.05);
-        box-shadow: 0 8px 15px -5px rgba(26,115,232,0.4);
-    }
-
-    /* ======== BUTTONS ======== */
-    .hover-translate-y:hover { transform: translateY(-2px); }
-    .hover-primary:hover { color: #1a73e8 !important; }
-    .transition-all { transition: all 0.3s ease; }
-
-    /* ======== ANIMATION ======== */
-    .animate__animated { animation-duration: 0.8s; }
-</style>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-
-    <script>
-        // ===== LIVE PREVIEW =====
-        const nameInput   = document.getElementById('roleName');
-        const descInput   = document.getElementById('description');
-        const switchInput = document.getElementById('isActiveSwitch');
-        const previewName   = document.getElementById('previewName');
-        const previewDesc   = document.getElementById('previewDesc');
-        const previewStatus = document.getElementById('previewStatus');
-
-        function updatePreview() {
-            const name = nameInput.value.trim();
-            const desc = descInput.value.trim();
-            const active = switchInput.checked;
-
-            // Smooth name update
-            if (previewName.textContent !== (name || '--')) {
-                previewName.style.transform = 'translateY(-5px)';
-                previewName.style.opacity = '0';
-                setTimeout(() => {
-                    previewName.textContent = name || '--';
-                    previewName.style.transform = 'translateY(0)';
-                    previewName.style.opacity = '1';
-                }, 150);
-            }
-
-            // Desc update with fade
-            if (previewDesc.textContent !== (desc || '--')) {
-                previewDesc.style.opacity = '0.5';
-                setTimeout(() => {
-                    previewDesc.textContent = desc || '--';
-                    previewDesc.style.opacity = '1';
-                }, 100);
-            }
-
-            if (active) {
-                previewStatus.innerHTML = '<i class="bi bi-check-circle-fill text-warning animate__animated animate__pulse animate__infinite"></i> Hoạt động';
-                previewStatus.closest('.bg-white').style.borderColor = 'rgba(255,255,255,0.3)';
-            } else {
-                previewStatus.innerHTML = '<i class="bi bi-pause-circle-fill" style="color:#fca5a5"></i> Tạm khóa';
-                previewStatus.closest('.bg-white').style.borderColor = 'rgba(252,165,165,0.3)';
-            }
+@section Styles {
+    <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
+    <style>
+        .role-name-input {
+            font-weight: 750;
         }
 
-        nameInput.addEventListener('input', updatePreview);
-        descInput.addEventListener('input', updatePreview);
-        switchInput.addEventListener('change', updatePreview);
+        .role-preview-list dd {
+            min-height: 1.15rem;
+            overflow-wrap: anywhere;
+        }
 
-        // ===== ROLE SUGGESTION CHIPS =====
-        document.querySelectorAll('.role-suggestion').forEach(chip => {
-            chip.addEventListener('click', () => {
-                nameInput.value = chip.dataset.role;
-                nameInput.dispatchEvent(new Event('input'));
-                nameInput.focus();
-                
-                // Visual feedback for chip
-                chip.style.transform = 'scale(0.95)';
-                setTimeout(() => chip.style.transform = '', 100);
-            });
-        });
+        .role-create-guide__list {
+            margin-top: 1rem;
+        }
+    </style>
+}
 
-        // Init
-        window.addEventListener('DOMContentLoaded', () => {
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/create-form.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            "use strict";
+
+            const nameInput = document.getElementById("RoleName");
+            const descriptionInput = document.getElementById("Description");
+            const previewName = document.getElementById("previewRoleName");
+            const previewDescription = document.getElementById("previewRoleDescription");
+
+            function updatePreview() {
+                if (previewName && nameInput) {
+                    previewName.textContent = nameInput.value.trim() || "Chưa nhập";
+                }
+
+                if (previewDescription && descriptionInput) {
+                    previewDescription.textContent = descriptionInput.value.trim() || "Chưa có mô tả";
+                }
+            }
+
+            [nameInput, descriptionInput].forEach(input => input?.addEventListener("input", updatePreview));
             updatePreview();
-            // Entrance animation for preview card elements
-            document.querySelectorAll('.card-preview-glass [id^="preview"]').forEach((el, index) => {
-                el.style.opacity = '0';
-                setTimeout(() => {
-                    el.style.transition = 'all 0.5s ease';
-                    el.style.opacity = '1';
-                }, 300 + (index * 100));
-            });
-        });
+        })();
     </script>
 }

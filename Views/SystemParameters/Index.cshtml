@@ -6,329 +6,800 @@
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
     <style>
-        .system-params-mobile {
+        .system-settings-page {
+            --settings-blue: var(--evaluation-brand);
+            --settings-blue-dark: var(--evaluation-brand-dark);
+            --settings-blue-soft: var(--evaluation-brand-soft);
+        }
+
+        .system-settings-page .system-settings-header-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .system-settings-page .settings-shell {
+            margin-top: 1rem;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .system-settings-page .settings-shell > .evaluation-results-heading,
+        .system-settings-page .settings-operations > .evaluation-results-heading {
+            padding: 1rem 1.1rem;
+        }
+
+        .system-settings-page .settings-validation {
+            margin: 1rem 1.1rem 0;
+            border: 1px solid #f4c8c3;
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            background: #fff0ee;
+            color: #912018;
+            font-size: 0.82rem;
+        }
+
+        .system-settings-page .settings-validation:empty,
+        .system-settings-page .settings-validation.validation-summary-valid {
             display: none;
         }
 
-        @@media (max-width: 767.98px) {
-            .system-settings-header {
-                flex-direction: column;
-                align-items: stretch !important;
-                gap: 0.875rem;
+        .system-settings-page .settings-validation ul {
+            margin: 0;
+            padding-left: 1.1rem;
+        }
+
+        .system-settings-page .settings-workspace {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(290px, 340px);
+            align-items: start;
+        }
+
+        .system-settings-page .settings-form-column {
+            min-width: 0;
+            padding: 0 1.1rem 1.1rem;
+        }
+
+        .system-settings-page .settings-group {
+            min-width: 0;
+            margin: 0;
+            border: 0;
+            border-bottom: 1px solid var(--evaluation-line);
+            padding: 1.15rem 0;
+        }
+
+        .system-settings-page .settings-group:last-of-type {
+            border-bottom: 0;
+        }
+
+        .system-settings-page .settings-group legend {
+            display: flex;
+            width: 100%;
+            align-items: flex-start;
+            gap: 0.7rem;
+            margin: 0 0 0.9rem;
+            padding: 0;
+            color: var(--evaluation-ink);
+        }
+
+        .system-settings-page .settings-section-icon {
+            display: inline-grid;
+            width: 36px;
+            height: 36px;
+            flex: 0 0 36px;
+            place-items: center;
+            border-radius: 8px;
+            background: var(--settings-blue-soft);
+            color: var(--settings-blue);
+            font-size: 0.95rem;
+        }
+
+        .system-settings-page .settings-group-title {
+            display: block;
+            font-size: 0.94rem;
+            font-weight: 800;
+            line-height: 1.35;
+        }
+
+        .system-settings-page .settings-group-copy {
+            display: block;
+            margin-top: 0.18rem;
+            color: var(--evaluation-muted);
+            font-size: 0.76rem;
+            font-weight: 500;
+            line-height: 1.45;
+        }
+
+        .system-settings-page .settings-fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.85rem;
+        }
+
+        .system-settings-page .settings-color-fields {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .system-settings-page .settings-field {
+            min-width: 0;
+        }
+
+        .system-settings-page .settings-field--wide {
+            grid-column: 1 / -1;
+        }
+
+        .system-settings-page .settings-field label,
+        .system-settings-page .system-param-card label {
+            display: block;
+            margin-bottom: 0.35rem;
+            color: #475467;
+            font-size: 0.75rem;
+            font-weight: 750;
+        }
+
+        .system-settings-page .settings-field .form-control,
+        .system-settings-page .system-param-input {
+            min-height: 44px;
+            border: 1px solid #d7dbe2;
+            border-radius: 8px;
+            color: var(--evaluation-ink);
+            box-shadow: none;
+        }
+
+        .system-settings-page textarea.form-control {
+            min-height: auto;
+            resize: vertical;
+        }
+
+        .system-settings-page .settings-field .form-control:focus,
+        .system-settings-page .system-param-input:focus {
+            border-color: var(--settings-blue);
+            box-shadow: 0 0 0 3px rgba(91, 66, 214, 0.16);
+        }
+
+        .system-settings-page .settings-field .form-control-color {
+            width: 100%;
+            min-height: 44px;
+            padding: 0.35rem;
+            cursor: pointer;
+        }
+
+        .system-settings-page .settings-field-hint {
+            margin: 0.35rem 0 0;
+            color: var(--evaluation-muted);
+            font-size: 0.7rem;
+            line-height: 1.45;
+        }
+
+        .system-settings-page .field-validation-error {
+            display: block;
+            margin-top: 0.3rem;
+            color: #b42318;
+            font-size: 0.7rem;
+            font-weight: 650;
+        }
+
+        .system-settings-page .settings-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            padding-top: 1rem;
+            border-top: 1px solid var(--evaluation-line);
+        }
+
+        .system-settings-page .settings-preview-column {
+            min-width: 0;
+            border-left: 1px solid var(--evaluation-line);
+            background: var(--evaluation-soft);
+            padding: 1.1rem;
+        }
+
+        .system-settings-page .settings-preview-panel {
+            position: sticky;
+            top: 82px;
+        }
+
+        .system-settings-page .settings-preview-heading {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .system-settings-page .settings-preview-heading strong,
+        .system-settings-page .settings-preview-heading small {
+            display: block;
+        }
+
+        .system-settings-page .settings-preview-heading strong {
+            font-size: 0.9rem;
+        }
+
+        .system-settings-page .settings-preview-heading small {
+            margin-top: 0.15rem;
+            color: var(--evaluation-muted);
+            font-size: 0.7rem;
+        }
+
+        .system-settings-page .brand-preview {
+            --preview-primary: var(--settings-blue);
+            --preview-sidebar: #ffffff;
+            --preview-sidebar-end: #f8f9fa;
+            --preview-sidebar-text: #292d34;
+            --preview-bg: #f7f9fc;
+            --preview-card: #ffffff;
+            overflow: hidden;
+            border: 1px solid var(--evaluation-line);
+            border-radius: 10px;
+            background: var(--preview-bg);
+        }
+
+        .system-settings-page .brand-preview-sidebar {
+            display: flex;
+            min-height: 88px;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.9rem;
+            background: linear-gradient(135deg, var(--preview-sidebar), var(--preview-sidebar-end));
+            color: var(--preview-sidebar-text);
+        }
+
+        .system-settings-page .brand-preview-logo {
+            display: inline-grid;
+            width: 40px;
+            height: 40px;
+            flex: 0 0 40px;
+            place-items: center;
+            overflow: hidden;
+            border: 1px solid rgba(100, 116, 139, 0.18);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.72);
+            color: var(--preview-primary);
+        }
+
+        .system-settings-page .brand-preview-logo img {
+            width: 100%;
+            height: 100%;
+            padding: 0.3rem;
+            object-fit: contain;
+        }
+
+        .system-settings-page .brand-preview-title {
+            font-size: 0.9rem;
+            font-weight: 800;
+            line-height: 1.25;
+        }
+
+        .system-settings-page .brand-preview-subtitle {
+            margin-top: 0.15rem;
+            font-size: 0.7rem;
+            opacity: 0.78;
+        }
+
+        .system-settings-page .brand-preview-body {
+            padding: 1rem;
+            background: var(--preview-card);
+        }
+
+        .system-settings-page .brand-preview-body h2 {
+            margin: 0.65rem 0 0.25rem;
+            font-size: 1rem;
+            font-weight: 800;
+        }
+
+        .system-settings-page .brand-preview-body p {
+            margin: 0 0 0.75rem;
+            color: var(--evaluation-muted);
+            font-size: 0.75rem;
+            line-height: 1.45;
+        }
+
+        .system-settings-page .brand-preview-pill,
+        .system-settings-page .brand-preview-action {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 7px;
+            font-size: 0.7rem;
+            font-weight: 750;
+        }
+
+        .system-settings-page .brand-preview-pill {
+            padding: 0.35rem 0.5rem;
+            background: color-mix(in srgb, var(--preview-primary) 12%, white);
+            color: var(--preview-primary);
+        }
+
+        .system-settings-page .brand-preview-action {
+            min-height: 32px;
+            padding: 0.45rem 0.7rem;
+            background: var(--preview-primary);
+            color: #fff;
+        }
+
+        .system-settings-page .settings-managed-keys {
+            margin-top: 1rem;
+            border-top: 1px solid var(--evaluation-line);
+            padding-top: 0.9rem;
+        }
+
+        .system-settings-page .settings-managed-keys > span {
+            display: block;
+            margin-bottom: 0.55rem;
+            color: var(--evaluation-muted);
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .system-settings-page .settings-key-list {
+            display: flex;
+            max-height: 150px;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            overflow-y: auto;
+        }
+
+        .system-settings-page .settings-key-list code {
+            border: 1px solid var(--evaluation-line);
+            border-radius: 6px;
+            padding: 0.28rem 0.4rem;
+            background: #fff;
+            color: #475467;
+            font-size: 0.62rem;
+        }
+
+        .system-settings-page .settings-operations {
+            margin-top: 1rem;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .system-settings-page .system-parameters-table {
+            min-width: 760px;
+        }
+
+        .system-settings-page .system-parameters-table td:first-child {
+            width: 240px;
+        }
+
+        .system-settings-page .system-param-code {
+            display: inline-flex;
+            border: 1px solid var(--evaluation-brand-border);
+            border-radius: 7px;
+            padding: 0.35rem 0.5rem;
+            background: var(--settings-blue-soft);
+            color: var(--settings-blue-dark);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 0.7rem;
+            font-weight: 750;
+        }
+
+        .system-settings-page .system-param-description {
+            max-width: 440px;
+            color: var(--evaluation-muted);
+            font-size: 0.78rem;
+            line-height: 1.45;
+        }
+
+        .system-settings-page .system-param-editor {
+            display: flex;
+            min-width: 260px;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .system-settings-page .system-param-editor .system-param-input {
+            flex: 1;
+        }
+
+        .system-settings-page .system-param-card {
+            border: 1px solid var(--evaluation-line);
+            border-radius: 9px;
+            padding: 0.9rem;
+            background: #fff;
+        }
+
+        .system-settings-page .system-param-card h2 {
+            margin: 0 0 0.55rem;
+            font-size: 0.88rem;
+        }
+
+        .system-settings-page .system-param-card p {
+            margin: 0 0 0.8rem;
+            color: var(--evaluation-muted);
+            font-size: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .system-settings-page .system-param-card form {
+            display: grid;
+            gap: 0.65rem;
+        }
+
+        @@media (max-width: 1100px) {
+            .system-settings-page .settings-workspace {
+                grid-template-columns: 1fr;
             }
 
-            .system-settings-header form,
-            .system-settings-header button {
+            .system-settings-page .settings-preview-column {
+                border-top: 1px solid var(--evaluation-line);
+                border-left: 0;
+            }
+
+            .system-settings-page .settings-preview-panel {
+                position: static;
+            }
+
+            .system-settings-page .brand-preview {
+                max-width: 560px;
+            }
+        }
+
+        @@media (max-width: 700px) {
+            .system-settings-page .evaluation-page-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .system-settings-page .system-settings-header-actions,
+            .system-settings-page .system-settings-header-actions form,
+            .system-settings-page .system-settings-header-actions button {
                 width: 100%;
             }
 
-            .system-params-desktop {
-                display: none;
+            .system-settings-page .settings-fields,
+            .system-settings-page .settings-color-fields {
+                grid-template-columns: 1fr;
             }
 
-            .system-params-mobile {
-                display: grid;
-                gap: 1rem;
+            .system-settings-page .settings-shell > .evaluation-results-heading,
+            .system-settings-page .settings-operations > .evaluation-results-heading,
+            .system-settings-page .settings-form-column,
+            .system-settings-page .settings-preview-column {
+                padding-right: 0.85rem;
+                padding-left: 0.85rem;
             }
 
-            .system-param-card {
-                border: 1px solid #e5edf5;
-                border-radius: 18px;
-                padding: 1rem;
-                background: #fff;
-                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-            }
-
-            .system-param-card__label {
-                font-size: 0.7rem;
-                font-weight: 700;
-                color: #6b7280;
-                text-transform: uppercase;
-                letter-spacing: 0.04em;
-                margin-bottom: 0.15rem;
+            .system-settings-page .settings-form-actions .evaluation-primary-action {
+                width: 100%;
             }
         }
     </style>
 }
 
-<div class="container-fluid p-0">
-    <div class="row mb-4">
-        <div class="col-12 d-flex justify-content-between align-items-center mb-3 system-settings-header">
-            <div>
-                <h3 class="mb-1 fw-bold text-dark"><i class="bi bi-sliders text-primary me-2"></i>Cài đặt hệ thống</h3>
-                <p class="text-muted mb-0">Tuỳ biến tên sản phẩm, logo, màu sắc, SEO, AI Assistant và các tham số vận hành</p>
-            </div>
+<div class="evaluation-page system-settings-page">
+    <header class="evaluation-page-header">
+        <div>
+            <h1>Cài đặt hệ thống</h1>
+            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Tham số hệ thống</span>
+            </nav>
+        </div>
+        <div class="system-settings-header-actions">
             <form asp-action="ResetBranding" method="post"
                   data-app-confirm
                   data-confirm-title="Khôi phục nhận diện mặc định?"
                   data-confirm-message="Tên sản phẩm, logo, màu sắc và cấu hình thương hiệu sẽ trở về giá trị mặc định."
                   data-confirm-tone="warning"
                   data-confirm-label="Khôi phục mặc định">
-                <button type="submit" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-counterclockwise me-1"></i> Khôi phục mặc định
+                <button type="submit" class="evaluation-secondary-action">
+                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                    <span>Khôi phục mặc định</span>
                 </button>
             </form>
         </div>
-    </div>
+    </header>
 
-    <form asp-action="UpdateBranding" method="post" enctype="multipart/form-data">
-        <div class="row g-4">
-            <div class="col-xl-8">
-                <div class="card border-0 shadow-sm rounded-4 mb-4">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center gap-2 mb-3">
-                            <span class="settings-section-icon"><i class="bi bi-brush"></i></span>
-                            <div>
-                                <h5 class="mb-0 fw-bold">Nhận diện thương hiệu</h5>
-                                <p class="text-muted small mb-0">Các thông tin này sẽ xuất hiện ở sidebar, login, footer, email và SEO.</p>
-                            </div>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label asp-for="Branding.ProductName" class="form-label fw-semibold">Tên sản phẩm</label>
-                                <input asp-for="Branding.ProductName" class="form-control" maxlength="200" required />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.ShortName" class="form-label fw-semibold">Tên ngắn trên sidebar</label>
-                                <input asp-for="Branding.ShortName" class="form-control" maxlength="80" required />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.CompanyName" class="form-label fw-semibold">Tên doanh nghiệp</label>
-                                <input asp-for="Branding.CompanyName" class="form-control" maxlength="120" required />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.Tagline" class="form-label fw-semibold">Slogan</label>
-                                <input asp-for="Branding.Tagline" class="form-control" maxlength="160" />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.LoginTitle" class="form-label fw-semibold">Tiêu đề đăng nhập</label>
-                                <input asp-for="Branding.LoginTitle" class="form-control" maxlength="120" />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.LoginSubtitle" class="form-label fw-semibold">Mô tả đăng nhập</label>
-                                <input asp-for="Branding.LoginSubtitle" class="form-control" maxlength="180" />
-                            </div>
-                        </div>
-                    </div>
+    <form asp-action="UpdateBranding" method="post" enctype="multipart/form-data" id="brandingSettingsForm">
+        <section class="evaluation-results settings-shell" aria-labelledby="brandingSettingsTitle">
+            <div class="evaluation-results-heading">
+                <div>
+                    <strong id="brandingSettingsTitle">Nhận diện và giao diện</strong>
+                    <span>Thay đổi được áp dụng trên sidebar, màn hình đăng nhập, footer và metadata SEO.</span>
                 </div>
-
-                <div class="card border-0 shadow-sm rounded-4 mb-4">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center gap-2 mb-3">
-                            <span class="settings-section-icon"><i class="bi bi-image"></i></span>
-                            <div>
-                                <h5 class="mb-0 fw-bold">Logo và tài nguyên hiển thị</h5>
-                                <p class="text-muted small mb-0">Có thể upload file hoặc nhập URL nội bộ/public.</p>
-                            </div>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label asp-for="Branding.LogoFile" class="form-label fw-semibold">Upload logo</label>
-                                <input asp-for="Branding.LogoFile" class="form-control" type="file" accept=".png,.jpg,.jpeg,.webp,.svg" />
-                                <div class="form-text">Khuyến nghị SVG/PNG nền trong suốt, nhỏ hơn 2MB.</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.FaviconFile" class="form-label fw-semibold">Upload favicon</label>
-                                <input asp-for="Branding.FaviconFile" class="form-control" type="file" accept=".ico,.png,.svg" />
-                                <div class="form-text">Dùng cho icon trình duyệt.</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.LogoUrl" class="form-label fw-semibold">Logo URL hiện tại</label>
-                                <input asp-for="Branding.LogoUrl" class="form-control" maxlength="500" placeholder="/uploads/branding/logo.png" />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.FaviconUrl" class="form-label fw-semibold">Favicon URL hiện tại</label>
-                                <input asp-for="Branding.FaviconUrl" class="form-control" maxlength="500" />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.SeoImageUrl" class="form-label fw-semibold">Ảnh SEO/Open Graph</label>
-                                <input asp-for="Branding.SeoImageUrl" class="form-control" maxlength="500" />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.PublicBaseUrl" class="form-label fw-semibold">Public Base URL</label>
-                                <input asp-for="Branding.PublicBaseUrl" class="form-control" maxlength="200" placeholder="https://domain-cua-doanh-nghiep.vn" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card border-0 shadow-sm rounded-4 mb-4">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center gap-2 mb-3">
-                            <span class="settings-section-icon"><i class="bi bi-palette2"></i></span>
-                            <div>
-                                <h5 class="mb-0 fw-bold">Theme giao diện</h5>
-                                <p class="text-muted small mb-0">Các màu này được áp dụng bằng CSS variables cho toàn hệ thống.</p>
-                            </div>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label asp-for="Branding.PrimaryColor" class="form-label fw-semibold">Màu chủ đạo</label>
-                                <input asp-for="Branding.PrimaryColor" class="form-control form-control-color w-100" type="color" />
-                            </div>
-                            <div class="col-md-4">
-                                <label asp-for="Branding.PrimaryDarkColor" class="form-label fw-semibold">Màu chủ đạo đậm</label>
-                                <input asp-for="Branding.PrimaryDarkColor" class="form-control form-control-color w-100" type="color" />
-                            </div>
-                            <div class="col-md-4">
-                                <label asp-for="Branding.BodyBackgroundColor" class="form-label fw-semibold">Màu nền</label>
-                                <input asp-for="Branding.BodyBackgroundColor" class="form-control form-control-color w-100" type="color" />
-                            </div>
-                            <div class="col-md-4">
-                                <label asp-for="Branding.SidebarColor" class="form-label fw-semibold">Sidebar đầu</label>
-                                <input asp-for="Branding.SidebarColor" class="form-control form-control-color w-100" type="color" />
-                            </div>
-                            <div class="col-md-4">
-                                <label asp-for="Branding.SidebarGradientEnd" class="form-label fw-semibold">Sidebar cuối</label>
-                                <input asp-for="Branding.SidebarGradientEnd" class="form-control form-control-color w-100" type="color" />
-                            </div>
-                            <div class="col-md-4">
-                                <label asp-for="Branding.SidebarTextColor" class="form-label fw-semibold">Chữ sidebar</label>
-                                <input asp-for="Branding.SidebarTextColor" class="form-control form-control-color w-100" type="color" />
-                            </div>
-                            <div class="col-md-4">
-                                <label asp-for="Branding.CardBackgroundColor" class="form-label fw-semibold">Nền card</label>
-                                <input asp-for="Branding.CardBackgroundColor" class="form-control form-control-color w-100" type="color" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card border-0 shadow-sm rounded-4 mb-4">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center gap-2 mb-3">
-                            <span class="settings-section-icon"><i class="bi bi-robot"></i></span>
-                            <div>
-                                <h5 class="mb-0 fw-bold">AI, SEO và nội dung nâng cao</h5>
-                                <p class="text-muted small mb-0">Tùy chỉnh cách hệ thống tự giới thiệu với người dùng và công cụ chia sẻ.</p>
-                            </div>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label asp-for="Branding.AiAssistantName" class="form-label fw-semibold">Tên AI Assistant</label>
-                                <input asp-for="Branding.AiAssistantName" class="form-control" maxlength="120" />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.AiAssistantSubtitle" class="form-label fw-semibold">Mô tả AI Assistant</label>
-                                <input asp-for="Branding.AiAssistantSubtitle" class="form-control" maxlength="180" />
-                            </div>
-                            <div class="col-12">
-                                <label asp-for="Branding.SeoDescription" class="form-label fw-semibold">Mô tả SEO</label>
-                                <textarea asp-for="Branding.SeoDescription" class="form-control" rows="3" maxlength="1000"></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.SeoKeywords" class="form-label fw-semibold">Từ khóa SEO</label>
-                                <input asp-for="Branding.SeoKeywords" class="form-control" maxlength="400" />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="Branding.Author" class="form-label fw-semibold">Author</label>
-                                <input asp-for="Branding.Author" class="form-control" maxlength="120" />
-                            </div>
-                            <div class="col-12">
-                                <label asp-for="Branding.FooterText" class="form-label fw-semibold">Footer</label>
-                                <textarea asp-for="Branding.FooterText" class="form-control" rows="2" maxlength="500"></textarea>
-                                <div class="form-text">Dùng <code>{year}</code> để tự động thay bằng năm hiện tại.</div>
-                            </div>
-                            <div class="col-12">
-                                <label asp-for="Branding.CustomCss" class="form-label fw-semibold">CSS tuỳ chỉnh nâng cao</label>
-                                <textarea asp-for="Branding.CustomCss" class="form-control font-monospace" rows="5" maxlength="2000" placeholder=":root { --radius-lg: 10px; }"></textarea>
-                                <div class="form-text">Chỉ Admin/HR nên chỉnh phần này vì CSS sẽ áp dụng toàn hệ thống.</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-end gap-2 mb-4">
-                    <button type="submit" class="btn btn-primary px-4">
-                        <i class="bi bi-save me-1"></i> Lưu cấu hình giao diện
-                    </button>
-                </div>
+                <span>@Model.BrandingParameters.Count tham số thương hiệu</span>
             </div>
 
-            <div class="col-xl-4">
-                <div class="card border-0 shadow-sm rounded-4 sticky-xl-top" style="top: 90px;">
-                    <div class="card-body p-4">
-                        <h5 class="fw-bold mb-3"><i class="bi bi-eye text-primary me-2"></i>Preview nhanh</h5>
-                        <div class="brand-preview" style="--preview-primary:@branding.PrimaryColor; --preview-sidebar:@branding.SidebarColor; --preview-sidebar-end:@branding.SidebarGradientEnd; --preview-sidebar-text:@branding.SidebarTextColor; --preview-bg:@branding.BodyBackgroundColor;">
+            <div asp-validation-summary="All" class="settings-validation" role="alert"></div>
+
+            <div class="settings-workspace">
+                <div class="settings-form-column">
+                    <fieldset class="settings-group">
+                        <legend>
+                            <span class="settings-section-icon"><i class="bi bi-brush" aria-hidden="true"></i></span>
+                            <span>
+                                <span class="settings-group-title">Thông tin thương hiệu</span>
+                                <span class="settings-group-copy">Tên và nội dung nhận diện xuất hiện tại các điểm chạm chính.</span>
+                            </span>
+                        </legend>
+                        <div class="settings-fields">
+                            <div class="settings-field">
+                                <label asp-for="Branding.ProductName">Tên sản phẩm</label>
+                                <input asp-for="Branding.ProductName" class="form-control" maxlength="200" required />
+                                <span asp-validation-for="Branding.ProductName"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.ShortName">Tên ngắn trên sidebar</label>
+                                <input asp-for="Branding.ShortName" class="form-control" maxlength="80" required />
+                                <span asp-validation-for="Branding.ShortName"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.CompanyName">Tên doanh nghiệp</label>
+                                <input asp-for="Branding.CompanyName" class="form-control" maxlength="120" required />
+                                <span asp-validation-for="Branding.CompanyName"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.Tagline">Slogan</label>
+                                <input asp-for="Branding.Tagline" class="form-control" maxlength="160" />
+                                <span asp-validation-for="Branding.Tagline"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.LoginTitle">Tiêu đề đăng nhập</label>
+                                <input asp-for="Branding.LoginTitle" class="form-control" maxlength="120" />
+                                <span asp-validation-for="Branding.LoginTitle"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.LoginSubtitle">Mô tả đăng nhập</label>
+                                <input asp-for="Branding.LoginSubtitle" class="form-control" maxlength="180" />
+                                <span asp-validation-for="Branding.LoginSubtitle"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="settings-group">
+                        <legend>
+                            <span class="settings-section-icon"><i class="bi bi-image" aria-hidden="true"></i></span>
+                            <span>
+                                <span class="settings-group-title">Logo và tài nguyên hiển thị</span>
+                                <span class="settings-group-copy">Tải ảnh an toàn hoặc sử dụng đường dẫn nội bộ/public đã có.</span>
+                            </span>
+                        </legend>
+                        <div class="settings-fields">
+                            <div class="settings-field">
+                                <label asp-for="Branding.LogoFile">Tải logo mới</label>
+                                <input asp-for="Branding.LogoFile" class="form-control" type="file" accept=".png,.jpg,.jpeg,.webp,.ico" />
+                                <p class="settings-field-hint">PNG, JPG, WEBP hoặc ICO; tối đa 2MB. File tải lên sẽ thay URL hiện tại.</p>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.FaviconFile">Tải favicon mới</label>
+                                <input asp-for="Branding.FaviconFile" class="form-control" type="file" accept=".ico,.png,.jpg,.jpeg,.webp" />
+                                <p class="settings-field-hint">Ưu tiên ICO hoặc PNG vuông, tối đa 2MB.</p>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.LogoUrl">Logo URL hiện tại</label>
+                                <input asp-for="Branding.LogoUrl" class="form-control" maxlength="500" placeholder="/uploads/branding/logo.png" />
+                                <span asp-validation-for="Branding.LogoUrl"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.FaviconUrl">Favicon URL hiện tại</label>
+                                <input asp-for="Branding.FaviconUrl" class="form-control" maxlength="500" />
+                                <span asp-validation-for="Branding.FaviconUrl"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.SeoImageUrl">Ảnh SEO/Open Graph</label>
+                                <input asp-for="Branding.SeoImageUrl" class="form-control" maxlength="500" />
+                                <span asp-validation-for="Branding.SeoImageUrl"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.PublicBaseUrl">Public Base URL</label>
+                                <input asp-for="Branding.PublicBaseUrl" class="form-control" maxlength="200" placeholder="https://domain-cua-doanh-nghiep.vn" inputmode="url" />
+                                <span asp-validation-for="Branding.PublicBaseUrl"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="settings-group">
+                        <legend>
+                            <span class="settings-section-icon"><i class="bi bi-palette2" aria-hidden="true"></i></span>
+                            <span>
+                                <span class="settings-group-title">Màu giao diện</span>
+                                <span class="settings-group-copy">Màu được áp dụng thông qua CSS variables cho toàn hệ thống.</span>
+                            </span>
+                        </legend>
+                        <div class="settings-fields settings-color-fields">
+                            <div class="settings-field">
+                                <label asp-for="Branding.PrimaryColor">Màu chủ đạo</label>
+                                <input asp-for="Branding.PrimaryColor" class="form-control form-control-color" type="color" />
+                                <span asp-validation-for="Branding.PrimaryColor"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.PrimaryDarkColor">Màu chủ đạo đậm</label>
+                                <input asp-for="Branding.PrimaryDarkColor" class="form-control form-control-color" type="color" />
+                                <span asp-validation-for="Branding.PrimaryDarkColor"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.BodyBackgroundColor">Màu nền</label>
+                                <input asp-for="Branding.BodyBackgroundColor" class="form-control form-control-color" type="color" />
+                                <span asp-validation-for="Branding.BodyBackgroundColor"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.SidebarColor">Sidebar đầu</label>
+                                <input asp-for="Branding.SidebarColor" class="form-control form-control-color" type="color" />
+                                <span asp-validation-for="Branding.SidebarColor"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.SidebarGradientEnd">Sidebar cuối</label>
+                                <input asp-for="Branding.SidebarGradientEnd" class="form-control form-control-color" type="color" />
+                                <span asp-validation-for="Branding.SidebarGradientEnd"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.SidebarTextColor">Chữ sidebar</label>
+                                <input asp-for="Branding.SidebarTextColor" class="form-control form-control-color" type="color" />
+                                <span asp-validation-for="Branding.SidebarTextColor"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.CardBackgroundColor">Nền nội dung</label>
+                                <input asp-for="Branding.CardBackgroundColor" class="form-control form-control-color" type="color" />
+                                <span asp-validation-for="Branding.CardBackgroundColor"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="settings-group">
+                        <legend>
+                            <span class="settings-section-icon"><i class="bi bi-robot" aria-hidden="true"></i></span>
+                            <span>
+                                <span class="settings-group-title">AI, SEO và nội dung nâng cao</span>
+                                <span class="settings-group-copy">Kiểm soát nội dung giới thiệu, metadata và tùy chỉnh giao diện có giới hạn.</span>
+                            </span>
+                        </legend>
+                        <div class="settings-fields">
+                            <div class="settings-field">
+                                <label asp-for="Branding.AiAssistantName">Tên AI Assistant</label>
+                                <input asp-for="Branding.AiAssistantName" class="form-control" maxlength="120" />
+                                <span asp-validation-for="Branding.AiAssistantName"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.AiAssistantSubtitle">Mô tả AI Assistant</label>
+                                <input asp-for="Branding.AiAssistantSubtitle" class="form-control" maxlength="180" />
+                                <span asp-validation-for="Branding.AiAssistantSubtitle"></span>
+                            </div>
+                            <div class="settings-field settings-field--wide">
+                                <label asp-for="Branding.SeoDescription">Mô tả SEO</label>
+                                <textarea asp-for="Branding.SeoDescription" class="form-control" rows="3" maxlength="1000"></textarea>
+                                <span asp-validation-for="Branding.SeoDescription"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.SeoKeywords">Từ khóa SEO</label>
+                                <input asp-for="Branding.SeoKeywords" class="form-control" maxlength="400" />
+                                <span asp-validation-for="Branding.SeoKeywords"></span>
+                            </div>
+                            <div class="settings-field">
+                                <label asp-for="Branding.Author">Author</label>
+                                <input asp-for="Branding.Author" class="form-control" maxlength="120" />
+                                <span asp-validation-for="Branding.Author"></span>
+                            </div>
+                            <div class="settings-field settings-field--wide">
+                                <label asp-for="Branding.FooterText">Nội dung footer</label>
+                                <textarea asp-for="Branding.FooterText" class="form-control" rows="2" maxlength="500"></textarea>
+                                <p class="settings-field-hint">Dùng <code>{year}</code> để tự động thay bằng năm hiện tại.</p>
+                                <span asp-validation-for="Branding.FooterText"></span>
+                            </div>
+                            <div class="settings-field settings-field--wide">
+                                <label asp-for="Branding.CustomCss">CSS tùy chỉnh nâng cao</label>
+                                <textarea asp-for="Branding.CustomCss" class="form-control font-monospace" rows="5" maxlength="2000" spellcheck="false" placeholder=":root { --radius-lg: 10px; }"></textarea>
+                                <p class="settings-field-hint">Không hỗ trợ thẻ HTML, <code>@@import</code>, JavaScript, expression hoặc behavior. CSS này áp dụng toàn hệ thống.</p>
+                                <span asp-validation-for="Branding.CustomCss"></span>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <div class="settings-form-actions">
+                        <button type="submit" class="evaluation-primary-action">
+                            <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                            <span>Lưu cấu hình giao diện</span>
+                        </button>
+                    </div>
+                </div>
+
+                <aside class="settings-preview-column" aria-labelledby="brandPreviewTitle">
+                    <div class="settings-preview-panel">
+                        <div class="settings-preview-heading">
+                            <span class="settings-section-icon"><i class="bi bi-eye" aria-hidden="true"></i></span>
+                            <div>
+                                <strong id="brandPreviewTitle">Xem trước nhanh</strong>
+                                <small>Tự cập nhật khi bạn thay đổi nội dung hoặc màu sắc.</small>
+                            </div>
+                        </div>
+
+                        <div class="brand-preview" id="brandPreview">
                             <div class="brand-preview-sidebar">
-                                <div class="brand-preview-logo">
+                                <div class="brand-preview-logo" id="brandPreviewLogo">
                                     @if (!string.IsNullOrWhiteSpace(branding.LogoUrl))
                                     {
-                                        <img src="@branding.LogoUrl" alt="Logo preview" />
+                                        <img src="@branding.LogoUrl" alt="Logo xem trước của @branding.CompanyName" />
                                     }
                                     else
                                     {
-                                        <i class="bi bi-hexagon-fill"></i>
+                                        <i class="bi bi-hexagon-fill" aria-hidden="true"></i>
                                     }
                                 </div>
                                 <div>
-                                    <div class="brand-preview-title">@branding.ShortName</div>
-                                    <div class="brand-preview-subtitle">@branding.Tagline</div>
+                                    <div class="brand-preview-title" data-preview-text="Branding_ShortName">@branding.ShortName</div>
+                                    <div class="brand-preview-subtitle" data-preview-text="Branding_Tagline">@branding.Tagline</div>
                                 </div>
                             </div>
                             <div class="brand-preview-body">
-                                <div class="brand-preview-pill">@branding.CompanyName</div>
-                                <h6>@branding.ProductName</h6>
-                                <p>@branding.LoginSubtitle</p>
-                                <span>Primary</span>
+                                <span class="brand-preview-pill" data-preview-text="Branding_CompanyName">@branding.CompanyName</span>
+                                <h2 data-preview-text="Branding_ProductName">@branding.ProductName</h2>
+                                <p data-preview-text="Branding_LoginSubtitle">@branding.LoginSubtitle</p>
+                                <span class="brand-preview-action">Nút chính</span>
                             </div>
                         </div>
 
-                        <div class="mt-4">
-                            <div class="small text-muted mb-2">Các key thương hiệu đang quản lý</div>
-                            <div class="d-flex flex-wrap gap-2">
+                        <div class="settings-managed-keys">
+                            <span>Các khóa thương hiệu đang quản lý</span>
+                            <div class="settings-key-list">
                                 @foreach (var item in Model.BrandingParameters)
                                 {
-                                    <span class="badge text-bg-light border">@item.ParameterCode</span>
+                                    <code>@item.ParameterCode</code>
                                 }
                             </div>
                         </div>
                     </div>
-                </div>
+                </aside>
             </div>
-        </div>
+        </section>
     </form>
 
-    <div class="card border-0 shadow-sm rounded-4 mt-2">
-        <div class="card-body p-4">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <span class="settings-section-icon"><i class="bi bi-gear"></i></span>
-                <div>
-                    <h5 class="mb-0 fw-bold">Tham số vận hành nâng cao</h5>
-                    <p class="text-muted small mb-0">Các cấu hình kỹ thuật khác của hệ thống.</p>
-                </div>
+    <section class="evaluation-results settings-operations" aria-labelledby="operationalSettingsTitle">
+        <div class="evaluation-results-heading">
+            <div>
+                <strong id="operationalSettingsTitle">Tham số vận hành</strong>
+                <span>Cấu hình kỹ thuật có ảnh hưởng trực tiếp đến dữ liệu và tác vụ nền.</span>
             </div>
+            <span>@Model.OtherParameters.Count tham số</span>
+        </div>
 
-            <div class="table-responsive system-params-desktop">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
+        @if (Model.OtherParameters.Count == 0)
+        {
+            <div class="evaluation-empty" role="status">
+                <span class="evaluation-empty-icon"><i class="bi bi-sliders" aria-hidden="true"></i></span>
+                <h2>Chưa có tham số vận hành</h2>
+                <p>Các cấu hình kỹ thuật ngoài nhóm thương hiệu sẽ xuất hiện tại đây.</p>
+            </div>
+        }
+        else
+        {
+            <div class="evaluation-table-shell">
+                <table class="evaluation-table system-parameters-table" aria-label="Danh sách tham số vận hành">
+                    <thead>
                         <tr>
                             <th>Mã cấu hình</th>
                             <th>Mô tả</th>
-                            <th style="width: 280px;">Giá trị</th>
-                            <th class="text-end" style="width: 130px;">Thao tác</th>
+                            <th>Giá trị</th>
+                            <th class="text-end">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var item in Model.OtherParameters)
                         {
+                            var isRetentionDays = string.Equals(item.ParameterCode, SystemSettingCodes.AiHistoryRetentionDays, StringComparison.OrdinalIgnoreCase);
+                            var formId = $"system-param-form-{item.Id}";
                             <tr>
-                                <td><span class="badge bg-secondary bg-opacity-10 text-secondary">@item.ParameterCode</span></td>
-                                <td class="text-muted">@item.Description</td>
+                                <td><code class="system-param-code">@item.ParameterCode</code></td>
+                                <td><div class="system-param-description">@item.Description</div></td>
                                 <td>
-                                    <form asp-action="Update" method="post" id="form-@item.Id">
+                                    <form asp-action="Update" method="post" id="@formId">
                                         <input type="hidden" name="id" value="@item.Id" />
-                                        <input type="text" name="value" class="form-control" value="@item.Value" form="form-@item.Id" required />
+                                        @if (isRetentionDays)
+                                        {
+                                            <label class="visually-hidden" for="system-param-value-@item.Id">Số ngày lưu lịch sử AI</label>
+                                            <input id="system-param-value-@item.Id" type="number" name="value" class="form-control system-param-input" value="@item.Value" min="1" max="3650" step="1" required />
+                                        }
+                                        else
+                                        {
+                                            <label class="visually-hidden" for="system-param-value-@item.Id">Giá trị @item.ParameterCode</label>
+                                            <input id="system-param-value-@item.Id" type="text" name="value" class="form-control system-param-input" value="@item.Value" maxlength="2000" required />
+                                        }
                                     </form>
                                 </td>
                                 <td class="text-end">
-                                    <button type="submit" form="form-@item.Id" class="btn btn-sm btn-primary px-3">
-                                        <i class="bi bi-save me-1"></i> Lưu
+                                    <button type="submit" form="@formId" class="evaluation-primary-action" aria-label="Lưu @item.ParameterCode">
+                                        <i class="bi bi-check2" aria-hidden="true"></i>
+                                        <span>Lưu</span>
                                     </button>
                                 </td>
                             </tr>
@@ -336,113 +807,86 @@
                     </tbody>
                 </table>
             </div>
-            <div class="system-params-mobile">
+
+            <div class="evaluation-mobile-list">
                 @foreach (var item in Model.OtherParameters)
                 {
+                    var isRetentionDays = string.Equals(item.ParameterCode, SystemSettingCodes.AiHistoryRetentionDays, StringComparison.OrdinalIgnoreCase);
                     <article class="system-param-card">
-                        <div class="system-param-card__label">Mã cấu hình</div>
-                        <div class="mb-3"><span class="badge bg-secondary bg-opacity-10 text-secondary">@item.ParameterCode</span></div>
-                        <div class="system-param-card__label">Mô tả</div>
-                        <div class="text-muted small mb-3">@item.Description</div>
-                        <div class="system-param-card__label">Giá trị</div>
-                        <form asp-action="Update" method="post" id="mobile-form-@item.Id">
+                        <h2><code class="system-param-code">@item.ParameterCode</code></h2>
+                        <p>@item.Description</p>
+                        <form asp-action="Update" method="post">
                             <input type="hidden" name="id" value="@item.Id" />
-                            <input type="text" name="value" class="form-control mb-3" value="@item.Value" required />
-                            <button type="submit" class="btn btn-sm btn-primary px-3 w-100">
-                                <i class="bi bi-save me-1"></i> Lưu
+                            <label for="mobile-system-param-value-@item.Id">Giá trị</label>
+                            @if (isRetentionDays)
+                            {
+                                <input id="mobile-system-param-value-@item.Id" type="number" name="value" class="form-control system-param-input" value="@item.Value" min="1" max="3650" step="1" required />
+                            }
+                            else
+                            {
+                                <input id="mobile-system-param-value-@item.Id" type="text" name="value" class="form-control system-param-input" value="@item.Value" maxlength="2000" required />
+                            }
+                            <button type="submit" class="evaluation-primary-action">
+                                <i class="bi bi-check2" aria-hidden="true"></i>
+                                <span>Lưu tham số</span>
                             </button>
                         </form>
                     </article>
                 }
             </div>
-        </div>
-    </div>
+        }
+    </section>
 </div>
 
-<style>
-    .settings-section-icon {
-        width: 38px;
-        height: 38px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 10px;
-        background: var(--primary-light);
-        color: var(--primary);
-        flex: 0 0 auto;
-    }
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('brandingSettingsForm');
+            const preview = document.getElementById('brandPreview');
+            if (!form || !preview) return;
 
-    .brand-preview {
-        overflow: hidden;
-        border: 1px solid var(--border-color);
-        border-radius: 14px;
-        background: var(--preview-bg);
-    }
+            const colorBindings = {
+                Branding_PrimaryColor: '--preview-primary',
+                Branding_SidebarColor: '--preview-sidebar',
+                Branding_SidebarGradientEnd: '--preview-sidebar-end',
+                Branding_SidebarTextColor: '--preview-sidebar-text',
+                Branding_BodyBackgroundColor: '--preview-bg',
+                Branding_CardBackgroundColor: '--preview-card'
+            };
 
-    .brand-preview-sidebar {
-        min-height: 92px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 16px;
-        background: linear-gradient(135deg, var(--preview-sidebar), var(--preview-sidebar-end));
-        color: var(--preview-sidebar-text);
-    }
+            const syncPreview = () => {
+                Object.entries(colorBindings).forEach(([id, property]) => {
+                    const input = document.getElementById(id);
+                    if (input?.value) preview.style.setProperty(property, input.value);
+                });
 
-    .brand-preview-logo {
-        width: 42px;
-        height: 42px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 10px;
-        background: rgba(255,255,255,0.14);
-        overflow: hidden;
-        flex: 0 0 auto;
-    }
+                preview.querySelectorAll('[data-preview-text]').forEach((target) => {
+                    const input = document.getElementById(target.dataset.previewText);
+                    if (input) target.textContent = input.value.trim() || 'Chưa thiết lập';
+                });
+            };
 
-    .brand-preview-logo img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        padding: 6px;
-    }
+            form.addEventListener('input', syncPreview);
+            syncPreview();
 
-    .brand-preview-title {
-        font-weight: 800;
-        line-height: 1.1;
-    }
+            const logoFile = document.getElementById('Branding_LogoFile');
+            const logoBox = document.getElementById('brandPreviewLogo');
+            let objectUrl = null;
+            logoFile?.addEventListener('change', () => {
+                if (objectUrl) URL.revokeObjectURL(objectUrl);
+                const file = logoFile.files?.[0];
+                if (!file || !logoBox) return;
 
-    .brand-preview-subtitle {
-        opacity: 0.78;
-        font-size: 0.78rem;
-    }
+                objectUrl = URL.createObjectURL(file);
+                const image = document.createElement('img');
+                image.src = objectUrl;
+                image.alt = 'Logo vừa chọn';
+                logoBox.replaceChildren(image);
+            });
 
-    .brand-preview-body {
-        padding: 18px;
-        background: var(--card-bg);
-    }
-
-    .brand-preview-body h6 {
-        margin: 8px 0 4px;
-        font-weight: 800;
-    }
-
-    .brand-preview-body p {
-        color: var(--text-muted);
-        margin-bottom: 12px;
-        font-size: 0.9rem;
-    }
-
-    .brand-preview-body span,
-    .brand-preview-pill {
-        display: inline-flex;
-        align-items: center;
-        border-radius: 8px;
-        background: color-mix(in srgb, var(--preview-primary) 12%, white);
-        color: var(--preview-primary);
-        font-size: 0.78rem;
-        font-weight: 800;
-        padding: 5px 9px;
-    }
-</style>
+            window.addEventListener('beforeunload', () => {
+                if (objectUrl) URL.revokeObjectURL(objectUrl);
+            }, { once: true });
+        });
+    </script>
+}

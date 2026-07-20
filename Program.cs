@@ -149,11 +149,64 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
                 context.Response.Redirect(context.RedirectUri);
                 return Task.CompletedTask;
             },
-            OnValidatePrincipal = context =>
+            OnValidatePrincipal = async context =>
             {
                 if (context.Principal == null)
                 {
-                    return Task.CompletedTask;
+                    return;
+                }
+
+                var systemUserIdValue = context.Principal.FindFirstValue("SystemUserId");
+                if (string.IsNullOrWhiteSpace(systemUserIdValue) &&
+                    context.Request.Path.StartsWithSegments("/Auth/GoogleResponse"))
+                {
+                    // Google middleware tạm thời dùng cookie scheme này để chuyển
+                    // principal ngoài sang tài khoản nội bộ ngay trong callback.
+                    return;
+                }
+
+                var userIdValue = systemUserIdValue ?? context.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdValue, out var userId))
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return;
+                }
+
+                var dbContext = context.HttpContext.RequestServices.GetRequiredService<MiniERPDbContext>();
+                var systemUser = await dbContext.SystemUsers
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(user => user.Id == userId);
+                if (systemUser == null ||
+                    systemUser.IsActive != true ||
+                    (systemUser.TrialEndTime.HasValue && systemUser.TrialEndTime.Value <= DateTime.Now))
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return;
+                }
+
+                var role = systemUser.RoleId.HasValue
+                    ? await dbContext.Roles.AsNoTracking().FirstOrDefaultAsync(item => item.Id == systemUser.RoleId.Value)
+                    : null;
+                if ((systemUser.RoleId.HasValue && role == null) || (role != null && role.IsActive != true))
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return;
+                }
+
+                var expectedRoleName = AuthRoleHelper.GetRoleNameOrDefault(role);
+                var currentRoleName = context.Principal.FindFirstValue(ClaimTypes.Role);
+                var expectedPasswordStamp = (systemUser.LastPasswordChange?.Ticks ?? 0L)
+                    .ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var currentPasswordStamp = context.Principal.FindFirstValue(AuthRoleHelper.PasswordChangedClaimType);
+                if (!string.Equals(currentRoleName, expectedRoleName, StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(currentPasswordStamp, expectedPasswordStamp, StringComparison.Ordinal))
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return;
                 }
 
                 var removedPermissionClaims = false;
@@ -170,8 +223,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
                 {
                     context.ShouldRenew = true;
                 }
-
-                return Task.CompletedTask;
             }
         };
     })

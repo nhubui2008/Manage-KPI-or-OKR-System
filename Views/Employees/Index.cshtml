@@ -4,11 +4,27 @@
     var assignments = ViewBag.Assignments as Dictionary<int, Manage_KPI_or_OKR_System.Models.EmployeeAssignment> ?? new Dictionary<int, Manage_KPI_or_OKR_System.Models.EmployeeAssignment>();
     var departments = ViewBag.Departments as Dictionary<int, string> ?? new Dictionary<int, string>();
     var positions = ViewBag.Positions as Dictionary<int, string> ?? new Dictionary<int, string>();
-    var totalEmployees = Model?.Count() ?? 0;
-    var activeEmployees = Model?.Count(e => e.IsActive == true) ?? 0;
+    var pageEmployees = Model?.ToList() ?? new List<Manage_KPI_or_OKR_System.Models.Employee>();
+    var currentPageIndex = Model?.PageIndex ?? 1;
+    var totalPageCount = Math.Max(1, Model?.TotalPages ?? 0);
+    var previousPageNumber = Model?.PreviousPageNumber;
+    var nextPageNumber = Model?.NextPageNumber;
+    var totalEmployees = pageEmployees.Count;
+    var activeEmployees = pageEmployees.Count(e => e.IsActive == true);
     var inactiveEmployees = totalEmployees - activeEmployees;
-    var assignedEmployees = assignments.Values.Count(a => a != null && (a.DepartmentId.HasValue || a.PositionId.HasValue));
+    var assignedEmployees = pageEmployees.Count(employee =>
+        assignments.TryGetValue(employee.Id, out var assignment) &&
+        (assignment.DepartmentId.HasValue || assignment.PositionId.HasValue));
+    var isEmployeeAdminRole = User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator");
+    var canCreateEmployee = isEmployeeAdminRole || User.HasClaim("Permission", "EMPLOYEES_CREATE");
+    var canEditEmployee = isEmployeeAdminRole || User.HasClaim("Permission", "EMPLOYEES_EDIT");
+    var canDeleteEmployee = isEmployeeAdminRole || User.HasClaim("Permission", "EMPLOYEES_DELETE");
+    var canManageEmployees = canCreateEmployee || canEditEmployee || canDeleteEmployee;
     var currentStatus = ViewBag.CurrentStatus?.ToString();
+    var currentSearch = ViewBag.CurrentSearch?.ToString();
+    var hasActiveFilters = !string.IsNullOrWhiteSpace(currentSearch) ||
+                           !string.IsNullOrWhiteSpace(currentStatus) ||
+                           ViewBag.CurrentDepartment != null;
     var statusSummary = currentStatus == "true"
         ? "Đang làm việc"
         : currentStatus == "false"
@@ -23,454 +39,520 @@
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
     <style>
-        .employees-page .employees-table td:nth-child(1) {
-            min-width: 240px;
+        .employees-page .employees-page-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.6rem;
+            flex-wrap: wrap;
         }
 
-        .employees-page .employees-table td:nth-child(4) {
+        .employees-page .employees-summary {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .employees-page .employees-summary article {
+            border-right: 1px solid var(--evaluation-line);
+            border-bottom: 0;
+        }
+
+        .employees-page .employees-summary article:last-child {
+            border-right: 0;
+        }
+
+        .employees-page .employees-summary article:nth-child(1) strong {
+            color: #1d4ed8;
+        }
+
+        .employees-page .employees-summary article:nth-child(2) strong {
+            color: #15803d;
+        }
+
+        .employees-page .employees-summary article:nth-child(3) strong {
+            color: #7c3aed;
+        }
+
+        .employees-page .employees-summary article:nth-child(4) strong {
+            color: #b42318;
+        }
+
+        .employees-page .employees-filter-form {
+            grid-template-columns: minmax(250px, 1.5fr) minmax(180px, 0.9fr) minmax(165px, 0.8fr) auto;
+        }
+
+        .employees-page .employees-table {
+            min-width: 1120px;
+        }
+
+        .employees-page .employee-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
             min-width: 230px;
         }
 
-        .employees-mobile-list {
-            display: none;
-        }
-
-        .employees-mobile-card {
-            padding: 1rem;
-            border-radius: 16px;
-            display: grid;
-            gap: 0.85rem;
-        }
-
-        .employees-mobile-card__header {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.85rem;
-        }
-
-        .employees-mobile-card__title {
-            margin: 0 0 0.25rem;
-            font-size: 1rem;
+        .employees-page .employee-avatar {
+            display: inline-grid;
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            place-items: center;
+            border-radius: 8px;
+            background: var(--evaluation-brand);
+            color: #fff;
+            font-size: 0.78rem;
             font-weight: 800;
-            color: #172033;
         }
 
-        .employees-mobile-card__meta,
-        .employees-mobile-card__chips,
-        .employees-mobile-card__actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
+        .employees-page .employee-name-cell strong,
+        .employees-page .employee-name-cell small {
+            display: block;
         }
 
-        .employees-mobile-card__label {
-            font-size: 0.76rem;
-            font-weight: 800;
-            color: #64748b;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
+        .employees-page .employee-name-cell strong {
+            font-size: 0.88rem;
         }
 
-        .employees-mobile-card__actions .btn,
-        .employees-mobile-card__actions .action-btn {
-            min-height: 42px;
-            border-radius: 12px;
+        .employees-page .employee-name-cell small {
+            margin-top: 0.15rem;
+            color: var(--evaluation-muted);
+            font-size: 0.73rem;
+        }
+
+        .employees-page .employee-assignment-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            min-height: 30px;
+            border: 1px solid var(--evaluation-line);
+            border-radius: 7px;
+            padding: 0.32rem 0.55rem;
+            background: var(--evaluation-soft);
+            color: #475467;
+            font-size: 0.74rem;
             font-weight: 700;
+            white-space: nowrap;
         }
 
-        @@media (max-width: 767.98px) {
-            .employees-page .table-responsive {
-                display: none;
+        .employees-page .employee-assignment-chip--department {
+            border-color: #bfdbfe;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .employees-page .employee-contact {
+            display: grid;
+            gap: 0.35rem;
+            min-width: 220px;
+        }
+
+        .employees-page .employee-contact span {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            color: #475467;
+            font-size: 0.76rem;
+            overflow-wrap: anywhere;
+        }
+
+        .employees-page .employee-contact i {
+            color: #98a2b3;
+        }
+
+        .employees-page .employee-join-date strong,
+        .employees-page .employee-join-date small {
+            display: block;
+        }
+
+        .employees-page .employee-join-date strong {
+            font-size: 0.8rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .employees-page .employee-join-date small {
+            margin-top: 0.15rem;
+            color: var(--evaluation-muted);
+            font-size: 0.7rem;
+        }
+
+        .employees-page .employee-card .employee-contact {
+            min-width: 0;
+        }
+
+        .employees-page .employee-card .evaluation-card-footer {
+            align-items: center;
+        }
+
+        @@media (max-width: 1100px) {
+            .employees-page .employees-summary {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
             }
 
-            .employees-mobile-list {
-                display: grid;
-                gap: 0.9rem;
-                margin-top: 0.5rem;
+            .employees-page .employees-summary article {
+                border-bottom: 0;
+            }
+
+            .employees-page .employees-summary article:nth-child(3) {
+                border-right: 1px solid var(--evaluation-line);
+            }
+        }
+
+        @@media (max-width: 900px) {
+            .employees-page .employees-summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .employees-page .employees-summary article {
+                border-right: 1px solid var(--evaluation-line);
+                border-bottom: 0;
+            }
+
+            .employees-page .employees-summary article:nth-child(2n) {
+                border-right: 0;
+            }
+
+            .employees-page .employees-summary article:nth-child(-n + 2) {
+                border-bottom: 1px solid var(--evaluation-line);
+            }
+
+            .employees-page .employees-summary article:last-child {
+                grid-column: auto;
+            }
+
+            .employees-page .employees-filter-form {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .employees-page .employees-filter-form .evaluation-search-field {
+                grid-column: 1 / -1;
+            }
+
+            .employees-page .employees-filter-form .evaluation-filter-button {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @@media (max-width: 700px) {
+            .employees-page .evaluation-page-header,
+            .employees-page .employees-page-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .employees-page .employees-page-actions > * {
+                width: 100%;
+            }
+
+            .employees-page .evaluation-page-header .evaluation-primary-action span {
+                display: inline;
+            }
+
+            .employees-page .employees-filter-form {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 }
 
-<div class="container-fluid px-0 management-page employees-page">
-    
-    <div class="page-header">
+<div class="evaluation-page employees-page">
+    <header class="evaluation-page-header">
         <div>
-            <h1 class="h3 font-weight-bold mb-1">Quản lý Nhân sự</h1>
-            <div class="page-breadcrumb">
+            <h1>Quản lý Nhân sự</h1>
+            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
                 <a href="/">Trang chủ</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <span>Nhân sự</span>
-            </div>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">Nhân sự</span>
+            </nav>
         </div>
 
-        <div class="page-header-actions">
-            @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
+        @if (canManageEmployees)
+        {
+            <div class="employees-page-actions">
+                <a asp-action="ExportReport" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-isActive="@ViewBag.CurrentStatus" asp-route-departmentId="@ViewBag.CurrentDepartment" class="evaluation-secondary-action" title="Xuất báo cáo nhân sự">
+                    <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
+                    <span>Xuất báo cáo</span>
+                </a>
+                @if (canCreateEmployee)
+                {
+                    <a asp-action="ImportExcel" class="evaluation-secondary-action">
+                        <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+                        <span>Nhập Excel</span>
+                    </a>
+                    <a asp-action="Create" class="evaluation-primary-action">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        <span>Thêm nhân viên</span>
+                    </a>
+                }
+            </div>
+        }
+    </header>
+
+    <section class="evaluation-summary employees-summary" aria-label="Tổng quan nhân sự trên trang hiện tại">
+        <article>
+            <span>Hồ sơ trên trang</span>
+            <strong>@totalEmployees</strong>
+            <small>Trang @currentPageIndex của danh sách</small>
+        </article>
+        <article>
+            <span>Đang làm việc</span>
+            <strong>@activeEmployees</strong>
+            <small>Hồ sơ còn hoạt động</small>
+        </article>
+        <article>
+            <span>Đã phân bổ</span>
+            <strong>@assignedEmployees</strong>
+            <small>Có phòng ban hoặc chức vụ</small>
+        </article>
+        <article>
+            <span>Đã nghỉ việc</span>
+            <strong>@inactiveEmployees</strong>
+            <small>Hồ sơ ngừng hoạt động</small>
+        </article>
+    </section>
+
+    <section class="evaluation-filter-panel" aria-labelledby="employeeFilterHeading">
+        <div class="evaluation-filter-heading">
+            <div>
+                <p class="evaluation-eyebrow" id="employeeFilterHeading">Tìm và lọc</p>
+                <span>Tra cứu theo mã, tên, phòng ban và trạng thái công tác.</span>
+            </div>
+            @if (hasActiveFilters)
             {
-                <a asp-action="ExportReport" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-isActive="@ViewBag.CurrentStatus" asp-route-departmentId="@ViewBag.CurrentDepartment" class="btn-outline-custom text-success border-success d-flex align-items-center" title="Xuất báo cáo nhân sự">
-                    <i class="bi bi-file-earmark-arrow-down me-1"></i> Xuất báo cáo NS
-                </a>
-                <a asp-action="ImportExcel" class="btn-outline-custom d-flex align-items-center">
-                    <i class="bi bi-file-earmark-excel me-1"></i> Nhập Excel
-                </a>
-                <a asp-action="Create" class="btn-primary-custom d-flex align-items-center">
-                    <i class="bi bi-plus-lg me-1"></i> Thêm nhân viên mới
+                <a asp-action="Index" class="evaluation-clear-link">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    <span>Xóa lọc</span>
                 </a>
             }
         </div>
-    </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="overview-card overview-card--primary">
-                <div class="overview-card__top">
-                    <div>
-                        <div class="overview-card__label">Tổng hồ sơ</div>
-                        <div class="overview-card__value">@totalEmployees</div>
-                    </div>
-                    <div class="overview-card__icon"><i class="bi bi-people-fill"></i></div>
-                </div>
-                <div class="overview-card__hint">Toàn bộ nhân sự đang hiển thị theo bộ lọc hiện tại.</div>
-            </div>
-        </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="overview-card overview-card--success">
-                <div class="overview-card__top">
-                    <div>
-                        <div class="overview-card__label">Đang hoạt động</div>
-                        <div class="overview-card__value">@activeEmployees</div>
-                    </div>
-                    <div class="overview-card__icon"><i class="bi bi-person-check-fill"></i></div>
-                </div>
-                <div class="overview-card__hint">Nhân sự còn hiệu lực và sẵn sàng tham gia đánh giá KPI/OKR.</div>
-            </div>
-        </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="overview-card overview-card--info">
-                <div class="overview-card__top">
-                    <div>
-                        <div class="overview-card__label">Đã phân bổ</div>
-                        <div class="overview-card__value">@assignedEmployees</div>
-                    </div>
-                    <div class="overview-card__icon"><i class="bi bi-diagram-3-fill"></i></div>
-                </div>
-                <div class="overview-card__hint">Đã có gán phòng ban hoặc chức vụ trong cơ cấu tổ chức.</div>
-            </div>
-        </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="overview-card overview-card--warning">
-                <div class="overview-card__top">
-                    <div>
-                        <div class="overview-card__label">Ngừng hoạt động</div>
-                        <div class="overview-card__value">@inactiveEmployees</div>
-                    </div>
-                    <div class="overview-card__icon"><i class="bi bi-person-dash-fill"></i></div>
-                </div>
-                <div class="overview-card__hint">Hồ sơ đã nghỉ việc hoặc tạm ngừng trong hệ thống.</div>
-            </div>
-        </div>
-    </div>
+        <form asp-action="Index" method="get" class="evaluation-filter-form employees-filter-form">
+            <label class="evaluation-search-field">
+                <span class="visually-hidden">Tìm nhân viên</span>
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" name="searchString" value="@ViewBag.CurrentSearch" placeholder="Mã hoặc tên nhân viên..." autocomplete="off" />
+            </label>
 
-    <div class="row justify-content-center w-100 m-0">
-        <div class="col-12 px-0">
-            <div class="content-card w-100">
-                <div class="card-body-custom">
-                    <div class="page-toolbar-meta mb-3">
-                        <div class="d-flex flex-wrap gap-2">
-                            <span class="soft-chip tone-primary"><i class="bi bi-building"></i>@departmentSummary</span>
-                            <span class="soft-chip tone-success"><i class="bi bi-person-badge"></i>@statusSummary</span>
-                            @if (!string.IsNullOrWhiteSpace(ViewBag.CurrentSearch as string))
-                            {
-                                <span class="soft-chip"><i class="bi bi-search"></i>@ViewBag.CurrentSearch</span>
-                            }
-                        </div>
-                        <span class="small text-muted">Tra cứu nhanh theo hồ sơ, liên hệ, phòng ban và trạng thái công tác.</span>
-                    </div>
-                    
-                    <form asp-action="Index" method="get" class="toolbar">
-                        <div class="toolbar-left">
-                            <div class="toolbar-search">
-                                <i class="bi bi-search"></i>
-                                <input type="text" name="searchString" value="@ViewBag.CurrentSearch" placeholder="Tìm kiếm theo mã, tên, SĐT...">
-                            </div>
-                            
-                            <select name="departmentId" class="filter-select">
-                                <option value="">Tất cả phòng ban</option>
-                                @foreach (var dept in departments)
-                                {
-                                    if (ViewBag.CurrentDepartment?.ToString() == dept.Key.ToString())
-                                    {
-                                        <option value="@dept.Key" selected>@dept.Value</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="@dept.Key">@dept.Value</option>
-                                    }
-                                }
-                            </select>
-                            
-                            <select name="isActive" class="filter-select">
-                                @if (string.IsNullOrEmpty(ViewBag.CurrentStatus))
-                                {
-                                    <option value="" selected>Trạng thái</option>
-                                }
-                                else
-                                {
-                                    <option value="">Trạng thái</option>
-                                }
-                                
-                                @if (ViewBag.CurrentStatus == "true")
-                                {
-                                    <option value="true" selected>Đang làm việc</option>
-                                }
-                                else
-                                {
-                                    <option value="true">Đang làm việc</option>
-                                }
-                                
-                                @if (ViewBag.CurrentStatus == "false")
-                                {
-                                    <option value="false" selected>Đã nghỉ việc</option>
-                                }
-                                else
-                                {
-                                    <option value="false">Đã nghỉ việc</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="toolbar-right">
-                            <a asp-action="Index" class="btn btn-sm btn-light" title="Làm mới">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </a>
-                            <button type="submit" class="btn btn-sm btn-primary" title="Lọc kết quả">
-                                <i class="bi bi-funnel"></i> Lọc
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <div class="table-responsive w-100">
-                        <table class="data-table w-100 employees-table">
-                            <thead>
-                                <tr>
-                                    <th>Thông tin nhân viên</th>
-                                    <th>Phòng ban</th>
-                                    <th>Chức vụ</th>
-                                    <th>Liên hệ</th>
-                                    <th>Ngày vào làm</th>
-                                    <th>Trạng thái</th>
-                                    <th class="text-end">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (Model != null && Model.Any())
-                                {
-                                    foreach (var emp in Model)
-                                    {
-                                        var hasAssignment = assignments.TryGetValue(emp.Id, out var assign);
-                                        var deptId = hasAssignment ? assign?.DepartmentId : null;
-                                        var posId = hasAssignment ? assign?.PositionId : null;
-                                        var deptName = deptId.HasValue && departments.ContainsKey(deptId.Value)
-                                                       ? departments[deptId.Value] : "Chưa phân bổ";
-                                        var posName = posId.HasValue && positions.ContainsKey(posId.Value)
-                                                       ? positions[posId.Value] : "Chưa phân bổ";
-                                        var statusClass = emp.IsActive == true ? "active" : "inactive";
-                                        var statusDot = emp.IsActive == true ? "" : "text-danger bg-danger";
-                                        var statusText = emp.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc";
-                                        var avatarLetter = !string.IsNullOrEmpty(emp.FullName) ? emp.FullName[0].ToString().ToUpper() : "U";
+            <label>
+                <span>Phòng ban</span>
+                <select name="departmentId" class="no-select2">
+                    <option value="">Tất cả phòng ban</option>
+                    @foreach (var dept in departments)
+                    {
+                        <option value="@dept.Key" selected="@(ViewBag.CurrentDepartment?.ToString() == dept.Key.ToString() ? "selected" : null)">@dept.Value</option>
+                    }
+                </select>
+            </label>
 
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <div class="record-avatar">
-                                                        @avatarLetter
-                                                    </div>
-                                                    <div class="table-meta">
-                                                        <div class="table-meta__title">@emp.FullName</div>
-                                                        <div class="table-meta__sub">Mã nhân sự: @emp.EmployeeCode</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="soft-chip tone-info">@deptName</span>
-                                            </td>
-                                            <td>
-                                                <span class="soft-chip">@posName</span>
-                                            </td>
-                                            <td>
-                                                <div class="inline-icon-list">
-                                                    <span><i class="bi bi-envelope text-muted"></i>@emp.Email</span>
-                                                    <span><i class="bi bi-telephone text-muted"></i>@emp.Phone</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="table-meta">
-                                                    <div class="table-meta__title">@(emp.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
-                                                    <div class="table-meta__sub">Ngày bắt đầu công tác</div>
-                                                </div>
-                                            </td>
-                                            <td><span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span></td>
-                                            <td>
-                                                <div class="action-btns justify-content-end">
-                                                    <a asp-action="Details" asp-route-id="@emp.Id" class="action-btn" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
-                                                    @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
-                                                    {
-                                                        <a asp-action="Edit" asp-route-id="@emp.Id" class="action-btn" title="Chỉnh sửa thông tin"><i class="bi bi-pencil"></i></a>
-                                                        @if (emp.IsActive == true)
-                                                        {
-                                                            <a asp-action="Delete" asp-route-id="@emp.Id" class="action-btn danger" title="Nghỉ việc"><i class="bi bi-person-dash"></i></a>
-                                                        }
-                                                    }
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                }
-                                else
-                                {
-                                    <tr>
-                                        <td colspan="7" class="p-0">
-                                            <div class="table-empty-state">
-                                                <i class="bi bi-people"></i>
-                                                <h5>Không tìm thấy nhân sự phù hợp</h5>
-                                                <p>Hãy thử đổi từ khóa, phòng ban hoặc trạng thái để mở rộng kết quả tìm kiếm.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+            <label>
+                <span>Trạng thái</span>
+                <select name="isActive" class="no-select2">
+                    <option value="" selected="@(string.IsNullOrEmpty(currentStatus) ? "selected" : null)">Mọi trạng thái</option>
+                    <option value="true" selected="@(currentStatus == "true" ? "selected" : null)">Đang làm việc</option>
+                    <option value="false" selected="@(currentStatus == "false" ? "selected" : null)">Đã nghỉ việc</option>
+                </select>
+            </label>
 
-                    <div class="employees-mobile-list">
-                        @if (Model != null && Model.Any())
+            <button type="submit" class="evaluation-filter-button">
+                <i class="bi bi-funnel" aria-hidden="true"></i>
+                <span>Lọc dữ liệu</span>
+            </button>
+        </form>
+    </section>
+
+    <section class="evaluation-results employees-results" aria-labelledby="employeeResultsHeading">
+        <div class="evaluation-results-heading">
+            <div>
+                <p class="evaluation-eyebrow" id="employeeResultsHeading">Danh sách nhân sự</p>
+                <strong>@totalEmployees hồ sơ trên trang hiện tại</strong>
+            </div>
+            <span>@departmentSummary · @statusSummary · Trang @currentPageIndex/@totalPageCount</span>
+        </div>
+
+        @if (pageEmployees.Count == 0)
+        {
+            <div class="evaluation-empty" role="status">
+                <span class="evaluation-empty-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+                <h2>Không tìm thấy nhân sự phù hợp</h2>
+                <p>Hãy thử đổi từ khóa, phòng ban hoặc trạng thái để mở rộng kết quả tìm kiếm.</p>
+                @if (hasActiveFilters)
+                {
+                    <a asp-action="Index" class="evaluation-secondary-action">Xóa bộ lọc</a>
+                }
+                else if (canCreateEmployee)
+                {
+                    <a asp-action="Create" class="evaluation-primary-action">Thêm nhân viên</a>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="evaluation-table-shell">
+                <table class="evaluation-table employees-table" aria-label="Danh sách nhân viên">
+                    <thead>
+                        <tr>
+                            <th>Thông tin nhân viên</th>
+                            <th>Phòng ban</th>
+                            <th>Chức vụ</th>
+                            <th>Liên hệ</th>
+                            <th>Ngày vào làm</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var emp in pageEmployees)
                         {
-                            foreach (var emp in Model)
-                            {
-                                var hasAssignment = assignments.TryGetValue(emp.Id, out var assign);
-                                var deptId = hasAssignment ? assign?.DepartmentId : null;
-                                var posId = hasAssignment ? assign?.PositionId : null;
-                                var deptName = deptId.HasValue && departments.ContainsKey(deptId.Value)
-                                               ? departments[deptId.Value] : "Chưa phân bổ";
-                                var posName = posId.HasValue && positions.ContainsKey(posId.Value)
-                                               ? positions[posId.Value] : "Chưa phân bổ";
-                                var statusClass = emp.IsActive == true ? "active" : "inactive";
-                                var statusDot = emp.IsActive == true ? "" : "text-danger bg-danger";
-                                var statusText = emp.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc";
-                                var avatarLetter = !string.IsNullOrEmpty(emp.FullName) ? emp.FullName[0].ToString().ToUpper() : "U";
+                            var hasAssignment = assignments.TryGetValue(emp.Id, out var assign);
+                            var deptId = hasAssignment ? assign?.DepartmentId : null;
+                            var posId = hasAssignment ? assign?.PositionId : null;
+                            var deptName = deptId.HasValue && departments.ContainsKey(deptId.Value) ? departments[deptId.Value] : "Chưa phân bổ";
+                            var posName = posId.HasValue && positions.ContainsKey(posId.Value) ? positions[posId.Value] : "Chưa phân bổ";
+                            var statusClass = emp.IsActive == true ? "evaluation-status evaluation-status--running" : "evaluation-status evaluation-status--closed";
+                            var statusText = emp.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc";
+                            var avatarLetter = !string.IsNullOrWhiteSpace(emp.FullName) ? emp.FullName[0].ToString().ToUpperInvariant() : "NV";
 
-                                <article class="content-card employees-mobile-card">
-                                    <div class="employees-mobile-card__header">
-                                        <div class="record-avatar">@avatarLetter</div>
-                                        <div class="flex-grow-1 min-w-0">
-                                            <h3 class="employees-mobile-card__title">@emp.FullName</h3>
-                                            <div class="small text-muted mb-2">Mã nhân sự: @emp.EmployeeCode</div>
-                                            <div class="employees-mobile-card__chips">
-                                                <span class="soft-chip tone-info">@deptName</span>
-                                                <span class="soft-chip">@posName</span>
-                                                <span class="status-badge @statusClass"><span class="status-dot @statusDot"></span> @statusText</span>
-                                            </div>
+                            <tr>
+                                <td>
+                                    <div class="employee-name-cell">
+                                        <span class="employee-avatar" aria-hidden="true">@avatarLetter</span>
+                                        <div>
+                                            <strong>@emp.FullName</strong>
+                                            <small>Mã nhân sự: @emp.EmployeeCode</small>
                                         </div>
                                     </div>
-
-                                    <div>
-                                        <div class="employees-mobile-card__label">Liên hệ</div>
-                                        <div class="inline-icon-list mt-1">
-                                            <span><i class="bi bi-envelope text-muted"></i>@(string.IsNullOrWhiteSpace(emp.Email) ? "Chưa cập nhật" : emp.Email)</span>
-                                            <span><i class="bi bi-telephone text-muted"></i>@(string.IsNullOrWhiteSpace(emp.Phone) ? "Chưa cập nhật" : emp.Phone)</span>
-                                        </div>
+                                </td>
+                                <td><span class="employee-assignment-chip employee-assignment-chip--department"><i class="bi bi-building" aria-hidden="true"></i>@deptName</span></td>
+                                <td><span class="employee-assignment-chip"><i class="bi bi-briefcase" aria-hidden="true"></i>@posName</span></td>
+                                <td>
+                                    <div class="employee-contact">
+                                        <span><i class="bi bi-envelope" aria-hidden="true"></i>@(string.IsNullOrWhiteSpace(emp.Email) ? "Chưa cập nhật" : emp.Email)</span>
+                                        <span><i class="bi bi-telephone" aria-hidden="true"></i>@(string.IsNullOrWhiteSpace(emp.Phone) ? "Chưa cập nhật" : emp.Phone)</span>
                                     </div>
-
-                                    <div>
-                                        <div class="employees-mobile-card__label">Ngày vào làm</div>
-                                        <div class="small text-dark fw-semibold mt-1">@(emp.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
+                                </td>
+                                <td>
+                                    <div class="employee-join-date">
+                                        <strong>@(emp.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</strong>
+                                        <small>Ngày bắt đầu công tác</small>
                                     </div>
-
-                                    <div class="employees-mobile-card__actions">
-                                        <a asp-action="Details" asp-route-id="@emp.Id" class="btn btn-outline-primary">
-                                            <i class="bi bi-eye me-1"></i> Chi tiết
+                                </td>
+                                <td><span class="@statusClass"><span aria-hidden="true"></span>@statusText</span></td>
+                                <td>
+                                    <div class="evaluation-actions">
+                                        <a asp-action="Details" asp-route-id="@emp.Id" class="evaluation-icon-button" title="Xem chi tiết" aria-label="Xem chi tiết @emp.FullName">
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
                                         </a>
-                                        @if (User.IsInRole("HR") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
+                                        @if (canEditEmployee || canDeleteEmployee)
                                         {
-                                            <a asp-action="Edit" asp-route-id="@emp.Id" class="btn btn-outline-secondary">
-                                                <i class="bi bi-pencil me-1"></i> Sửa
-                                            </a>
-                                            @if (emp.IsActive == true)
+                                            @if (canEditEmployee)
                                             {
-                                                <a asp-action="Delete" asp-route-id="@emp.Id" class="btn btn-outline-danger">
-                                                    <i class="bi bi-person-dash me-1"></i> Nghỉ việc
+                                                <a asp-action="Edit" asp-route-id="@emp.Id" class="evaluation-icon-button" title="Chỉnh sửa" aria-label="Chỉnh sửa @emp.FullName">
+                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                </a>
+                                            }
+                                            @if (canDeleteEmployee && emp.IsActive == true)
+                                            {
+                                                <a asp-action="Delete" asp-route-id="@emp.Id" class="evaluation-icon-button evaluation-icon-button--danger" title="Cho nghỉ việc" aria-label="Cho @emp.FullName nghỉ việc">
+                                                    <i class="bi bi-person-dash" aria-hidden="true"></i>
                                                 </a>
                                             }
                                         }
                                     </div>
-                                </article>
-                            }
+                                </td>
+                            </tr>
                         }
-                    </div>
-
-                    @if (Model != null && Model.TotalPages > 1)
-                    {
-                        <div class="d-flex justify-content-between align-items-center mt-4 px-2 flex-wrap gap-2">
-                            <div class="text-muted small">
-                                Hiển thị trang <strong>@Model.PageIndex</strong> trên tổng số <strong>@Model.TotalPages</strong>
-                            </div>
-                            <nav aria-label="Phân trang nhân sự">
-                                <ul class="pagination pagination-sm mb-0 gap-1">
-                                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
-                                        @if (Model.HasPreviousPage && Model.PreviousPageNumber.HasValue)
-                                        {
-                                            <a class="page-link border-0 rounded-circle shadow-none text-dark" asp-action="Index"
-                                               asp-route-pageNumber="@Model.PreviousPageNumber"
-                                               asp-route-searchString="@ViewBag.CurrentSearch"
-                                               asp-route-isActive="@ViewBag.CurrentStatus"
-                                               asp-route-departmentId="@ViewBag.CurrentDepartment">
-                                                <i class="bi bi-chevron-left"></i>
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="page-link border-0 rounded-circle shadow-none text-dark"><i class="bi bi-chevron-left"></i></span>
-                                        }
-                                    </li>
-                                    @for (int i = 1; i <= Model.TotalPages; i++)
-                                    {
-                                        if (i == 1 || i == Model.TotalPages || (i >= Model.PageIndex - 1 && i <= Model.PageIndex + 1))
-                                        {
-                                            <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                                                <a class="page-link border-0 rounded-circle shadow-none @(i == Model.PageIndex ? "" : "text-dark")" asp-action="Index"
-                                                   asp-route-pageNumber="@i"
-                                                   asp-route-searchString="@ViewBag.CurrentSearch"
-                                                   asp-route-isActive="@ViewBag.CurrentStatus"
-                                                   asp-route-departmentId="@ViewBag.CurrentDepartment">@i</a>
-                                            </li>
-                                        }
-                                        else if (i == Model.PageIndex - 2 || i == Model.PageIndex + 2)
-                                        {
-                                            <li class="page-item disabled"><span class="page-link border-0">...</span></li>
-                                        }
-                                    }
-                                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                                        @if (Model.HasNextPage && Model.NextPageNumber.HasValue)
-                                        {
-                                            <a class="page-link border-0 rounded-circle shadow-none text-dark" asp-action="Index"
-                                               asp-route-pageNumber="@Model.NextPageNumber"
-                                               asp-route-searchString="@ViewBag.CurrentSearch"
-                                               asp-route-isActive="@ViewBag.CurrentStatus"
-                                               asp-route-departmentId="@ViewBag.CurrentDepartment">
-                                                <i class="bi bi-chevron-right"></i>
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="page-link border-0 rounded-circle shadow-none text-dark"><i class="bi bi-chevron-right"></i></span>
-                                        }
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    }
-                </div>
+                    </tbody>
+                </table>
             </div>
-        </div>
-    </div>
+
+            <div class="evaluation-mobile-list employees-mobile-list">
+                @foreach (var emp in pageEmployees)
+                {
+                    var hasAssignment = assignments.TryGetValue(emp.Id, out var assign);
+                    var deptId = hasAssignment ? assign?.DepartmentId : null;
+                    var posId = hasAssignment ? assign?.PositionId : null;
+                    var deptName = deptId.HasValue && departments.ContainsKey(deptId.Value) ? departments[deptId.Value] : "Chưa phân bổ";
+                    var posName = posId.HasValue && positions.ContainsKey(posId.Value) ? positions[posId.Value] : "Chưa phân bổ";
+                    var statusClass = emp.IsActive == true ? "evaluation-status evaluation-status--running" : "evaluation-status evaluation-status--closed";
+                    var statusText = emp.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc";
+
+                    <article class="evaluation-period-card employee-card">
+                        <div class="evaluation-card-topline">
+                            <span class="@statusClass"><span aria-hidden="true"></span>@statusText</span>
+                            <span class="evaluation-config-status">@emp.EmployeeCode</span>
+                        </div>
+                        <h2>@emp.FullName</h2>
+                        <p>@deptName · @posName</p>
+                        <dl>
+                            <div><dt>Ngày vào làm</dt><dd>@(emp.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</dd></div>
+                            <div><dt>Điện thoại</dt><dd>@(string.IsNullOrWhiteSpace(emp.Phone) ? "Chưa cập nhật" : emp.Phone)</dd></div>
+                        </dl>
+                        <div class="employee-contact">
+                            <span><i class="bi bi-envelope" aria-hidden="true"></i>@(string.IsNullOrWhiteSpace(emp.Email) ? "Chưa cập nhật email" : emp.Email)</span>
+                        </div>
+                        <div class="evaluation-card-footer">
+                            <a asp-action="Details" asp-route-id="@emp.Id">Xem chi tiết</a>
+                            <div class="evaluation-actions">
+                                @if (canEditEmployee || canDeleteEmployee)
+                                {
+                                    @if (canEditEmployee)
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@emp.Id" class="evaluation-icon-button" title="Chỉnh sửa" aria-label="Chỉnh sửa @emp.FullName">
+                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                        </a>
+                                    }
+                                    @if (canDeleteEmployee && emp.IsActive == true)
+                                    {
+                                        <a asp-action="Delete" asp-route-id="@emp.Id" class="evaluation-icon-button evaluation-icon-button--danger" title="Cho nghỉ việc" aria-label="Cho @emp.FullName nghỉ việc">
+                                            <i class="bi bi-person-dash" aria-hidden="true"></i>
+                                        </a>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+
+        @if ((Model?.TotalPages ?? 0) > 1)
+        {
+            <nav class="evaluation-pagination" aria-label="Phân trang nhân sự">
+                @if (previousPageNumber.HasValue)
+                {
+                    <a asp-action="Index" asp-route-pageNumber="@previousPageNumber" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-isActive="@ViewBag.CurrentStatus" asp-route-departmentId="@ViewBag.CurrentDepartment" aria-label="Trang trước">
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                    </a>
+                }
+                else
+                {
+                    <span class="is-disabled" aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
+                }
+
+                @for (int pageNumber = 1; pageNumber <= totalPageCount; pageNumber++)
+                {
+                    if (pageNumber == 1 || pageNumber == totalPageCount || (pageNumber >= currentPageIndex - 1 && pageNumber <= currentPageIndex + 1))
+                    {
+                        <a asp-action="Index" asp-route-pageNumber="@pageNumber" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-isActive="@ViewBag.CurrentStatus" asp-route-departmentId="@ViewBag.CurrentDepartment" class="@(pageNumber == currentPageIndex ? "is-current" : null)" aria-current="@(pageNumber == currentPageIndex ? "page" : null)">@pageNumber</a>
+                    }
+                    else if (pageNumber == currentPageIndex - 2 || pageNumber == currentPageIndex + 2)
+                    {
+                        <span class="is-disabled">…</span>
+                    }
+                }
+
+                @if (nextPageNumber.HasValue)
+                {
+                    <a asp-action="Index" asp-route-pageNumber="@nextPageNumber" asp-route-searchString="@ViewBag.CurrentSearch" asp-route-isActive="@ViewBag.CurrentStatus" asp-route-departmentId="@ViewBag.CurrentDepartment" aria-label="Trang sau">
+                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </a>
+                }
+                else
+                {
+                    <span class="is-disabled" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                }
+            </nav>
+        }
+    </section>
 </div>

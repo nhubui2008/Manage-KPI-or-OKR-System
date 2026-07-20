@@ -33,23 +33,34 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [HasPermission("ROLES_CREATE")]
-        public async Task<IActionResult> Create(string roleName, string description)
+        public async Task<IActionResult> Create([Bind("RoleName,Description")] Role role)
         {
-            if (!string.IsNullOrEmpty(roleName))
+            role.RoleName = role.RoleName?.Trim();
+            role.Description = role.Description?.Trim();
+
+            if (!string.IsNullOrWhiteSpace(role.RoleName) &&
+                await _context.Roles.AnyAsync(existing => existing.RoleName != null && existing.RoleName.ToLower() == role.RoleName.ToLower()))
             {
-                var role = new Role 
-                { 
-                    RoleName = roleName, 
-                    Description = description, 
-                    IsActive = true, 
-                    CreatedAt = DateTime.Now 
-                };
-                _context.Roles.Add(role);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã tạo nhóm quyền mới thành công!";
-                return RedirectToAction(nameof(Index));
+                ModelState.AddModelError(nameof(Role.RoleName), "Tên nhóm quyền đã tồn tại trong hệ thống.");
             }
-            return View();
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.ErrorMessage = string.Join(" ", ModelState.Values
+                    .SelectMany(value => value.Errors)
+                    .Select(error => error.ErrorMessage)
+                    .Where(message => !string.IsNullOrWhiteSpace(message)));
+                return View(role);
+            }
+
+            // A newly-created role must be assignable immediately. There is no
+            // status-management flow on this screen, so do not create dead roles.
+            role.IsActive = true;
+            role.CreatedAt = DateTime.Now;
+            _context.Roles.Add(role);
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã tạo nhóm quyền mới thành công!";
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
@@ -59,6 +70,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var role = await _context.Roles.FindAsync(id);
             if (role != null)
             {
+                if (AuthRoleHelper.IsAdminRoleName(role.RoleName))
+                {
+                    TempData["ErrorMessage"] = "Không thể xóa vai trò quản trị hệ thống.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 // Kiểm tra xem có người dùng nào đang gán role này không
                 var hasUsers = await _context.SystemUsers.AnyAsync(u => u.RoleId == id);
                 if (hasUsers)
@@ -96,6 +113,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             ViewBag.Role = role;
             ViewBag.RolePermissionIds = rolePermissionIds;
+            ViewBag.CanEditPermissions = User.IsInRole("Admin") ||
+                                         User.IsInRole("Administrator") ||
+                                         User.HasClaim("Permission", "ROLES_EDIT");
 
             return View(allPermissions);
         }
@@ -104,14 +124,33 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("ROLES_EDIT")]
         public async Task<IActionResult> UpdatePermissions(int roleId, List<int> permissionIds)
         {
+            var role = await _context.Roles.FindAsync(roleId);
+            if (role == null)
+            {
+                return NotFound();
+            }
+
+            if (AuthRoleHelper.IsAdminRoleName(role.RoleName))
+            {
+                TempData["ErrorMessage"] = "Quyền của vai trò quản trị hệ thống được đồng bộ tự động và không thể chỉnh thủ công.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            permissionIds ??= new List<int>();
+            var validPermissionIds = await _context.Permissions
+                .Where(permission => permissionIds.Contains(permission.Id))
+                .Select(permission => permission.Id)
+                .Distinct()
+                .ToListAsync();
+
             // Xóa các quyền cũ
             var oldPermissions = _context.Role_Permissions.Where(rp => rp.RoleId == roleId);
             _context.Role_Permissions.RemoveRange(oldPermissions);
 
             // Thêm các quyền mới
-            if (permissionIds != null && permissionIds.Any())
+            if (validPermissionIds.Any())
             {
-                foreach (var pId in permissionIds)
+                foreach (var pId in validPermissionIds)
                 {
                     _context.Role_Permissions.Add(new Role_Permission { RoleId = roleId, PermissionId = pId });
                 }

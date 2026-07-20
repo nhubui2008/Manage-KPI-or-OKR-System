@@ -78,8 +78,10 @@ namespace Manage_KPI_or_OKR_System.Services
         Task<AppBrandingSettings> GetBrandingAsync(CancellationToken cancellationToken = default);
         Task<IReadOnlyList<SystemParameter>> EnsureDefaultParametersAsync(CancellationToken cancellationToken = default);
         Task SetValuesAsync(IDictionary<string, string?> values, int? updatedById, CancellationToken cancellationToken = default);
+        Task SetOperationalValueAsync(int id, string? value, int? updatedById, CancellationToken cancellationToken = default);
         string GetDefaultValue(string code);
         bool IsBrandingCode(string code);
+        bool IsOperationalCode(string code);
         BrandingSettingsForm ToBrandingForm(AppBrandingSettings branding);
     }
 
@@ -118,8 +120,15 @@ namespace Manage_KPI_or_OKR_System.Services
             .Where(d => d.Group.Equals("Branding", StringComparison.OrdinalIgnoreCase))
             .Select(d => d.Code)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> OperationalCodes = Definitions
+            .Where(d => d.Group.Equals("System", StringComparison.OrdinalIgnoreCase))
+            .Select(d => d.Code)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         private static readonly Regex HexColorRegex = new("^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$", RegexOptions.Compiled);
+        private static readonly Regex UnsafeCustomCssRegex = new(
+            @"(?:<|@import\b|expression\s*\(|javascript\s*:|behavior\s*:|-moz-binding\s*:)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly SemaphoreSlim BrandingCacheGate = new(1, 1);
         private static AppBrandingSettings? _cachedBranding;
         private static DateTime _brandingCacheExpiresAtUtc;
@@ -276,6 +285,48 @@ namespace Manage_KPI_or_OKR_System.Services
             _brandingCacheExpiresAtUtc = DateTime.MinValue;
         }
 
+        public async Task SetOperationalValueAsync(
+            int id,
+            string? value,
+            int? updatedById,
+            CancellationToken cancellationToken = default)
+        {
+            var parameter = await _context.SystemParameters
+                .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+            if (parameter == null)
+            {
+                throw new KeyNotFoundException("Không tìm thấy tham số hệ thống cần cập nhật.");
+            }
+
+            var code = parameter.ParameterCode?.Trim() ?? string.Empty;
+            if (IsBrandingCode(code))
+            {
+                throw new InvalidOperationException("Tham số nhận diện chỉ được cập nhật trong biểu mẫu thương hiệu.");
+            }
+
+            if (!IsOperationalCode(code))
+            {
+                throw new InvalidOperationException("Tham số này không thuộc nhóm vận hành được phép cập nhật tại trang này.");
+            }
+
+            if (code.Equals(SystemSettingCodes.AiHistoryRetentionDays, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!int.TryParse(value, out var retentionDays) || retentionDays is < 1 or > 3650)
+                {
+                    throw new InvalidOperationException("Thời gian lưu lịch sử AI phải từ 1 đến 3650 ngày.");
+                }
+
+                parameter.Value = retentionDays.ToString();
+            }
+            else
+            {
+                parameter.Value = NormalizeValue(code, value);
+            }
+
+            parameter.UpdatedById = updatedById;
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
         public string GetDefaultValue(string code)
         {
             return Definitions.FirstOrDefault(d => d.Code.Equals(code, StringComparison.OrdinalIgnoreCase))?.DefaultValue ?? "";
@@ -284,6 +335,11 @@ namespace Manage_KPI_or_OKR_System.Services
         public bool IsBrandingCode(string code)
         {
             return BrandingCodes.Contains(code);
+        }
+
+        public bool IsOperationalCode(string code)
+        {
+            return OperationalCodes.Contains(code);
         }
 
         public BrandingSettingsForm ToBrandingForm(AppBrandingSettings branding)
@@ -326,7 +382,31 @@ namespace Manage_KPI_or_OKR_System.Services
                 return HexColorRegex.IsMatch(cleanValue) ? cleanValue : GetDefaultValue(code);
             }
 
+            if (code.Equals(SystemSettingCodes.CustomCss, StringComparison.OrdinalIgnoreCase))
+            {
+                if (UnsafeCustomCssRegex.IsMatch(cleanValue))
+                {
+                    throw new InvalidOperationException(
+                        "CSS tùy chỉnh chứa cú pháp không an toàn. Không dùng thẻ HTML, @import, javascript, expression hoặc behavior.");
+                }
+
+                return cleanValue.Length > 2000 ? cleanValue[..2000] : cleanValue;
+            }
+
             return cleanValue.Length > 2000 ? cleanValue[..2000] : cleanValue;
+        }
+
+        public static string EncodeCustomCssForStyleBlock(string? customCss)
+        {
+            if (string.IsNullOrWhiteSpace(customCss))
+            {
+                return string.Empty;
+            }
+
+            // A style element is an HTML raw-text context. Encoding every literal
+            // '<' as a CSS escape prevents legacy database values from closing the
+            // style tag while preserving ordinary CSS declarations.
+            return customCss.Replace("<", "\\3C ", StringComparison.Ordinal);
         }
     }
 }
