@@ -349,7 +349,7 @@
                     var userName = User.Identity.Name;
                     var userRole = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? "User";
                     <div class="sidebar-footer dropup">
-                        <button type="button" class="sidebar-settings-trigger" data-settings-panel-trigger aria-controls="settingsPanel" aria-expanded="false">
+                        <button type="button" class="sidebar-settings-trigger" data-settings-panel-trigger aria-label="Mở cài đặt" aria-controls="settingsPanel" aria-expanded="false">
                             <i class="bi bi-gear-wide-connected"></i>
                             <span>Cài đặt</span>
                         </button>
@@ -498,12 +498,12 @@
             <div class="main-content">
                 <header class="top-header">
                     <div class="header-left">
-                        <button id="sidebarToggle" class="sidebar-toggle">
+                        <button type="button" id="sidebarToggle" class="sidebar-toggle" aria-label="Thu gọn hoặc mở rộng thanh điều hướng" aria-expanded="false" aria-controls="sidebar">
                             <i class="bi bi-list"></i>
                         </button>
                         <div class="header-search">
                             <i class="bi bi-search"></i>
-                            <input type="text" placeholder="Tìm kiếm nhanh nhân viên, KPI, OKR, phòng ban...">
+                            <input type="search" aria-label="Tìm kiếm nhanh nhân viên, KPI, OKR, phòng ban" placeholder="Tìm kiếm nhanh nhân viên, KPI, OKR, phòng ban..." autocomplete="off">
                         </div>
                     </div>
 
@@ -516,7 +516,7 @@
                                  data-notification-read-endpoint="/Notifications/MarkAsRead"
                                  data-notification-read-all-endpoint="/Notifications/MarkAllAsRead"
                                  data-notification-ai-refresh-endpoint="/AI/RefreshSmartAlerts">
-                                <button class="header-icon-btn notification-bell-btn" title="Trung tâm thông báo" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                <button type="button" class="header-icon-btn notification-bell-btn" title="Trung tâm thông báo" aria-label="Mở trung tâm thông báo" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                     <i class="bi bi-bell"></i>
                                     <span class="badge-dot d-none" data-notification-dot></span>
                                     <span class="notification-count-pill d-none" data-notification-pill></span>

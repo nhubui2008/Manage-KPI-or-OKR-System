@@ -580,6 +580,10 @@
         .lp-nav-divider { display: none; }
     }
     @@media (max-width: 640px) {
+        .lp-nav { padding: 0.75rem 1rem; }
+        .lp-nav-inner { gap: 0.5rem; }
+        .lp-brand { min-width: 0; font-size: 1.1rem; gap: 6px; white-space: nowrap; }
+        .lp-brand i { font-size: 1.25rem; }
         .lp-hero h1 { font-size: 2.2rem; letter-spacing: 0; }
         .lp-features-grid { grid-template-columns: 1fr; }
         .lp-workflow-track { grid-template-columns: 1fr; }
@@ -587,8 +591,9 @@
         .lp-footer-inner { grid-template-columns: 1fr; }
         .lp-tabs-body { padding: 1.5rem; }
         .lp-cta-box { padding: 3rem 1.5rem; }
-        .lp-nav-actions { gap: 1rem; }
-        .lp-nav-link-btn { font-size: 0.9rem; padding: 0.5rem 1rem; }
+        .lp-nav-actions { gap: 0.5rem; flex-shrink: 0; }
+        .lp-nav-link-btn { width: 64px; font-size: 0.75rem; padding: 0; line-height: 1.15; text-align: center; }
+        .lp-cta-btn { max-width: 88px; padding: 0.55rem 0.65rem; font-size: 0.75rem; line-height: 1.15; text-align: center; justify-content: center; }
     }
 </style>
 
@@ -1090,7 +1095,7 @@
             <div class="reg-modal-bg-blob"></div>
         </div>
         <div class="reg-modal-right">
-            <button class="reg-modal-close" onclick="closeRegModal()"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="reg-modal-close" onclick="closeRegModal()"><i class="bi bi-x-lg"></i></button>
             <div class="reg-form-container">
                 <h3>Xác nhận thông tin</h3>
                 <p id="regSubtitleText" class="reg-form-subtitle">Bạn đang chọn: <strong id="regPlanName" class="text-primary"></strong></p>
@@ -1174,7 +1179,7 @@
             <div class="reg-modal-bg-blob"></div>
         </div>
         <div class="reg-modal-right">
-            <button class="reg-modal-close" onclick="closeChangePasswordModal()"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="reg-modal-close" onclick="closeChangePasswordModal()"><i class="bi bi-x-lg"></i></button>
             <div class="reg-form-container">
                 <h3>Bảo mật tài khoản</h3>
                 <p class="reg-form-subtitle">Vui lòng nhập mật khẩu mới để tiếp tục sử dụng hệ thống.</p>
@@ -1241,7 +1246,7 @@
             <div class="reg-modal-bg-blob"></div>
         </div>
         <div class="reg-modal-right">
-            <button class="reg-modal-close" onclick="closeForgotPasswordModal()"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="reg-modal-close" onclick="closeForgotPasswordModal()"><i class="bi bi-x-lg"></i></button>
             <div class="reg-form-container">
                 <h3>Khôi phục mật khẩu</h3>
                 <p class="reg-form-subtitle">Làm theo các bước để lấy lại quyền truy cập.</p>

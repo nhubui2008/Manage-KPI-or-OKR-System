@@ -1154,8 +1154,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const overlay = document.getElementById('sidebarOverlay');
 
     if (sidebarToggle) {
+        sidebarToggle.setAttribute('aria-expanded', document.documentElement.classList.contains('sidebar-expanded') ? 'true' : 'false');
         sidebarToggle.addEventListener('click', function () {
             const isExpanded = document.documentElement.classList.toggle('sidebar-expanded');
+            sidebarToggle.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
             // Ghi nhớ trạng thái người dùng chọn
             localStorage.setItem('sidebarState', isExpanded ? 'expanded' : 'collapsed');
         });
@@ -1163,6 +1165,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function closeMobileSidebar() {
         document.documentElement.classList.remove('sidebar-expanded');
+        sidebarToggle?.setAttribute('aria-expanded', 'false');
         sidebar?.classList.remove('show');
         overlay?.classList.remove('show');
         localStorage.setItem('sidebarState', 'collapsed');
