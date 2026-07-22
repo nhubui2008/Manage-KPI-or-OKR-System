@@ -425,6 +425,19 @@
                     </div>
                 </div>
                 <div id="aiKpiSuggestResults" class="kpi-ai-results"></div>
+                <div id="aiKpiRefineChat" class="border rounded-3 bg-light p-3 mt-3 d-none" aria-labelledby="aiKpiRefineTitle">
+                    <label id="aiKpiRefineTitle" for="aiKpiRefineInput" class="form-label fw-semibold mb-1">
+                        <i class="bi bi-chat-dots me-1" aria-hidden="true"></i> Yêu cầu agent chỉnh sửa
+                    </label>
+                    <p class="evaluation-form-hint mb-2">Ví dụ: “Giảm target KPI đầu tiên 10%, viết tên ngắn hơn và bỏ KPI cuối”.</p>
+                    <div class="input-group">
+                        <input id="aiKpiRefineInput" class="form-control" maxlength="1000" placeholder="Nhập yêu cầu chỉnh sửa gợi ý KPI..." />
+                        <button id="aiKpiRefineBtn" type="button" class="btn btn-outline-primary">
+                            <i class="bi bi-send" aria-hidden="true"></i> Gửi
+                        </button>
+                    </div>
+                    <div id="aiKpiRefineStatus" class="small text-muted mt-2" role="status" aria-live="polite"></div>
+                </div>
             </div>
         </div>
     </div>

@@ -356,12 +356,15 @@
 
     function renderKpiSuggestions(suggestions) {
         var results = document.getElementById("aiKpiSuggestResults");
+        var refineChat = document.getElementById("aiKpiRefineChat");
         aiState.suggestions = suggestions || [];
         if (!results) return;
         if (!aiState.suggestions.length) {
             results.innerHTML = '<p class="evaluation-form-hint">AI chưa trả về gợi ý phù hợp.</p>';
+            refineChat?.classList.add("d-none");
             return;
         }
+        refineChat?.classList.remove("d-none");
         results.innerHTML = aiState.suggestions.map(function (item, index) {
             var name = fieldValue(item, ["name", "Name"]) || "KPI đề xuất";
             var rationale = fieldValue(item, ["rationale", "Rationale"]);
@@ -439,6 +442,50 @@
         } finally {
             button.disabled = false;
             button.innerHTML = original;
+        }
+    });
+
+    document.getElementById("aiKpiRefineBtn")?.addEventListener("click", async function () {
+        var button = this;
+        var input = document.getElementById("aiKpiRefineInput");
+        var status = document.getElementById("aiKpiRefineStatus");
+        var instruction = input?.value?.trim() || "";
+        if (!instruction) {
+            if (status) status.textContent = "Hãy nhập nội dung cần chỉnh sửa.";
+            input?.focus();
+            return;
+        }
+
+        var original = button.innerHTML;
+        button.disabled = true;
+        if (input) input.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Đang sửa...';
+        if (status) status.textContent = "Agent đang chỉnh sửa gợi ý KPI...";
+        try {
+            var headers = typeof window.antiForgeryHeaders === "function" ? window.antiForgeryHeaders() : {};
+            var response = await fetch("/AI/RefineKpiSuggestions", {
+                method: "POST",
+                headers: Object.assign({ "Content-Type": "application/json" }, headers),
+                body: JSON.stringify({ instruction: instruction, suggestions: aiState.suggestions })
+            });
+            var data = await response.json().catch(function () { return {}; });
+            if (!response.ok || data.success === false) throw new Error(data.warnings?.[0] || "Không thể chỉnh sửa gợi ý KPI.");
+            renderKpiSuggestions(data.suggestions || data);
+            if (input) input.value = "";
+            if (status) status.textContent = "Đã cập nhật gợi ý theo yêu cầu. Bạn có thể tiếp tục yêu cầu chỉnh sửa.";
+        } catch (error) {
+            if (status) status.textContent = error.message || "Không thể chỉnh sửa gợi ý KPI.";
+        } finally {
+            button.disabled = false;
+            if (input) input.disabled = false;
+            button.innerHTML = original;
+            input?.focus();
+        }
+    });
+    document.getElementById("aiKpiRefineInput")?.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && !event.isComposing) {
+            event.preventDefault();
+            document.getElementById("aiKpiRefineBtn")?.click();
         }
     });
 

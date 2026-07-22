@@ -197,6 +197,16 @@
         if (tbody) {
             tbody.innerHTML = html;
         }
+        setText('aiKrRefineStatus', 'Bạn có thể yêu cầu agent chỉnh sửa toàn bộ danh sách này.');
+    }
+
+    function collectAiKrSuggestions() {
+        return Array.from(document.querySelectorAll('#aiKrListTableBody tr')).map(row => ({
+            keyResultName: row.querySelector('.ai-kr-name')?.value?.trim() || '',
+            targetValue: Number(row.querySelector('.ai-kr-target')?.value),
+            unit: row.querySelector('.ai-kr-unit')?.value?.trim() || '',
+            isInverse: !!row.querySelector('.ai-kr-is-inverse')?.checked
+        }));
     }
 
     window.applyAiHistoryKR = function (parsedData) {
@@ -403,6 +413,50 @@
             resetAiSuggestLoading();
             const saveBtn = byId('btnSaveAiKrs');
             if (saveBtn) setSubmitLoading(saveBtn, false);
+            setValue('aiKrRefineInput', '');
+            setText('aiKrRefineStatus', '');
+        });
+
+        byId('btnRefineAiKrs')?.addEventListener('click', async function () {
+            const input = byId('aiKrRefineInput');
+            const instruction = input?.value?.trim() || '';
+            if (!instruction) {
+                setText('aiKrRefineStatus', 'Hãy nhập nội dung cần chỉnh sửa.');
+                input?.focus();
+                return;
+            }
+
+            const button = this;
+            const original = button.innerHTML;
+            button.disabled = true;
+            if (input) input.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Đang sửa...';
+            setText('aiKrRefineStatus', 'Agent đang chỉnh sửa gợi ý KR...');
+            try {
+                const response = await fetch(`/OKRs/RefineKeyResultSuggestions/${byId('aiOkrId').value}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', ...(window.antiForgeryHeaders ? window.antiForgeryHeaders() : {}) },
+                    body: JSON.stringify({ instruction, items: collectAiKrSuggestions() })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || data.success === false) throw new Error(data.message || 'Không thể chỉnh sửa gợi ý KR.');
+                renderAiKrResults(data);
+                if (input) input.value = '';
+                setText('aiKrRefineStatus', 'Đã cập nhật gợi ý theo yêu cầu. Bạn có thể tiếp tục yêu cầu chỉnh sửa.');
+            } catch (error) {
+                setText('aiKrRefineStatus', error.message || 'Không thể chỉnh sửa gợi ý KR.');
+            } finally {
+                button.disabled = false;
+                if (input) input.disabled = false;
+                button.innerHTML = original;
+                input?.focus();
+            }
+        });
+        byId('aiKrRefineInput')?.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' && !event.isComposing) {
+                event.preventDefault();
+                byId('btnRefineAiKrs')?.click();
+            }
         });
 
         byId('btnSaveAiKrs')?.addEventListener('click', function () {

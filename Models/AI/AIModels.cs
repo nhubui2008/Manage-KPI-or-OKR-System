@@ -74,6 +74,12 @@ namespace Manage_KPI_or_OKR_System.Models.AI
         public List<string> Warnings { get; set; } = new();
     }
 
+    public class RefineKpiSuggestionsRequest
+    {
+        public string? Instruction { get; set; }
+        public List<SuggestedKpi> Suggestions { get; set; } = new();
+    }
+
     public class AnalyzePerformanceRequest
     {
         public int? PeriodId { get; set; }

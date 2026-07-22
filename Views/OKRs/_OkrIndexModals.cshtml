@@ -68,6 +68,19 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div class="border rounded-3 bg-light p-3 mt-3" aria-labelledby="aiKrRefineTitle">
+                            <label id="aiKrRefineTitle" for="aiKrRefineInput" class="form-label fw-semibold mb-1">
+                                <i class="bi bi-chat-dots me-1" aria-hidden="true"></i> Yêu cầu agent chỉnh sửa
+                            </label>
+                            <p class="small text-muted mb-2">Ví dụ: “Rút còn 3 KR, đặt chỉ tiêu thực tế hơn và đổi đơn vị KR thứ hai thành %”.</p>
+                            <div class="input-group">
+                                <input id="aiKrRefineInput" class="form-control" maxlength="1000" placeholder="Nhập yêu cầu chỉnh sửa gợi ý KR..." />
+                                <button id="btnRefineAiKrs" type="button" class="btn btn-outline-primary">
+                                    <i class="bi bi-send" aria-hidden="true"></i> Gửi
+                                </button>
+                            </div>
+                            <div id="aiKrRefineStatus" class="small text-muted mt-2" role="status" aria-live="polite"></div>
+                        </div>
                         <div class="d-flex justify-content-end gap-3 mt-4">
                             <button type="button" class="btn-outline-custom px-4" data-bs-dismiss="modal">Hủy bỏ</button>
                             <button type="button" class="btn-primary-custom px-4" id="btnSaveAiKrs">Thêm KR đã chọn</button>
