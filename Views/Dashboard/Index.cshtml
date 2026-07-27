@@ -193,6 +193,26 @@
 </div>
 
 <style>
+    .dashboard-page {
+        min-width: 0;
+        overflow-x: clip;
+    }
+
+    .dashboard-header {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .dashboard-page .card,
+    .dashboard-page .card-body,
+    .dashboard-page .table-responsive {
+        min-width: 0;
+    }
+
+    .dashboard-page canvas {
+        max-width: 100%;
+    }
+
     #aiPerformanceAnalysisResult,
     #aiCustomerSegmentsResult,
     #aiPerformanceAnalysisResult .ai-result-card,
@@ -233,6 +253,56 @@
     #aiCustomerSegmentsResult .ai-segment-card {
         background: #fff;
     }
+
+    @@media (max-width: 767.98px) {
+        .dashboard-header {
+            align-items: stretch !important;
+            flex-direction: column;
+        }
+
+        .dashboard-header > .ms-auto,
+        .dashboard-period-filter {
+            width: 100%;
+        }
+
+        .dashboard-period-filter {
+            border-radius: 0.65rem !important;
+            padding: 0.35rem 0.75rem !important;
+        }
+
+        .dashboard-period-filter .form-select {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+
+        .dashboard-page .row.g-4 {
+            --bs-gutter-x: 0.85rem;
+            --bs-gutter-y: 0.85rem;
+        }
+
+        .dashboard-page .card-body {
+            padding: 1rem;
+        }
+
+        .dashboard-page .card-header .btn {
+            min-height: 40px;
+        }
+    }
+
+    @@media (max-width: 390px) {
+        .dashboard-page .dashboard-stat-card {
+            padding: 0.85rem !important;
+        }
+
+        .dashboard-page .card-header {
+            align-items: stretch !important;
+            flex-direction: column;
+        }
+
+        .dashboard-page .card-header .btn {
+            width: 100%;
+        }
+    }
 </style>
 
 @* ============ MAIN CHART + RECENT CHECKINS ============ *@
@@ -244,7 +314,7 @@
             </div>
             <div class="card-body d-flex align-items-center justify-content-center p-4">
                 <div class="w-100" style="position: relative; height: 350px;">
-                    <canvas id="mainDashboardChart"></canvas>
+                    <canvas id="mainDashboardChart" role="img" aria-label="Biểu đồ xu hướng tiến độ KPI trong 6 tháng gần nhất"></canvas>
                 </div>
             </div>
         </div>
@@ -357,7 +427,7 @@
             </div>
             <div class="card-body d-flex align-items-center justify-content-center p-4">
                 <div class="w-100" style="position: relative; height: 320px;">
-                    <canvas id="okrStatusChart"></canvas>
+                    <canvas id="okrStatusChart" role="img" aria-label="Biểu đồ phân bổ trạng thái OKR"></canvas>
                 </div>
             </div>
         </div>
@@ -369,7 +439,7 @@
             </div>
             <div class="card-body d-flex align-items-center justify-content-center p-4">
                 <div class="w-100" style="position: relative; height: 320px;">
-                    <canvas id="deptPerformanceChart"></canvas>
+                    <canvas id="deptPerformanceChart" role="img" aria-label="Biểu đồ hiệu suất trung bình theo phòng ban"></canvas>
                 </div>
             </div>
         </div>

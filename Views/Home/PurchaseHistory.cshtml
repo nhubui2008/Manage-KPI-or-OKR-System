@@ -6,7 +6,7 @@
 
 @await Html.PartialAsync("_LandingHeader")
 
-<div style="background-color: #f8f9fa; min-height: 100vh; padding: 2rem 0; padding-top: 100px;">
+<main class="purchase-history-page">
     <div class="container">
         <!-- Breadcrumb / Back Navigation -->
         <nav aria-label="breadcrumb" class="mb-4">
@@ -31,7 +31,8 @@
                 @if (Model != null && Model.Any())
                 {
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 0.95rem;">
+                        <table class="table table-hover align-middle mb-0 purchase-history-table">
+                            <caption class="visually-hidden">Danh sách các gói dịch vụ đã đăng ký</caption>
                             <thead class="table-light">
                                 <tr>
                                     <th scope="col" class="ps-4 border-0 text-secondary fw-semibold">Thời gian</th>
@@ -44,20 +45,20 @@
                                 @foreach (var item in Model)
                                 {
                                     <tr>
-                                        <td class="ps-4">
+                                        <td class="ps-4" data-label="Thời gian">
                                             <div class="fw-medium text-dark">@item.CreatedAt.ToString("dd/MM/yyyy")</div>
                                             <div class="text-muted small">@item.CreatedAt.ToString("HH:mm")</div>
                                         </td>
-                                        <td>
+                                        <td data-label="Email tài khoản">
                                             <span class="text-dark">@item.Email</span>
                                         </td>
-                                        <td>
+                                        <td data-label="Tên gói dịch vụ">
                                             <div class="d-flex align-items-center gap-2">
                                                 <i class="bi bi-box-seam text-primary"></i>
                                                 <span class="fw-semibold text-primary">@item.SelectedPlan</span>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td data-label="Trạng thái">
                                             <span class="badge rounded-pill bg-success text-white px-3 py-2">Thành công</span>
                                         </td>
                                     </tr>
@@ -69,7 +70,7 @@
                 else
                 {
                     <div class="text-center py-5">
-                        <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" alt="No data" style="width: 120px; opacity: 0.5; margin-bottom: 1.5rem;" />
+                        <div class="empty-history-icon" aria-hidden="true"><i class="bi bi-receipt"></i></div>
                         <h5 class="text-muted fw-normal mb-3">Bạn chưa đăng ký gói dịch vụ nào.</h5>
                         <a href="/#pricing" class="btn btn-primary px-4 py-2" style="border-radius: 50px; font-weight: 500;">
                             Xem Bảng giá
@@ -79,14 +80,13 @@
             </div>
         </div>
     </div>
-</div>
+</main>
 
 <style>
-    :root {
-        --primary: #7b68ee;
-    }
-    body {
+    .purchase-history-page {
         background-color: #f8f9fa;
+        min-height: 100vh;
+        padding: 100px 0 2rem;
     }
     .table-hover tbody tr:hover {
         background-color: rgba(123,104,238,0.04);
@@ -94,6 +94,29 @@
     .table td, .table th {
         padding: 1rem 0.5rem;
         vertical-align: middle;
+    }
+    .empty-history-icon {
+        color: var(--primary);
+        font-size: 4rem;
+        line-height: 1;
+        margin-bottom: 1rem;
+        opacity: .55;
+    }
+    @@media (max-width: 575.98px) {
+        .purchase-history-page { padding-top: 82px; }
+        .purchase-history-page .container { padding-inline: 1rem; }
+        .purchase-history-page .card-header { align-items: flex-start !important; padding: 1.25rem !important; }
+        .purchase-history-page .table-responsive { overflow: visible; }
+        .purchase-history-table thead { display: none; }
+        .purchase-history-table,
+        .purchase-history-table tbody,
+        .purchase-history-table tr,
+        .purchase-history-table td { display: block; width: 100%; }
+        .purchase-history-table tbody { padding: 0 1rem 1rem; }
+        .purchase-history-table tr { border: 1px solid #e5e7eb; border-radius: .75rem; margin-top: 1rem; padding: .5rem 1rem; }
+        .purchase-history-table td,
+        .purchase-history-table td.ps-4 { display: flex; justify-content: space-between; gap: 1rem; padding: .65rem 0 !important; border: 0; text-align: right; overflow-wrap: anywhere; }
+        .purchase-history-table td::before { content: attr(data-label); color: #6c757d; font-weight: 600; text-align: left; }
     }
 </style>
 

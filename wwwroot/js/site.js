@@ -1152,23 +1152,47 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
+    const mobileSearchToggle = document.getElementById('mobileSearchToggle');
+    const mobileSearchClose = document.getElementById('mobileSearchClose');
+    const headerSearchShell = document.getElementById('headerSearch');
+    const mobileViewport = window.matchMedia('(max-width: 991.98px)');
+    let sidebarReturnFocus = null;
+
+    function syncSidebarAccessibility(isExpanded) {
+        const isMobile = mobileViewport.matches;
+        sidebarToggle?.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+        overlay?.setAttribute('tabindex', isMobile && isExpanded ? '0' : '-1');
+        document.body.classList.toggle('mobile-navigation-open', isMobile && isExpanded);
+        if (sidebar) {
+            sidebar.setAttribute('aria-hidden', isMobile && !isExpanded ? 'true' : 'false');
+        }
+    }
 
     if (sidebarToggle) {
-        sidebarToggle.setAttribute('aria-expanded', document.documentElement.classList.contains('sidebar-expanded') ? 'true' : 'false');
+        syncSidebarAccessibility(document.documentElement.classList.contains('sidebar-expanded'));
         sidebarToggle.addEventListener('click', function () {
             const isExpanded = document.documentElement.classList.toggle('sidebar-expanded');
-            sidebarToggle.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+            sidebarReturnFocus = isExpanded ? document.activeElement : null;
+            syncSidebarAccessibility(isExpanded);
             // Ghi nhớ trạng thái người dùng chọn
-            localStorage.setItem('sidebarState', isExpanded ? 'expanded' : 'collapsed');
+            if (!mobileViewport.matches) {
+                localStorage.setItem('sidebarState', isExpanded ? 'expanded' : 'collapsed');
+            }
+            if (isExpanded && mobileViewport.matches) {
+                window.setTimeout(() => sidebar?.querySelector('.sidebar-link[href]')?.focus({ preventScroll: true }), 0);
+            }
         });
     }
 
     function closeMobileSidebar() {
         document.documentElement.classList.remove('sidebar-expanded');
-        sidebarToggle?.setAttribute('aria-expanded', 'false');
         sidebar?.classList.remove('show');
         overlay?.classList.remove('show');
-        localStorage.setItem('sidebarState', 'collapsed');
+        syncSidebarAccessibility(false);
+        if (sidebarReturnFocus instanceof HTMLElement) {
+            sidebarReturnFocus.focus({ preventScroll: true });
+        }
+        sidebarReturnFocus = null;
     }
 
     if (overlay) {
@@ -1176,6 +1200,58 @@ document.addEventListener('DOMContentLoaded', function () {
             closeMobileSidebar();
         });
     }
+
+    function setMobileSearchOpen(isOpen) {
+        if (!headerSearchShell || !mobileSearchToggle) return;
+        document.documentElement.classList.toggle('mobile-search-open', isOpen);
+        mobileSearchToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        if (isOpen) {
+            window.setTimeout(() => headerSearchShell.querySelector('input')?.focus({ preventScroll: true }), 0);
+        } else {
+            headerSearchShell.querySelector('.search-results-dropdown')?.classList.remove('show');
+            mobileSearchToggle.focus({ preventScroll: true });
+        }
+    }
+
+    mobileSearchToggle?.addEventListener('click', () => setMobileSearchOpen(true));
+    mobileSearchClose?.addEventListener('click', () => setMobileSearchOpen(false));
+
+    document.addEventListener('keydown', function (event) {
+        const mobileSidebarOpen = mobileViewport.matches
+            && document.documentElement.classList.contains('sidebar-expanded');
+
+        if (event.key === 'Tab' && mobileSidebarOpen && sidebar) {
+            const focusable = Array.from(sidebar.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(element => element instanceof HTMLElement && element.offsetParent !== null);
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (!first || !last) {
+                event.preventDefault();
+                return;
+            }
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            } else if (!sidebar.contains(document.activeElement)) {
+                event.preventDefault();
+                first.focus();
+            }
+            return;
+        }
+
+        if (event.key !== 'Escape') return;
+        if (document.documentElement.classList.contains('mobile-search-open')) {
+            setMobileSearchOpen(false);
+            return;
+        }
+        if (mobileSidebarOpen) {
+            closeMobileSidebar();
+        }
+    });
 
     // --- Active Menu Highlighting ---
     function normalizeSidebarPath(path) {
@@ -1771,9 +1847,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // storage and class writes on every resize event.
     const desktopViewport = window.matchMedia('(min-width: 992px)');
     const clearMobileOnlySidebarState = function (event) {
-        if (!event.matches) return;
-        sidebar?.classList.remove('show');
-        overlay?.classList.remove('show');
+        if (event.matches) {
+            sidebar?.classList.remove('show');
+            overlay?.classList.remove('show');
+            document.documentElement.classList.remove('mobile-search-open');
+            mobileSearchToggle?.setAttribute('aria-expanded', 'false');
+            const storedState = localStorage.getItem('sidebarState');
+            document.documentElement.classList.toggle('sidebar-expanded', storedState !== 'collapsed');
+            syncSidebarAccessibility(document.documentElement.classList.contains('sidebar-expanded'));
+            return;
+        }
+
+        document.documentElement.classList.remove('sidebar-expanded', 'mobile-search-open');
+        mobileSearchToggle?.setAttribute('aria-expanded', 'false');
+        syncSidebarAccessibility(false);
     };
     if (typeof desktopViewport.addEventListener === 'function') {
         desktopViewport.addEventListener('change', clearMobileOnlySidebarState);

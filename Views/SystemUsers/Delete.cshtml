@@ -7,15 +7,15 @@
     var roleName = Model.RoleId.HasValue && roles.ContainsKey(Model.RoleId.Value) ? roles[Model.RoleId.Value] : "N/A";
 }
 
-<div class="container-fluid px-4 mt-4">
+<div class="container-fluid px-3 px-md-4 py-4 system-user-delete-page">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
-            <div class="card shadow-lg border-0 rounded-4 overflow-hidden mt-5">
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden mt-md-4">
                 <div class="card-header bg-danger text-white py-4 d-flex flex-column align-items-center text-center">
                     <div class="bg-white text-danger rounded-circle d-flex justify-content-center align-items-center mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                     </div>
-                    <h3 class="fw-bold mb-0">Xóa vĩnh viễn Hệ thống tài khoản?</h3>
+                    <h1 class="h3 fw-bold mb-0">Xóa vĩnh viễn tài khoản hệ thống?</h1>
                     <p class="mb-0 text-white-50 mt-1">Hành động này KHÔNG THỂ hoàn tác!</p>
                 </div>
                 <div class="card-body p-4 p-md-5">
@@ -47,3 +47,11 @@
         </div>
     </div>
 </div>
+
+<style>
+    @@media (max-width: 575.98px) {
+        .system-user-delete-page .card-header { padding: 1.5rem 1rem !important; }
+        .system-user-delete-page .card-body { padding: 1.25rem !important; }
+        .system-user-delete-page .btn { min-height: 48px; white-space: normal; }
+    }
+</style>

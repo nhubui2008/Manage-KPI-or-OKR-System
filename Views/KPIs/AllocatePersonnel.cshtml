@@ -11,8 +11,8 @@
     var unit = detail?.MeasurementUnit ?? "";
 }
 
-<div class="container-fluid px-0">
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+<div class="container-fluid px-0 kpi-allocation-page">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4 kpi-allocation-header">
         <div>
             <h1 class="h3 font-weight-bold mb-1">Phân bổ KPI: @Model.KPIName</h1>
             <div class="page-breadcrumb">
@@ -44,7 +44,7 @@
                     </p>
                 </div>
                 <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                    <div id="summaryCard" class="bg-white p-3 rounded-4 shadow-sm border border-primary border-opacity-25 d-inline-block text-start" style="min-width: 200px;">
+                    <div id="summaryCard" class="bg-white p-3 rounded-4 shadow-sm border border-primary border-opacity-25 d-inline-block text-start kpi-allocation-summary">
                         <div class="text-muted small text-uppercase fw-bold mb-1">Tổng phân bổ</div>
                         <div class="d-flex align-items-center gap-2">
                             <span id="totalPercentageDisplay" class="fs-3 fw-bold text-primary">0%</span>
@@ -80,7 +80,7 @@
 
                             @if (departments.Any())
                             {
-                                <div class="department-selector-list d-flex flex-column gap-2" style="max-height: 220px; overflow-y: auto;">
+                                <div class="department-selector-list d-flex flex-column gap-2">
                                     @foreach (var dept in departments)
                                     {
                                         var isDepartmentAssigned = currentDepartmentAssignments.Contains(dept.Id);
@@ -118,7 +118,7 @@
                             <input type="text" id="employeeSearch" class="form-control bg-light border-0 py-2 rounded-pill-end" placeholder="Tìm tên hoặc mã nhân viên...">
                         </div>
                         
-                        <div class="employee-selector-list" style="max-height: 500px; overflow-y: auto;">
+                        <div class="employee-selector-list">
                             @foreach (var group in groupedEmployees)
                             {
                                 var departmentNameJson = System.Text.Json.JsonSerializer.Serialize(group.Key);
@@ -246,6 +246,10 @@
     #summaryCard.valid { border-color: var(--success) !important; background: var(--success-bg) !important; }
     #summaryCard.invalid { border-color: var(--danger) !important; background: var(--danger-bg) !important; }
 </style>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/kpi-create.css" asp-append-version="true" />
+}
 
 <script>
     const totalKpiTarget = @Json.Serialize(targetValue);

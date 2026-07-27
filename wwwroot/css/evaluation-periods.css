@@ -128,7 +128,8 @@
 .evaluation-filter-form input,
 .evaluation-filter-form select,
 .evaluation-modal input,
-.evaluation-modal select {
+.evaluation-modal select,
+.evaluation-modal textarea {
     width: 100%;
     min-height: 44px;
     border: 1px solid #d7dbe2;
@@ -143,6 +144,7 @@
 .evaluation-filter-form select:focus,
 .evaluation-modal input:focus,
 .evaluation-modal select:focus,
+.evaluation-modal textarea:focus,
 .evaluation-icon-button:focus-visible,
 .evaluation-chip:focus-visible,
 .evaluation-primary-action:focus-visible,
@@ -320,6 +322,34 @@
     .evaluation-form-header > a { justify-self: start; }
     .evaluation-form-actions { display: grid !important; grid-template-columns: 1fr; }
     .evaluation-form-actions > * { width: 100%; text-align: center; }
+}
+
+@media (max-width: 575.98px) {
+    .evaluation-page-header h1 {
+        font-size: 1.4rem;
+        overflow-wrap: anywhere;
+    }
+
+    .evaluation-modal.modal-content {
+        max-height: calc(100dvh - 1rem);
+    }
+
+    .modal-dialog:has(> .evaluation-modal) {
+        width: auto;
+        max-width: none;
+        height: calc(100% - 1rem);
+        margin: 0.5rem;
+    }
+
+    .evaluation-modal .modal-body {
+        min-width: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .evaluation-modal .modal-footer {
+        flex-shrink: 0;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -10,7 +10,7 @@
     }
 }
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -103,7 +103,7 @@
         (function() {
             const sidebarState = localStorage.getItem('sidebarState');
             const desktopDefault = window.matchMedia('(min-width: 992px)').matches;
-            if (sidebarState === 'expanded' || (sidebarState === null && desktopDefault)) {
+            if (desktopDefault && (sidebarState === 'expanded' || sidebarState === null)) {
                 document.documentElement.classList.add('sidebar-expanded');
             } else {
                 document.documentElement.classList.remove('sidebar-expanded');
@@ -124,6 +124,7 @@
     }
     else
     {
+        <a class="app-skip-link" href="#mainContent">Chuyển đến nội dung chính</a>
         <form id="globalAntiForgeryForm" class="d-none">
             @Html.AntiForgeryToken()
         </form>
@@ -493,7 +494,7 @@
                 <div class="settings-panel-backdrop" data-settings-panel-close></div>
             }
 
-            <div id="sidebarOverlay" class="sidebar-overlay"></div>
+            <button type="button" id="sidebarOverlay" class="sidebar-overlay" aria-label="Đóng thanh điều hướng" tabindex="-1"></button>
 
             <div class="main-content">
                 <header class="top-header">
@@ -501,9 +502,15 @@
                         <button type="button" id="sidebarToggle" class="sidebar-toggle" aria-label="Thu gọn hoặc mở rộng thanh điều hướng" aria-expanded="false" aria-controls="sidebar">
                             <i class="bi bi-list"></i>
                         </button>
-                        <div class="header-search">
-                            <i class="bi bi-search"></i>
+                        <button type="button" id="mobileSearchToggle" class="header-icon-btn mobile-search-toggle" aria-label="Mở tìm kiếm nhanh" aria-expanded="false" aria-controls="headerSearch">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                        </button>
+                        <div id="headerSearch" class="header-search">
+                            <i class="bi bi-search" aria-hidden="true"></i>
                             <input type="search" aria-label="Tìm kiếm nhanh nhân viên, KPI, OKR, phòng ban" placeholder="Tìm kiếm nhanh nhân viên, KPI, OKR, phòng ban..." autocomplete="off">
+                            <button type="button" id="mobileSearchClose" class="header-search-close" aria-label="Đóng tìm kiếm nhanh">
+                                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -626,7 +633,7 @@
                     </div>
                 </header>
 
-                <main class="page-content" role="main">
+                <main id="mainContent" class="page-content" role="main" tabindex="-1">
                     @RenderBody()
                 </main>
 

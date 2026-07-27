@@ -377,3 +377,142 @@
 @media (prefers-reduced-motion: reduce) {
     .kpi-create-page *, .kpi-create-page *::before, .kpi-create-page *::after { transition-duration: 0.01ms !important; }
 }
+
+/* KPI details and allocation reuse the same compact, responsive workspace rules. */
+.kpi-detail-page,
+.kpi-allocation-page {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-bottom: 2rem;
+}
+
+.kpi-detail-header,
+.kpi-allocation-header {
+    gap: 1rem;
+}
+
+.kpi-detail-header > div:first-child,
+.kpi-allocation-header > div:first-child,
+.kpi-detail-page .card,
+.kpi-allocation-page .card,
+.kpi-detail-page .card-body,
+.kpi-allocation-page .card-body {
+    min-width: 0;
+}
+
+.kpi-detail-page p,
+.kpi-detail-page td,
+.kpi-allocation-page .employee-select-item,
+.kpi-allocation-page .department-select-item {
+    overflow-wrap: anywhere;
+}
+
+.kpi-detail-actions {
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.kpi-detail-actions .btn,
+.kpi-allocation-header .btn,
+.kpi-modal-actions .btn {
+    min-height: 44px;
+}
+
+.kpi-allocation-summary { min-width: 12.5rem; }
+.kpi-allocation-page .department-selector-list {
+    max-height: 13.75rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+.kpi-allocation-page .employee-selector-list {
+    max-height: 31.25rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+.kpi-allocation-page .department-select-item,
+.kpi-allocation-page .employee-select-item {
+    min-height: 44px;
+}
+
+.kpi-detail-page .table-responsive {
+    scrollbar-gutter: stable;
+    overscroll-behavior-inline: contain;
+}
+
+@media (max-width: 767.98px) {
+    .kpi-detail-header,
+    .kpi-allocation-header {
+        align-items: stretch !important;
+        flex-direction: column;
+    }
+
+    .kpi-detail-header h1,
+    .kpi-allocation-header h1 {
+        font-size: 1.35rem;
+        overflow-wrap: anywhere;
+    }
+
+    .kpi-detail-actions {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .kpi-detail-actions .btn:first-child:last-child,
+    .kpi-allocation-header > div:last-child,
+    .kpi-allocation-header .btn {
+        width: 100%;
+    }
+
+    .kpi-detail-actions .btn {
+        padding-inline: 0.8rem !important;
+        white-space: nowrap;
+    }
+
+    .kpi-detail-page .card-body,
+    .kpi-allocation-page .card-body {
+        padding: 1rem !important;
+    }
+
+    .kpi-allocation-summary {
+        display: block !important;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .kpi-allocation-page .department-selector-list,
+    .kpi-allocation-page .employee-selector-list {
+        max-height: min(45vh, 24rem);
+    }
+
+    .kpi-workspace-modal {
+        width: auto;
+        max-width: none;
+        height: calc(100% - 1rem);
+        margin: 0.5rem;
+    }
+
+    .kpi-workspace-modal .modal-content { max-height: 100%; }
+    .kpi-workspace-modal .modal-header,
+    .kpi-workspace-modal .modal-body { padding: 1rem !important; }
+    .kpi-modal-actions {
+        position: sticky;
+        bottom: -1rem;
+        z-index: 2;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        margin-inline: -1rem;
+        margin-bottom: -1rem;
+        padding: 0.8rem 1rem;
+        border-top: 1px solid var(--evaluation-line);
+        background: #fff;
+    }
+    .kpi-modal-actions .btn { width: 100%; padding-inline: 0.75rem !important; }
+}
+
+@media (max-width: 420px) {
+    .kpi-detail-actions { grid-template-columns: 1fr; }
+}

@@ -355,6 +355,15 @@
             border-radius: 8px;
         }
 
+        :is(#aiSuggestKrModal, #addKrModal, #allocateOkrModal, #updateKrProgressModal, #editKrModal) .modal-content {
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        :is(#aiSuggestKrModal, #addKrModal, #allocateOkrModal, #updateKrProgressModal, #editKrModal) :is(.modal-body-soft, .modal-body) {
+            overflow-wrap: anywhere;
+        }
+
         @media (max-width: 1200px) {
             .okr-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .okr-filter-field--search,
@@ -376,6 +385,17 @@
             }
             .okr-summary__item:nth-child(2n) { border-right: 0; }
             .okr-filter-grid { grid-template-columns: 1fr; }
+            .okr-filter-field--search,
+            .okr-filter-actions { grid-column: auto; }
+            .okr-filter-actions .btn { flex: 1 1 120px; min-height: 42px; }
+            .okr-quick-filters {
+                flex-wrap: nowrap;
+                margin-inline: -10px;
+                padding-inline: 10px;
+                overflow-x: auto;
+                scrollbar-width: thin;
+            }
+            .okr-quick-filters a { flex: 0 0 auto; min-height: 40px; }
             .okr-objective-header { grid-template-columns: minmax(0, 1fr) 40px; }
             .okr-objective-main { padding-right: 8px; }
             .okr-kr-row {
@@ -384,6 +404,13 @@
             }
             .okr-kr-row__actions { justify-content: flex-start; }
             .okr-objective-progress { max-width: none; }
+            :is(#aiSuggestKrModal, #addKrModal, #allocateOkrModal, #updateKrProgressModal, #editKrModal) .modal-dialog {
+                width: auto;
+                max-width: none;
+                margin: 8px;
+            }
+            :is(#aiSuggestKrModal, #addKrModal, #allocateOkrModal, #updateKrProgressModal, #editKrModal) .modal-content { max-height: calc(100dvh - 16px); }
+            :is(#aiSuggestKrModal, #addKrModal, #allocateOkrModal, #updateKrProgressModal, #editKrModal) :is(.modal-body-soft, .modal-body) { overflow-y: auto; }
         }
         @media (max-width: 390px) {
             .okr-panel { padding: 10px; }

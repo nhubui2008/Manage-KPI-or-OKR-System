@@ -49,8 +49,8 @@
     };
 }
 
-<div class="container-fluid px-0">
-    <div class="page-header d-flex justify-content-between align-items-center mb-4">
+<div class="container-fluid px-0 kpi-detail-page">
+    <div class="page-header d-flex justify-content-between align-items-center mb-4 kpi-detail-header">
         <div>
             <h1 class="h3 font-weight-bold mb-1">Chi tiết KPI: @Model.KPIName</h1>
             <div class="page-breadcrumb">
@@ -61,7 +61,7 @@
                 <span>Chi tiết</span>
             </div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 kpi-detail-actions">
             <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4">
                 <i class="bi bi-arrow-left me-1"></i> Quay lại
             </a>
@@ -482,7 +482,7 @@
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-bottom-0 pb-0 bg-light rounded-top p-4">
                 <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-2"></i>Chỉnh sửa KPI</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng cửa sổ chỉnh sửa"></button>
             </div>
             <div class="modal-body p-4">
                 <form asp-action="Edit" method="post">
@@ -656,7 +656,7 @@
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2 mt-4">
+                    <div class="d-flex justify-content-end gap-2 mt-4 kpi-modal-actions">
                         <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
                         <button type="submit" class="btn btn-primary rounded-pill px-4"><i class="bi bi-save me-2"></i>Lưu thay đổi</button>
                     </div>
@@ -718,3 +718,7 @@
 
     document.querySelectorAll('[data-okr-link-scope]').forEach(setupOkrLinkScope);
 </script>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/kpi-create.css" asp-append-version="true" />
+}

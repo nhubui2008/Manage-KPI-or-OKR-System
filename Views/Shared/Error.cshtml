@@ -36,9 +36,9 @@
                 }
 
                 <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center mt-2">
-                    <a href="javascript:history.back()" class="btn btn-outline-secondary rounded-pill px-4 py-2">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 py-2" onclick="history.back()">
                         <i class="bi bi-arrow-left me-2"></i>Quay lại trang trước
-                    </a>
+                    </button>
                     <a href="/" class="btn btn-primary rounded-pill px-5 py-2 shadow-sm">
                         <i class="bi bi-house-door me-2"></i>Về trang chủ
                     </a>
@@ -53,13 +53,14 @@
 <style>
     .error-container {
         background: linear-gradient(145deg, #ffffff, #f8f9fa);
-        transition: transform 0.3s ease;
-    }
-    .error-container:hover {
-        transform: translateY(-5px);
     }
     .btn-primary {
         background-color: #0d6efd;
         border-color: #0d6efd;
+    }
+    @@media (max-width: 575.98px) {
+        .error-container { padding: 1.5rem !important; }
+        .error-container h1 { font-size: 1.6rem; }
+        .error-container .btn { width: 100%; min-height: 44px; }
     }
 </style>

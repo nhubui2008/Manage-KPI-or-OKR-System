@@ -6,7 +6,7 @@
     var roles = ViewBag.Roles as Dictionary<int, string> ?? new Dictionary<int, string>();
 }
 
-<div class="container-fluid px-4 mt-4">
+<div class="container-fluid px-3 px-md-4 py-4 system-user-edit-page">
     <div class="row mb-3">
         <div class="col-12">
             <h3 class="text-primary fw-bold"><i class="bi bi-pencil-square me-2"></i>Chỉnh sửa thông tin</h3>
@@ -66,14 +66,15 @@
                         <p class="text-muted small">Để trống nếu bạn không muốn đổi mật khẩu.</p>
                         
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Đổi mật khẩu mới</label>
-                            <input name="newPassword" type="password" class="form-control" placeholder="Nhập mật khẩu mới..." minlength="6" maxlength="128" pattern="\S{6,128}" autocomplete="new-password" title="Mật khẩu từ 6 đến 128 ký tự và không chứa khoảng trắng" />
+                            <label for="newPassword" class="form-label fw-semibold">Đổi mật khẩu mới</label>
+                            <input id="newPassword" name="newPassword" type="password" class="form-control" placeholder="Nhập mật khẩu mới..." minlength="6" maxlength="128" pattern="\S{6,128}" autocomplete="new-password" aria-describedby="newPasswordHint" title="Mật khẩu từ 6 đến 128 ký tự và không chứa khoảng trắng" />
+                            <div id="newPasswordHint" class="form-text">Từ 6 đến 128 ký tự, không chứa khoảng trắng.</div>
                             @Html.ValidationMessage("newPassword", "", new { @class = "text-danger small mt-1 d-block" })
                         </div>
                     </div>
 
                     <div class="col-12 mt-5">
-                        <div class="d-flex justify-content-end gap-2 text-end border-top pt-3">
+                        <div class="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 text-end border-top pt-3 form-actions">
                             <a asp-action="Index" class="btn btn-light rounded-pill px-4">Hủy thao tác</a>
                             <button type="submit" class="btn btn-primary rounded-pill px-4">
                                 <i class="bi bi-cloud-check me-1"></i> Lưu thay đổi
@@ -85,3 +86,13 @@
         </div>
     </div>
 </div>
+
+<style>
+    .system-user-edit-page .card { max-width: 1100px; }
+    .system-user-edit-page .form-control,
+    .system-user-edit-page .form-select { min-height: 46px; }
+    @@media (max-width: 575.98px) {
+        .system-user-edit-page .card-body { padding: 1.25rem !important; }
+        .system-user-edit-page .form-actions .btn { width: 100%; min-height: 44px; }
+    }
+</style>

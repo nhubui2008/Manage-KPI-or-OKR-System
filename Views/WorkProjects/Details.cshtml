@@ -1204,6 +1204,10 @@
             justify-content: flex-start !important;
         }
 
+        .project-actions .btn {
+            min-height: 42px;
+        }
+
         .project-summary {
             -webkit-line-clamp: 2;
         }
@@ -1211,6 +1215,25 @@
         .kanban-column {
             height: calc(100dvh - 240px);
             min-height: 430px;
+        }
+    }
+
+    @@media (max-width: 390px) {
+        .project-actions .btn {
+            flex: 1 1 100%;
+            justify-content: center;
+        }
+
+        .project-meta-row {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .meta-chip {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     }
 
