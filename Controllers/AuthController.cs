@@ -583,7 +583,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [Authorize] // Bắt buộc phải đăng nhập mới được đổi mật khẩu
         public IActionResult ChangePassword(bool force = false)
         {
-            ViewData["IsLoginPage"] = true;
             if (force)
             {
                 ViewBag.Error = "Bạn bắt buộc phải đổi mật khẩu ở lần đăng nhập đầu tiên để bảo vệ tài khoản!";
@@ -596,7 +595,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(string oldPassword, string newPassword, string confirmPassword)
         {
-            ViewData["IsLoginPage"] = true;
             var validationMessage = ValidatePasswordChange(oldPassword, newPassword, confirmPassword);
             if (validationMessage != null)
             {
