@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AGY implementation report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "taskId",
+    "iteration",
+    "status",
+    "summary",
+    "changedFiles",
+    "commands",
+    "acceptanceCriteria",
+    "blockers",
+    "risks",
+    "notesForCodex",
+    "gitStatus"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "taskId": { "type": "string", "minLength": 1 },
+    "iteration": { "type": "integer", "minimum": 1, "maximum": 5 },
+    "status": { "enum": ["completed", "blocked", "failed"] },
+    "summary": { "type": "string" },
+    "changedFiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "intent"],
+        "properties": {
+          "path": { "type": "string" },
+          "intent": { "type": "string" }
+        }
+      }
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "exitCode", "result"],
+        "properties": {
+          "command": { "type": "string" },
+          "exitCode": { "type": ["integer", "null"] },
+          "result": { "enum": ["passed", "failed", "not_run"] },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["criterion", "status", "evidence"],
+        "properties": {
+          "criterion": { "type": "string" },
+          "status": { "enum": ["met", "not_met", "not_verified"] },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "notesForCodex": { "type": "array", "items": { "type": "string" } },
+    "gitStatus": { "type": "array", "items": { "type": "string" } }
+  }
+}
