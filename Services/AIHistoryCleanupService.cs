@@ -1,4 +1,5 @@
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Services.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
 namespace Manage_KPI_or_OKR_System.Services
@@ -44,31 +45,57 @@ namespace Manage_KPI_or_OKR_System.Services
 
         private async Task CleanupHistoryAsync()
         {
-            using var scope = _scopeFactory.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<MiniERPDbContext>();
-
-            // Get Retention Days from SystemParameters
-            var limitParam = await context.SystemParameters
-                .FirstOrDefaultAsync(p => p.ParameterCode == "AI_HISTORY_RETENTION_DAYS");
-            
-            // Default to 30 days if not set or invalid
-            int retentionDays = 30;
-            if (limitParam != null && int.TryParse(limitParam.Value, out int configuredDays))
+            List<int> tenantIds;
+            using (var discoveryScope = _scopeFactory.CreateScope())
             {
-                retentionDays = configuredDays;
+                var discoveryContext = discoveryScope.ServiceProvider
+                    .GetRequiredService<MiniERPDbContext>();
+                tenantIds = await discoveryContext.Tenants
+                    .AsNoTracking()
+                    .Where(tenant => tenant.IsActive)
+                    .Select(tenant => tenant.Id)
+                    .ToListAsync();
             }
 
-            var cutoffDate = DateTime.Now.AddDays(-retentionDays);
-
-            var oldRecords = await context.AIGenerationHistories
-                .Where(h => h.CreatedAt < cutoffDate)
-                .ToListAsync();
-
-            if (oldRecords.Any())
+            foreach (var tenantId in tenantIds)
             {
+                using var tenantScope = _scopeFactory.CreateScope();
+                var tenantContext = tenantScope.ServiceProvider
+                    .GetRequiredService<TenantContext>();
+                tenantContext.SetBackgroundTenant(tenantId);
+                var context = tenantScope.ServiceProvider
+                    .GetRequiredService<MiniERPDbContext>();
+
+                var limitParam = await context.SystemParameters
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(parameter =>
+                        parameter.ParameterCode == "AI_HISTORY_RETENTION_DAYS");
+
+                var retentionDays = 30;
+                if (limitParam != null &&
+                    int.TryParse(limitParam.Value, out var configuredDays) &&
+                    configuredDays is >= 1 and <= 3650)
+                {
+                    retentionDays = configuredDays;
+                }
+
+                var cutoffDate = DateTime.Now.AddDays(-retentionDays);
+                var oldRecords = await context.AIGenerationHistories
+                    .Where(history => history.CreatedAt < cutoffDate)
+                    .ToListAsync();
+
+                if (oldRecords.Count == 0)
+                {
+                    continue;
+                }
+
                 context.AIGenerationHistories.RemoveRange(oldRecords);
                 await context.SaveChangesAsync();
-                _logger.LogInformation($"Cleaned up {oldRecords.Count} AI Generation History records older than {retentionDays} days.");
+                _logger.LogInformation(
+                    "Cleaned up {Count} AI history records for tenant {TenantId} older than {RetentionDays} days.",
+                    oldRecords.Count,
+                    tenantId,
+                    retentionDays);
             }
         }
     }

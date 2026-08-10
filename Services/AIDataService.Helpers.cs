@@ -23,12 +23,15 @@ namespace Manage_KPI_or_OKR_System.Services
         {
             if (periodId.HasValue)
             {
-                return await _context.EvaluationPeriods.FirstOrDefaultAsync(p => p.Id == periodId.Value && p.IsActive == true);
+                return await _context.EvaluationPeriods.AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.Id == periodId.Value && p.IsActive == true);
             }
 
             return await _context.EvaluationPeriods
+                .AsNoTracking()
                 .Where(p => p.IsActive == true)
                 .OrderByDescending(p => p.StartDate)
+                .ThenByDescending(p => p.Id)
                 .FirstOrDefaultAsync();
         }
 
@@ -36,7 +39,7 @@ namespace Manage_KPI_or_OKR_System.Services
         {
             var builder = new StringBuilder();
             builder.AppendLine("NGU CANH DU LIEU NOI BO KPI/OKR");
-            builder.AppendLine($"Nguoi dung: {scope.CurrentEmployeeName}; role {scope.RoleName}; pham vi {scope.Describe()}.");
+            builder.AppendLine($"Vai tro {scope.RoleName}; pham vi {scope.Describe()}.");
             builder.AppendLine($"Ky danh gia: {(period == null ? "Khong xac dinh" : $"{period.PeriodName} ({period.StartDate:dd/MM/yyyy}-{period.EndDate:dd/MM/yyyy})")}.");
             builder.AppendLine("Chi su dung cac so lieu ben duoi, neu thieu du lieu hay noi ro la thieu du lieu.");
             return builder;
@@ -121,6 +124,11 @@ namespace Manage_KPI_or_OKR_System.Services
                 : query.Where(c => false);
         }
 
+        private static IQueryable<KPICheckIn> OfficialCheckIns(IQueryable<KPICheckIn> query) =>
+            query.Where(checkIn =>
+                checkIn.ReviewStatus != null &&
+                checkIn.ReviewStatus.Trim().ToUpper() == "APPROVED");
+
         private static IQueryable<KPICheckIn> ApplyPeriodToCheckIns(IQueryable<KPICheckIn> query, EvaluationPeriod? period)
         {
             if (period?.StartDate != null)
@@ -145,9 +153,12 @@ namespace Manage_KPI_or_OKR_System.Services
         private async Task<decimal> GetLatestProgressForKpiAsync(int kpiId, AIDataScope scope, EvaluationPeriod? period)
         {
             var checkIns = ScopeCheckIns(_context.KPICheckIns.Where(c => c.KPIId == kpiId), scope);
+            checkIns = OfficialCheckIns(checkIns);
             checkIns = ApplyPeriodToCheckIns(checkIns, period);
             var latestCheckIns = await checkIns
+                .AsNoTracking()
                 .OrderByDescending(c => c.CheckInDate)
+                .ThenByDescending(c => c.Id)
                 .ToListAsync();
             var latestCheckInIds = latestCheckIns
                 .GroupBy(c => c.EmployeeId)
@@ -160,6 +171,7 @@ namespace Manage_KPI_or_OKR_System.Services
             }
 
             var values = await _context.CheckInDetails
+                .AsNoTracking()
                 .Where(d => d.CheckInId.HasValue &&
                             latestCheckInIds.Contains(d.CheckInId.Value) &&
                             d.ProgressPercentage.HasValue)
@@ -172,8 +184,10 @@ namespace Manage_KPI_or_OKR_System.Services
         private async Task<EmployeeAssignment?> GetActiveAssignmentAsync(int employeeId)
         {
             return await _context.EmployeeAssignments
+                .AsNoTracking()
                 .Where(a => a.EmployeeId == employeeId && a.IsActive == true)
                 .OrderByDescending(a => a.EffectiveDate)
+                .ThenByDescending(a => a.Id)
                 .FirstOrDefaultAsync();
         }
 

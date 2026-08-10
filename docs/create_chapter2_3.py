@@ -252,8 +252,8 @@ def write_section_2_3(doc):
         "Luồng phụ / Ngoại lệ (Alternative Flow)":
             "Luồng 4a (Chọn gợi ý từ AI):\n"
             "   - Trưởng phòng click vào nút 'Gợi ý từ AI'.\n"
-            "   - Hệ thống gọi AIDataService.Suggestions gửi ngữ cảnh (chức danh nhân viên, OKR phòng ban) sang AI Gemini.\n"
-            "   - Gemini đề xuất 3 KPI mẫu kèm target phù hợp. Trưởng phòng click chọn một KPI mẫu để auto-fill vào biểu mẫu.\n"
+            "   - Server xác minh quyền, kỳ đang mở và OKR/Key Result rồi gửi snapshot tối thiểu không chứa tên, mã hoặc email nhân viên qua model gateway.\n"
+            "   - Advisor trả 3-5 bản nháp strict JSON có citation; server kiểm tra đơn vị, chiều KPI và target/pass/fail. Trưởng phòng chọn một bản nháp để điền form rồi vẫn phải tự gửi qua validator chuẩn.\n"
             "Luồng 5a (Vượt quá tổng trọng số):\n"
             "   - Hệ thống hiển thị thông báo lỗi 'Tổng trọng số KPI của nhân viên trong kỳ vượt quá 100%'. Yêu cầu Trưởng phòng điều chỉnh lại.",
         "Điều kiện sau (Post-condition)": "KPI được lưu vào bảng KPIs và KPIDetails với trạng thái 'Chờ duyệt' (Pending Decision)."
@@ -314,33 +314,31 @@ def write_section_2_3(doc):
     create_spec_table(doc, spec_uc_ma_03)
     add_table_caption(doc, "Bảng 13: Đặc tả Use Case UC_MA_03 – Phê duyệt Check-in")
 
-    # --- UC 4: Trợ lý AI Gemini ---
-    add_heading3(doc, "d) Đặc tả Use Case UC_EM_06 – Trợ lý AI Gemini")
+    # --- UC 4: Trợ lý AI có nguồn ---
+    add_heading3(doc, "d) Đặc tả Use Case UC_EM_06 – Trợ lý AI có nguồn")
     
     spec_uc_em_06 = {
         "Mã Use Case": "UC_EM_06",
-        "Tên Use Case": "Tương tác với Trợ lý AI Gemini",
+        "Tên Use Case": "Tương tác với Trợ lý AI có nguồn",
         "Độ ưu tiên": "Trung bình (Tính năng giá trị gia tăng)",
         "Tác nhân chính": "Employee, Manager, Director (Người dùng hệ thống)",
-        "Mô tả": "Cung cấp chatbot AI Gemini (Gemini API) nhận biết ngữ cảnh thực tế của người dùng (Context-aware), hỗ trợ tư vấn thiết lập mục tiêu, phân tích hiệu suất và đề xuất các giải pháp cải thiện công việc.",
-        "Điều kiện tiên quyết": "Tài khoản doanh nghiệp đang sử dụng gói dịch vụ có tính năng AI Insight; Hệ thống đã cấu hình API Key cho Gemini Service.",
+        "Mô tả": "Cung cấp Chat Advisor nhận biết ngữ cảnh được cấp quyền, dùng nguồn SQL/RAG có citation và chủ động abstain khi bằng chứng không đủ.",
+        "Điều kiện tiên quyết": "Tài khoản có membership/role tenant hiện hành, gói dịch vụ hỗ trợ AI và model gateway/RAG đã được cấu hình an toàn.",
         "Luồng sự kiện chính (Basic Flow)": 
             "1. Người dùng click mở 'Chatbot AI' từ thanh công cụ hoặc trang cá nhân.\n"
             "2. Người dùng nhập câu hỏi hoặc yêu cầu (Ví dụ: 'Phòng Công nghệ của tôi đang chậm KPI X, làm sao để khắc phục?').\n"
-            "3. Hệ thống gọi AIDataService để tự động trích xuất dữ liệu ngữ cảnh (Role, phòng ban, danh sách KPI đang chậm tiến độ, lịch sử check-in liên quan).\n"
-            "4. Hệ thống đóng gói dữ liệu ngữ cảnh kết hợp với prompt của người dùng gửi sang Gemini API (gemini-2.5-flash).\n"
-            "5. Gemini xử lý và phản hồi câu trả lời có cấu trúc và có tính cá nhân hóa cao cho người dùng.\n"
-            "6. Hệ thống lưu lịch sử hội thoại vào bảng AIGenerationHistories và hiển thị câu trả lời trực quan trên widget chat.",
+            "3. Server dựng lại principal từ membership/role hiện hành, nạp KPI/OKR và check-in đã duyệt trong đúng scope.\n"
+            "4. Hệ thống truy xuất tối đa các nguồn RAG mà tenant/ACL cho phép và gửi context tạm thời qua IAIModelClient.\n"
+            "5. Advisor kiểm tra strict JSON, source ID và trạng thái nguồn trước khi trả câu trả lời có citation.\n"
+            "6. Widget hiển thị câu trả lời tư vấn và nguồn; server chỉ lưu AgentRun/citation metadata, không lưu nội dung hội thoại hoặc raw provider response.",
         "Luồng phụ / Ngoại lệ (Alternative Flow)":
-            "Luồng 4a (Vượt quá Rate Limit của AI):\n"
-            "   - Hệ thống phát hiện số lượng request trong phút vượt quá giới hạn (15 req/phút).\n"
-            "   - Hệ thống hiển thị thông báo: 'Trợ lý AI đang quá tải, vui lòng thử lại sau 1 phút' và ngắt kết nối tạm thời.\n"
-            "Luồng 4b (Lỗi kết nối API):\n"
-            "   - Không kết nối được với server Google Gemini. Hệ thống chuyển sang sử dụng bộ quy tắc rule-based dự phòng để đưa ra các tư vấn cơ bản.",
-        "Điều kiện sau (Post-condition)": "Lịch sử cuộc hội thoại được lưu lại và tự động xóa sau 30 ngày qua dịch vụ background AIHistoryCleanupService."
+            "Luồng 4a (Thiếu bằng chứng): Advisor abstain và nêu rõ không đủ nguồn để trả lời.\n"
+            "Luồng 4b (Nguồn hoặc quyền thay đổi): Server trả conflict, không sử dụng kết quả stale và yêu cầu thử lại.\n"
+            "Luồng 4c (Provider timeout/invalid JSON): Hệ thống retry hữu hạn rồi trả thông báo an toàn, không lộ lỗi nội bộ.",
+        "Điều kiện sau (Post-condition)": "Không có dữ liệu nghiệp vụ chính thức nào bị thay đổi; chỉ metadata run/citation tối thiểu được lưu để kiểm toán."
     }
     create_spec_table(doc, spec_uc_em_06)
-    add_table_caption(doc, "Bảng 14: Đặc tả Use Case UC_EM_06 – Trợ lý AI Gemini")
+    add_table_caption(doc, "Bảng 14: Đặc tả Use Case UC_EM_06 – Trợ lý AI có nguồn")
 
     # ============================================================
     # 2.3.3. SƠ ĐỒ HOẠT ĐỘNG (ACTIVITY DIAGRAMS)
@@ -388,10 +386,10 @@ def write_section_2_3(doc):
     add_table_caption(doc, "Hình 3: Sơ đồ hoạt động quy trình check-in và phê duyệt tiến độ")
 
     # --- Sơ đồ 3 ---
-    add_heading3(doc, "c) Quy trình trợ lý AI Gemini tư vấn & hỗ trợ quyết định")
+    add_heading3(doc, "c) Quy trình trợ lý AI có nguồn tư vấn & hỗ trợ quyết định")
     add_para(doc,
-        "Sơ đồ dưới đây mô tả luồng gọi dịch vụ AI Gemini, từ khi người dùng đặt câu hỏi, hệ thống thu thập "
-        "ngữ cảnh thông qua AIDataService để tối ưu hóa Prompt, gửi gọi Gemini API và trả kết quả hiển thị cho người dùng:"
+        "Sơ đồ dưới đây mô tả luồng Chat Advisor: xác thực tenant/scope, thu thập nguồn SQL/RAG được cấp quyền, "
+        "gọi model gateway, kiểm tra strict schema/citation và chỉ trả kết quả khi nguồn còn hiện hành:"
     )
     
     p_act3 = doc.add_paragraph()
@@ -400,8 +398,8 @@ def write_section_2_3(doc):
     if os.path.exists(img_path3):
         p_act3.add_run().add_picture(img_path3, width=Cm(14.5))
     else:
-        p_act3.add_run("[SƠ ĐỒ HOẠT ĐỘNG AI GEMINI - LỖI HÌNH ẢNH]")
-    add_table_caption(doc, "Hình 4: Sơ đồ hoạt động quy trình trợ lý AI Gemini")
+        p_act3.add_run("[SƠ ĐỒ HOẠT ĐỘNG CHAT ADVISOR - LỖI HÌNH ẢNH]")
+    add_table_caption(doc, "Hình 4: Sơ đồ hoạt động quy trình trợ lý AI có nguồn")
 
     # Kết luận mục
     add_para(doc, "", space_before=6, space_after=0, indent=False)

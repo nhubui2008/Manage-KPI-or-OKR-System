@@ -325,7 +325,7 @@ def write_chapter3(doc):
         ["18", "SystemParameters", "Cấu hình tham số hệ thống động", "Foundation"],
         ["19", "SystemAlerts", "Cảnh báo tiến độ và vận hành hệ thống", "System"],
         ["20", "AuditLogs", "Nhật ký truy vết thao tác người dùng", "System"],
-        ["21", "AIGenerationHistories", "Lịch sử cuộc gọi AI và hội thoại Gemini", "System & AI"],
+        ["21", "AIGenerationHistories", "Dữ liệu AI legacy chỉ giữ cho migration/retention; runtime mới không ghi", "System & AI"],
         ["22", "SaaSPackages", "Gói cước dịch vụ SaaS đa doanh nghiệp", "SaaS Admin"],
     ]
 

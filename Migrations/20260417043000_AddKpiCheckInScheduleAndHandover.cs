@@ -58,18 +58,22 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 nullable: true,
                 defaultValue: 24);
 
+            // Defer binding newly added columns until the preceding ALTER TABLE
+            // statements have executed in SQL Server.
             migrationBuilder.Sql(@"
-UPDATE [KPIDetails]
-SET [CheckInFrequencyDays] = 1
-WHERE [CheckInFrequencyDays] IS NULL OR [CheckInFrequencyDays] < 1;
+EXEC(N'
+    UPDATE [KPIDetails]
+    SET [CheckInFrequencyDays] = 1
+    WHERE [CheckInFrequencyDays] IS NULL OR [CheckInFrequencyDays] < 1;
 
-UPDATE [KPIDetails]
-SET [CheckInDeadlineTime] = '10:00:00'
-WHERE [CheckInDeadlineTime] IS NULL;
+    UPDATE [KPIDetails]
+    SET [CheckInDeadlineTime] = ''10:00:00''
+    WHERE [CheckInDeadlineTime] IS NULL;
 
-UPDATE [KPIDetails]
-SET [ReminderBeforeHours] = 24
-WHERE [ReminderBeforeHours] IS NULL OR [ReminderBeforeHours] < 0;
+    UPDATE [KPIDetails]
+    SET [ReminderBeforeHours] = 24
+    WHERE [ReminderBeforeHours] IS NULL OR [ReminderBeforeHours] < 0;
+')
 
 IF NOT EXISTS (SELECT 1 FROM [CheckInStatuses] WHERE [StatusName] = N'Đúng tiến độ')
     INSERT INTO [CheckInStatuses] ([StatusName]) VALUES (N'Đúng tiến độ');

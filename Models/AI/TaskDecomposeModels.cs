@@ -2,26 +2,17 @@ namespace Manage_KPI_or_OKR_System.Models.AI
 {
     // ── Request models ──────────────────────────────────────────
 
-    public class DecomposeOKRRequest
-    {
-        public int OKRId { get; set; }
-        public string? AdditionalContext { get; set; }
-    }
-
-    public class DecomposeKPIRequest
-    {
-        public int KPIId { get; set; }
-        public string? AdditionalContext { get; set; }
-    }
-
-    public class DecomposeProjectRequest
-    {
-        public int WorkProjectId { get; set; }
-        public string? AdditionalContext { get; set; }
-    }
-
     public class ConfirmDecomposeRequest
     {
+        public Guid? AgentRunId { get; set; }
+        public int? DraftActionId { get; set; }
+        public string? AgentRunRowVersion { get; set; }
+        public string? DraftRowVersion { get; set; }
+        public string? ApprovalToken { get; set; }
+        public Guid? IdempotencyKey { get; set; }
+        public string? PlanningSourceType { get; set; }
+        public int? PlanningSourceId { get; set; }
+        public string? PlanningSourceVersion { get; set; }
         public int? WorkProjectId { get; set; }
         public string? NewProjectName { get; set; }
         public int? SourceOKRId { get; set; }
@@ -42,6 +33,7 @@ namespace Manage_KPI_or_OKR_System.Models.AI
         public string? DepartmentName { get; set; }
         public string KanbanStatus { get; set; } = "Todo";
         public int EstimatedDays { get; set; } = 7;
+        public DateTime? DueDate { get; set; }
         public decimal KpiImpactWeight { get; set; } = 1;
         public int? KPIId { get; set; }
         public int? OKRKeyResultId { get; set; }
@@ -50,17 +42,6 @@ namespace Manage_KPI_or_OKR_System.Models.AI
     }
 
     // ── Response models ─────────────────────────────────────────
-
-    public class DecomposeResponse
-    {
-        public bool Success { get; set; } = true;
-        public List<DecomposedTaskDto> Tasks { get; set; } = new();
-        public string? SourceObjective { get; set; }
-        public int? SuggestedProjectId { get; set; }
-        public string? SuggestedProjectName { get; set; }
-        public List<WorkProjectOption> AvailableProjects { get; set; } = new();
-        public List<string> Warnings { get; set; } = new();
-    }
 
     public class WorkProjectOption
     {
@@ -75,4 +56,21 @@ namespace Manage_KPI_or_OKR_System.Models.AI
         public int TasksCreated { get; set; }
         public List<string> Warnings { get; set; } = new();
     }
+
+    public sealed class GoalPlanningDraftDecisionRequest
+    {
+        public Guid? AgentRunId { get; set; }
+        public int? DraftActionId { get; set; }
+        public string? AgentRunRowVersion { get; set; }
+        public string? DraftRowVersion { get; set; }
+        public string? ApprovalToken { get; set; }
+        public Guid? IdempotencyKey { get; set; }
+        public string? PlanningSourceType { get; set; }
+        public int? PlanningSourceId { get; set; }
+        public string? PlanningSourceVersion { get; set; }
+    }
+
+    public sealed record GoalPlanningDraftDecisionResponse(
+        bool Success,
+        string LifecycleStatus);
 }

@@ -1,22 +1,37 @@
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
+using Manage_KPI_or_OKR_System.Models.AI;
 using Manage_KPI_or_OKR_System.Services;
+using Manage_KPI_or_OKR_System.Services.AI;
+using Manage_KPI_or_OKR_System.Services.Tenancy;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using DotNetEnv;
 using OfficeOpenXml;
 using System.Net;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 
 // EPPlus yêu cầu cấu hình LicenseContext để hoạt động trong môi trường non-commercial
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 var builder = WebApplication.CreateBuilder(args);
-Env.Load();
+// Defense in depth for the Blob client. Its built-in HttpClient loggers are also
+// removed at registration because request URIs carry short-lived SAS credentials.
+builder.Logging.AddFilter(
+    "System.Net.Http.HttpClient.PrivateKnowledgeBlobStore",
+    LogLevel.Warning);
+// Local .env values are development fallbacks only. Production must use the
+// hosting provider's environment/secret store.
+if (builder.Environment.IsDevelopment())
+{
+    Env.NoClobber().Load();
+}
 builder.Configuration.AddEnvironmentVariables();
 
 if (builder.Environment.IsDevelopment())
@@ -24,6 +39,24 @@ if (builder.Environment.IsDevelopment())
     builder.Logging.ClearProviders();
     builder.Logging.AddConsole();
     builder.Logging.AddDebug();
+}
+else
+{
+    var smtpSender = builder.Configuration["SmtpSettings:SenderEmail"];
+    var smtpPassword = builder.Configuration["SmtpSettings:Password"];
+    var passwordResetBaseUrl = builder.Configuration["PasswordReset:PublicBaseUrl"];
+    if (string.IsNullOrWhiteSpace(smtpSender) || string.IsNullOrWhiteSpace(smtpPassword))
+    {
+        throw new InvalidOperationException(
+            "SMTP credentials are required outside Development. Set SmtpSettings__SenderEmail and SmtpSettings__Password in the secret store.");
+    }
+
+    if (!Uri.TryCreate(passwordResetBaseUrl, UriKind.Absolute, out var resetUri) ||
+        resetUri.Scheme != Uri.UriSchemeHttps)
+    {
+        throw new InvalidOperationException(
+            "PasswordReset__PublicBaseUrl must be a trusted absolute HTTPS URL outside Development.");
+    }
 }
 
 // 1. Đăng ký các dịch vụ (Services)
@@ -45,13 +78,107 @@ builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IOKRProgressService
 builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IOKRWorkflowService, Manage_KPI_or_OKR_System.Services.OKRWorkflowService>();
 
 // Register AI services
-builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 builder.Services.AddScoped<IAIDataService, AIDataService>();
 builder.Services.AddScoped<IAIAlertService, AIAlertService>();
 builder.Services.AddScoped<IAITaskDecompositionService, AITaskDecompositionService>();
+builder.Services.Configure<Manage_KPI_or_OKR_System.Options.AzureSearchOptions>(
+    builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.AzureSearchOptions.SectionName));
+builder.Services.Configure<Manage_KPI_or_OKR_System.Options.BgeM3Options>(
+    builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.BgeM3Options.SectionName));
+builder.Services.Configure<Manage_KPI_or_OKR_System.Options.MinerUOptions>(
+    builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.MinerUOptions.SectionName));
+builder.Services.Configure<Manage_KPI_or_OKR_System.Options.KnowledgeStorageOptions>(
+    builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.KnowledgeStorageOptions.SectionName));
+builder.Services.Configure<Manage_KPI_or_OKR_System.Options.MalwareScannerOptions>(
+    builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.MalwareScannerOptions.SectionName));
+builder.Services.Configure<Manage_KPI_or_OKR_System.Options.DocumentIngestionOptions>(
+    builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.DocumentIngestionOptions.SectionName));
+builder.Services.Configure<Manage_KPI_or_OKR_System.Options.DeepSeekOptions>(
+    builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.DeepSeekOptions.SectionName));
+builder.Services.AddHttpClient<
+    Manage_KPI_or_OKR_System.Models.AI.IAIModelClient,
+    Manage_KPI_or_OKR_System.Services.AI.DeepSeekModelClient>(client =>
+        client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AllowAutoRedirect = false,
+        UseCookies = false
+    });
+builder.Services.AddHttpClient<IBgeM3EmbeddingClient, BgeM3EmbeddingClient>()
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AllowAutoRedirect = false,
+        UseCookies = false
+    });
+builder.Services.AddHttpClient<IAIEvidenceRetriever, AzureSearchEvidenceRetriever>()
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AllowAutoRedirect = false,
+        UseCookies = false
+    });
+builder.Services.AddHttpClient<IAzureSearchIndexWriter, AzureSearchIndexWriter>()
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AllowAutoRedirect = false,
+        UseCookies = false
+    });
+builder.Services.AddHttpClient<IMinerUClient, MinerUClient>()
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AllowAutoRedirect = false,
+        UseCookies = false
+    });
+builder.Services.AddHttpClient<IPrivateKnowledgeBlobStore, PrivateKnowledgeBlobStore>(
+        "PrivateKnowledgeBlobStore")
+    .RemoveAllLoggers()
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AllowAutoRedirect = false,
+        UseCookies = false
+    });
+builder.Services.AddSingleton<IAIEvidenceSecurityFilterBuilder, EvidenceSecurityFilterBuilder>();
+builder.Services.AddScoped<IAiProposalPersistence, AiProposalPersistence>();
+builder.Services.AddScoped<IOkrKeyResultAiProposalPersistence,
+    OkrKeyResultAiProposalPersistence>();
+builder.Services.AddScoped<ICheckInAiEvaluationQueue, CheckInAiEvaluationQueue>();
+builder.Services.AddScoped<ICheckInAiEvaluationOutboxAdministrationService,
+    CheckInAiEvaluationOutboxAdministrationService>();
+builder.Services.AddScoped<IDocumentIngestionQueue, DocumentIngestionQueue>();
+builder.Services.AddScoped<IKnowledgeDocumentAdministrationService, KnowledgeDocumentAdministrationService>();
+builder.Services.AddSingleton<IMinerUResultParser, MinerUResultParser>();
+builder.Services.AddSingleton<IDocumentThreatScanner, ClamAvDocumentThreatScanner>();
+builder.Services.AddScoped<IDocumentIngestionProcessor, DocumentIngestionProcessor>();
+builder.Services.AddSingleton<IDocumentIngestionLeaseHeartbeat, DocumentIngestionLeaseHeartbeat>();
+builder.Services.AddHostedService<CheckInAiEvaluationWorker>();
+builder.Services.AddHostedService<DocumentIngestionWorker>();
+builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.AI.ICheckInAiEvaluator,
+    Manage_KPI_or_OKR_System.Services.AI.CheckInAiEvaluator>();
+builder.Services.AddScoped<IOkrKeyResultAiAdvisor, OkrKeyResultAiAdvisor>();
+builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.AI.IGoalPlanningDraftService,
+    Manage_KPI_or_OKR_System.Services.AI.GoalPlanningDraftService>();
+builder.Services.AddSingleton<IGoalPlanningCritic, GoalPlanningCritic>();
+builder.Services.AddScoped<IGoalPlanningAssignmentAdvisor, GoalPlanningAssignmentAdvisor>();
+builder.Services.AddScoped<IEvaluationReviewDraftAdvisor, EvaluationReviewDraftAdvisor>();
+builder.Services.AddScoped<ICustomerSegmentAdvisor, CustomerSegmentAdvisor>();
+builder.Services.AddScoped<IPerformanceAnalysisAdvisor, PerformanceAnalysisAdvisor>();
+builder.Services.AddScoped<IAIChatAdvisor, AIChatAdvisor>();
+builder.Services.AddScoped<IKpiSuggestionAdvisor, KpiSuggestionAdvisor>();
+builder.Services.AddScoped<IOkrKeyResultSuggestionAdvisor, OkrKeyResultSuggestionAdvisor>();
+builder.Services.AddScoped<EvaluationCalculator>();
+builder.Services.AddScoped<IWorkItemCommandValidator, WorkItemCommandValidator>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ISystemSettingsService, SystemSettingsService>();
 builder.Services.AddHostedService<Manage_KPI_or_OKR_System.Services.AIHistoryCleanupService>();
+builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+builder.Services.AddSingleton<IPasswordResetRateLimiter, PasswordResetRateLimiter>();
+
+// Shared-database tenant boundary. The middleware mutates this scoped object
+// before controller actions execute; DbContext query filters read the same
+// instance for every query in the request.
+builder.Services.AddScoped<TenantContext>();
+builder.Services.AddScoped<ITenantContext>(services =>
+    services.GetRequiredService<TenantContext>());
+builder.Services.AddScoped<ITenantProvisioningService, TenantProvisioningService>();
 
 var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
 if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
@@ -231,6 +358,27 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ClientId = builder.Configuration["GOOGLE_CLIENT_ID"] ?? string.Empty;
         options.ClientSecret = builder.Configuration["GOOGLE_CLIENT_SECRET"] ?? string.Empty;
     });
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        AuthRoleHelper.PlatformAdminPolicyName,
+        policy => policy.RequireClaim(AuthRoleHelper.PlatformAdminClaimType, bool.TrueString));
+});
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("LoginAttempts", httpContext =>
+        RateLimitPartition.GetSlidingWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(5),
+                SegmentsPerWindow = 5,
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
 
 var defaultConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(defaultConnectionString))
@@ -296,8 +444,10 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 app.UseRouting();
+app.UseRateLimiter();
 
 app.UseAuthentication();
+app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
 
 app.MapStaticAssets();

@@ -37,9 +37,8 @@
         name = kpi.KPIName ?? $"KPI #{kpi.Id}"
     }));
     var progressSnapshotsJson = ViewBag.ProgressSnapshotsJson as string ?? "{}";
-    bool canAutoApproveCheckIn = ViewBag.CanAutoApproveCheckIn == true;
-    string progressPageTitle = canAutoApproveCheckIn ? "Ghi nhận tiến độ KPI" : "Cập nhật tiến độ KPI";
-    string progressActionLabel = canAutoApproveCheckIn ? "Ghi nhận tiến độ" : "Gửi check-in";
+    string progressPageTitle = "Cập nhật tiến độ KPI";
+    string progressActionLabel = "Gửi check-in chờ duyệt";
     string? requestedReturnUrl = ViewBag.ReturnUrl as string;
     string safeReturnUrl = !string.IsNullOrWhiteSpace(requestedReturnUrl) && Url.IsLocalUrl(requestedReturnUrl)
         ? requestedReturnUrl
@@ -77,6 +76,8 @@
             </div>
 
             <form id="checkinForm" asp-action="Create" method="post" class="cf-form" data-create-form-element>
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="SubmissionId" value="@Guid.NewGuid()" />
                 <input type="hidden" name="returnUrl" value="@safeReturnUrl" />
                 <div asp-validation-summary="All" class="cf-alert" role="alert" tabindex="-1" data-error-summary></div>
 

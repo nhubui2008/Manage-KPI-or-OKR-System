@@ -58,7 +58,7 @@ def draw_erd(font_path):
         },
         'kpi': {
             'title': "KPI (Chỉ tiêu KPI)", 'bg': '#1D4ED8',
-            'fields': ["Id (PK) [int]", "KPIName [string]", "KPIType (Đ.Lượng/Đ.Tính)", "PeriodId (FK) [int]", "Status [string]", "LinkedOKRId (FK) [int]", "LinkedKRId (FK) [int]"],
+            'fields': ["Id (PK) [int]", "KPIName [string]", "KPIType (Đ.Lượng/Đ.Tính)", "PeriodId (FK) [int]", "Status [string]", "OKRId (FK) [int]", "OKRKeyResultId (FK) [int]"],
             'x': 950, 'y': 600, 'w': 250, 'h': 170
         },
         'kpidetail': {
@@ -78,7 +78,7 @@ def draw_erd(font_path):
         },
         'project': {
             'title': "WorkProject (Dự án)", 'bg': '#091E42',
-            'fields': ["Id (PK) [int]", "ProjectCode [string]", "ProjectName [string]", "Status [string]", "ProgressPercentage [decimal]", "LinkedOKRId (FK) [int]"],
+            'fields': ["Id (PK) [int]", "ProjectCode [string]", "ProjectName [string]", "Status [string]", "ProgressPercentage [decimal]", "SourceOKRId (FK) [int]"],
             'x': 1330, 'y': 220, 'w': 230, 'h': 160
         },
         'workitem': {

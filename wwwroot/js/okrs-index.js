@@ -121,6 +121,7 @@
         if (!byId('updateKrProgressModal')) return;
         const form = byId('updateKrProgressModal')?.querySelector('form');
         resetForm(form);
+        resetKrAiPanel();
         setValue('updateKrId', krId);
         setText('updateKrNameDisplay', 'KR: ' + (krName || ''));
         setValue('updateKrCurrentValue', normalizeDecimalValue(currentVal));
@@ -131,13 +132,196 @@
         getModal('updateKrProgressModal')?.show();
     }
 
-    function showAiSuggestError(message) {
+    function resetKrAiPanel() {
+        const panel = byId('updateKrAiPanel');
+        if (!panel) return;
+        panel.replaceChildren();
+        panel.className = 'alert alert-light border small mt-3 mb-0 d-none';
+        delete panel.dataset.candidateValue;
+    }
+
+    function appendKrAiLine(parent, text, className) {
+        const line = document.createElement('div');
+        if (className) line.className = className;
+        line.textContent = text;
+        parent.appendChild(line);
+        return line;
+    }
+
+    function renderKrAiProposal(payload) {
+        const panel = byId('updateKrAiPanel');
+        if (!panel) return;
+        const proposal = payload.proposal || {};
+        const confidence = proposal.confidence || {};
+        const citations = Array.isArray(proposal.citations) ? proposal.citations : [];
+        const shouldAbstain = confidence.shouldAbstain === true ||
+            proposal.proposedStatus === 'InsufficientEvidence';
+        const confidenceBandLabels = {
+            0: 'Từ chối kết luận',
+            1: 'Thấp',
+            2: 'Vừa',
+            3: 'Cao',
+            Abstain: 'Từ chối kết luận',
+            Low: 'Thấp',
+            Moderate: 'Vừa',
+            High: 'Cao'
+        };
+        const confidenceBand = shouldAbstain
+            ? 'Từ chối kết luận'
+            : confidenceBandLabels[String(confidence.band ?? '')] || 'Chưa phân loại';
+        const status = shouldAbstain
+            ? 'AI từ chối kết luận'
+            : proposal.proposedStatus || 'Chưa phân loại';
+        const score = (Number(confidence.score || 0) * 100).toFixed(0);
+
+        panel.replaceChildren();
+        panel.className = `alert alert-${shouldAbstain ? 'warning' : 'info'} border small mt-3 mb-0`;
+        panel.dataset.candidateValue = String(payload.proposedCurrentValue ?? '');
+        appendKrAiLine(
+            panel,
+            `${status} · tiến độ quy tắc ${Number(proposal.proposedProgressPercent || 0).toFixed(2)}% · độ tin cậy nguồn ${score}% (${confidenceBand})`,
+            'fw-semibold');
+        appendKrAiLine(
+            panel,
+            proposal.rationale || 'Không có diễn giải bổ sung.',
+            'mt-1');
+
+        const sourceTitle = document.createElement('div');
+        sourceTitle.className = 'fw-semibold mt-2';
+        sourceTitle.textContent = 'Nguồn kiểm chứng';
+        panel.appendChild(sourceTitle);
+        if (citations.length === 0) {
+            appendKrAiLine(panel, 'Không có nguồn độc lập; không nên dựa vào đề xuất này.', 'text-muted');
+        } else {
+            const list = document.createElement('ul');
+            list.className = 'mb-1 ps-3';
+            citations.forEach(source => {
+                const item = document.createElement('li');
+                const location = [
+                    source.versionId ? `bản ${source.versionId}` : '',
+                    source.page ? `trang ${source.page}` : '',
+                    source.section ? `mục ${source.section}` : ''
+                ].filter(Boolean).join(', ');
+                const freshness = source.isCurrent === true
+                    ? ''
+                    : ' [nguồn cũ/không rõ ngày]';
+                item.textContent = `${source.title || source.sourceType} #${source.sourceId}${location ? ` (${location})` : ''}${freshness}`;
+                list.appendChild(item);
+            });
+            panel.appendChild(list);
+        }
+        appendKrAiLine(
+            panel,
+            'Đây là đề xuất provisional; AI chưa thay đổi CurrentValue hoặc ResultStatus.',
+            'text-muted mt-1');
+
+        if (payload.proposalId && payload.proposalLifecycleStatus === 'AwaitingHumanReview') {
+            const actions = document.createElement('div');
+            actions.className = 'd-flex flex-wrap gap-2 mt-2';
+            [
+                { decision: 'Accepted', label: 'Ghi nhận đồng ý', className: 'btn btn-sm btn-outline-success' },
+                { decision: 'Rejected', label: 'Ghi nhận không đồng ý', className: 'btn btn-sm btn-outline-secondary' }
+            ].forEach(config => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = config.className;
+                button.textContent = config.label;
+                button.addEventListener('click', () => decideKrAiProposal(
+                    payload.proposalId,
+                    config.decision,
+                    actions,
+                    panel));
+                actions.appendChild(button);
+            });
+            panel.appendChild(actions);
+        }
+    }
+
+    async function decideKrAiProposal(proposalId, decision, actions, panel) {
+        actions.querySelectorAll('button').forEach(button => { button.disabled = true; });
+        try {
+            const response = await fetch('/AI/DecideOkrKeyResultProposal', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(window.antiForgeryHeaders ? window.antiForgeryHeaders() : {})
+                },
+                body: JSON.stringify({ proposalId, decision })
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(payload?.warnings?.[0] || 'Không thể ghi nhận quyết định AI.');
+            }
+            actions.remove();
+            appendKrAiLine(
+                panel,
+                decision === 'Accepted'
+                    ? 'Đã ghi nhận bạn đồng ý với đề xuất. Giá trị chính thức vẫn chỉ đổi khi bạn bấm “Con người xác nhận cập nhật”.'
+                    : 'Đã ghi nhận bạn không đồng ý. Hãy chỉnh giá trị hoặc đóng biểu mẫu; AI chưa thay đổi dữ liệu chính thức.',
+                `fw-semibold mt-2 ${decision === 'Accepted' ? 'text-success' : 'text-secondary'}`);
+        } catch (error) {
+            actions.querySelectorAll('button').forEach(button => { button.disabled = false; });
+            appendKrAiLine(
+                panel,
+                error.message || 'Không thể ghi nhận quyết định AI.',
+                'text-danger mt-2');
+        }
+    }
+
+    async function evaluateKrWithAi() {
+        const button = byId('updateKrAiEvaluateBtn');
+        const panel = byId('updateKrAiPanel');
+        const keyResultId = Number(byId('updateKrId')?.value);
+        const proposedCurrentValue = Number(normalizeDecimalValue(byId('updateKrCurrentValue')?.value));
+        if (!button || !panel || !keyResultId || !Number.isFinite(proposedCurrentValue) || proposedCurrentValue < 0) {
+            byId('updateKrCurrentValue')?.focus();
+            return;
+        }
+
+        button.disabled = true;
+        const originalHtml = button.innerHTML;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Đang đánh giá...';
+        panel.className = 'alert alert-info border small mt-3 mb-0';
+        panel.textContent = 'Agent đang kiểm tra KR, nguồn được phép truy cập và độ tin cậy…';
+        try {
+            const response = await fetch('/AI/EvaluateOkrKeyResultProposal', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(window.antiForgeryHeaders ? window.antiForgeryHeaders() : {})
+                },
+                body: JSON.stringify({ keyResultId, proposedCurrentValue })
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(payload?.warnings?.[0] || 'Không thể đánh giá tiến độ KR.');
+            }
+            const liveKeyResultId = Number(byId('updateKrId')?.value);
+            const liveProposedValue = Number(
+                normalizeDecimalValue(byId('updateKrCurrentValue')?.value));
+            if (liveKeyResultId !== keyResultId ||
+                liveProposedValue !== proposedCurrentValue) {
+                panel.className = 'alert alert-warning border small mt-3 mb-0';
+                panel.textContent = 'Giá trị KR đã thay đổi trong lúc agent đánh giá. Kết quả cũ đã bị bỏ; hãy chạy lại AI với giá trị hiện tại.';
+                return;
+            }
+            renderKrAiProposal(payload);
+        } catch (error) {
+            panel.className = 'alert alert-danger border small mt-3 mb-0';
+            panel.textContent = error.message || 'Không thể đánh giá tiến độ KR.';
+        } finally {
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+        }
+    }
+
+    function showAiSuggestError(message, title = 'Không tải được gợi ý AI') {
         const loading = byId('aiLoadingIndicator');
         const content = byId('aiSuggestionContent');
         if (content) content.style.display = 'none';
         if (loading) {
             loading.style.display = 'block';
-            loading.innerHTML = `<div class="okr-empty" role="alert"><div class="okr-empty__icon"><i class="bi bi-exclamation-triangle"></i></div><h3>Không tải được gợi ý AI</h3><p>${message}</p><button type="button" class="btn btn-outline-primary js-okr-action" data-action="ai-suggest-retry">Thử lại</button></div>`;
+            loading.innerHTML = `<div class="okr-empty" role="alert"><div class="okr-empty__icon"><i class="bi bi-exclamation-triangle"></i></div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(message)}</p><button type="button" class="btn btn-outline-primary js-okr-action" data-action="ai-suggest-retry">Thử lại</button></div>`;
         }
     }
 
@@ -166,7 +350,10 @@
     function renderAiKrResults(data) {
         const items = Array.isArray(data) ? data : (data?.items || data?.Items || []);
         if (!Array.isArray(items) || items.length === 0) {
-            showAiSuggestError('AI không trả về Key Result hợp lệ. Vui lòng thử lại.');
+            const warnings = data?.warnings || data?.Warnings || [];
+            showAiSuggestError(
+                warnings[0] || 'Agent chưa có đủ bằng chứng để tạo Key Result phù hợp.',
+                'Agent chưa tạo bản nháp');
             return;
         }
 
@@ -174,18 +361,29 @@
         byId('aiSuggestionContent').style.display = 'block';
 
         const tbody = byId('aiKrListTableBody');
+        const allowedUnits = Array.from(document.querySelectorAll('#unitList option'))
+            .map(option => option.value?.trim())
+            .filter(Boolean);
         let html = '';
         items.forEach((kr, index) => {
             const name = escapeHtml(kr.KeyResultName || kr.keyResultName || '');
             const target = kr.TargetValue ?? kr.targetValue ?? '';
             const unit = escapeHtml(kr.Unit || kr.unit || '');
+            const unitOptions = allowedUnits.map(value => {
+                const safeValue = escapeHtml(value);
+                return `<option value="${safeValue}" ${value === (kr.Unit || kr.unit || '') ? 'selected' : ''}>${safeValue}</option>`;
+            }).join('');
+            const rationale = escapeHtml(kr.Rationale || kr.rationale || '');
             const isInverseChecked = kr.IsInverse || kr.isInverse ? 'checked' : '';
             html += `
                 <tr>
                     <td><input class="form-check-input ai-kr-checkbox" type="checkbox" checked data-index="${index}" aria-label="Chọn KR ${index + 1}"></td>
-                    <td><input type="text" class="form-control form-control-sm ai-kr-name" value="${name}" required aria-label="Tên KR ${index + 1}"></td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm ai-kr-name" value="${name}" required aria-label="Tên KR ${index + 1}">
+                        ${rationale ? `<div class="small text-muted mt-1 ai-kr-rationale">${rationale}</div>` : ''}
+                    </td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm ai-kr-target" value="${escapeHtml(target)}" required aria-label="Chỉ tiêu KR ${index + 1}"></td>
-                    <td><input type="text" class="form-control form-control-sm ai-kr-unit" value="${unit}" list="unitList" required aria-label="Đơn vị KR ${index + 1}"></td>
+                    <td><select class="form-select form-select-sm ai-kr-unit" required aria-label="Đơn vị KR ${index + 1}">${unitOptions || `<option value="${unit}" selected>${unit}</option>`}</select></td>
                     <td>
                         <div class="form-check form-switch">
                             <input class="form-check-input ai-kr-is-inverse" type="checkbox" ${isInverseChecked} aria-label="Chỉ tiêu thu nhỏ KR ${index + 1}">
@@ -197,7 +395,27 @@
         if (tbody) {
             tbody.innerHTML = html;
         }
+        renderAiKrCitations(data?.citations || data?.Citations || []);
         setText('aiKrRefineStatus', 'Bạn có thể yêu cầu agent chỉnh sửa toàn bộ danh sách này.');
+    }
+
+    function renderAiKrCitations(citations) {
+        const container = byId('aiKrCitationList');
+        if (!container) return;
+        container.replaceChildren();
+        if (!Array.isArray(citations) || citations.length === 0) {
+            container.textContent = 'Chưa có nguồn được trích dẫn.';
+            return;
+        }
+        citations.forEach(citation => {
+            const item = document.createElement('span');
+            item.className = 'badge text-bg-light border me-2 mb-1';
+            const sourceType = citation.sourceType || citation.SourceType || 'source';
+            const sourceId = citation.sourceId || citation.SourceId || '';
+            const title = citation.title || citation.Title || `${sourceType} #${sourceId}`;
+            item.textContent = title;
+            container.appendChild(item);
+        });
     }
 
     function collectAiKrSuggestions() {
@@ -208,10 +426,6 @@
             isInverse: !!row.querySelector('.ai-kr-is-inverse')?.checked
         }));
     }
-
-    window.applyAiHistoryKR = function (parsedData) {
-        renderAiKrResults(parsedData);
-    };
 
     let aiSuggestAbort = null;
     let currentAiOkr = { id: null, name: '' };
@@ -321,13 +535,18 @@
                     window.openAiTaskDecomposeModal('OKR', okrId, okrName, projectId, projectName);
                 }
                 break;
+            case 'ai-decompose-kr':
+                if (typeof window.openAiTaskDecomposeModal === 'function') {
+                    window.openAiTaskDecomposeModal(
+                        'KR',
+                        button.dataset.krId,
+                        button.dataset.krName || '',
+                        projectId,
+                        projectName);
+                }
+                break;
             case 'allocate':
                 openAllocateModal(okrId);
-                break;
-            case 'ai-history-kr':
-                if (typeof window.openAiHistoryModal === 'function') {
-                    window.openAiHistoryModal('SuggestKR', byId('aiOkrId')?.value, window.applyAiHistoryKR);
-                }
                 break;
             case 'ai-suggest-retry':
                 if (currentAiOkr.id) {
@@ -405,6 +624,16 @@
             document.querySelectorAll('.ai-kr-checkbox').forEach(cb => { cb.checked = this.checked; });
         });
 
+        byId('updateKrAiEvaluateBtn')?.addEventListener('click', evaluateKrWithAi);
+        byId('updateKrCurrentValue')?.addEventListener('input', function () {
+            const panel = byId('updateKrAiPanel');
+            if (panel?.dataset.candidateValue !== undefined &&
+                normalizeDecimalValue(this.value) !== normalizeDecimalValue(panel.dataset.candidateValue)) {
+                resetKrAiPanel();
+            }
+        });
+        byId('updateKrProgressModal')?.addEventListener('hidden.bs.modal', resetKrAiPanel);
+
         // Reset AI modal state when closed.
         byId('aiSuggestKrModal')?.addEventListener('hidden.bs.modal', function () {
             if (aiSuggestAbort) aiSuggestAbort.abort();
@@ -415,6 +644,7 @@
             if (saveBtn) setSubmitLoading(saveBtn, false);
             setValue('aiKrRefineInput', '');
             setText('aiKrRefineStatus', '');
+            byId('aiKrCitationList')?.replaceChildren();
         });
 
         byId('btnRefineAiKrs')?.addEventListener('click', async function () {

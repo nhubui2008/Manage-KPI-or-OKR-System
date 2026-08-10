@@ -31,7 +31,8 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 maxLength: 30,
                 nullable: true);
 
-            migrationBuilder.Sql("UPDATE [KPICheckIns] SET [ReviewStatus] = N'Approved' WHERE [ReviewStatus] IS NULL");
+            migrationBuilder.Sql(
+                "EXEC(N'UPDATE [KPICheckIns] SET [ReviewStatus] = N''Approved'' WHERE [ReviewStatus] IS NULL')");
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "ReviewedAt",
@@ -70,7 +71,8 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 type: "decimal(5,2)",
                 nullable: true);
 
-            migrationBuilder.Sql("UPDATE [GoalComments] SET [CommentType] = N'Comment' WHERE [CommentType] IS NULL");
+            migrationBuilder.Sql(
+                "EXEC(N'UPDATE [GoalComments] SET [CommentType] = N''Comment'' WHERE [CommentType] IS NULL')");
 
             migrationBuilder.Sql(@"
 IF NOT EXISTS (SELECT 1 FROM [Permissions] WHERE [PermissionCode] = N'KPICHECKINS_REVIEW')

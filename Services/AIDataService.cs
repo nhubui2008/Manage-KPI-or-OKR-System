@@ -29,7 +29,10 @@ namespace Manage_KPI_or_OKR_System.Services
 
             var systemUserId = TryGetSystemUserId(user);
             var employee = systemUserId.HasValue
-                ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId.Value && e.IsActive == true)
+                ? await _context.Employees.AsNoTracking()
+                    .Where(e => e.SystemUserId == systemUserId.Value && e.IsActive == true)
+                    .OrderBy(e => e.Id)
+                    .FirstOrDefaultAsync()
                 : null;
 
             var scope = new AIDataScope
@@ -131,7 +134,9 @@ namespace Manage_KPI_or_OKR_System.Services
                                requested.Contains(x.PermissionCode));
         }
 
-        public async Task<string> BuildChatContextAsync(ClaimsPrincipal user, int? periodId)
+        public async Task<AuthorizedChatContext> BuildChatContextAsync(
+            ClaimsPrincipal user,
+            int? periodId)
         {
             var scope = await BuildScopeAsync(user);
             var selectedPeriod = await GetSelectedPeriodAsync(periodId);
@@ -139,39 +144,54 @@ namespace Manage_KPI_or_OKR_System.Services
             var scopedOkrIds = await GetScopedOkrIdsAsync(scope);
 
             var kpis = await _context.KPIs
+                .AsNoTracking()
                 .Where(k => k.IsActive == true && scopedKpiIds.Contains(k.Id))
                 .Where(k => selectedPeriod == null || k.PeriodId == selectedPeriod.Id)
                 .OrderByDescending(k => k.CreatedAt)
+                .ThenByDescending(k => k.Id)
                 .Take(20)
                 .ToListAsync();
 
             var kpiIds = kpis.Select(k => k.Id).ToList();
-            var details = await _context.KPIDetails
+            var detailRows = await _context.KPIDetails
+                .AsNoTracking()
                 .Where(d => d.KPIId.HasValue && kpiIds.Contains(d.KPIId.Value))
-                .ToDictionaryAsync(d => d.KPIId!.Value);
+                .OrderByDescending(d => d.Id)
+                .ToListAsync();
+            var details = detailRows
+                .GroupBy(d => d.KPIId!.Value)
+                .ToDictionary(group => group.Key, group => group.First());
 
-            var checkIns = ScopeCheckIns(_context.KPICheckIns.AsQueryable(), scope);
+            var checkIns = ScopeCheckIns(_context.KPICheckIns.AsNoTracking(), scope);
+            checkIns = OfficialCheckIns(checkIns);
             checkIns = ApplyPeriodToCheckIns(checkIns, selectedPeriod);
             var recentCheckIns = await checkIns
                 .Where(c => c.KPIId.HasValue && kpiIds.Contains(c.KPIId.Value))
                 .OrderByDescending(c => c.CheckInDate)
+                .ThenByDescending(c => c.Id)
                 .Take(10)
                 .ToListAsync();
 
             var checkInIds = recentCheckIns.Select(c => c.Id).ToList();
             var checkInDetails = await _context.CheckInDetails
+                .AsNoTracking()
                 .Where(d => d.CheckInId.HasValue && checkInIds.Contains(d.CheckInId.Value))
+                .OrderByDescending(d => d.Id)
                 .ToListAsync();
 
             var okrs = await _context.OKRs
+                .AsNoTracking()
                 .Where(o => o.IsActive == true && scopedOkrIds.Contains(o.Id))
                 .OrderByDescending(o => o.CreatedAt)
+                .ThenByDescending(o => o.Id)
                 .Take(10)
                 .ToListAsync();
 
             var okrIds = okrs.Select(o => o.Id).ToList();
             var keyResults = await _context.OKRKeyResults
+                .AsNoTracking()
                 .Where(kr => kr.OKRId.HasValue && okrIds.Contains(kr.OKRId.Value))
+                .OrderBy(kr => kr.Id)
                 .ToListAsync();
 
             var builder = NewContextHeader(scope, selectedPeriod);
@@ -181,7 +201,7 @@ namespace Manage_KPI_or_OKR_System.Services
             {
                 details.TryGetValue(kpi.Id, out var detail);
                 var latestProgress = await GetLatestProgressForKpiAsync(kpi.Id, scope, selectedPeriod);
-                builder.AppendLine($"- KPI #{kpi.Id}: {kpi.KPIName}; target {FormatDecimal(detail?.TargetValue)} {detail?.MeasurementUnit}; tien do moi nhat {FormatDecimal(latestProgress)}%.");
+                builder.AppendLine($"- KPI #{kpi.Id}: {BoundChatText(kpi.KPIName, 255)}; target {FormatDecimal(detail?.TargetValue)} {BoundChatText(detail?.MeasurementUnit, 50)}; tien do moi nhat {FormatDecimal(latestProgress)}%.");
             }
 
             builder.AppendLine("OKR lien quan:");
@@ -192,7 +212,7 @@ namespace Manage_KPI_or_OKR_System.Services
                 var avg = krForOkr.Any()
                     ? krForOkr.Average(kr => (double)ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, kr.TargetValue ?? 0, kr.IsInverse))
                     : 0;
-                builder.AppendLine($"- OKR #{okr.Id}: {okr.ObjectiveName}; cycle {okr.Cycle}; progress TB {Math.Round(avg, 1)}%.");
+                builder.AppendLine($"- OKR #{okr.Id}: {BoundChatText(okr.ObjectiveName, 255)}; cycle {BoundChatText(okr.Cycle, 50)}; progress TB {Math.Round(avg, 1)}%.");
             }
 
             builder.AppendLine("Check-in gan day:");
@@ -200,10 +220,23 @@ namespace Manage_KPI_or_OKR_System.Services
             foreach (var checkIn in recentCheckIns)
             {
                 var detail = checkInDetails.FirstOrDefault(d => d.CheckInId == checkIn.Id);
-                builder.AppendLine($"- {checkIn.CheckInDate:dd/MM/yyyy}: KPI #{checkIn.KPIId}, employee #{checkIn.EmployeeId}, progress {FormatDecimal(detail?.ProgressPercentage)}%, ghi chu: {detail?.Note ?? "N/A"}.");
+                builder.AppendLine($"- {checkIn.CheckInDate:dd/MM/yyyy}: KPI #{checkIn.KPIId}, employee #{checkIn.EmployeeId}, progress {FormatDecimal(detail?.ProgressPercentage)}%, ghi chu da duyet: {BoundChatText(detail?.Note, 500)}.");
             }
 
-            return builder.ToString();
+            return new AuthorizedChatContext(
+                builder.ToString(),
+                kpis.Count > 0 || okrs.Count > 0 || recentCheckIns.Count > 0);
+        }
+
+        private static string BoundChatText(string? value, int maximumLength)
+        {
+            var normalized = string.Join(
+                ' ',
+                (value ?? "N/A")
+                    .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+            return normalized.Length <= maximumLength
+                ? normalized
+                : normalized[..maximumLength];
         }
     }
 }

@@ -179,6 +179,7 @@
                         bool canViewRoles = HasPerm("ROLES_VIEW");
                         bool canViewAuditLogs = HasPerm("AUDITLOGS_VIEW");
                         bool canOpenAdminTools = isAdmin;
+                        bool canManageKnowledgeDocuments = isAdmin || User.IsInRole("Director") || User.IsInRole("HR");
                     }
 
                     <div class="sidebar-group">
@@ -423,7 +424,7 @@
                         </a>
                     </div>
 
-                    @if (canOpenSystemParameters || canViewSystemUsers || canViewRoles || canViewAuditLogs || canOpenAdminTools)
+                    @if (canOpenSystemParameters || canViewSystemUsers || canViewRoles || canViewAuditLogs || canManageKnowledgeDocuments || canOpenAdminTools)
                     {
                         <div class="settings-panel__section">
                             <div class="settings-panel__label">Hệ thống</div>
@@ -464,6 +465,16 @@
                                     <span>
                                         <strong>Lịch sử hệ thống</strong>
                                         <small>Theo dõi các thay đổi quan trọng</small>
+                                    </span>
+                                </a>
+                            }
+                            @if (canManageKnowledgeDocuments)
+                            {
+                                <a href="/KnowledgeDocuments" class="settings-panel__item">
+                                    <span class="settings-panel__icon"><i class="bi bi-database-fill-lock"></i></span>
+                                    <span>
+                                        <strong>Vận hành AI và RAG</strong>
+                                        <small>Hàng đợi check-in, upload, ACL và trạng thái RAG</small>
                                     </span>
                                 </a>
                             }
@@ -875,6 +886,5 @@
     <div data-page-scripts hidden>
         @await RenderSectionAsync("Scripts", required: false)
     </div>
-    <partial name="_AiHistoryModal" />
 </body>
 </html>

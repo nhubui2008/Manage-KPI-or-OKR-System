@@ -330,7 +330,7 @@ def write_section_1_4(doc):
          "Module đánh giá phải xếp hạng tự động theo 7 bậc (S-D) dựa trên điểm số thực tế. "
          "Tích hợp module BonusRules để HR cấu hình quy tắc thưởng linh hoạt, xuất báo cáo "
          "Excel tự động để rút ngắn thời gian xử lý cuối kỳ từ 7 ngày xuống còn vài phút."),
-        ("Tích hợp AI Gemini như một trợ lý chuyên môn thực thụ",
+        ("Tích hợp AI có nguồn như một trợ lý chuyên môn",
          "AI không chỉ là chatbot hỏi đáp thông thường mà phải có context-aware (đọc hiểu dữ liệu thực tế). "
          "AI hỗ trợ đề xuất KPI phù hợp cho Manager, phân tích hiệu suất tự động cuối kỳ và hỗ trợ viết "
          "nhận xét đánh giá (AI Review) nhằm tiết kiệm 80% thời gian soạn thảo."),

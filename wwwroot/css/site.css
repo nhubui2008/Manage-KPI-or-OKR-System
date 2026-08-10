@@ -2394,6 +2394,23 @@ html.sidebar-expanded .main-content {
     margin-bottom: 0.35rem;
 }
 
+.ai-message-citations {
+    margin-top: 0.75rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid #e3e8ef;
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+}
+
+.ai-message-citations ul {
+    margin: 0.3rem 0 0;
+    padding-left: 1rem;
+}
+
+.ai-message-citations li {
+    margin-bottom: 0.2rem;
+}
+
 .ai-message-bot .ai-message-bubble {
     background: #ffffff;
     color: var(--text-primary);
@@ -2451,6 +2468,11 @@ html.sidebar-expanded .main-content {
     color: #ffffff;
     min-width: 44px;
     font-weight: 800;
+}
+
+.ai-chat-form button:disabled {
+    cursor: wait;
+    opacity: 0.6;
 }
 
 .ai-typing-dot {
@@ -7129,10 +7151,6 @@ body.modal-open {
 
 .page-content > * {
     transition: opacity var(--motion-base) var(--motion-ease-out);
-}
-
-.page-content.is-route-pending {
-    cursor: progress;
 }
 
 .page-content.is-route-pending::after {

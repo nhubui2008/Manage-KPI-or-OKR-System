@@ -1,6 +1,6 @@
 """
 Script vẽ sơ đồ tuần tự (Sequence Diagram) bằng Pillow (PIL)
-Bản vẽ thể hiện luồng giao tiếp giữa các đối tượng khi gọi Trợ lý AI Gemini
+Bản vẽ thể hiện luồng giao tiếp của KPI Suggestion Advisor có nguồn
 """
 
 from PIL import Image, ImageDraw, ImageFont
@@ -12,26 +12,26 @@ def draw_sequence(font_path):
     draw = ImageDraw.Draw(img)
 
     try:
-        font_title = ImageFont.truetype(font_path, 20)
-        font_obj = ImageFont.truetype(font_path, 14)
-        font_text = ImageFont.truetype(font_path, 11)
+        font_title = ImageFont.truetype(font_path, 18)
+        font_obj = ImageFont.truetype(font_path, 12)
+        font_text = ImageFont.truetype(font_path, 10)
     except:
         font_title = ImageFont.load_default()
         font_obj = ImageFont.load_default()
         font_text = ImageFont.load_default()
 
     # Tiêu đề sơ đồ
-    draw.text((w // 2, 35), "SƠ ĐỒ TUẦN TỰ: QUY TRÌNH YÊU CẦU TƯ VẤN & GỢI Ý KPI BẰNG AI GEMINI", fill='#1E293B', font=font_title, anchor="mm")
+    draw.text((w // 2, 35), "SƠ ĐỒ TUẦN TỰ: KPI SUGGESTION ADVISOR CÓ NGUỒN", fill='#1E293B', font=font_title, anchor="mm")
 
     # Định nghĩa các đối tượng (Objects/Lifelines)
     # Cấu trúc: name, x
     objects = [
         {"name": "User (Browser)", "x": 100, "bg": '#E2E8F0'},
         {"name": "AIController", "x": 280, "bg": '#F1F5F9'},
-        {"name": "AIDataService", "x": 480, "bg": '#F1F5F9'},
-        {"name": "MiniERPDbContext", "x": 680, "bg": '#F1F5F9'},
-        {"name": "GeminiService", "x": 860, "bg": '#FDF2F8'},
-        {"name": "Gemini API (Google)", "x": 1020, "bg": '#FDF2F8'}
+        {"name": "KpiSuggestionAdvisor", "x": 460, "bg": '#F1F5F9'},
+        {"name": "AIDataService", "x": 640, "bg": '#F1F5F9'},
+        {"name": "MiniERPDbContext", "x": 820, "bg": '#F1F5F9'},
+        {"name": "IAIModelClient", "x": 1000, "bg": '#FDF2F8'}
     ]
 
     # Vẽ các hình chữ nhật đối tượng ở đầu và đường nét đứt (Lifeline)
@@ -51,50 +51,50 @@ def draw_sequence(font_path):
     activations = [
         (100, 150, 700),
         (280, 150, 680),
-        (480, 180, 310),
-        (680, 200, 270),
-        (860, 350, 620),
-        (1020, 390, 580)
+        (460, 180, 650),
+        (640, 210, 540),
+        (820, 230, 620),
+        (1000, 350, 430)
     ]
     for x, y_start, y_end in activations:
         draw.rectangle([x - 8, y_start, x + 8, y_end], fill='#FFFFFF', outline='#475569', width=2)
 
     # 3. Vẽ các mũi tên thông điệp (Messages)
-    # Message 1: Ajax gửi prompt & params
-    draw_msg_arrow(draw, 108, 280, 160, "1. Gửi Ajax Request (prompt, context)", font_text)
+    # Message 1: Ajax chỉ gửi các ID phạm vi
+    draw_msg_arrow(draw, 108, 280, 160, "1. POST /AI/SuggestKPI (scope IDs)", font_text)
     
-    # Message 2: Gọi dựng context
-    draw_msg_arrow(draw, 288, 480, 190, "2. GetKpiSuggestionsContextAsync()", font_text)
+    # Message 2: Controller đã kiểm tra anti-forgery và permission
+    draw_msg_arrow(draw, 288, 460, 190, "2. SuggestAsync sau CSRF/quyền", font_text)
 
-    # Message 3: Query DB
-    draw_msg_arrow(draw, 488, 680, 210, "3. Query OKRs/KPIs/Employees", font_text)
+    # Message 3: Advisor dựng snapshot được cấp quyền
+    draw_msg_arrow(draw, 468, 640, 220, "3. Build authorized snapshot", font_text)
     
-    # Message 4: Trả dữ liệu raw
-    draw_reply_arrow(draw, 672, 488, 250, "4. Trả về thực thể data", font_text)
+    # Message 4: Data service truy vấn tenant/scope
+    draw_msg_arrow(draw, 648, 820, 250, "4. Query period/OKR/KPI scope", font_text)
 
-    # Message 5: Trả về context string đã format
-    draw_reply_arrow(draw, 472, 288, 290, "5. Trả về Context String (XML/JSON)", font_text)
+    # Message 5: Trả snapshot tối thiểu và fingerprint đầu
+    draw_reply_arrow(draw, 812, 468, 300, "5. Snapshot tối thiểu", font_text)
 
-    # Message 6: Kiểm tra rate limit
-    draw_msg_arrow(draw, 288, 860, 350, "6. Cấu hình Prompt & Gọi Gemini", font_text)
+    # Message 6: Gọi model gateway
+    draw_msg_arrow(draw, 468, 1000, 350, "6. Strict JSON + allowed source IDs", font_text)
 
-    # Message 7: Post sang Google Server
-    draw_msg_arrow(draw, 868, 1020, 390, "7. HTTP POST /v1beta/models", font_text)
+    # Message 7: Model trả bản nháp
+    draw_reply_arrow(draw, 992, 468, 420, "7. 3-5 drafts hoặc abstain", font_text)
 
-    # Message 8: Phản hồi kết quả AI
-    draw_reply_arrow(draw, 1012, 868, 560, "8. JSON Response (AI gợi ý)", font_text)
+    # Message 8: Validate schema/source/business rules
+    draw_msg_self(draw, 460, 440, 475, "8. Validate schema/ngưỡng/nguồn", font_text)
 
-    # Message 9: Trả chuỗi text
-    draw_reply_arrow(draw, 852, 288, 600, "9. Trả về kết quả tư vấn", font_text)
+    # Message 9: Dựng lại snapshot trong transaction
+    draw_msg_arrow(draw, 468, 640, 510, "9. Rebuild snapshot (Serializable)", font_text)
 
-    # Message 10: Lưu log CSDL
-    draw_msg_arrow(draw, 288, 680, 635, "10. Lưu log AIGenerationHistories", font_text)
+    # Message 10: Chỉ commit metadata
+    draw_msg_arrow(draw, 468, 820, 570, "10. Commit run + citation metadata", font_text)
 
-    # Message 11: Trả Json kết quả về UI
-    draw_reply_arrow(draw, 272, 108, 665, "11. Trả JSON dữ liệu AI", font_text)
+    # Message 11: Trả draft có nguồn
+    draw_reply_arrow(draw, 452, 288, 630, "11. Cited advisory drafts", font_text)
 
-    # Message 12: Hiển thị giao diện Chat
-    draw_msg_self(draw, 100, 680, 710, "12. Render HTML & biểu đồ", font_text)
+    # Message 12: Người dùng áp dụng vào form, chưa tạo KPI
+    draw_reply_arrow(draw, 272, 108, 680, "12. Điền form (chưa lưu)", font_text)
 
     # Lưu ảnh ra thư mục docs
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -159,6 +159,8 @@ def draw_msg_self(draw, x, y_start, y_end, text, font, fill='#0F172A'):
 
 def main():
     font_path = "C:\\Windows\\Fonts\\arial.ttf"
+    if not os.path.exists(font_path):
+        font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
     if not os.path.exists(font_path):
         font_path = "C:\\Windows\\Fonts\\times.ttf"
     draw_sequence(font_path)

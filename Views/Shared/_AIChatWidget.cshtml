@@ -12,7 +12,7 @@
             <div class="ai-chat-header">
                 <div>
                     <div class="ai-chat-title">@aiBranding.AiAssistantName</div>
-                    <div class="ai-chat-subtitle">@aiBranding.AiAssistantSubtitle</div>
+                    <div class="ai-chat-subtitle">@aiBranding.AiAssistantSubtitle · Chỉ tư vấn, không thay đổi dữ liệu</div>
                 </div>
                 <button type="button" class="ai-chat-close" id="aiChatClose" aria-label="Dong AI chat">
                     <i class="bi bi-x-lg"></i>
@@ -44,7 +44,9 @@
             const form = document.getElementById('aiChatForm');
             const input = document.getElementById('aiChatInput');
             const messages = document.getElementById('aiChatMessages');
+            const submitButton = form?.querySelector('button[type="submit"]');
             const history = [];
+            let isSending = false;
 
             if (!widget || !toggle || !panel || !form || !input || !messages) return;
 
@@ -53,20 +55,46 @@
                 if (open) setTimeout(() => input.focus(), 100);
             }
 
-            function renderMessage(role, text, pending) {
+            function renderMessage(role, text, pending, citations) {
                 const row = document.createElement('div');
                 row.className = `ai-message ai-message-${role}`;
                 const bubble = document.createElement('div');
                 bubble.className = 'ai-message-bubble';
+                if (role === 'bot') bubble.setAttribute('role', 'status');
                 if (pending) {
                     bubble.innerHTML = '<span class="ai-typing-dot"></span><span class="ai-typing-dot"></span><span class="ai-typing-dot"></span>';
                 } else {
                     bubble.innerHTML = formatAiText(text);
+                    appendCitations(bubble, citations);
                 }
                 row.appendChild(bubble);
                 messages.appendChild(row);
                 messages.scrollTop = messages.scrollHeight;
                 return bubble;
+            }
+
+            function appendCitations(bubble, citations) {
+                const items = Array.isArray(citations) ? citations : [];
+                if (!items.length) return;
+
+                const container = document.createElement('div');
+                container.className = 'ai-message-citations';
+                const label = document.createElement('strong');
+                label.textContent = 'Nguồn sử dụng';
+                const list = document.createElement('ul');
+                items.forEach(citation => {
+                    const item = document.createElement('li');
+                    const sourceType = citation?.sourceType === 'azure-search'
+                        ? 'Tài liệu nội bộ'
+                        : 'Dữ liệu KPI/OKR';
+                    const location = citation?.section
+                        ? ` · ${citation.section}`
+                        : (citation?.page ? ` · trang ${citation.page}` : '');
+                    item.textContent = `${citation?.title || sourceType}${location}`;
+                    list.appendChild(item);
+                });
+                container.append(label, list);
+                bubble.appendChild(container);
             }
 
             function formatAiText(text) {
@@ -80,7 +108,13 @@
                 let listItems = [];
 
                 function escape(value) {
-                    return window.escapeHtml ? window.escapeHtml(value || '') : String(value || '');
+                    if (window.escapeHtml) return window.escapeHtml(value || '');
+                    return String(value || '')
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#039;');
                 }
 
                 function inlineMarkdown(value) {
@@ -120,13 +154,30 @@
                 return `<div class="ai-message-content">${chunks.join('')}</div>`;
             }
 
+            function getBoundedHistory() {
+                const selected = [];
+                let remaining = 4000;
+                for (let index = history.length - 1; index >= 0 && selected.length < 8; index--) {
+                    const source = history[index];
+                    const text = String(source?.text || '').trim().slice(0, Math.min(1000, remaining));
+                    if (!text) break;
+                    selected.push({ role: source.role, text });
+                    remaining -= text.length;
+                    if (remaining <= 0) break;
+                }
+                return selected.reverse();
+            }
+
             async function sendPrompt(prompt) {
                 const cleanPrompt = (prompt || '').trim();
-                if (!cleanPrompt) return;
+                if (!cleanPrompt || isSending) return;
 
+                const priorHistory = getBoundedHistory();
                 renderMessage('user', cleanPrompt);
                 history.push({ role: 'user', text: cleanPrompt });
                 input.value = '';
+                isSending = true;
+                if (submitButton) submitButton.disabled = true;
 
                 const pendingBubble = renderMessage('bot', '', true);
                 try {
@@ -136,18 +187,22 @@
                             'Content-Type': 'application/json',
                             ...window.antiForgeryHeaders()
                         },
-                        body: JSON.stringify({ message: cleanPrompt, history: history.slice(-8) })
+                        body: JSON.stringify({ message: cleanPrompt, history: priorHistory })
                     });
                     const data = await response.json();
                     if (!response.ok || data.success === false) {
                         pendingBubble.innerHTML = formatAiText(data.warnings?.[0] || 'AI chưa sẵn sàng. Vui lòng thử lại sau.');
                         return;
                     }
-                    pendingBubble.innerHTML = formatAiText(data.text || '');
-                    history.push({ role: 'model', text: data.text || '' });
+                    const answer = data.text || data.warnings?.[0] || 'Chưa đủ dữ liệu để trả lời có căn cứ.';
+                    pendingBubble.innerHTML = formatAiText(answer);
+                    appendCitations(pendingBubble, data.citations);
+                    if (data.text) history.push({ role: 'assistant', text: data.text });
                 } catch {
-                    pendingBubble.innerHTML = 'Không thể kết nối AI. Vui lòng thử lại sau.';
+                    pendingBubble.innerHTML = formatAiText('Không thể kết nối AI. Vui lòng thử lại sau.');
                 } finally {
+                    isSending = false;
+                    if (submitButton) submitButton.disabled = false;
                     messages.scrollTop = messages.scrollHeight;
                 }
             }

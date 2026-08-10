@@ -349,6 +349,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form asp-action="Create" asp-controller="KPICheckIns" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="SubmissionId" value="@Guid.NewGuid()" />
                 <div class="modal-body-soft">
                     <div class="row g-3">
                         <div class="col-md-6">

@@ -1,6 +1,12 @@
 # 📊 Hệ Thống Quản Lý KPI/OKR Doanh Nghiệp
 
-> Ứng dụng web quản lý hiệu suất doanh nghiệp toàn diện, tích hợp AI (Gemini), xây dựng trên nền tảng ASP.NET 10 MVC + Entity Framework Core + SQL Server.
+> Ứng dụng web quản lý hiệu suất doanh nghiệp toàn diện, tích hợp model gateway, agent/RAG và các luồng tư vấn AI có kiểm soát, xây dựng trên ASP.NET 10 MVC + Entity Framework Core + SQL Server.
+
+Kiến trúc, cấu hình triển khai và lộ trình AI agent/RAG:
+[docs/AI_NATIVE_ARCHITECTURE.md](docs/AI_NATIVE_ARCHITECTURE.md).
+
+Quy trình tiền kiểm, backup, triển khai và xác minh migration SQL Server:
+[docs/DATABASE_MIGRATION_DEPLOYMENT.md](docs/DATABASE_MIGRATION_DEPLOYMENT.md).
 
 ## 📋 Mục Lục
 
@@ -9,7 +15,7 @@
 - [Công Nghệ Sử Dụng](#-công-nghệ-sử-dụng)
 - [Các Module Chức Năng](#-các-module-chức-năng)
 - [Phân Quyền RBAC](#-phân-quyền-rbac)
-- [Tích Hợp AI](#-tích-hợp-ai-gemini)
+- [Tích Hợp AI](#-tích-hợp-ai)
 - [Cơ Sở Dữ Liệu](#-cơ-sở-dữ-liệu)
 - [Cài Đặt & Chạy](#-cài-đặt--chạy)
 - [Tài Khoản Demo](#-tài-khoản-demo)
@@ -26,6 +32,7 @@ Hệ thống quản lý KPI/OKR là giải pháp **end-to-end** cho doanh nghi�
 - **Quản lý KPI**: Giao chỉ tiêu, theo dõi tiến độ, check-in định kỳ
 - **Đánh giá hiệu suất**: Xếp hạng tự động (S/A+/A/B+/B/C/D), tính thưởng
 - **AI hỗ trợ**: Chatbot tư vấn, gợi ý KPI, phân tích hiệu suất, cảnh báo rủi ro
+- **AI-native có kiểm soát**: planning, check-in, KR, review, Dashboard và gợi ý KPI dùng citation/abstain; con người quyết định cuối
 - **Thông báo & Nhắc nhở**: Deadline check-in, cảnh báo AI, email SMTP
 
 ---
@@ -46,8 +53,8 @@ Hệ thống quản lý KPI/OKR là giải pháp **end-to-end** cho doanh nghi�
 ├─────────────────────────────────────────────────┤
 │                 Services Layer                  │
 │  ┌────────────┐ ┌───────────┐ ┌──────────────┐ │
-│  │GeminiService│ │AIDataSvc  │ │Notification  │ │
-│  │(Gemini API) │ │AIAlertSvc │ │EmailService  │ │
+│  │Model gateway│ │AIDataSvc  │ │Notification  │ │
+│  │+ advisors  │ │AIAlertSvc │ │EmailService  │ │
 │  └────────────┘ └───────────┘ └──────────────┘ │
 ├─────────────────────────────────────────────────┤
 │          Entity Framework Core 10               │
@@ -68,7 +75,7 @@ Hệ thống quản lý KPI/OKR là giải pháp **end-to-end** cho doanh nghi�
 | **Framework** | ASP.NET Core MVC | .NET 10.0 |
 | **ORM** | Entity Framework Core | 10.0.5 |
 | **Database** | SQL Server | 2019+ |
-| **AI Engine** | Google Gemini API | gemini-2.5-flash |
+| **AI Engine** | DeepSeek qua `IAIModelClient` + advisor/RAG có kiểm soát | Cấu hình theo môi trường |
 | **Auth** | Cookie + Google OAuth2 | — |
 | **Email** | SMTP (Gmail) | — |
 | **Export** | EPPlus (Excel) | 7.7.3 |
@@ -85,7 +92,7 @@ Hệ thống quản lý KPI/OKR là giải pháp **end-to-end** cho doanh nghi�
 | Chức năng | Mô tả |
 |---|---|
 | **Vai trò (Roles)** | Admin, Director, Manager, HR, Employee — phân quyền chi tiết 60 permissions |
-| **Tài khoản (SystemUsers)** | Đăng nhập/đăng ký, Google OAuth, quên mật khẩu (OTP email), đổi mật khẩu |
+| **Tài khoản (SystemUsers)** | Đăng nhập/đăng ký, Google OAuth, liên kết đặt lại mật khẩu một lần, đổi mật khẩu |
 | **Nhân viên (Employees)** | CRUD, import Excel, auto-gen mã (EMP001), gán phòng ban/chức vụ |
 | **Phòng ban (Departments)** | Cây phòng ban phân cấp, gán quản lý, 12 phòng ban demo |
 | **Chức vụ (Positions)** | 12 chức danh với RankLevel, auto-gen mã |
@@ -170,20 +177,23 @@ Authorization Flow:
 
 ---
 
-## 🤖 Tích Hợp AI (Gemini)
+## 🤖 Tích Hợp AI
 
 ### Kiến Trúc AI Services
 
 ```
 AIController (API endpoints)
-  ├── GeminiService         → Gọi Gemini API (rate limit 15/min, 1500/day)
+  ├── AI-native advisors    → Planning/check-in/KR/review/Dashboard/KPI/Chat có citation
+  ├── IAIModelClient        → Model gateway cho strict-schema advisors
+  ├── IAIModelClient        → Model gateway dùng chung, strict-schema
+  ├── OkrKeyResultSuggestionAdvisor → Gợi ý/refine bản nháp KR có nguồn
   ├── AIDataService         → Build context data theo role scope
   │   ├── .Suggestions      → Gợi ý KPI thông minh
   │   ├── .Performance      → Phân tích hiệu suất
   │   ├── .CustomerSegments → Phân khúc khách hàng
   │   ├── .Alerts           → Phát hiện rủi ro
   │   └── .Helpers          → Utility functions
-  ├── AIAlertService        → Smart alerts (AI + rule-based fallback)
+  ├── AIAlertService        → Smart alerts deterministic, reconcile theo source/kỳ
   └── AIHistoryCleanupService → Background cleanup (30 ngày mặc định)
 ```
 
@@ -191,13 +201,20 @@ AIController (API endpoints)
 
 | Tính năng | Mô tả |
 |---|---|
-| **AI Chat Widget** | Chatbot tư vấn KPI/OKR, context-aware theo dữ liệu thực |
-| **Gợi ý KPI** | Đề xuất KPI phù hợp theo OKR, phòng ban, nhân viên |
+| **AI Chat Widget** | Tư vấn KPI/OKR có citation/abstain từ snapshot được cấp quyền và RAG tenant/ACL; không lưu hội thoại/raw response |
+| **Gợi ý KPI** | Bản nháp 3-5 KPI strict JSON có citation; server kiểm tra kỳ/quyền/đơn vị/ngưỡng, chỉ điền form và không tự tạo KPI |
 | **Phân tích hiệu suất** | Đánh giá performance theo kỳ, phòng ban, cá nhân |
 | **Phân khúc khách hàng** | Gợi ý customer segments cho Sales |
 | **AI Review** | Hỗ trợ viết nhận xét đánh giá |
-| **Smart Alerts** | Cảnh báo rủi ro dựa trên dữ liệu KPI thực tế |
-| **Lịch sử AI** | Lưu trữ và tái sử dụng kết quả AI, auto-cleanup |
+| **Smart Alerts** | Rule engine từ KPI/KR và check-in đã duyệt; gộp trùng và tự hết hạn ngay khi rủi ro được xử lý |
+| **Goal Planning Agent** | Lập đúng ba task plan có assignee/deadline/phụ thuộc/rủi ro/citation; Fit 35/25/20/10/10 do server tính, draft bền vững chỉ được tạo task sau khi người dùng xác nhận |
+| **KPI Check-in Evaluator** | Projected score/classification định lượng do server tính; rubric định tính được version hóa, confidence 40/25/20/15 và dưới 0,60 chỉ abstain phần định tính; proposal cũ chuyển `Stale`, con người chỉnh bản nháp và quyết định cuối |
+| **OKR KR Advisor** | Đánh giá candidate KR có nguồn trước khi con người cập nhật giá trị chính thức |
+| **AI operations & RAG admin** | Check-in outbox DeadLetter retry có kiểm tra source/row-version, private Blob, upload/version idempotent, ACL user/role/department, signature/ClamAV, MinerU, BGE-M3, Azure Search, ingestion retry, metrics 30 ngày và SQL-authoritative de-index; còn cần retention policy và staging provider QA |
+| **Gợi ý/refine KR** | Trả bản nháp KR strict JSON có citation; server kiểm tra quyền, scope, source fingerprint, đơn vị và độ chính xác; con người chọn rồi gửi qua luồng tạo KR chuẩn |
+| **Lịch sử AI legacy** | Không còn reader/writer runtime; bảng cũ chỉ được giữ để tương thích migration và tác vụ retention, còn các advisor mới chỉ lưu AgentRun/citation metadata |
+
+Tài liệu triển khai: [kiến trúc AI-native](docs/AI_NATIVE_ARCHITECTURE.md), [kế hoạch gốc đã phục hồi](docs/AI_NATIVE_IMPLEMENTATION_PLAN_RECOVERED.md) và [ma trận trạng thái thực hiện](docs/AI_NATIVE_PLAN_STATUS.md).
 
 ---
 
@@ -248,7 +265,7 @@ File `seeddata.sql` tạo **240 nhân viên**, 12 phòng ban, 36 OKRs, 108 Key R
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - SQL Server 2019+ (hoặc Azure SQL)
-- (Tùy chọn) Gemini API Key cho tính năng AI
+- (Tùy chọn) DeepSeek API key và hạ tầng RAG cho các tính năng AI
 
 ### Bước 1: Clone & Cấu Hình
 
@@ -264,7 +281,9 @@ ConnectionStrings__DefaultConnection=Server=localhost;Database=KPIorOKRSystem;Us
 
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
-GEMINI_API_KEY=your-gemini-api-key
+DeepSeek__BaseUrl=https://api.deepseek.com/v1/
+DeepSeek__Model=deepseek-chat
+DeepSeek__ApiKey=your-deepseek-api-key
 
 SmtpSettings__Server=smtp.gmail.com
 SmtpSettings__Port=587
@@ -300,7 +319,7 @@ dotnet run
 
 ```json
 {
-  "Gemini": { "Model": "gemini-2.5-flash" },
+  "DeepSeek": { "BaseUrl": "https://api.deepseek.com", "Model": "deepseek-chat" },
   "DataProtection": { "KeysPath": "App_Data/DataProtection-Keys" },
   "ForwardedHeaders": {
     "Enabled": true,
@@ -348,12 +367,12 @@ Manage-KPI-or-OKR-System/
 ├── Views/                  # 20 view folders + Shared
 │   ├── Shared/
 │   │   ├── _Layout.cshtml       # Main layout (sidebar, navbar, notifications)
-│   │   ├── _AIChatWidget.cshtml # AI chatbot widget
-│   │   └── _AiHistoryModal.cshtml
+│   │   └── _AIChatWidget.cshtml # Chat Advisor có citation
 │   ├── Dashboard/, KPIs/, OKRs/, KPICheckIns/, etc.
 │   └── Auth/ (Login, Register, ForgotPassword, etc.)
 ├── Services/               # Business logic & external integrations
-│   ├── GeminiService.cs         # Gemini API client (rate-limited)
+│   ├── AI/DeepSeekModelClient.cs # Model gateway provider adapter
+│   ├── AI/OkrKeyResultSuggestionAdvisor.cs # Bản nháp KR có kiểm soát
 │   ├── AIDataService*.cs        # AI context builders (6 partial classes)
 │   ├── AIAlertService.cs        # Smart risk alerts
 │   ├── AIHistoryCleanupService.cs # Background cleanup job
@@ -399,10 +418,10 @@ Manage-KPI-or-OKR-System/
 ### Performance
 - **AsNoTracking**: Read queries optimized
 - **Pagination**: `PaginatedList<T>` cho danh sách lớn
-- **Rate Limiting**: Gemini API 15 req/min, 1500 req/day
+- **AI input controls**: Giới hạn kích thước, timeout/retry hữu hạn, strict JSON và quota theo luồng
 
 ### Background Services
-- **AIHistoryCleanupService**: Tự động xóa lịch sử AI cũ (configurable retention)
+- **AIHistoryCleanupService**: Chỉ dọn dữ liệu lịch sử AI legacy theo thời hạn lưu; luồng mới không ghi prompt/raw response
 
 ### Workflow Engine
 - **KPI Status**: Bản nháp → Chờ duyệt → Đang thực hiện → Gần đạt → Hoàn thành/Không đạt/Từ chối/Hủy bỏ
@@ -417,4 +436,4 @@ Dự án sử dụng EPPlus với NonCommercial License.
 
 ---
 
-*Phát triển bởi VietMach Team — ASP.NET 10 + Gemini AI + SQL Server*
+*Phát triển bởi VietMach Team — ASP.NET 10 + AI model gateway/RAG + SQL Server*

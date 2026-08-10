@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace ManageKpiOkrSystem.Tests;
@@ -125,18 +126,28 @@ public sealed class OKRsControllerIndexTests
         context.OKRs.AddRange(withKr, withoutKr);
         await context.SaveChangesAsync();
 
-        var project = new WorkProject
+        var projects = new[]
         {
-            ProjectCode = "PRJ-MAP",
-            ProjectName = "[OKR] With KR and links",
-            Status = "Active",
-            IsActive = true,
-            SourceOKRId = withKr.Id,
-            CreatedAt = DateTime.Now
+            new WorkProject
+            {
+                ProjectCode = "PRJ-MAP-1",
+                ProjectName = "[OKR] Delivery stream",
+                Status = "Active",
+                IsActive = true,
+                SourceOKRId = withKr.Id,
+                CreatedAt = DateTime.Now.AddMinutes(-1)
+            },
+            new WorkProject
+            {
+                ProjectCode = "PRJ-MAP-2",
+                ProjectName = "[OKR] Adoption stream",
+                Status = "Active",
+                IsActive = true,
+                SourceOKRId = withKr.Id,
+                CreatedAt = DateTime.Now
+            }
         };
-        context.WorkProjects.Add(project);
-        await context.SaveChangesAsync();
-        withKr.LinkedWorkProjectId = project.Id;
+        context.WorkProjects.AddRange(projects);
         context.OKRKeyResults.Add(new OKRKeyResult
         {
             OKRId = withKr.Id,
@@ -167,8 +178,11 @@ public sealed class OKRsControllerIndexTests
         Assert.Equal(1, mappedWithKr.KeyResultCount);
         Assert.Equal(50m, mappedWithKr.TotalProgress);
         Assert.Equal("Ship release", Assert.Single(mappedWithKr.KeyResults).KeyResultName);
-        Assert.Equal(project.Id, mappedWithKr.LinkedWorkProjectId);
-        Assert.Equal("[OKR] With KR and links", mappedWithKr.LinkedWorkProjectName);
+        Assert.Equal(2, mappedWithKr.LinkedProjects.Count);
+        Assert.Equal(projects.Select(project => project.Id), mappedWithKr.LinkedProjects.Select(project => project.Id));
+        Assert.Equal(
+            new[] { "[OKR] Delivery stream", "[OKR] Adoption stream" },
+            mappedWithKr.LinkedProjects.Select(project => project.Name));
         Assert.Equal(1, mappedWithKr.EmployeeAllocationCount);
         Assert.Equal(1, mappedWithKr.DepartmentAllocationCount);
         Assert.Equal("Assignee One", mappedWithKr.PrimaryAssigneeName);
@@ -178,6 +192,7 @@ public sealed class OKRsControllerIndexTests
         Assert.Equal(0, mappedWithoutKr.KeyResultCount);
         Assert.Equal(0m, mappedWithoutKr.TotalProgress);
         Assert.Empty(mappedWithoutKr.KeyResults);
+        Assert.Empty(mappedWithoutKr.LinkedProjects);
         Assert.Equal("Chưa phân bổ", mappedWithoutKr.AllocationSummary);
     }
 
@@ -343,6 +358,144 @@ public sealed class OKRsControllerIndexTests
     }
 
     [Fact]
+    public async Task Index_OnlyMapsProjectsInsideTheUsersProjectAccessScope()
+    {
+        await using var context = CreateContext();
+        const int userId = 56;
+        var employee = new Employee
+        {
+            EmployeeCode = "EMP-PROJECT-SCOPE",
+            FullName = "Scoped employee",
+            Email = "scoped-project@example.com",
+            Phone = "0900000056",
+            SystemUserId = userId,
+            IsActive = true
+        };
+        var otherEmployee = new Employee
+        {
+            EmployeeCode = "EMP-PROJECT-OTHER",
+            FullName = "Other owner",
+            Email = "other-project@example.com",
+            Phone = "0900000057",
+            IsActive = true
+        };
+        context.Employees.AddRange(employee, otherEmployee);
+        await context.SaveChangesAsync();
+
+        var okr = Okr("Visible OKR with split project scope");
+        context.OKRs.Add(okr);
+        await context.SaveChangesAsync();
+        context.OKR_Employee_Allocations.Add(new OKR_Employee_Allocation
+        {
+            OKRId = okr.Id,
+            EmployeeId = employee.Id
+        });
+        var accessibleProject = new WorkProject
+        {
+            ProjectName = "Visible owned project",
+            OwnerId = employee.Id,
+            SourceOKRId = okr.Id,
+            Status = "Active",
+            IsActive = true
+        };
+        var hiddenProject = new WorkProject
+        {
+            ProjectName = "Hidden other-owner project",
+            OwnerId = otherEmployee.Id,
+            SourceOKRId = okr.Id,
+            Status = "Active",
+            IsActive = true
+        };
+        context.WorkProjects.AddRange(accessibleProject, hiddenProject);
+        await context.SaveChangesAsync();
+
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+            new Claim(ClaimTypes.Role, "Employee"),
+            new Claim("Permission", "OKRS_VIEW"),
+            new Claim("Permission", "WORKPROJECTS_VIEW")
+        }, "Test"));
+        var model = Assert.IsType<OkrIndexViewModel>(
+            Assert.IsType<ViewResult>(await CreateController(context, principal).Index(null!, null)).Model);
+
+        var linkedProject = Assert.Single(Assert.Single(model.Items).LinkedProjects);
+        Assert.Equal(accessibleProject.Id, linkedProject.Id);
+        Assert.Equal("Visible owned project", linkedProject.Name);
+        Assert.DoesNotContain(model.Items.SelectMany(item => item.LinkedProjects), project => project.Id == hiddenProject.Id);
+    }
+
+    [Fact]
+    public async Task Index_HasProjectFilter_DoesNotRevealProjectsOutsidePermissionOrScope()
+    {
+        await using var context = CreateContext();
+        const int userId = 58;
+        var employee = new Employee
+        {
+            EmployeeCode = "EMP-HIDDEN-PROJECT",
+            FullName = "OKR only employee",
+            Email = "okr-only@example.com",
+            Phone = "0900000058",
+            SystemUserId = userId,
+            IsActive = true
+        };
+        var otherOwner = new Employee
+        {
+            EmployeeCode = "EMP-HIDDEN-OWNER",
+            FullName = "Hidden project owner",
+            Email = "hidden-owner@example.com",
+            Phone = "0900000059",
+            IsActive = true
+        };
+        context.Employees.AddRange(employee, otherOwner);
+        await context.SaveChangesAsync();
+        var okr = Okr("Visible OKR with hidden-only project");
+        context.OKRs.Add(okr);
+        await context.SaveChangesAsync();
+        context.OKR_Employee_Allocations.Add(new OKR_Employee_Allocation
+        {
+            OKRId = okr.Id,
+            EmployeeId = employee.Id
+        });
+        context.WorkProjects.Add(new WorkProject
+        {
+            ProjectName = "Hidden project",
+            OwnerId = otherOwner.Id,
+            SourceOKRId = okr.Id,
+            Status = "Active",
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+
+        var withProjectPermission = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+            new Claim(ClaimTypes.Role, "Employee"),
+            new Claim("Permission", "OKRS_VIEW"),
+            new Claim("Permission", "WORKPROJECTS_VIEW")
+        }, "Test"));
+        var scopedResult = Assert.IsType<OkrIndexViewModel>(
+            Assert.IsType<ViewResult>(await CreateController(context, withProjectPermission)
+                .Index(null!, null, quickFilter: "has-project")).Model);
+        Assert.True(scopedResult.CanViewProjects);
+        Assert.Empty(scopedResult.Items);
+
+        var withoutProjectPermission = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+            new Claim(ClaimTypes.Role, "Employee"),
+            new Claim("Permission", "OKRS_VIEW")
+        }, "Test"));
+        var ignoredResult = Assert.IsType<OkrIndexViewModel>(
+            Assert.IsType<ViewResult>(await CreateController(context, withoutProjectPermission)
+                .Index(null!, null, quickFilter: "has-project")).Model);
+        Assert.False(ignoredResult.CanViewProjects);
+        Assert.Equal(string.Empty, ignoredResult.QuickFilter);
+        Assert.Equal(okr.Id, Assert.Single(ignoredResult.Items).Id);
+        Assert.Empty(ignoredResult.Items.Single().LinkedProjects);
+    }
+
+    [Fact]
     public async Task Index_ManagerOnlySeesManagedDepartmentScope()
     {
         await using var context = CreateContext();
@@ -419,7 +572,11 @@ public sealed class OKRsControllerIndexTests
             User = user ?? AdminPrincipal(1)
         };
 
-        return new OKRsController(context, new NoopGeminiService(), new OKRWorkflowService(context))
+        return new OKRsController(
+            context,
+            new OKRWorkflowService(context),
+            new NoopOkrKeyResultSuggestionAdvisor(),
+            NullLogger<OKRsController>.Instance)
         {
             ControllerContext = new ControllerContext
             {
@@ -462,18 +619,6 @@ public sealed class OKRsControllerIndexTests
             new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
             new Claim(ClaimTypes.Role, "Manager")
         }, "Test"));
-    }
-
-    private sealed class NoopGeminiService : IGeminiService
-    {
-        public Task<string> GenerateTextAsync(
-            string systemInstruction,
-            string prompt,
-            GeminiGenerationOptions? options = null,
-            CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult("[]");
-        }
     }
 
     private sealed class TestTempDataProvider : ITempDataProvider

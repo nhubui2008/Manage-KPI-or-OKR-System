@@ -248,7 +248,7 @@ def write_section_3_2(doc):
     
     add_para(doc,
         "Sơ đồ phân cấp cấu trúc trang hiển thị mối liên kết chặt chẽ từ cổng đăng nhập Auth, "
-        "đến màn hình Dashboard trung tâm và 5 trục chức năng chính cùng với widget Trợ lý AI Gemini:"
+        "đến màn hình Dashboard trung tâm và 5 trục chức năng chính cùng với widget Trợ lý AI có nguồn:"
     )
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -382,10 +382,10 @@ def write_section_3_2(doc):
         p_img_checkin.add_run("[HÌNH ẢNH CHECKIN LỖI]")
     add_figure_caption(doc, "Hình 11: Giao diện nhật ký check-in tiến độ và nhận xét của quản lý")
 
-    # 6. Trợ lý AI Gemini
-    add_heading3(doc, "f) Giao diện Trợ lý AI Gemini (Bizen AI Assistant)")
+    # 6. Trợ lý AI có nguồn
+    add_heading3(doc, "f) Giao diện Trợ lý AI có nguồn (Bizen AI Assistant)")
     add_para(doc,
-        "Bảng điều khiển slide-out của Trợ lý AI Gemini (Bizen AI Widget) hiển thị ở góc phải màn hình, "
+        "Bảng điều khiển slide-out của Chat Advisor (Bizen AI Widget) hiển thị ở góc phải màn hình, "
         "tự động liên kết ngữ cảnh thực tế của người dùng. Cung cấp các nút tắt nhanh: 'Phân tích tiến độ KPI', "
         "'Tìm KPI có rủi ro', 'Đề xuất giải pháp khắc phục', đồng thời cho phép nhập câu hỏi tự nhiên để AI hỗ trợ:"
     )
@@ -397,13 +397,13 @@ def write_section_3_2(doc):
         p_img_ai.add_run().add_picture(img_ai, width=Cm(14.5))
     else:
         p_img_ai.add_run("[HÌNH ẢNH AI LỖI]")
-    add_figure_caption(doc, "Hình 12: Giao diện Trợ lý AI Gemini (Bizen AI Assistant) trượt mở")
+    add_figure_caption(doc, "Hình 12: Giao diện Trợ lý AI có nguồn (Bizen AI Assistant) trượt mở")
 
     # Kết luận mục
     add_para(doc, "", space_before=6, space_after=0, indent=False)
     add_para(doc,
         "Tổng kết Chương 3: Việc thiết kế cơ sở dữ liệu chuẩn hóa 3NF và xây dựng hệ thống giao diện trực quan, "
-        "nhất quán có sự hỗ trợ của Trợ lý AI Gemini đã hoàn thiện toàn bộ phần thiết kế logic và thiết kế vật lý của dự án. "
+        "nhất quán có sự hỗ trợ của các advisor AI có kiểm soát đã hoàn thiện toàn bộ phần thiết kế logic và thiết kế vật lý của dự án. "
         "Đây là cơ sở đầy đủ và chi tiết để nhóm NEXTGEN triển khai lập trình mã nguồn và cấu hình hệ thống ở chương tiếp theo.",
         italic=True, space_before=6, space_after=12
     )

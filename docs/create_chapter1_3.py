@@ -245,7 +245,7 @@ def write_section_1_3(doc):
     headers_member = ["STT", "Họ và tên", "Mã SV", "Vai trò", "Nhiệm vụ chính trong dự án"]
     rows_member = [
         ["1", "Phạm Trần Anh Quân", "TB01758", "Leader, AI Specialist",
-         "Quản lý tiến độ dự án, chịu trách nhiệm chính về kiến trúc AI, tích hợp mô hình AI Gemini để đưa ra quyết định thông minh."],
+         "Quản lý tiến độ dự án, chịu trách nhiệm kiến trúc AI-native, model gateway và các rào chắn hỗ trợ quyết định."],
         ["2", "Bùi Nguyễn Anh Như", "TB01785", "Frontend Developer (KPI, OKR)",
          "Xây dựng và phát triển giao diện người dùng cho các module quản lý OKR, thiết lập KPI và dashboard tổng quan."],
         ["3", "Phạm Trần An An", "TB01817", "Backend Developer (KPI, OKR)",
@@ -267,7 +267,7 @@ def write_section_1_3(doc):
     add_bullet(doc, "Hệ điều hành Windows, IDE Visual Studio 2022, SQL Server Management Studio (SSMS), Git/GitHub.", bold_prefix="Công cụ phát triển")
     add_bullet(doc, "ASP.NET Core MVC (.NET 10.0), Entity Framework Core 10.0, SQL Server 2019+ làm DB.", bold_prefix="Công nghệ Backend")
     add_bullet(doc, "Razor Views, CSS (Bootstrap 5), JavaScript (Vanilla JS), ApexCharts.js cho Dashboard đồ họa.", bold_prefix="Công nghệ Frontend")
-    add_bullet(doc, "Google Gemini API (gemini-2.5-flash) cho các tính năng hỗ trợ quyết định bằng trí tuệ nhân tạo.", bold_prefix="Tích hợp AI")
+    add_bullet(doc, "Model gateway qua IAIModelClient cho các advisor strict-schema, citation và abstain.", bold_prefix="Tích hợp AI")
     add_bullet(doc, "EPPlus cho xuất báo cáo Excel, DotNetEnv quản lý cấu hình bảo mật, MailKit cho SMTP Email.", bold_prefix="Thư viện phụ trợ")
 
     # ============================================================
@@ -296,7 +296,7 @@ def write_section_1_3(doc):
         ["10", "Lập trình Module 2: Thiết lập chiến lược & OKR", "06/06/2026", "10/06/2026", "Anh Như, An An, Thế Bảo", "100%"],
         ["11", "Lập trình Module 3: Giao KPI & Quản lý KPI", "11/06/2026", "15/06/2026", "Huy Nhật, An An, Thế Bảo", "100%"],
         ["12", "Lập trình Module 4: Check-in & Duyệt tiến độ", "16/06/2026", "20/06/2026", "Anh Như, Huy Nhật, An An", "100%"],
-        ["13", "Lập trình Module 5: Tích hợp AI Gemini", "19/06/2026", "24/06/2026", "Anh Quân", "100%"],
+        ["13", "Lập trình Module 5: Tích hợp AI-native", "19/06/2026", "24/06/2026", "Anh Quân", "100%"],
         ["14", "Lập trình Module 6: Quản lý công việc (Order/Kanban)", "20/06/2026", "25/06/2026", "Huy Nhật, Thế Bảo", "100%"],
         ["15", "Tích hợp hệ thống & Tối ưu hóa Database", "25/06/2026", "27/06/2026", "Cả nhóm", "100%"],
         ["16", "Viết kịch bản test & Thực hiện kiểm thử (QA)", "26/06/2026", "28/06/2026", "Quốc Khánh (Tester)", "100%"],

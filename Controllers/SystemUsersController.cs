@@ -1,52 +1,91 @@
-using Microsoft.AspNetCore.Mvc;
-using Manage_KPI_or_OKR_System.Data;
-using Manage_KPI_or_OKR_System.Helpers;
-using Microsoft.EntityFrameworkCore;
-using Manage_KPI_or_OKR_System.Models;
-using Microsoft.AspNetCore.Authorization;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text.Json;
-using System.ComponentModel.DataAnnotations;
+using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helpers;
+using Manage_KPI_or_OKR_System.Models;
+using Manage_KPI_or_OKR_System.Models.Tenancy;
+using Manage_KPI_or_OKR_System.Services;
+using Manage_KPI_or_OKR_System.Services.Tenancy;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
     [Authorize]
     public class SystemUsersController : Controller
     {
+        private const string PlatformAdminClaimType = "PlatformAdmin";
         private readonly MiniERPDbContext _context;
+        private readonly ITenantContext? _tenantContext;
+        private readonly IPasswordResetService? _passwordResetService;
 
-        public SystemUsersController(MiniERPDbContext context)
+        public SystemUsersController(
+            MiniERPDbContext context,
+            ITenantContext? tenantContext = null,
+            IPasswordResetService? passwordResetService = null)
         {
             _context = context;
+            _tenantContext = tenantContext;
+            _passwordResetService = passwordResetService;
         }
 
         [HasPermission("SYSUSERS_VIEW")]
         public async Task<IActionResult> Index(string searchString, int? roleId, string status)
         {
-            var query = _context.SystemUsers.AsQueryable();
-
-            if (!string.IsNullOrEmpty(searchString))
+            if (!TryGetTenantId(out var tenantId))
             {
-                query = query.Where(u => (u.Username ?? "").Contains(searchString) || 
-                                         (u.Email ?? "").Contains(searchString));
+                return Forbid();
+            }
+
+            var query = _context.TenantMemberships
+                .AsNoTracking()
+                .Where(membership =>
+                    membership.TenantId == tenantId &&
+                    membership.SystemUser != null);
+
+            if (!string.IsNullOrWhiteSpace(searchString))
+            {
+                query = query.Where(membership =>
+                    (membership.SystemUser!.Username ?? "").Contains(searchString) ||
+                    (membership.SystemUser.Email ?? "").Contains(searchString));
             }
 
             if (roleId.HasValue)
             {
-                query = query.Where(u => u.RoleId == roleId);
+                query = query.Where(membership => membership.RoleId == roleId.Value);
             }
 
-            if (!string.IsNullOrEmpty(status))
+            if (string.Equals(status, "active", StringComparison.OrdinalIgnoreCase))
             {
-                if (status == "active") query = query.Where(u => u.IsActive == true);
-                else if (status == "locked") query = query.Where(u => u.IsActive == false);
+                query = query.Where(membership => membership.IsActive);
+            }
+            else if (string.Equals(status, "locked", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(membership => !membership.IsActive);
             }
 
-            var users = await query.OrderByDescending(u => u.CreatedAt).ToListAsync();
-            
-            var roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
-            ViewBag.Roles = roles;
-            
+            var users = await query
+                .OrderByDescending(membership => membership.SystemUser!.CreatedAt)
+                .Select(membership => new SystemUser
+                {
+                    Id = membership.SystemUserId,
+                    Username = membership.SystemUser!.Username,
+                    Email = membership.SystemUser.Email,
+                    LastPasswordChange = membership.SystemUser.LastPasswordChange,
+                    RoleId = membership.RoleId,
+                    IsActive = membership.IsActive,
+                    CreatedAt = membership.SystemUser.CreatedAt,
+                    CreatedById = membership.SystemUser.CreatedById,
+                    TrialEndTime = membership.SystemUser.TrialEndTime,
+                    PreferredLanguage = membership.SystemUser.PreferredLanguage
+                })
+                .ToListAsync();
+
+            ViewBag.Roles = await _context.Roles
+                .AsNoTracking()
+                .ToDictionaryAsync(role => role.Id, role => role.RoleName ?? "Chưa đặt tên");
             ViewBag.SearchString = searchString;
             ViewBag.RoleId = roleId;
             ViewBag.Status = status;
@@ -55,135 +94,176 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("SYSUSERS_EDIT")]
         public async Task<IActionResult> AssignRole(int userId, int roleId)
         {
-            var user = await _context.SystemUsers.FindAsync(userId);
+            if (!TryGetTenantId(out var tenantId))
+            {
+                return Forbid();
+            }
+
+            var membership = await GetTenantMembershipAsync(tenantId, userId);
             var requestedRole = await _context.Roles.FindAsync(roleId);
-            if (user == null || requestedRole == null || requestedRole.IsActive != true)
+            if (membership?.SystemUser == null || requestedRole?.IsActive != true)
             {
                 TempData["ToastErrorMessage"] = "Tài khoản hoặc vai trò không tồn tại.";
                 return RedirectToAction(nameof(Index));
             }
 
-            if (!CanManageAdministrators() &&
-                (await IsAdministratorRoleAsync(user.RoleId) || AuthRoleHelper.IsAdminRoleName(requestedRole.RoleName)))
+            if (!HasExplicitPlatformAdminClaim() &&
+                (await IsReservedPlatformRoleAsync(membership.RoleId) ||
+                 IsReservedPlatformRoleName(requestedRole.RoleName)))
             {
                 return Forbid();
             }
 
-            var oldData = new
-            {
-                user.Id,
-                user.Username,
-                user.RoleId
-            };
-
-            user.RoleId = roleId;
+            var oldData = TenantAuditData(membership);
+            membership.RoleId = roleId;
             await _context.SaveChangesAsync();
-            await LogSystemUserAuditAsync("UPDATE", oldData, new
-            {
-                user.Id,
-                user.Username,
-                user.RoleId
-            });
+            await LogSystemUserAuditAsync("UPDATE", oldData, TenantAuditData(membership));
 
-            TempData["SuccessMessage"] = $"Đã cập nhật phân quyền cho tài khoản {user.Username}!";
+            TempData["SuccessMessage"] =
+                $"Đã cập nhật phân quyền cho tài khoản {membership.SystemUser.Username}!";
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("SYSUSERS_EDIT")]
         public async Task<IActionResult> ToggleLock(int userId)
         {
-            var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (int.TryParse(currentUserIdStr, out int currentUserId) && currentUserId == userId)
+            if (!TryGetTenantId(out var tenantId))
+            {
+                return Forbid();
+            }
+
+            var membership = await GetTenantMembershipAsync(tenantId, userId);
+            if (membership?.SystemUser == null)
+            {
+                return NotFound();
+            }
+
+            if (GetCurrentUserId() == userId)
             {
                 TempData["ToastErrorMessage"] = "Bạn không thể tự khóa tài khoản đang đăng nhập.";
                 return RedirectToAction(nameof(Index));
             }
 
-            var user = await _context.SystemUsers.FindAsync(userId);
-            if (user != null)
+            if (!HasExplicitPlatformAdminClaim() &&
+                await IsReservedPlatformRoleAsync(membership.RoleId))
             {
-                if (!CanManageAdministrators() && await IsAdministratorRoleAsync(user.RoleId))
-                {
-                    return Forbid();
-                }
-
-                var oldData = new
-                {
-                    user.Id,
-                    user.Username,
-                    user.IsActive
-                };
-
-                user.IsActive = !(user.IsActive ?? true);
-                await _context.SaveChangesAsync();
-                await LogSystemUserAuditAsync("UPDATE", oldData, new
-                {
-                    user.Id,
-                    user.Username,
-                    user.IsActive
-                });
-
-                TempData["SuccessMessage"] = user.IsActive == true ? $"Đã mở khóa tài khoản {user.Username}." : $"Đã khóa tài khoản {user.Username}.";
+                return Forbid();
             }
+
+            var oldData = TenantAuditData(membership);
+            membership.IsActive = !membership.IsActive;
+            await _context.SaveChangesAsync();
+            await LogSystemUserAuditAsync("UPDATE", oldData, TenantAuditData(membership));
+
+            TempData["SuccessMessage"] = membership.IsActive
+                ? $"Đã mở khóa tài khoản {membership.SystemUser.Username} trong tenant hiện tại."
+                : $"Đã khóa tài khoản {membership.SystemUser.Username} trong tenant hiện tại.";
             return RedirectToAction(nameof(Index));
         }
 
         [HasPermission("SYSUSERS_EDIT")]
         public async Task<IActionResult> ResetPassword(int? id)
         {
-            if (id == null) return NotFound();
-            var user = await _context.SystemUsers.FindAsync(id);
-            if (user == null) return NotFound();
-            if (!CanManageAdministrators() && await IsAdministratorRoleAsync(user.RoleId)) return Forbid();
+            if (!TryGetTenantId(out var tenantId))
+            {
+                return Forbid();
+            }
 
-            return View(user);
+            if (!id.HasValue)
+            {
+                return NotFound();
+            }
+
+            var membership = await GetTenantMembershipAsync(tenantId, id.Value, asTracking: false);
+            if (membership?.SystemUser == null)
+            {
+                return NotFound();
+            }
+
+            if ((!HasExplicitPlatformAdminClaim() &&
+                 await IsReservedPlatformRoleAsync(membership.RoleId)) ||
+                !await CanModifyGlobalIdentityAsync(id.Value, tenantId))
+            {
+                return Forbid();
+            }
+
+            return View(ToTenantViewModel(membership));
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("SYSUSERS_EDIT")]
         public async Task<IActionResult> ResetPassword(int userId, string newPassword)
         {
-            var user = await _context.SystemUsers.FindAsync(userId);
-            if (user == null) return NotFound();
-            if (!CanManageAdministrators() && await IsAdministratorRoleAsync(user.RoleId)) return Forbid();
+            if (!TryGetTenantId(out var tenantId))
+            {
+                return Forbid();
+            }
+
+            var membership = await GetTenantMembershipAsync(tenantId, userId);
+            if (membership?.SystemUser == null)
+            {
+                return NotFound();
+            }
+
+            if ((!HasExplicitPlatformAdminClaim() &&
+                 await IsReservedPlatformRoleAsync(membership.RoleId)) ||
+                !await CanModifyGlobalIdentityAsync(userId, tenantId))
+            {
+                return Forbid();
+            }
 
             var passwordValidation = ValidateManagedPassword(newPassword, required: true);
             if (passwordValidation != null)
             {
                 ModelState.AddModelError("newPassword", passwordValidation);
-                return View(user);
+                return View(ToTenantViewModel(membership));
             }
 
+            var user = membership.SystemUser;
             var oldLastPasswordChange = user.LastPasswordChange;
             user.PasswordHash = PasswordHelper.HashPassword(newPassword);
             user.LastPasswordChange = DateTime.Now;
+            if (_passwordResetService != null)
+            {
+                await _passwordResetService.InvalidateUnusedTokensAsync(user.Id);
+            }
             await _context.SaveChangesAsync();
             await LogSystemUserAuditAsync("UPDATE", new
             {
                 user.Id,
                 user.Username,
+                TenantId = tenantId,
                 PasswordChanged = false,
                 LastPasswordChange = oldLastPasswordChange
             }, new
             {
                 user.Id,
                 user.Username,
+                TenantId = tenantId,
                 PasswordChanged = true,
                 user.LastPasswordChange
             });
 
-            TempData["SuccessMessage"] = $"Đã làm mới mật khẩu cho tài khoản {user.Username}.";
+            TempData["SuccessMessage"] =
+                $"Đã làm mới mật khẩu cho tài khoản {user.Username}.";
             return RedirectToAction(nameof(Index));
         }
 
-        // ------------------------- THÊM MỚI -------------------------
         [HasPermission("SYSUSERS_CREATE")]
         public async Task<IActionResult> Create()
         {
+            if (!TryGetTenantId(out _))
+            {
+                return Forbid();
+            }
+
             ViewBag.Roles = await GetAssignableRolesAsync();
             return View();
         }
@@ -191,8 +271,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [HasPermission("SYSUSERS_CREATE")]
-        public async Task<IActionResult> Create([Bind("Username,Email,PasswordHash,RoleId")] SystemUser user)
+        public async Task<IActionResult> Create(
+            [Bind("Username,Email,PasswordHash,RoleId")] SystemUser user)
         {
+            if (!TryGetTenantId(out var tenantId))
+            {
+                return Forbid();
+            }
+
             user.Username = user.Username?.Trim();
             user.Email = user.Email?.Trim().ToLowerInvariant();
 
@@ -201,7 +287,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 ModelState.AddModelError(nameof(user.Username), "Vui lòng nhập tên đăng nhập.");
             }
 
-            if (string.IsNullOrWhiteSpace(user.Email) || !new EmailAddressAttribute().IsValid(user.Email))
+            if (string.IsNullOrWhiteSpace(user.Email) ||
+                !new EmailAddressAttribute().IsValid(user.Email))
             {
                 ModelState.AddModelError(nameof(user.Email), "Vui lòng nhập email hợp lệ.");
             }
@@ -217,14 +304,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 ModelState.AddModelError(nameof(user.PasswordHash), passwordValidation);
             }
 
+            Role? requestedRole = null;
             if (user.RoleId.HasValue)
             {
-                var requestedRole = await _context.Roles.FindAsync(user.RoleId.Value);
-                if (requestedRole == null || requestedRole.IsActive != true)
+                requestedRole = await _context.Roles.FindAsync(user.RoleId.Value);
+                if (requestedRole?.IsActive != true)
                 {
-                    ModelState.AddModelError(nameof(user.RoleId), "Vai trò được chọn không tồn tại hoặc đã ngừng hoạt động.");
+                    ModelState.AddModelError(
+                        nameof(user.RoleId),
+                        "Vai trò được chọn không tồn tại hoặc đã ngừng hoạt động.");
                 }
-                else if (!CanManageAdministrators() && AuthRoleHelper.IsAdminRoleName(requestedRole.RoleName))
+                else if (!HasExplicitPlatformAdminClaim() &&
+                         IsReservedPlatformRoleName(requestedRole.RoleName))
                 {
                     return Forbid();
                 }
@@ -234,54 +325,93 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 var normalizedUsername = user.Username!.ToLowerInvariant();
                 var normalizedEmail = user.Email!.ToLowerInvariant();
-                bool duplicateUsername = await _context.SystemUsers.AnyAsync(u =>
-                    u.Username != null && u.Username.ToLower() == normalizedUsername);
-                bool duplicateEmail = await _context.SystemUsers.AnyAsync(u =>
-                    u.Email != null && u.Email.ToLower() == normalizedEmail);
+                var duplicateUsername = await _context.SystemUsers.AnyAsync(existing =>
+                    existing.Username != null &&
+                    existing.Username.ToLower() == normalizedUsername);
+                var duplicateEmail = await _context.SystemUsers.AnyAsync(existing =>
+                    existing.Email != null &&
+                    existing.Email.ToLower() == normalizedEmail);
 
                 if (duplicateUsername || duplicateEmail)
                 {
-                    if (duplicateUsername) ModelState.AddModelError(nameof(user.Username), "Tên đăng nhập đã tồn tại.");
-                    if (duplicateEmail) ModelState.AddModelError(nameof(user.Email), "Email đã tồn tại.");
+                    if (duplicateUsername)
+                    {
+                        ModelState.AddModelError(nameof(user.Username), "Tên đăng nhập đã tồn tại.");
+                    }
+
+                    if (duplicateEmail)
+                    {
+                        ModelState.AddModelError(nameof(user.Email), "Email đã tồn tại.");
+                    }
+
                     ViewBag.Roles = await GetAssignableRolesAsync();
                     return View(user);
                 }
 
+                var tenantRoleId = user.RoleId!.Value;
+                user.RoleId = null;
                 user.CreatedAt = DateTime.Now;
+                user.CreatedById = GetCurrentUserId();
                 user.IsActive = true;
-                if (!string.IsNullOrEmpty(user.PasswordHash))
+                user.PasswordHash = PasswordHelper.HashPassword(user.PasswordHash!);
+
+                var membership = new TenantMembership
                 {
-                    user.PasswordHash = PasswordHelper.HashPassword(user.PasswordHash);
-                }
-                _context.Add(user);
+                    TenantId = tenantId,
+                    SystemUser = user,
+                    RoleId = tenantRoleId,
+                    IsActive = true,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    CreatedBySystemUserId = GetCurrentUserId()
+                };
+                _context.TenantMemberships.Add(membership);
                 await _context.SaveChangesAsync();
                 await LogSystemUserAuditAsync("CREATE", null, new
                 {
                     user.Id,
                     user.Username,
                     user.Email,
-                    user.RoleId,
-                    user.IsActive
+                    TenantId = tenantId,
+                    RoleId = tenantRoleId,
+                    MembershipIsActive = membership.IsActive
                 });
 
-                TempData["SuccessMessage"] = $"Đã tạo tài khoản {user.Username} thành công!";
+                TempData["SuccessMessage"] =
+                    $"Đã tạo tài khoản {user.Username} trong tenant hiện tại!";
                 return RedirectToAction(nameof(Index));
             }
+
             ViewBag.Roles = await GetAssignableRolesAsync();
             return View(user);
         }
 
-        // ------------------------- SỬA THÔNG TIN -------------------------
         [HasPermission("SYSUSERS_EDIT")]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null) return NotFound();
-            var user = await _context.SystemUsers.FindAsync(id);
-            if (user == null) return NotFound();
-            if (!CanManageAdministrators() && await IsAdministratorRoleAsync(user.RoleId)) return Forbid();
+            if (!TryGetTenantId(out var tenantId))
+            {
+                return Forbid();
+            }
+
+            if (!id.HasValue)
+            {
+                return NotFound();
+            }
+
+            var membership = await GetTenantMembershipAsync(tenantId, id.Value, asTracking: false);
+            if (membership?.SystemUser == null)
+            {
+                return NotFound();
+            }
+
+            if (!HasExplicitPlatformAdminClaim() &&
+                await IsReservedPlatformRoleAsync(membership.RoleId))
+            {
+                return Forbid();
+            }
 
             ViewBag.Roles = await GetAssignableRolesAsync();
-            return View(user);
+            return View(ToTenantViewModel(membership));
         }
 
         [HttpPost]
@@ -292,7 +422,27 @@ namespace Manage_KPI_or_OKR_System.Controllers
             [Bind("Id,Username,Email,RoleId,IsActive")] SystemUser user,
             string? newPassword)
         {
-            if (id != user.Id) return NotFound();
+            if (!TryGetTenantId(out var tenantId))
+            {
+                return Forbid();
+            }
+
+            if (id != user.Id)
+            {
+                return NotFound();
+            }
+
+            var membership = await GetTenantMembershipAsync(tenantId, id);
+            if (membership?.SystemUser == null)
+            {
+                return NotFound();
+            }
+
+            if (!HasExplicitPlatformAdminClaim() &&
+                await IsReservedPlatformRoleAsync(membership.RoleId))
+            {
+                return Forbid();
+            }
 
             user.Username = user.Username?.Trim();
             user.Email = user.Email?.Trim().ToLowerInvariant();
@@ -301,7 +451,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 ModelState.AddModelError(nameof(user.Username), "Vui lòng nhập tên đăng nhập.");
             }
 
-            if (string.IsNullOrWhiteSpace(user.Email) || !new EmailAddressAttribute().IsValid(user.Email))
+            if (string.IsNullOrWhiteSpace(user.Email) ||
+                !new EmailAddressAttribute().IsValid(user.Email))
             {
                 ModelState.AddModelError(nameof(user.Email), "Vui lòng nhập email hợp lệ.");
             }
@@ -317,114 +468,170 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 ModelState.AddModelError(nameof(newPassword), passwordValidation);
             }
 
+            if (GetCurrentUserId() == id && user.IsActive != true)
+            {
+                ModelState.AddModelError(
+                    nameof(user.IsActive),
+                    "Bạn không thể tự khóa tài khoản đang đăng nhập.");
+            }
+
             if (ModelState.IsValid)
             {
-                var existingUser = await _context.SystemUsers.FindAsync(id);
-                if (existingUser != null)
+                var requestedRole = await _context.Roles.FindAsync(user.RoleId!.Value);
+                if (requestedRole?.IsActive != true)
                 {
-                    var requestedRole = user.RoleId.HasValue
-                        ? await _context.Roles.FindAsync(user.RoleId.Value)
-                        : null;
-                    if (user.RoleId.HasValue && (requestedRole == null || requestedRole.IsActive != true))
-                    {
-                        ModelState.AddModelError(nameof(user.RoleId), "Vai trò được chọn không tồn tại hoặc đã ngừng hoạt động.");
-                        ViewBag.Roles = await GetAssignableRolesAsync();
-                        return View(user);
-                    }
+                    ModelState.AddModelError(
+                        nameof(user.RoleId),
+                        "Vai trò được chọn không tồn tại hoặc đã ngừng hoạt động.");
+                }
+                else if (!HasExplicitPlatformAdminClaim() &&
+                         IsReservedPlatformRoleName(requestedRole.RoleName))
+                {
+                    return Forbid();
+                }
+            }
 
-                    if (!CanManageAdministrators() &&
-                        (await IsAdministratorRoleAsync(existingUser.RoleId) || AuthRoleHelper.IsAdminRoleName(requestedRole?.RoleName)))
-                    {
-                        return Forbid();
-                    }
+            if (ModelState.IsValid)
+            {
+                var existingUser = membership.SystemUser;
+                var globalIdentityChanged =
+                    !string.Equals(existingUser.Username, user.Username, StringComparison.Ordinal) ||
+                    !string.Equals(existingUser.Email, user.Email, StringComparison.Ordinal) ||
+                    !string.IsNullOrEmpty(newPassword);
+                if (globalIdentityChanged &&
+                    !await CanModifyGlobalIdentityAsync(id, tenantId))
+                {
+                    return Forbid();
+                }
 
-                    var normalizedUsername = user.Username!.ToLowerInvariant();
-                    var normalizedEmail = user.Email!.ToLowerInvariant();
-                    if (await _context.SystemUsers.AnyAsync(u =>
-                        u.Id != id && u.Username != null && u.Username.ToLower() == normalizedUsername))
-                    {
-                        ModelState.AddModelError(nameof(user.Username), "Tên đăng nhập đã tồn tại.");
-                        ViewBag.Roles = await GetAssignableRolesAsync();
-                        return View(user);
-                    }
+                var normalizedUsername = user.Username!.ToLowerInvariant();
+                var normalizedEmail = user.Email!.ToLowerInvariant();
+                if (await _context.SystemUsers.AnyAsync(existing =>
+                    existing.Id != id &&
+                    existing.Username != null &&
+                    existing.Username.ToLower() == normalizedUsername))
+                {
+                    ModelState.AddModelError(nameof(user.Username), "Tên đăng nhập đã tồn tại.");
+                }
 
-                    if (await _context.SystemUsers.AnyAsync(u =>
-                        u.Id != id && u.Email != null && u.Email.ToLower() == normalizedEmail))
-                    {
-                        ModelState.AddModelError(nameof(user.Email), "Email đã tồn tại.");
-                        ViewBag.Roles = await GetAssignableRolesAsync();
-                        return View(user);
-                    }
+                if (await _context.SystemUsers.AnyAsync(existing =>
+                    existing.Id != id &&
+                    existing.Email != null &&
+                    existing.Email.ToLower() == normalizedEmail))
+                {
+                    ModelState.AddModelError(nameof(user.Email), "Email đã tồn tại.");
+                }
 
+                if (ModelState.IsValid)
+                {
                     var oldData = new
                     {
                         existingUser.Id,
                         existingUser.Username,
                         existingUser.Email,
-                        existingUser.RoleId,
-                        existingUser.IsActive,
+                        TenantId = tenantId,
+                        membership.RoleId,
+                        MembershipIsActive = membership.IsActive,
                         PasswordChanged = false
                     };
 
                     existingUser.Username = user.Username;
                     existingUser.Email = user.Email;
-                    existingUser.RoleId = user.RoleId;
-                    existingUser.IsActive = user.IsActive;
+                    membership.RoleId = user.RoleId;
+                    membership.IsActive = user.IsActive == true;
 
                     var passwordChanged = false;
                     if (!string.IsNullOrEmpty(newPassword))
                     {
                         existingUser.PasswordHash = PasswordHelper.HashPassword(newPassword);
                         existingUser.LastPasswordChange = DateTime.Now;
+                        if (_passwordResetService != null)
+                        {
+                            await _passwordResetService.InvalidateUnusedTokensAsync(existingUser.Id);
+                        }
                         passwordChanged = true;
                     }
-                    
-                    _context.Update(existingUser);
+
                     await _context.SaveChangesAsync();
                     await LogSystemUserAuditAsync("UPDATE", oldData, new
                     {
                         existingUser.Id,
                         existingUser.Username,
                         existingUser.Email,
-                        existingUser.RoleId,
-                        existingUser.IsActive,
+                        TenantId = tenantId,
+                        membership.RoleId,
+                        MembershipIsActive = membership.IsActive,
                         PasswordChanged = passwordChanged
                     });
 
-                    TempData["SuccessMessage"] = $"Đã cập nhật tài khoản {existingUser.Username} thành công!";
+                    TempData["SuccessMessage"] =
+                        $"Đã cập nhật tài khoản {existingUser.Username} trong tenant hiện tại!";
                     return RedirectToAction(nameof(Index));
                 }
             }
+
             ViewBag.Roles = await GetAssignableRolesAsync();
             return View(user);
         }
 
-        // ------------------------- XEM CHI TIẾT -------------------------
         [HasPermission("SYSUSERS_VIEW")]
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null) return NotFound();
-            var user = await _context.SystemUsers.FindAsync(id);
-            if (user == null) return NotFound();
+            if (!TryGetTenantId(out var tenantId))
+            {
+                return Forbid();
+            }
 
-            ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
+            if (!id.HasValue)
+            {
+                return NotFound();
+            }
+
+            var membership = await GetTenantMembershipAsync(tenantId, id.Value, asTracking: false);
+            if (membership?.SystemUser == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.Roles = await _context.Roles
+                .AsNoTracking()
+                .ToDictionaryAsync(role => role.Id, role => role.RoleName ?? "Chưa đặt tên");
             ViewBag.CanEditSystemUser =
                 await PermissionLookupHelper.HasPermissionAsync(_context, User, "SYSUSERS_EDIT") &&
-                (CanManageAdministrators() || !await IsAdministratorRoleAsync(user.RoleId));
-            return View(user);
+                (HasExplicitPlatformAdminClaim() ||
+                 !await IsReservedPlatformRoleAsync(membership.RoleId));
+            return View(ToTenantViewModel(membership));
         }
 
-        // ------------------------- XÓA -------------------------
         [HasPermission("SYSUSERS_DELETE")]
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null) return NotFound();
-            var user = await _context.SystemUsers.FindAsync(id);
-            if (user == null) return NotFound();
-            if (!CanManageAdministrators() && await IsAdministratorRoleAsync(user.RoleId)) return Forbid();
+            if (!TryGetTenantId(out var tenantId))
+            {
+                return Forbid();
+            }
 
-            ViewBag.Roles = await _context.Roles.ToDictionaryAsync(r => r.Id, r => r.RoleName);
-            return View(user);
+            if (!id.HasValue)
+            {
+                return NotFound();
+            }
+
+            var membership = await GetTenantMembershipAsync(tenantId, id.Value, asTracking: false);
+            if (membership?.SystemUser == null)
+            {
+                return NotFound();
+            }
+
+            if (!HasExplicitPlatformAdminClaim() &&
+                await IsReservedPlatformRoleAsync(membership.RoleId))
+            {
+                return Forbid();
+            }
+
+            ViewBag.Roles = await _context.Roles
+                .AsNoTracking()
+                .ToDictionaryAsync(role => role.Id, role => role.RoleName ?? "Chưa đặt tên");
+            return View(ToTenantViewModel(membership));
         }
 
         [HttpPost, ActionName("Delete")]
@@ -432,52 +639,99 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("SYSUSERS_DELETE")]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (int.TryParse(currentUserIdStr, out int currentUserId) && currentUserId == id)
+            if (!TryGetTenantId(out var tenantId))
+            {
+                return Forbid();
+            }
+
+            var membership = await GetTenantMembershipAsync(tenantId, id);
+            if (membership?.SystemUser == null)
+            {
+                return NotFound();
+            }
+
+            if (GetCurrentUserId() == id)
             {
                 TempData["ErrorMessage"] = "Bạn không thể xóa tài khoản đang đăng nhập.";
                 return RedirectToAction(nameof(Index));
             }
 
-            var user = await _context.SystemUsers.FindAsync(id);
-            if (user != null)
+            if (!HasExplicitPlatformAdminClaim() &&
+                await IsReservedPlatformRoleAsync(membership.RoleId))
             {
-                if (!CanManageAdministrators() && await IsAdministratorRoleAsync(user.RoleId))
-                {
-                    return Forbid();
-                }
-
-                var oldData = new
-                {
-                    user.Id,
-                    user.Username,
-                    user.Email,
-                    user.RoleId,
-                    user.IsActive
-                };
-
-                try {
-                    _context.SystemUsers.Remove(user);
-                    await _context.SaveChangesAsync();
-                    await LogSystemUserAuditAsync("DELETE", oldData, new
-                    {
-                        user.Id,
-                        Deleted = true
-                    });
-
-                    TempData["SuccessMessage"] = $"Đã xóa vĩnh viễn tài khoản {user.Username}.";
-                }
-                catch (Exception) {
-                    TempData["ErrorMessage"] = $"Lỗi: Tài khoản {user.Username} đã có dữ liệu liên kết, không thể xóa cứng. Hãy dùng tùy chọn Vô hiệu hóa (Khóa) thay vì xóa.";
-                }
+                return Forbid();
             }
+
+            var oldData = TenantAuditData(membership);
+            membership.IsActive = false;
+            await _context.SaveChangesAsync();
+            await LogSystemUserAuditAsync("DELETE", oldData, new
+            {
+                membership.SystemUserId,
+                membership.TenantId,
+                membership.RoleId,
+                MembershipIsActive = membership.IsActive,
+                GlobalUserDeleted = false
+            });
+
+            TempData["SuccessMessage"] =
+                $"Đã gỡ quyền truy cập tenant của tài khoản {membership.SystemUser.Username}.";
             return RedirectToAction(nameof(Index));
         }
 
-        private bool CanManageAdministrators() =>
-            User.IsInRole("Admin") || User.IsInRole("Administrator");
+        private bool TryGetTenantId(out int tenantId)
+        {
+            tenantId = _tenantContext?.TenantId ?? 0;
+            return tenantId > 0;
+        }
 
-        private async Task<bool> IsAdministratorRoleAsync(int? roleId)
+        private int? GetCurrentUserId()
+        {
+            var value = User.FindFirstValue("SystemUserId") ??
+                        User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(value, out var userId) && userId > 0 ? userId : null;
+        }
+
+        private Task<TenantMembership?> GetTenantMembershipAsync(
+            int tenantId,
+            int userId,
+            bool asTracking = true)
+        {
+            IQueryable<TenantMembership> query = _context.TenantMemberships
+                .Include(membership => membership.SystemUser)
+                .Where(membership =>
+                    membership.TenantId == tenantId &&
+                    membership.SystemUserId == userId);
+            if (!asTracking)
+            {
+                query = query.AsNoTracking();
+            }
+
+            return query.SingleOrDefaultAsync();
+        }
+
+        private bool HasExplicitPlatformAdminClaim() =>
+            User.HasClaim(claim =>
+                string.Equals(claim.Type, PlatformAdminClaimType, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(claim.Value, bool.TrueString, StringComparison.OrdinalIgnoreCase));
+
+        private async Task<bool> CanModifyGlobalIdentityAsync(int userId, int tenantId)
+        {
+            if (HasExplicitPlatformAdminClaim())
+            {
+                return true;
+            }
+
+            var memberships = await _context.TenantMemberships
+                .AsNoTracking()
+                .Where(membership => membership.SystemUserId == userId)
+                .Select(membership => membership.TenantId)
+                .Take(2)
+                .ToListAsync();
+            return memberships.Count == 1 && memberships[0] == tenantId;
+        }
+
+        private async Task<bool> IsReservedPlatformRoleAsync(int? roleId)
         {
             if (!roleId.HasValue)
             {
@@ -485,27 +739,70 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var roleName = await _context.Roles
+                .AsNoTracking()
                 .Where(role => role.Id == roleId.Value)
                 .Select(role => role.RoleName)
                 .FirstOrDefaultAsync();
-            return AuthRoleHelper.IsAdminRoleName(roleName);
+            return IsReservedPlatformRoleName(roleName);
+        }
+
+        private static bool IsReservedPlatformRoleName(string? roleName)
+        {
+            if (string.IsNullOrWhiteSpace(roleName))
+            {
+                return false;
+            }
+
+            var normalized = string.Concat(roleName.Where(char.IsLetterOrDigit))
+                .ToUpperInvariant();
+            return normalized is "SAASADMIN" or "SUPERADMIN" or "PLATFORMADMIN";
         }
 
         private async Task<Dictionary<int, string>> GetAssignableRolesAsync()
         {
             var roles = await _context.Roles
+                .AsNoTracking()
                 .Where(role => role.IsActive == true)
                 .OrderBy(role => role.RoleName)
                 .ToListAsync();
-            if (!CanManageAdministrators())
+            if (!HasExplicitPlatformAdminClaim())
             {
                 roles = roles
-                    .Where(role => !AuthRoleHelper.IsAdminRoleName(role.RoleName))
+                    .Where(role => !IsReservedPlatformRoleName(role.RoleName))
                     .ToList();
             }
 
-            return roles.ToDictionary(role => role.Id, role => role.RoleName ?? "Chưa đặt tên");
+            return roles.ToDictionary(
+                role => role.Id,
+                role => role.RoleName ?? "Chưa đặt tên");
         }
+
+        private static SystemUser ToTenantViewModel(TenantMembership membership)
+        {
+            var user = membership.SystemUser!;
+            return new SystemUser
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                LastPasswordChange = user.LastPasswordChange,
+                RoleId = membership.RoleId,
+                IsActive = membership.IsActive,
+                CreatedAt = user.CreatedAt,
+                CreatedById = user.CreatedById,
+                TrialEndTime = user.TrialEndTime,
+                PreferredLanguage = user.PreferredLanguage
+            };
+        }
+
+        private static object TenantAuditData(TenantMembership membership) => new
+        {
+            membership.SystemUserId,
+            Username = membership.SystemUser?.Username,
+            membership.TenantId,
+            membership.RoleId,
+            MembershipIsActive = membership.IsActive
+        };
 
         private static string? ValidateManagedPassword(string? password, bool required)
         {
@@ -524,19 +821,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 : null;
         }
 
-        private async Task LogSystemUserAuditAsync(string actionType, object? oldData, object? newData)
+        private async Task LogSystemUserAuditAsync(
+            string actionType,
+            object? oldData,
+            object? newData)
         {
-            var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(currentUserIdStr, out int currentUserId))
+            var currentUserId = GetCurrentUserId();
+            if (!currentUserId.HasValue)
             {
                 return;
             }
 
             _context.AuditLogs.Add(new AuditLog
             {
-                SystemUserId = currentUserId,
+                SystemUserId = currentUserId.Value,
                 ActionType = actionType,
-                ImpactedTable = "SystemUsers",
+                ImpactedTable = "TenantMemberships",
                 OldData = oldData == null ? null : JsonSerializer.Serialize(oldData),
                 NewData = newData == null ? null : JsonSerializer.Serialize(newData),
                 LogTime = DateTime.Now

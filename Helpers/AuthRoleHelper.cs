@@ -10,6 +10,8 @@ namespace Manage_KPI_or_OKR_System.Helpers
         public const string DefaultSelfServiceRoleName = "Employee";
         public const string DashboardPermissionCode = "DASHBOARD_VIEW";
         public const string PasswordChangedClaimType = "PasswordChangedTicks";
+        public const string PlatformAdminClaimType = "PlatformAdmin";
+        public const string PlatformAdminPolicyName = "PlatformAdminOnly";
 
         public static async Task<Role> EnsureDefaultSelfServiceRoleAsync(MiniERPDbContext context)
         {
@@ -40,7 +42,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
                 ? await context.Roles.FindAsync(user.RoleId.Value)
                 : null;
 
-            if (IsAdminRoleName(currentRole?.RoleName) || IsLegacyAdminRole(currentRole?.RoleName))
+            if (IsReservedPlatformRoleName(currentRole?.RoleName))
             {
                 var adminRole = await EnsureAdminRoleAsync(context);
                 if (user.RoleId != adminRole.Id)
@@ -87,7 +89,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
 
         public static string GetRoleNameOrDefault(Role? role)
         {
-            if (IsAdminRoleName(role?.RoleName) || IsLegacyAdminRole(role?.RoleName))
+            if (IsReservedPlatformRoleName(role?.RoleName))
             {
                 return AdminRoleName;
             }
@@ -101,6 +103,13 @@ namespace Manage_KPI_or_OKR_System.Helpers
         {
             return string.Equals(roleName, AdminRoleName, StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(roleName, "Administrator", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsReservedPlatformRoleName(string? roleName)
+        {
+            return IsAdminRoleName(roleName) ||
+                   string.Equals(roleName, "SaaS_Admin", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(roleName, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
         }
 
         public static async Task<Role> EnsureAdminRoleAsync(MiniERPDbContext context)
@@ -177,12 +186,6 @@ namespace Manage_KPI_or_OKR_System.Helpers
                     p => p.Id,
                     (rp, p) => new { rp, p })
                 .Any(x => x.rp.RoleId == role.Id && x.p.PermissionCode == DashboardPermissionCode);
-        }
-
-        private static bool IsLegacyAdminRole(string? roleName)
-        {
-            return string.Equals(roleName, "SaaS_Admin", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(roleName, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
         }
 
         private static async Task EnsureRolePermissionAsync(

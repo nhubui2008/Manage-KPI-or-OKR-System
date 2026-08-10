@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "VietMach - Nền tảng Quản trị Hiệu suất Toàn diện";
     ViewData["IsLandingPage"] = true;
-    ViewData["Description"] = "Phần mềm SaaS chuyên nghiệp quản trị OKR, đo lường KPI, đánh giá nhân sự 360 độ và tính thưởng tự động với AI Gemini 2.5.";
+    ViewData["Description"] = "Phần mềm SaaS chuyên nghiệp quản trị OKR, đo lường KPI, đánh giá nhân sự 360 độ và hỗ trợ quyết định bằng AI có nguồn.";
 }
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -612,7 +612,7 @@
                     <div class="lp-dropdown-menu">
                         <a href="#showcase"><i class="bi bi-speedometer2"></i> Dashboard Quản trị</a>
                         <a href="#showcase"><i class="bi bi-bullseye"></i> Giải pháp OKR & KPI</a>
-                        <a href="#showcase"><i class="bi bi-robot"></i> Trợ lý AI Gemini 2.5</a>
+                        <a href="#showcase"><i class="bi bi-robot"></i> Trợ lý AI có nguồn</a>
                         <a href="#showcase"><i class="bi bi-trophy"></i> Đánh giá & Khen thưởng</a>
                     </div>
                 </div>
@@ -669,7 +669,7 @@
     <div class="lp-hero-inner">
         <div class="lp-hero-content reveal">
             <div class="lp-hero-badge">
-                <i class="bi bi-cpu"></i> Tích hợp AI Gemini 2.5
+                <i class="bi bi-cpu"></i> Tích hợp AI-native có kiểm soát
             </div>
             <h1>Quản trị Hiệu suất <br><span class="gradient-text">OKR · KPI · Đánh giá</span></h1>
             <p>Nền tảng SaaS toàn diện giúp doanh nghiệp thiết lập mục tiêu chiến lược, đo lường hiệu suất, duyệt check-in, đánh giá nhân sự và tự động tính thưởng — tất cả trong một hệ thống duy nhất.</p>
@@ -725,7 +725,7 @@
         </div>
         <div class="stat-item reveal reveal-delay-2">
             <div class="stat-number">AI <span class="stat-suffix">2.5</span></div>
-            <div class="stat-label">Gemini tích hợp sẵn</div>
+            <div class="stat-label">AI có nguồn tích hợp sẵn</div>
         </div>
         <div class="stat-item reveal reveal-delay-3">
             <div class="stat-number"><span class="counter" data-target="100">0</span><span class="stat-suffix">%</span></div>
@@ -781,7 +781,7 @@
                 </ul>
             </div>
             <div class="sticky-block" data-index="4">
-                <h3>AI Gemini 2.5 Tích hợp</h3>
+                <h3>AI-native có kiểm soát</h3>
                 <p>Chat, phân tích hiệu suất, gợi ý KPI, sinh nhận xét và cảnh báo rủi ro hoàn toàn tự động.</p>
                 <ul>
                     <li><i class="bi bi-check-circle-fill"></i> AI Chat với ngữ cảnh KPI/OKR</li>
@@ -823,7 +823,7 @@
             <div class="bento-content">
                 <div class="bento-icon purple"><i class="bi bi-robot"></i></div>
                 <h4 class="bento-title">Trợ lý AI Thông minh</h4>
-                <p class="bento-desc">Gemini 2.5 tích hợp sâu vào hệ thống. Tự động đề xuất KPI, phân tích điểm mạnh/yếu của nhân sự, và cảnh báo sớm rủi ro.</p>
+                <p class="bento-desc">Các advisor tích hợp theo tenant và phạm vi quyền, đưa ra bản nháp có nguồn, phân tích tham khảo và cảnh báo rủi ro để con người quyết định.</p>
             </div>
             <div class="bento-visual bv-ai">
                 <div class="bv-ai-chat">
@@ -980,11 +980,11 @@
                         
                         @if (pkg.HasAIInsight)
                         {
-                            <li><i class="bi bi-check-circle-fill"></i> Tích hợp <strong>Trợ lý AI Gemini 2.5</strong></li>
+                            <li><i class="bi bi-check-circle-fill"></i> Tích hợp <strong>Trợ lý AI có nguồn</strong></li>
                         }
                         else
                         {
-                            <li><i class="bi bi-dash-circle text-muted"></i> Trợ lý AI Gemini (Không hỗ trợ)</li>
+                            <li><i class="bi bi-dash-circle text-muted"></i> Trợ lý AI (Không hỗ trợ)</li>
                         }
                         
                         <li><i class="bi bi-check-circle-fill"></i> @(pkg.PricePerMonth == 0 ? "Triển khai On-Premise (Server riêng)" : "Báo cáo Dashboard chuẩn")</li>
@@ -1013,7 +1013,7 @@
         <div class="lp-tech-logos">
             <div class="tech-logo"><i class="bi bi-filetype-cs"></i> ASP.NET Core</div>
             <div class="tech-logo"><i class="bi bi-database"></i> SQL Server</div>
-            <div class="tech-logo"><i class="bi bi-cpu"></i> Gemini AI</div>
+            <div class="tech-logo"><i class="bi bi-cpu"></i> AI model gateway</div>
             <div class="tech-logo"><i class="bi bi-google"></i> Google OAuth</div>
             <div class="tech-logo"><i class="bi bi-file-earmark-excel"></i> EPPlus Excel</div>
             <div class="tech-logo"><i class="bi bi-bar-chart-fill"></i> Chart.js</div>
@@ -1042,7 +1042,7 @@
     <div class="lp-footer-inner">
         <div class="lp-footer-brand">
             <a href="/" class="lp-brand"><i class="bi bi-hexagon-fill"></i> VIETMACH</a>
-            <p>Nền tảng Quản trị Hiệu suất Toàn diện tích hợp AI Gemini — OKR, KPI, Đánh giá & Thưởng tự động.</p>
+            <p>Nền tảng Quản trị Hiệu suất Toàn diện tích hợp AI-native có kiểm soát — OKR, KPI, Đánh giá & Thưởng.</p>
         </div>
         <div class="lp-footer-col">
             <h4>Sản phẩm</h4>
@@ -1050,7 +1050,7 @@
                 <li><a href="#showcase">Dashboard tổng quan</a></li>
                 <li><a href="#showcase">Giải pháp OKR & KPI</a></li>
                 <li><a href="#showcase">Đánh giá & Khen thưởng</a></li>
-                <li><a href="#showcase">Trợ lý AI Gemini</a></li>
+                <li><a href="#showcase">Trợ lý AI có nguồn</a></li>
                 <li><a href="#pricing">Bảng giá dịch vụ</a></li>
             </ul>
         </div>
@@ -1144,7 +1144,7 @@
                             <input type="password" id="loginPassword" name="password" required placeholder="Nhập mật khẩu" />
                         </div>
                         <div style="text-align: right; margin-top: 8px;">
-                            <a href="javascript:void(0)" onclick="openForgotPasswordModal()" style="color: var(--primary); font-size: 0.9rem; text-decoration: none; font-weight: 500;">Quên mật khẩu?</a>
+                            <a href="/Auth/ForgotPassword" style="color: var(--primary); font-size: 0.9rem; text-decoration: none; font-weight: 500;">Quên mật khẩu?</a>
                         </div>
                     </div>
                     
@@ -1224,97 +1224,6 @@
                         <i class="bi bi-check-circle-fill"></i> Cập nhật Mật khẩu
                     </button>
                 </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== FORGOT PASSWORD MODAL ===== -->
-<div id="forgotPasswordModal" class="reg-modal-overlay">
-    <div class="reg-modal-premium">
-        <div class="reg-modal-left">
-            <div class="reg-modal-brand">
-                <i class="bi bi-hexagon-fill"></i> VIETMACH
-            </div>
-            <h2>Khôi phục Mật khẩu</h2>
-            <p>Lấy lại quyền truy cập vào hệ thống Quản trị Hiệu suất Toàn diện (OKR/KPI) một cách an toàn.</p>
-            <ul class="reg-modal-benefits">
-                <li><i class="bi bi-envelope-check"></i> Xác thực qua Email</li>
-                <li><i class="bi bi-shield-lock"></i> Bảo mật 2 lớp</li>
-                <li><i class="bi bi-lightning-charge"></i> Nhanh chóng & An toàn</li>
-            </ul>
-            <div class="reg-modal-bg-blob"></div>
-        </div>
-        <div class="reg-modal-right">
-            <button type="button" class="reg-modal-close" onclick="closeForgotPasswordModal()"><i class="bi bi-x-lg"></i></button>
-            <div class="reg-form-container">
-                <h3>Khôi phục mật khẩu</h3>
-                <p class="reg-form-subtitle">Làm theo các bước để lấy lại quyền truy cập.</p>
-                
-                <div id="fpAlertError" class="alert-error" style="display:none; background: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; padding: 0.75rem 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.5rem; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 500;">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <span id="fpErrorMsg"></span>
-                </div>
-
-                <div id="fpAlertSuccess" class="alert-success" style="display:none; background: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; padding: 0.75rem 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.5rem; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 500;">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span id="fpSuccessMsg"></span>
-                </div>
-
-                <!-- STEP 1: REQUEST OTP -->
-                <form id="fpStep1Form" onsubmit="submitFpStep1(event)">
-                    <div class="form-group">
-                        <label for="fpEmail">Email đăng ký</label>
-                        <div class="input-icon-wrapper">
-                            <i class="bi bi-envelope"></i>
-                            <input type="email" id="fpEmail" required placeholder="Nhập email của bạn" />
-                        </div>
-                    </div>
-                    <button type="submit" id="btnFpStep1" class="btn-primary-lg w-100 mt-4" style="justify-content: center; border: none; cursor: pointer;">
-                        <i class="bi bi-send-fill"></i> Nhận mã xác nhận
-                    </button>
-                </form>
-
-                <!-- STEP 2: VERIFY OTP -->
-                <form id="fpStep2Form" style="display:none;" onsubmit="submitFpStep2(event)">
-                    <div class="form-group">
-                        <label for="fpOtp">Mã xác nhận (OTP)</label>
-                        <div class="input-icon-wrapper">
-                            <i class="bi bi-123"></i>
-                            <input type="text" id="fpOtp" required placeholder="Nhập mã 6 số từ email" />
-                        </div>
-                    </div>
-                    <button type="submit" id="btnFpStep2" class="btn-primary-lg w-100 mt-4" style="justify-content: center; border: none; cursor: pointer;">
-                        <i class="bi bi-check-circle-fill"></i> Xác nhận mã
-                    </button>
-                </form>
-
-                <!-- STEP 3: NEW PASSWORD -->
-                <form id="fpStep3Form" style="display:none;" onsubmit="submitFpStep3(event)">
-                    <div class="form-group">
-                        <label for="fpNewPassword">Mật khẩu mới</label>
-                        <div class="input-icon-wrapper">
-                            <i class="bi bi-key"></i>
-                            <input type="password" id="fpNewPassword" required placeholder="Nhập mật khẩu mới" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="fpConfirmPassword">Xác nhận mật khẩu</label>
-                        <div class="input-icon-wrapper">
-                            <i class="bi bi-shield-lock"></i>
-                            <input type="password" id="fpConfirmPassword" required placeholder="Nhập lại mật khẩu" />
-                        </div>
-                    </div>
-                    <button type="submit" id="btnFpStep3" class="btn-primary-lg w-100 mt-4" style="justify-content: center; border: none; cursor: pointer;">
-                        <i class="bi bi-check-circle-fill"></i> Tạo mật khẩu mới
-                    </button>
-                </form>
-
-                <div class="text-center mt-4">
-                    <a href="javascript:void(0)" onclick="closeForgotPasswordModal();" style="color: #64748b; text-decoration: none; font-size: 0.95rem; font-weight: 500; transition: color 0.2s;" onmouseover="this.style.color='#7b68ee'" onmouseout="this.style.color='#64748b'">
-                        <i class="bi bi-arrow-left me-1"></i> Quay lại
-                    </a>
-                </div>
             </div>
         </div>
     </div>
@@ -1810,7 +1719,8 @@
         }
     }
 
-    // --- Forgot Password Modal Logic ---
+    /* Retired OTP reset flow. Password resets now use the standard one-time-link page. */
+    /*
     let fpCurrentEmail = '';
     let fpCurrentCode = '';
 
@@ -1854,7 +1764,7 @@
 
         try {
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-            const res = await fetch('/Auth/ForgotPasswordAjax', {
+            const res = await fetch('/Auth/ForgotPassword', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
                 body: JSON.stringify({ email: email })
@@ -1895,7 +1805,7 @@
 
         try {
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-            const res = await fetch('/Auth/VerifyOTPAjax', {
+            const res = await fetch('/Auth/ForgotPassword', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
                 body: JSON.stringify({ email: fpCurrentEmail, code: code })
@@ -1944,7 +1854,7 @@
 
         try {
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-            const res = await fetch('/Auth/SetNewPasswordAjax', {
+            const res = await fetch('/Auth/ForgotPassword', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
                 body: JSON.stringify({ email: fpCurrentEmail, code: fpCurrentCode, newPassword: newPw, confirmPassword: confirmPw })
@@ -1971,4 +1881,5 @@
             btn.disabled = false;
         }
     }
+    */
 </script>

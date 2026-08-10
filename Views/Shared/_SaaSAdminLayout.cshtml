@@ -3,6 +3,7 @@
     var appBranding = await SystemSettingsService.GetBrandingAsync();
     var canonicalUrl = Manage_KPI_or_OKR_System.Helpers.SeoHelper.GetCanonicalUrl(ViewContext, appBranding.PublicBaseUrl);
     var seoImageUrl = appBranding.SeoImageUrl;
+    var currentAction = Convert.ToString(ViewContext.RouteData.Values["Action"]) ?? string.Empty;
     if (!string.IsNullOrWhiteSpace(seoImageUrl) && !seoImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
     {
         seoImageUrl = $"{appBranding.PublicBaseUrl}{(seoImageUrl.StartsWith("/") ? seoImageUrl : "/" + seoImageUrl)}";
@@ -102,27 +103,27 @@
                     <a href="/Dashboard/Index" class="sidebar-link">
                         <i class="bi bi-layout-sidebar-inset"></i> <span>Hệ thống vận hành</span>
                     </a>
-                    <a href="/SaaSAdmin" class="sidebar-link @(ViewContext.RouteData.Values["Action"].ToString() == "Index" ? "active" : "")">
+                    <a href="/SaaSAdmin" class="sidebar-link @(currentAction == "Index" ? "active" : "")">
                         <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
                     </a>
                 </div>
 
                 <div class="sidebar-group">
                     <div class="sidebar-group-label">Quản lý Khách Hàng</div>
-                    <a href="/SaaSAdmin/Registrations" class="sidebar-link @(ViewContext.RouteData.Values["Action"].ToString() == "Registrations" ? "active" : "")">
+                    <a href="/SaaSAdmin/Registrations" class="sidebar-link @(currentAction == "Registrations" ? "active" : "")">
                         <i class="bi bi-people-fill"></i> <span>Khách hàng & Đăng ký</span>
                     </a>
-                    <a href="/SaaSAdmin/Packages" class="sidebar-link @(ViewContext.RouteData.Values["Action"].ToString() == "Packages" ? "active" : "")">
+                    <a href="/SaaSAdmin/Packages" class="sidebar-link @(currentAction == "Packages" ? "active" : "")">
                         <i class="bi bi-boxes"></i> <span>Quản lý Gói Dịch Vụ</span>
                     </a>
                 </div>
 
                 <div class="sidebar-group">
                     <div class="sidebar-group-label">Báo cáo & Tài chính</div>
-                    <a href="/SaaSAdmin/Revenue" class="sidebar-link @(ViewContext.RouteData.Values["Action"].ToString() == "Revenue" ? "active" : "")">
+                    <a href="/SaaSAdmin/Revenue" class="sidebar-link @(currentAction == "Revenue" ? "active" : "")">
                         <i class="bi bi-graph-up-arrow"></i> <span>Báo cáo doanh thu</span>
                     </a>
-                    <a href="/SaaSAdmin/PaymentHistory" class="sidebar-link @(ViewContext.RouteData.Values["Action"].ToString() == "PaymentHistory" ? "active" : "")">
+                    <a href="/SaaSAdmin/PaymentHistory" class="sidebar-link @(currentAction == "PaymentHistory" ? "active" : "")">
                         <i class="bi bi-receipt"></i> <span>Lịch sử thanh toán</span>
                     </a>
                 </div>

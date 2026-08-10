@@ -18,12 +18,17 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 nullable: false,
                 defaultValue: "YearlyGoal");
 
+            // SQL Server compiles a migration batch before executing the
+            // preceding ALTER TABLE. Dynamic SQL defers binding the new column
+            // until after it exists.
             migrationBuilder.Sql(@"
-                UPDATE [MissionVisions]
-                SET [MissionVisionType] = CASE
-                    WHEN [TargetYear] IS NULL THEN N'Mission'
-                    ELSE N'YearlyGoal'
-                END
+                EXEC(N'
+                    UPDATE [MissionVisions]
+                    SET [MissionVisionType] = CASE
+                        WHEN [TargetYear] IS NULL THEN N''Mission''
+                        ELSE N''YearlyGoal''
+                    END
+                ')
             ");
         }
 

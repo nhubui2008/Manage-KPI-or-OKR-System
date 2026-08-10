@@ -16,11 +16,13 @@ namespace Manage_KPI_or_OKR_System.Migrations
             migrationBuilder.Sql(
                 """
                 IF COL_LENGTH('OKRs', 'UpdatedAt') IS NULL
-                    ALTER TABLE [OKRs] ADD [UpdatedAt] datetime2 NULL;
+                    EXEC(N'ALTER TABLE [OKRs] ADD [UpdatedAt] datetime2 NULL;');
 
-                UPDATE [OKRs]
-                SET [UpdatedAt] = [CreatedAt]
-                WHERE [UpdatedAt] IS NULL AND [CreatedAt] IS NOT NULL;
+                EXEC(N'
+                    UPDATE [OKRs]
+                    SET [UpdatedAt] = [CreatedAt]
+                    WHERE [UpdatedAt] IS NULL AND [CreatedAt] IS NOT NULL;
+                ');
                 """);
         }
 

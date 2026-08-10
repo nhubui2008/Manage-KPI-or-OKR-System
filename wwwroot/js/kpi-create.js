@@ -7,10 +7,11 @@
     var form = root.querySelector("[data-create-form-element]");
     var employeeRows = Array.from(root.querySelectorAll("[data-employee-row]"));
     var employeeChecks = Array.from(root.querySelectorAll("[data-employee-check]"));
+    var departmentChecks = Array.from(root.querySelectorAll('input[name="DepartmentIds"]'));
     var weightSummary = root.querySelector("[data-weight-summary]");
     var weightTotal = root.querySelector("[data-weight-total]");
     var weightMessage = root.querySelector("[data-weight-message]");
-    var aiState = { keyResults: [], requestId: 0, suggestions: [] };
+    var aiState = { keyResults: [], requestId: 0 };
 
     function q(selector) { return root.querySelector(selector); }
 
@@ -118,6 +119,9 @@
 
     employeeChecks.forEach(function (checkbox) {
         checkbox.addEventListener("change", function () { syncEmployeeRow(checkbox, true); });
+    });
+    departmentChecks.forEach(function (checkbox) {
+        checkbox.addEventListener("change", updateSelectionCounts);
     });
     root.querySelectorAll("[data-weight-input]").forEach(function (input) {
         input.addEventListener("input", updateWeightSummary);
@@ -303,6 +307,11 @@
             okr: controls.okr.value,
             kr: controls.kr?.value || ""
         };
+        if (source === "modal") {
+            previous.period = previous.period || q("#PeriodId")?.value || "";
+            previous.okr = previous.okr || q("#okrSelect")?.value || "";
+            previous.kr = previous.kr || q("#keyResultSelect")?.value || "";
+        }
         var params = new URLSearchParams();
         if (previous.employee) params.set("employeeId", previous.employee);
         if (previous.department) params.set("departmentId", previous.department);
@@ -354,28 +363,37 @@
         return "";
     }
 
-    function renderKpiSuggestions(suggestions) {
+    function displayMetric(value) {
+        return value === "" || value === null || value === undefined ? "N/A" : value;
+    }
+
+    function renderKpiSuggestions(response) {
         var results = document.getElementById("aiKpiSuggestResults");
-        var refineChat = document.getElementById("aiKpiRefineChat");
-        aiState.suggestions = suggestions || [];
+        var suggestions = response?.suggestions || [];
+        var citations = response?.citations || [];
         if (!results) return;
-        if (!aiState.suggestions.length) {
-            results.innerHTML = '<p class="evaluation-form-hint">AI chưa trả về gợi ý phù hợp.</p>';
-            refineChat?.classList.add("d-none");
+        if (!suggestions.length) {
+            var warning = response?.warnings?.[0] || "AI chưa trả về gợi ý phù hợp.";
+            results.innerHTML = '<p class="evaluation-form-hint">' + escapeHtml(warning) + '</p>';
             return;
         }
-        refineChat?.classList.remove("d-none");
-        results.innerHTML = aiState.suggestions.map(function (item, index) {
+        var citationById = {};
+        citations.forEach(function (citation) {
+            citationById[String(citation.sourceType) + ":" + String(citation.sourceId)] = citation.title || (citation.sourceType + " #" + citation.sourceId);
+        });
+        results.innerHTML = suggestions.map(function (item, index) {
             var name = fieldValue(item, ["name", "Name"]) || "KPI đề xuất";
             var rationale = fieldValue(item, ["rationale", "Rationale"]);
             var target = fieldValue(item, ["targetValue", "TargetValue"]);
             var pass = fieldValue(item, ["passThreshold", "PassThreshold"]);
             var fail = fieldValue(item, ["failThreshold", "FailThreshold"]);
             var unit = fieldValue(item, ["unit", "Unit", "measurementUnit", "MeasurementUnit"]);
-            return '<article class="kpi-ai-suggestion"><div class="kpi-ai-suggestion__top"><div><div class="kpi-ai-suggestion__name">' + escapeHtml(name) + '</div><div class="kpi-ai-suggestion__rationale">' + escapeHtml(rationale) + '</div></div><button type="button" class="btn btn-sm btn-outline-success" data-apply-kpi="' + index + '">Áp dụng</button></div><div class="kpi-ai-suggestion__metrics"><span>Target: ' + escapeHtml(target || "N/A") + (unit ? " " + escapeHtml(unit) : "") + '</span><span>Đạt: ' + escapeHtml(pass || "N/A") + '</span><span>Trượt: ' + escapeHtml(fail || "N/A") + '</span></div></article>';
+            var sourceIds = fieldValue(item, ["sourceIds", "SourceIds"]) || [];
+            var sourceTitles = sourceIds.map(function (sourceId) { return citationById[sourceId] || sourceId; });
+            return '<article class="kpi-ai-suggestion"><div class="kpi-ai-suggestion__top"><div><div class="kpi-ai-suggestion__name">' + escapeHtml(name) + '</div><div class="kpi-ai-suggestion__rationale">' + escapeHtml(rationale) + '</div></div><button type="button" class="btn btn-sm btn-outline-success" data-apply-kpi="' + index + '">Áp dụng bản nháp</button></div><div class="kpi-ai-suggestion__metrics"><span>Chỉ tiêu: ' + escapeHtml(displayMetric(target)) + (unit ? " " + escapeHtml(unit) : "") + '</span><span>Đạt: ' + escapeHtml(displayMetric(pass)) + '</span><span>Trượt: ' + escapeHtml(displayMetric(fail)) + '</span></div><div class="evaluation-form-hint"><i class="bi bi-journal-check" aria-hidden="true"></i> Căn cứ: ' + escapeHtml(sourceTitles.join(", ")) + '</div></article>';
         }).join("");
         results.querySelectorAll("[data-apply-kpi]").forEach(function (button) {
-            button.addEventListener("click", function () { applyKpiSuggestion(aiState.suggestions[Number(button.dataset.applyKpi)]); });
+            button.addEventListener("click", function () { applyKpiSuggestion(suggestions[Number(button.dataset.applyKpi)]); });
         });
     }
 
@@ -386,6 +404,7 @@
         var pass = fieldValue(item, ["passThreshold", "PassThreshold"]);
         var fail = fieldValue(item, ["failThreshold", "FailThreshold"]);
         var unit = fieldValue(item, ["unit", "Unit", "measurementUnit", "MeasurementUnit"]);
+        var isInverse = fieldValue(item, ["isInverse", "IsInverse"]);
         var fields = { "#KPIName": name, "#TargetValue": target, "#PassThreshold": pass, "#FailThreshold": fail, "#measurementUnit": unit };
         Object.keys(fields).forEach(function (selector) {
             var field = q(selector);
@@ -394,8 +413,20 @@
             field.dispatchEvent(new Event("input", { bubbles: true }));
             field.dispatchEvent(new Event("change", { bubbles: true }));
         });
+        var inverseField = q("#IsInverse");
+        if (inverseField) {
+            inverseField.checked = isInverse === true;
+            inverseField.dispatchEvent(new Event("change", { bubbles: true }));
+        }
         var controls = aiControls();
-        if (controls.period?.value) q("#PeriodId").value = controls.period.value;
+        if (controls.period?.value) {
+            var period = q("#PeriodId");
+            if (period) {
+                period.value = controls.period.value;
+                period.dispatchEvent(new Event("change", { bubbles: true }));
+                refreshSelect(period);
+            }
+        }
         if (controls.okr?.value) {
             var okr = q("#okrSelect");
             if (okr) { okr.value = controls.okr.value; okr.dispatchEvent(new Event("change", { bubbles: true })); }
@@ -410,6 +441,19 @@
             }
             updatePreview();
         }, 0);
+        if (controls.employee?.value) {
+            var employeeCheckbox = root.querySelector('input[name="EmployeeIds"][value="' + controls.employee.value + '"]');
+            if (employeeCheckbox && !employeeCheckbox.checked) {
+                employeeCheckbox.checked = true;
+                employeeCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        } else if (controls.department?.value) {
+            var departmentCheckbox = root.querySelector('input[name="DepartmentIds"][value="' + controls.department.value + '"]');
+            if (departmentCheckbox && !departmentCheckbox.checked) {
+                departmentCheckbox.checked = true;
+                departmentCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        }
         var modal = document.getElementById("aiKpiSuggestModal");
         if (modal && window.bootstrap) bootstrap.Modal.getOrCreateInstance(modal).hide();
         toast({ tone: "success", eyebrow: "AI Gợi ý KPI", title: "Đã áp dụng bản nháp", message: "Hãy kiểm tra lại các ngưỡng và phạm vi phân bổ trước khi tạo." });
@@ -435,7 +479,7 @@
             var response = await fetch("/AI/SuggestKPI", { method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, headers), body: JSON.stringify(payload) });
             var data = await response.json();
             if (!response.ok || data.success === false) throw new Error(data.warnings?.[0] || "Không thể tạo gợi ý KPI.");
-            renderKpiSuggestions(data.suggestions || data);
+            renderKpiSuggestions(data);
         } catch (error) {
             if (results) results.innerHTML = "";
             toast({ tone: "warning", eyebrow: "AI Gợi ý KPI", title: "AI chưa sẵn sàng", message: error.message });
@@ -445,50 +489,5 @@
         }
     });
 
-    document.getElementById("aiKpiRefineBtn")?.addEventListener("click", async function () {
-        var button = this;
-        var input = document.getElementById("aiKpiRefineInput");
-        var status = document.getElementById("aiKpiRefineStatus");
-        var instruction = input?.value?.trim() || "";
-        if (!instruction) {
-            if (status) status.textContent = "Hãy nhập nội dung cần chỉnh sửa.";
-            input?.focus();
-            return;
-        }
-
-        var original = button.innerHTML;
-        button.disabled = true;
-        if (input) input.disabled = true;
-        button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Đang sửa...';
-        if (status) status.textContent = "Agent đang chỉnh sửa gợi ý KPI...";
-        try {
-            var headers = typeof window.antiForgeryHeaders === "function" ? window.antiForgeryHeaders() : {};
-            var response = await fetch("/AI/RefineKpiSuggestions", {
-                method: "POST",
-                headers: Object.assign({ "Content-Type": "application/json" }, headers),
-                body: JSON.stringify({ instruction: instruction, suggestions: aiState.suggestions })
-            });
-            var data = await response.json().catch(function () { return {}; });
-            if (!response.ok || data.success === false) throw new Error(data.warnings?.[0] || "Không thể chỉnh sửa gợi ý KPI.");
-            renderKpiSuggestions(data.suggestions || data);
-            if (input) input.value = "";
-            if (status) status.textContent = "Đã cập nhật gợi ý theo yêu cầu. Bạn có thể tiếp tục yêu cầu chỉnh sửa.";
-        } catch (error) {
-            if (status) status.textContent = error.message || "Không thể chỉnh sửa gợi ý KPI.";
-        } finally {
-            button.disabled = false;
-            if (input) input.disabled = false;
-            button.innerHTML = original;
-            input?.focus();
-        }
-    });
-    document.getElementById("aiKpiRefineInput")?.addEventListener("keydown", function (event) {
-        if (event.key === "Enter" && !event.isComposing) {
-            event.preventDefault();
-            document.getElementById("aiKpiRefineBtn")?.click();
-        }
-    });
-
-    window.renderKpiSuggestions = renderKpiSuggestions;
     setupAi();
 })();

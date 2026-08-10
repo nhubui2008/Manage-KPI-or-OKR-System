@@ -1,249 +1,60 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Data;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Models.AI;
+using Manage_KPI_or_OKR_System.Services.AI;
+using Manage_KPI_or_OKR_System.Services.Tenancy;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace Manage_KPI_or_OKR_System.Services
 {
+    public sealed class AITaskConfirmationValidationException : Exception
+    {
+        public AITaskConfirmationValidationException(string message) : base(message) { }
+    }
+
+    public sealed class AITaskConfirmationConflictException : Exception
+    {
+        public AITaskConfirmationConflictException(string message) : base(message) { }
+    }
+
     public interface IAITaskDecompositionService
     {
-        Task<DecomposeResponse> DecomposeOKRAsync(DecomposeOKRRequest request, ClaimsPrincipal user, CancellationToken cancellationToken = default);
-        Task<DecomposeResponse> DecomposeKPIAsync(DecomposeKPIRequest request, ClaimsPrincipal user, CancellationToken cancellationToken = default);
-        Task<DecomposeResponse> DecomposeProjectAsync(DecomposeProjectRequest request, ClaimsPrincipal user, CancellationToken cancellationToken = default);
         Task<ConfirmDecomposeResponse> ConfirmDecomposeAsync(ConfirmDecomposeRequest request, ClaimsPrincipal user, CancellationToken cancellationToken = default);
+        Task<GoalPlanningDraftDecisionResponse> RejectDraftAsync(
+            GoalPlanningDraftDecisionRequest request,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken = default);
     }
 
     public sealed class AITaskDecompositionService : IAITaskDecompositionService
     {
+        private const string GoalPlanningRunType = "goal-planning-advisory";
         private static readonly string[] Priorities = { "Low", "Normal", "High", "Urgent" };
         private static readonly string[] KanbanStatuses = { "Backlog", "Todo", "InProgress", "Review", "Done", "Blocked" };
         private readonly MiniERPDbContext _context;
-        private readonly IGeminiService _geminiService;
-        private readonly ILogger<AITaskDecompositionService> _logger;
-        private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
-        {
-            PropertyNameCaseInsensitive = true
-        };
+        private readonly IWorkItemCommandValidator _commandValidator;
+        private readonly ICheckInAiEvaluationQueue? _aiEvaluationQueue;
+        private readonly ITenantContext? _tenantContext;
 
         public AITaskDecompositionService(
             MiniERPDbContext context,
-            IGeminiService geminiService,
-            ILogger<AITaskDecompositionService> logger)
+            IWorkItemCommandValidator? commandValidator = null,
+            ICheckInAiEvaluationQueue? aiEvaluationQueue = null,
+            ITenantContext? tenantContext = null)
         {
             _context = context;
-            _geminiService = geminiService;
-            _logger = logger;
-        }
-
-        public async Task<DecomposeResponse> DecomposeOKRAsync(
-            DecomposeOKRRequest request,
-            ClaimsPrincipal user,
-            CancellationToken cancellationToken = default)
-        {
-            var okr = await _context.OKRs
-                .Include(o => o.KeyResults)
-                .FirstOrDefaultAsync(o => o.Id == request.OKRId && o.IsActive == true, cancellationToken);
-            if (okr == null)
-            {
-                return new DecomposeResponse { Success = false, Warnings = { "Khong tim thay OKR can chia task." } };
-            }
-
-            if (!await CanAccessOkrAsync(okr, user, cancellationToken))
-            {
-                throw new UnauthorizedAccessException("Ban khong co quyen dung AI chia task cho OKR nay.");
-            }
-
-            var departmentIds = await _context.OKR_Department_Allocations
-                .Where(a => a.OKRId == okr.Id)
-                .Select(a => a.DepartmentId)
-                .Distinct()
-                .ToListAsync(cancellationToken);
-            var contextBundle = await BuildPeopleContextAsync(departmentIds, cancellationToken);
-            var prompt = BuildOkrPrompt(okr, contextBundle, request.AdditionalContext);
-
-            var text = await _geminiService.GenerateTextAsync(
-                "Ban la AI lap ke hoach thuc thi OKR/KPI. Chi tra ve JSON array hop le, khong markdown, khong giai thich.",
-                prompt,
-                new GeminiGenerationOptions { Temperature = 0.25, ResponseMimeType = "application/json" },
-                cancellationToken);
-
-            var tasks = await MapTasksAsync(ParseTasks(text), contextBundle, okr, null, cancellationToken);
-            await SaveAIHistoryAsync("DecomposeOKR", okr.Id, prompt, text, user, cancellationToken);
-            var response = new DecomposeResponse
-            {
-                SourceObjective = okr.ObjectiveName,
-                Tasks = tasks,
-                AvailableProjects = await LoadAvailableProjectsAsync(user, cancellationToken)
-            };
-
-            await ApplySuggestedProjectAsync(response, okr, cancellationToken);
-            if (!tasks.Any())
-            {
-                response.Success = false;
-                response.Warnings.Add("Gemini chua tra ve task hop le.");
-            }
-
-            return response;
-        }
-
-        public async Task<DecomposeResponse> DecomposeKPIAsync(
-            DecomposeKPIRequest request,
-            ClaimsPrincipal user,
-            CancellationToken cancellationToken = default)
-        {
-            var kpi = await _context.KPIs
-                .FirstOrDefaultAsync(k => k.Id == request.KPIId && k.IsActive == true, cancellationToken);
-            if (kpi == null)
-            {
-                return new DecomposeResponse { Success = false, Warnings = { "Khong tim thay KPI can chia task." } };
-            }
-
-            if (!await AccessScopeHelper.CanAccessKpiAsync(_context, user, kpi))
-            {
-                throw new UnauthorizedAccessException("Ban khong co quyen dung AI chia task cho KPI nay.");
-            }
-
-            var detail = await _context.KPIDetails.FirstOrDefaultAsync(d => d.KPIId == kpi.Id, cancellationToken);
-            var departmentIds = await _context.KPI_Department_Assignments
-                .Where(a => a.KPIId == kpi.Id)
-                .Select(a => a.DepartmentId)
-                .Distinct()
-                .ToListAsync(cancellationToken);
-            var contextBundle = await BuildPeopleContextAsync(departmentIds, cancellationToken);
-            var prompt = BuildKpiPrompt(kpi, detail, contextBundle, request.AdditionalContext);
-
-            var text = await _geminiService.GenerateTextAsync(
-                "Ban la AI lap ke hoach thuc thi KPI. Chi tra ve JSON array hop le, khong markdown, khong giai thich.",
-                prompt,
-                new GeminiGenerationOptions { Temperature = 0.25, ResponseMimeType = "application/json" },
-                cancellationToken);
-
-            var tasks = await MapTasksAsync(ParseTasks(text), contextBundle, null, kpi, cancellationToken);
-            await SaveAIHistoryAsync("DecomposeKPI", kpi.Id, prompt, text, user, cancellationToken);
-
-            var response = new DecomposeResponse
-            {
-                SourceObjective = kpi.KPIName,
-                Tasks = tasks,
-                AvailableProjects = await LoadAvailableProjectsAsync(user, cancellationToken)
-            };
-
-            if (!tasks.Any())
-            {
-                response.Success = false;
-                response.Warnings.Add("Gemini chua tra ve task hop le.");
-            }
-
-            return response;
-        }
-
-        public async Task<DecomposeResponse> DecomposeProjectAsync(
-            DecomposeProjectRequest request,
-            ClaimsPrincipal user,
-            CancellationToken cancellationToken = default)
-        {
-            var project = await _context.WorkProjects
-                .FirstOrDefaultAsync(p => p.Id == request.WorkProjectId && p.IsActive == true, cancellationToken);
-            if (project == null)
-            {
-                return new DecomposeResponse { Success = false, Warnings = { "Khong tim thay WorkProject can chia task." } };
-            }
-
-            if (!await CanAccessProjectAsync(project, user, cancellationToken))
-            {
-                throw new UnauthorizedAccessException("Ban khong co quyen dung AI chia task cho project nay.");
-            }
-
-            var departmentIds = await _context.WorkProjectDepartments
-                .Where(pd => pd.WorkProjectId == project.Id && pd.IsActive == true)
-                .Select(pd => pd.DepartmentId)
-                .Distinct()
-                .ToListAsync(cancellationToken);
-            var sourceKpi = project.SourceKPIId.HasValue
-                ? await _context.KPIs.FirstOrDefaultAsync(k => k.Id == project.SourceKPIId.Value && k.IsActive == true, cancellationToken)
-                : null;
-            var sourceOkrId = project.SourceOKRId ?? project.LinkedOKRId ?? sourceKpi?.OKRId;
-            var sourceOkr = sourceOkrId.HasValue
-                ? await _context.OKRs
-                    .Include(o => o.KeyResults)
-                    .FirstOrDefaultAsync(o => o.Id == sourceOkrId.Value && o.IsActive == true, cancellationToken)
-                : null;
-            var kpiDetail = sourceKpi == null
-                ? null
-                : await _context.KPIDetails.FirstOrDefaultAsync(d => d.KPIId == sourceKpi.Id, cancellationToken);
-            if (sourceOkr != null)
-            {
-                var okrDepartmentIds = await _context.OKR_Department_Allocations
-                    .Where(a => a.OKRId == sourceOkr.Id)
-                    .Select(a => a.DepartmentId)
-                    .ToListAsync(cancellationToken);
-                departmentIds.AddRange(okrDepartmentIds);
-            }
-
-            if (sourceKpi != null)
-            {
-                var kpiDepartmentIds = await _context.KPI_Department_Assignments
-                    .Where(a => a.KPIId == sourceKpi.Id)
-                    .Select(a => a.DepartmentId)
-                    .ToListAsync(cancellationToken);
-                departmentIds.AddRange(kpiDepartmentIds);
-            }
-
-            departmentIds = departmentIds.Distinct().ToList();
-            var contextBundle = await BuildPeopleContextAsync(departmentIds, cancellationToken);
-            var existingTasks = await _context.WorkItems
-                .Where(t => t.WorkProjectId == project.Id && t.IsActive == true)
-                .OrderBy(t => t.CreatedAt)
-                .Select(t => new
-                {
-                    t.Title,
-                    t.Description,
-                    t.Priority,
-                    t.KanbanStatus,
-                    t.ProgressPercentage,
-                    t.AssigneeId,
-                    t.DepartmentId,
-                    t.KPIId,
-                    t.OKRKeyResultId,
-                    t.DueDate
-                })
-                .ToListAsync(cancellationToken);
-            var prompt = BuildProjectPrompt(project, sourceOkr, sourceKpi, kpiDetail, existingTasks, contextBundle, request.AdditionalContext);
-
-            var text = await _geminiService.GenerateTextAsync(
-                "Ban la AI lap ke hoach du an tren Kanban. Chi tra ve JSON array hop le, khong markdown, khong giai thich.",
-                prompt,
-                new GeminiGenerationOptions { Temperature = 0.25, ResponseMimeType = "application/json" },
-                cancellationToken);
-
-            var existingTaskTitleKeys = existingTasks
-                .Select(t => NormalizeTitleKey(t.Title))
-                .Where(key => !string.IsNullOrWhiteSpace(key))
-                .ToHashSet();
-            var tasks = (await MapTasksAsync(ParseTasks(text), contextBundle, sourceOkr, sourceKpi, cancellationToken))
-                .Where(t => !existingTaskTitleKeys.Contains(NormalizeTitleKey(t.Title)))
-                .ToList();
-            await SaveAIHistoryAsync("DecomposeProject", project.Id, prompt, text, user, cancellationToken);
-
-            var response = new DecomposeResponse
-            {
-                SourceObjective = sourceKpi?.KPIName ?? sourceOkr?.ObjectiveName ?? project.ProjectName,
-                SuggestedProjectId = project.Id,
-                SuggestedProjectName = project.ProjectName,
-                Tasks = tasks,
-                AvailableProjects = await LoadAvailableProjectsAsync(user, cancellationToken)
-            };
-
-            if (!tasks.Any())
-            {
-                response.Success = false;
-                response.Warnings.Add("Gemini chua tra ve task hop le.");
-            }
-
-            return response;
+            _commandValidator = commandValidator ?? new WorkItemCommandValidator(context);
+            _aiEvaluationQueue = aiEvaluationQueue;
+            _tenantContext = tenantContext;
         }
 
         public async Task<ConfirmDecomposeResponse> ConfirmDecomposeAsync(
@@ -252,6 +63,15 @@ namespace Manage_KPI_or_OKR_System.Services
             CancellationToken cancellationToken = default)
         {
             var warnings = new List<string>();
+            if (request.Tasks == null ||
+                request.Tasks.Count > GoalPlanningDraftResponse.RequiredTaskCount ||
+                request.Tasks.Any(task =>
+                    task.Title?.Length > 220 ||
+                    task.Description?.Length > 2_000))
+            {
+                throw new AITaskConfirmationValidationException(
+                    "Mỗi bản nháp chỉ được xác nhận tối đa 3 task; tên và mô tả phải nằm trong giới hạn cho phép.");
+            }
             var validTasks = request.Tasks
                 .Where(t => t.IsSelected)
                 .Where(t => !string.IsNullOrWhiteSpace(t.Title))
@@ -263,95 +83,588 @@ namespace Manage_KPI_or_OKR_System.Services
             {
                 return new ConfirmDecomposeResponse { Success = false, Warnings = { "Khong co task hop le de tao." } };
             }
-
-            var currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, user);
-            await EnsureCanAccessRequestedSourceLinksAsync(request, user, cancellationToken);
-            var project = request.WorkProjectId.HasValue
-                ? await _context.WorkProjects.FirstOrDefaultAsync(p => p.Id == request.WorkProjectId.Value && p.IsActive == true, cancellationToken)
-                : null;
-
-            if (request.WorkProjectId.HasValue && project == null)
+            if (validTasks.Any(task => task.DueDate.HasValue &&
+                                       (task.DueDate.Value.Date < DateTime.Today ||
+                                        task.DueDate.Value.Date > DateTime.Today.AddDays(365))))
             {
-                return new ConfirmDecomposeResponse { Success = false, Warnings = { "Khong tim thay WorkProject duoc chon." } };
+                throw new AITaskConfirmationValidationException(
+                    "Deadline của task phải từ hôm nay đến tối đa 365 ngày tới.");
             }
 
-            if (project != null && !await CanAccessProjectAsync(project, user, cancellationToken))
+            // A confirmation may create a project, tasks, department links, and
+            // audit data. Resolve source, project and people scope inside the
+            // same transaction so authorization cannot go stale before write.
+            // The in-memory provider used by unit tests does not support transactions.
+            IDbContextTransaction? transaction = null;
+            if (_context.Database.IsRelational())
             {
-                throw new UnauthorizedAccessException("Ban khong co quyen tao task cho project nay.");
+                transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
             }
+            var transactionCompleted = false;
 
-            var confirmScope = await BuildConfirmTaskScopeAsync(request, project, currentEmployee, cancellationToken);
-            validTasks = await SanitizeConfirmedTasksAsync(validTasks, request, confirmScope, cancellationToken);
-
-            if (project == null)
+            try
             {
-                project = await CreateProjectAsync(request, validTasks, currentEmployee, cancellationToken);
-                _context.WorkProjects.Add(project);
-                await _context.SaveChangesAsync(cancellationToken);
-            }
-            else
-            {
-                await ApplyRequestGoalLinksToProjectAsync(project, request, cancellationToken);
-            }
-
-            var departmentIds = new HashSet<int>();
-            foreach (var taskDto in validTasks)
-            {
-                var task = await CreateWorkItemAsync(project.Id, taskDto, request, currentEmployee, cancellationToken);
-                _context.WorkItems.Add(task);
-                if (task.DepartmentId.HasValue)
-                {
-                    departmentIds.Add(task.DepartmentId.Value);
-                }
-            }
-
-            foreach (var departmentId in departmentIds)
-            {
-                var exists = await _context.WorkProjectDepartments.AnyAsync(pd =>
-                    pd.WorkProjectId == project.Id &&
-                    pd.DepartmentId == departmentId &&
-                    pd.IsActive == true,
+                await LockPlanningSourceForConfirmationAsync(request, cancellationToken);
+                var planningProof = await LoadPlanningProofForUpdateAsync(
+                    ProofRequest.FromConfirmation(request),
+                    user,
                     cancellationToken);
-                if (!exists)
+                if (_tenantContext?.IsProductionRequest == true &&
+                    !await PermissionLookupHelper.HasPermissionAsync(
+                        _context,
+                        user,
+                        "WORKITEMS_CREATE") &&
+                    !await PermissionLookupHelper.HasPermissionAsync(
+                        _context,
+                        user,
+                        "WORKPROJECTS_EDIT"))
                 {
-                    _context.WorkProjectDepartments.Add(new WorkProjectDepartment
+                    throw new UnauthorizedAccessException(
+                        "Bạn không còn quyền tạo task trong WorkProject.");
+                }
+                if (_tenantContext?.IsProductionRequest == true &&
+                    !request.WorkProjectId.HasValue &&
+                    !await PermissionLookupHelper.HasPermissionAsync(
+                        _context,
+                        user,
+                        "WORKPROJECTS_CREATE"))
+                {
+                    throw new UnauthorizedAccessException(
+                        "Bạn cần quyền WORKPROJECTS_CREATE để tạo project mới từ bản nháp AI.");
+                }
+                if (planningProof?.ExistingApproval is AgentApproval existingApproval)
+                {
+                    if (transaction != null)
                     {
-                        WorkProjectId = project.Id,
-                        DepartmentId = departmentId,
-                        CollaborationRole = "Contributor",
-                        IsActive = true
+                        await transaction.CommitAsync(cancellationToken);
+                        transactionCompleted = true;
+                    }
+                    return new ConfirmDecomposeResponse
+                    {
+                        Success = true,
+                        WorkProjectId = existingApproval.ResultEntityId.GetValueOrDefault(),
+                        TasksCreated = existingApproval.AppliedItemCount.GetValueOrDefault(),
+                        Warnings = { "Yêu cầu xác nhận này đã được áp dụng trước đó; hệ thống trả lại kết quả cũ." }
+                    };
+                }
+                if (planningProof != null &&
+                    !await AgentEvidenceAuthorization.RemainsAuthorizedAsync(
+                        _context,
+                        planningProof.Run.Id,
+                        user,
+                        cancellationToken))
+                {
+                    var now = DateTimeOffset.UtcNow;
+                    planningProof.Run.State = nameof(AgentRunState.Cancelled);
+                    planningProof.Run.FailureCode = "evidence_access_revoked";
+                    planningProof.Run.UpdatedAtUtc = now;
+                    planningProof.Action.Status = "Superseded";
+                    planningProof.Action.UpdatedAtUtc = now;
+                    if (!_context.Database.IsRelational())
+                    {
+                        planningProof.Run.RowVersion = RandomNumberGenerator.GetBytes(8);
+                        planningProof.Action.RowVersion = RandomNumberGenerator.GetBytes(8);
+                    }
+                    await _context.SaveChangesAsync(cancellationToken);
+                    if (transaction != null)
+                    {
+                        await transaction.CommitAsync(cancellationToken);
+                        transactionCompleted = true;
+                    }
+                    throw new AITaskConfirmationConflictException(
+                        "Quyền truy cập bằng chứng của bản nháp đã thay đổi. Hãy tạo lại bản nháp AI.");
+                }
+                var currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, user);
+                await EnsureCanAccessRequestedSourceLinksAsync(request, user, cancellationToken);
+                var project = request.WorkProjectId.HasValue
+                    ? await _context.WorkProjects.FirstOrDefaultAsync(
+                        p => p.Id == request.WorkProjectId.Value && p.IsActive == true,
+                        cancellationToken)
+                    : null;
+
+                if (request.WorkProjectId.HasValue && project == null)
+                {
+                    return new ConfirmDecomposeResponse
+                    {
+                        Success = false,
+                        Warnings = { "Khong tim thay WorkProject duoc chon." }
+                    };
+                }
+
+                if (project != null && !await CanAccessProjectAsync(project, user, cancellationToken))
+                {
+                    throw new UnauthorizedAccessException("Ban khong co quyen tao task cho project nay.");
+                }
+
+                if (planningProof != null)
+                {
+                    var currentVersion = await GoalPlanningSourceVersion.ResolveAsync(
+                        _context,
+                        planningProof.SourceType,
+                        planningProof.SourceId,
+                        cancellationToken);
+                    var currentVersionId = GoalPlanningSourceVersion.ToVersionId(currentVersion);
+                    if (!string.Equals(
+                            currentVersionId,
+                            planningProof.SourceVersion,
+                            StringComparison.Ordinal))
+                    {
+                        planningProof.Run.State = nameof(AgentRunState.Cancelled);
+                        planningProof.Run.UpdatedAtUtc = DateTimeOffset.UtcNow;
+                        planningProof.Action.Status = "Superseded";
+                        planningProof.Action.UpdatedAtUtc = DateTimeOffset.UtcNow;
+                        await _context.SaveChangesAsync(cancellationToken);
+                        if (transaction != null)
+                        {
+                            await transaction.CommitAsync(cancellationToken);
+                            transactionCompleted = true;
+                        }
+                        throw new AITaskConfirmationConflictException(
+                            "Nguồn lập kế hoạch đã thay đổi. Hãy tạo lại bản nháp AI trước khi xác nhận.");
+                    }
+                    planningProof.Run.State = nameof(AgentRunState.Executing);
+                    planningProof.Run.UpdatedAtUtc = DateTimeOffset.UtcNow;
+                }
+
+                var confirmScope = await BuildConfirmTaskScopeAsync(
+                    request,
+                    project,
+                    currentEmployee,
+                    cancellationToken);
+                validTasks = await SanitizeConfirmedTasksAsync(
+                    validTasks,
+                    request,
+                    confirmScope,
+                    warnings,
+                    cancellationToken);
+
+                if (project == null)
+                {
+                    project = await CreateProjectAsync(request, validTasks, currentEmployee, cancellationToken);
+                    _context.WorkProjects.Add(project);
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+                else
+                {
+                    await ApplyRequestGoalLinksToProjectAsync(project, request, cancellationToken);
+                }
+
+                var departmentIds = new HashSet<int>();
+                var createdTasks = new List<WorkItem>();
+                foreach (var taskDto in validTasks)
+                {
+                    var task = await CreateWorkItemAsync(project.Id, taskDto, request, currentEmployee, cancellationToken);
+                    var validation = await _commandValidator.ValidateAsync(
+                        project,
+                        user,
+                        task.AssigneeId,
+                        task.DepartmentId,
+                        task.KPIId,
+                        task.OKRKeyResultId,
+                        task.DueDate,
+                        cancellationToken);
+                    if (!validation.IsValid)
+                    {
+                        throw new AITaskConfirmationValidationException(string.Join(" ", validation.Errors));
+                    }
+                    task.KPIId = validation.KpiId;
+                    task.OKRKeyResultId = validation.KeyResultId;
+                    _context.WorkItems.Add(task);
+                    createdTasks.Add(task);
+                    if (task.DepartmentId.HasValue)
+                    {
+                        departmentIds.Add(task.DepartmentId.Value);
+                    }
+                }
+
+                foreach (var departmentId in departmentIds)
+                {
+                    var exists = await _context.WorkProjectDepartments.AnyAsync(pd =>
+                        pd.WorkProjectId == project.Id &&
+                        pd.DepartmentId == departmentId &&
+                        pd.IsActive == true,
+                        cancellationToken);
+                    if (!exists)
+                    {
+                        _context.WorkProjectDepartments.Add(new WorkProjectDepartment
+                        {
+                            WorkProjectId = project.Id,
+                            DepartmentId = departmentId,
+                            CollaborationRole = "Contributor",
+                            IsActive = true
+                        });
+                    }
+                }
+
+                if (planningProof != null)
+                {
+                    planningProof.Run.State = nameof(AgentRunState.Completed);
+                    planningProof.Run.UpdatedAtUtc = DateTimeOffset.UtcNow;
+                    planningProof.Action.Status = "AppliedToHumanDraft";
+                    planningProof.Action.UpdatedAtUtc = DateTimeOffset.UtcNow;
+                    _context.AgentApprovals.Add(new AgentApproval
+                    {
+                        TenantId = planningProof.TenantId,
+                        AgentRunId = planningProof.Run.Id,
+                        ApprovedBySystemUserId = planningProof.ActorId,
+                        Decision = "AppliedByHuman",
+                        IdempotencyKey = planningProof.IdempotencyKey,
+                        ResultEntityId = project.Id,
+                        AppliedItemCount = validTasks.Count,
+                        DecidedAtUtc = DateTimeOffset.UtcNow
                     });
                 }
+
+                AddAuditLog(
+                    user,
+                    "AI_DECOMPOSE",
+                    "WorkItems",
+                    planningProof?.Action.DraftText,
+                    BuildAppliedTaskAudit(project.Id, validTasks));
+                await _context.SaveChangesAsync(cancellationToken);
+                await RecalculateProjectProgressAsync(project.Id, cancellationToken);
+                await SyncCreatedTaskCheckInsAsync(createdTasks, user, cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+                if (transaction != null)
+                {
+                    await transaction.CommitAsync(cancellationToken);
+                    transactionCompleted = true;
+                }
+
+                return new ConfirmDecomposeResponse
+                {
+                    Success = true,
+                    WorkProjectId = project.Id,
+                    TasksCreated = validTasks.Count,
+                    Warnings = warnings
+                };
+            }
+            catch
+            {
+                if (transaction != null && !transactionCompleted)
+                {
+                    await transaction.RollbackAsync(CancellationToken.None);
+                }
+                throw;
+            }
+            finally
+            {
+                if (transaction != null)
+                {
+                    await transaction.DisposeAsync();
+                }
+            }
+        }
+
+        private async Task LockPlanningSourceForConfirmationAsync(
+            ConfirmDecomposeRequest request,
+            CancellationToken cancellationToken)
+        {
+            if (_tenantContext?.IsProductionRequest != true || !_context.Database.IsRelational())
+            {
+                return;
+            }
+            var sourceType = GoalPlanningSourceVersion.NormalizeSourceType(request.PlanningSourceType);
+            var sourceId = request.PlanningSourceId.GetValueOrDefault();
+            var found = sourceType switch
+            {
+                "KPI" => await _context.KPIs
+                    .FromSqlInterpolated($"SELECT * FROM [KPIs] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {sourceId}")
+                    .AsNoTracking()
+                    .AnyAsync(cancellationToken),
+                "OKR" => await _context.OKRs
+                    .FromSqlInterpolated($"SELECT * FROM [OKRs] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {sourceId}")
+                    .AsNoTracking()
+                    .AnyAsync(cancellationToken),
+                "OKRKeyResult" => await _context.OKRKeyResults
+                    .FromSqlInterpolated($"SELECT * FROM [OKRKeyResults] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {sourceId}")
+                    .AsNoTracking()
+                    .AnyAsync(cancellationToken),
+                "WorkProject" => await _context.WorkProjects
+                    .FromSqlInterpolated($"SELECT * FROM [WorkProjects] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {sourceId}")
+                    .AsNoTracking()
+                    .AnyAsync(cancellationToken),
+                _ => false
+            };
+            if (!found)
+            {
+                throw new AITaskConfirmationConflictException(
+                    "Nguồn của bản nháp không còn tồn tại trong tenant hiện tại.");
+            }
+        }
+
+        public async Task<GoalPlanningDraftDecisionResponse> RejectDraftAsync(
+            GoalPlanningDraftDecisionRequest request,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(user);
+            await using var transaction = _context.Database.IsRelational()
+                ? await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
+                : null;
+            try
+            {
+                var proof = await LoadPlanningProofForUpdateAsync(
+                        ProofRequest.FromDecision(request),
+                        user,
+                        cancellationToken)
+                    ?? throw new AITaskConfirmationConflictException(
+                        "Bản nháp này không có lifecycle bền vững để từ chối.");
+                if (_tenantContext?.IsProductionRequest == true &&
+                    !await PermissionLookupHelper.HasPermissionAsync(
+                        _context,
+                        user,
+                        "WORKITEMS_CREATE") &&
+                    !await PermissionLookupHelper.HasPermissionAsync(
+                        _context,
+                        user,
+                        "WORKPROJECTS_EDIT"))
+                {
+                    throw new UnauthorizedAccessException(
+                        "Bạn không còn quyền quyết định bản nháp Goal Planning.");
+                }
+                if (proof.ExistingApproval != null)
+                {
+                    if (transaction != null)
+                    {
+                        await transaction.CommitAsync(cancellationToken);
+                    }
+                    return new GoalPlanningDraftDecisionResponse(true, "RejectedByHuman");
+                }
+
+                var now = DateTimeOffset.UtcNow;
+                proof.Action.Status = "RejectedByHuman";
+                proof.Action.UpdatedAtUtc = now;
+                proof.Run.State = nameof(AgentRunState.Cancelled);
+                proof.Run.UpdatedAtUtc = now;
+                _context.AgentApprovals.Add(new AgentApproval
+                {
+                    TenantId = proof.TenantId,
+                    AgentRunId = proof.Run.Id,
+                    ApprovedBySystemUserId = proof.ActorId,
+                    Decision = "RejectedByHuman",
+                    IdempotencyKey = proof.IdempotencyKey,
+                    AppliedItemCount = 0,
+                    DecidedAtUtc = now
+                });
+                AddAuditLog(
+                    user,
+                    "AI_PLAN_REJECT",
+                    "AgentDraftActions",
+                    proof.Action.DraftText,
+                    JsonSerializer.Serialize(new { proof.Action.Id, Status = "RejectedByHuman" }));
+                await _context.SaveChangesAsync(cancellationToken);
+                if (transaction != null)
+                {
+                    await transaction.CommitAsync(cancellationToken);
+                }
+                return new GoalPlanningDraftDecisionResponse(true, "RejectedByHuman");
+            }
+            catch
+            {
+                if (transaction != null)
+                {
+                    await transaction.RollbackAsync(CancellationToken.None);
+                }
+                throw;
+            }
+        }
+
+        private async Task<PlanningProof?> LoadPlanningProofForUpdateAsync(
+            ProofRequest request,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken)
+        {
+            if (_tenantContext?.IsProductionRequest != true)
+            {
+                return null;
             }
 
-            var projectOkrId = project.SourceOKRId ?? project.LinkedOKRId ?? request.SourceOKRId;
-            if (projectOkrId.HasValue)
+            var tenantId = _tenantContext.TenantId
+                ?? throw new UnauthorizedAccessException("A resolved tenant is required.");
+            var actorValue = user.FindFirstValue("SystemUserId") ??
+                             user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(actorValue, out var actorId) || actorId <= 0 ||
+                (_tenantContext.SystemUserId.HasValue && _tenantContext.SystemUserId.Value != actorId))
             {
-                var okr = await _context.OKRs.FirstOrDefaultAsync(o => o.Id == projectOkrId.Value, cancellationToken);
-                if (okr != null)
+                throw new UnauthorizedAccessException("A valid tenant actor is required.");
+            }
+
+            var sourceType = GoalPlanningSourceVersion.NormalizeSourceType(request.PlanningSourceType);
+            var sourceId = request.PlanningSourceId.GetValueOrDefault();
+            var sourceVersion = request.PlanningSourceVersion?.Trim().ToUpperInvariant();
+            if (!request.AgentRunId.HasValue ||
+                !request.DraftActionId.HasValue || request.DraftActionId <= 0 ||
+                !request.IdempotencyKey.HasValue || request.IdempotencyKey == Guid.Empty ||
+                string.IsNullOrWhiteSpace(request.ApprovalToken) || request.ApprovalToken.Length > 128 ||
+                sourceType.Length == 0 ||
+                sourceId <= 0 ||
+                sourceVersion?.Length != 16 ||
+                !ulong.TryParse(
+                    sourceVersion,
+                    System.Globalization.NumberStyles.HexNumber,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var unsignedSourceVersion) ||
+                !TryDecodeRowVersion(request.AgentRunRowVersion, out var expectedRunRowVersion) ||
+                !TryDecodeRowVersion(request.DraftRowVersion, out var expectedDraftRowVersion))
+            {
+                throw new AITaskConfirmationConflictException(
+                    "Bản nháp AI không có proof hợp lệ. Hãy chạy lại agent trước khi xác nhận.");
+            }
+
+            if (request.Confirmation != null)
+            {
+                await EnsureProofMatchesRequestedDestinationAsync(
+                    request.Confirmation,
+                    sourceType,
+                    sourceId,
+                    cancellationToken);
+            }
+
+            if (_context.Database.IsRelational())
+            {
+                var lockedRunId = await _context.Database.SqlQuery<Guid>(
+                        $"SELECT [Id] AS [Value] FROM [AgentRuns] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {request.AgentRunId.Value} AND [TenantId] = {tenantId}")
+                    .SingleOrDefaultAsync(cancellationToken);
+                if (lockedRunId != request.AgentRunId.Value)
                 {
-                    okr.LinkedWorkProjectId = project.Id;
+                    throw new AITaskConfirmationConflictException(
+                        "Bản nháp AI không còn hiệu lực hoặc không thuộc tenant hiện tại.");
                 }
             }
 
-            AddAuditLog(user, "AI_DECOMPOSE", "WorkItems", null, $"AI tao {validTasks.Count} task cho project #{project.Id}");
-            await _context.SaveChangesAsync(cancellationToken);
-            await RecalculateProjectProgressAsync(project.Id, cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return new ConfirmDecomposeResponse
+            var run = await _context.AgentRuns
+                .SingleOrDefaultAsync(item => item.Id == request.AgentRunId.Value, cancellationToken);
+            var expectedCorrelation = $"goal-planning:{sourceType}:{sourceId}:{sourceVersion}";
+            if (run == null ||
+                !string.Equals(run.RunType, GoalPlanningRunType, StringComparison.Ordinal) ||
+                run.RequestedBySystemUserId != actorId ||
+                !string.Equals(run.CorrelationId, expectedCorrelation, StringComparison.Ordinal))
             {
-                Success = true,
-                WorkProjectId = project.Id,
-                TasksCreated = validTasks.Count,
-                Warnings = warnings
+                throw new AITaskConfirmationConflictException(
+                    "Bản nháp AI đã được xác nhận, bị thay thế hoặc không thuộc người dùng hiện tại.");
+            }
+
+            if (!IsValidApprovalToken(request.ApprovalToken, run.ApprovalTokenHash))
+            {
+                throw new AITaskConfirmationConflictException(
+                    "Approval token của bản nháp AI không hợp lệ hoặc đã bị thay thế.");
+            }
+
+            var sameIdempotencyApproval = await _context.AgentApprovals
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    item => item.IdempotencyKey == request.IdempotencyKey.Value,
+                    cancellationToken);
+            if (sameIdempotencyApproval != null)
+            {
+                if (sameIdempotencyApproval.AgentRunId != run.Id ||
+                    sameIdempotencyApproval.ApprovedBySystemUserId != actorId ||
+                    !string.Equals(sameIdempotencyApproval.Decision, request.ExpectedDecision, StringComparison.Ordinal))
+                {
+                    throw new AITaskConfirmationConflictException(
+                        "Idempotency key đã được dùng cho một quyết định khác.");
+                }
+
+                var replayAction = await _context.AgentDraftActions
+                    .SingleOrDefaultAsync(
+                        item => item.Id == request.DraftActionId.Value && item.AgentRunId == run.Id,
+                        cancellationToken)
+                    ?? throw new AITaskConfirmationConflictException(
+                        "Bản nháp AI không còn tồn tại trong tenant hiện tại.");
+                return new PlanningProof(
+                    tenantId,
+                    actorId,
+                    sourceType,
+                    sourceId,
+                    sourceVersion,
+                    request.IdempotencyKey.Value,
+                    run,
+                    replayAction,
+                    sameIdempotencyApproval);
+            }
+
+            var alreadyDecided = await _context.AgentApprovals
+                .AsNoTracking()
+                .AnyAsync(item => item.AgentRunId == run.Id, cancellationToken);
+            if (alreadyDecided ||
+                !string.Equals(run.State, nameof(AgentRunState.WaitingApproval), StringComparison.Ordinal) ||
+                !CryptographicOperations.FixedTimeEquals(run.RowVersion, expectedRunRowVersion))
+            {
+                throw new AITaskConfirmationConflictException(
+                    "Bản nháp AI đã được xác nhận, bị thay thế hoặc có row version không còn hợp lệ.");
+            }
+
+            if (_context.Database.IsRelational())
+            {
+                var lockedActionId = await _context.Database.SqlQuery<int>(
+                        $"SELECT [Id] AS [Value] FROM [AgentDraftActions] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {request.DraftActionId.Value} AND [TenantId] = {tenantId}")
+                    .SingleOrDefaultAsync(cancellationToken);
+                if (lockedActionId != request.DraftActionId.Value)
+                {
+                    throw new AITaskConfirmationConflictException(
+                        "Bản nháp AI không còn tồn tại trong tenant hiện tại.");
+                }
+            }
+            var action = await _context.AgentDraftActions
+                .SingleOrDefaultAsync(
+                    item => item.Id == request.DraftActionId.Value && item.AgentRunId == run.Id,
+                    cancellationToken);
+            if (action == null ||
+                !string.Equals(action.SourceEntityType, sourceType, StringComparison.Ordinal) ||
+                action.SourceEntityId != sourceId ||
+                action.SourceVersion != unchecked((long)unsignedSourceVersion) ||
+                !action.ActionType.StartsWith($"goal-planning-draft:{actorId}:", StringComparison.Ordinal) ||
+                !string.Equals(action.Status, "AwaitingHumanReview", StringComparison.Ordinal) ||
+                !CryptographicOperations.FixedTimeEquals(action.RowVersion, expectedDraftRowVersion))
+            {
+                throw new AITaskConfirmationConflictException(
+                    "AgentDraftAction đã bị chỉnh sửa, thay thế hoặc không khớp với proof.");
+            }
+
+            return new PlanningProof(
+                tenantId,
+                actorId,
+                sourceType,
+                sourceId,
+                sourceVersion,
+                request.IdempotencyKey.Value,
+                run,
+                action,
+                null);
+        }
+
+        private async Task EnsureProofMatchesRequestedDestinationAsync(
+            ConfirmDecomposeRequest request,
+            string sourceType,
+            int sourceId,
+            CancellationToken cancellationToken)
+        {
+            var matches = sourceType switch
+            {
+                "KPI" => request.SourceKPIId == sourceId,
+                "OKR" => request.SourceOKRId == sourceId,
+                "WorkProject" => request.WorkProjectId == sourceId,
+                "OKRKeyResult" => request.SourceOKRId.HasValue &&
+                                  await _context.OKRKeyResults.AnyAsync(
+                                      item => item.Id == sourceId &&
+                                              item.OKRId == request.SourceOKRId.Value,
+                                      cancellationToken),
+                _ => false
             };
+            if (!matches)
+            {
+                throw new AITaskConfirmationConflictException(
+                    "Đích tạo task không khớp với nguồn của bản nháp AI.");
+            }
         }
 
         private async Task<List<DecomposedTaskDto>> SanitizeConfirmedTasksAsync(
             List<DecomposedTaskDto> tasks,
             ConfirmDecomposeRequest request,
             ConfirmTaskScope scope,
+            List<string> warnings,
             CancellationToken cancellationToken)
         {
             var sanitizedTasks = new List<DecomposedTaskDto>();
@@ -362,6 +675,14 @@ namespace Manage_KPI_or_OKR_System.Services
                 var assigneeId = await ResolveScopedEmployeeIdAsync(task.AssigneeId, scope, cancellationToken);
                 var departmentId = await ResolveScopedDepartmentIdAsync(task.DepartmentId, assigneeId, scope, cancellationToken);
 
+                if (task.KPIId.HasValue && task.KPIId != kpiId ||
+                    task.OKRKeyResultId.HasValue && task.OKRKeyResultId != keyResultId ||
+                    task.AssigneeId.HasValue && task.AssigneeId != assigneeId ||
+                    task.DepartmentId.HasValue && task.DepartmentId != departmentId)
+                {
+                    warnings.Add($"Task '{Trim(task.Title, 80)}' có liên kết ngoài phạm vi và đã được chuẩn hóa trước khi kiểm tra quyền.");
+                }
+
                 sanitizedTasks.Add(new DecomposedTaskDto
                 {
                     Title = task.Title,
@@ -371,6 +692,7 @@ namespace Manage_KPI_or_OKR_System.Services
                     DepartmentId = departmentId,
                     KanbanStatus = task.KanbanStatus,
                     EstimatedDays = task.EstimatedDays,
+                    DueDate = task.DueDate,
                     KpiImpactWeight = task.KpiImpactWeight,
                     KPIId = kpiId,
                     OKRKeyResultId = keyResultId,
@@ -396,7 +718,6 @@ namespace Manage_KPI_or_OKR_System.Services
             var isGoalScopeConstrained = request.SourceOKRId.HasValue ||
                 request.SourceKPIId.HasValue ||
                 project?.SourceOKRId.HasValue == true ||
-                project?.LinkedOKRId.HasValue == true ||
                 project?.SourceKPIId.HasValue == true;
 
             if (project != null)
@@ -426,7 +747,7 @@ namespace Manage_KPI_or_OKR_System.Services
                 }
             }
 
-            var sourceOkrId = request.SourceOKRId ?? project?.SourceOKRId ?? project?.LinkedOKRId ?? sourceKpi?.OKRId;
+            var sourceOkrId = request.SourceOKRId ?? project?.SourceOKRId ?? sourceKpi?.OKRId;
             if (sourceOkrId.HasValue)
             {
                 var okrKeyResultIds = await _context.OKRKeyResults
@@ -535,13 +856,12 @@ namespace Manage_KPI_or_OKR_System.Services
                 ProgressPercentage = 0,
                 IsCrossDepartment = departmentCount > 1,
                 StartDate = DateTime.Today,
-                DueDate = DateTime.Today.AddDays(Math.Clamp(tasks.Max(t => t.EstimatedDays), 1, 365)),
+                DueDate = tasks.Max(ResolveTaskDueDate),
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now,
                 CreatedById = currentEmployee?.Id,
                 IsActive = true,
                 SourceOKRId = sourceOkrId,
-                LinkedOKRId = sourceOkrId,
                 SourceKPIId = sourceKpiId
             };
         }
@@ -578,13 +898,16 @@ namespace Manage_KPI_or_OKR_System.Services
                 ProgressPercentage = NormalizeProgress(null, status),
                 KpiImpactWeight = NormalizeImpactWeight(taskDto.KpiImpactWeight),
                 StartDate = DateTime.Today,
-                DueDate = DateTime.Today.AddDays(Math.Clamp(taskDto.EstimatedDays, 1, 365)),
+                DueDate = ResolveTaskDueDate(taskDto),
                 CompletedAt = status == "Done" ? DateTime.Now : null,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now,
                 IsActive = true
             };
         }
+
+        private static DateTime ResolveTaskDueDate(DecomposedTaskDto task) =>
+            task.DueDate?.Date ?? DateTime.Today.AddDays(Math.Clamp(task.EstimatedDays, 1, 365));
 
         private async Task ApplyRequestGoalLinksToProjectAsync(
             WorkProject project,
@@ -610,11 +933,6 @@ namespace Manage_KPI_or_OKR_System.Services
                 project.SourceOKRId = sourceOkrId;
             }
 
-            if (!project.LinkedOKRId.HasValue && project.SourceOKRId.HasValue)
-            {
-                project.LinkedOKRId = project.SourceOKRId;
-            }
-
             project.UpdatedAt = DateTime.Now;
         }
 
@@ -628,7 +946,11 @@ namespace Manage_KPI_or_OKR_System.Services
                 var okr = await _context.OKRs
                     .Include(o => o.KeyResults)
                     .FirstOrDefaultAsync(o => o.Id == request.SourceOKRId.Value && o.IsActive == true, cancellationToken);
-                if (okr != null && !await CanAccessOkrAsync(okr, user, cancellationToken))
+                if (okr == null)
+                {
+                    throw new AITaskConfirmationValidationException("OKR nguồn không tồn tại hoặc đã ngừng hoạt động.");
+                }
+                if (!await CanAccessOkrAsync(okr, user, cancellationToken))
                 {
                     throw new UnauthorizedAccessException("Ban khong co quyen tao task tu OKR nay.");
                 }
@@ -638,355 +960,15 @@ namespace Manage_KPI_or_OKR_System.Services
             {
                 var kpi = await _context.KPIs
                     .FirstOrDefaultAsync(k => k.Id == request.SourceKPIId.Value && k.IsActive == true, cancellationToken);
-                if (kpi != null && !await AccessScopeHelper.CanAccessKpiAsync(_context, user, kpi))
+                if (kpi == null)
+                {
+                    throw new AITaskConfirmationValidationException("KPI nguồn không tồn tại hoặc đã ngừng hoạt động.");
+                }
+                if (!await AccessScopeHelper.CanAccessKpiAsync(_context, user, kpi))
                 {
                     throw new UnauthorizedAccessException("Ban khong co quyen tao task tu KPI nay.");
                 }
             }
-        }
-
-        private async Task<List<DecomposedTaskDto>> MapTasksAsync(
-            IEnumerable<DecomposedTaskDto> parsedTasks,
-            PeopleContext contextBundle,
-            OKR? okr,
-            KPI? kpi,
-            CancellationToken cancellationToken)
-        {
-            var keyResultIds = okr?.KeyResults.Select(k => k.Id).ToHashSet() ?? new HashSet<int>();
-            if (kpi?.OKRKeyResultId.HasValue == true)
-            {
-                keyResultIds.Add(kpi.OKRKeyResultId.Value);
-            }
-
-            var kpiIds = kpi != null
-                ? new HashSet<int> { kpi.Id }
-                : new HashSet<int>();
-
-            if (okr != null)
-            {
-                var linkedKpiIds = await _context.KPIs
-                    .Where(item => item.OKRId == okr.Id && item.IsActive == true)
-                    .Select(item => item.Id)
-                    .ToListAsync(cancellationToken);
-                foreach (var kpiId in linkedKpiIds)
-                {
-                    kpiIds.Add(kpiId);
-                }
-            }
-
-            return parsedTasks
-                .Where(t => !string.IsNullOrWhiteSpace(t.Title))
-                .GroupBy(t => NormalizeTitleKey(t.Title))
-                .Where(group => !string.IsNullOrWhiteSpace(group.Key))
-                .Select(group => group.First())
-                .Take(10)
-                .Select(t =>
-                {
-                    var assignee = t.AssigneeId.HasValue && contextBundle.Employees.TryGetValue(t.AssigneeId.Value, out var employee)
-                        ? employee
-                        : null;
-                    var department = t.DepartmentId.HasValue && contextBundle.Departments.TryGetValue(t.DepartmentId.Value, out var dept)
-                        ? dept
-                        : assignee?.Department;
-                    var keyResultId = t.OKRKeyResultId.HasValue && keyResultIds.Contains(t.OKRKeyResultId.Value)
-                        ? t.OKRKeyResultId
-                        : okr?.KeyResults.FirstOrDefault()?.Id ?? kpi?.OKRKeyResultId;
-                    var mappedKpiId = t.KPIId.HasValue && kpiIds.Contains(t.KPIId.Value)
-                        ? t.KPIId
-                        : kpi?.Id;
-
-                    return new DecomposedTaskDto
-                    {
-                        Title = Trim(t.Title, 220),
-                        Description = Trim(t.Description, 2000),
-                        Priority = NormalizePriority(t.Priority),
-                        AssigneeId = assignee?.Id,
-                        AssigneeName = assignee?.Name,
-                        DepartmentId = department?.Id,
-                        DepartmentName = department?.Name,
-                        KanbanStatus = NormalizeKanbanStatus(t.KanbanStatus),
-                        EstimatedDays = Math.Clamp(t.EstimatedDays <= 0 ? 1 : t.EstimatedDays, 1, 365),
-                        KpiImpactWeight = NormalizeImpactWeight(t.KpiImpactWeight),
-                        KPIId = mappedKpiId,
-                        OKRKeyResultId = keyResultId,
-                        KeyResultName = okr?.KeyResults.FirstOrDefault(kr => kr.Id == keyResultId)?.KeyResultName,
-                        IsSelected = true
-                    };
-                })
-                .ToList();
-        }
-
-        private List<DecomposedTaskDto> ParseTasks(string text)
-        {
-            var json = ExtractJsonPayload(text);
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return new List<DecomposedTaskDto>();
-            }
-
-            try
-            {
-                using var document = JsonDocument.Parse(json);
-                var root = document.RootElement;
-                var taskElement = root.ValueKind == JsonValueKind.Array
-                    ? root
-                    : root.ValueKind == JsonValueKind.Object && root.TryGetProperty("tasks", out var tasks)
-                        ? tasks
-                        : default;
-
-                if (taskElement.ValueKind != JsonValueKind.Array)
-                {
-                    return new List<DecomposedTaskDto>();
-                }
-
-                return JsonSerializer.Deserialize<List<DecomposedTaskDto>>(taskElement.GetRawText(), _jsonOptions)
-                    ?? new List<DecomposedTaskDto>();
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogWarning(ex, "Gemini returned invalid task JSON.");
-                return new List<DecomposedTaskDto>();
-            }
-        }
-
-        private async Task<PeopleContext> BuildPeopleContextAsync(List<int> sourceDepartmentIds, CancellationToken cancellationToken)
-        {
-            var departmentsQuery = _context.Departments.Where(d => d.IsActive == true);
-            if (sourceDepartmentIds.Any())
-            {
-                departmentsQuery = departmentsQuery.Where(d => sourceDepartmentIds.Contains(d.Id));
-            }
-
-            var departments = await departmentsQuery
-                .OrderBy(d => d.DepartmentName)
-                .Select(d => new DepartmentOption(d.Id, d.DepartmentName ?? $"Phong ban #{d.Id}"))
-                .ToListAsync(cancellationToken);
-            var departmentIds = departments.Select(d => d.Id).ToList();
-
-            var employeeRows = await _context.EmployeeAssignments
-                .Where(a => a.IsActive == true &&
-                            a.EmployeeId.HasValue &&
-                            a.DepartmentId.HasValue &&
-                            (!departmentIds.Any() || departmentIds.Contains(a.DepartmentId.Value)))
-                .Join(_context.Employees.Where(e => e.IsActive == true),
-                    assignment => assignment.EmployeeId!.Value,
-                    employee => employee.Id,
-                    (assignment, employee) => new { assignment.DepartmentId, employee.Id, employee.FullName })
-                .ToListAsync(cancellationToken);
-
-            var departmentLookup = departments.ToDictionary(d => d.Id);
-            var employees = employeeRows
-                .GroupBy(row => row.Id)
-                .Select(group =>
-                {
-                    var row = group.First();
-                    var department = row.DepartmentId.HasValue && departmentLookup.TryGetValue(row.DepartmentId.Value, out var dept)
-                        ? dept
-                        : null;
-                    return new EmployeeOption(row.Id, row.FullName ?? $"Nhan vien #{row.Id}", department);
-                })
-                .OrderBy(e => e.Name)
-                .ToDictionary(e => e.Id);
-
-            return new PeopleContext(departmentLookup, employees);
-        }
-
-        private string BuildOkrPrompt(OKR okr, PeopleContext contextBundle, string? additionalContext)
-        {
-            var input = new
-            {
-                objective = new
-                {
-                    okr.Id,
-                    okr.ObjectiveName,
-                    okr.Cycle,
-                    keyResults = okr.KeyResults.Select(kr => new
-                    {
-                        kr.Id,
-                        kr.KeyResultName,
-                        kr.TargetValue,
-                        kr.CurrentValue,
-                        kr.Unit,
-                        kr.IsInverse
-                    })
-                },
-                departments = contextBundle.Departments.Values,
-                employees = contextBundle.Employees.Values.Select(e => new
-                {
-                    e.Id,
-                    e.Name,
-                    departmentId = e.Department?.Id,
-                    departmentName = e.Department?.Name
-                }),
-                additionalContext
-            };
-
-            return "Hay chia OKR sau thanh 3-7 task Kanban nho, ro viec, co the giao ngay va khong trung lap. " +
-                   "Moi task bat buoc co field: title, description, priority, assigneeId, departmentId, kanbanStatus, estimatedDays, kpiImpactWeight, okrKeyResultId. " +
-                   "priority chi dung Low, Normal, High, Urgent; kanbanStatus chi dung Backlog, Todo, InProgress, Review, Done, Blocked va uu tien Todo/Backlog/InProgress. " +
-                   "Chi dung assigneeId/departmentId/keyResultId trong du lieu duoc cap; neu thieu nguoi phu hop thi de null. Tra ve JSON array hop le hoac object {\"tasks\": [...]}. JSON input:\n" +
-                   JsonSerializer.Serialize(input, _jsonOptions);
-        }
-
-        private string BuildKpiPrompt(KPI kpi, KPIDetail? detail, PeopleContext contextBundle, string? additionalContext)
-        {
-            var input = new
-            {
-                kpi = new
-                {
-                    kpi.Id,
-                    kpi.KPIName,
-                    kpi.Description,
-                    kpi.PeriodId,
-                    kpi.OKRId,
-                    kpi.OKRKeyResultId,
-                    detail = detail == null ? null : new
-                    {
-                        detail.TargetValue,
-                        detail.PassThreshold,
-                        detail.FailThreshold,
-                        detail.MeasurementUnit,
-                        detail.DeadlineDate,
-                        detail.CheckInFrequencyDays
-                    }
-                },
-                departments = contextBundle.Departments.Values,
-                employees = contextBundle.Employees.Values.Select(e => new
-                {
-                    e.Id,
-                    e.Name,
-                    departmentId = e.Department?.Id,
-                    departmentName = e.Department?.Name
-                }),
-                additionalContext
-            };
-
-            return "Hay chia KPI sau thanh 3-7 task Kanban nho, ro viec, do duoc va khong trung lap. " +
-                   "Moi task bat buoc co field: title, description, priority, assigneeId, departmentId, kanbanStatus, estimatedDays, kpiImpactWeight, kpiId. " +
-                   "priority chi dung Low, Normal, High, Urgent; kanbanStatus chi dung Backlog, Todo, InProgress, Review, Done, Blocked va uu tien Todo/Backlog/InProgress. " +
-                   "Chi dung assigneeId/departmentId trong du lieu duoc cap; neu thieu nguoi phu hop thi de null. Tra ve JSON array hop le hoac object {\"tasks\": [...]}. JSON input:\n" +
-                   JsonSerializer.Serialize(input, _jsonOptions);
-        }
-
-        private string BuildProjectPrompt(WorkProject project, OKR? okr, KPI? kpi, KPIDetail? detail, object existingTasks, PeopleContext contextBundle, string? additionalContext)
-        {
-            var input = new
-            {
-                project = new
-                {
-                    project.Id,
-                    project.ProjectCode,
-                    project.ProjectName,
-                    project.Description,
-                    project.Priority,
-                    project.Status,
-                    project.StartDate,
-                    project.DueDate,
-                    project.ProgressPercentage
-                },
-                linkedGoal = new
-                {
-                    okr = okr == null ? null : new
-                    {
-                        okr.Id,
-                        okr.ObjectiveName,
-                        okr.Cycle,
-                        keyResults = okr.KeyResults.Select(kr => new
-                        {
-                            kr.Id,
-                            kr.KeyResultName,
-                            kr.TargetValue,
-                            kr.CurrentValue,
-                            kr.Unit,
-                            kr.IsInverse,
-                            progressGap = CalculateProgressGap(kr.TargetValue, kr.CurrentValue, kr.IsInverse)
-                        })
-                    },
-                    kpi = kpi == null ? null : new
-                    {
-                        kpi.Id,
-                        kpi.KPIName,
-                        kpi.Description,
-                        kpi.PeriodId,
-                        kpi.OKRId,
-                        kpi.OKRKeyResultId,
-                        detail = detail == null ? null : new
-                        {
-                            detail.TargetValue,
-                            detail.PassThreshold,
-                            detail.FailThreshold,
-                            detail.MeasurementUnit,
-                            detail.DeadlineDate,
-                            detail.CheckInFrequencyDays
-                        }
-                    }
-                },
-                existingTasks,
-                okrAlignment = new
-                {
-                    instruction = "Moi task nen gan voi KPI hoac Key Result cu the neu co du lieu lien ket.",
-                    progressGap = "Uu tien cac Key Result co khoang cach lon giua CurrentValue va TargetValue.",
-                    taskGranularity = "Moi task nen la mot viec co dau ra ro rang, hoan thanh trong 1-10 ngay."
-                },
-                doNotDuplicateExistingTasks = existingTasks,
-                departments = contextBundle.Departments.Values,
-                employees = contextBundle.Employees.Values.Select(e => new
-                {
-                    e.Id,
-                    e.Name,
-                    departmentId = e.Department?.Id,
-                    departmentName = e.Department?.Name
-                }),
-                additionalContext
-            };
-
-            return "Hay chia WorkProject sau thanh 3-10 task Kanban kha thi, uu tien task nho co the giao viec ngay va khong trung lap. " +
-                   "Bam sat okrAlignment: moi task phai phuc vu Objective/KPI/Key Result cu the, neu co progressGap lon thi uu tien task tac dong truc tiep vao gap do. " +
-                   "Dung doNotDuplicateExistingTasks de tranh tao lai task da co, ke ca khi ten khac nhung noi dung tuong tu. " +
-                   "Moi task bat buoc co field: title, description, priority, assigneeId, departmentId, kanbanStatus, estimatedDays, kpiImpactWeight, kpiId, okrKeyResultId. " +
-                   "priority chi dung Low, Normal, High, Urgent; kanbanStatus chi dung Backlog, Todo, InProgress, Review, Done, Blocked va uu tien Todo/Backlog/InProgress, khong dat Done tru khi task that su da hoan thanh. " +
-                   "description phai noi ro dau ra, cach do hoan thanh va lien he voi KR/KPI nao; title nen bat dau bang dong tu hanh dong. " +
-                   "Chi dung assigneeId/departmentId/kpiId/okrKeyResultId trong du lieu duoc cap; neu thieu nguoi phu hop thi de null. Tra ve JSON array hop le hoac object {\"tasks\": [...]}. JSON input:\n" +
-                   JsonSerializer.Serialize(input, _jsonOptions);
-        }
-
-        private async Task ApplySuggestedProjectAsync(DecomposeResponse response, OKR okr, CancellationToken cancellationToken)
-        {
-            WorkProject? suggested = null;
-            if (okr.LinkedWorkProjectId.HasValue)
-            {
-                suggested = await _context.WorkProjects
-                    .FirstOrDefaultAsync(p => p.Id == okr.LinkedWorkProjectId.Value && p.IsActive == true, cancellationToken);
-            }
-
-            suggested ??= await _context.WorkProjects
-                .FirstOrDefaultAsync(p => p.IsActive == true && (p.SourceOKRId == okr.Id || p.LinkedOKRId == okr.Id), cancellationToken);
-
-            if (suggested != null)
-            {
-                response.SuggestedProjectId = suggested.Id;
-                response.SuggestedProjectName = suggested.ProjectName;
-            }
-        }
-
-        private async Task<List<WorkProjectOption>> LoadAvailableProjectsAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
-        {
-            var accessibleProjectIds = await GetAccessibleProjectIdsAsync(user, cancellationToken);
-            if (!accessibleProjectIds.Any())
-            {
-                return new List<WorkProjectOption>();
-            }
-
-            return await _context.WorkProjects
-                .Where(p => p.IsActive == true && accessibleProjectIds.Contains(p.Id))
-                .OrderByDescending(p => p.UpdatedAt ?? p.CreatedAt)
-                .Take(50)
-                .Select(p => new WorkProjectOption
-                {
-                    Id = p.Id,
-                    Name = p.ProjectName ?? $"Project #{p.Id}"
-                })
-                .ToListAsync(cancellationToken);
         }
 
         private async Task<string> ResolveProjectNameAsync(ConfirmDecomposeRequest request, CancellationToken cancellationToken)
@@ -1019,7 +1001,9 @@ namespace Manage_KPI_or_OKR_System.Services
 
         private async Task<bool> CanAccessOkrAsync(OKR okr, ClaimsPrincipal user, CancellationToken cancellationToken)
         {
-            if (AccessScopeHelper.IsAdmin(user) || AccessScopeHelper.IsDirector(user))
+            if (AccessScopeHelper.IsAdmin(user) ||
+                AccessScopeHelper.IsDirector(user) ||
+                AccessScopeHelper.IsHumanResources(user))
             {
                 return true;
             }
@@ -1058,52 +1042,10 @@ namespace Manage_KPI_or_OKR_System.Services
 
         private async Task<List<int>> GetAccessibleProjectIdsAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
         {
-            if (AccessScopeHelper.IsAdmin(user) || AccessScopeHelper.IsDirector(user) || user.IsInRole("HR"))
-            {
-                return await _context.WorkProjects
-                    .Where(p => p.IsActive == true)
-                    .Select(p => p.Id)
-                    .ToListAsync(cancellationToken);
-            }
-
-            var employee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, user);
-            if (employee == null)
-            {
-                return new List<int>();
-            }
-
-            var departmentIds = await AccessScopeHelper.GetEmployeeDepartmentIdsAsync(_context, employee.Id);
-            if (AccessScopeHelper.IsManagerScoped(user))
-            {
-                var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, employee);
-                departmentIds = departmentIds.Concat(managedDepartmentIds).Distinct().ToList();
-            }
-
-            var ownedProjectIds = await _context.WorkProjects
-                .Where(p => p.IsActive == true && (p.OwnerId == employee.Id || p.CreatedById == employee.Id))
-                .Select(p => p.Id)
-                .ToListAsync(cancellationToken);
-
-            var departmentProjectIds = departmentIds.Any()
-                ? await _context.WorkProjectDepartments
-                    .Where(pd => pd.IsActive == true && departmentIds.Contains(pd.DepartmentId))
-                    .Select(pd => pd.WorkProjectId)
-                    .ToListAsync(cancellationToken)
-                : new List<int>();
-
-            var taskProjectIds = await _context.WorkItems
-                .Where(t => t.IsActive == true &&
-                            (t.AssigneeId == employee.Id ||
-                             t.ReporterId == employee.Id ||
-                             (t.DepartmentId.HasValue && departmentIds.Contains(t.DepartmentId.Value))))
-                .Select(t => t.WorkProjectId)
-                .ToListAsync(cancellationToken);
-
-            return ownedProjectIds
-                .Concat(departmentProjectIds)
-                .Concat(taskProjectIds)
-                .Distinct()
-                .ToList();
+            return await ProjectAccessScopeHelper.GetAccessibleProjectIdsAsync(
+                _context,
+                user,
+                cancellationToken: cancellationToken);
         }
 
         private async Task<int?> ResolveKpiIdAsync(int? kpiId, CancellationToken cancellationToken)
@@ -1308,37 +1250,190 @@ namespace Manage_KPI_or_OKR_System.Services
                     : project.Status;
         }
 
+        private async Task SyncCreatedTaskCheckInsAsync(
+            IReadOnlyCollection<WorkItem> createdTasks,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken)
+        {
+            const string marker = "AUTO_WORKITEM_SYNC";
+            if (_aiEvaluationQueue == null || _tenantContext?.TenantId is not > 0)
+            {
+                return;
+            }
+
+            var systemUserIdValue = user.FindFirstValue("SystemUserId") ??
+                                    user.FindFirstValue(ClaimTypes.NameIdentifier);
+            var systemUserId = int.TryParse(systemUserIdValue, out var parsedSystemUserId)
+                ? parsedSystemUserId
+                : (int?)null;
+            if (!systemUserId.HasValue)
+            {
+                return;
+            }
+
+            var currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, user);
+            var pairs = createdTasks
+                .Where(task => task.KPIId.HasValue && task.AssigneeId.HasValue)
+                .Select(task => new { KpiId = task.KPIId!.Value, EmployeeId = task.AssigneeId!.Value })
+                .Distinct()
+                .ToList();
+            foreach (var pair in pairs)
+            {
+                var kpi = await _context.KPIs
+                    .FirstOrDefaultAsync(item => item.Id == pair.KpiId && item.IsActive == true, cancellationToken);
+                if (kpi == null)
+                {
+                    continue;
+                }
+
+                var detail = await _context.KPIDetails
+                    .FirstOrDefaultAsync(item => item.KPIId == pair.KpiId, cancellationToken);
+                var period = kpi.PeriodId.HasValue
+                    ? await _context.EvaluationPeriods.FirstOrDefaultAsync(
+                        item => item.Id == kpi.PeriodId.Value,
+                        cancellationToken)
+                    : null;
+                var tasks = await _context.WorkItems
+                    .Where(item =>
+                        item.IsActive == true &&
+                        item.KPIId == pair.KpiId &&
+                        item.AssigneeId == pair.EmployeeId)
+                    .ToListAsync(cancellationToken);
+                var progress = CalculateWeightedTaskProgress(tasks);
+                var achievedValue = Math.Round((detail?.TargetValue ?? 100m) * progress / 100m, 2);
+                var assignmentWeight = await _context.KPI_Employee_Assignments
+                    .Where(item =>
+                        item.KPIId == pair.KpiId &&
+                        item.EmployeeId == pair.EmployeeId &&
+                        (item.Status == null || item.Status == "Active"))
+                    .Select(item => (decimal?)item.Weight)
+                    .FirstOrDefaultAsync(cancellationToken) ?? 1m;
+                if (assignmentWeight <= 0)
+                {
+                    assignmentWeight = 1m;
+                }
+
+                var submittedAt = DateTime.Now;
+                var deadlineAt = KpiCheckInScheduleHelper.ResolveDeadlineForCheckIn(submittedAt, detail, period);
+                var expectedValue = KpiCheckInScheduleHelper.CalculateExpectedValueAtDeadline(
+                    detail,
+                    period,
+                    deadlineAt,
+                    assignmentWeight);
+                var scheduleProgress = detail != null
+                    ? KpiCheckInScheduleHelper.CalculateScheduleProgress(achievedValue, expectedValue, detail.IsInverse)
+                    : progress;
+                var isLate = KpiCheckInScheduleHelper.IsLate(submittedAt, deadlineAt, scheduleProgress);
+                var today = submittedAt.Date;
+                var tomorrow = today.AddDays(1);
+                var checkIn = await _context.KPICheckIns
+                    .Where(item =>
+                        item.KPIId == pair.KpiId &&
+                        item.EmployeeId == pair.EmployeeId &&
+                        item.CheckInDate >= today &&
+                        item.CheckInDate < tomorrow &&
+                        item.ReviewComment == marker)
+                    .OrderByDescending(item => item.CheckInDate)
+                    .FirstOrDefaultAsync(cancellationToken);
+                if (checkIn == null)
+                {
+                    checkIn = new KPICheckIn
+                    {
+                        KPIId = pair.KpiId,
+                        EmployeeId = pair.EmployeeId,
+                        SubmittedById = currentEmployee?.Id,
+                        ReviewComment = marker
+                    };
+                    _context.KPICheckIns.Add(checkIn);
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+
+                checkIn.CheckInDate = submittedAt;
+                checkIn.SubmittedById = currentEmployee?.Id;
+                checkIn.DeadlineAt = deadlineAt;
+                checkIn.IsLate = isLate;
+                checkIn.StatusId = await ResolveAutoCheckInStatusIdAsync(
+                    isLate,
+                    scheduleProgress,
+                    progress,
+                    cancellationToken);
+                checkIn.ReviewStatus = "Pending";
+                checkIn.ReviewedById = null;
+                checkIn.ReviewedAt = null;
+                checkIn.ReviewComment = marker;
+
+                var checkInDetail = await _context.CheckInDetails
+                    .FirstOrDefaultAsync(item => item.CheckInId == checkIn.Id, cancellationToken);
+                if (checkInDetail == null)
+                {
+                    checkInDetail = new CheckInDetail { CheckInId = checkIn.Id };
+                    _context.CheckInDetails.Add(checkInDetail);
+                }
+                checkInDetail.AchievedValue = achievedValue;
+                checkInDetail.ProgressPercentage = Math.Round(progress, 2);
+                checkInDetail.ExpectedValueAtDeadline = expectedValue;
+                checkInDetail.ScheduleProgressPercentage = Math.Round(scheduleProgress, 2);
+                checkInDetail.Note = $"{marker}: Tự động tổng hợp từ {tasks.Count} công việc dự án có liên kết KPI.";
+                AddAuditLog(
+                    user,
+                    "AUTO_SYNC",
+                    "KPICheckIns",
+                    null,
+                    $"AI task tạo check-in #{checkIn.Id} KPI #{pair.KpiId} nhân viên #{pair.EmployeeId}; tiến độ {progress:0.##}%");
+                await _context.SaveChangesAsync(cancellationToken);
+                await _aiEvaluationQueue.EnqueueAsync(
+                    new CheckInAiEvaluationWorkItem(
+                        checkIn.Id,
+                        _tenantContext.TenantId,
+                        systemUserId,
+                        user.FindFirstValue(ClaimTypes.Role)),
+                    cancellationToken);
+            }
+        }
+
+        private async Task<int?> ResolveAutoCheckInStatusIdAsync(
+            bool isLate,
+            decimal scheduleProgress,
+            decimal totalProgress,
+            CancellationToken cancellationToken)
+        {
+            var statuses = await _context.CheckInStatuses
+                .AsNoTracking()
+                .Where(item => item.StatusName != null)
+                .ToListAsync(cancellationToken);
+            var statusByName = statuses
+                .GroupBy(item => item.StatusName!)
+                .ToDictionary(group => group.Key, group => group.First().Id);
+            var statusName = isLate
+                ? "Late"
+                : totalProgress >= 100m
+                    ? "Done"
+                    : scheduleProgress >= 120m
+                        ? "Ahead"
+                        : "On Track";
+            return statusByName.TryGetValue(statusName, out var statusId)
+                ? statusId
+                : null;
+        }
+
+        private static decimal CalculateWeightedTaskProgress(IEnumerable<WorkItem> tasks)
+        {
+            decimal weightedProgress = 0;
+            decimal totalWeight = 0;
+            foreach (var task in tasks)
+            {
+                var weight = NormalizeImpactWeight(task.KpiImpactWeight);
+                weightedProgress += (task.ProgressPercentage ?? 0) * weight;
+                totalWeight += weight;
+            }
+            return totalWeight > 0 ? Math.Round(weightedProgress / totalWeight, 2) : 0m;
+        }
+
         private async Task<string> GenerateProjectCodeAsync(CancellationToken cancellationToken)
         {
             var datePart = DateTime.Now.ToString("yyyyMMdd");
             var countToday = await _context.WorkProjects.CountAsync(p => p.ProjectCode != null && p.ProjectCode.StartsWith($"PRJ-{datePart}"), cancellationToken);
             return $"PRJ-{datePart}-{countToday + 1:000}";
-        }
-
-        private async Task SaveAIHistoryAsync(
-            string feature,
-            int? targetId,
-            string prompt,
-            string response,
-            ClaimsPrincipal user,
-            CancellationToken cancellationToken)
-        {
-            var systemUserIdValue = user.FindFirstValue("SystemUserId") ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(systemUserIdValue, out var systemUserId))
-            {
-                return;
-            }
-
-            _context.AIGenerationHistories.Add(new AIGenerationHistory
-            {
-                FeatureName = feature,
-                TargetId = targetId,
-                Prompt = prompt,
-                Response = response,
-                SystemUserId = systemUserId,
-                CreatedAt = DateTime.Now
-            });
-            await _context.SaveChangesAsync(cancellationToken);
         }
 
         private void AddAuditLog(ClaimsPrincipal user, string action, string table, string? oldData, string? newData)
@@ -1355,27 +1450,67 @@ namespace Manage_KPI_or_OKR_System.Services
             });
         }
 
-        private static string ExtractJsonPayload(string text)
+        private static string BuildAppliedTaskAudit(
+            int projectId,
+            IReadOnlyCollection<DecomposedTaskDto> tasks) =>
+            JsonSerializer.Serialize(
+                new
+                {
+                    projectId,
+                    tasks = tasks.Select(task => new
+                    {
+                        title = task.Title.Trim(),
+                        description = task.Description?.Trim(),
+                        task.AssigneeId,
+                        task.DepartmentId,
+                        task.KPIId,
+                        task.OKRKeyResultId,
+                        dueDate = ResolveTaskDueDate(task).ToString("yyyy-MM-dd"),
+                        priority = NormalizePriority(task.Priority),
+                        status = NormalizeKanbanStatus(task.KanbanStatus)
+                    })
+                },
+                new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+
+        private static bool TryDecodeRowVersion(string? value, out byte[] rowVersion)
         {
-            var trimmed = text.Trim();
-            if (trimmed.StartsWith("```", StringComparison.Ordinal))
+            rowVersion = Array.Empty<byte>();
+            if (string.IsNullOrWhiteSpace(value) || value.Length > 128)
             {
-                trimmed = trimmed.Replace("```json", string.Empty, StringComparison.OrdinalIgnoreCase)
-                    .Replace("```", string.Empty)
-                    .Trim();
+                return false;
             }
-
-            var arrayStart = trimmed.IndexOf('[');
-            var objectStart = trimmed.IndexOf('{');
-            var startsWithObject = objectStart >= 0 && (arrayStart < 0 || objectStart < arrayStart);
-            if (startsWithObject)
+            try
             {
-                var objectEnd = trimmed.LastIndexOf('}');
-                return objectEnd > objectStart ? trimmed[objectStart..(objectEnd + 1)] : trimmed;
+                rowVersion = Convert.FromBase64String(value);
+                return rowVersion.Length is > 0 and <= 32;
             }
+            catch (FormatException)
+            {
+                return false;
+            }
+        }
 
-            var arrayEnd = trimmed.LastIndexOf(']');
-            return arrayStart >= 0 && arrayEnd > arrayStart ? trimmed[arrayStart..(arrayEnd + 1)] : trimmed;
+        private static bool IsValidApprovalToken(string token, string? storedHash)
+        {
+            if (string.IsNullOrWhiteSpace(storedHash) || storedHash.Length != 64)
+            {
+                return false;
+            }
+            try
+            {
+                var tokenBytes = WebEncoders.Base64UrlDecode(token);
+                if (tokenBytes.Length != 32)
+                {
+                    return false;
+                }
+                return CryptographicOperations.FixedTimeEquals(
+                    SHA256.HashData(tokenBytes),
+                    Convert.FromHexString(storedHash));
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
         }
 
         private static string ResolveProjectPriority(IEnumerable<DecomposedTaskDto> tasks)
@@ -1455,24 +1590,6 @@ namespace Manage_KPI_or_OKR_System.Services
                 .ToUpperInvariant();
         }
 
-        private static decimal? CalculateProgressGap(decimal? targetValue, decimal? currentValue, bool isInverse)
-        {
-            if (!targetValue.HasValue)
-            {
-                return null;
-            }
-
-            var current = currentValue ?? 0;
-            var gap = isInverse
-                ? current - targetValue.Value
-                : targetValue.Value - current;
-            return gap <= 0 ? 0 : gap;
-        }
-
-        private sealed record PeopleContext(
-            Dictionary<int, DepartmentOption> Departments,
-            Dictionary<int, EmployeeOption> Employees);
-
         private sealed record ConfirmTaskScope(
             HashSet<int> DepartmentIds,
             HashSet<int> EmployeeIds,
@@ -1482,9 +1599,57 @@ namespace Manage_KPI_or_OKR_System.Services
             int? FallbackKeyResultId,
             bool IsGoalScopeConstrained,
             bool IsPeopleScopeConstrained);
+        private sealed record PlanningProof(
+            int TenantId,
+            int ActorId,
+            string SourceType,
+            int SourceId,
+            string SourceVersion,
+            Guid IdempotencyKey,
+            AgentRunRecord Run,
+            AgentDraftAction Action,
+            AgentApproval? ExistingApproval);
+        private sealed record ProofRequest(
+            Guid? AgentRunId,
+            int? DraftActionId,
+            string? AgentRunRowVersion,
+            string? DraftRowVersion,
+            string? ApprovalToken,
+            Guid? IdempotencyKey,
+            string? PlanningSourceType,
+            int? PlanningSourceId,
+            string? PlanningSourceVersion,
+            string ExpectedDecision,
+            ConfirmDecomposeRequest? Confirmation)
+        {
+            public static ProofRequest FromConfirmation(ConfirmDecomposeRequest request) =>
+                new(
+                    request.AgentRunId,
+                    request.DraftActionId,
+                    request.AgentRunRowVersion,
+                    request.DraftRowVersion,
+                    request.ApprovalToken,
+                    request.IdempotencyKey,
+                    request.PlanningSourceType,
+                    request.PlanningSourceId,
+                    request.PlanningSourceVersion,
+                    "AppliedByHuman",
+                    request);
 
-        private sealed record DepartmentOption(int Id, string Name);
+            public static ProofRequest FromDecision(GoalPlanningDraftDecisionRequest request) =>
+                new(
+                    request.AgentRunId,
+                    request.DraftActionId,
+                    request.AgentRunRowVersion,
+                    request.DraftRowVersion,
+                    request.ApprovalToken,
+                    request.IdempotencyKey,
+                    request.PlanningSourceType,
+                    request.PlanningSourceId,
+                    request.PlanningSourceVersion,
+                    "RejectedByHuman",
+                    null);
+        }
 
-        private sealed record EmployeeOption(int Id, string Name, DepartmentOption? Department);
     }
 }

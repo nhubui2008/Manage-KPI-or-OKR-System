@@ -776,6 +776,24 @@
                                 </button>
                             </div>
                             <textarea name="ReviewComment" id="editReviewComment" class="form-control" rows="5" maxlength="2000" placeholder="AI sẽ tạo bản nháp, quản lý có thể chỉnh sửa trước khi lưu"></textarea>
+                            <div id="aiReviewDraftPanel" class="border rounded-3 bg-light p-3 mt-3 d-none" role="status" aria-live="polite">
+                                <div class="d-flex flex-wrap justify-content-between gap-2 align-items-start mb-2">
+                                    <div>
+                                        <span class="badge text-bg-warning">Bản nháp AI · Chờ con người quyết định</span>
+                                        <div class="small text-muted mt-1">AI không thay đổi điểm, hạng, trạng thái hay nhận xét chính thức.</div>
+                                    </div>
+                                </div>
+                                <p id="aiReviewDraftText" class="mb-2" style="white-space: pre-wrap;"></p>
+                                <div id="aiReviewDraftSourceWarning" class="alert alert-warning py-2 px-3 small d-none" role="alert">
+                                    Nhân viên, kỳ hoặc tổng điểm đã thay đổi. Hãy lưu kết quả trước rồi tạo lại bản nháp AI.
+                                </div>
+                                <div class="small fw-semibold mb-1">Nguồn tham chiếu</div>
+                                <ul id="aiReviewDraftCitations" class="small text-muted ps-3 mb-3"></ul>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="evaluation-primary-action" id="aiApplyReviewDraftBtn">Chèn vào ô nhận xét</button>
+                                    <button type="button" class="evaluation-secondary-action" id="aiRejectReviewDraftBtn">Không sử dụng</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -790,6 +808,86 @@
 
 <script>
     const evaluationRankScale = @Html.Raw(rankScaleJson);
+    let activeEvaluationReviewDraft = null;
+    let evaluationReviewSourceSnapshot = null;
+
+    function captureEvaluationReviewSource() {
+        const score = Number.parseFloat(normalizeDecimalValue(document.getElementById('editTotalScore')?.value || '0'));
+        return {
+            resultId: document.getElementById('editId')?.value || '',
+            employeeId: document.getElementById('editEmployeeId')?.value || '',
+            periodId: document.getElementById('editPeriodId')?.value || '',
+            score: Number.isNaN(score) ? null : score
+        };
+    }
+
+    function evaluationReviewSourceMatches(snapshot) {
+        if (!snapshot) return false;
+        const current = captureEvaluationReviewSource();
+        return current.resultId === snapshot.resultId &&
+            current.employeeId === snapshot.employeeId &&
+            current.periodId === snapshot.periodId &&
+            current.score === snapshot.score;
+    }
+
+    function syncEvaluationReviewDraftEligibility() {
+        if (!activeEvaluationReviewDraft) return;
+        const sourceMatches = evaluationReviewSourceMatches(activeEvaluationReviewDraft.sourceSnapshot);
+        document.getElementById('aiReviewDraftSourceWarning')?.classList.toggle('d-none', sourceMatches);
+        const applyButton = document.getElementById('aiApplyReviewDraftBtn');
+        if (applyButton) {
+            applyButton.disabled = !activeEvaluationReviewDraft.hasCitations || !sourceMatches;
+        }
+    }
+
+    function resetEvaluationReviewDraft() {
+        activeEvaluationReviewDraft = null;
+        evaluationReviewSourceSnapshot = null;
+        const panel = document.getElementById('aiReviewDraftPanel');
+        panel?.classList.add('d-none');
+        document.getElementById('aiReviewDraftSourceWarning')?.classList.add('d-none');
+        const text = document.getElementById('aiReviewDraftText');
+        if (text) text.textContent = '';
+        const citations = document.getElementById('aiReviewDraftCitations');
+        if (citations) citations.replaceChildren();
+    }
+
+    function showEvaluationReviewDraft(data) {
+        if (!evaluationReviewSourceSnapshot ||
+            String(data.evaluationResultId || '') !== evaluationReviewSourceSnapshot.resultId) {
+            window.AppFeedback.toast({
+                tone: 'warning',
+                eyebrow: 'AI Nhận xét',
+                title: 'Bản nháp không còn khớp',
+                message: 'Kết quả đang mở đã thay đổi. Hãy tạo lại bản nháp AI.'
+            });
+            return;
+        }
+        activeEvaluationReviewDraft = {
+            draftActionId: data.draftActionId,
+            rowVersion: data.rowVersion,
+            text: data.text || '',
+            hasCitations: Array.isArray(data.citations) && data.citations.length > 0,
+            sourceSnapshot: { ...evaluationReviewSourceSnapshot }
+        };
+        const text = document.getElementById('aiReviewDraftText');
+        if (text) text.textContent = activeEvaluationReviewDraft.text;
+        const citations = document.getElementById('aiReviewDraftCitations');
+        citations?.replaceChildren();
+        (data.citations || []).forEach(citation => {
+            const item = document.createElement('li');
+            const label = citation.title || `${citation.sourceType || 'Nguồn'} #${citation.sourceId || ''}`;
+            item.textContent = citation.versionId ? `${label} · phiên bản ${citation.versionId}` : label;
+            citations?.appendChild(item);
+        });
+        if (citations && !citations.children.length) {
+            const item = document.createElement('li');
+            item.textContent = 'Chưa có citation hợp lệ; không thể áp dụng bản nháp.';
+            citations.appendChild(item);
+        }
+        document.getElementById('aiReviewDraftPanel')?.classList.remove('d-none');
+        syncEvaluationReviewDraftEligibility();
+    }
 
     function normalizeDecimalValue(value) {
         return String(value ?? '').replace(',', '.');
@@ -816,6 +914,7 @@
     }
 
     function editResult(id, empId, periodId, score, rankId, classification, reviewComment) {
+        resetEvaluationReviewDraft();
         const normalizedScore = normalizeDecimalValue(score || '0');
         document.getElementById('editId').value = id;
         document.getElementById('editEmployeeId').value = empId;
@@ -823,6 +922,7 @@
         document.getElementById('editTotalScore').value = normalizedScore;
         updateRankOutputs(document.getElementById('editTotalScore'));
         document.getElementById('editReviewComment').value = reviewComment || "";
+        evaluationReviewSourceSnapshot = captureEvaluationReviewSource();
         document.getElementById('editModalScoreHeader').innerText = Number.parseFloat(normalizedScore || '0').toLocaleString('vi-VN');
         
         var editModal = new bootstrap.Modal(document.getElementById('editModal'));
@@ -852,13 +952,27 @@
                     ? '0'
                     : numericScore.toLocaleString('vi-VN');
             }
+            syncEvaluationReviewDraftEligibility();
         });
         updateRankOutputs(input);
+    });
+
+    ['editEmployeeId', 'editPeriodId'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', syncEvaluationReviewDraftEligibility);
     });
 
     document.getElementById('aiGenerateReviewBtn')?.addEventListener('click', async function () {
         const resultId = parseInt(document.getElementById('editId').value || '0', 10);
         if (!resultId) return;
+        if (!evaluationReviewSourceMatches(evaluationReviewSourceSnapshot)) {
+            window.AppFeedback.toast({
+                tone: 'warning',
+                eyebrow: 'AI Nhận xét',
+                title: 'Dữ liệu chưa được lưu',
+                message: 'Hãy lưu nhân viên, kỳ và tổng điểm trước khi tạo bản nháp AI.'
+            });
+            return;
+        }
 
         const btn = this;
         const originalHtml = btn.innerHTML;
@@ -880,7 +994,7 @@
                 window.AppFeedback.toast({ tone: 'warning', eyebrow: 'AI Nhận xét', title: 'AI chưa sẵn sàng', message });
                 return;
             }
-            document.getElementById('editReviewComment').value = data.text || '';
+            showEvaluationReviewDraft(data);
         } catch {
             window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối AI', title: 'Lỗi kết nối', message: 'Không thể kết nối AI. Vui lòng thử lại sau.' });
         } finally {
@@ -888,4 +1002,67 @@
             btn.innerHTML = originalHtml;
         }
     });
+
+    async function decideEvaluationReviewDraft(decision) {
+        if (!activeEvaluationReviewDraft) return;
+        if (decision === 'Accepted' &&
+            !evaluationReviewSourceMatches(activeEvaluationReviewDraft.sourceSnapshot)) {
+            syncEvaluationReviewDraftEligibility();
+            window.AppFeedback.toast({
+                tone: 'warning',
+                eyebrow: 'AI Nhận xét',
+                title: 'Nguồn đã thay đổi',
+                message: 'Hãy lưu kết quả trước rồi tạo lại bản nháp AI.'
+            });
+            return;
+        }
+        if (decision === 'Accepted') {
+            const currentText = document.getElementById('editReviewComment').value;
+            if (currentText.trim() && currentText !== activeEvaluationReviewDraft.text &&
+                !window.confirm('Ô nhận xét đang có nội dung. Bạn có muốn thay bằng bản nháp AI vừa duyệt không?')) {
+                return;
+            }
+        }
+        const applyButton = document.getElementById('aiApplyReviewDraftBtn');
+        const rejectButton = document.getElementById('aiRejectReviewDraftBtn');
+        applyButton.disabled = true;
+        rejectButton.disabled = true;
+        try {
+            const response = await fetch('/AI/DecideEvaluationReviewDraft', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...window.antiForgeryHeaders()
+                },
+                body: JSON.stringify({
+                    draftActionId: activeEvaluationReviewDraft.draftActionId,
+                    rowVersion: activeEvaluationReviewDraft.rowVersion,
+                    decision
+                })
+            });
+            const data = await response.json();
+            if (!response.ok || data.success === false) {
+                const message = data.warnings?.[0] || 'Bản nháp AI không còn hợp lệ.';
+                window.AppFeedback.toast({ tone: 'warning', eyebrow: 'AI Nhận xét', title: 'Không thể quyết định bản nháp', message });
+                return;
+            }
+
+            if (decision === 'Accepted') {
+                const input = document.getElementById('editReviewComment');
+                const draftText = data.text || activeEvaluationReviewDraft.text;
+                input.value = draftText;
+                window.AppFeedback.toast({ tone: 'success', eyebrow: 'AI Nhận xét', title: 'Đã chèn vào bản nháp', message: 'Hãy chỉnh sửa nếu cần và bấm Cập nhật kết quả để lưu chính thức.' });
+            }
+            resetEvaluationReviewDraft();
+        } catch {
+            window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối AI', title: 'Lỗi kết nối', message: 'Không thể cập nhật bản nháp AI. Vui lòng thử lại.' });
+        } finally {
+            applyButton.disabled = false;
+            rejectButton.disabled = false;
+        }
+    }
+
+    document.getElementById('aiApplyReviewDraftBtn')?.addEventListener('click', () => decideEvaluationReviewDraft('Accepted'));
+    document.getElementById('aiRejectReviewDraftBtn')?.addEventListener('click', () => decideEvaluationReviewDraft('Rejected'));
+    document.getElementById('editModal')?.addEventListener('hidden.bs.modal', resetEvaluationReviewDraft);
 </script>

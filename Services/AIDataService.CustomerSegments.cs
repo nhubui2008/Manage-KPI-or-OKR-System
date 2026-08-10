@@ -35,7 +35,7 @@ namespace Manage_KPI_or_OKR_System.Services
             var targetEmployeeIds = await ResolveTargetEmployeeIdsAsync(scope, employeeId, request.DepartmentId);
 
             var builder = NewContextHeader(scope, selectedPeriod);
-            builder.AppendLine("MUC TIEU AI: goi y tep khach hang va danh gia tiem nang khach hang co the giup nhan vien/phong ban dat KPI doanh thu.");
+            builder.AppendLine("MUC TIEU AI: goi y tep khach hang co can cu co the giup nhan vien/phong ban dat KPI doanh thu.");
             builder.AppendLine("Luu y: he thong hien CHUA co bang CRM/Customer rieng. Neu thieu du lieu ve ten khach hang, khu vuc, san pham/nganh hang, vong doi khach hang thi phai noi ro trong DataGaps va chi suy luan tu KPI/OKR/check-in/bao cao tai chinh noi bo.");
 
             await AppendEmployeeCommercialProfileAsync(builder, scope, targetEmployeeIds, employeeId, request.DepartmentId);
@@ -54,7 +54,8 @@ namespace Manage_KPI_or_OKR_System.Services
             await AppendFinancialTargetsAsync(builder, selectedPeriod, previousPeriod);
 
             builder.AppendLine("DINH DANG CAN GOI Y:");
-            builder.AppendLine("- Moi tep khach hang can neu: ten tep, vi sao hop voi nhan vien, san pham/dich vu nen ban, khu vuc neu co, moi/cu/lau nam, diem tiem nang 0-100, can cu doanh thu, hanh dong tiep theo.");
+            builder.AppendLine("- Moi tep khach hang can neu: ten tep, vi sao hop voi nhan vien, san pham/dich vu nen ban, khu vuc neu co, moi/cu/lau nam, can cu du lieu, can cu doanh thu va hanh dong tiep theo.");
+            builder.AppendLine("- Khong cham diem, xep hang hoac trinh bay xac suat tiem nang khi chua co mo hinh duoc hieu chinh.");
             builder.AppendLine("- Uu tien dua tren ky truoc: KPI nao dat/chua dat, doanh thu/target nao con thieu, check-in nao co ghi chu lien quan khach hang.");
             builder.AppendLine("- Khong bia ten khach hang cu the neu context khong co ten; co the goi y cap 'tep/phan khuc' thay vi danh sach cong ty.");
 
@@ -77,24 +78,28 @@ namespace Manage_KPI_or_OKR_System.Services
             }
 
             var employees = await _context.Employees
+                .AsNoTracking()
                 .Where(e => targetEmployeeIds.Contains(e.Id))
                 .OrderBy(e => e.FullName)
+                .ThenBy(e => e.Id)
                 .Take(20)
                 .ToListAsync();
 
             var employeeIds = employees.Select(e => e.Id).ToList();
             var assignments = await _context.EmployeeAssignments
+                .AsNoTracking()
                 .Where(a => a.EmployeeId.HasValue && employeeIds.Contains(a.EmployeeId.Value) && a.IsActive == true)
                 .OrderByDescending(a => a.EffectiveDate)
+                .ThenByDescending(a => a.Id)
                 .ToListAsync();
 
             var departmentIds = assignments.Where(a => a.DepartmentId.HasValue).Select(a => a.DepartmentId!.Value).Distinct().ToList();
             var positionIds = assignments.Where(a => a.PositionId.HasValue).Select(a => a.PositionId!.Value).Distinct().ToList();
             var departments = departmentIds.Any()
-                ? await _context.Departments.Where(d => departmentIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => d.DepartmentName ?? "N/A")
+                ? await _context.Departments.AsNoTracking().Where(d => departmentIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => d.DepartmentName ?? "N/A")
                 : new Dictionary<int, string>();
             var positions = positionIds.Any()
-                ? await _context.Positions.Where(p => positionIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.PositionName ?? "N/A")
+                ? await _context.Positions.AsNoTracking().Where(p => positionIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.PositionName ?? "N/A")
                 : new Dictionary<int, string>();
 
             foreach (var employee in employees)
@@ -107,12 +112,13 @@ namespace Manage_KPI_or_OKR_System.Services
                     ? pos
                     : "N/A";
                 var scopeNote = employee.Id == scope.CurrentEmployeeId ? "tai khoan dang dang nhap" : "nhan vien trong pham vi";
-                builder.AppendLine($"- #{employee.Id} {employee.FullName} ({employee.EmployeeCode}); {scopeNote}; phong ban {departmentName}; chuc vu {positionName}; email {employee.Email ?? "N/A"}.");
+                builder.AppendLine($"- Nhan vien #{employee.Id}; {scopeNote}; phong ban {departmentName}; chuc vu {positionName}.");
             }
 
             if (requestedDepartmentId.HasValue)
             {
-                var department = await _context.Departments.FindAsync(requestedDepartmentId.Value);
+                var department = await _context.Departments.AsNoTracking()
+                    .FirstOrDefaultAsync(item => item.Id == requestedDepartmentId.Value);
                 builder.AppendLine($"Phong ban duoc yeu cau: #{department?.Id} {department?.DepartmentName ?? "N/A"}.");
             }
 
@@ -132,11 +138,9 @@ namespace Manage_KPI_or_OKR_System.Services
             }
 
             var results = await _context.EvaluationResults
+                .AsNoTracking()
                 .Where(r => r.EmployeeId.HasValue && employeeIds.Contains(r.EmployeeId.Value) && r.PeriodId == period.Id)
                 .ToListAsync();
-            var employeeNames = await _context.Employees
-                .Where(e => employeeIds.Contains(e.Id))
-                .ToDictionaryAsync(e => e.Id, e => e.FullName ?? $"Nhan vien #{e.Id}");
 
             builder.AppendLine($"- Ky: #{period.Id} {period.PeriodName}; {period.StartDate:dd/MM/yyyy}-{period.EndDate:dd/MM/yyyy}.");
             if (!results.Any())
@@ -144,11 +148,9 @@ namespace Manage_KPI_or_OKR_System.Services
                 builder.AppendLine("- Chua co EvaluationResult trong ky nay.");
             }
 
-            foreach (var result in results.OrderByDescending(r => r.TotalScore).Take(10))
+            foreach (var result in results.OrderByDescending(r => r.TotalScore).ThenBy(r => r.Id).Take(10))
             {
-                var name = result.EmployeeId.HasValue && employeeNames.TryGetValue(result.EmployeeId.Value, out var employeeName)
-                    ? employeeName
-                    : "N/A";
+                var name = result.EmployeeId.HasValue ? $"Nhan vien #{result.EmployeeId.Value}" : "N/A";
                 builder.AppendLine($"- {name}: tong diem {FormatDecimal(result.TotalScore)}, phan loai {result.Classification ?? "N/A"}, nhan xet {result.ReviewComment ?? "N/A"}.");
             }
         }
@@ -194,14 +196,17 @@ namespace Manage_KPI_or_OKR_System.Services
 
             var kpiIds = directKpiIds.Concat(departmentKpiIds).Distinct().ToList();
             var kpis = await _context.KPIs
+                .AsNoTracking()
                 .Where(k => k.IsActive == true && kpiIds.Contains(k.Id))
                 .Where(k => !periodIds.Any() || (k.PeriodId.HasValue && periodIds.Contains(k.PeriodId.Value)))
                 .OrderByDescending(k => k.PeriodId)
                 .ThenBy(k => k.KPIName)
+                .ThenBy(k => k.Id)
                 .ToListAsync();
 
             var kpiDetails = kpis.Any()
                 ? await _context.KPIDetails
+                    .AsNoTracking()
                     .Where(d => d.KPIId.HasValue && kpis.Select(k => k.Id).Contains(d.KPIId.Value))
                     .ToDictionaryAsync(d => d.KPIId!.Value)
                 : new Dictionary<int, KPIDetail>();
@@ -219,20 +224,27 @@ namespace Manage_KPI_or_OKR_System.Services
             }
 
             var commercialKpiIds = commercialKpis.Select(k => k.Id).ToList();
-            var checkIns = commercialKpiIds.Any()
-                ? await _context.KPICheckIns
+            var checkIns = new List<KPICheckIn>();
+            if (commercialKpiIds.Any())
+            {
+                var checkInQuery = _context.KPICheckIns
+                    .AsNoTracking()
                     .Where(c => c.EmployeeId.HasValue &&
                                 employeeIds.Contains(c.EmployeeId.Value) &&
                                 c.KPIId.HasValue &&
-                                commercialKpiIds.Contains(c.KPIId.Value) &&
-                                (c.ReviewStatus == "Approved" || c.ReviewStatus == null))
+                                commercialKpiIds.Contains(c.KPIId.Value));
+                checkInQuery = OfficialCheckIns(checkInQuery);
+                checkIns = await checkInQuery
                     .OrderByDescending(c => c.CheckInDate)
-                    .ToListAsync()
-                : new List<KPICheckIn>();
+                    .ThenByDescending(c => c.Id)
+                    .ToListAsync();
+            }
 
             var checkInIds = checkIns.Select(c => c.Id).ToList();
             var checkInDetails = checkInIds.Any()
-                ? await _context.CheckInDetails.Where(d => d.CheckInId.HasValue && checkInIds.Contains(d.CheckInId.Value)).ToListAsync()
+                ? await _context.CheckInDetails.AsNoTracking()
+                    .Where(d => d.CheckInId.HasValue && checkInIds.Contains(d.CheckInId.Value))
+                    .ToListAsync()
                 : new List<CheckInDetail>();
 
             foreach (var kpi in commercialKpis)
@@ -244,10 +256,12 @@ namespace Manage_KPI_or_OKR_System.Services
             }
 
             var comparisons = await _context.KPI_Result_Comparisons
+                .AsNoTracking()
                 .Where(c => c.EmployeeId.HasValue &&
                             employeeIds.Contains(c.EmployeeId.Value) &&
                             (!periodIds.Any() || (c.PeriodId.HasValue && periodIds.Contains(c.PeriodId.Value))))
                 .OrderByDescending(c => c.ProcessedDate)
+                .ThenByDescending(c => c.Id)
                 .Take(20)
                 .ToListAsync();
 
@@ -255,6 +269,7 @@ namespace Manage_KPI_or_OKR_System.Services
             {
                 var comparisonKpiIds = comparisons.Where(c => c.KPIId.HasValue).Select(c => c.KPIId!.Value).Distinct().ToList();
                 var comparisonKpis = await _context.KPIs
+                    .AsNoTracking()
                     .Where(k => comparisonKpiIds.Contains(k.Id))
                     .ToDictionaryAsync(k => k.Id, k => k.KPIName ?? $"KPI #{k.Id}");
                 builder.AppendLine("KPI_Result_Comparison / du lieu chot doanh thu:");
@@ -294,8 +309,10 @@ namespace Manage_KPI_or_OKR_System.Services
 
             okrIds = okrIds.Distinct().ToList();
             var okrs = await _context.OKRs
+                .AsNoTracking()
                 .Where(o => o.IsActive == true && okrIds.Contains(o.Id))
                 .OrderByDescending(o => o.CreatedAt)
+                .ThenByDescending(o => o.Id)
                 .Take(30)
                 .ToListAsync();
 
@@ -313,11 +330,15 @@ namespace Manage_KPI_or_OKR_System.Services
 
             var okrIdsForKr = okrs.Select(o => o.Id).ToList();
             var keyResults = okrIdsForKr.Any()
-                ? await _context.OKRKeyResults.Where(kr => kr.OKRId.HasValue && okrIdsForKr.Contains(kr.OKRId.Value)).ToListAsync()
+                ? await _context.OKRKeyResults.AsNoTracking()
+                    .Where(kr => kr.OKRId.HasValue && okrIdsForKr.Contains(kr.OKRId.Value))
+                    .ToListAsync()
                 : new List<OKRKeyResult>();
 
             var rows = keyResults
                 .Where(kr => IsCommercialText(kr.KeyResultName) || IsCommercialText(kr.Unit) || IsMoneyUnit(kr.Unit))
+                .OrderBy(kr => kr.OKRId)
+                .ThenBy(kr => kr.Id)
                 .Take(20)
                 .ToList();
 
@@ -344,11 +365,13 @@ namespace Manage_KPI_or_OKR_System.Services
                 .ToList();
 
             var statements = await _context.MissionVisions
+                .AsNoTracking()
                 .Where(m => m.IsActive == true &&
                             m.FinancialTarget.HasValue &&
                             (!years.Any() || !m.TargetYear.HasValue || years.Contains(m.TargetYear.Value)))
                 .OrderByDescending(m => m.TargetYear)
                 .ThenBy(m => m.MissionVisionType)
+                .ThenBy(m => m.Id)
                 .Take(10)
                 .ToListAsync();
 
@@ -368,13 +391,16 @@ namespace Manage_KPI_or_OKR_System.Services
             if (selectedPeriod == null)
             {
                 return await _context.EvaluationPeriods
+                    .AsNoTracking()
                     .Where(p => p.IsActive == true)
                     .OrderByDescending(p => p.StartDate)
+                    .ThenByDescending(p => p.Id)
                     .Skip(1)
                     .FirstOrDefaultAsync();
             }
 
-            var query = _context.EvaluationPeriods.Where(p => p.IsActive == true && p.Id != selectedPeriod.Id);
+            var query = _context.EvaluationPeriods.AsNoTracking()
+                .Where(p => p.IsActive == true && p.Id != selectedPeriod.Id);
             if (selectedPeriod.StartDate.HasValue)
             {
                 query = query.Where(p => p.EndDate.HasValue && p.EndDate.Value < selectedPeriod.StartDate.Value);

@@ -171,7 +171,7 @@ def write_chapter7(doc):
     add_bullet(doc, "Bảng Kanban board kéo thả quản lý công việc chi tiết (WorkItems) liên kết trực tiếp với chỉ tiêu KPI.", bold_prefix="Phân hệ Dự án & Kanban")
     add_bullet(doc, "Lên lịch họp và ghi nhận biên bản họp 1-on-1 giữa quản lý và nhân viên.", bold_prefix="Phân hệ Trao đổi & Họp 1-on-1")
     add_bullet(doc, "HR đóng kỳ đánh giá, hệ thống tự động tính điểm KPI trung bình, xếp hạng Rank S->D và dự toán thưởng dựa trên kết quả đạt được thực tế.", bold_prefix="Phân hệ Đánh giá & Thưởng")
-    add_bullet(doc, "Widget chatbot tư vấn ngữ cảnh, AI gợi ý sinh KPI tự động, và AI phân tích hiệu suất doanh nghiệp.", bold_prefix="Phân hệ Trợ lý AI Gemini")
+    add_bullet(doc, "Widget tư vấn có nguồn, bản nháp KPI/KR và phân tích hiệu suất tham khảo; dữ liệu chính thức vẫn do con người xác nhận.", bold_prefix="Phân hệ AI-native có kiểm soát")
 
     # 7.1.4. Những hạn chế / Chức năng chưa hoàn thiện
     add_heading2(doc, "7.1.4. Những chức năng chưa hoàn thiện và hạn chế của hệ thống")
@@ -186,7 +186,7 @@ def write_chapter7(doc):
 
     # Khó khăn
     add_heading2(doc, "7.2.1. Khó khăn gặp phải")
-    add_bullet(doc, "Gemini API có giới hạn tần suất gọi (Rate Limits) và độ trễ phản hồi từ máy chủ Google thỉnh thoảng bị chậm.", bold_prefix="Tích hợp AI Gemini")
+    add_bullet(doc, "Model provider và RAG có thể giới hạn tần suất hoặc tăng độ trễ; hệ thống cần timeout, retry hữu hạn, quota và theo dõi staging.", bold_prefix="Tích hợp AI")
     add_bullet(doc, "Việc tính toán tiến độ OKR liên cấp (OKR roll-up progress) dễ gặp xung đột dữ liệu (Race Conditions) khi nhiều nhân viên check-in đồng thời.", bold_prefix="Đồng bộ hóa tiến độ OKR/KPI")
     add_bullet(doc, "Hệ thống claims phân quyền lớn (60 permissions) gây chậm hiệu năng tải trang web khi phải kiểm tra quyền liên tục trên mỗi request.", bold_prefix="Hiệu năng phân quyền Claims")
 

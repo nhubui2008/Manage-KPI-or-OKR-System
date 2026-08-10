@@ -10,6 +10,8 @@ namespace Manage_KPI_or_OKR_System.Models
         public int? EmployeeId { get; set; }
         public int? KPIId { get; set; }
         public int? SubmittedById { get; set; }
+        /// <summary>Optional client-generated idempotency key for a check-in submission.</summary>
+        public Guid? SubmissionId { get; set; }
         public DateTime? CheckInDate { get; set; } = DateTime.Now;
         public DateTime? DeadlineAt { get; set; }
         public bool? IsLate { get; set; }

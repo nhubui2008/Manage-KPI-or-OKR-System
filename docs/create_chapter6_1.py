@@ -155,7 +155,7 @@ def write_chapter6_1(doc):
     add_para(doc, "Admin chịu trách nhiệm vận hành 5 mảng chức năng kỹ thuật bao gồm:")
     add_bullet(doc, "Quản trị danh sách người dùng đăng nhập hệ thống, cấp phát tài khoản mới, đặt lại mật khẩu và khóa/mở khóa tài khoản.", bold_prefix="Quản lý tài khoản (SystemUsers)")
     add_bullet(doc, "Cấu hình quyền hạn (60 permissions) cho 5 vai trò mặc định (Admin, Director, Manager, HR, Employee) hoặc tạo thêm vai trò mới.", bold_prefix="Phân quyền vai trò (Roles & Permissions)")
-    add_bullet(doc, "Thiết lập cấu hình Gmail SMTP, các tham số API Gemini Key, thời hạn dùng thử hệ thống (SaaS Trial).", bold_prefix="Cấu hình hệ thống (SystemParameters)")
+    add_bullet(doc, "Thiết lập cấu hình Gmail SMTP và thời hạn dùng thử hệ thống (SaaS Trial); secret AI phải nằm trong secret store của môi trường.", bold_prefix="Cấu hình hệ thống (SystemParameters)")
     add_bullet(doc, "Tra cứu lịch sử thao tác của tất cả tài khoản trong hệ thống để phục vụ công tác rà soát lỗi và bảo mật an toàn thông tin.", bold_prefix="Giám sát nhật ký (AuditLogs)")
     add_bullet(doc, "Thống kê tình hình đăng ký của các doanh nghiệp khách hàng (Tenants), gia hạn gói cước dịch vụ.", bold_prefix="Quản trị SaaS & Thanh toán (SaaSAdmin)")
 
@@ -198,7 +198,7 @@ def write_chapter6_1(doc):
         "1. Truy cập mục 'Tham số hệ thống' (URL: `/SystemParameters`).\n"
         "2. Cấu hình các tham số SMTP: Nhập SMTP_Server (smtp.gmail.com), SMTP_Port (587), SMTP_Username "
         "và mật khẩu ứng dụng Gmail (App Password) để kích hoạt tính năng gửi mail tự động.\n"
-        "3. Cấu hình AI Gemini API Key: Nhập khoá API của Google để chatbot và các tính năng gợi ý KPI hoạt động.\n"
+        "3. Kiểm tra trạng thái tích hợp AI: secret provider và endpoint RAG được cấu hình ngoài database qua secret store của môi trường.\n"
         "4. Click 'Cập nhật tham số'. Hệ thống sẽ tự động tải lại (Reload) các tham số này vào bộ nhớ cache RAM của Web server.",
         italic=False
     )

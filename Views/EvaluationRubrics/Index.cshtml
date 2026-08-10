@@ -1,0 +1,330 @@
+@model Manage_KPI_or_OKR_System.Models.ViewModels.EvaluationRubricIndexViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Rubric đánh giá AI";
+    var active = Model.ActiveVersion;
+    var history = Model.Versions.Where(version => !version.IsActive).ToList();
+    var newVersion = Model.NewVersion;
+    string DecimalValue(decimal value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+}
+
+<div class="container-fluid px-0">
+    <div class="page-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 font-weight-bold mb-1">Rubric đánh giá AI</h1>
+            <div class="page-breadcrumb">
+                <a asp-controller="KPIs" asp-action="Index">Danh sách KPI</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <a asp-controller="KPIs" asp-action="Details" asp-route-id="@Model.KpiId">@Model.KpiName</a>
+                <i class="bi bi-chevron-right separator"></i>
+                <span>Rubric</span>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.PeriodName))
+            {
+                <div class="text-muted small mt-2">
+                    <i class="bi bi-calendar3 me-1"></i>Chu kỳ: @Model.PeriodName
+                </div>
+            }
+        </div>
+        <a asp-controller="KPIs" asp-action="Details" asp-route-id="@Model.KpiId" class="btn btn-outline-secondary rounded-pill px-4">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại KPI
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="alert alert-success rounded-4 border-0 shadow-sm" role="status">
+            <i class="bi bi-check-circle me-2"></i>@successMessage
+        </div>
+    }
+
+    <div class="alert alert-info rounded-4 border-0 shadow-sm" role="note">
+        <div class="fw-bold mb-1"><i class="bi bi-stars me-2"></i>Nguyên tắc vận hành</div>
+        <div>
+            Rubric chỉ dùng để AI tạo đề xuất tạm thời cho check-in đang chờ duyệt. Version đã phát hành là bất biến:
+            tạo version mới sẽ thay thế version active, đánh dấu đề xuất cũ là <span class="fw-semibold">Stale</span> và đưa check-in đang chờ vào hàng đợi đánh giá lại.
+            Điểm/kết quả chính thức vẫn do quản lý hoặc giám đốc quyết định.
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h2 class="h5 mb-0 fw-bold">
+                        <i class="bi bi-plus-circle text-primary me-2"></i>Phát hành version mới
+                    </h2>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="CreateVersion" method="post" id="rubric-version-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="KpiId" value="@Model.KpiId" />
+
+                        <div asp-validation-summary="All" class="alert alert-danger rounded-3" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label for="rubric-name" class="form-label fw-semibold">Tên rubric</label>
+                            <input id="rubric-name" name="Name" class="form-control rounded-3" maxlength="160" required value="@newVersion.Name" />
+                            <div class="form-text">Tên này giúp truy vết version, không thay đổi kết quả chính thức.</div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="on-track" class="form-label fw-semibold">Đúng tiến độ từ (%)</label>
+                                <input id="on-track" name="OnTrackPercent" type="number" min="0" max="100" step="0.01" class="form-control rounded-3" required value="@DecimalValue(newVersion.OnTrackPercent)" />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="at-risk" class="form-label fw-semibold">Rủi ro từ (%)</label>
+                                <input id="at-risk" name="AtRiskPercent" type="number" min="0" max="100" step="0.01" class="form-control rounded-3" required value="@DecimalValue(newVersion.AtRiskPercent)" />
+                            </div>
+                            <div class="col-md-4">
+                                <label for="min-confidence" class="form-label fw-semibold">Confidence tối thiểu</label>
+                                <input id="min-confidence" name="MinimumConfidenceToPropose" type="number" min="0.6" max="1" step="0.01" class="form-control rounded-3" required value="@DecimalValue(newVersion.MinimumConfidenceToPropose)" />
+                            </div>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                            <div>
+                                <h3 class="h6 fw-bold mb-1">Tiêu chí định tính/behavioral</h3>
+                                <p class="text-muted small mb-0">Tối thiểu 1, tối đa 10 tiêu chí. Tổng trọng số không vượt quá 100%.</p>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" id="add-criterion-button">
+                                <i class="bi bi-plus-lg me-1"></i>Thêm tiêu chí
+                            </button>
+                        </div>
+
+                        <div id="criteria-list" class="d-flex flex-column gap-3">
+                            @for (var index = 0; index < newVersion.Criteria.Count; index++)
+                            {
+                                var criterion = newVersion.Criteria[index];
+                                <fieldset class="criterion-item border rounded-4 p-3 bg-light" data-criterion-item>
+                                    <legend class="float-none w-auto px-2 h6 fw-bold mb-3">Tiêu chí <span data-criterion-number>@(index + 1)</span></legend>
+                                    <div class="row g-3">
+                                        <div class="col-md-7">
+                                            <label class="form-label fw-semibold" for="Criteria_@(index)__Name">Tên tiêu chí</label>
+                                            <input id="Criteria_@(index)__Name" name="Criteria[@index].Name" class="form-control rounded-3" maxlength="160" required value="@criterion.Name" data-criterion-field="Name" />
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="form-label fw-semibold" for="Criteria_@(index)__MeasurementType">Loại đo</label>
+                                            <select id="Criteria_@(index)__MeasurementType" name="Criteria[@index].MeasurementType" class="form-select rounded-3" data-criterion-field="MeasurementType">
+                                                <option value="Qualitative" selected="@(criterion.MeasurementType == "Qualitative")">Qualitative</option>
+                                                <option value="Behavioral" selected="@(criterion.MeasurementType == "Behavioral")">Behavioral</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold" for="Criteria_@(index)__Description">Mô tả/căn cứ chấm</label>
+                                            <textarea id="Criteria_@(index)__Description" name="Criteria[@index].Description" class="form-control rounded-3" maxlength="600" rows="2" data-criterion-field="Description">@criterion.Description</textarea>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold" for="Criteria_@(index)__WeightPercent">Trọng số (%)</label>
+                                            <input id="Criteria_@(index)__WeightPercent" name="Criteria[@index].WeightPercent" type="number" min="0.01" max="100" step="0.01" class="form-control rounded-3" required value="@DecimalValue(criterion.WeightPercent)" data-criterion-field="WeightPercent" />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold" for="Criteria_@(index)__MinimumConfidenceToScore">Confidence chấm</label>
+                                            <input id="Criteria_@(index)__MinimumConfidenceToScore" name="Criteria[@index].MinimumConfidenceToScore" type="number" min="0.6" max="1" step="0.01" class="form-control rounded-3" required value="@DecimalValue(criterion.MinimumConfidenceToScore)" data-criterion-field="MinimumConfidenceToScore" />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold" for="Criteria_@(index)__MinimumScorePercent">Điểm min</label>
+                                            <input id="Criteria_@(index)__MinimumScorePercent" name="Criteria[@index].MinimumScorePercent" type="number" min="0" max="100" step="0.01" class="form-control rounded-3" required value="@DecimalValue(criterion.MinimumScorePercent)" data-criterion-field="MinimumScorePercent" />
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold" for="Criteria_@(index)__MaximumScorePercent">Điểm max</label>
+                                            <input id="Criteria_@(index)__MaximumScorePercent" name="Criteria[@index].MaximumScorePercent" type="number" min="0" max="100" step="0.01" class="form-control rounded-3" required value="@DecimalValue(criterion.MaximumScorePercent)" data-criterion-field="MaximumScorePercent" />
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end mt-3">
+                                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill" data-remove-criterion>
+                                            <i class="bi bi-trash me-1"></i>Xóa tiêu chí
+                                        </button>
+                                    </div>
+                                </fieldset>
+                            }
+                        </div>
+
+                        <div class="alert alert-warning rounded-4 mt-4 mb-0" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Sau khi phát hành, version cũ không được sửa trực tiếp. Hãy tạo version mới nếu tiêu chí thay đổi.
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a asp-controller="KPIs" asp-action="Details" asp-route-id="@Model.KpiId" class="btn btn-outline-secondary rounded-pill px-4">Hủy</a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                <i class="bi bi-cloud-arrow-up me-1"></i>Phát hành version
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-7">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h2 class="h5 mb-0 fw-bold">
+                        <i class="bi bi-check2-circle text-success me-2"></i>Version active
+                    </h2>
+                </div>
+                <div class="card-body p-4">
+                    @if (active == null)
+                    {
+                        <div class="text-muted">KPI này chưa có rubric active. AI check-in sẽ không tự chấm tiêu chí định tính.</div>
+                    }
+                    else
+                    {
+                        @await Html.PartialAsync("_RubricVersionSummary", active)
+                    }
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h2 class="h5 mb-0 fw-bold">
+                        <i class="bi bi-clock-history text-secondary me-2"></i>Lịch sử version
+                    </h2>
+                </div>
+                <div class="card-body p-0">
+                    @if (history.Count == 0)
+                    {
+                        <div class="p-4 text-muted">Chưa có version cũ.</div>
+                    }
+                    else
+                    {
+                        <div class="accordion accordion-flush" id="rubric-history">
+                            @for (var index = 0; index < history.Count; index++)
+                            {
+                                var version = history[index];
+                                <div class="accordion-item">
+                                    <h3 class="accordion-header" id="rubric-history-heading-@version.Id">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#rubric-history-body-@version.Id" aria-expanded="false" aria-controls="rubric-history-body-@version.Id">
+                                            v@version.Version · @version.Name · @version.EffectiveFromUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                        </button>
+                                    </h3>
+                                    <div id="rubric-history-body-@version.Id" class="accordion-collapse collapse" aria-labelledby="rubric-history-heading-@version.Id" data-bs-parent="#rubric-history">
+                                        <div class="accordion-body">
+                                            @await Html.PartialAsync("_RubricVersionSummary", version)
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<template id="criterion-template">
+    <fieldset class="criterion-item border rounded-4 p-3 bg-light" data-criterion-item>
+        <legend class="float-none w-auto px-2 h6 fw-bold mb-3">Tiêu chí <span data-criterion-number></span></legend>
+        <div class="row g-3">
+            <div class="col-md-7">
+                <label class="form-label fw-semibold" data-criterion-label="Name">Tên tiêu chí</label>
+                <input class="form-control rounded-3" maxlength="160" required data-criterion-field="Name" />
+            </div>
+            <div class="col-md-5">
+                <label class="form-label fw-semibold" data-criterion-label="MeasurementType">Loại đo</label>
+                <select class="form-select rounded-3" data-criterion-field="MeasurementType">
+                    <option value="Qualitative">Qualitative</option>
+                    <option value="Behavioral">Behavioral</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <label class="form-label fw-semibold" data-criterion-label="Description">Mô tả/căn cứ chấm</label>
+                <textarea class="form-control rounded-3" maxlength="600" rows="2" data-criterion-field="Description"></textarea>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" data-criterion-label="WeightPercent">Trọng số (%)</label>
+                <input type="number" min="0.01" max="100" step="0.01" class="form-control rounded-3" required value="10" data-criterion-field="WeightPercent" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" data-criterion-label="MinimumConfidenceToScore">Confidence chấm</label>
+                <input type="number" min="0.6" max="1" step="0.01" class="form-control rounded-3" required value="0.6" data-criterion-field="MinimumConfidenceToScore" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" data-criterion-label="MinimumScorePercent">Điểm min</label>
+                <input type="number" min="0" max="100" step="0.01" class="form-control rounded-3" required value="0" data-criterion-field="MinimumScorePercent" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold" data-criterion-label="MaximumScorePercent">Điểm max</label>
+                <input type="number" min="0" max="100" step="0.01" class="form-control rounded-3" required value="100" data-criterion-field="MaximumScorePercent" />
+            </div>
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill" data-remove-criterion>
+                <i class="bi bi-trash me-1"></i>Xóa tiêu chí
+            </button>
+        </div>
+    </fieldset>
+</template>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const maxCriteria = 10;
+            const list = document.getElementById('criteria-list');
+            const template = document.getElementById('criterion-template');
+            const addButton = document.getElementById('add-criterion-button');
+
+            const updateIndexes = () => {
+                const items = Array.from(list.querySelectorAll('[data-criterion-item]'));
+                items.forEach((item, index) => {
+                    const number = item.querySelector('[data-criterion-number]');
+                    if (number) {
+                        number.textContent = String(index + 1);
+                    }
+
+                    item.querySelectorAll('[data-criterion-field]').forEach((field) => {
+                        const property = field.getAttribute('data-criterion-field');
+                        const id = `Criteria_${index}__${property}`;
+                        field.name = `Criteria[${index}].${property}`;
+                        field.id = id;
+                    });
+
+                    item.querySelectorAll('[data-criterion-label]').forEach((label) => {
+                        const property = label.getAttribute('data-criterion-label');
+                        label.setAttribute('for', `Criteria_${index}__${property}`);
+                    });
+
+                    const removeButton = item.querySelector('[data-remove-criterion]');
+                    if (removeButton) {
+                        removeButton.disabled = items.length <= 1;
+                        removeButton.setAttribute('aria-label', `Xóa tiêu chí ${index + 1}`);
+                    }
+                });
+
+                addButton.disabled = items.length >= maxCriteria;
+            };
+
+            addButton.addEventListener('click', () => {
+                if (list.querySelectorAll('[data-criterion-item]').length >= maxCriteria) {
+                    return;
+                }
+
+                const fragment = template.content.cloneNode(true);
+                list.appendChild(fragment);
+                updateIndexes();
+            });
+
+            list.addEventListener('click', (event) => {
+                const removeButton = event.target.closest('[data-remove-criterion]');
+                if (!removeButton) {
+                    return;
+                }
+
+                const items = list.querySelectorAll('[data-criterion-item]');
+                if (items.length <= 1) {
+                    return;
+                }
+
+                removeButton.closest('[data-criterion-item]').remove();
+                updateIndexes();
+            });
+
+            updateIndexes();
+        })();
+    </script>
+}

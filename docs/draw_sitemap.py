@@ -73,9 +73,9 @@ def draw_sitemap(font_path):
             draw.line([cx, sub_y + 25, cx + 15, sub_y + 25], fill='#CBD5E1', width=2)
             draw_node(draw, sub, item['x'] + 20, sub_y, 190, 50, font_level2, bg='#FFFFFF', border='#CBD5E1')
 
-    # Trực quan hóa Phân hệ Trợ lý AI Gemini (Floating Node)
+    # Trực quan hóa Phân hệ Trợ lý AI có nguồn (Floating Node)
     # y = 600
-    draw_node(draw, "Trợ lý AI Gemini (Bizen AI Widget)\n[Phân tích / Gợi ý / Chat tư vấn]", 550, 710, 400, 60, font_level1, bg='#FDF2F8', border='#DB2777')
+    draw_node(draw, "Trợ lý AI có nguồn (Bizen AI Widget)\n[Phân tích / Gợi ý / Chat tư vấn]", 550, 710, 400, 60, font_level1, bg='#FDF2F8', border='#DB2777')
     # Đường nối chéo từ Dashboard và các nơi khác
     draw.line([825, 680, 825, 710], fill='#DB2777', width=2, joint="round")
     draw.ellipse([820, 675, 830, 685], fill='#DB2777')

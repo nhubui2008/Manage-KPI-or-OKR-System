@@ -135,10 +135,20 @@ body, html {
     display: none;
 }
 .gentle-error {
+    display: block;
     color: #e57373;
     font-size: 0.9rem;
     margin-top: 4px;
     min-height: 18px;
+}
+
+.registration-validation-summary.validation-summary-valid {
+    display: none;
+}
+
+.registration-validation-summary ul {
+    margin: 0;
+    padding-left: 1.25rem;
 }
 
 .demo-accounts {
@@ -294,6 +304,10 @@ body, html {
 }
 
 .comfort-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
     padding: 14px 0;
     border: none;
@@ -307,26 +321,36 @@ body, html {
     margin-top: 8px;
     box-shadow: rgba(13, 21, 48, 0.04) 0 4px 4px 0;
 }
-.comfort-button:hover {
+.comfort-button:not(:disabled):hover {
     background: #000000;
     transform: translateY(-1px);
     box-shadow: rgba(0, 0, 0, 0.1) 0 1px 3px 0, rgba(0, 0, 0, 0.1) 0 1px 2px -1px;
+}
+.comfort-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.78;
+    transform: none;
 }
 .button-background {
     display: none;
 }
 .button-text {
     position: relative;
+    transition: opacity 0.15s ease;
 }
 .button-loader {
     display: none;
     position: absolute;
-    right: 16px; top: 50%;
-    transform: translateY(-50%);
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     z-index: 2;
 }
 .comfort-button.loading .button-loader {
     display: block;
+}
+.comfort-button.loading .button-text {
+    opacity: 0;
 }
 .gentle-spinner {
     width: 20px; height: 20px;
@@ -336,8 +360,8 @@ body, html {
 }
 .spinner-circle {
     width: 16px; height: 16px;
-    border: 2.5px solid rgba(123, 104, 238, 0.24);
-    border-top: 2.5px solid #7b68ee;
+    border: 2.5px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #ffffff;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -505,4 +529,3 @@ a, a:hover, a:focus, a:active {
         grid-template-columns: 1fr;
     }
 }
-

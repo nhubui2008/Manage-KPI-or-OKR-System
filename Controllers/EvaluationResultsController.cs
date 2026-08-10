@@ -3,6 +3,9 @@ using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Models;
+using Manage_KPI_or_OKR_System.Models.ViewModels;
+using Manage_KPI_or_OKR_System.Services;
+using Manage_KPI_or_OKR_System.Services.AI;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -162,39 +165,46 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [HasPermission("EVALRESULTS_CREATE")]
-        public async Task<IActionResult> Create(EvaluationResult model)
+        public async Task<IActionResult> Create(EvaluationResultInputViewModel input)
         {
             if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
                 return Forbid();
 
             if (ModelState.IsValid)
             {
-                if (!await CanCurrentUserAccessEvaluationEmployeeAsync(model.EmployeeId))
+                if (!await CanCurrentUserAccessEvaluationEmployeeAsync(input.EmployeeId))
                 {
                     return Forbid();
                 }
 
-                if (!model.PeriodId.HasValue ||
-                    !await GetWritableEvaluationPeriodsQuery().AnyAsync(p => p.Id == model.PeriodId.Value))
+                if (!input.PeriodId.HasValue ||
+                    !await GetWritableEvaluationPeriodsQuery().AnyAsync(p => p.Id == input.PeriodId.Value))
                 {
                     TempData["ErrorMessage"] = "Kỳ đánh giá không tồn tại, đã đóng hoặc đã bị vô hiệu hóa.";
                     return RedirectToAction(nameof(Index));
                 }
 
                 var isDuplicate = await _context.EvaluationResults
-                    .AnyAsync(r => r.EmployeeId == model.EmployeeId && r.PeriodId == model.PeriodId);
+                    .AnyAsync(r => r.EmployeeId == input.EmployeeId && r.PeriodId == input.PeriodId);
                 if (isDuplicate)
                 {
                     TempData["ErrorMessage"] = "Kết quả đánh giá cho nhân viên này trong kỳ này đã tồn tại.";
                     return RedirectToAction(nameof(Index));
                 }
 
+                var model = new EvaluationResult
+                {
+                    EmployeeId = input.EmployeeId,
+                    PeriodId = input.PeriodId,
+                    TotalScore = input.TotalScore,
+                    ReviewComment = input.ReviewComment?.Trim(),
+                    SubmissionStatus = SubmissionDraft
+                };
                 if (!await ApplyRankFromScoreAsync(model))
                 {
                     return RedirectToAction(nameof(Index));
                 }
 
-                model.SubmissionStatus ??= SubmissionDraft;
                 _context.EvaluationResults.Add(model);
                 await _context.SaveChangesAsync();
 
@@ -213,7 +223,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [HasPermission("EVALRESULTS_EDIT")]
-        public async Task<IActionResult> Edit(EvaluationResult model)
+        public async Task<IActionResult> Edit(EvaluationResultInputViewModel input)
         {
             if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
                 return Forbid();
@@ -224,25 +234,30 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var existing = await _context.EvaluationResults.FindAsync(model.Id);
+            var existing = await _context.EvaluationResults.FindAsync(input.Id);
             if (existing == null) return NotFound();
-            if (!await CanCurrentUserAccessEvaluationEmployeeAsync(model.EmployeeId) ||
+            if (IsFrozen(existing))
+            {
+                TempData["ErrorMessage"] = "Đánh giá đang chờ duyệt hoặc đã được duyệt nên không thể chỉnh sửa.";
+                return RedirectToAction(nameof(Index));
+            }
+            if (!await CanCurrentUserAccessEvaluationEmployeeAsync(input.EmployeeId) ||
                 !await CanCurrentUserAccessEvaluationEmployeeAsync(existing.EmployeeId))
             {
                 return Forbid();
             }
 
-            if (!model.PeriodId.HasValue ||
-                !await GetWritableEvaluationPeriodsQuery().AnyAsync(p => p.Id == model.PeriodId.Value))
+            if (!input.PeriodId.HasValue ||
+                !await GetWritableEvaluationPeriodsQuery().AnyAsync(p => p.Id == input.PeriodId.Value))
             {
                 TempData["ErrorMessage"] = "Kỳ đánh giá không tồn tại, đã đóng hoặc đã bị vô hiệu hóa.";
                 return RedirectToAction(nameof(Index));
             }
 
             var isDuplicate = await _context.EvaluationResults
-                .AnyAsync(r => r.Id != model.Id &&
-                               r.EmployeeId == model.EmployeeId &&
-                               r.PeriodId == model.PeriodId);
+                .AnyAsync(r => r.Id != input.Id &&
+                               r.EmployeeId == input.EmployeeId &&
+                               r.PeriodId == input.PeriodId);
             if (isDuplicate)
             {
                 TempData["ErrorMessage"] = "Kết quả đánh giá cho nhân viên này trong kỳ này đã tồn tại.";
@@ -254,29 +269,31 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var oldPeriod = await _context.EvaluationPeriods.FindAsync(existing.PeriodId);
             string oldInfo = $"Cũ: {oldEmployee?.FullName} - {oldPeriod?.PeriodName} - Điểm: {existing.TotalScore?.ToString("0.#")} ({existing.Classification})";
 
-            existing.EmployeeId = model.EmployeeId;
-            existing.PeriodId = model.PeriodId;
-            existing.TotalScore = model.TotalScore;
+            existing.EmployeeId = input.EmployeeId;
+            existing.PeriodId = input.PeriodId;
+            existing.TotalScore = input.TotalScore;
             if (!await ApplyRankFromScoreAsync(existing))
             {
                 return RedirectToAction(nameof(Index));
             }
-            existing.ReviewComment = model.ReviewComment;
+            existing.ReviewComment = input.ReviewComment?.Trim();
 
+            await EvaluationReviewDraftLifecycle.SupersedeAwaitingAsync(_context, existing.Id);
             _context.Update(existing);
             await _context.SaveChangesAsync();
 
             // Ghi nhật ký hệ thống (Audit Log)
-            var newEmployee = await _context.Employees.FindAsync(model.EmployeeId);
-            var newPeriod = await _context.EvaluationPeriods.FindAsync(model.PeriodId);
+            var newEmployee = await _context.Employees.FindAsync(input.EmployeeId);
+            var newPeriod = await _context.EvaluationPeriods.FindAsync(input.PeriodId);
             string newInfo = $"Mới: {newEmployee?.FullName} - {newPeriod?.PeriodName} - Điểm: {existing.TotalScore?.ToString("0.#")} ({existing.Classification})";
             await LogAuditAsync("UPDATE", oldInfo, newInfo);
 
-            TempData["SuccessMessage"] = $"Đã cập nhật kết quả đánh giá thành công! Tổng điểm: {(model.TotalScore % 1 == 0 ? model.TotalScore?.ToString("0") : model.TotalScore?.ToString("0.#"))}đ";
+            TempData["SuccessMessage"] = $"Đã cập nhật kết quả đánh giá thành công! Tổng điểm: {(input.TotalScore % 1 == 0 ? input.TotalScore?.ToString("0") : input.TotalScore?.ToString("0.#"))}đ";
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("EVALRESULTS_EDIT")]
         public async Task<IActionResult> SubmitForDirectorReview(int id, string? managerComment, string? returnUrl)
         {
@@ -287,6 +304,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!await CanSubmitEvaluationAsync(result, submitter))
             {
                 return Forbid();
+            }
+
+            if (!IsEditableForSubmission(result))
+            {
+                TempData["ErrorMessage"] = "Chỉ đánh giá nháp hoặc bị từ chối mới có thể gửi lại để duyệt.";
+                return RedirectBack(returnUrl);
             }
 
             if (!string.IsNullOrWhiteSpace(managerComment))
@@ -301,6 +324,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             result.DirectorReviewedAt = null;
             result.DirectorReviewComment = null;
 
+            await EvaluationReviewDraftLifecycle.SupersedeAwaitingAsync(_context, result.Id);
             await _context.SaveChangesAsync();
             await LogAuditAsync("SUBMIT_REVIEW", null, $"Trưởng phòng gửi đánh giá #{id} lên giám đốc duyệt");
 
@@ -309,6 +333,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HasPermission("EVALRESULTS_REVIEW", "EVALRESULTS_EDIT")]
         public async Task<IActionResult> DirectorReview(int id, string decision, string? directorReviewComment, string? returnUrl)
         {
@@ -340,8 +365,35 @@ namespace Manage_KPI_or_OKR_System.Controllers
             result.DirectorReviewedAt = DateTime.Now;
             result.DirectorReviewComment = directorReviewComment?.Trim();
 
-            await _context.SaveChangesAsync();
-            await LogAuditAsync(isApproved ? "DIRECTOR_APPROVE" : "DIRECTOR_REJECT", null, $"Giám đốc review đánh giá #{id}: {result.SubmissionStatus}");
+            await EvaluationReviewDraftLifecycle.SupersedeAwaitingAsync(_context, result.Id);
+
+            if (isApproved)
+            {
+                await new EvaluationCalculator(_context).ApplyFinalApprovedBonusAsync(result);
+            }
+
+            AddAudit(
+                isApproved ? "DIRECTOR_APPROVE" : "DIRECTOR_REJECT",
+                null,
+                $"Giám đốc review đánh giá #{id}: {result.SubmissionStatus}");
+            try
+            {
+                // Result, final bonus and audit are committed by one
+                // SaveChanges transaction. RowVersion rejects double review.
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                TempData["ErrorMessage"] =
+                    "Đánh giá đã được người khác xử lý. Vui lòng tải lại trang trước khi review.";
+                return RedirectBack(returnUrl);
+            }
+            catch (DbUpdateException)
+            {
+                TempData["ErrorMessage"] =
+                    "Không thể ghi nhận quyết định vì dữ liệu thưởng hoặc đánh giá đã thay đổi. Vui lòng tải lại.";
+                return RedirectBack(returnUrl);
+            }
 
             TempData["SuccessMessage"] = isApproved
                 ? "Đã duyệt đánh giá và kết quả."
@@ -359,6 +411,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var result = await _context.EvaluationResults.FindAsync(id);
             if (result != null)
             {
+                if (IsFrozen(result))
+                {
+                    TempData["ErrorMessage"] = "Đánh giá đang chờ duyệt hoặc đã được duyệt nên không thể xóa.";
+                    return RedirectToAction(nameof(Index));
+                }
                 if (!await CanCurrentUserAccessEvaluationEmployeeAsync(result.EmployeeId))
                 {
                     return Forbid();
@@ -461,10 +518,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return false;
             }
 
-            var rank = await _context.GradingRanks
-                .Where(r => r.MinScore.HasValue && r.MinScore <= result.TotalScore.Value)
-                .OrderByDescending(r => r.MinScore)
-                .FirstOrDefaultAsync();
+            var rank = await new EvaluationCalculator(_context).ApplyRankFromScoreAsync(result);
 
             if (rank == null)
             {
@@ -472,10 +526,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return false;
             }
 
-            result.RankId = rank.Id;
-            result.Classification = rank.Description;
             return true;
         }
+
+        private static bool IsFrozen(EvaluationResult result) =>
+            string.Equals(result.SubmissionStatus, SubmissionPendingDirector, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(result.SubmissionStatus, SubmissionApproved, StringComparison.OrdinalIgnoreCase);
+
+        private static bool IsEditableForSubmission(EvaluationResult result) =>
+            string.IsNullOrWhiteSpace(result.SubmissionStatus) ||
+            string.Equals(result.SubmissionStatus, SubmissionDraft, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(result.SubmissionStatus, SubmissionRejected, StringComparison.OrdinalIgnoreCase);
 
         private async Task<bool> CanCurrentUserAccessEvaluationEmployeeAsync(int? employeeId)
         {
@@ -510,21 +571,30 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         private async Task LogAuditAsync(string actionType, string? oldData, string newData)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (int.TryParse(userIdStr, out int userId))
+            if (AddAudit(actionType, oldData, newData))
             {
-                var log = new AuditLog
-                {
-                    SystemUserId = userId,
-                    ActionType = actionType,
-                    ImpactedTable = "EvaluationResults",
-                    OldData = oldData,
-                    NewData = newData,
-                    LogTime = DateTime.Now
-                };
-                _context.AuditLogs.Add(log);
                 await _context.SaveChangesAsync();
             }
+        }
+
+        private bool AddAudit(string actionType, string? oldData, string newData)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out var userId))
+            {
+                return false;
+            }
+
+            _context.AuditLogs.Add(new AuditLog
+            {
+                SystemUserId = userId,
+                ActionType = actionType,
+                ImpactedTable = "EvaluationResults",
+                OldData = oldData,
+                NewData = newData,
+                LogTime = DateTime.Now
+            });
+            return true;
         }
     }
 }

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace ManageKpiOkrSystem.Tests;
@@ -316,7 +317,7 @@ public sealed class OKRsBusinessFlowFinalTests
         Assert.False(reloaded.IsActive);
         Assert.Equal(1, await context.OKRKeyResults.CountAsync(k => k.Id == kr.Id));
         Assert.Equal(1, await context.WorkItems.CountAsync(t => t.Id == task.Id && t.IsActive == true));
-        Assert.True(reloaded.LinkedWorkProjectId.HasValue);
+        Assert.Equal(1, await context.WorkProjects.CountAsync(p => p.SourceOKRId == okr.Id));
         Assert.Contains("vô hiệu hóa", Assert.IsType<string>(controller.TempData["SuccessMessage"]), StringComparison.OrdinalIgnoreCase);
     }
 
@@ -407,7 +408,7 @@ public sealed class OKRsBusinessFlowFinalTests
             emp.Id);
 
         var okr = await context.OKRs.SingleAsync();
-        Assert.True(okr.LinkedWorkProjectId.HasValue || await context.WorkProjects.AnyAsync());
+        Assert.True(await context.WorkProjects.AnyAsync(p => p.SourceOKRId == okr.Id));
 
         await controller.AddKeyResult(new OKRKeyResult
         {
@@ -510,13 +511,11 @@ public sealed class OKRsBusinessFlowFinalTests
             ProjectCode = "PRJ-P29",
             ProjectName = "[OKR] Linked",
             SourceOKRId = okr.Id,
-            LinkedOKRId = okr.Id,
             IsActive = true,
             Status = "Active"
         };
         context.WorkProjects.Add(project);
         await context.SaveChangesAsync();
-        okr.LinkedWorkProjectId = project.Id;
 
         var kr = new OKRKeyResult
         {
@@ -545,7 +544,11 @@ public sealed class OKRsBusinessFlowFinalTests
     private static OKRsController CreateController(MiniERPDbContext context, ClaimsPrincipal user)
     {
         var http = new DefaultHttpContext { User = user };
-        return new OKRsController(context, new NoopGeminiService(), new OKRWorkflowService(context))
+        return new OKRsController(
+            context,
+            new OKRWorkflowService(context),
+            new NoopOkrKeyResultSuggestionAdvisor(),
+            NullLogger<OKRsController>.Instance)
         {
             ControllerContext = new ControllerContext { HttpContext = http },
             TempData = new TempDataDictionary(http, new TestTempDataProvider())
@@ -568,15 +571,6 @@ public sealed class OKRsBusinessFlowFinalTests
             new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
             new Claim(ClaimTypes.Role, role)
         }, "Test"));
-    }
-
-    private sealed class NoopGeminiService : IGeminiService
-    {
-        public Task<string> GenerateTextAsync(
-            string systemInstruction,
-            string prompt,
-            GeminiGenerationOptions? options = null,
-            CancellationToken cancellationToken = default) => Task.FromResult("[]");
     }
 
     private sealed class TestTempDataProvider : ITempDataProvider

@@ -31,28 +31,14 @@ namespace Manage_KPI_or_OKR_System.Services
 
             if (okr == null) return null;
 
-            WorkProject? project = null;
-            if (okr.LinkedWorkProjectId.HasValue)
-            {
-                project = await _context.WorkProjects
-                    .FirstOrDefaultAsync(p => p.Id == okr.LinkedWorkProjectId.Value && p.IsActive == true);
-            }
-
-            if (project == null)
-            {
-                project = await _context.WorkProjects
-                    .FirstOrDefaultAsync(p =>
-                        p.IsActive == true &&
-                        (p.SourceOKRId == okrId || p.LinkedOKRId == okrId));
-            }
+            var project = await _context.WorkProjects
+                .Where(p => p.IsActive == true && p.SourceOKRId == okrId)
+                .OrderBy(p => p.CreatedAt)
+                .ThenBy(p => p.Id)
+                .FirstOrDefaultAsync();
 
             if (project != null)
             {
-                if (okr.LinkedWorkProjectId != project.Id)
-                {
-                    okr.LinkedWorkProjectId = project.Id;
-                }
-
                 await EnsureWorkItemsForKeyResultsAsync(project, okr.KeyResults);
                 project.UpdatedAt = DateTime.Now;
                 await _context.SaveChangesAsync();
@@ -94,7 +80,6 @@ namespace Manage_KPI_or_OKR_System.Services
                 });
             }
 
-            okr.LinkedWorkProjectId = project.Id;
             await EnsureWorkItemsForKeyResultsAsync(project, okr.KeyResults);
             await _context.SaveChangesAsync();
             return project;
@@ -110,26 +95,16 @@ namespace Manage_KPI_or_OKR_System.Services
             var okr = await _context.OKRs.FirstOrDefaultAsync(o => o.Id == okrId);
             if (okr == null) return false;
 
-            WorkProject? existingProject = null;
-            if (okr.LinkedWorkProjectId.HasValue)
+            if (await HasActiveWorkItemAsync(keyResult.Id))
             {
-                existingProject = await _context.WorkProjects
-                    .FirstOrDefaultAsync(p => p.Id == okr.LinkedWorkProjectId.Value && p.IsActive == true);
+                return true;
             }
 
-            // Fallback: project linked via SourceOKRId / LinkedOKRId (legacy paths)
-            if (existingProject == null)
-            {
-                existingProject = await _context.WorkProjects
-                    .FirstOrDefaultAsync(p =>
-                        p.IsActive == true &&
-                        (p.SourceOKRId == okrId || p.LinkedOKRId == okrId));
-
-                if (existingProject != null && okr.LinkedWorkProjectId != existingProject.Id)
-                {
-                    okr.LinkedWorkProjectId = existingProject.Id;
-                }
-            }
+            var existingProject = await _context.WorkProjects
+                .Where(p => p.IsActive == true && p.SourceOKRId == okrId)
+                .OrderBy(p => p.CreatedAt)
+                .ThenBy(p => p.Id)
+                .FirstOrDefaultAsync();
 
             if (existingProject == null)
             {
@@ -140,12 +115,6 @@ namespace Manage_KPI_or_OKR_System.Services
                 }
 
                 return await HasActiveWorkItemAsync(keyResult.Id);
-            }
-
-            var taskExists = await HasActiveWorkItemAsync(keyResult.Id);
-            if (taskExists)
-            {
-                return true;
             }
 
             AddWorkItem(existingProject.Id, keyResult, existingProject.DueDate);

@@ -1,5 +1,5 @@
+using System.Data;
 using System.Security.Claims;
-using System.Text.Json;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Models.AI;
@@ -17,19 +17,13 @@ namespace Manage_KPI_or_OKR_System.Services
     {
         private readonly MiniERPDbContext _context;
         private readonly IAIDataService _dataService;
-        private readonly IGeminiService _geminiService;
-        private readonly ILogger<AIAlertService> _logger;
 
         public AIAlertService(
             MiniERPDbContext context,
-            IAIDataService dataService,
-            IGeminiService geminiService,
-            ILogger<AIAlertService> logger)
+            IAIDataService dataService)
         {
             _context = context;
             _dataService = dataService;
-            _geminiService = geminiService;
-            _logger = logger;
         }
 
         public async Task<SmartAlertsResponse> GetVisibleSmartAlertsAsync(ClaimsPrincipal user)
@@ -41,45 +35,42 @@ namespace Manage_KPI_or_OKR_System.Services
         public async Task<SmartAlertsResponse> RefreshSmartAlertsAsync(ClaimsPrincipal user, int? periodId, CancellationToken cancellationToken = default)
         {
             var warnings = new List<string>();
-            var candidates = (await _dataService.GetRiskCandidatesAsync(user, periodId)).ToList();
-            var alerts = candidates.Select(ToFallbackDto).ToList();
-
-            if (candidates.Any())
-            {
-                try
-                {
-                    var prompt = BuildAlertPrompt(candidates);
-                    var text = await _geminiService.GenerateTextAsync(
-                        "Ban la AI phan tich KPI/OKR. Viet canh bao ngan gon bang tieng Viet, thuc te, khong bia them so lieu. Chi tra ve JSON array hop le.",
-                        prompt,
-                        new GeminiGenerationOptions { Temperature = 0.2, ResponseMimeType = "application/json" },
-                        cancellationToken);
-                    alerts = ParseAlertDtos(text, candidates);
-                }
-                catch (GeminiConfigurationException ex)
-                {
-                    warnings.Add(ex.Message);
-                }
-                catch (GeminiRateLimitException ex)
-                {
-                    warnings.Add(ex.Message);
-                }
-                catch (Exception ex)
-                {
-                    warnings.Add("Khong the goi Gemini cho AI alerts, he thong dang dung noi dung rule-based.");
-                    _logger.LogWarning(ex, "Failed to generate AI alert wording.");
-                }
-            }
+            await using var transaction = _context.Database.IsRelational()
+                ? await _context.Database.BeginTransactionAsync(
+                    IsolationLevel.Serializable,
+                    cancellationToken)
+                : null;
+            var resolvedPeriodId = await ResolvePeriodIdAsync(periodId, cancellationToken);
+            var candidates = (await _dataService.GetRiskCandidatesAsync(
+                    user,
+                    resolvedPeriodId))
+                .ToList();
+            var alerts = CollapseCandidates(candidates);
 
             var currentEmployee = await _dataService.GetCurrentEmployeeAsync(user);
             if (currentEmployee != null)
             {
-                await UpsertAlertsAsync(currentEmployee.Id, alerts, cancellationToken);
+                await ReconcileAlertsAsync(
+                    currentEmployee.Id,
+                    resolvedPeriodId,
+                    alerts,
+                    cancellationToken);
+                if (transaction != null)
+                {
+                    await transaction.CommitAsync(cancellationToken);
+                }
                 alerts = (await _dataService.GetVisibleSmartAlertsAsync(user)).ToList();
             }
-            else if (alerts.Any())
+            else
             {
-                warnings.Add("Tai khoan hien tai chua lien ket Employee nen AI alerts chi hien thi tam thoi, chua luu vao SystemAlerts.");
+                if (transaction != null)
+                {
+                    await transaction.CommitAsync(cancellationToken);
+                }
+                if (alerts.Any())
+                {
+                    warnings.Add("Tai khoan hien tai chua lien ket Employee nen canh bao chi hien thi tam thoi, chua luu vao SystemAlerts.");
+                }
             }
 
             return new SmartAlertsResponse
@@ -89,18 +80,45 @@ namespace Manage_KPI_or_OKR_System.Services
             };
         }
 
-        private async Task UpsertAlertsAsync(int receiverId, List<SmartAlertDto> alerts, CancellationToken cancellationToken)
+        private async Task ReconcileAlertsAsync(
+            int receiverId,
+            int? periodId,
+            IReadOnlyList<SmartAlertDto> alerts,
+            CancellationToken cancellationToken)
         {
             var now = DateTime.Now;
+            var existingQuery = _context.SystemAlerts.Where(alert =>
+                alert.ReceiverId == receiverId &&
+                alert.AlertType == "AI Insight");
+            if (periodId.HasValue)
+            {
+                existingQuery = existingQuery.Where(alert => alert.PeriodId == periodId.Value);
+            }
+            var existingRows = await existingQuery
+                .OrderByDescending(alert => alert.Id)
+                .ToListAsync(cancellationToken);
+            var existingByKey = existingRows
+                .GroupBy(ToKey)
+                .ToDictionary(group => group.Key, group => group.First());
+            var desiredKeys = alerts.Select(ToKey).ToHashSet();
+
+            foreach (var duplicate in existingRows
+                         .Where(alert => !ReferenceEquals(existingByKey[ToKey(alert)], alert)))
+            {
+                duplicate.ExpiresAt = now;
+                duplicate.IsRead = true;
+            }
+            foreach (var obsolete in existingByKey
+                         .Where(item => !desiredKeys.Contains(item.Key))
+                         .Select(item => item.Value))
+            {
+                obsolete.ExpiresAt = now;
+                obsolete.IsRead = true;
+            }
+
             foreach (var alert in alerts)
             {
-                var existing = await _context.SystemAlerts.FirstOrDefaultAsync(a =>
-                    a.ReceiverId == receiverId &&
-                    a.AlertType == "AI Insight" &&
-                    a.SourceType == alert.SourceType &&
-                    a.SourceRefId == alert.SourceRefId &&
-                    a.PeriodId == alert.PeriodId,
-                    cancellationToken);
+                existingByKey.TryGetValue(ToKey(alert), out var existing);
 
                 var content = Trim($"{alert.Title}: {alert.Content}", 255);
                 if (existing == null)
@@ -132,57 +150,50 @@ namespace Manage_KPI_or_OKR_System.Services
             await _context.SaveChangesAsync(cancellationToken);
         }
 
-        private static string BuildAlertPrompt(List<AIRiskCandidate> candidates)
+        private async Task<int?> ResolvePeriodIdAsync(
+            int? periodId,
+            CancellationToken cancellationToken)
         {
-            var input = candidates.Select(c => new
+            if (periodId.HasValue)
             {
-                sourceType = c.SourceType,
-                sourceRefId = c.SourceRefId,
-                severity = c.Severity,
-                title = c.Title,
-                content = c.Content,
-                evidence = c.Evidence
-            });
+                var exists = await _context.EvaluationPeriods
+                    .AsNoTracking()
+                    .AnyAsync(period =>
+                        period.Id == periodId.Value && period.IsActive == true,
+                        cancellationToken);
+                if (!exists)
+                {
+                    throw new KeyNotFoundException("Evaluation period was not found.");
+                }
+                return periodId.Value;
+            }
 
-            return "Hay bien cac risk candidates sau thanh JSON array. Moi item co dung cac field: severity, title, content, sourceType, sourceRefId. " +
-                   "Content toi da 180 ky tu, neu co so lieu thi giu nguyen so lieu trong evidence.\n" +
-                   JsonSerializer.Serialize(input, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            return await _context.EvaluationPeriods
+                .AsNoTracking()
+                .Where(period => period.IsActive == true)
+                .OrderByDescending(period => period.StartDate)
+                .ThenByDescending(period => period.Id)
+                .Select(period => (int?)period.Id)
+                .FirstOrDefaultAsync(cancellationToken);
         }
 
-        private static List<SmartAlertDto> ParseAlertDtos(string text, List<AIRiskCandidate> fallback)
+        private static List<SmartAlertDto> CollapseCandidates(
+            IEnumerable<AIRiskCandidate> candidates)
         {
-            var json = ExtractJsonArray(text);
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return fallback.Select(ToFallbackDto).ToList();
-            }
-
-            try
-            {
-                var parsed = JsonSerializer.Deserialize<List<SmartAlertDto>>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web));
-                if (parsed == null || !parsed.Any())
-                {
-                    return fallback.Select(ToFallbackDto).ToList();
-                }
-
-                foreach (var item in parsed)
-                {
-                    var match = fallback.FirstOrDefault(c => c.SourceType == item.SourceType && c.SourceRefId == item.SourceRefId);
-                    item.Severity = string.IsNullOrWhiteSpace(item.Severity) ? match?.Severity ?? "medium" : item.Severity;
-                    item.Title = string.IsNullOrWhiteSpace(item.Title) ? match?.Title ?? "AI Insight" : item.Title;
-                    item.Content = string.IsNullOrWhiteSpace(item.Content) ? match?.Content ?? string.Empty : item.Content;
-                    item.SourceType = string.IsNullOrWhiteSpace(item.SourceType) ? match?.SourceType : item.SourceType;
-                    item.SourceRefId ??= match?.SourceRefId;
-                    item.PeriodId ??= match?.PeriodId;
-                    item.CreatedAt = DateTime.Now;
-                }
-
-                return parsed;
-            }
-            catch
-            {
-                return fallback.Select(ToFallbackDto).ToList();
-            }
+            return candidates
+                .GroupBy(candidate => new AlertKey(
+                    candidate.SourceType,
+                    candidate.SourceRefId,
+                    candidate.PeriodId))
+                .Select(group => group
+                    .OrderBy(candidate => SeverityOrder(candidate.Severity))
+                    .ThenBy(candidate => candidate.Title, StringComparer.Ordinal)
+                    .First())
+                .OrderBy(candidate => SeverityOrder(candidate.Severity))
+                .ThenBy(candidate => candidate.Title, StringComparer.Ordinal)
+                .Select(ToFallbackDto)
+                .Take(12)
+                .ToList();
         }
 
         private static SmartAlertDto ToFallbackDto(AIRiskCandidate candidate)
@@ -199,20 +210,18 @@ namespace Manage_KPI_or_OKR_System.Services
             };
         }
 
-        private static string ExtractJsonArray(string text)
-        {
-            var trimmed = text.Trim();
-            if (trimmed.StartsWith("```"))
-            {
-                trimmed = trimmed.Replace("```json", string.Empty, StringComparison.OrdinalIgnoreCase)
-                    .Replace("```", string.Empty)
-                    .Trim();
-            }
+        private static int SeverityOrder(string? severity) =>
+            string.Equals(severity, "high", StringComparison.OrdinalIgnoreCase)
+                ? 0
+                : string.Equals(severity, "medium", StringComparison.OrdinalIgnoreCase)
+                    ? 1
+                    : 2;
 
-            var start = trimmed.IndexOf('[');
-            var end = trimmed.LastIndexOf(']');
-            return start >= 0 && end > start ? trimmed[start..(end + 1)] : trimmed;
-        }
+        private static AlertKey ToKey(SmartAlertDto alert) =>
+            new(alert.SourceType, alert.SourceRefId, alert.PeriodId);
+
+        private static AlertKey ToKey(SystemAlert alert) =>
+            new(alert.SourceType, alert.SourceRefId, alert.PeriodId);
 
         private static string Trim(string value, int maxLength)
         {
@@ -223,5 +232,10 @@ namespace Manage_KPI_or_OKR_System.Services
 
             return value.Length <= maxLength ? value : value[..maxLength];
         }
+
+        private sealed record AlertKey(
+            string? SourceType,
+            int? SourceRefId,
+            int? PeriodId);
     }
 }

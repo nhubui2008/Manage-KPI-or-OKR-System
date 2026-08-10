@@ -24,5 +24,7 @@ namespace Manage_KPI_or_OKR_System.Models
         public DateTime? DirectorReviewedAt { get; set; }
         [StringLength(2000)]
         public string? DirectorReviewComment { get; set; }
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = Array.Empty<byte>();
     }
 }

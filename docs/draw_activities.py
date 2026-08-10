@@ -199,11 +199,11 @@ def draw_activity_ai(font_path):
         font_lane = ImageFont.load_default()
         font_text = ImageFont.load_default()
 
-    draw.text((w // 2, 35), "QUY TRÌNH HỖ TRỢ VÀ TƯ VẤN BẰNG AI GEMINI", fill='#1E293B', font=font_title, anchor="mm")
+    draw.text((w // 2, 35), "QUY TRÌNH CHAT ADVISOR CÓ NGUỒN", fill='#1E293B', font=font_title, anchor="mm")
 
     # Làn 1: Người dùng (User) [80 -> 360]
     # Làn 2: Hệ thống (System) [360 -> 680]
-    # Làn 3: Gemini AI [680 -> 960]
+    # Làn 3: Model gateway [680 -> 960]
     ly = 80
     lh = 660
     
@@ -213,7 +213,7 @@ def draw_activity_ai(font_path):
 
     draw.text((220, ly + 25), "NGƯỜI DÙNG (USER)", fill='#1D4ED8', font=font_lane, anchor="mm")
     draw.text((520, ly + 25), "HỆ THỐNG / SERVICES", fill='#374151', font=font_lane, anchor="mm")
-    draw.text((820, ly + 25), "GOOGLE GEMINI AI", fill='#DB2777', font=font_lane, anchor="mm")
+    draw.text((820, ly + 25), "MODEL GATEWAY", fill='#DB2777', font=font_lane, anchor="mm")
     
     draw.line([80, ly + 50, 960, ly + 50], fill='#64748B', width=2)
 
@@ -228,26 +228,26 @@ def draw_activity_ai(font_path):
     draw_line_arrow(draw, [220, 270, 220, 290, 520, 290, 520, 310])
 
     # Step 2: Thu thập dữ liệu ngữ cảnh
-    draw_box(draw, "AIDataService tự động truy vấn\ncontext theo phân quyền (Scope)", 420, 310, 200, 60, font_text)
+    draw_box(draw, "Xác thực tenant/scope; nạp\nSQL + RAG theo ACL", 420, 310, 200, 60, font_text)
     draw_arrow(draw, 520, 370, 520, 400)
 
-    # Step 3: Tạo và tối ưu hóa Prompt
-    draw_box(draw, "Hợp nhất Prompt của user\nvới Context dữ liệu thực tế", 420, 400, 200, 60, font_text)
-    # Chuyển sang làn Gemini AI
+    # Step 3: Tạo request dữ liệu tạm thời
+    draw_box(draw, "Tạo request strict schema\nvới source ID do server cấp", 420, 400, 200, 60, font_text)
+    # Chuyển sang làn model gateway
     draw_line_arrow(draw, [520, 460, 520, 480, 820, 480, 820, 500])
 
     # Step 4: Xử lý và phản hồi
-    draw_box(draw, "Nhận prompt context,\nxử lý sinh câu trả lời", 720, 500, 200, 60, font_text)
+    draw_box(draw, "Sinh JSON tư vấn\nkèm source IDs", 720, 500, 200, 60, font_text)
     # Quay lại làn Hệ thống
     draw_line_arrow(draw, [820, 560, 820, 580, 520, 580, 520, 600])
 
-    # Step 5: Lưu lịch sử và dọn dẹp
-    draw_box(draw, "Lưu vào AIGenerationHistory,\nxuất ra Widget giao diện", 420, 600, 200, 60, font_text)
+    # Step 5: Kiểm tra nguồn và lưu metadata tối thiểu
+    draw_box(draw, "Recheck nguồn/quyền; lưu\nAgentRun + citation metadata", 420, 600, 200, 60, font_text)
     # Trả kết quả về cho Người dùng
     draw_line_arrow(draw, [420, 630, 320, 630, 320, 600, 220, 600, 220, 620])
 
     # Step 6: Xem kết quả AI tư vấn
-    draw_box(draw, "Xem kết quả tư vấn AI,\nchấp nhận áp dụng gợi ý", 120, 620, 200, 60, font_text)
+    draw_box(draw, "Xem tư vấn và nguồn;\ncon người tự quyết định", 120, 620, 200, 60, font_text)
     draw_arrow(draw, 220, 680, 220, 700)
     
     # End node

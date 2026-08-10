@@ -6,6 +6,7 @@
     var ranks = ViewBag.Ranks as Dictionary<int, string> ?? new Dictionary<int, string>();
     bool canDirectorReview = ViewBag.CanDirectorReview == true;
     string returnUrl = Context.Request.Path + Context.Request.QueryString;
+    var results = Model ?? new List<Manage_KPI_or_OKR_System.Models.EvaluationResult>();
 
     string StatusText(string? status) => status switch
     {
@@ -15,10 +16,10 @@
         _ => "Bản nháp"
     };
 
-    int totalPending = Model?.Count ?? 0;
-    int approved = Model?.Count(r => string.Equals(r.SubmissionStatus, "Approved", StringComparison.OrdinalIgnoreCase)) ?? 0;
-    int rejected = Model?.Count(r => string.Equals(r.SubmissionStatus, "Rejected", StringComparison.OrdinalIgnoreCase)) ?? 0;
-    bool hasResults = Model?.Any() == true;
+    int totalPending = results.Count;
+    int approved = results.Count(r => string.Equals(r.SubmissionStatus, "Approved", StringComparison.OrdinalIgnoreCase));
+    int rejected = results.Count(r => string.Equals(r.SubmissionStatus, "Rejected", StringComparison.OrdinalIgnoreCase));
+    bool hasResults = results.Count > 0;
 }
 
 @section Styles {
@@ -618,7 +619,7 @@
                     <tbody>
                         @if (hasResults)
                         {
-                            foreach (var result in Model)
+                            foreach (var result in results)
                             {
                                 var empName = result.EmployeeId.HasValue && employees.ContainsKey(result.EmployeeId.Value) ? employees[result.EmployeeId.Value] : "N/A";
                                 var periodName = result.PeriodId.HasValue && periods.ContainsKey(result.PeriodId.Value) ? periods[result.PeriodId.Value] : "N/A";
@@ -721,7 +722,7 @@
             <div class="evaluation-review-mobile-list">
                 @if (hasResults)
                 {
-                    foreach (var result in Model)
+                    foreach (var result in results)
                     {
                         var empName = result.EmployeeId.HasValue && employees.ContainsKey(result.EmployeeId.Value) ? employees[result.EmployeeId.Value] : "N/A";
                         var periodName = result.PeriodId.HasValue && periods.ContainsKey(result.PeriodId.Value) ? periods[result.PeriodId.Value] : "N/A";

@@ -1,0 +1,76 @@
+@model Manage_KPI_or_OKR_System.Models.ViewModels.EvaluationRubricVersionViewModel
+
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary") rounded-pill px-3 py-2">
+        v@Model.Version @(Model.IsActive ? "Active" : "Superseded")
+    </span>
+    <span class="fw-bold">@Model.Name</span>
+    <span class="text-muted small">Hiệu lực: @Model.EffectiveFromUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+    @if (Model.SupersededAtUtc.HasValue)
+    {
+        <span class="text-muted small">Thay thế: @Model.SupersededAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+    }
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="border rounded-4 p-3 h-100">
+            <div class="text-muted small text-uppercase fw-bold">Đúng tiến độ</div>
+            <div class="fs-5 fw-bold">@Model.OnTrackPercent.ToString("0.##")%</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="border rounded-4 p-3 h-100">
+            <div class="text-muted small text-uppercase fw-bold">Rủi ro</div>
+            <div class="fs-5 fw-bold">@Model.AtRiskPercent.ToString("0.##")%</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="border rounded-4 p-3 h-100">
+            <div class="text-muted small text-uppercase fw-bold">Confidence tối thiểu</div>
+            <div class="fs-5 fw-bold">@Model.MinimumConfidenceToPropose.ToString("0.###")</div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Criteria.Count == 0)
+{
+    <div class="text-muted">Version này không có tiêu chí định tính active.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <caption class="visually-hidden">Các tiêu chí của rubric @Model.Name, phiên bản @Model.Version</caption>
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Tiêu chí</th>
+                    <th scope="col">Loại</th>
+                    <th scope="col" class="text-end">Trọng số</th>
+                    <th scope="col" class="text-end">Confidence</th>
+                    <th scope="col" class="text-end">Khoảng điểm</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var criterion in Model.Criteria.OrderBy(item => item.Ordinal))
+                {
+                    <tr>
+                        <td class="text-muted">@(@criterion.Ordinal + 1)</td>
+                        <td>
+                            <div class="fw-semibold">@criterion.Name</div>
+                            @if (!string.IsNullOrWhiteSpace(criterion.Description))
+                            {
+                                <div class="text-muted small">@criterion.Description</div>
+                            }
+                        </td>
+                        <td>@criterion.MeasurementType</td>
+                        <td class="text-end">@criterion.WeightPercent.ToString("0.##")%</td>
+                        <td class="text-end">@criterion.MinimumConfidenceToScore.ToString("0.###")</td>
+                        <td class="text-end">@criterion.MinimumScorePercent.ToString("0.##")–@criterion.MaximumScorePercent.ToString("0.##")%</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
+#pragma warning disable CS8981
 
 namespace Manage_KPI_or_OKR_System.Migrations
 {
@@ -20,3 +21,4 @@ namespace Manage_KPI_or_OKR_System.Migrations
         }
     }
 }
+#pragma warning restore CS8981

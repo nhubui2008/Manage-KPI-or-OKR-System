@@ -7,7 +7,10 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
-    [Authorize]
+    // Role and permission catalogs are global compatibility tables. Until
+    // their schema becomes tenant-owned, only platform administrators may
+    // mutate them.
+    [Authorize(Policy = AuthRoleHelper.PlatformAdminPolicyName)]
     public class RolesController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -37,6 +40,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             role.RoleName = role.RoleName?.Trim();
             role.Description = role.Description?.Trim();
+
+            if (AuthRoleHelper.IsReservedPlatformRoleName(role.RoleName))
+            {
+                ModelState.AddModelError(nameof(Role.RoleName), "Tên vai trò này được dành riêng cho quản trị nền tảng.");
+            }
 
             if (!string.IsNullOrWhiteSpace(role.RoleName) &&
                 await _context.Roles.AnyAsync(existing => existing.RoleName != null && existing.RoleName.ToLower() == role.RoleName.ToLower()))
@@ -70,7 +78,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var role = await _context.Roles.FindAsync(id);
             if (role != null)
             {
-                if (AuthRoleHelper.IsAdminRoleName(role.RoleName))
+                if (AuthRoleHelper.IsReservedPlatformRoleName(role.RoleName))
                 {
                     TempData["ErrorMessage"] = "Không thể xóa vai trò quản trị hệ thống.";
                     return RedirectToAction(nameof(Index));
@@ -130,7 +138,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return NotFound();
             }
 
-            if (AuthRoleHelper.IsAdminRoleName(role.RoleName))
+            if (AuthRoleHelper.IsReservedPlatformRoleName(role.RoleName))
             {
                 TempData["ErrorMessage"] = "Quyền của vai trò quản trị hệ thống được đồng bộ tự động và không thể chỉnh thủ công.";
                 return RedirectToAction(nameof(Index));

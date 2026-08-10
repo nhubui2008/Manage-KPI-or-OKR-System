@@ -378,7 +378,7 @@ def write_chapter1(doc):
     )
 
     add_dash_bullet(doc,
-        "Tích hợp trí tuệ nhân tạo (AI Gemini) vào quy trình vận hành: chatbot "
+        "Tích hợp trí tuệ nhân tạo qua model gateway vào quy trình vận hành: Chat Advisor có nguồn, "
         "tư vấn KPI/OKR, gợi ý KPI thông minh, phân tích hiệu suất tự động, cảnh báo "
         "rủi ro sớm – giúp quản lý đưa ra quyết định nhanh chóng, chính xác dựa trên dữ liệu.",
         bold_prefix="Hỗ trợ quyết định bằng AI"
@@ -436,7 +436,7 @@ def write_chapter1(doc):
          "Dashboard trực quan (ApexCharts), báo cáo theo phòng ban/kỳ, export Excel tự động"],
         ["8", "Phân tích & dự báo",
          "Không có công cụ phân tích xu hướng, cảnh báo rủi ro",
-         "AI Gemini phân tích hiệu suất, cảnh báo rủi ro sớm, gợi ý KPI thông minh"],
+         "Advisor AI phân tích tham khảo, cảnh báo rủi ro sớm và tạo bản nháp KPI có nguồn"],
     ]
 
     table = doc.add_table(rows=1 + len(rows), cols=4)
@@ -480,7 +480,7 @@ def write_chapter1(doc):
     )
 
     add_bullet(doc,
-        "Hệ thống tích hợp AI Gemini để gợi ý KPI, phân tích hiệu suất, "
+        "Hệ thống tích hợp các advisor AI có scope/citation để gợi ý KPI, phân tích hiệu suất, "
         "cảnh báo rủi ro – đây là xu hướng công nghệ tiên tiến, mang lại giá trị khác biệt "
         "so với các giải pháp truyền thống.",
         bold_prefix="Ứng dụng AI vào quản trị"
@@ -541,7 +541,7 @@ def write_section_1_2(doc):
         "vừa và nhỏ (SMEs) tại Việt Nam. Hệ thống cho phép số hóa toàn bộ quy trình "
         "quản lý hiệu suất từ thiết lập chiến lược, phân rã mục tiêu OKR đa cấp, giao và "
         "theo dõi KPI, check-in tiến độ định kỳ, đến đánh giá xếp hạng và tính thưởng "
-        "tự động. Đặc biệt, hệ thống tích hợp AI Gemini để hỗ trợ quản lý đưa ra quyết "
+        "tự động. Đặc biệt, hệ thống tích hợp AI có kiểm soát để hỗ trợ quản lý đưa ra quyết "
         "định dựa trên dữ liệu phân tích, mang lại giá trị vượt trội so với các phương thức "
         "quản lý truyền thống."
     )
@@ -581,7 +581,7 @@ def write_section_1_2(doc):
          "theo BonusRules (% lương + cố định), dự toán thưởng realtime theo kỳ "
          "đánh giá. Export báo cáo Excel (EPPlus) theo phòng ban."),
         ("Tích hợp AI hỗ trợ quyết định",
-         "Tích hợp Google Gemini AI với các tính năng: Chatbot tư vấn KPI/OKR "
+         "Tích hợp model gateway và RAG với các tính năng: Chat Advisor tư vấn KPI/OKR có nguồn "
          "context-aware (dựa trên dữ liệu thực); Gợi ý KPI thông minh theo OKR, "
          "phòng ban, nhân viên; Phân tích hiệu suất theo kỳ/phòng ban/cá nhân; "
          "Phân khúc khách hàng cho Sales; Cảnh báo rủi ro tự động (Smart Alerts); "
@@ -719,7 +719,7 @@ def write_section_1_2(doc):
     tech_scope = [
         ("Backend", "ASP.NET 10 MVC (.NET 10.0), Entity Framework Core 10, SQL Server 2019+"),
         ("Frontend", "Razor Views + Bootstrap 5 + Vanilla JavaScript, ApexCharts.js cho biểu đồ"),
-        ("AI Engine", "Google Gemini API (gemini-2.5-flash) với rate limiting (15 req/min, 1500 req/day)"),
+        ("AI Engine", "IAIModelClient/DeepSeek theo môi trường, strict JSON, timeout/retry hữu hạn và RAG tenant/ACL"),
         ("Authentication", "Cookie-based Authentication + Google OAuth2 + OTP Email (quên mật khẩu)"),
         ("Email", "SMTP Gmail cho thông báo, nhắc nhở deadline, xác thực OTP"),
         ("Export", "EPPlus (NonCommercial License) cho xuất báo cáo Excel"),
@@ -793,4 +793,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

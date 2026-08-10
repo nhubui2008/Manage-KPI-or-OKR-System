@@ -71,7 +71,7 @@ def draw_use_case():
         6: {'text': "Check-in tiến độ\nKPI cá nhân", 'x': 520, 'y': 980, 'bg': '#EEF2F6', 'border': '#64748B'},
         
         7: {'text': "Cảnh báo rủi ro\n(Smart Alerts AI)", 'x': 1050, 'y': 240, 'bg': '#FDF2F8', 'border': '#DB2777'},
-        8: {'text': "Trợ lý AI Gemini\nChatbot & Gợi ý", 'x': 1050, 'y': 420, 'bg': '#FDF2F8', 'border': '#DB2777'},
+        8: {'text': "Trợ lý AI có nguồn\nChat & Bản nháp", 'x': 1050, 'y': 420, 'bg': '#FDF2F8', 'border': '#DB2777'},
         9: {'text': "Cơ cấu Tổ chức\n& Hồ sơ Nhân sự", 'x': 1050, 'y': 600, 'bg': '#FEF3C7', 'border': '#D97706'},
         10: {'text': "Cấu hình Thưởng\n& Kỳ đánh giá", 'x': 1050, 'y': 780, 'bg': '#FEF3C7', 'border': '#D97706'},
         11: {'text': "Quản lý gói SaaS\n& Hệ thống", 'x': 1050, 'y': 960, 'bg': '#F3F4F6', 'border': '#4B5563'}

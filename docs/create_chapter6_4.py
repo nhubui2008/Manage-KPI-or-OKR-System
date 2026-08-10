@@ -125,7 +125,7 @@ def write_section_6_4(doc):
     add_para(doc, "Nhân viên thực hiện các quy trình thao tác nghiệp vụ hàng ngày bao gồm:")
     add_bullet(doc, "Thực hiện nhập giá trị đạt được thực tế, giải trình khó khăn của KPI định kỳ.", bold_prefix="Báo cáo check-in tiến độ")
     add_bullet(doc, "Nhận các thẻ công việc được giao, cập nhật tiến độ công việc trên bảng Kanban board.", bold_prefix="Cập nhật trạng thái công việc")
-    add_bullet(doc, "Sử dụng widget AI để chat hỏi đáp chuyên môn, xin giải pháp khắc phục chậm trễ KPI.", bold_prefix="Hỏi đáp & Nhận gợi ý từ AI Gemini")
+    add_bullet(doc, "Sử dụng widget AI để hỏi đáp trong phạm vi được cấp quyền, xem nguồn và xin giải pháp khắc phục chậm trễ KPI.", bold_prefix="Hỏi đáp với Chat Advisor")
     add_bullet(doc, "Tra cứu biên bản họp 1-on-1 đã thống nhất, theo dõi các Action Items được giao.", bold_prefix="Theo dõi kế hoạch họp 1-on-1")
     add_bullet(doc, "Xem kết quả điểm số đánh giá, xếp hạng rank hiệu suất và thưởng cuối kỳ sau khi Giám đốc chốt.", bold_prefix="Tra cứu kết quả hiệu suất & Thưởng")
 
@@ -160,14 +160,14 @@ def write_section_6_4(doc):
     )
 
     # Thao tác 3
-    add_heading3(doc, "c) Hội thoại và nhận trợ giúp từ Trợ lý AI Gemini (Widget)")
+    add_heading3(doc, "c) Hội thoại và nhận trợ giúp từ Trợ lý AI có nguồn (Widget)")
     add_para(doc,
-        "Nhân viên tương tác với Trợ lý AI Gemini để tìm kiếm giải pháp tháo gỡ khó khăn trong công việc:\n"
+        "Nhân viên tương tác với Chat Advisor để tìm kiếm giải pháp tháo gỡ khó khăn trong công việc:\n"
         "1. Tại bất kỳ trang nào của hệ thống, click biểu tượng Chatbot (Bizen AI Widget) floating ở góc dưới bên phải màn hình.\n"
         "2. Khung chat trượt mở. Hệ thống tự động đính kèm context công việc hiện tại của nhân viên gửi đi. "
         "Nhân viên có thể click nút tắt nhanh 'Tư vấn cải thiện KPI chậm hạn' hoặc nhập câu hỏi tự nhiên "
         "(Ví dụ: 'Tôi đang bị chậm tiến độ KPI viết code do thiếu nhân sự, AI hãy đề xuất giải pháp').\n"
-        "3. AI Gemini xử lý ngữ cảnh và trả về câu trả lời chi tiết: gợi ý cách tối ưu quy trình làm việc, "
+        "3. Advisor xử lý context được cấp quyền và trả về câu trả lời có citation: gợi ý cách tối ưu quy trình làm việc, "
         "hoặc đề xuất kịch bản trao đổi 1-on-1 với quản lý để xin hỗ trợ. "
         "Mọi lịch sử hội thoại sẽ được mã hóa lưu trữ phục vụ việc tiếp tục ngữ cảnh ở các lần mở sau.",
         italic=False
@@ -182,7 +182,7 @@ def main():
 
     print("    ✓ 6.4. Vai trò Nhân viên (Employee)")
     print("      ✓ 6.4.1. Tổng quan nhiệm vụ")
-    print("      ✓ 6.4.2. Thao tác chính (Check-in, Kanban, Trợ lý AI Gemini)")
+    print("      ✓ 6.4.2. Thao tác chính (Check-in, Kanban, Trợ lý AI có nguồn)")
     write_section_6_4(doc)
 
     doc.save(OUTPUT_PATH)

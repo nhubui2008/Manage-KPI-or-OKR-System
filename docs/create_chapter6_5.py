@@ -112,18 +112,18 @@ def add_bullet(doc, text, bold_prefix="", level=0):
 def write_section_6_5(doc):
     """6.5. Hướng dẫn sử dụng tính năng Trợ lý AI (AI Assistant)"""
 
-    add_heading1(doc, "6.5. Hướng dẫn sử dụng các tính năng Trợ lý AI (Bizen AI & Gemini)")
+    add_heading1(doc, "6.5. Hướng dẫn sử dụng các tính năng Trợ lý AI (Bizen AI)")
 
     add_para(doc,
         "Điểm khác biệt vượt trội của hệ thống quản trị Bizen KPI/OKR so với các phần mềm truyền thống "
-        "là việc tích hợp sâu Trí tuệ nhân tạo (Google Gemini 2.5 Flash API). Trợ lý AI không hoạt động độc lập "
+        "là việc tích hợp Trí tuệ nhân tạo qua model gateway có kiểm soát quyền và nguồn. Trợ lý AI không hoạt động độc lập "
         "mà đóng vai trò là một tác nhân hỗ trợ xuyên suốt (Co-pilot), tự động liên kết dữ liệu ngữ cảnh "
         "để tư vấn, sinh chỉ tiêu và cảnh báo rủi ro tiến độ theo thời gian thực."
     )
 
     # 6.5.1. Vai trò của Trợ lý AI trong hệ thống
     add_heading2(doc, "6.5.1. Vai trò của Trợ lý AI trong hệ thống")
-    add_para(doc, "Trợ lý AI Gemini hỗ trợ người dùng ở các góc độ vận hành sau:")
+    add_para(doc, "Trợ lý AI hỗ trợ người dùng ở các góc độ vận hành sau:")
     add_bullet(doc, "Cung cấp khung hội thoại tự nhiên trượt mở ở mọi màn hình, giúp nhân sự hỏi đáp giải quyết khó khăn ngay tại chỗ.", bold_prefix="Tư vấn ngữ cảnh thời gian thực")
     add_bullet(doc, "Giúp Trưởng phòng sinh nhanh các chỉ tiêu KPI định lượng phù hợp từ mục tiêu phòng ban, tránh tình trạng thiết lập KPI mơ hồ.", bold_prefix="Tự động hóa thiết lập mục tiêu")
     add_bullet(doc, "Giúp Giám đốc đọc hiểu lượng dữ liệu khổng lồ của doanh nghiệp, phân tích nguyên nhân chậm tiến độ và đưa ra đề xuất cải tiến.", bold_prefix="Hỗ trợ ra quyết định chiến lược")
@@ -137,10 +137,9 @@ def write_section_6_5(doc):
         "Widget Chat hỗ trợ giải quyết khó khăn nghiệp vụ dựa trên ngữ cảnh thực tế của tài khoản đăng nhập:\n"
         "1. Click biểu tượng Chatbot màu hồng ở góc dưới bên phải màn hình để trượt mở panel chat.\n"
         "2. Nhập câu hỏi nghiệp vụ hoặc click các phím tắt nhanh được thiết kế sẵn (Ví dụ: 'Phân tích KPI của tôi', 'Tìm rủi ro tiến độ').\n"
-        "3. AIDataService sẽ đóng gói context dữ liệu thực tế (danh sách KPI đang phụ trách, tiến độ hiện tại, rào cản check-in gần nhất) "
-        "gửi kèm câu hỏi sang Gemini API.\n"
-        "4. Panel hiển thị câu trả lời định dạng bảng biểu hoặc danh sách Markdown rõ ràng, đề xuất các hành động "
-        "cụ thể để nhân viên tháo gỡ khó khăn.",
+        "3. Chat Advisor đóng gói snapshot KPI/OKR và check-in đã duyệt trong đúng phạm vi; RAG chỉ lấy tài liệu qua tenant/ACL do server sinh.\n"
+        "4. Model phải trả câu trả lời có source ID hợp lệ hoặc chủ động báo thiếu dữ liệu. Panel escape nội dung, hiển thị citation và chỉ tư vấn; "
+        "không tự thay đổi dữ liệu nghiệp vụ.",
         italic=False
     )
 
@@ -149,9 +148,9 @@ def write_section_6_5(doc):
     add_para(doc,
         "Giúp Trưởng phòng sinh nhanh KPI chuẩn hóa khi giao chỉ tiêu cho nhân viên:\n"
         "1. Tại biểu mẫu 'Giao KPI mới' (URL: `/KPIs/Create`), chọn OKR phòng ban cần liên kết.\n"
-        "2. Click nút 'AI gợi ý KPI'. Hệ thống sẽ tự động gửi thông tin OKR phòng ban và chức danh của nhân viên lên AI.\n"
-        "3. AI phản hồi đề xuất 3 KPI mẫu bao gồm: tên KPI, mô tả chi tiết, đơn vị tính và đề xuất giá trị target hợp lý. "
-        "Quản lý click nút 'Áp dụng' bên cạnh KPI phù hợp nhất để tự động điền thông tin vào form giao việc.",
+        "2. Click nút 'AI gợi ý KPI', chọn kỳ đang mở và phạm vi được phép. Server chỉ gửi snapshot tối thiểu, không gửi tên, mã, email hoặc số điện thoại nhân viên.\n"
+        "3. Advisor trả 3-5 bản nháp có nguồn gồm tên KPI, target, đơn vị, chiều và ngưỡng đạt/trượt đã được server kiểm tra. "
+        "Quản lý click 'Áp dụng bản nháp', kiểm tra lại phạm vi/trọng số rồi tự gửi biểu mẫu; AI không tự tạo KPI chính thức.",
         italic=False
     )
 
@@ -160,10 +159,10 @@ def write_section_6_5(doc):
     add_para(doc,
         "Giúp ban Giám đốc đánh giá nhanh sức khỏe doanh nghiệp cuối tháng hoặc cuối kỳ:\n"
         "1. Tại trang Dashboard chính của Giám đốc (URL: `/Dashboard`), click nút 'AI Performance Analysis'.\n"
-        "2. AIDataService quét toàn bộ CSDL và đóng gói ngữ cảnh: tiến độ trung bình của tất cả OKR công ty, "
-        "danh sách 5 phòng ban có tiến độ KPI thấp nhất, các rào cản check-in muộn được ghi nhận trong kỳ.\n"
-        "3. Gemini API phân tích và kết xuất báo cáo tổng quan cấu trúc chuẩn gồm: Đánh giá sức khỏe hiện tại, "
-        "Chỉ ra các điểm nghẽn (Bottlenecks) nhân sự, và Đề xuất giải pháp định hướng hành động cho Giám đốc.",
+        "2. AIDataService chỉ tổng hợp check-in đã duyệt thuộc tenant và phạm vi người dùng được phép xem; "
+        "nếu chưa có tiến độ đo lường thì hệ thống dừng và thông báo thiếu bằng chứng.\n"
+        "3. Model gateway trả strict JSON gồm tổng quan, điểm mạnh, rủi ro, hành động và citation. "
+        "Kết quả chỉ mang tính tham khảo, không tự đổi điểm, xếp loại, trạng thái duyệt hoặc thưởng.",
         italic=False
     )
 

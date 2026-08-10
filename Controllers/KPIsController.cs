@@ -24,9 +24,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private const string CheckInStatusLate = "Chậm tiến độ";
         private const string CheckInStatusAhead = "Vượt tiến độ";
         private const string CheckInStatusDone = "Hoàn thành";
-        private static readonly SemaphoreSlim KpiStatusCacheLock = new(1, 1);
-        private static IReadOnlyList<KpiStatusRow>? KpiStatusCache;
-        private static DateTime KpiStatusCacheExpiresAt;
+        private readonly SemaphoreSlim _kpiStatusCacheLock = new(1, 1);
+        private IReadOnlyList<KpiStatusRow>? _kpiStatusCache;
+        private DateTime _kpiStatusCacheExpiresAt;
         private readonly MiniERPDbContext _context;
 
         private sealed record KpiStatusRow(int Id, string StatusName);
@@ -39,31 +39,31 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private async Task<IReadOnlyList<KpiStatusRow>> GetKpiStatusRowsAsync()
         {
             var now = DateTime.UtcNow;
-            if (KpiStatusCache != null && KpiStatusCacheExpiresAt > now)
+            if (_kpiStatusCache != null && _kpiStatusCacheExpiresAt > now)
             {
-                return KpiStatusCache;
+                return _kpiStatusCache;
             }
 
-            await KpiStatusCacheLock.WaitAsync();
+            await _kpiStatusCacheLock.WaitAsync();
             try
             {
                 now = DateTime.UtcNow;
-                if (KpiStatusCache != null && KpiStatusCacheExpiresAt > now)
+                if (_kpiStatusCache != null && _kpiStatusCacheExpiresAt > now)
                 {
-                    return KpiStatusCache;
+                    return _kpiStatusCache;
                 }
 
-                KpiStatusCache = await _context.Statuses
+                _kpiStatusCache = await _context.Statuses
                     .AsNoTracking()
                     .Where(status => status.StatusType == WorkflowStatusHelper.StatusTypeKpi)
                     .Select(status => new KpiStatusRow(status.Id, status.StatusName ?? string.Empty))
                     .ToListAsync();
-                KpiStatusCacheExpiresAt = now.AddMinutes(2);
-                return KpiStatusCache;
+                _kpiStatusCacheExpiresAt = now.AddMinutes(2);
+                return _kpiStatusCache;
             }
             finally
             {
-                KpiStatusCacheLock.Release();
+                _kpiStatusCacheLock.Release();
             }
         }
 
@@ -408,7 +408,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Where(checkIn =>
                     checkIn.KPIId.HasValue &&
                     kpiIds.Contains(checkIn.KPIId.Value) &&
-                    (checkIn.ReviewStatus == ReviewStatusApproved || checkIn.ReviewStatus == null));
+                    checkIn.ReviewStatus == ReviewStatusApproved);
             if (isEmployeeOrSales && currentEmployee != null)
             {
                 checkInQuery = checkInQuery.Where(checkIn => checkIn.EmployeeId == currentEmployee.Id);
@@ -686,7 +686,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                          join d in _context.CheckInDetails on ci.Id equals d.CheckInId
                                          where ci.KPIId == id &&
                                                contributorEmployeeIds.Contains(ci.EmployeeId ?? 0) &&
-                                               (ci.ReviewStatus == "Approved" || ci.ReviewStatus == null)
+                                               ci.ReviewStatus == "Approved"
                                          group new { ci, d } by ci.EmployeeId into g
                                          select new {
                                              EmployeeId = g.Key ?? 0,
@@ -809,9 +809,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = $"Đã cập nhật KPI: {existingKpi.KPIName} thành công!";
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                TempData["ErrorMessage"] = "Đã xảy ra lỗi hệ thống: " + ex.Message;
+                TempData["ErrorMessage"] = "Không thể cập nhật KPI lúc này. Vui lòng thử lại sau.";
             }
 
             return RedirectToAction(nameof(Details), new { id });
@@ -1289,10 +1289,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 if (!string.IsNullOrEmpty(returnUrl)) return LocalRedirect(returnUrl);
                 return RedirectToAction(nameof(Details), new { id = kpiId });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await transaction.RollbackAsync();
-                TempData["ErrorMessage"] = "Lỗi khi cập nhật phân bổ KPI: " + (ex.InnerException?.Message ?? ex.Message);
+                TempData["ErrorMessage"] = "Không thể cập nhật phân bổ KPI lúc này. Vui lòng thử lại sau.";
                 if (!string.IsNullOrEmpty(returnUrl)) return LocalRedirect(returnUrl);
                 return RedirectToAction(nameof(Details), new { id = kpiId });
             }
@@ -1303,7 +1303,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var sourceCheckIn = await _context.KPICheckIns
                 .Where(c => c.KPIId == kpi.Id &&
                             c.EmployeeId == fromEmployeeId &&
-                            (c.ReviewStatus == ReviewStatusApproved || c.ReviewStatus == null))
+                            c.ReviewStatus == ReviewStatusApproved)
                 .OrderByDescending(c => c.CheckInDate)
                 .FirstOrDefaultAsync();
             if (sourceCheckIn == null)

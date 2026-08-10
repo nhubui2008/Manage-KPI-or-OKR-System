@@ -18,6 +18,7 @@
     bool canEditOkr = Model?.CanEditOkr == true;
     bool canDeleteOkr = Model?.CanDeleteOkr == true;
     bool canUpdateOwnProgress = Model?.CanUpdateOkrProgress == true;
+    bool canViewProjects = Model?.CanViewProjects == true;
 
     string QuickFilterClass(string value) =>
         string.Equals(value, currentQuickFilter, StringComparison.OrdinalIgnoreCase) ||
@@ -147,7 +148,10 @@
                             <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="mine" class="@QuickFilterClass("mine")"><i class="bi bi-person-check"></i> Của tôi</a>
                             <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="attention" class="@QuickFilterClass("attention")"><i class="bi bi-exclamation-triangle"></i> Cần chú ý</a>
                             <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="no-kr" class="@QuickFilterClass("no-kr")"><i class="bi bi-key"></i> Chưa có KR</a>
-                            <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="has-project" class="@QuickFilterClass("has-project")"><i class="bi bi-kanban"></i> Có dự án</a>
+                            @if (canViewProjects)
+                            {
+                                <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="has-project" class="@QuickFilterClass("has-project")"><i class="bi bi-kanban"></i> Có dự án</a>
+                            }
                             <a asp-action="Index" asp-route-searchString="@currentFilter" asp-route-cycle="@currentCycle" asp-route-statusId="@currentStatusId" asp-route-okrTypeId="@currentOkrTypeId" asp-route-scope="@currentScope" asp-route-sortBy="@currentSortBy" asp-route-quickFilter="unallocated" class="@QuickFilterClass("unallocated")"><i class="bi bi-people"></i> Chưa phân bổ</a>
                         </div>
                     </form>

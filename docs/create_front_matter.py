@@ -395,7 +395,7 @@ def add_glossary(doc):
         ["6", "API", "Application Programming Interface – Giao diện lập trình ứng dụng, cho phép các hệ thống giao tiếp với nhau."],
         ["7", "CRUD", "Create, Read, Update, Delete – Bốn thao tác cơ bản trên dữ liệu."],
         ["8", "SQL Server", "Hệ quản trị cơ sở dữ liệu quan hệ của Microsoft, lưu trữ và quản lý dữ liệu hệ thống."],
-        ["9", "AI / Gemini", "Trí tuệ nhân tạo (Artificial Intelligence). Gemini là mô hình AI của Google được tích hợp trong dự án để gợi ý KPI, phân tích hiệu suất."],
+        ["9", "AI / LLM", "Trí tuệ nhân tạo và mô hình ngôn ngữ lớn được tích hợp qua model gateway để tạo tư vấn có nguồn, có kiểm soát."],
         ["10", "Dashboard", "Bảng điều khiển tổng quan, hiển thị dữ liệu trực quan bằng biểu đồ và chỉ số thống kê."],
         ["11", "Check-in", "Hành động cập nhật tiến độ thực hiện KPI/OKR định kỳ (hàng tuần/tháng)."],
         ["12", "ERD", "Entity Relationship Diagram – Sơ đồ quan hệ thực thể, mô tả cấu trúc và mối quan hệ giữa các bảng trong CSDL."],
@@ -600,7 +600,7 @@ def add_loi_mo_dau(doc):
         "xếp hạng tự động (S/A+/A/B+/B/C/D).",
         "Về phía Nhân viên: Giao diện check-in KPI trực quan, theo dõi tiến độ cá nhân, "
         "nhận thông báo nhắc nhở deadline và nhận gợi ý từ AI để cải thiện hiệu suất.",
-        "Về phía Hệ thống: Tích hợp AI Gemini để phân tích hiệu suất, cảnh báo rủi ro, "
+        "Về phía Hệ thống: Tích hợp các advisor AI có nguồn để phân tích hiệu suất, cảnh báo rủi ro, "
         "gợi ý KPI thông minh, hỗ trợ ra quyết định dựa trên dữ liệu."
     ]
 
@@ -679,7 +679,7 @@ def add_tom_tat(doc):
         "Về phía Quản lý (Admin/HR): Cung cấp bộ công cụ quản trị tập trung để thiết lập "
         "sứ mệnh, tầm nhìn, mục tiêu chiến lược hàng năm. Hệ thống hỗ trợ giao KPI cho "
         "phòng ban và cá nhân, theo dõi tiến độ check-in định kỳ, xếp hạng tự động "
-        "(S/A+/A/B+/B/C/D) và tính thưởng dựa trên hiệu suất. Đặc biệt, tích hợp AI Gemini "
+        "(S/A+/A/B+/B/C/D) và tính thưởng dựa trên hiệu suất. Đặc biệt, tích hợp AI-native có kiểm soát "
         "để gợi ý KPI phù hợp, phân tích xu hướng hiệu suất và cảnh báo rủi ro sớm."
     )
 

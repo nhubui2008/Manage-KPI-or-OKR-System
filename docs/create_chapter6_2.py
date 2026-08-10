@@ -139,7 +139,7 @@ def write_section_6_2(doc):
         "2. Quan sát các biểu đồ: Biểu đồ đường thể hiện tiến độ check-in trung bình, biểu đồ donut thể hiện tỷ lệ trạng thái KPI. "
         "Theo dõi widget 'Dự toán quỹ thưởng thực tế' (Expected Bonus Fund) tăng giảm theo thời gian thực dựa trên tiến độ KPI.\n"
         "3. Sử dụng tính năng AI phân tích: Click nút 'AI Performance Analysis'. Hệ thống sẽ tự động tổng hợp toàn bộ context "
-        "về tiến độ OKRs công ty, KPIs chậm hạn của các phòng ban gửi sang Gemini API. "
+        "về tiến độ OKR/KPI trong đúng tenant và phạm vi quyền gửi qua model gateway. "
         "Sau khoảng 3 giây, widget AI sẽ hiển thị báo cáo đánh giá chuyên sâu bằng tiếng Việt kèm các gợi ý giải pháp cải thiện cụ thể.",
         italic=False
     )

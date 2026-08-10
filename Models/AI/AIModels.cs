@@ -19,8 +19,19 @@ namespace Manage_KPI_or_OKR_System.Models.AI
     {
         public bool Success { get; set; } = true;
         public string? Text { get; set; }
+        public Guid? AgentRunId { get; set; }
+        public bool AdvisoryOnly { get; set; } = true;
+        public List<EvidenceRef> Citations { get; set; } = new();
         public List<string> Warnings { get; set; } = new();
     }
+
+    /// <summary>
+    /// Authorized, transient KPI/OKR chat snapshot. Text and approved check-in
+    /// notes may be sent to the model but must never be persisted.
+    /// </summary>
+    public sealed record AuthorizedChatContext(
+        string Text,
+        bool HasBusinessEvidence);
 
     public class SuggestKpiRequest
     {
@@ -30,6 +41,14 @@ namespace Manage_KPI_or_OKR_System.Models.AI
         public int? OkrKeyResultId { get; set; }
         public int? PeriodId { get; set; }
     }
+
+    /// <summary>
+    /// Authorized KPI-planning snapshot. Text is transient and must never be
+    /// persisted; HasWritablePeriod lets the server abstain before a model call.
+    /// </summary>
+    public sealed record AuthorizedKpiSuggestionContext(
+        string Text,
+        bool HasWritablePeriod);
 
     public class SuggestKpiOptionsRequest
     {
@@ -64,20 +83,19 @@ namespace Manage_KPI_or_OKR_System.Models.AI
         public string? Unit { get; set; }
         public decimal? PassThreshold { get; set; }
         public decimal? FailThreshold { get; set; }
+        public bool IsInverse { get; set; }
         public string? Rationale { get; set; }
+        public List<string> SourceIds { get; set; } = new();
     }
 
     public class SuggestKpiResponse
     {
         public bool Success { get; set; } = true;
+        public Guid? AgentRunId { get; set; }
+        public bool AdvisoryOnly { get; set; } = true;
         public List<SuggestedKpi> Suggestions { get; set; } = new();
+        public List<EvidenceRef> Citations { get; set; } = new();
         public List<string> Warnings { get; set; } = new();
-    }
-
-    public class RefineKpiSuggestionsRequest
-    {
-        public string? Instruction { get; set; }
-        public List<SuggestedKpi> Suggestions { get; set; } = new();
     }
 
     public class AnalyzePerformanceRequest
@@ -106,17 +124,20 @@ namespace Manage_KPI_or_OKR_System.Models.AI
         public string? ProductOrService { get; set; }
         public string? Region { get; set; }
         public string? CustomerLifecycle { get; set; }
-        public int? PotentialScore { get; set; }
-        public string? PotentialRationale { get; set; }
+        public string? EvidenceBasis { get; set; }
         public string? RevenueBasis { get; set; }
         public string? RecommendedAction { get; set; }
         public string? DataGaps { get; set; }
+        public List<string> SourceIds { get; set; } = new();
     }
 
     public class SuggestCustomerSegmentsResponse
     {
         public bool Success { get; set; } = true;
+        public Guid? AgentRunId { get; set; }
+        public bool AdvisoryOnly { get; set; } = true;
         public List<SuggestedCustomerSegment> Segments { get; set; } = new();
+        public List<EvidenceRef> Citations { get; set; } = new();
         public List<string> Warnings { get; set; } = new();
     }
 

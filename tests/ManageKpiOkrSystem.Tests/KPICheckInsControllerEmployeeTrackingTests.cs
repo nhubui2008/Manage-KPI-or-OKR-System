@@ -2,7 +2,11 @@ using System.Security.Claims;
 using Manage_KPI_or_OKR_System.Controllers;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Models;
+using Manage_KPI_or_OKR_System.Models.AI;
+using Manage_KPI_or_OKR_System.Models.Tenancy;
 using Manage_KPI_or_OKR_System.Models.ViewModels;
+using Manage_KPI_or_OKR_System.Services.AI;
+using Manage_KPI_or_OKR_System.Services.Tenancy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -17,6 +21,472 @@ namespace ManageKpiOkrSystem.Tests;
 
 public sealed class KPICheckInsControllerEmployeeTrackingTests
 {
+    [Fact]
+    public async Task Review_AppliedAiDraft_CompletesHumanDecisionWithoutAiAutoApproval()
+    {
+        await using var context = CreateContext();
+        var reviewer = new Employee
+        {
+            Id = 99,
+            SystemUserId = 99,
+            EmployeeCode = "QL099",
+            FullName = "Quản lý",
+            Email = "manager99@example.test",
+            Phone = "099",
+            IsActive = true
+        };
+        var employee = new Employee
+        {
+            Id = 1,
+            EmployeeCode = "NV001",
+            FullName = "Nhân viên",
+            Email = "employee1@example.test",
+            Phone = "001",
+            IsActive = true
+        };
+        var kpi = new KPI { Id = 10, KPIName = "KPI có AI", IsActive = true };
+        var checkIn = new KPICheckIn
+        {
+            Id = 100,
+            EmployeeId = employee.Id,
+            KPIId = kpi.Id,
+            CheckInDate = DateTime.UtcNow,
+            ReviewStatus = "Pending"
+        };
+        context.AddRange(reviewer, employee, kpi, checkIn);
+        context.CheckInDetails.Add(new CheckInDetail
+        {
+            CheckInId = checkIn.Id,
+            AchievedValue = 72m,
+            ProgressPercentage = 72m
+        });
+        await context.SaveChangesAsync();
+        var run = new AgentRunRecord
+        {
+            Id = Guid.NewGuid(),
+            TenantId = 1,
+            RunType = "CheckInEvaluation",
+            CorrelationId = "review-draft-test",
+            State = nameof(AgentRunState.AwaitingReview)
+        };
+        var proposal = new AiEvaluationProposal
+        {
+            TenantId = 1,
+            AgentRunId = run.Id,
+            KPICheckInId = checkIn.Id,
+            SourceEntityType = "KPICheckIn",
+            SourceEntityId = checkIn.Id,
+            SourceVersion = await CheckInAiSourceVersion.ResolveAsync(context, checkIn),
+            Status = "AwaitingHumanReview",
+            ProposedStatus = "AtRisk",
+            ProposedProgressPercent = 72m,
+            ConfidenceScore = .82,
+            RequiresHumanReview = true,
+            RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
+        };
+        context.AddRange(run, proposal);
+        await context.SaveChangesAsync();
+        var controller = CreateController(
+            context,
+            99,
+            new[] { "Admin" },
+            new[] { "KPICHECKINS_REVIEW" });
+
+        var result = await controller.Review(
+            checkIn.Id,
+            "Approved",
+            "Đã kiểm tra bản nháp AI và điều chỉnh.",
+            "70",
+            "/KPICheckIns/EmployeeTracking?tab=pending",
+            proposal.Id,
+            Convert.ToBase64String(proposal.RowVersion));
+
+        Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("Approved", checkIn.ReviewStatus);
+        Assert.Equal(70m, checkIn.ReviewScore);
+        Assert.Equal("Stale", proposal.Status);
+        Assert.Equal("AppliedToApprovedReview", proposal.HumanDecision);
+        Assert.Equal(nameof(AgentRunState.Completed), run.State);
+        var approval = Assert.Single(context.AgentApprovals);
+        Assert.Equal("AppliedToApprovedReview", approval.Decision);
+        Assert.Equal(99, approval.ApprovedBySystemUserId);
+    }
+
+    [Fact]
+    public async Task Review_RevokedRagEvidence_StalesDraftBeforeOfficialFieldsChange()
+    {
+        await using var context = CreateContext();
+        var reviewer = new Employee
+        {
+            Id = 99,
+            SystemUserId = 99,
+            EmployeeCode = "QL099",
+            FullName = "Quản lý",
+            Email = "manager99@example.test",
+            Phone = "099",
+            IsActive = true
+        };
+        var employee = new Employee
+        {
+            Id = 1,
+            EmployeeCode = "NV001",
+            FullName = "Nhân viên",
+            Email = "employee1@example.test",
+            Phone = "001",
+            IsActive = true
+        };
+        var kpi = new KPI { Id = 10, KPIName = "KPI có RAG", IsActive = true };
+        var checkIn = new KPICheckIn
+        {
+            Id = 100,
+            EmployeeId = employee.Id,
+            KPIId = kpi.Id,
+            CheckInDate = DateTime.UtcNow,
+            ReviewStatus = "Pending"
+        };
+        context.AddRange(reviewer, employee, kpi, checkIn);
+        context.CheckInDetails.Add(new CheckInDetail
+        {
+            CheckInId = checkIn.Id,
+            AchievedValue = 72m,
+            ProgressPercentage = 72m
+        });
+        await context.SaveChangesAsync();
+        var run = new AgentRunRecord
+        {
+            Id = Guid.NewGuid(),
+            TenantId = 1,
+            RunType = "CheckInEvaluation",
+            CorrelationId = "revoked-rag-review",
+            State = nameof(AgentRunState.AwaitingReview)
+        };
+        var proposal = new AiEvaluationProposal
+        {
+            TenantId = 1,
+            AgentRunId = run.Id,
+            KPICheckInId = checkIn.Id,
+            SourceEntityType = "KPICheckIn",
+            SourceEntityId = checkIn.Id,
+            SourceVersion = await CheckInAiSourceVersion.ResolveAsync(context, checkIn),
+            Status = "AwaitingHumanReview",
+            ProposedStatus = "AtRisk",
+            ProposedProgressPercent = 72m,
+            ConfidenceScore = .82d,
+            RequiresHumanReview = true,
+            RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
+        };
+        context.AddRange(run, proposal);
+        await context.SaveChangesAsync();
+        var document = await SeedAuthorizedRagEvidenceAsync(context, run.Id, proposal.Id);
+        document.AccessPrincipalsJson = KnowledgeDocumentAccessPolicy.Serialize(new[] { "user:100" });
+        document.AccessPolicyVersion = 2;
+        await context.SaveChangesAsync();
+        var controller = CreateController(
+            context,
+            99,
+            new[] { "Admin" },
+            new[] { "KPICHECKINS_REVIEW" });
+
+        var result = await controller.Review(
+            checkIn.Id,
+            "Approved",
+            "Không được áp dụng khi bằng chứng đã thu hồi.",
+            "72",
+            "/KPICheckIns/EmployeeTracking?tab=pending",
+            proposal.Id,
+            Convert.ToBase64String(proposal.RowVersion));
+
+        Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("Pending", checkIn.ReviewStatus);
+        Assert.Null(checkIn.ReviewedAt);
+        Assert.Null(checkIn.ReviewScore);
+        Assert.Equal("Stale", proposal.Status);
+        Assert.Equal(nameof(AgentRunState.Cancelled), run.State);
+        Assert.Equal("evidence_access_revoked", run.FailureCode);
+        Assert.Empty(context.AgentApprovals);
+    }
+
+    [Fact]
+    public async Task Review_StaleAiDraft_IsRejectedBeforeOfficialReviewChanges()
+    {
+        await using var context = CreateContext();
+        var employee = new Employee
+        {
+            Id = 1,
+            EmployeeCode = "NV001",
+            FullName = "Nhân viên",
+            Email = "employee1@example.test",
+            Phone = "001",
+            IsActive = true
+        };
+        var kpi = new KPI { Id = 10, KPIName = "KPI có AI", IsActive = true };
+        var checkIn = new KPICheckIn
+        {
+            Id = 100,
+            EmployeeId = employee.Id,
+            KPIId = kpi.Id,
+            CheckInDate = DateTime.UtcNow,
+            ReviewStatus = "Pending"
+        };
+        context.AddRange(employee, kpi, checkIn);
+        context.CheckInDetails.Add(new CheckInDetail
+        {
+            CheckInId = checkIn.Id,
+            AchievedValue = 50m,
+            ProgressPercentage = 50m
+        });
+        await context.SaveChangesAsync();
+        var run = new AgentRunRecord
+        {
+            Id = Guid.NewGuid(),
+            TenantId = 1,
+            RunType = "CheckInEvaluation",
+            CorrelationId = "stale-review-draft-test",
+            State = nameof(AgentRunState.AwaitingReview)
+        };
+        var proposal = new AiEvaluationProposal
+        {
+            TenantId = 1,
+            AgentRunId = run.Id,
+            KPICheckInId = checkIn.Id,
+            SourceEntityType = "KPICheckIn",
+            SourceEntityId = checkIn.Id,
+            SourceVersion = (await CheckInAiSourceVersion.ResolveAsync(context, checkIn)) + 1,
+            Status = "AwaitingHumanReview",
+            ProposedStatus = "AtRisk",
+            ConfidenceScore = .8,
+            RequiresHumanReview = true,
+            RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
+        };
+        context.AddRange(run, proposal);
+        await context.SaveChangesAsync();
+        var controller = CreateController(
+            context,
+            99,
+            new[] { "Admin" },
+            new[] { "KPICHECKINS_REVIEW" });
+
+        var result = await controller.Review(
+            checkIn.Id,
+            "Approved",
+            "Không được áp dụng",
+            "90",
+            "/KPICheckIns/EmployeeTracking?tab=pending",
+            proposal.Id,
+            Convert.ToBase64String(proposal.RowVersion));
+
+        Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("Pending", checkIn.ReviewStatus);
+        Assert.Null(checkIn.ReviewScore);
+        Assert.Equal("Stale", proposal.Status);
+        Assert.Equal(nameof(AgentRunState.Cancelled), run.State);
+        Assert.Empty(context.AgentApprovals);
+    }
+
+    [Fact]
+    public async Task Review_InsufficientEvidenceProposal_CannotBeAppliedByCraftedPost()
+    {
+        await using var context = CreateContext();
+        var employee = new Employee
+        {
+            Id = 1,
+            EmployeeCode = "NV001",
+            FullName = "Nhân viên",
+            Email = "employee1@example.test",
+            Phone = "001",
+            IsActive = true
+        };
+        var kpi = new KPI { Id = 10, KPIName = "KPI thiếu bằng chứng", IsActive = true };
+        var checkIn = new KPICheckIn
+        {
+            Id = 100,
+            EmployeeId = employee.Id,
+            KPIId = kpi.Id,
+            CheckInDate = DateTime.UtcNow,
+            ReviewStatus = "Pending"
+        };
+        context.AddRange(employee, kpi, checkIn);
+        context.CheckInDetails.Add(new CheckInDetail
+        {
+            CheckInId = checkIn.Id,
+            AchievedValue = 50m,
+            ProgressPercentage = 50m
+        });
+        await context.SaveChangesAsync();
+        var run = new AgentRunRecord
+        {
+            Id = Guid.NewGuid(),
+            TenantId = 1,
+            RunType = "CheckInEvaluation",
+            CorrelationId = "abstain-review-draft-test",
+            State = nameof(AgentRunState.AwaitingReview)
+        };
+        var proposal = new AiEvaluationProposal
+        {
+            TenantId = 1,
+            AgentRunId = run.Id,
+            KPICheckInId = checkIn.Id,
+            SourceEntityType = "KPICheckIn",
+            SourceEntityId = checkIn.Id,
+            SourceVersion = await CheckInAiSourceVersion.ResolveAsync(context, checkIn),
+            Status = "AwaitingHumanReview",
+            ProposedStatus = "InsufficientEvidence",
+            ProposedProgressPercent = 50m,
+            ConfidenceScore = .2,
+            RequiresHumanReview = true,
+            RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
+        };
+        context.AddRange(run, proposal);
+        await context.SaveChangesAsync();
+        var controller = CreateController(
+            context,
+            99,
+            new[] { "Admin" },
+            new[] { "KPICHECKINS_REVIEW" });
+
+        var result = await controller.Review(
+            checkIn.Id,
+            "Approved",
+            "Client cố áp dụng proposal abstain",
+            "90",
+            "/KPICheckIns/EmployeeTracking?tab=pending",
+            proposal.Id,
+            Convert.ToBase64String(proposal.RowVersion));
+
+        Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("Pending", checkIn.ReviewStatus);
+        Assert.Null(checkIn.ReviewScore);
+        Assert.Equal("AwaitingHumanReview", proposal.Status);
+        Assert.Equal(nameof(AgentRunState.AwaitingReview), run.State);
+        Assert.Empty(context.AgentApprovals);
+    }
+
+    [Fact]
+    public async Task Review_ApprovalScoreMoreThanTenFromFormula_RequiresReason()
+    {
+        await using var context = CreateContext();
+        var reviewer = new Employee
+        {
+            Id = 99,
+            SystemUserId = 99,
+            EmployeeCode = "QL099",
+            FullName = "Quản lý",
+            Email = "manager-deviation@example.test",
+            Phone = "0991",
+            IsActive = true
+        };
+        var employee = new Employee
+        {
+            Id = 1,
+            EmployeeCode = "NV001",
+            FullName = "Nhân viên",
+            Email = "employee-deviation@example.test",
+            Phone = "0011",
+            IsActive = true
+        };
+        var kpi = new KPI { Id = 10, KPIName = "KPI baseline", IsActive = true };
+        var checkIn = new KPICheckIn
+        {
+            Id = 100,
+            EmployeeId = employee.Id,
+            KPIId = kpi.Id,
+            CheckInDate = DateTime.UtcNow,
+            ReviewStatus = "Pending"
+        };
+        context.AddRange(reviewer, employee, kpi, checkIn);
+        context.CheckInDetails.Add(new CheckInDetail
+        {
+            CheckInId = checkIn.Id,
+            ProgressPercentage = 50m
+        });
+        await context.SaveChangesAsync();
+        var controller = CreateController(
+            context,
+            99,
+            new[] { "Admin" },
+            new[] { "KPICHECKINS_REVIEW" });
+
+        var result = await controller.Review(
+            checkIn.Id,
+            "Approved",
+            reviewComment: null,
+            reviewScore: "61",
+            returnUrl: "/KPICheckIns/EmployeeTracking?tab=pending");
+
+        Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("Pending", checkIn.ReviewStatus);
+        Assert.Null(checkIn.ReviewScore);
+        Assert.Contains("lệch hơn 10 điểm", controller.TempData["ErrorMessage"]?.ToString());
+        Assert.Empty(context.AuditLogs);
+    }
+
+    [Fact]
+    public async Task Review_ApprovedCheckIn_EnqueuesOfficialSnapshotInSameWorkflow()
+    {
+        var tenantContext = new TenantContext();
+        tenantContext.SetRequest(1, 99);
+        await using var context = CreateContext(tenantContext);
+        context.Tenants.Add(new Tenant { Id = 1, Name = "Tenant", Code = "tenant" });
+        var reviewer = new Employee
+        {
+            Id = 99,
+            SystemUserId = 99,
+            EmployeeCode = "QL099",
+            FullName = "Quản lý",
+            Email = "manager-official@example.test",
+            Phone = "0992",
+            IsActive = true
+        };
+        var employee = new Employee
+        {
+            Id = 1,
+            EmployeeCode = "NV001",
+            FullName = "Nhân viên",
+            Email = "employee-official@example.test",
+            Phone = "0012",
+            IsActive = true
+        };
+        var kpi = new KPI { Id = 10, KPIName = "KPI official snapshot", IsActive = true };
+        var checkIn = new KPICheckIn
+        {
+            Id = 100,
+            EmployeeId = employee.Id,
+            KPIId = kpi.Id,
+            CheckInDate = DateTime.UtcNow,
+            ReviewStatus = "Pending"
+        };
+        context.AddRange(reviewer, employee, kpi, checkIn);
+        context.CheckInDetails.Add(new CheckInDetail
+        {
+            CheckInId = checkIn.Id,
+            AchievedValue = 75m,
+            ProgressPercentage = 75m
+        });
+        await context.SaveChangesAsync();
+        var queue = new CheckInAiEvaluationQueue(context, tenantContext);
+        var controller = CreateController(
+            context,
+            99,
+            new[] { "Admin" },
+            new[] { "KPICHECKINS_REVIEW" },
+            queue,
+            tenantContext);
+
+        var result = await controller.Review(
+            checkIn.Id,
+            "Approved",
+            "Đã kiểm tra snapshot chính thức.",
+            "75",
+            "/KPICheckIns/EmployeeTracking?tab=pending");
+
+        Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("Approved", checkIn.ReviewStatus);
+        var outbox = Assert.Single(context.CheckInAiEvaluationOutbox);
+        Assert.Equal(checkIn.Id, outbox.CheckInId);
+        Assert.Equal("Pending", outbox.State);
+        Assert.Equal(await CheckInAiSourceVersion.ResolveAsync(context, checkIn), outbox.SourceVersion);
+    }
+
     [Fact]
     public async Task EmployeeTracking_DeduplicatesCandidatesAndClampsTrackingPages()
     {
@@ -81,7 +551,7 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
     }
 
     [Fact]
-    public async Task EmployeeTracking_UsesLegacyNullAsOfficialAndKeepsPendingSubmissionSeparate()
+    public async Task EmployeeTracking_UsesApprovedAsOfficialAndKeepsPendingSubmissionSeparate()
     {
         await using var context = CreateContext();
         var employee = new Employee
@@ -111,7 +581,7 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
             CheckInDate = DateTime.Today.AddDays(-2),
             DeadlineAt = DateTime.Today.AddDays(-1).AddHours(10),
             IsLate = false,
-            ReviewStatus = null
+            ReviewStatus = "Approved"
         };
         var pending = new KPICheckIn
         {
@@ -459,7 +929,7 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
         var redirect = Assert.IsType<LocalRedirectResult>(result);
         Assert.Equal(returnUrl, redirect.Url);
         var saved = Assert.Single(context.KPICheckIns);
-        Assert.Equal("Approved", saved.ReviewStatus);
+        Assert.Equal("Pending", saved.ReviewStatus);
         Assert.Equal(25m, Assert.Single(context.CheckInDetails).AchievedValue);
     }
 
@@ -502,11 +972,126 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
         Assert.Empty(context.KPICheckIns);
     }
 
+    [Fact]
+    public async Task Create_CustomRole_FailsClosedForAnotherEmployee_ButAllowsOwnAssignedKpi()
+    {
+        await using var context = CreateContext();
+        var kpiStatus = new Status
+        {
+            Id = 1,
+            StatusType = "KPI",
+            StatusName = "Đang thực hiện"
+        };
+        var periodStatus = new Status
+        {
+            Id = 2,
+            StatusType = "EvaluationPeriod",
+            StatusName = "Mở"
+        };
+        var period = new EvaluationPeriod
+        {
+            Id = 1,
+            PeriodName = "Kỳ hiện tại",
+            StatusId = periodStatus.Id,
+            StartDate = DateTime.Today.AddDays(-1),
+            EndDate = DateTime.Today.AddDays(1),
+            IsActive = true
+        };
+        var currentEmployee = new Employee
+        {
+            Id = 1,
+            SystemUserId = 99,
+            EmployeeCode = "CUSTOM01",
+            FullName = "Custom role owner",
+            Email = "custom@example.test",
+            Phone = "001",
+            IsActive = true
+        };
+        var otherEmployee = new Employee
+        {
+            Id = 2,
+            SystemUserId = 100,
+            EmployeeCode = "OTHER01",
+            FullName = "Other employee",
+            Email = "other@example.test",
+            Phone = "002",
+            IsActive = true
+        };
+        var kpi = new KPI
+        {
+            Id = 1,
+            KPIName = "Assigned KPI",
+            StatusId = kpiStatus.Id,
+            PeriodId = period.Id,
+            IsActive = true
+        };
+        context.AddRange(
+            kpiStatus,
+            periodStatus,
+            period,
+            currentEmployee,
+            otherEmployee,
+            kpi);
+        context.KPIDetails.Add(new KPIDetail
+        {
+            KPIId = kpi.Id,
+            TargetValue = 100m,
+            PassThreshold = 80m,
+            CheckInFrequencyDays = 1,
+            CheckInDeadlineTime = TimeSpan.FromHours(23)
+        });
+        context.KPI_Employee_Assignments.AddRange(
+            new KPI_Employee_Assignment
+            {
+                EmployeeId = currentEmployee.Id,
+                KPIId = kpi.Id,
+                Status = "Active",
+                Weight = 1m
+            },
+            new KPI_Employee_Assignment
+            {
+                EmployeeId = otherEmployee.Id,
+                KPIId = kpi.Id,
+                Status = "Active",
+                Weight = 1m
+            });
+        context.CheckInStatuses.Add(new CheckInStatus
+        {
+            Id = 1,
+            StatusName = "Đúng tiến độ"
+        });
+        await context.SaveChangesAsync();
+        var controller = CreateController(
+            context,
+            99,
+            new[] { "KpiContributor" },
+            new[] { "KPICHECKINS_CREATE" });
+
+        var forbidden = await controller.Create(
+            new KPICheckIn { EmployeeId = otherEmployee.Id, KPIId = kpi.Id },
+            "50",
+            string.Empty,
+            "/KPICheckIns/EmployeeTracking");
+        var own = await controller.Create(
+            new KPICheckIn { EmployeeId = currentEmployee.Id, KPIId = kpi.Id },
+            "50",
+            string.Empty,
+            "/KPICheckIns/EmployeeTracking");
+
+        Assert.IsType<ForbidResult>(forbidden);
+        Assert.IsType<LocalRedirectResult>(own);
+        var saved = Assert.Single(context.KPICheckIns);
+        Assert.Equal(currentEmployee.Id, saved.EmployeeId);
+        Assert.Equal("Pending", saved.ReviewStatus);
+    }
+
     private static KPICheckInsController CreateController(
         MiniERPDbContext context,
         int userId,
         IEnumerable<string> roles,
-        IEnumerable<string>? permissions = null)
+        IEnumerable<string>? permissions = null,
+        ICheckInAiEvaluationQueue? evaluationQueue = null,
+        ITenantContext? tenantContext = null)
     {
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, userId.ToString()) };
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
@@ -520,13 +1105,73 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
             httpContext,
             new RouteData(),
             new ControllerActionDescriptor());
-        var controller = new KPICheckInsController(context)
+        var controller = new KPICheckInsController(context, evaluationQueue, tenantContext)
         {
             ControllerContext = new ControllerContext(actionContext),
             Url = new UrlHelper(actionContext),
             TempData = new TempDataDictionary(httpContext, new TestTempDataProvider())
         };
         return controller;
+    }
+
+    private static async Task<KnowledgeDocument> SeedAuthorizedRagEvidenceAsync(
+        MiniERPDbContext context,
+        Guid agentRunId,
+        int proposalId)
+    {
+        var document = new KnowledgeDocument
+        {
+            Id = Guid.NewGuid(),
+            TenantId = 1,
+            Title = "Check-in review evidence",
+            OwnerSystemUserId = 99,
+            AccessPrincipalsJson = KnowledgeDocumentAccessPolicy.Serialize(new[] { "user:99" }),
+            AccessPolicyVersion = 1
+        };
+        var version = new KnowledgeDocumentVersion
+        {
+            Id = Guid.NewGuid(),
+            TenantId = 1,
+            DocumentId = document.Id,
+            VersionNumber = 1,
+            ContentSha256 = new string('A', 64),
+            SourceBlobUri = "https://private.example.test/check-in/source.pdf",
+            OriginalFileName = "source.pdf",
+            ContentType = "application/pdf",
+            FileSizeBytes = 100,
+            Status = "Indexed"
+        };
+        var chunk = new KnowledgeChunk
+        {
+            Id = Guid.NewGuid(),
+            TenantId = 1,
+            DocumentVersionId = version.Id,
+            PipelineVersion = "test-v1",
+            AccessPolicyVersion = 1,
+            Ordinal = 0,
+            ContentSha256 = new string('B', 64),
+            ContentBlobUri = "https://private.example.test/check-in/chunk.json",
+            SearchIndexKey = $"check-in-{Guid.NewGuid():N}",
+            TokenCount = 10,
+            IsActive = true
+        };
+        context.AddRange(document, version, chunk);
+        context.EvidenceReferenceMetadata.Add(new EvidenceReferenceMetadata
+        {
+            TenantId = 1,
+            AgentRunId = agentRunId,
+            AiEvaluationProposalId = proposalId,
+            SourceType = "azure-search",
+            SourceId = document.Id.ToString(),
+            SourceVersionId = version.Id.ToString(),
+            SourceTitle = document.Title,
+            ObservedAtUtc = DateTimeOffset.UtcNow,
+            Reliability = .8d,
+            IsDirectlyRelevant = true,
+            IsCurrent = true
+        });
+        await context.SaveChangesAsync();
+        return document;
     }
 
     private sealed class TestTempDataProvider : ITempDataProvider
@@ -539,12 +1184,12 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
         }
     }
 
-    private static MiniERPDbContext CreateContext()
+    private static MiniERPDbContext CreateContext(ITenantContext? tenantContext = null)
     {
         var options = new DbContextOptionsBuilder<MiniERPDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
-        return new MiniERPDbContext(options);
+        return new MiniERPDbContext(options, tenantContext);
     }
 }

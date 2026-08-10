@@ -1303,14 +1303,13 @@ INSERT INTO [WorkProjects]
     [UpdatedAt],
     [CreatedById],
     [IsActive],
-    [SourceOKRId],
-    [LinkedOKRId]
+    [SourceOKRId]
 )
 VALUES
-    (1, N'BZ-PROD-TRACE', N'Chuẩn hóa truy xuất nguyên liệu Q2', N'Theo dõi lô nguyên liệu, hồ sơ kiểm định và dữ liệu truy xuất cho nhà máy Bizen.', 3, N'High',   N'Active', 35.00, 1, '2026-04-01', '2026-06-30', GETDATE(), GETDATE(), 3, 1, 7, 7),
-    (2, N'BZ-DIST-GROW',  N'Mở rộng điểm bán sản phẩm Bizen',    N'Phối hợp kinh doanh, marketing và chăm sóc khách hàng để mở mới điểm bán thực phẩm đóng gói.', 6, N'High',   N'Active', 42.00, 1, '2026-04-05', '2026-06-30', GETDATE(), GETDATE(), 6, 1, 10, 10),
-    (3, N'BZ-NEW-SKU',    N'Ra mắt dòng bánh ngũ cốc Bizen',     N'R&D, QA và marketing phối hợp hoàn thiện công thức, bao bì và kế hoạch ra mắt sản phẩm mới.', 11, N'Normal', N'Active', 28.00, 1, '2026-04-10', '2026-07-15', GETDATE(), GETDATE(), 11, 1, 25, 25),
-    (4, N'BZ-COLD-CHAIN', N'Ổn định tồn kho lạnh và giao hàng',  N'Chuẩn hóa tồn kho, điều phối kho vận và giảm rủi ro giao hàng trễ cho sản phẩm cần kiểm soát nhiệt độ.', 9, N'High', N'Active', 51.00, 1, '2026-04-01', '2026-06-30', GETDATE(), GETDATE(), 9, 1, 19, 19);
+    (1, N'BZ-PROD-TRACE', N'Chuẩn hóa truy xuất nguyên liệu Q2', N'Theo dõi lô nguyên liệu, hồ sơ kiểm định và dữ liệu truy xuất cho nhà máy Bizen.', 3, N'High',   N'Active', 35.00, 1, '2026-04-01', '2026-06-30', GETDATE(), GETDATE(), 3, 1, 7),
+    (2, N'BZ-DIST-GROW',  N'Mở rộng điểm bán sản phẩm Bizen',    N'Phối hợp kinh doanh, marketing và chăm sóc khách hàng để mở mới điểm bán thực phẩm đóng gói.', 6, N'High',   N'Active', 42.00, 1, '2026-04-05', '2026-06-30', GETDATE(), GETDATE(), 6, 1, 10),
+    (3, N'BZ-NEW-SKU',    N'Ra mắt dòng bánh ngũ cốc Bizen',     N'R&D, QA và marketing phối hợp hoàn thiện công thức, bao bì và kế hoạch ra mắt sản phẩm mới.', 11, N'Normal', N'Active', 28.00, 1, '2026-04-10', '2026-07-15', GETDATE(), GETDATE(), 11, 1, 25),
+    (4, N'BZ-COLD-CHAIN', N'Ổn định tồn kho lạnh và giao hàng',  N'Chuẩn hóa tồn kho, điều phối kho vận và giảm rủi ro giao hàng trễ cho sản phẩm cần kiểm soát nhiệt độ.', 9, N'High', N'Active', 51.00, 1, '2026-04-01', '2026-06-30', GETDATE(), GETDATE(), 9, 1, 19);
 SET IDENTITY_INSERT [WorkProjects] OFF;
 GO
 

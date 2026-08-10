@@ -239,7 +239,7 @@ def write_section_2_2(doc):
         ["4", "Manager\n(Trưởng phòng)", "Người dùng\n(Nội bộ)", "Trong phòng ban trực thuộc\n(Department Scope)",
          "Nhận OKR công ty để phân rã OKR phòng ban. Giao KPI cho nhân viên. Phê duyệt tiến độ check-in (Review Queue). Quản lý dự án, phân công việc trên Kanban. Chấm điểm nhân viên và họp 1-on-1."],
         ["5", "Employee\n(Nhân viên)", "Người dùng\n(Nội bộ)", "Chỉ dữ liệu cá nhân được giao\n(Personal Scope)",
-         "Xem OKR/KPI cá nhân. Check-in tiến độ KPI định kỳ kèm giải trình. Nhận việc và cập nhật thẻ Kanban công việc. Xem điểm xếp hạng và dự toán thưởng cá nhân. Tương tác với trợ lý AI Gemini để nhận tư vấn."],
+         "Xem OKR/KPI cá nhân. Check-in tiến độ KPI định kỳ kèm giải trình. Nhận việc và cập nhật thẻ Kanban công việc. Xem điểm xếp hạng và dự toán thưởng cá nhân. Tương tác với Chat Advisor có nguồn để nhận tư vấn."],
     ]
 
     create_table(doc, headers_actor, rows_actor, col_widths=[1.0, 2.5, 2.5, 3.8, 6.5])

@@ -431,6 +431,7 @@
                                                 </summary>
                                                 <form asp-action="Create" method="post" class="et-checkin-form" data-local-submit data-busy-label="Đang lưu tiến độ...">
                                                     @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="SubmissionId" value="@Guid.NewGuid()" />
                                                     <input type="hidden" name="EmployeeId" value="@row.EmployeeId" />
                                                     <input type="hidden" name="KPIId" value="@row.KpiId" />
                                                     <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
@@ -622,6 +623,24 @@
                                         <dd>@Percent(item.ScheduleProgressPercentage)</dd>
                                     </div>
                                 </dl>
+                                @if (Model.CanReviewCheckIns)
+                                {
+                                    <div class="et-ai-proposal" data-ai-proposal="@item.CheckInId">
+                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                            <div>
+                                                <strong><i class="bi bi-stars me-1" aria-hidden="true"></i>AI đánh giá tham khảo</strong>
+                                                <small class="d-block text-muted">Chỉ là đề xuất có nguồn; quản lý vẫn quyết định.</small>
+                                            </div>
+                                            <button type="button"
+                                                    class="evaluation-secondary-action et-ai-proposal__button"
+                                                    data-ai-evaluate-checkin="@item.CheckInId">
+                                                <i class="bi bi-search me-1" aria-hidden="true"></i>
+                                                Phân tích check-in
+                                            </button>
+                                        </div>
+                                        <div class="et-ai-proposal__result mt-2" data-ai-proposal-result hidden role="status"></div>
+                                    </div>
+                                }
                                 @if (!string.IsNullOrWhiteSpace(item.FailReasonName) || !string.IsNullOrWhiteSpace(item.Note))
                                 {
                                     <div class="et-review-context">
@@ -637,10 +656,14 @@
                                 }
                             </div>
 
-                            <form asp-action="Review" method="post" class="et-inline-review-form" data-local-submit data-busy-label="Đang xử lý xác nhận...">
+                            <form asp-action="Review" method="post" class="et-inline-review-form"
+                                  data-local-submit data-busy-label="Đang xử lý xác nhận..."
+                                  data-formula-baseline="@(item.ProgressPercentage?.ToString(CultureInfo.InvariantCulture) ?? "")">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@item.CheckInId" />
                                 <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                                <input type="hidden" name="aiProposalId" value="" data-ai-proposal-id />
+                                <input type="hidden" name="aiProposalRowVersion" value="" data-ai-proposal-row-version />
                                 <label for="@reviewScoreId">
                                     <span>Điểm đánh giá <small>(không bắt buộc)</small></span>
                                     <input id="@reviewScoreId" name="reviewScore" type="number" min="0" max="100" step="0.01"
@@ -731,4 +754,235 @@
 
 @section Scripts {
     <script src="~/js/kpi-employee-tracking.js" asp-append-version="true"></script>
+    <script>
+        (() => {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            document.querySelectorAll('[data-ai-evaluate-checkin]').forEach((button) => {
+                button.addEventListener('click', async () => {
+                    const checkInId = Number(button.dataset.aiEvaluateCheckin);
+                    const container = button.closest('[data-ai-proposal]');
+                    const result = container?.querySelector('[data-ai-proposal-result]');
+                    if (!checkInId || !result) return;
+
+                    button.disabled = true;
+                    button.setAttribute('aria-busy', 'true');
+                    result.hidden = false;
+                    result.textContent = 'Đang đối chiếu dữ liệu và nguồn nội bộ…';
+                    try {
+                        const response = await fetch('@Url.Action("EvaluateCheckInProposal", "AI")', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': token || ''
+                            },
+                            body: JSON.stringify({ checkInId })
+                        });
+                        const payload = await response.json();
+                        if (!response.ok) {
+                            throw new Error(payload?.warnings?.[0] || 'Không thể tạo đề xuất AI.');
+                        }
+
+                        const proposal = payload.proposal || {};
+                        const confidence = proposal.confidence || {};
+                        const confidenceBreakdown = proposal.confidenceBreakdown || {};
+                        const citations = Array.isArray(proposal.citations) ? proposal.citations : [];
+                        const dataGaps = Array.isArray(proposal.dataGaps) ? proposal.dataGaps : [];
+                        const criterionScores = Array.isArray(proposal.criterionScores) ? proposal.criterionScores : [];
+                        const confidenceBandLabels = {
+                            0: 'Từ chối kết luận',
+                            1: 'Thấp',
+                            2: 'Vừa',
+                            3: 'Cao',
+                            Abstain: 'Từ chối kết luận',
+                            Low: 'Thấp',
+                            Moderate: 'Vừa',
+                            High: 'Cao'
+                        };
+                        const shouldAbstain = confidence.shouldAbstain === true;
+                        const confidenceBand = shouldAbstain
+                            ? 'Từ chối kết luận'
+                            : confidenceBandLabels[String(confidence.band ?? '')] || 'Chưa phân loại';
+                        const sourceText = citations.length
+                            ? citations.map(source => {
+                                const location = [
+                                    source.versionId ? `bản ${source.versionId}` : '',
+                                    source.page ? `trang ${source.page}` : '',
+                                    source.section ? `mục ${source.section}` : ''
+                                ].filter(Boolean).join(', ');
+                                const freshness = source.isCurrent === true
+                                    ? ''
+                                    : ' [nguồn cũ/không rõ ngày]';
+                                const sourceLabel = source.sourceType === 'check-in-submission'
+                                    ? ' [tự khai, chưa xác minh]'
+                                    : '';
+                                return `${source.title || source.sourceType} #${source.sourceId}${location ? ` (${location})` : ''}${freshness}${sourceLabel}`;
+                            }).join('; ')
+                            : 'Không có nguồn bổ sung';
+                        result.replaceChildren();
+                        const summary = document.createElement('div');
+                        const advisoryStatus = proposal.serverClassification || proposal.proposedStatus || 'Chưa phân loại';
+                        const snapshotLabel = payload.candidateIsProvisional === false
+                            ? 'Snapshot chính thức sau duyệt'
+                            : 'Dự kiến – check-in chưa duyệt';
+                        summary.textContent = `${snapshotLabel} · baseline chính thức ${Number(payload.officialApprovedBaselinePercent || 0).toFixed(2)}% · dự phóng ${Number(payload.candidateProjectedPercent || 0).toFixed(2)}% · phân loại hệ thống ${advisoryStatus}`;
+                        const rationale = document.createElement('div');
+                        rationale.className = 'small mt-1';
+                        rationale.textContent = proposal.rationale || 'Không có nhận xét tự động.';
+                        const confidenceLine = document.createElement('div');
+                        confidenceLine.className = 'small mt-1';
+                        confidenceLine.textContent = `Độ tin cậy dữ liệu ${(Number(confidence.score || 0) * 100).toFixed(0)}% (${confidenceBand}) · phủ ${(Number(confidenceBreakdown.evidenceCoverage || 0) * 100).toFixed(0)}% · thẩm quyền ${(Number(confidenceBreakdown.sourceAuthority || 0) * 100).toFixed(0)}% · nhất quán ${(Number(confidenceBreakdown.consistency || 0) * 100).toFixed(0)}% · độ mới ${(Number(confidenceBreakdown.freshness || 0) * 100).toFixed(0)}%.`;
+                        const citationsLine = document.createElement('div');
+                        citationsLine.className = 'small text-muted mt-1';
+                        citationsLine.textContent = `Nguồn: ${sourceText}. Đề xuất provisional; chưa thay đổi dữ liệu chính thức.`;
+                        result.append(summary, rationale, confidenceLine, citationsLine);
+                        if (dataGaps.length) {
+                            const gapList = document.createElement('ul');
+                            gapList.className = 'small text-warning-emphasis mt-2 mb-0';
+                            gapList.setAttribute('aria-label', 'Khoảng trống dữ liệu');
+                            dataGaps.forEach(gap => {
+                                const item = document.createElement('li');
+                                item.textContent = gap.message || gap.code || 'Thiếu dữ liệu';
+                                gapList.append(item);
+                            });
+                            result.append(gapList);
+                        }
+                        if (criterionScores.length) {
+                            const criterionList = document.createElement('ul');
+                            criterionList.className = 'small mt-2 mb-0';
+                            criterionList.setAttribute('aria-label', 'Điểm tiêu chí định tính đề xuất');
+                            criterionScores.forEach(criterion => {
+                                const item = document.createElement('li');
+                                const scoreText = criterion.scorePercent == null
+                                    ? 'không chấm do thiếu dữ liệu'
+                                    : `${Number(criterion.scorePercent).toFixed(2)}%`;
+                                item.textContent = `${criterion.name}: ${scoreText} · ${criterion.proposedStatus}. ${criterion.rationale || ''}`;
+                                criterionList.append(item);
+                            });
+                            result.append(criterionList);
+                        }
+                        if (payload.proposalId && payload.proposalLifecycleStatus === 'AwaitingHumanReview') {
+                            const actions = document.createElement('div');
+                            actions.className = 'd-flex flex-wrap gap-2 mt-2';
+                            const decisionMessage = document.createElement('div');
+                            decisionMessage.className = 'small mt-2';
+                            const reviewForm = container.closest('.et-review-item')?.querySelector('.et-inline-review-form');
+                            const canApplyDraft = proposal.canApplyToDraft === true && Boolean(payload.proposalRowVersion);
+                            const decisions = canApplyDraft ? ['ApplyDraft', 'Rejected'] : ['Rejected'];
+                            decisions.forEach((decision) => {
+                                const decisionButton = document.createElement('button');
+                                decisionButton.type = 'button';
+                                decisionButton.className = decision === 'ApplyDraft'
+                                    ? 'ci-review-button ci-review-button--approve'
+                                    : 'ci-review-button ci-review-button--reject';
+                                decisionButton.textContent = decision === 'ApplyDraft'
+                                    ? 'Áp dụng vào bản nháp'
+                                    : (canApplyDraft ? 'Không sử dụng đề xuất' : 'Ghi nhận không đủ bằng chứng');
+                                decisionButton.addEventListener('click', async () => {
+                                    if (decision === 'ApplyDraft') {
+                                        if (!reviewForm) return;
+                                        const scoreInput = reviewForm.querySelector('[name="reviewScore"]');
+                                        const commentInput = reviewForm.querySelector('[name="reviewComment"]');
+                                        const proposalInput = reviewForm.querySelector('[data-ai-proposal-id]');
+                                        const proposalRowVersionInput = reviewForm.querySelector('[data-ai-proposal-row-version]');
+                                        const proposedScore = Math.max(0, Math.min(100,
+                                            Number(proposal.proposedProgressPercent ?? payload.candidateProjectedPercent ?? 0)));
+                                        if (scoreInput && !scoreInput.value) {
+                                            scoreInput.value = proposedScore.toFixed(2).replace(/\.00$/, '');
+                                            scoreInput.dataset.aiDraftValue = scoreInput.value;
+                                        }
+                                        if (commentInput && !commentInput.value.trim()) {
+                                            const draftComment = `AI tham khảo (${confidenceBand}, ${(Number(confidence.score || 0) * 100).toFixed(0)}%): ${proposal.rationale || advisoryStatus}. Quản lý đã đối chiếu và chịu trách nhiệm nội dung quyết định.`;
+                                            commentInput.value = draftComment.slice(0, Number(commentInput.maxLength) || 1000);
+                                            commentInput.dataset.aiDraftValue = commentInput.value;
+                                        }
+                                        if (proposalInput) proposalInput.value = String(payload.proposalId);
+                                        if (proposalRowVersionInput) proposalRowVersionInput.value = String(payload.proposalRowVersion || '');
+                                        decisionMessage.textContent = 'Đã đưa đề xuất vào bản nháp. Hãy kiểm tra, chỉnh sửa rồi bấm Xác nhận hoặc Từ chối; AI chưa thay đổi dữ liệu chính thức.';
+                                        scoreInput?.focus();
+                                        return;
+                                    }
+
+                                    actions.querySelectorAll('button').forEach(item => item.disabled = true);
+                                    try {
+                                        const decisionResponse = await fetch('@Url.Action("DecideCheckInProposal", "AI")', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'RequestVerificationToken': token || ''
+                                            },
+                                            body: JSON.stringify({
+                                                proposalId: payload.proposalId,
+                                                decision,
+                                                rowVersion: payload.proposalRowVersion,
+                                                idempotencyKey: crypto.randomUUID()
+                                            })
+                                        });
+                                        const decisionPayload = await decisionResponse.json();
+                                        if (!decisionResponse.ok) {
+                                            throw new Error(decisionPayload?.warnings?.[0] || 'Không thể lưu quyết định.');
+                                        }
+                                        decisionMessage.textContent = decisionPayload.message;
+                                        const proposalInput = reviewForm?.querySelector('[data-ai-proposal-id]');
+                                        const proposalRowVersionInput = reviewForm?.querySelector('[data-ai-proposal-row-version]');
+                                        const scoreInput = reviewForm?.querySelector('[name="reviewScore"]');
+                                        const commentInput = reviewForm?.querySelector('[name="reviewComment"]');
+                                        if (proposalInput) proposalInput.value = '';
+                                        if (proposalRowVersionInput) proposalRowVersionInput.value = '';
+                                        if (scoreInput?.dataset.aiDraftValue === scoreInput.value) scoreInput.value = '';
+                                        if (commentInput?.dataset.aiDraftValue === commentInput.value) commentInput.value = '';
+                                        actions.remove();
+                                    } catch (decisionError) {
+                                        decisionMessage.textContent = decisionError?.message || 'Không thể lưu quyết định.';
+                                        actions.querySelectorAll('button').forEach(item => item.disabled = false);
+                                    }
+                                });
+                                actions.append(decisionButton);
+                            });
+                            result.append(actions, decisionMessage);
+                        } else if (payload.proposalLifecycleStatus) {
+                            const lifecycle = document.createElement('div');
+                            lifecycle.className = 'small text-muted mt-2';
+                            lifecycle.textContent = `Vòng đời đề xuất: ${payload.proposalLifecycleStatus}. Không còn hành động quyết định nào khả dụng.`;
+                            result.append(lifecycle);
+                        }
+                    } catch (error) {
+                        result.textContent = error?.message || 'Không thể tạo đề xuất AI.';
+                    } finally {
+                        button.disabled = false;
+                        button.removeAttribute('aria-busy');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.et-inline-review-form[data-formula-baseline]').forEach((form) => {
+                form.addEventListener('submit', (event) => {
+                    const submitter = event.submitter;
+                    if (submitter?.value !== 'Approved') return;
+                    const baseline = Number(form.dataset.formulaBaseline);
+                    const scoreInput = form.querySelector('[name="reviewScore"]');
+                    const commentInput = form.querySelector('[name="reviewComment"]');
+                    if (!scoreInput?.value.trim()) {
+                        commentInput?.setCustomValidity('');
+                        return;
+                    }
+                    const score = Number(scoreInput?.value);
+                    if (!Number.isFinite(baseline) || !Number.isFinite(score) || Math.abs(score - baseline) <= 10) {
+                        commentInput?.setCustomValidity('');
+                        return;
+                    }
+                    if (!commentInput?.value.trim()) {
+                        event.preventDefault();
+                        commentInput?.setCustomValidity('Vui lòng nêu lý do khi điểm lệch hơn 10 điểm so với baseline công thức.');
+                        commentInput?.reportValidity();
+                        commentInput?.focus();
+                        return;
+                    }
+                    commentInput.setCustomValidity('');
+                });
+                form.querySelector('[name="reviewComment"]')?.addEventListener('input', (event) => {
+                    event.currentTarget.setCustomValidity('');
+                });
+            });
+        })();
+    </script>
 }

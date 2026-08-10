@@ -20,6 +20,7 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public bool CanEditOkr { get; init; }
         public bool CanDeleteOkr { get; init; }
         public bool CanUpdateOkrProgress { get; init; }
+        public bool CanViewProjects { get; init; }
 
         public bool ModalCatalogsLoaded { get; init; }
         public bool HasActiveFilters { get; init; }
@@ -67,11 +68,10 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public int? CreatedById { get; init; }
         public DateTime? CreatedAt { get; init; }
         public DateTime? UpdatedAt { get; init; }
-        public int? LinkedWorkProjectId { get; init; }
-
         /// <summary>Activity stamp for "Mới cập nhật" (UpdatedAt if set, otherwise CreatedAt).</summary>
         public DateTime LastActivityAt => UpdatedAt ?? CreatedAt ?? DateTime.MinValue;
-        public string? LinkedWorkProjectName { get; init; }
+        public IReadOnlyList<OkrLinkedProjectViewModel> LinkedProjects { get; init; } =
+            Array.Empty<OkrLinkedProjectViewModel>();
 
         public decimal TotalProgress { get; init; }
         public int KeyResultCount { get; init; }
@@ -161,6 +161,12 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
                 return parts.Count == 0 ? "Chưa phân bổ" : string.Join(" · ", parts);
             }
         }
+    }
+
+    public sealed class OkrLinkedProjectViewModel
+    {
+        public int Id { get; init; }
+        public string Name { get; init; } = string.Empty;
     }
 
     public sealed class OkrKeyResultItemViewModel

@@ -118,7 +118,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
             string nextEmployeeCode = await _codeGenerator.GenerateEmployeeCodeAsync();
             
             ViewData["NextEmployeeCode"] = nextEmployeeCode;
-            ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username");
+            ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username");
             ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", null);
             ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", null);
             ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync();
@@ -131,6 +131,13 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
         public async Task<IActionResult> Create([Bind("Id,EmployeeCode,FullName,DateOfBirth,Phone,Email,TaxCode,JoinDate,SystemUserId,IsActive,StrategicGoalId")] Employee employee, int? departmentId, int? positionId)
         {
             await ValidateStrategicGoalAsync(employee.StrategicGoalId);
+            if (employee.SystemUserId.HasValue &&
+                !await IsCurrentTenantUserAsync(employee.SystemUserId.Value))
+            {
+                ModelState.AddModelError(
+                    nameof(Employee.SystemUserId),
+                    "Tài khoản không thuộc không gian làm việc hiện tại.");
+            }
 
             if (ModelState.IsValid)
             {
@@ -148,7 +155,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
                     ModelState.AddModelError("EmployeeCode", "Mã này đã tồn tại.");
                     
                     ViewData["NextEmployeeCode"] = await _codeGenerator.GenerateEmployeeCodeAsync();
-                    ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username");
+                    ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username");
                     ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
                     ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
                     ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
@@ -166,7 +173,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
                         ModelState.AddModelError("SystemUserId", "Tài khoản này đã bị chiếm dụng.");
 
                         ViewData["NextEmployeeCode"] = await _codeGenerator.GenerateEmployeeCodeAsync();
-                        ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", employee.SystemUserId);
+                        ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username", employee.SystemUserId);
                         ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
                         ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
                         ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
@@ -200,7 +207,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
             }
 
             ViewData["NextEmployeeCode"] = await _codeGenerator.GenerateEmployeeCodeAsync();
-            ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username");
+            ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username");
             ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
             ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
             ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
@@ -225,7 +232,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
                 .OrderByDescending(a => a.EffectiveDate)
                 .FirstOrDefaultAsync();
 
-            ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", emp.SystemUserId);
+            ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username", emp.SystemUserId);
             ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", assignment?.DepartmentId);
             ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", assignment?.PositionId);
             ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(emp.StrategicGoalId);
@@ -245,7 +252,14 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
         return NotFound();
     }
 
-    await ValidateStrategicGoalAsync(employee.StrategicGoalId);
+	    await ValidateStrategicGoalAsync(employee.StrategicGoalId);
+	    if (employee.SystemUserId.HasValue &&
+	        !await IsCurrentTenantUserAsync(employee.SystemUserId.Value))
+	    {
+	        ModelState.AddModelError(
+	            nameof(Employee.SystemUserId),
+	            "Tài khoản không thuộc không gian làm việc hiện tại.");
+	    }
 
     if (ModelState.IsValid)
     {
@@ -258,7 +272,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
                 ViewBag.ErrorMessage = "Tài khoản này đã được liên kết với nhân viên khác, vui lòng chọn tài khoản khác!";
                 ModelState.AddModelError("SystemUserId", "Tài khoản này đã bị chiếm dụng.");
 
-                ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", employee.SystemUserId);
+                ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username", employee.SystemUserId);
                 ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
                 ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
                 ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
@@ -312,12 +326,16 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
                     .ToList();
                 if (systemUserIdsToDeactivate.Any())
                 {
-                    var linkedUsers = await _context.SystemUsers
-                        .Where(user => systemUserIdsToDeactivate.Contains(user.Id))
+                    var tenantId = _context.CurrentTenantId;
+                    var linkedMemberships = await _context.TenantMemberships
+                        .Where(membership =>
+                            tenantId.HasValue &&
+                            membership.TenantId == tenantId.Value &&
+                            systemUserIdsToDeactivate.Contains(membership.SystemUserId))
                         .ToListAsync();
-                    foreach (var linkedUser in linkedUsers)
+                    foreach (var membership in linkedMemberships)
                     {
-                        linkedUser.IsActive = false;
+                        membership.IsActive = false;
                     }
                 }
             }
@@ -371,7 +389,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
         }
     }
 
-    ViewData["SystemUserId"] = new SelectList(_context.SystemUsers, "Id", "Username", employee.SystemUserId);
+    ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username", employee.SystemUserId);
     ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
     ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
     ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
@@ -451,7 +469,8 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             // Lấy thông tin tài khoản liên kết
             if (emp.SystemUserId.HasValue)
             {
-                ViewBag.SystemUser = await _context.SystemUsers.FindAsync(emp.SystemUserId.Value);
+                ViewBag.SystemUser = await GetTenantSystemUsersQuery(includeInactive: true)
+                    .FirstOrDefaultAsync(user => user.Id == emp.SystemUserId.Value);
             }
 
             // Lấy danh sách KPI được giao
@@ -506,10 +525,15 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
 
                 if (emp.SystemUserId.HasValue)
                 {
-                    var systemUser = await _context.SystemUsers.FindAsync(emp.SystemUserId.Value);
-                    if (systemUser != null)
+                    var tenantId = _context.CurrentTenantId;
+                    var membership = tenantId.HasValue
+                        ? await _context.TenantMemberships.FirstOrDefaultAsync(item =>
+                            item.TenantId == tenantId.Value &&
+                            item.SystemUserId == emp.SystemUserId.Value)
+                        : null;
+                    if (membership != null)
                     {
-                        systemUser.IsActive = false;
+                        membership.IsActive = false;
                     }
                 }
 
@@ -632,9 +656,9 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
 
                                 employees.Add(employee);
                             }
-                            catch (Exception ex)
+                            catch (Exception)
                             {
-                                errors.Add($"Dòng {row}: Lỗi xử lý dữ liệu - {ex.Message}");
+                                errors.Add($"Dòng {row}: Không thể đọc dữ liệu ở dòng này.");
                             }
                         }
                     }
@@ -660,9 +684,9 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
                 TempData["SuccessMessage"] = $"Đã import thành công {employees.Count} nhân viên!";
                 return RedirectToAction(nameof(Index));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                ViewBag.ErrorMessage = $"Lỗi xử lý file: {ex.Message}";
+                ViewBag.ErrorMessage = "Không thể xử lý tệp import. Vui lòng kiểm tra định dạng và thử lại.";
                 return View();
             }
         }
@@ -685,6 +709,31 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             }
 
             return null;
+        }
+
+        private IQueryable<SystemUser> GetTenantSystemUsersQuery(bool includeInactive = false)
+        {
+            var tenantId = _context.CurrentTenantId;
+            if (!tenantId.HasValue)
+            {
+                return _context.SystemUsers.Where(_ => false);
+            }
+
+            return _context.SystemUsers.Where(user =>
+                _context.TenantMemberships.Any(membership =>
+                    membership.TenantId == tenantId.Value &&
+                    membership.SystemUserId == user.Id &&
+                    (includeInactive || membership.IsActive)));
+        }
+
+        private async Task<bool> IsCurrentTenantUserAsync(int systemUserId)
+        {
+            var tenantId = _context.CurrentTenantId;
+            return tenantId.HasValue &&
+                   await _context.TenantMemberships.AnyAsync(membership =>
+                       membership.TenantId == tenantId.Value &&
+                       membership.SystemUserId == systemUserId &&
+                       membership.IsActive);
         }
 
         private List<string> ValidateEmployee(Employee employee, int row)

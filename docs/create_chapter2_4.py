@@ -264,8 +264,8 @@ def write_section_2_4(doc):
          "Ghi nhận lịch sử check-in tiến độ của nhân viên và queue phê duyệt của quản lý."],
         ["6", "Evaluation\n(Đánh giá)", "EvaluationResults, KPIAdjustmentHistories, BonusRules, RealtimeExpectedBonuses",
          "Tính điểm hiệu suất cuối kỳ, tự động xếp hạng bậc S->D và dự toán lương thưởng tương ứng."],
-        ["7", "System & AI\n(Hệ thống)", "SystemAlerts, AuditLogs, AIGenerationHistories",
-         "Ghi nhận cảnh báo tiến độ, nhật ký Audit Logs hoạt động và lưu trữ lịch sử chat của Gemini AI."],
+        ["7", "System & AI\n(Hệ thống)", "SystemAlerts, AuditLogs, AgentRuns, EvidenceReferenceMetadata, AIGenerationHistories (legacy)",
+         "Ghi nhận cảnh báo, audit và metadata run/citation; bảng lịch sử AI cũ chỉ được giữ cho tương thích migration/retention, không ghi hội thoại mới."],
     ]
 
     create_table(doc, headers_db, rows_db, col_widths=[1.0, 3.0, 5.5, 6.5])
@@ -336,7 +336,7 @@ def write_section_2_4(doc):
          "hiệu suất tổng hợp, xếp hạng rank cuối cùng (S->D) và số tiền thưởng thực lĩnh."),
         
         ("Quan hệ OKR – WorkProject (1 – N)",
-         "Một mục tiêu OKR có thể được thực thi thông qua nhiều dự án (WorkProject) liên kết qua LinkedOKRId, giúp tổ chức theo dõi "
+         "Một mục tiêu OKR có thể được thực thi thông qua nhiều dự án (WorkProject) liên kết qua SourceOKRId, giúp tổ chức theo dõi "
          "tiến độ dự án đóng góp vào OKR vĩ mô."),
         
         ("Quan hệ WorkProject – WorkItem (1 – N)",

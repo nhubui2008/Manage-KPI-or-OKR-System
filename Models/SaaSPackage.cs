@@ -10,7 +10,7 @@ namespace Manage_KPI_or_OKR_System.Models
 
         [Required]
         [StringLength(100)]
-        public string PackageName { get; set; }
+        public string PackageName { get; set; } = string.Empty;
 
         public decimal PricePerMonth { get; set; }
 
@@ -21,7 +21,7 @@ namespace Manage_KPI_or_OKR_System.Models
         public bool HasAIInsight { get; set; }
 
         [StringLength(500)]
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
         public bool IsPopular { get; set; }
 

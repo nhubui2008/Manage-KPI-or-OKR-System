@@ -237,18 +237,18 @@ def write_section_4_3(doc):
         "Đặc tả chức năng đi sâu vào mô tả chi tiết logic xử lý nghiệp vụ ở lớp backend, cấu trúc dữ liệu "
         "đầu vào/đầu ra (Input/Output) và các quy tắc ràng buộc nghiệp vụ chính. Để minh họa trực quan "
         "quy trình giao tiếp liên lớp, mục này trình bày sơ đồ tuần tự (Sequence Diagram) cho quy trình "
-        "yêu cầu tư vấn và gợi ý chỉ tiêu KPI thông minh từ Trợ lý AI Gemini."
+        "yêu cầu gợi ý chỉ tiêu KPI thông minh qua model gateway có kiểm soát nguồn."
     )
 
     # ============================================================
     # 4.3.1. SƠ ĐỒ TUẦN TỰ QUY TRÌNH AI SUGGESTION
     # ============================================================
-    add_heading2(doc, "4.3.1. Sơ đồ tuần tự quy trình tư vấn và gợi ý KPI bằng AI Gemini")
+    add_heading2(doc, "4.3.1. Sơ đồ tuần tự quy trình gợi ý KPI có nguồn")
     
     add_para(doc,
         "Sơ đồ dưới đây mô tả luồng tương tác không đồng bộ (Asynchronous call) từ trình duyệt web của người dùng, "
         "đi qua lớp bảo mật phân quyền của Controller, nạp dữ liệu ngữ cảnh thực tế từ Database thông qua DbContext, "
-        "gửi gói tin đóng gói sang API Google Gemini và trả kết quả hiển thị cho người dùng:"
+        "gửi snapshot tối thiểu qua model gateway, kiểm tra strict JSON/citation, dựng lại source fingerprint rồi mới trả bản nháp cho người dùng:"
     )
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -260,7 +260,7 @@ def write_section_4_3(doc):
         p_seq.add_run().add_picture(seq_path, width=Cm(15.0))
     else:
         p_seq.add_run("[SƠ ĐỒ SEQUENCE AI - LỖI HÌNH ẢNH]")
-    add_figure_caption(doc, "Hình 13: Sơ đồ tuần tự quy trình yêu cầu tư vấn & gợi ý KPI bằng AI Gemini")
+    add_figure_caption(doc, "Hình 13: Sơ đồ tuần tự quy trình yêu cầu gợi ý KPI qua model gateway")
 
     # ============================================================
     # 4.3.2. MÔ TẢ XỬ LÝ BACKEND (BACKEND LOGIC)
@@ -272,20 +272,18 @@ def write_section_4_3(doc):
         "đăng ký Dependency Injection trong Program.cs:"
     )
 
-    add_bullet(doc, "Lớp Action 'GetKpiSuggestions' tiếp nhận tham số truyền lên. "
-                   "Gọi HasPermissionAttribute kiểm tra quyền 'AI_SUGGESTION_VIEW'. Nếu hợp lệ, "
-                   "gọi Service để lấy context và gọi tiếp GeminiService.", bold_prefix="1. AIController.cs")
+    add_bullet(doc, "Action 'SuggestKPI' tiếp nhận các ID phạm vi, yêu cầu anti-forgery và "
+                   "HasPermissionAttribute kiểm tra quyền 'KPIS_CREATE'. Nếu hợp lệ, action gọi KPI Suggestion Advisor; "
+                   "mọi lỗi quyền, source conflict, timeout và schema sai được ánh xạ thành response an toàn.", bold_prefix="1. AIController.cs")
 
     add_bullet(doc, "Lớp xử lý nạp ngữ cảnh thực tế từ database. "
                    "Sử dụng Entity Framework Core 10 truy vấn các bảng: OKRs, KPIs, Employees. "
-                   "Hệ thống sẽ biên dịch dữ liệu này thành cấu trúc văn bản XML/JSON chi tiết, bao gồm: "
-                   "danh sách OKR phòng ban hiện tại, danh sách KPI nhân sự đang chịu trách nhiệm, "
-                   "và chức danh công việc của nhân viên.", bold_prefix="2. AIDataService.cs")
+                   "Hệ thống biên dịch thành snapshot tối thiểu gồm kỳ đang mở, OKR/Key Result, loại KPI, KPI mẫu và chức danh; "
+                   "không đưa tên, mã, email hoặc số điện thoại nhân viên vào context model.", bold_prefix="2. AIDataService.cs")
 
-    add_bullet(doc, "Cấu hình tham số model (mặc định sử dụng gemini-2.5-flash), "
-                   "thiết lập SystemInstruction (chỉ dẫn hệ thống bắt buộc AI phản hồi bằng tiếng Việt, cấu trúc bảng HTML "
-                   "hoặc Markdown). Gửi request POST sang API Endpoint của Google thông qua HttpClient. "
-                   "Nhận kết quả JSON, trích xuất text phản hồi và trả về Controller.", bold_prefix="3. GeminiService.cs")
+    add_bullet(doc, "Gọi IAIModelClient ở nhiệt độ 0 và chỉ nhận strict JSON 3-5 bản nháp hoặc danh sách rỗng. "
+                   "Advisor kiểm tra source ID, đơn vị, chiều KPI và quan hệ target/pass/fail, sau đó dựng lại snapshot trong "
+                   "transaction Serializable. Chỉ AgentRun/citation metadata được lưu; prompt và raw response không được lưu.", bold_prefix="3. KpiSuggestionAdvisor.cs")
 
     # ============================================================
     # 4.3.3. MÔ TẢ INPUT / OUTPUT (CẤU TRÚC DỮ LIỆU)
@@ -296,19 +294,19 @@ def write_section_4_3(doc):
 
     # --- Input ---
     add_heading3(doc, "a) Dữ liệu đầu vào (Input - JSON Request)")
-    add_para(doc, "Khi client gửi Ajax Request lên endpoint `/AI/GetKpiSuggestions`, gói tin JSON bao gồm:")
-    add_bullet(doc, "Chuỗi ký tự do người dùng nhập (Ví dụ: 'Hãy đề xuất 3 KPI đo lường tốc độ code').", bold_prefix="Prompt [string]")
+    add_para(doc, "Khi client gửi Ajax Request lên endpoint `/AI/SuggestKPI`, gói tin JSON bao gồm:")
     add_bullet(doc, "ID của kỳ đánh giá hiện tại để lọc OKR liên quan.", bold_prefix="PeriodId [int]")
     add_bullet(doc, "ID phòng ban của nhân viên để lọc OKR phòng ban.", bold_prefix="DepartmentId [int]")
     add_bullet(doc, "ID của nhân viên để lọc chức danh công việc.", bold_prefix="EmployeeId [int]")
+    add_bullet(doc, "ID Objective và Key Result liên kết; Key Result bắt buộc phải thuộc đúng Objective.", bold_prefix="OkrId / OkrKeyResultId [int]")
 
     # --- Output ---
     add_heading3(doc, "b) Dữ liệu đầu ra (Output - JSON Response)")
     add_para(doc, "Sau khi xử lý thành công, backend phản hồi gói tin JSON có cấu trúc:")
     add_bullet(doc, "Giá trị true/false xác định cuộc gọi API thành công hay lỗi.", bold_prefix="Success [bool]")
-    add_bullet(doc, "Nội dung câu trả lời của AI đã được định dạng mã HTML (render trực tiếp lên chat widget).", bold_prefix="HtmlResponse [string]")
-    add_bullet(doc, "Chuỗi văn bản thuần chưa định dạng của AI.", bold_prefix="RawResponse [string]")
-    add_bullet(doc, "Mã thông báo lỗi chi tiết nếu success = false.", bold_prefix="ErrorMessage [string]")
+    add_bullet(doc, "Danh sách bản nháp có name, targetValue, unit, passThreshold, failThreshold, isInverse, rationale và sourceIds.", bold_prefix="Suggestions [array]")
+    add_bullet(doc, "Mã AgentRun và danh sách citation metadata tương ứng với sourceIds đã dùng.", bold_prefix="AgentRunId / Citations")
+    add_bullet(doc, "Cảnh báo abstain hoặc thông báo an toàn nếu success = false.", bold_prefix="Warnings [array]")
 
     # ============================================================
     # 4.3.4. QUY TẮC NGHIỆP VỤ CHÍNH (BUSINESS RULES)
@@ -319,24 +317,20 @@ def write_section_4_3(doc):
 
     rules = [
         ("Ràng buộc Access Scope bảo mật dữ liệu",
-         "Người dùng chỉ được phép yêu cầu AI gợi ý KPI/OKR cho bản thân hoặc cho nhân viên thuộc phòng ban mình quản lý. "
-         "Backend sẽ đối chiếu ID người gửi request với AccessScopeHelper, nếu phát hiện truy cập chéo ID của phòng ban khác, "
-         "hệ thống sẽ từ chối xử lý và ghi nhận cảnh báo bảo mật vào Audit Logs."),
+         "Người dùng chỉ được yêu cầu gợi ý trong tenant/phạm vi được cấp quyền và phải có KPIS_CREATE. "
+         "Backend xác minh lại employee, department, kỳ, OKR và Key Result trước lẫn sau model call; nguồn đổi thì từ chối bản nháp cũ."),
         
-        ("Cơ chế Rate Limiting (Giới hạn tần suất gọi)",
-         "Để tránh tình trạng spam API làm cạn kiệt tài nguyên hệ thống và phát sinh chi phí lớn, hệ thống áp dụng "
-         "Rate Limit nghiêm ngặt ở mức tối đa 15 requests/phút đối với mỗi tài khoản doanh nghiệp. Lượt gọi được đếm "
-         "và reset tự động qua bộ đệm nhớ cache."),
+        ("Giới hạn input và retry hữu hạn",
+         "Snapshot gửi model bị giới hạn 24.000 ký tự, response tối đa 30.000 ký tự và chỉ retry schema một lần. "
+         "Request hủy/timeout được dừng và ánh xạ thành lỗi an toàn, không giữ request model chạy vô hạn."),
         
-        ("Quy tắc cấu trúc Prompt chống trùng lặp (Anti-duplication Prompting)",
-         "Khi AIDataService dựng context gửi sang Gemini, bắt buộc phải đính kèm danh sách các KPI đã giao từ trước. "
-         "SystemInstruction quy định rõ: 'AI không được đề xuất các chỉ tiêu KPI trùng lặp hoặc tương đương với danh sách "
-         "đang chạy, nhằm đảm bảo mỗi kỳ nhân viên chỉ tập trung vào các KPI độc lập'."),
+        ("Strict schema, citation và validator KPI",
+         "Model chỉ được dùng source ID và đơn vị do server cấp. Server từ chối field thừa, nguồn giả, KPI trùng tên, "
+         "số lượng ngoài 3-5 và ngưỡng trái chiều KPI; danh sách rỗng được coi là abstain hợp lệ."),
         
-        ("Cơ chế tự động dọn dẹp lịch sử (AI Auto-cleanup)",
-         "Lịch sử hội thoại AI được lưu tạm thời để phục vụ tính năng ghi nhớ ngữ cảnh cuộc trò chuyện. "
-         "Tuy nhiên, để bảo vệ dung lượng database, dịch vụ background AIHistoryCleanupService sẽ tự động quét "
-         "và xóa sạch các cuộc trò chuyện cũ hơn 30 ngày vào lúc 2 giờ sáng hàng ngày."),
+        ("AI đề xuất, con người quyết định",
+         "Advisor không ghi KPIs/KPIDetails và không lưu prompt/raw output. Nút áp dụng chỉ điền form; thao tác POST tạo KPI "
+         "vẫn chạy toàn bộ validator quyền, kỳ, OKR, ngưỡng và phân bổ. Endpoint refine không nguồn đã được loại bỏ."),
     ]
 
     for title, desc in rules:
@@ -346,7 +340,7 @@ def write_section_4_3(doc):
     add_para(doc, "", space_before=6, space_after=0, indent=False)
     add_para(doc,
         "Việc đặc tả chi tiết logic backend, cấu trúc dữ liệu trao đổi và các quy tắc nghiệp vụ trên giúp "
-        "quy trình tích hợp AI Gemini đạt hiệu năng tối ưu, đồng thời bảo vệ an toàn thông tin và kiểm soát tốt "
+        "quy trình tích hợp AI qua model gateway có thể kiểm toán, đồng thời bảo vệ an toàn thông tin và kiểm soát tốt "
         "chi phí tài nguyên hệ thống trong suốt quá trình vận hành lâu dài.",
         italic=True, space_before=6, space_after=12
     )

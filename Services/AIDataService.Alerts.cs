@@ -15,22 +15,31 @@ namespace Manage_KPI_or_OKR_System.Services
             var candidates = new List<AIRiskCandidate>();
 
             var kpis = await _context.KPIs
+                .AsNoTracking()
                 .Where(k => k.IsActive == true && scopedKpiIds.Contains(k.Id))
                 .Where(k => period == null || k.PeriodId == period.Id)
                 .OrderByDescending(k => k.CreatedAt)
+                .ThenByDescending(k => k.Id)
                 .Take(80)
                 .ToListAsync();
 
             var kpiIds = kpis.Select(k => k.Id).ToList();
-            var detailMap = await _context.KPIDetails
+            var detailRowsForKpis = await _context.KPIDetails
+                .AsNoTracking()
                 .Where(d => d.KPIId.HasValue && kpiIds.Contains(d.KPIId.Value))
-                .ToDictionaryAsync(d => d.KPIId!.Value);
+                .OrderByDescending(d => d.Id)
+                .ToListAsync();
+            var detailMap = detailRowsForKpis
+                .GroupBy(detail => detail.KPIId!.Value)
+                .ToDictionary(group => group.Key, group => group.First());
 
-            var checkIns = ScopeCheckIns(_context.KPICheckIns.AsQueryable(), scope);
+            var checkIns = ScopeCheckIns(_context.KPICheckIns.AsNoTracking(), scope);
+            checkIns = OfficialCheckIns(checkIns);
             checkIns = ApplyPeriodToCheckIns(checkIns, period);
             var checkInRows = await checkIns.Where(c => c.KPIId.HasValue && kpiIds.Contains(c.KPIId.Value)).ToListAsync();
             var checkInIds = checkInRows.Select(c => c.Id).ToList();
             var detailRows = await _context.CheckInDetails
+                .AsNoTracking()
                 .Where(d => d.CheckInId.HasValue && checkInIds.Contains(d.CheckInId.Value))
                 .ToListAsync();
 
@@ -112,7 +121,9 @@ namespace Manage_KPI_or_OKR_System.Services
 
             var scopedOkrIds = await GetScopedOkrIdsAsync(scope);
             var keyResults = await _context.OKRKeyResults
+                .AsNoTracking()
                 .Where(kr => kr.OKRId.HasValue && scopedOkrIds.Contains(kr.OKRId.Value))
+                .OrderBy(kr => kr.Id)
                 .ToListAsync();
 
             foreach (var kr in keyResults)
@@ -152,6 +163,7 @@ namespace Manage_KPI_or_OKR_System.Services
 
             var now = DateTime.Now;
             return await _context.SystemAlerts
+                .AsNoTracking()
                 .Where(a => a.ReceiverId == employee.Id &&
                             a.AlertType == "AI Insight" &&
                             (a.ExpiresAt == null || a.ExpiresAt > now))

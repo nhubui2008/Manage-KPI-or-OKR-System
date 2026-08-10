@@ -22,6 +22,925 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.AgentApproval", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("AgentRunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("AppliedItemCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ApprovedBySystemUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("DecidedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<Guid?>("IdempotencyKey")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("ResultEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentRunId");
+
+                    b.HasIndex("TenantId", "AgentRunId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("[IdempotencyKey] IS NOT NULL");
+
+                    b.ToTable("AgentApprovals");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.AgentDraftAction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid>("AgentRunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DraftText")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("EvaluationResultId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("SourceEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SourceEntityType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<long>("SourceVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "AgentRunId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "EvaluationResultId");
+
+                    b.HasIndex("TenantId", "SourceEntityType", "SourceEntityId", "SourceVersion", "ActionType")
+                        .IsUnique();
+
+                    b.ToTable("AgentDraftActions", t =>
+                        {
+                            t.HasCheckConstraint("CK_AgentDraftActions_Source", "[SourceEntityId] > 0 AND LEN(LTRIM(RTRIM([SourceEntityType]))) > 0 AND LEN(LTRIM(RTRIM([ActionType]))) > 0 AND LEN(LTRIM(RTRIM([DraftText]))) > 0");
+
+                            t.HasCheckConstraint("CK_AgentDraftActions_Status", "[Status] IN ('AwaitingHumanReview','AppliedToHumanDraft','RejectedByHuman','Superseded')");
+                        });
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.AgentRunRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ApprovalTokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int?>("RequestedBySystemUserId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("RunType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CorrelationId");
+
+                    b.ToTable("AgentRuns");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.AiEvaluationCriterionResult", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AiEvaluationProposalId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CitationCount")
+                        .HasColumnType("int");
+
+                    b.Property<double>("ConfidenceScore")
+                        .HasColumnType("float");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("EvaluationCriterionId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("ProposedScorePercent")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("ProposedStatus")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("RubricVersion")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "EvaluationCriterionId");
+
+                    b.HasIndex("TenantId", "AiEvaluationProposalId", "EvaluationCriterionId")
+                        .IsUnique();
+
+                    b.ToTable("AiEvaluationCriterionResults", t =>
+                        {
+                            t.HasCheckConstraint("CK_AiEvaluationCriterionResults_Values", "[RubricVersion] > 0 AND [ConfidenceScore] BETWEEN 0 AND 1 AND [CitationCount] >= 0 AND ([ProposedScorePercent] IS NULL OR [ProposedScorePercent] BETWEEN 0 AND 100)");
+                        });
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.AiEvaluationProposal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid?>("AgentRunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("CandidateIsProvisional")
+                        .HasColumnType("bit");
+
+                    b.Property<double>("ConfidenceScore")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ConsistencyScore")
+                        .HasColumnType("float");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DataGapCodes")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTimeOffset?>("DecidedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("EvaluationResultId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("EvaluationRubricId")
+                        .HasColumnType("int");
+
+                    b.Property<double>("EvidenceCoverageScore")
+                        .HasColumnType("float");
+
+                    b.Property<double>("FreshnessScore")
+                        .HasColumnType("float");
+
+                    b.Property<string>("HumanDecision")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<decimal?>("HumanReviewScore")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal?>("HumanScoreDelta")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int?>("KPICheckInId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("OfficialBaselineScore")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal?>("ProjectedScore")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal?>("ProposedCurrentValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ProposedProgressPercent")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("ProposedStatus")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<bool>("RequiresHumanReview")
+                        .HasColumnType("bit");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int?>("RubricVersion")
+                        .HasColumnType("int");
+
+                    b.Property<double>("SourceAuthorityScore")
+                        .HasColumnType("float");
+
+                    b.Property<int>("SourceEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SourceEntityType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<long>("SourceVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentRunId");
+
+                    b.HasIndex("EvaluationResultId");
+
+                    b.HasIndex("KPICheckInId");
+
+                    b.HasIndex("TenantId", "EvaluationRubricId");
+
+                    b.HasIndex("TenantId", "SourceEntityType", "SourceEntityId", "SourceVersion")
+                        .IsUnique();
+
+                    b.ToTable("AiEvaluationProposals", t =>
+                        {
+                            t.HasCheckConstraint("CK_AiEvaluationProposals_Confidence", "[ConfidenceScore] BETWEEN 0 AND 1 AND [EvidenceCoverageScore] BETWEEN 0 AND 1 AND [SourceAuthorityScore] BETWEEN 0 AND 1 AND [ConsistencyScore] BETWEEN 0 AND 1 AND [FreshnessScore] BETWEEN 0 AND 1");
+
+                            t.HasCheckConstraint("CK_AiEvaluationProposals_Scores", "([OfficialBaselineScore] IS NULL OR [OfficialBaselineScore] BETWEEN 0 AND 100) AND ([ProjectedScore] IS NULL OR [ProjectedScore] BETWEEN 0 AND 100) AND ([HumanReviewScore] IS NULL OR [HumanReviewScore] BETWEEN 0 AND 100) AND ([HumanScoreDelta] IS NULL OR [HumanScoreDelta] BETWEEN -100 AND 100)");
+                        });
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.CheckInAiEvaluationOutbox", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("AvailableAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("CheckInId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("LastFailureCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset?>("LeaseExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("LeaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("RequestedBySystemUserId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<long>("SourceVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CheckInId");
+
+                    b.HasIndex("State", "AvailableAtUtc", "LeaseExpiresAtUtc");
+
+                    b.HasIndex("TenantId", "CheckInId", "SourceVersion")
+                        .IsUnique();
+
+                    b.ToTable("CheckInAiEvaluationOutbox");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.DocumentIngestionJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("AccessPolicyVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("AvailableAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("DocumentVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LastFailureCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset?>("LeaseExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("LeaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("MinerUJobId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("ParserResultBlobUri")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("PipelineVersion")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int?>("RequestedBySystemUserId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentVersionId");
+
+                    b.HasIndex("State", "AvailableAtUtc", "LeaseExpiresAtUtc");
+
+                    b.HasIndex("TenantId", "DocumentVersionId", "Operation", "PipelineVersion", "AccessPolicyVersion")
+                        .IsUnique();
+
+                    b.ToTable("DocumentIngestionJobs", t =>
+                        {
+                            t.HasCheckConstraint("CK_DocumentIngestionJobs_NonNegativeValues", "[AccessPolicyVersion] > 0 AND [AttemptCount] >= 0");
+
+                            t.HasCheckConstraint("CK_DocumentIngestionJobs_Operation", "[Operation] IN ('Index','Delete')");
+
+                            t.HasCheckConstraint("CK_DocumentIngestionJobs_ParserResultBlobUri", "[ParserResultBlobUri] IS NULL OR ([ParserResultBlobUri] LIKE 'https://%' AND CHARINDEX('?', [ParserResultBlobUri]) = 0 AND CHARINDEX('#', [ParserResultBlobUri]) = 0)");
+
+                            t.HasCheckConstraint("CK_DocumentIngestionJobs_State", "[State] IN ('Pending','Leased','WaitingForMinerU','Indexing','Completed','DeadLetter','Cancelled')");
+                        });
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.EvaluationCriterion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(600)
+                        .HasColumnType("nvarchar(600)");
+
+                    b.Property<int>("EvaluationRubricId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("MaximumScorePercent")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("MeasurementType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<decimal>("MinimumConfidenceToScore")
+                        .HasColumnType("decimal(4,3)");
+
+                    b.Property<decimal>("MinimumScorePercent")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("WeightPercent")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "EvaluationRubricId", "Ordinal")
+                        .IsUnique();
+
+                    b.ToTable("EvaluationCriteria", t =>
+                        {
+                            t.HasCheckConstraint("CK_EvaluationCriteria_MeasurementType", "[MeasurementType] IN ('Quantitative','Qualitative','Behavioral')");
+
+                            t.HasCheckConstraint("CK_EvaluationCriteria_Weights", "[Ordinal] >= 0 AND [WeightPercent] BETWEEN 0 AND 100 AND [MinimumConfidenceToScore] BETWEEN 0.6 AND 1 AND [MinimumScorePercent] BETWEEN 0 AND 100 AND [MaximumScorePercent] BETWEEN 0 AND 100 AND [MinimumScorePercent] <= [MaximumScorePercent] AND LEN(LTRIM(RTRIM([Name]))) > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.EvaluationRubric", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("AtRiskPercent")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("CreatedBySystemUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("EffectiveFromUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("KPIId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("MinimumConfidenceToPropose")
+                        .HasColumnType("decimal(4,3)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<decimal>("OnTrackPercent")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int?>("PeriodId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("SupersededAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "KPIId")
+                        .IsUnique()
+                        .HasFilter("[IsActive] = 1");
+
+                    b.HasIndex("TenantId", "PeriodId");
+
+                    b.HasIndex("TenantId", "KPIId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("EvaluationRubrics", t =>
+                        {
+                            t.HasCheckConstraint("CK_EvaluationRubrics_Thresholds", "[Version] > 0 AND [OnTrackPercent] BETWEEN 0 AND 100 AND [AtRiskPercent] BETWEEN 0 AND 100 AND [AtRiskPercent] <= [OnTrackPercent] AND [MinimumConfidenceToPropose] BETWEEN 0 AND 1");
+                        });
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.EvidenceReferenceMetadata", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid?>("AgentRunId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("AiEvaluationProposalId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDirectlyRelevant")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("ObservedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<double>("Reliability")
+                        .HasColumnType("float");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int?>("SourcePage")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SourceSection")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("SourceTitle")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("SourceVersionId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentRunId");
+
+                    b.HasIndex("AiEvaluationProposalId");
+
+                    b.HasIndex("TenantId", "AgentRunId", "AiEvaluationProposalId");
+
+                    b.ToTable("EvidenceReferenceMetadata");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.KnowledgeChunk", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("AccessPolicyVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ContentBlobUri")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("ContentSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("DocumentVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Page")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PipelineVersion")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SearchIndexKey")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Section")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TokenCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentVersionId");
+
+                    b.HasIndex("TenantId", "SearchIndexKey")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "DocumentVersionId", "PipelineVersion", "AccessPolicyVersion", "Ordinal")
+                        .IsUnique();
+
+                    b.ToTable("KnowledgeChunks", t =>
+                        {
+                            t.HasCheckConstraint("CK_KnowledgeChunks_ContentBlobUri", "[ContentBlobUri] LIKE 'https://%' AND CHARINDEX('?', [ContentBlobUri]) = 0 AND CHARINDEX('#', [ContentBlobUri]) = 0");
+
+                            t.HasCheckConstraint("CK_KnowledgeChunks_NonNegativeValues", "[AccessPolicyVersion] > 0 AND [Ordinal] >= 0 AND [TokenCount] >= 0 AND ([Page] IS NULL OR [Page] > 0)");
+                        });
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.KnowledgeDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("AccessPolicyVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("AccessPrincipalsJson")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("OwnerSystemUserId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerSystemUserId");
+
+                    b.HasIndex("TenantId", "OwnerSystemUserId", "IsDeleted");
+
+                    b.ToTable("KnowledgeDocuments", t =>
+                        {
+                            t.HasCheckConstraint("CK_KnowledgeDocuments_AccessPolicyVersion", "[AccessPolicyVersion] > 0");
+
+                            t.HasCheckConstraint("CK_KnowledgeDocuments_AccessPrincipalsJson", "ISJSON([AccessPrincipalsJson]) = 1");
+                        });
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.KnowledgeDocumentVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SourceBlobUri")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.HasIndex("TenantId", "DocumentId", "ContentSha256")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "DocumentId", "VersionNumber")
+                        .IsUnique();
+
+                    b.ToTable("KnowledgeDocumentVersions", t =>
+                        {
+                            t.HasCheckConstraint("CK_KnowledgeDocumentVersions_PositiveValues", "[VersionNumber] > 0 AND [FileSizeBytes] > 0");
+
+                            t.HasCheckConstraint("CK_KnowledgeDocumentVersions_SourceBlobUri", "[SourceBlobUri] LIKE 'https://%' AND CHARINDEX('?', [SourceBlobUri]) = 0 AND CHARINDEX('#', [SourceBlobUri]) = 0");
+
+                            t.HasCheckConstraint("CK_KnowledgeDocumentVersions_Status", "[Status] IN ('Stored','Queued','Processing','Indexed','Failed','Superseded','Cancelled')");
+                        });
+                });
+
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AIGenerationHistory", b =>
                 {
                     b.Property<int>("Id")
@@ -50,9 +969,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("TargetId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("SystemUserId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("AIGenerationHistories");
                 });
@@ -81,9 +1005,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("EmployeeId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("AdhocTasks");
                 });
@@ -116,9 +1045,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("SystemUserId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("SystemUserId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("AuditLogs");
                 });
@@ -140,9 +1074,16 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("RankId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("RankId");
+
+                    b.HasIndex("TenantId", "RankId")
+                        .IsUnique()
+                        .HasFilter("[RankId] IS NOT NULL");
 
                     b.ToTable("BonusRules");
                 });
@@ -173,9 +1114,16 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<decimal?>("ScheduleProgressPercentage")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CheckInId");
+
+                    b.HasIndex("TenantId", "CheckInId")
+                        .IsUnique()
+                        .HasFilter("[CheckInId] IS NOT NULL");
 
                     b.ToTable("CheckInDetails");
                 });
@@ -197,9 +1145,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<string>("SnapshotData")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CheckInId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("CheckInHistoryLogs");
                 });
@@ -216,9 +1169,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("StatusName")
+                    b.HasIndex("TenantId", "StatusName")
                         .IsUnique()
                         .HasFilter("[StatusName] IS NOT NULL");
 
@@ -256,17 +1212,20 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("ParentDepartmentId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
 
-                    b.HasIndex("DepartmentCode")
-                        .IsUnique()
-                        .HasFilter("[DepartmentCode] IS NOT NULL");
-
                     b.HasIndex("ManagerId");
 
                     b.HasIndex("ParentDepartmentId");
+
+                    b.HasIndex("TenantId", "DepartmentCode")
+                        .IsUnique()
+                        .HasFilter("[DepartmentCode] IS NOT NULL");
 
                     b.ToTable("Departments");
                 });
@@ -323,15 +1282,20 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
 
-                    b.HasIndex("EmployeeCode")
+                    b.HasIndex("SystemUserId");
+
+                    b.HasIndex("TenantId", "EmployeeCode")
                         .IsUnique()
                         .HasFilter("[EmployeeCode] IS NOT NULL");
 
-                    b.HasIndex("SystemUserId")
+                    b.HasIndex("TenantId", "SystemUserId")
                         .IsUnique()
                         .HasFilter("[SystemUserId] IS NOT NULL");
 
@@ -361,6 +1325,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("PositionId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DepartmentId");
@@ -368,6 +1335,8 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasIndex("EmployeeId");
 
                     b.HasIndex("PositionId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("EmployeeAssignments");
                 });
@@ -401,6 +1370,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("StatusId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -438,9 +1410,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DepartmentId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("EvaluationReportIncidents");
                 });
@@ -463,6 +1440,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("DepartmentId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -470,6 +1450,8 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("EvaluationReportSummaries");
                 });
@@ -509,6 +1491,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("SubmissionStatus")
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
@@ -517,6 +1505,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("SubmittedById")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
                         .HasColumnType("int");
 
                     b.Property<decimal?>("TotalScore")
@@ -534,6 +1525,10 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     b.HasIndex("SubmittedById");
 
+                    b.HasIndex("TenantId", "EmployeeId", "PeriodId")
+                        .IsUnique()
+                        .HasFilter("[EmployeeId] IS NOT NULL AND [PeriodId] IS NOT NULL");
+
                     b.ToTable("EvaluationResults");
                 });
 
@@ -549,7 +1544,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("FailReasons");
                 });
@@ -584,6 +1584,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<decimal?>("Rating")
                         .HasColumnType("decimal(5,2)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CheckInId");
@@ -591,6 +1594,8 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasIndex("CommenterId");
 
                     b.HasIndex("KPIId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("GoalComments");
                 });
@@ -614,7 +1619,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("GradingRanks");
                 });
@@ -640,9 +1650,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PeriodId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("HRExportReports");
                 });
@@ -693,6 +1708,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("StatusId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AssignerId");
@@ -740,11 +1758,16 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<string>("Reason")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AdjusterId");
 
                     b.HasIndex("KPIId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("KPIAdjustmentHistories");
                 });
@@ -795,7 +1818,13 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("StatusId")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("SubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int?>("SubmittedById")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -811,6 +1840,10 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasIndex("StatusId");
 
                     b.HasIndex("SubmittedById");
+
+                    b.HasIndex("TenantId", "SubmissionId")
+                        .IsUnique()
+                        .HasFilter("[SubmissionId] IS NOT NULL");
 
                     b.ToTable("KPICheckIns");
                 });
@@ -854,9 +1887,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<decimal?>("TargetValue")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("KPIId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("KPIDetails");
                 });
@@ -873,7 +1911,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("KPIProperties");
                 });
@@ -886,13 +1929,16 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("TypeName")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TypeName")
+                    b.HasIndex("TenantId", "TypeName")
                         .IsUnique()
                         .HasFilter("[TypeName] IS NOT NULL");
 
@@ -909,9 +1955,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasColumnType("int")
                         .HasColumnOrder(1);
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("KPIId", "DepartmentId");
 
                     b.HasIndex("DepartmentId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("KPI_Department_Assignments");
                 });
@@ -930,12 +1981,17 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<decimal?>("Weight")
                         .HasColumnType("decimal(5,2)");
 
                     b.HasKey("KPIId", "EmployeeId");
 
                     b.HasIndex("EmployeeId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("KPI_Employee_Assignments");
                 });
@@ -973,6 +2029,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<decimal?>("SystemTargetValue")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("EmployeeId");
@@ -980,6 +2039,8 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasIndex("KPIId");
 
                     b.HasIndex("PeriodId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("KPI_Result_Comparisons");
                 });
@@ -1017,9 +2078,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("TargetYear")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedById");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("MissionVisions");
                 });
@@ -1045,9 +2111,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("LinkedWorkProjectId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("OKRTypeId")
                         .HasColumnType("int");
 
@@ -1056,6 +2119,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasColumnType("nvarchar(255)");
 
                     b.Property<int?>("StatusId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -1068,6 +2134,8 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasIndex("OKRTypeId");
 
                     b.HasIndex("StatusId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("OKRs");
                 });
@@ -1103,6 +2171,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<decimal?>("TargetValue")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Unit")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -1110,6 +2181,8 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OKRId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("OKRKeyResults");
                 });
@@ -1122,13 +2195,16 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("TypeName")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TypeName")
+                    b.HasIndex("TenantId", "TypeName")
                         .IsUnique()
                         .HasFilter("[TypeName] IS NOT NULL");
 
@@ -1145,9 +2221,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasColumnType("int")
                         .HasColumnOrder(1);
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("OKRId", "DepartmentId");
 
                     b.HasIndex("DepartmentId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("OKR_Department_Allocations");
                 });
@@ -1165,9 +2246,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<decimal?>("AllocatedValue")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("OKRId", "EmployeeId");
 
                     b.HasIndex("EmployeeId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("OKR_Employee_Allocations");
                 });
@@ -1182,9 +2268,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasColumnType("int")
                         .HasColumnOrder(1);
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("OKRId", "MissionId");
 
                     b.HasIndex("MissionId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("OKR_Mission_Mappings");
                 });
@@ -1214,13 +2305,52 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("EmployeeId");
 
                     b.HasIndex("ManagerId");
 
+                    b.HasIndex("TenantId");
+
                     b.ToTable("OneOnOneMeetings");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SystemUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime?>("UsedAtUtc")
+                        .IsConcurrencyToken()
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SystemUserId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("PasswordResetTokens");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.PaymentTransaction", b =>
@@ -1307,9 +2437,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("RankLevel")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("PositionCode")
+                    b.HasIndex("TenantId", "PositionCode")
                         .IsUnique()
                         .HasFilter("[PositionCode] IS NOT NULL");
 
@@ -1371,11 +2504,18 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<int?>("PeriodId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("EmployeeId");
 
                     b.HasIndex("PeriodId");
+
+                    b.HasIndex("TenantId", "EmployeeId", "PeriodId")
+                        .IsUnique()
+                        .HasFilter("[EmployeeId] IS NOT NULL AND [PeriodId] IS NOT NULL");
 
                     b.ToTable("RealtimeExpectedBonuses");
                 });
@@ -1491,9 +2631,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("StatusType", "StatusName")
+                    b.HasIndex("TenantId", "StatusType", "StatusName")
                         .IsUnique()
                         .HasFilter("[StatusType] IS NOT NULL AND [StatusName] IS NOT NULL");
 
@@ -1542,11 +2685,16 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PeriodId");
 
                     b.HasIndex("ReceiverId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("SystemAlerts");
                 });
@@ -1567,6 +2715,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedById")
                         .HasColumnType("int");
 
@@ -1575,6 +2726,8 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasColumnType("nvarchar(2000)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UpdatedById");
 
@@ -1596,6 +2749,14 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Email")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ExternalProvider")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ExternalSubject")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
@@ -1637,7 +2798,81 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .IsUnique()
                         .HasFilter("[Username] IS NOT NULL");
 
+                    b.HasIndex("ExternalProvider", "ExternalSubject")
+                        .IsUnique()
+                        .HasFilter("[ExternalProvider] IS NOT NULL AND [ExternalSubject] IS NOT NULL");
+
                     b.ToTable("SystemUsers");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Tenants");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Tenancy.TenantMembership", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBySystemUserId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("RoleId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SystemUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("SystemUserId");
+
+                    b.HasIndex("TenantId", "SystemUserId")
+                        .IsUnique();
+
+                    b.ToTable("TenantMemberships");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.WorkItem", b =>
@@ -1696,6 +2931,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(220)
@@ -1716,10 +2954,11 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.HasIndex("KPIId");
 
                     b.HasIndex("OKRKeyResultId")
-                        .IsUnique()
                         .HasFilter("[OKRKeyResultId] IS NOT NULL AND [IsActive] = 1");
 
                     b.HasIndex("ReporterId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("WorkProjectId");
 
@@ -1748,12 +2987,17 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<bool?>("IsSystem")
                         .HasColumnType("bit");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int>("WorkItemId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CommenterId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("WorkItemId");
 
@@ -1787,9 +3031,6 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<bool?>("IsCrossDepartment")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("LinkedOKRId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("OwnerId")
                         .HasColumnType("int");
 
@@ -1822,6 +3063,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -1831,9 +3075,13 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.HasIndex("ProjectCode")
+                    b.HasIndex("SourceOKRId");
+
+                    b.HasIndex("TenantId", "ProjectCode")
                         .IsUnique()
                         .HasFilter("[ProjectCode] IS NOT NULL");
+
+                    b.HasIndex("TenantId", "SourceOKRId");
 
                     b.ToTable("WorkProjects");
                 });
@@ -1856,6 +3104,9 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int>("WorkProjectId")
                         .HasColumnType("int");
 
@@ -1863,10 +3114,257 @@ namespace Manage_KPI_or_OKR_System.Migrations
 
                     b.HasIndex("DepartmentId");
 
-                    b.HasIndex("WorkProjectId", "DepartmentId")
+                    b.HasIndex("WorkProjectId");
+
+                    b.HasIndex("TenantId", "WorkProjectId", "DepartmentId")
                         .IsUnique();
 
                     b.ToTable("WorkProjectDepartments");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.AgentApproval", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.AI.AgentRunRecord", null)
+                        .WithMany()
+                        .HasForeignKey("AgentRunId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.AgentDraftAction", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.AI.AgentRunRecord", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "AgentRunId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.EvaluationResult", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "EvaluationResultId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.AgentRunRecord", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.AiEvaluationCriterionResult", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.AI.AiEvaluationProposal", "Proposal")
+                        .WithMany()
+                        .HasForeignKey("TenantId", "AiEvaluationProposalId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.AI.EvaluationCriterion", "Criterion")
+                        .WithMany()
+                        .HasForeignKey("TenantId", "EvaluationCriterionId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Criterion");
+
+                    b.Navigation("Proposal");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.AiEvaluationProposal", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.AI.AgentRunRecord", null)
+                        .WithMany()
+                        .HasForeignKey("AgentRunId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.EvaluationResult", null)
+                        .WithMany()
+                        .HasForeignKey("EvaluationResultId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.KPICheckIn", null)
+                        .WithMany()
+                        .HasForeignKey("KPICheckInId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.AI.EvaluationRubric", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "EvaluationRubricId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.CheckInAiEvaluationOutbox", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.KPICheckIn", null)
+                        .WithMany()
+                        .HasForeignKey("CheckInId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.DocumentIngestionJob", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.AI.KnowledgeDocumentVersion", "DocumentVersion")
+                        .WithMany("IngestionJobs")
+                        .HasForeignKey("DocumentVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DocumentVersion");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.EvaluationCriterion", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.AI.EvaluationRubric", "EvaluationRubric")
+                        .WithMany("Criteria")
+                        .HasForeignKey("TenantId", "EvaluationRubricId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("EvaluationRubric");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.EvaluationRubric", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.KPI", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "KPIId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.EvaluationPeriod", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId", "PeriodId")
+                        .HasPrincipalKey("TenantId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.EvidenceReferenceMetadata", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.AI.AgentRunRecord", null)
+                        .WithMany()
+                        .HasForeignKey("AgentRunId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.AI.AiEvaluationProposal", "Proposal")
+                        .WithMany()
+                        .HasForeignKey("AiEvaluationProposalId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Proposal");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.KnowledgeChunk", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.AI.KnowledgeDocumentVersion", "DocumentVersion")
+                        .WithMany("Chunks")
+                        .HasForeignKey("DocumentVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DocumentVersion");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.KnowledgeDocument", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.SystemUser", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerSystemUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.KnowledgeDocumentVersion", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.AI.KnowledgeDocument", "Document")
+                        .WithMany("Versions")
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Document");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AIGenerationHistory", b =>
@@ -1875,6 +3373,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("SystemUserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("SystemUser");
@@ -1886,6 +3390,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AuditLog", b =>
@@ -1894,6 +3404,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("SystemUserId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("SystemUser");
                 });
@@ -1904,6 +3420,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("RankId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.CheckInDetail", b =>
@@ -1912,6 +3434,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("CheckInId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.CheckInHistoryLog", b =>
@@ -1920,6 +3448,21 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("CheckInId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.CheckInStatus", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Department", b =>
@@ -1938,6 +3481,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("ParentDepartmentId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Employee", b =>
@@ -1951,6 +3500,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("SystemUserId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.EmployeeAssignment", b =>
@@ -1969,6 +3524,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("PositionId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.EvaluationPeriod", b =>
@@ -1977,6 +3538,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("StatusId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.EvaluationReportIncident", b =>
@@ -1985,6 +3552,21 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.EvaluationReportSummary", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.EvaluationResult", b =>
@@ -2013,6 +3595,21 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("SubmittedById")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.FailReason", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.GoalComment", b =>
@@ -2031,6 +3628,21 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("KPIId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.GradingRank", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.HRExportReport", b =>
@@ -2039,6 +3651,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("PeriodId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.KPI", b =>
@@ -2082,6 +3700,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("StatusId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.KPIAdjustmentHistory", b =>
@@ -2095,6 +3719,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("KPIId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.KPICheckIn", b =>
@@ -2128,6 +3758,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("SubmittedById")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.KPIDetail", b =>
@@ -2136,6 +3772,30 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("KPIId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.KPIProperty", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.KPIType", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.KPI_Department_Assignment", b =>
@@ -2151,6 +3811,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasForeignKey("KPIId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.KPI_Employee_Assignment", b =>
@@ -2165,6 +3831,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("KPIId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -2184,6 +3856,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("PeriodId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.MissionVision", b =>
@@ -2192,6 +3870,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.OKR", b =>
@@ -2210,6 +3894,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("StatusId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.OKRKeyResult", b =>
@@ -2218,6 +3908,21 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany("KeyResults")
                         .HasForeignKey("OKRId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.OKRType", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.OKR_Department_Allocation", b =>
@@ -2232,6 +3937,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("OKRId")
                         .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -2248,6 +3959,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasForeignKey("OKRId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.OKR_Mission_Mapping", b =>
@@ -2263,6 +3980,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasForeignKey("OKRId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.OneOnOneMeeting", b =>
@@ -2276,6 +3999,23 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("ManagerId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.PasswordResetToken", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.SystemUser", "SystemUser")
+                        .WithMany()
+                        .HasForeignKey("SystemUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SystemUser");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.PaymentTransaction", b =>
@@ -2297,6 +4037,15 @@ namespace Manage_KPI_or_OKR_System.Migrations
                     b.Navigation("Registration");
                 });
 
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Position", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.RealtimeExpectedBonus", b =>
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
@@ -2308,6 +4057,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("PeriodId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Role", b =>
@@ -2333,6 +4088,15 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Status", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.SystemAlert", b =>
                 {
                     b.HasOne("Manage_KPI_or_OKR_System.Models.EvaluationPeriod", null)
@@ -2344,10 +4108,22 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("ReceiverId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.SystemParameter", b =>
                 {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Manage_KPI_or_OKR_System.Models.Employee", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -2365,6 +4141,32 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.NoAction);
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Tenancy.TenantMembership", b =>
+                {
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.SystemUser", "SystemUser")
+                        .WithMany("TenantMemberships")
+                        .HasForeignKey("SystemUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", "Tenant")
+                        .WithMany("Memberships")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+
+                    b.Navigation("SystemUser");
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.WorkItem", b =>
@@ -2394,6 +4196,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .HasForeignKey("ReporterId")
                         .OnDelete(DeleteBehavior.NoAction);
 
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Manage_KPI_or_OKR_System.Models.WorkProject", null)
                         .WithMany("WorkItems")
                         .HasForeignKey("WorkProjectId")
@@ -2407,6 +4215,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("CommenterId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Manage_KPI_or_OKR_System.Models.WorkItem", null)
                         .WithMany("Comments")
@@ -2426,6 +4240,19 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .WithMany()
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.OKR", "SourceOKR")
+                        .WithMany("WorkProjects")
+                        .HasForeignKey("SourceOKRId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("SourceOKR");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.WorkProjectDepartment", b =>
@@ -2436,6 +4263,12 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.HasOne("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Manage_KPI_or_OKR_System.Models.WorkProject", null)
                         .WithMany("Departments")
                         .HasForeignKey("WorkProjectId")
@@ -2443,9 +4276,38 @@ namespace Manage_KPI_or_OKR_System.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.EvaluationRubric", b =>
+                {
+                    b.Navigation("Criteria");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.KnowledgeDocument", b =>
+                {
+                    b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.AI.KnowledgeDocumentVersion", b =>
+                {
+                    b.Navigation("Chunks");
+
+                    b.Navigation("IngestionJobs");
+                });
+
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.OKR", b =>
                 {
                     b.Navigation("KeyResults");
+
+                    b.Navigation("WorkProjects");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.SystemUser", b =>
+                {
+                    b.Navigation("TenantMemberships");
+                });
+
+            modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.Tenancy.Tenant", b =>
+                {
+                    b.Navigation("Memberships");
                 });
 
             modelBuilder.Entity("Manage_KPI_or_OKR_System.Models.WorkItem", b =>

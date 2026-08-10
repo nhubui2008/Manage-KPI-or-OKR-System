@@ -61,7 +61,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var kpiQuery = _context.KPIs.Where(k => k.IsActive == true);
             var okrQuery = _context.OKRs.Where(o => o.IsActive == true);
             var checkInQuery = _context.KPICheckIns
-                .Where(c => c.ReviewStatus == "Approved" || c.ReviewStatus == null);
+                .Where(c => c.ReviewStatus == "Approved");
 
             if (selectedPeriod != null)
             {
@@ -309,7 +309,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                  join cd in _context.CheckInDetails on ci.Id equals cd.CheckInId
                                  where d.IsActive == true
                                         && ea.IsActive == true
-                                        && (ci.ReviewStatus == "Approved" || ci.ReviewStatus == null)
+                                        && ci.ReviewStatus == "Approved"
                                         && (!startDate.HasValue || ci.CheckInDate >= startDate.Value)
                                        && (!endExclusive.HasValue || ci.CheckInDate < endExclusive.Value)
                                        && (!isEmployeeRole || ci.EmployeeId == scopedEmployeeId)
@@ -347,7 +347,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var monthCheckInQuery = _context.KPICheckIns
                     .Where(c => c.CheckInDate >= monthStart &&
                                 c.CheckInDate <= monthEnd &&
-                                (c.ReviewStatus == "Approved" || c.ReviewStatus == null));
+                                c.ReviewStatus == "Approved");
                 if (isEmployeeRole)
                 {
                     monthCheckInQuery = employee != null
@@ -401,7 +401,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // 11. TOP NHÂN VIÊN HIỆU SUẤT CAO
             // ========================================
             var topCheckInQuery = _context.KPICheckIns
-                .Where(c => c.ReviewStatus == "Approved" || c.ReviewStatus == null);
+                .Where(c => c.ReviewStatus == "Approved");
             if (startDate.HasValue && endExclusive.HasValue)
             {
                 topCheckInQuery = topCheckInQuery.Where(c => c.CheckInDate >= startDate.Value && c.CheckInDate < endExclusive.Value);

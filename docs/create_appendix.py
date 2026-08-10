@@ -306,22 +306,22 @@ def write_appendices(doc):
     add_table_caption(doc, "Bảng A.1: Đặc tả chi tiết Use Case UC10: Quản lý hồ sơ nhân sự")
 
     # Bảng đặc tả UC25
-    add_heading2(doc, "2. Đặc tả Use Case UC25: Tra cứu lịch sử cuộc gọi AI")
+    add_heading2(doc, "2. Đặc tả Use Case UC25: Theo dõi vận hành AI")
     headers_uc25 = ["Thuộc tính Use Case", "Nội dung đặc tả chi tiết"]
     rows_uc25 = [
-        ["Tên Use Case", "UC25: Tra cứu lịch sử cuộc gọi AI"],
+        ["Tên Use Case", "UC25: Theo dõi vận hành AI an toàn"],
         ["Tác nhân (Actor)", "Admin, Director"],
-        ["Mục đích", "Giúp quản trị viên kiểm tra lượng token đã tiêu dùng, nội dung prompt và phản hồi của Gemini API."],
+        ["Mục đích", "Giúp quản trị viên theo dõi trạng thái run, độ trễ, retry/dead-letter, citation và abstain mà không đọc prompt hoặc raw provider response."],
         ["Điều kiện tiên quyết", "Admin đã đăng nhập thành công và có quyền 'AUDIT_LOGS_VIEW'."],
         ["Kịch bản chính (Luồng cơ bản)",
-         "1. Admin truy cập mục 'Nhật ký AI' (URL: `/System/AiHistory`).\n"
-         "2. Hệ thống hiển thị bảng lịch sử cuộc gọi AI: Người gọi, Thời gian, Kích thước Token, model sử dụng.\n"
-         "3. Admin click 'Xem chi tiết' để đọc toàn bộ Prompt gửi đi và phản hồi trả về từ Google Gemini.\n"
-         "4. Admin theo dõi biểu đồ thống kê token tiêu thụ theo ngày."],
-        ["Kết quả đầu ra", "Chi tiết cuộc gọi AI được truy vấn chính xác từ bảng AIGenerationHistories."],
+         "1. Quản trị tenant mở trang vận hành AI/RAG được phân quyền.\n"
+         "2. Hệ thống hiển thị trạng thái run/outbox/ingestion, độ trễ, số lần retry, dead-letter, citation và abstain.\n"
+         "3. Quản trị viên có thể retry đúng bản ghi DeadLetter sau khi server kiểm tra row-version, source và quyền hiện hành.\n"
+         "4. Giao diện không hiển thị prompt, nội dung tài liệu, hội thoại hoặc raw provider response."],
+        ["Kết quả đầu ra", "Metadata vận hành được truy vấn theo tenant; mọi retry được audit và không tự thay đổi dữ liệu nghiệp vụ chính thức."],
     ]
     create_table(doc, headers_uc25, rows_uc25, col_widths=[4.5, 11.5])
-    add_table_caption(doc, "Bảng A.2: Đặc tả chi tiết Use Case UC25: Tra cứu lịch sử cuộc gọi AI")
+    add_table_caption(doc, "Bảng A.2: Đặc tả chi tiết Use Case UC25: Theo dõi vận hành AI")
 
 
     # ============================================================
@@ -346,7 +346,7 @@ def write_appendices(doc):
         ["2", "ProjectName", "NVARCHAR(255)", "Tên dự án Kanban", "NOT NULL"],
         ["3", "Description", "NVARCHAR(1000)", "Mô tả mục tiêu dự án", "NULL"],
         ["4", "DepartmentId", "INT", "Mã phòng ban quản lý dự án", "FK, NOT NULL"],
-        ["5", "LinkedOKRId", "INT", "OKR liên kết để đóng góp tiến độ", "FK, NULL"],
+        ["5", "SourceOKRId", "INT", "OKR nguồn mà dự án đóng góp tiến độ", "FK, NULL"],
         ["6", "IsActive", "BIT", "Trạng thái hoạt động", "DEFAULT 1"],
     ]
     create_spec_table(doc, headers_spec, rows_proj, col_widths=col_w)
@@ -379,18 +379,18 @@ def write_appendices(doc):
     add_table_caption(doc, "Bảng B.3: Đặc tả chi tiết bảng BonusRules")
 
     # --- 4. AIGenerationHistories ---
-    add_heading2(doc, "4. Đặc tả bảng AIGenerationHistories (Nhật ký gọi AI)")
+    add_heading2(doc, "4. Đặc tả bảng AIGenerationHistories (Dữ liệu legacy chờ retention)")
     rows_ai = [
         ["1", "Id", "INT", "Khóa chính, tự tăng định danh log AI", "PK, IDENTITY(1,1)"],
         ["2", "SystemUserId", "INT", "ID tài khoản gọi AI", "FK, NOT NULL"],
         ["3", "PromptType", "VARCHAR(50)", "Loại gọi AI (Chat/KPI_Generator/Analysis)", "NOT NULL"],
         ["4", "PromptText", "NVARCHAR(MAX)", "Nội dung câu hỏi gửi đi", "NOT NULL"],
-        ["5", "ResponseText", "NVARCHAR(MAX)", "Câu trả lời của Gemini API", "NOT NULL"],
+        ["5", "ResponseText", "NVARCHAR(MAX)", "Phản hồi provider lịch sử; runtime mới không ghi trường này", "NOT NULL"],
         ["6", "TokenCount", "INT", "Kích thước token tiêu dùng", "DEFAULT 0"],
         ["7", "CreatedAt", "DATETIME", "Thời điểm thực hiện cuộc gọi", "DEFAULT GETDATE()"],
     ]
     create_spec_table(doc, headers_spec, rows_ai, col_widths=col_w)
-    add_table_caption(doc, "Bảng B.4: Đặc tả chi tiết bảng AIGenerationHistories")
+    add_table_caption(doc, "Bảng B.4: Đặc tả bảng legacy AIGenerationHistories (không có reader/writer runtime mới)")
 
 
     # ============================================================
@@ -419,8 +419,8 @@ def write_appendices(doc):
          "1. Tài khoản tenant có TrialEndTime nhỏ hơn thời gian hiện tại.\n2. User cố truy cập Dashboard.",
          "Hệ thống chặn truy cập, hiển thị trang thông báo hết hạn và hướng dẫn thanh toán gia hạn.", "Đúng kỳ vọng (Pass)"],
         
-        ["TC_EDGE_04", "Gọi AI khi mất cấu hình API Key",
-         "1. Xóa cấu hình Gemini API Key trong bảng SystemParameters.\n2. User mở AI chat widget.",
+        ["TC_EDGE_04", "Gọi AI khi thiếu secret provider",
+         "1. Không cấp DeepSeek__ApiKey trong secret store của môi trường.\n2. User mở AI chat widget.",
          "Hệ thống bắt ngoại lệ, hiển thị thông báo thân thiện 'Tính năng AI đang bảo trì, vui lòng quay lại sau' thay vì báo lỗi crash hệ thống.", "Đúng kỳ vọng (Pass)"],
     ]
     create_table(doc, headers_tce, rows_tce, col_widths=[2.0, 3.5, 4.5, 4.5, 2.0])
@@ -464,23 +464,25 @@ def write_appendices(doc):
     
     add_para(doc,
         "Hệ thống thiết lập một số API nội bộ để phục vụ gọi Ajax từ client lên server "
-        "và liên kết dữ liệu với Trợ lý AI Gemini. Dưới đây là đặc tả kỹ thuật:"
+        "và liên kết dữ liệu với các dịch vụ AI qua model gateway. Dưới đây là đặc tả kỹ thuật:"
     )
 
     # API 1
     add_heading2(doc, "1. API lấy gợi ý KPI thông minh")
-    add_bullet(doc, "/AI/GetKpiSuggestions", bold_prefix="Endpoint URL")
+    add_bullet(doc, "/AI/SuggestKPI", bold_prefix="Endpoint URL")
     add_bullet(doc, "POST", bold_prefix="Phương thức (Method)")
     add_bullet(doc, "application/json", bold_prefix="Định dạng Header")
-    add_bullet(doc, "{ \"prompt\": \"Đề xuất KPI cho dev\", \"periodId\": 1, \"departmentId\": 2, \"employeeId\": 5 }", bold_prefix="Tham số truyền lên (Body)")
-    add_bullet(doc, "{ \"success\": true, \"htmlResponse\": \"<ul><li>...</li></ul>\", \"rawResponse\": \"...\" }", bold_prefix="Kết quả trả về (Response)")
+    add_bullet(doc, "{ \"periodId\": 1, \"departmentId\": 2, \"employeeId\": 5, \"okrId\": 10, \"okrKeyResultId\": 20 }", bold_prefix="Tham số truyền lên (Body)")
+    add_bullet(doc, "{ \"success\": true, \"advisoryOnly\": true, \"agentRunId\": \"...\", \"suggestions\": [{ \"name\": \"...\", \"targetValue\": 100, \"unit\": \"%\", \"passThreshold\": 90, \"failThreshold\": 70, \"isInverse\": false, \"rationale\": \"...\", \"sourceIds\": [\"authorized-kpi-planning-snapshot:...\"] }], \"citations\": [] }", bold_prefix="Kết quả trả về (Response)")
+    add_bullet(doc, "Yêu cầu KPIS_CREATE + anti-forgery; chỉ nhận kỳ/phạm vi được phép, strict schema và source ID do server cấp. Kết quả chỉ điền form, không tự tạo KPI và không lưu prompt/raw response.", bold_prefix="Ràng buộc an toàn")
 
     # API 2
     add_heading2(doc, "2. API phân tích hiệu suất bằng AI")
     add_bullet(doc, "/AI/AnalyzePerformance", bold_prefix="Endpoint URL")
     add_bullet(doc, "POST", bold_prefix="Phương thức (Method)")
-    add_bullet(doc, "Không cần tham số (Hệ thống tự động quét Session để xác định UserId và Access Scope)", bold_prefix="Tham số truyền lên")
-    add_bullet(doc, "{ \"success\": true, \"htmlResponse\": \"<h3>Báo cáo đánh giá hiệu suất...</h3>\" }", bold_prefix="Kết quả trả về")
+    add_bullet(doc, "{ \"periodId\": 1, \"employeeId\": null, \"departmentId\": null } (tenant và actor luôn lấy từ session)", bold_prefix="Tham số truyền lên")
+    add_bullet(doc, "{ \"success\": true, \"advisoryOnly\": true, \"overview\": { ... }, \"strengths\": [], \"risks\": [], \"recommendedActions\": [], \"citations\": [] }", bold_prefix="Kết quả trả về")
+    add_bullet(doc, "Chỉ dùng check-in đã duyệt, yêu cầu DASHBOARD_VIEW, abstain khi thiếu tiến độ đo lường và không lưu prompt/raw response.", bold_prefix="Ràng buộc an toàn")
 
     # Kết luận phụ lục
     add_para(doc, "", space_before=12, space_after=0, indent=False)

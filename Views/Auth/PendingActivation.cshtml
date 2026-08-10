@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Đang chờ kích hoạt";
+    Layout = null;
+}
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - VIETMACH</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+</head>
+<body class="bg-light">
+    <main class="container d-flex min-vh-100 align-items-center justify-content-center py-4">
+        <section class="card border-0 shadow-sm w-100" style="max-width: 600px" aria-labelledby="pending-title">
+            <div class="card-body p-4 p-md-5">
+                <span class="badge text-bg-warning mb-3">Chờ xác minh</span>
+                <h1 id="pending-title" class="h3">Không gian làm việc chưa được kích hoạt</h1>
+                <p class="text-secondary mb-3">
+                    Tài khoản <strong>@(ViewBag.Email ?? "của bạn")</strong> đã xác thực thành công.
+                    Quản trị viên vẫn cần phê duyệt yêu cầu và cấp tenant trước khi bạn truy cập dữ liệu KPI/OKR.
+                </p>
+                @if (!string.IsNullOrWhiteSpace(ViewBag.PendingPlan as string))
+                {
+                    <p class="mb-4">Gói đang chờ: <strong>@ViewBag.PendingPlan</strong>.</p>
+                }
+                <div class="d-flex flex-wrap gap-2">
+                    <a asp-action="PendingActivation" class="btn btn-primary">Kiểm tra lại trạng thái</a>
+                    <form asp-action="Logout" method="post">
+                        <button type="submit" class="btn btn-outline-secondary">Đăng xuất</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

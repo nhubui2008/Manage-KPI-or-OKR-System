@@ -8,10 +8,13 @@ namespace ManageKpiOkrSystem.Tests;
 public sealed class OKRWorkflowServiceTests
 {
     [Fact]
-    public void ModelLinkProperties_AreAvailable()
+    public void ModelLinkProperties_ExposeOnlyCanonicalOneToManyRelationship()
     {
-        Assert.NotNull(typeof(OKR).GetProperty("LinkedWorkProjectId"));
-        Assert.NotNull(typeof(WorkProject).GetProperty("SourceOKRId"));
+        Assert.NotNull(typeof(WorkProject).GetProperty(nameof(WorkProject.SourceOKRId)));
+        Assert.NotNull(typeof(WorkProject).GetProperty(nameof(WorkProject.SourceOKR)));
+        Assert.NotNull(typeof(OKR).GetProperty(nameof(OKR.WorkProjects)));
+        Assert.Null(typeof(WorkProject).GetProperty("LinkedOKRId"));
+        Assert.Null(typeof(OKR).GetProperty("LinkedWorkProjectId"));
     }
 
     [Fact]
@@ -37,8 +40,6 @@ public sealed class OKRWorkflowServiceTests
             .Include(p => p.Departments)
             .Include(p => p.WorkItems)
             .SingleAsync();
-        var reloadedOkr = await context.OKRs.SingleAsync();
-
         Assert.StartsWith("[OKR] Grow revenue", project.ProjectName);
         Assert.Equal(7, project.OwnerId);
         Assert.Equal(7, project.CreatedById);
@@ -47,7 +48,6 @@ public sealed class OKRWorkflowServiceTests
         Assert.Equal(new DateTime(2026, 6, 30), project.DueDate);
         Assert.StartsWith($"PRJ-{DateTime.Now:yyyyMMdd}-", project.ProjectCode);
         Assert.Equal(okr.Id, GetProperty<int?>(project, "SourceOKRId"));
-        Assert.Equal(project.Id, GetProperty<int?>(reloadedOkr, "LinkedWorkProjectId"));
 
         var department = Assert.Single(project.Departments);
         Assert.Equal(3, department.DepartmentId);

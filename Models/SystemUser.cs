@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Manage_KPI_or_OKR_System.Models.Tenancy;
 
 namespace Manage_KPI_or_OKR_System.Models
 {
@@ -19,5 +20,12 @@ namespace Manage_KPI_or_OKR_System.Models
         public int? CreatedById { get; set; }
         public DateTime? TrialEndTime { get; set; }
         public string PreferredLanguage { get; set; } = "Tiếng Việt"; // Mặc định
+        [StringLength(50)]
+        public string? ExternalProvider { get; set; }
+        [StringLength(255)]
+        public string? ExternalSubject { get; set; }
+
+        // SystemUser remains global. Tenant-specific activation and role assignment live in TenantMembership.
+        public ICollection<TenantMembership> TenantMemberships { get; set; } = new HashSet<TenantMembership>();
     }
 }

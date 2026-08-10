@@ -231,7 +231,7 @@ def write_section_4_2(doc):
         ["1", ".NET 10.0 / ASP.NET MVC", "10.0.0", "Môi trường thực thi & Web framework chính để xây dựng ứng dụng theo mô hình MVC, định tuyến router và render views."],
         ["2", "EF Core 10.0", "10.0.0", "Lớp ORM truy cập cơ sở dữ liệu SQL Server, thực thi các truy vấn LINQ và quản lý Migrations database tự động."],
         ["3", "SQL Server 2019+", "RDBMS", "Hệ quản trị cơ sở dữ liệu quan hệ lưu trữ 45 bảng dữ liệu thực thể của hệ thống."],
-        ["4", "Google Gemini API", "gemini-2.5-flash", "Trí tuệ nhân tạo (Gemini Service) cung cấp gợi ý chỉ tiêu KPI, phân tích hiệu suất cuối kỳ và chatbot widget."],
+        ["4", "AI model gateway", "Theo môi trường", "IAIModelClient phục vụ các advisor có strict schema, citation, abstain và kiểm tra lại source/quyền trước khi dùng kết quả."],
         ["5", "EPPlus", "7.1.0", "Đọc và xuất các tệp báo cáo Excel, hỗ trợ import danh sách hàng loạt nhân viên và export bảng đánh giá, bảng lương thưởng HR."],
         ["6", "MailKit & MimeKit", "4.3.0", "Gửi email thông báo tự động (thông báo deadline check-in, xác thực mã OTP khi quên mật khẩu qua Gmail SMTP)."],
         ["7", "DotNetEnv", "3.0.0", "Đọc file cấu hình môi trường (.env) nhằm bảo mật thông tin nhạy cảm (Connection String, API Key, Client Secret)."],
@@ -258,9 +258,9 @@ def write_section_4_2(doc):
                    "giúp giảm thiểu tối đa các lỗi cú pháp. EF Core 10 hỗ trợ cấu hình Fluent API chi tiết cho 45 thực thể, "
                    "tự động xử lý cascade delete và duy trì tính toàn vẹn dữ liệu.", bold_prefix="Entity Framework Core 10.0")
 
-    add_bullet(doc, "Mô hình ngôn ngữ lớn tốc độ cao và chi phí thấp của Google, "
-                   "hỗ trợ context window lớn. Việc sử dụng Gemini API giúp hệ thống tự động hóa các khâu lập kế hoạch "
-                   "và phân tích – điều mà các phần mềm truyền thống không thể thực hiện được.", bold_prefix="Google Gemini 2.5 Flash")
+    add_bullet(doc, "Tách nghiệp vụ AI khỏi nhà cung cấp qua IAIModelClient. Các advisor áp dụng strict JSON, citation, "
+                   "abstain và source fingerprint; prompt/raw response không được lưu. Chat đã dùng model gateway và RAG có ACL; "
+                   "Các endpoint AI legacy đã bị gỡ; gợi ý/refine KR cũng dùng advisor có source fingerprint và chỉ lưu metadata.", bold_prefix="AI model gateway")
 
     add_bullet(doc, "Thư viện Excel tốt nhất cho .NET, hoạt động hiệu năng cao "
                    "mà không cần cài đặt Microsoft Office trên máy chủ. EPPlus giúp HR xuất nhanh hàng trăm dòng dữ liệu "
@@ -270,7 +270,7 @@ def write_section_4_2(doc):
     add_para(doc, "", space_before=6, space_after=0, indent=False)
     add_para(doc,
         "Việc kết hợp đồng bộ giữa một backend .NET mạnh mẽ, một DB SQL Server tin cậy, giao diện Bootstrap "
-        "trực quan và trí tuệ nhân tạo Gemini API đã cung cấp một bệ đỡ công nghệ vững chắc, đảm bảo "
+        "trực quan và model gateway có kiểm soát đã cung cấp một bệ đỡ công nghệ vững chắc, đảm bảo "
         "hệ thống đáp ứng tốt các yêu cầu phi chức năng về hiệu năng và bảo mật.",
         italic=True, space_before=6, space_after=12
     )

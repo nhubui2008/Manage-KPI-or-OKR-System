@@ -15,6 +15,8 @@
     string okrProgressColor = ProgressHelper.GetProgressColorClass(okrProgressInt);
     var objectiveTitle = string.IsNullOrWhiteSpace(okr.ObjectiveName) ? $"OKR #{okr.Id}" : okr.ObjectiveName;
     var menuLabel = $"Tùy chọn OKR #{okr.Id}: {objectiveTitle}";
+    var linkedProjects = okr.LinkedProjects ?? Array.Empty<Manage_KPI_or_OKR_System.Models.ViewModels.OkrLinkedProjectViewModel>();
+    var soleLinkedProject = linkedProjects.Count == 1 ? linkedProjects[0] : null;
 }
                                 <article class="accordion-item okr-objective-card" data-okr-id="@okr.Id">
                                     <div class="accordion-header okr-objective-header" id="heading-@okr.Id">
@@ -49,14 +51,11 @@
                                                 <div class="okr-objective-meta">
                                                     <span><i class="bi bi-calendar3" aria-hidden="true"></i> @(okr.Cycle ?? "Chưa rõ chu kỳ")</span>
                                                     <span><i class="bi bi-people" aria-hidden="true"></i> @okr.AllocationSummary</span>
-                                                    @if (okr.LinkedWorkProjectId.HasValue)
+                                                    @if (linkedProjects.Count > 0)
                                                     {
-                                                        <a asp-controller="WorkProjects" asp-action="Details" asp-route-id="@okr.LinkedWorkProjectId"
-                                                           class="okr-project-link js-stop-propagation"
-                                                           title="@(okr.LinkedWorkProjectName ?? "Xem dự án vận hành")"
-                                                           aria-label="Mở dự án vận hành cho OKR #@okr.Id: @objectiveTitle">
-                                                            <i class="bi bi-kanban" aria-hidden="true"></i> Dự án vận hành
-                                                        </a>
+                                                        <span class="okr-chip okr-chip--muted">
+                                                            <i class="bi bi-kanban" aria-hidden="true"></i> @linkedProjects.Count dự án
+                                                        </span>
                                                     }
                                                 </div>
                                                 <div class="okr-objective-progress" aria-label="Tiến độ OKR #@okr.Id: @okrProgressInt phần trăm">
@@ -110,8 +109,8 @@
                                                                     data-action="ai-decompose"
                                                                     data-okr-id="@okr.Id"
                                                                     data-okr-name="@objectiveTitle"
-                                                                    data-project-id="@(okr.LinkedWorkProjectId?.ToString() ?? "")"
-                                                                    data-project-name="@(okr.LinkedWorkProjectName ?? "")">
+                                                                    data-project-id="@(soleLinkedProject?.Id.ToString() ?? "")"
+                                                                    data-project-name="@(soleLinkedProject?.Name ?? "")">
                                                                 <i class="bi bi-stars me-2" aria-hidden="true"></i>AI Chia task
                                                             </button>
                                                         </li>
@@ -147,6 +146,23 @@
 
                                     <div id="@collapseId" class="accordion-collapse collapse" aria-labelledby="heading-@okr.Id">
                                         <div class="accordion-body okr-kr-panel">
+                                            @if (linkedProjects.Count > 0)
+                                            {
+                                                <section class="mb-3" aria-label="Dự án thực thi OKR #@okr.Id">
+                                                    <div class="small fw-semibold text-secondary mb-2">
+                                                        <i class="bi bi-kanban me-1" aria-hidden="true"></i>Dự án thực thi (@linkedProjects.Count)
+                                                    </div>
+                                                    <div class="d-flex flex-wrap gap-2">
+                                                        @foreach (var project in linkedProjects)
+                                                        {
+                                                            <a asp-controller="WorkProjects" asp-action="Details" asp-route-id="@project.Id"
+                                                               class="btn btn-sm btn-outline-primary">
+                                                                @project.Name
+                                                            </a>
+                                                        }
+                                                    </div>
+                                                </section>
+                                            }
                                             <div class="okr-kr-panel__title">
                                                 <i class="bi bi-key-fill" aria-hidden="true"></i>
                                                 <span>Key Results</span>
@@ -190,6 +206,16 @@
                                                             <div class="okr-kr-row__actions">
                                                                 @if (canEditOkr)
                                                                 {
+                                                                    <button type="button" class="btn btn-sm okr-icon-btn okr-icon-btn--primary js-okr-action"
+                                                                            data-action="ai-decompose-kr"
+                                                                            data-kr-id="@kr.Id"
+                                                                            data-kr-name="@krName"
+                                                                            data-project-id="@(soleLinkedProject?.Id.ToString() ?? "")"
+                                                                            data-project-name="@(soleLinkedProject?.Name ?? "")"
+                                                                            title="AI lập kế hoạch cho @krName"
+                                                                            aria-label="AI chia task cho Key Result #@kr.Id: @krName">
+                                                                        <i class="bi bi-stars" aria-hidden="true"></i>
+                                                                    </button>
                                                                     <button type="button" class="btn btn-sm okr-icon-btn js-edit-kr"
                                                                             data-kr-id="@kr.Id"
                                                                             data-kr-name="@kr.KeyResultName"

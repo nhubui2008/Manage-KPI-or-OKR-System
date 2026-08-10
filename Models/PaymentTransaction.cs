@@ -11,7 +11,7 @@ namespace Manage_KPI_or_OKR_System.Models
 
         [Required]
         [StringLength(50)]
-        public string TransactionCode { get; set; }
+        public string TransactionCode { get; set; } = string.Empty;
 
         public int RegistrationId { get; set; }
 
@@ -22,12 +22,12 @@ namespace Manage_KPI_or_OKR_System.Models
         public DateTime TransactionDate { get; set; } = DateTime.Now;
 
         [StringLength(50)]
-        public string Status { get; set; } // "Thành công", "Đang xử lý", "Thất bại"
+        public string Status { get; set; } = string.Empty; // "Thành công", "Đang xử lý", "Thất bại"
 
         [ForeignKey("RegistrationId")]
-        public virtual PurchaseRegistration Registration { get; set; }
+        public virtual PurchaseRegistration Registration { get; set; } = null!;
 
         [ForeignKey("PackageId")]
-        public virtual SaaSPackage Package { get; set; }
+        public virtual SaaSPackage Package { get; set; } = null!;
     }
 }

@@ -241,7 +241,7 @@ def write_section_5_2(doc):
         
         ["9", "TC_AI_01", "Gọi trợ lý AI gợi ý KPI",
          "1. Mở form giao KPI.\n2. Click nút 'Gợi ý từ AI'.\n3. AI đề xuất KPI dựa trên context phòng ban.",
-         "Gemini API phản hồi 3 gợi ý KPI mẫu bằng tiếng Việt đúng ngữ cảnh. Người dùng có thể click áp dụng nhanh.", "Đạt (Pass)"],
+         "Model gateway trả 3-5 bản nháp strict JSON có citation; server chặn schema/nguồn/ngưỡng sai, không tạo KPI tự động và người dùng có thể áp dụng bản nháp vào form.", "Đạt (Pass)"],
         
         ["10", "TC_AI_02", "Kiểm tra Rate Limit gọi AI",
          "1. Thực hiện gửi câu hỏi liên tục >15 lần/phút trong widget AI chat.",
@@ -266,7 +266,7 @@ def write_section_5_2(doc):
         "Thông qua quá trình thực thi 12 kịch bản kiểm thử trọng yếu trên các trình duyệt khác nhau, "
         "kết quả cho thấy toàn bộ các kịch bản đều đạt trạng thái ĐẠT (Pass). Hệ thống hoạt động chính xác theo đúng "
         "thiết kế logic nghiệp vụ, cơ chế phân quyền Claims và Access Scope bảo mật hoạt động hiệu quả, "
-        "tốc độ xử lý của backend nhanh chóng và các tính năng tích hợp AI Gemini hoạt động ổn định."
+        "tốc độ xử lý của backend nhanh chóng và các luồng AI có kiểm soát hoạt động ổn định."
     )
 
     # Kết luận chương

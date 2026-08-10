@@ -169,8 +169,8 @@
                 </button>
             </div>
             <div class="card-body">
-                <div id="aiPerformanceAnalysisResult" class="text-muted small">
-                    Chọn kỳ báo cáo rồi bấm phân tích để AI tóm tắt xu hướng, rủi ro và hành động cải thiện.
+                <div id="aiPerformanceAnalysisResult" class="text-muted small" role="status" aria-live="polite">
+                    Chọn kỳ báo cáo rồi bấm phân tích để nhận tổng quan, rủi ro và hành động tham khảo có nguồn từ check-in đã duyệt.
                 </div>
             </div>
         </div>
@@ -184,8 +184,8 @@
                 </button>
             </div>
             <div class="card-body">
-                <div id="aiCustomerSegmentsResult" class="text-muted small">
-                    AI sẽ dựa vào nhân viên đang đăng nhập, KPI/OKR kỳ trước và dữ liệu doanh thu để đề xuất tệp khách hàng tiềm năng.
+                <div id="aiCustomerSegmentsResult" class="text-muted small" role="status" aria-live="polite">
+                    AI sẽ dựa vào phạm vi KPI/OKR và dữ liệu doanh thu được phép để đề xuất phân khúc tham khảo có nguồn; không chấm điểm hoặc dự báo xác suất tiềm năng.
                 </div>
             </div>
         </div>
@@ -545,7 +545,7 @@
                     result.innerHTML = `<div class="alert alert-warning mb-0">${escapeHtml(data.warnings?.[0] || 'Không thể phân tích AI.')}</div>`;
                     return;
                 }
-                result.innerHTML = `<div class="ai-result-card">${formatAiAnalysis(data.text || '')}</div>`;
+                result.innerHTML = renderPerformanceAnalysis(data);
             } catch {
                 result.innerHTML = '<div class="alert alert-danger mb-0">Không thể kết nối AI. Vui lòng thử lại sau.</div>';
             } finally {
@@ -576,7 +576,7 @@
                     result.innerHTML = `<div class="alert alert-warning mb-0">${escapeHtml(data.warnings?.[0] || 'Không thể gợi ý tệp khách hàng.')}</div>`;
                     return;
                 }
-                result.innerHTML = renderCustomerSegments(data.segments || []);
+                result.innerHTML = renderCustomerSegments(data.segments || [], data.citations || []);
             } catch {
                 result.innerHTML = '<div class="alert alert-danger mb-0">Không thể kết nối AI. Vui lòng thử lại sau.</div>';
             } finally {
@@ -585,54 +585,61 @@
             }
         });
 
-        function formatAiAnalysis(text) {
-            const lines = String(text || '')
-                .replace(/\r\n/g, '\n')
-                .split('\n')
-                .map(line => line.trim());
-
-            const chunks = [];
-            let listItems = [];
-
-            function inlineMarkdown(value) {
-                return escapeHtml(value)
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        function renderPerformanceAnalysis(data) {
+            if (!data?.overview) {
+                return `<div class="alert alert-light border mb-0">${escapeHtml(data?.warnings?.[0] || 'Chưa đủ check-in đã duyệt để tạo phân tích có căn cứ.')}</div>`;
             }
 
-            function flushList() {
-                if (!listItems.length) return;
-                chunks.push(`<ul>${listItems.map(item => `<li>${inlineMarkdown(item)}</li>`).join('')}</ul>`);
-                listItems = [];
-            }
+            const citationLabels = new Map((data.citations || []).map(citation => [
+                `${citation.sourceType || ''}:${citation.sourceId || ''}`,
+                citation.title || `${citation.sourceType || 'Nguồn'} #${citation.sourceId || ''}`
+            ]));
+            const renderInsight = (item, accentClass = 'border-start border-3 border-secondary') => {
+                const sourceLabels = (item?.sourceIds || [])
+                    .map(sourceId => citationLabels.get(sourceId))
+                    .filter(Boolean);
+                return `
+                    <div class="${accentClass} ps-3 py-1 mb-3">
+                        <div class="fw-semibold text-dark">${escapeHtml(item?.title || 'Nhận định')}</div>
+                        <div class="small mt-1">${escapeHtml(item?.detail || '')}</div>
+                        ${sourceLabels.length ? `<div class="small text-muted mt-1"><strong>Nguồn:</strong> ${sourceLabels.map(escapeHtml).join('; ')}</div>` : ''}
+                    </div>
+                `;
+            };
+            const renderSection = (title, items, accentClass) => {
+                if (!items?.length) return '';
+                return `
+                    <section class="mt-3" aria-label="${escapeHtml(title)}">
+                        <div class="small fw-bold text-uppercase text-muted mb-2">${escapeHtml(title)}</div>
+                        ${items.map(item => renderInsight(item, accentClass)).join('')}
+                    </section>
+                `;
+            };
 
-            lines.forEach(line => {
-                if (!line) {
-                    flushList();
-                    return;
-                }
-
-                const bullet = line.match(/^[-*]\s+(.+)$/);
-                if (bullet) {
-                    listItems.push(bullet[1]);
-                    return;
-                }
-
-                flushList();
-                chunks.push(`<p>${inlineMarkdown(line)}</p>`);
-            });
-
-            flushList();
-            return `<div class="ai-analysis-content">${chunks.join('')}</div>`;
+            return `
+                <div class="ai-result-card">
+                    ${renderInsight(data.overview, 'border-start border-3 border-primary')}
+                    ${renderSection('Điểm mạnh', data.strengths || [], 'border-start border-3 border-success')}
+                    ${renderSection('Rủi ro', data.risks || [], 'border-start border-3 border-warning')}
+                    ${renderSection('Hành động đề xuất', data.recommendedActions || [], 'border-start border-3 border-info')}
+                    <div class="small text-muted mt-2">Phân tích chỉ mang tính tham khảo; không thay đổi điểm, xếp loại, trạng thái duyệt hoặc thưởng.</div>
+                </div>
+            `;
         }
 
-        function renderCustomerSegments(segments) {
+        function renderCustomerSegments(segments, citations) {
             if (!segments.length) {
                 return '<div class="text-muted small">AI chưa tìm thấy tệp khách hàng phù hợp từ dữ liệu hiện có.</div>';
             }
 
+            const citationLabels = new Map((citations || []).map(citation => [
+                `${citation.sourceType || ''}:${citation.sourceId || ''}`,
+                citation.title || `${citation.sourceType || 'Nguồn'} #${citation.sourceId || ''}`
+            ]));
             const cards = segments.map(item => {
-                const score = Math.max(0, Math.min(100, parseInt(item.potentialScore || 0, 10)));
-                const tone = score >= 80 ? 'success' : score >= 60 ? 'primary' : score >= 40 ? 'warning' : 'danger';
+                const sourceLabels = (item.sourceIds || [])
+                    .map(sourceId => citationLabels.get(sourceId))
+                    .filter(Boolean);
                 return `
                     <div class="ai-segment-card border rounded p-3 mb-2">
                         <div class="d-flex justify-content-between gap-2 align-items-start mb-2">
@@ -640,10 +647,7 @@
                                 <div class="fw-bold text-dark">${escapeHtml(item.segmentName || 'Tệp khách hàng')}</div>
                                 <div class="text-muted">${escapeHtml(item.employeeFit || 'Chưa đủ dữ liệu khớp nhân viên.')}</div>
                             </div>
-                            <span class="badge bg-${tone} bg-opacity-10 text-${tone} border border-${tone} rounded-pill">${score}/100</span>
-                        </div>
-                        <div class="progress mb-2" style="height: 6px;">
-                            <div class="progress-bar bg-${tone}" style="width:${score}%"></div>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border rounded-pill">Đề xuất tham khảo</span>
                         </div>
                         <div class="row g-2 small">
                             <div class="col-sm-6"><strong>Sản phẩm/ngành:</strong> ${escapeHtml(item.productOrService || 'Chưa rõ')}</div>
@@ -651,14 +655,15 @@
                             <div class="col-sm-6"><strong>Vòng đời:</strong> ${escapeHtml(item.customerLifecycle || 'Mới/cũ/lâu năm chưa rõ')}</div>
                             <div class="col-sm-6"><strong>Căn cứ doanh thu:</strong> ${escapeHtml(item.revenueBasis || 'Thiếu dữ liệu doanh thu chi tiết')}</div>
                         </div>
-                        <div class="mt-2 small"><strong>Lý do tiềm năng:</strong> ${escapeHtml(item.potentialRationale || 'N/A')}</div>
+                        <div class="mt-2 small"><strong>Căn cứ đề xuất:</strong> ${escapeHtml(item.evidenceBasis || 'Chưa đủ căn cứ')}</div>
                         <div class="mt-1 small"><strong>Hành động:</strong> ${escapeHtml(item.recommendedAction || 'N/A')}</div>
                         ${item.dataGaps ? `<div class="mt-2 small text-muted"><i class="bi bi-info-circle me-1"></i>${escapeHtml(item.dataGaps)}</div>` : ''}
+                        ${sourceLabels.length ? `<div class="mt-2 small text-muted"><strong>Nguồn:</strong> ${sourceLabels.map(escapeHtml).join('; ')}</div>` : ''}
                     </div>
                 `;
             }).join('');
 
-            return `<div class="ai-result-card">${cards}</div>`;
+            return `<div class="ai-result-card">${cards}<div class="small text-muted mt-2">Các phân khúc không được xếp hạng và không phải xác suất thành công.</div></div>`;
         }
 
         // --- 1. BIỂU ĐỒ XU HƯỚNG 6 THÁNG GẦN NHẤT ---

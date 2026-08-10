@@ -287,7 +287,7 @@ def write_chapter5(doc):
     add_bullet(doc, "Gửi báo cáo check-in, đính kèm giải trình, duyệt check-in trong Review Queue, goal comments.", bold_prefix="Module 5: Check-in tiến độ")
     add_bullet(doc, "Tạo dự án phòng ban, phân công việc, kéo thả Kanban board, liên kết WorkItem với KPI.", bold_prefix="Module 6: Dự án & Kanban")
     add_bullet(doc, "Mở/đóng kỳ đánh giá, xếp hạng rank tự động, tính toán dự toán thưởng, export Excel tổng hợp.", bold_prefix="Module 7: Đánh giá & Thưởng")
-    add_bullet(doc, "Tư vấn chatbot, gọi AI gợi ý KPI, phân tích hiệu suất và Smart Alerts cảnh báo rủi ro.", bold_prefix="Module 8: Trợ lý AI Gemini")
+    add_bullet(doc, "Chat có citation, gợi ý KPI, phân tích hiệu suất và Smart Alerts deterministic từ dữ liệu đã duyệt.", bold_prefix="Module 8: Trợ lý AI có kiểm soát")
 
     # 5.1.3. Phương pháp kiểm thử
     add_heading2(doc, "5.1.3. Phương pháp kiểm thử")

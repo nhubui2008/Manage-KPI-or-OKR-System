@@ -205,10 +205,10 @@
                                                     </form>
                                                     <form asp-controller="SaaSAdmin" asp-action="DeleteAccount" method="post" style="display:inline;"
                                                           data-app-confirm
-                                                          data-confirm-title="Xóa vĩnh viễn tài khoản?"
-                                                          data-confirm-message="Tài khoản “@item.Username” và toàn bộ đăng ký mua gói liên quan sẽ bị xóa vĩnh viễn."
+                                                          data-confirm-title="Vô hiệu hóa tài khoản?"
+                                                          data-confirm-message="Tài khoản “@item.Username” và các membership sẽ bị vô hiệu hóa; dữ liệu lịch sử vẫn được giữ lại."
                                                           data-confirm-tone="danger"
-                                                          data-confirm-label="Xóa vĩnh viễn"
+                                                          data-confirm-label="Vô hiệu hóa"
                                                           data-confirm-require-text="@item.Username"
                                                           data-confirm-require-label="Nhập đúng username “@item.Username” để xác nhận">
                                                         <input type="hidden" name="userId" value="@item.UserId" />
@@ -318,8 +318,8 @@
                                         </form>
                                         <form asp-controller="SaaSAdmin" asp-action="DeleteAccount" method="post" style="display:inline;">
                                             <input type="hidden" name="userId" value="@item.UserId" />
-                                            <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm" title="Xóa tài khoản" style="border-radius: 6px; padding: 4px 8px;" onclick="return confirm('CẢNH BÁO: Xóa tài khoản sẽ xóa toàn bộ dữ liệu. Bạn có chắc chắn?');">
-                                                <i class="bi bi-trash"></i>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm" title="Vô hiệu hóa tài khoản" style="border-radius: 6px; padding: 4px 8px;" onclick="return confirm('Tài khoản và các membership sẽ bị vô hiệu hóa; dữ liệu lịch sử vẫn được giữ lại. Tiếp tục?');">
+                                                <i class="bi bi-person-dash"></i>
                                             </button>
                                         </form>
                                     </div>

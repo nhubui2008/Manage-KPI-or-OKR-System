@@ -1,21 +1,6 @@
 ﻿@model Manage_KPI_or_OKR_System.Models.ViewModels.OkrIndexViewModel
 @{
-    var measurementUnits = new[] {
-        new { Value = "%", Text = "% - Tỷ lệ phần trăm" },
-        new { Value = "VNĐ", Text = "VNĐ - Tiền tệ" },
-        new { Value = "Triệu VNĐ", Text = "Triệu VNĐ - Tiền tệ rút gọn" },
-        new { Value = "Điểm", Text = "Điểm - Thang điểm" },
-        new { Value = "Người", Text = "Người - Nhân sự" },
-        new { Value = "Khách hàng", Text = "Khách hàng" },
-        new { Value = "Cơ hội", Text = "Cơ hội bán hàng" },
-        new { Value = "Hợp đồng", Text = "Hợp đồng" },
-        new { Value = "Sản phẩm", Text = "Sản phẩm" },
-        new { Value = "Lần", Text = "Lần" },
-        new { Value = "Giờ", Text = "Giờ" },
-        new { Value = "Ngày", Text = "Ngày" },
-        new { Value = "Dự án", Text = "Dự án" },
-        new { Value = "Công việc", Text = "Công việc" }
-    };
+    var measurementUnits = Manage_KPI_or_OKR_System.Models.ViewModels.KpiCreateViewModel.MeasurementUnitOptions;
 }
 <!-- Modal AI Suggest Key Results -->
 <div class="modal fade" id="aiSuggestKrModal" tabindex="-1" aria-labelledby="aiSuggestKrModalTitle" aria-hidden="true">
@@ -34,10 +19,7 @@
                         <i class="bi bi-bullseye"></i>
                         <span id="aiOkrNameDisplay" class="text-truncate fw-bold">Objective: </span>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill js-okr-action"
-                            data-action="ai-history-kr">
-                        <i class="bi bi-clock-history"></i> Lịch sử AI
-                    </button>
+                    <span class="badge text-bg-info">Bản nháp tư vấn · Con người quyết định</span>
                 </div>
                 <div id="aiLoadingIndicator" class="text-center py-5">
                     <div class="spinner-grow text-info" role="status" style="width: 3rem; height: 3rem;">
@@ -67,6 +49,12 @@
                                     <!-- Dynamic content -->
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="border rounded-3 p-3 mt-3" aria-labelledby="aiKrCitationTitle">
+                            <div id="aiKrCitationTitle" class="small fw-semibold mb-2">
+                                <i class="bi bi-journal-text me-1" aria-hidden="true"></i> Nguồn được sử dụng
+                            </div>
+                            <div id="aiKrCitationList" class="small text-muted" role="status" aria-live="polite"></div>
                         </div>
                         <div class="border rounded-3 bg-light p-3 mt-3" aria-labelledby="aiKrRefineTitle">
                             <label id="aiKrRefineTitle" for="aiKrRefineInput" class="form-label fw-semibold mb-1">
@@ -283,10 +271,22 @@
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-end gap-3 mt-4">
+                    <div id="updateKrAiPanel" class="alert alert-light border small mt-3 mb-0 d-none"
+                         role="status" aria-live="polite"></div>
+
+                    <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
                         <button type="button" class="btn-outline-custom px-4" data-bs-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn-primary-custom px-4">Cập nhật ngay</button>
+                        <button type="button" class="btn btn-outline-primary px-4" id="updateKrAiEvaluateBtn">
+                            <i class="bi bi-stars me-1" aria-hidden="true"></i>
+                            AI đánh giá có nguồn
+                        </button>
+                        <button type="submit" class="btn-primary-custom px-4" id="updateKrSubmitBtn">
+                            Con người xác nhận cập nhật
+                        </button>
                     </div>
+                    <p class="small text-muted text-end mt-2 mb-0">
+                        AI chỉ tư vấn và không tự sửa giá trị hay trạng thái KR. Bạn vẫn là người quyết định cuối cùng.
+                    </p>
                 </form>
             </div>
         </div>

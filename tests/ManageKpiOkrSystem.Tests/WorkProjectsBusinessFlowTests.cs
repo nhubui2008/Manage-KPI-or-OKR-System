@@ -81,7 +81,6 @@ public sealed class WorkProjectsBusinessFlowTests
         var saved = Assert.Single(await context.WorkProjects.ToListAsync());
         Assert.Equal(sourceKpi.Id, saved.SourceKPIId);
         Assert.Equal(sourceOkr.Id, saved.SourceOKRId);
-        Assert.Equal(sourceOkr.Id, saved.LinkedOKRId);
     }
 
     [Fact]

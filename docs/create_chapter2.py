@@ -329,7 +329,7 @@ def write_chapter2(doc):
         ["25", "UC_EM_03", "Quản lý Kanban cá nhân", "Employee / Nhân viên", "Xem công việc được phân công, cập nhật trạng thái thẻ kéo thả Kanban."],
         ["26", "UC_EM_04", "Tương tác 1-on-1", "Employee / Nhân viên", "Xác nhận lịch họp, gửi phản hồi và trao đổi ý kiến với quản lý trực tiếp."],
         ["27", "UC_EM_05", "Xem dự toán thưởng", "Employee / Nhân viên", "Theo dõi điểm hiệu suất cá nhân và mức thưởng dự toán tương ứng thực tế."],
-        ["28", "UC_EM_06", "Trợ lý AI Gemini", "Employee / Nhân viên", "Chat với AI tư vấn lập kế hoạch, nhận gợi ý KPI thông minh cho công việc."],
+        ["28", "UC_EM_06", "Trợ lý AI có nguồn", "Employee / Nhân viên", "Chat với advisor trong đúng phạm vi dữ liệu, có citation và abstain khi thiếu bằng chứng."],
     ]
 
     create_table(doc, headers_uc, rows_uc, col_widths=[1.0, 2.0, 3.5, 3.5, 6.8])
@@ -351,8 +351,8 @@ def write_chapter2(doc):
     add_bullet(doc, "Giao diện được xây dựng responsive hoàn toàn bằng Bootstrap 5, tối ưu hóa hiển thị từ màn hình "
                    "desktop của quản trị viên đến màn hình điện thoại di động của nhân viên khi thực hiện check-in nhanh.", bold_prefix="Yêu cầu tương thích")
 
-    add_bullet(doc, "Tích hợp cơ chế rate limit (15 req/phút) khi gọi tới Gemini API để tránh tràn băng thông và quá "
-                   "tải chi phí. Tối ưu hóa truy vấn SQL Server bằng AsNoTracking đối với các truy vấn đọc, giúp hệ thống phản "
+    add_bullet(doc, "Giới hạn kích thước input/history, timeout, retry hữu hạn và quota theo tenant/người dùng cho model gateway để kiểm soát "
+                   "tải và chi phí. Tối ưu hóa truy vấn SQL Server bằng AsNoTracking đối với các truy vấn đọc, giúp hệ thống phản "
                    "hồi nhanh dưới 500ms đối với các tác vụ thông thường.", bold_prefix="Yêu cầu hiệu năng")
 
     add_bullet(doc, "Các tác vụ dọn dẹp dữ liệu lịch sử AI cũ được chạy ngầm tự động thông qua AIHistoryCleanupService "

@@ -1,18 +1,25 @@
 // login.js - Toggle password visibility & button loading
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Password toggle
-    const passwordInput = document.getElementById('password');
-    const passwordToggle = document.getElementById('passwordToggle');
-    if (passwordInput && passwordToggle) {
-        passwordToggle.addEventListener('click', function () {
-            const isPassword = passwordInput.type === 'password';
-            passwordInput.type = isPassword ? 'text' : 'password';
-            passwordToggle.querySelector('.eye-open').style.display = isPassword ? 'none' : 'block';
-            passwordToggle.querySelector('.eye-closed').style.display = isPassword ? 'block' : 'none';
+    function initializePasswordToggle(inputId, toggleId, fieldLabel) {
+        const input = document.getElementById(inputId);
+        const toggle = document.getElementById(toggleId);
+        if (!input || !toggle) return;
+
+        toggle.setAttribute('aria-controls', input.id);
+        toggle.addEventListener('click', function () {
+            const willShowPassword = input.type === 'password';
+            input.type = willShowPassword ? 'text' : 'password';
+            toggle.setAttribute(
+                'aria-label',
+                `${willShowPassword ? 'Ẩn' : 'Hiện'} ${fieldLabel}`);
         });
     }
 
+    initializePasswordToggle('password', 'passwordToggle', 'mật khẩu');
+    initializePasswordToggle('confirmPassword', 'confirmPasswordToggle', 'mật khẩu xác nhận');
+
+    const passwordInput = document.getElementById('password');
     const usernameInput = document.getElementById('username');
     const demoAccountButtons = document.querySelectorAll('.demo-account');
 
@@ -34,4 +41,26 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    const registerForm = document.getElementById('registerForm');
+    registerForm?.addEventListener('submit', function (event) {
+        const hasJQueryValidation = typeof window.jQuery !== 'undefined'
+            && typeof window.jQuery.fn.valid === 'function';
+        const isValid = hasJQueryValidation
+            ? window.jQuery(registerForm).valid()
+            : registerForm.checkValidity();
+
+        if (!isValid || event.defaultPrevented) {
+            return;
+        }
+
+        const submitButton = registerForm.querySelector('.comfort-button');
+        if (!submitButton || submitButton.disabled) {
+            event.preventDefault();
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.classList.add('loading');
+        submitButton.setAttribute('aria-busy', 'true');
+    });
 });

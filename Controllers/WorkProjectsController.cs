@@ -3,6 +3,9 @@ using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Models.ViewModels;
+using Manage_KPI_or_OKR_System.Services;
+using Manage_KPI_or_OKR_System.Services.AI;
+using Manage_KPI_or_OKR_System.Services.Tenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +34,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         };
 
         private readonly MiniERPDbContext _context;
-        private const string ReviewStatusApproved = "Approved";
+        private readonly IWorkItemCommandValidator _commandValidator;
+        private readonly ICheckInAiEvaluationQueue? _aiEvaluationQueue;
+        private readonly ITenantContext? _tenantContext;
+        private readonly HashSet<int> _pendingAiCheckInIds = new();
+        private const string ReviewStatusPending = "Pending";
         private const string AutoWorkItemSyncMarker = "AUTO_WORKITEM_SYNC";
 
         private sealed class ProjectTaskStats
@@ -44,8 +51,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         public WorkProjectsController(MiniERPDbContext context)
+            : this(context, new WorkItemCommandValidator(context))
+        {
+        }
+
+        public WorkProjectsController(
+            MiniERPDbContext context,
+            IWorkItemCommandValidator commandValidator,
+            ICheckInAiEvaluationQueue? aiEvaluationQueue = null,
+            ITenantContext? tenantContext = null)
         {
             _context = context;
+            _commandValidator = commandValidator;
+            _aiEvaluationQueue = aiEvaluationQueue;
+            _tenantContext = tenantContext;
         }
 
         [HasPermission("WORKPROJECTS_VIEW")]
@@ -405,7 +424,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 includeKpiIds.Add(project.SourceKPIId.Value);
             }
 
-            var sourceOkrId = project.SourceOKRId ?? project.LinkedOKRId;
+            var sourceOkrId = project.SourceOKRId;
             var sourceKeyResultIds = sourceOkrId.HasValue
                 ? await _context.OKRKeyResults
                     .Where(kr => kr.OKRId == sourceOkrId.Value)
@@ -488,7 +507,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (!ModelState.IsValid)
             {
-                await PopulateFormListsAsync(project.OwnerId, departmentIds, project.SourceOKRId ?? project.LinkedOKRId, project.SourceKPIId);
+                await PopulateFormListsAsync(project.OwnerId, departmentIds, project.SourceOKRId, project.SourceKPIId);
                 return View(project);
             }
 
@@ -507,7 +526,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context.WorkProjects.Add(project);
             await _context.SaveChangesAsync();
             await ReplaceProjectDepartmentsAsync(project.Id, departmentIds);
-            await SyncProjectOkrLinkAsync(project.Id, Array.Empty<int?>(), project.SourceOKRId);
             AddAuditLog("CREATE", "WorkProjects", null, $"Tạo dự án {project.ProjectCode} - {project.ProjectName}");
             await _context.SaveChangesAsync();
 
@@ -534,7 +552,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Select(pd => pd.DepartmentId)
                 .ToArrayAsync();
 
-            await PopulateFormListsAsync(project.OwnerId, departmentIds, project.SourceOKRId ?? project.LinkedOKRId, project.SourceKPIId);
+            await PopulateFormListsAsync(project.OwnerId, departmentIds, project.SourceOKRId, project.SourceKPIId);
             ViewBag.SelectedDepartmentIds = departmentIds;
             return View(project);
         }
@@ -570,13 +588,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (!ModelState.IsValid)
             {
-                await PopulateFormListsAsync(input.OwnerId, departmentIds, input.SourceOKRId ?? input.LinkedOKRId, input.SourceKPIId);
+                await PopulateFormListsAsync(input.OwnerId, departmentIds, input.SourceOKRId, input.SourceKPIId);
                 ViewBag.SelectedDepartmentIds = departmentIds;
                 return View(input);
             }
 
             var oldData = $"{project.ProjectName} | {project.Status} | {project.Priority}";
-            var previousOkrIds = new int?[] { project.SourceOKRId, project.LinkedOKRId };
             project.ProjectName = input.ProjectName;
             project.Description = input.Description;
             project.OwnerId = input.OwnerId;
@@ -585,13 +602,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             project.StartDate = input.StartDate;
             project.DueDate = input.DueDate;
             project.SourceOKRId = input.SourceOKRId;
-            project.LinkedOKRId = input.LinkedOKRId;
             project.SourceKPIId = input.SourceKPIId;
             project.IsCrossDepartment = departmentIds.Distinct().Count() > 1;
             project.UpdatedAt = DateTime.Now;
 
             await ReplaceProjectDepartmentsAsync(project.Id, departmentIds);
-            await SyncProjectOkrLinkAsync(project.Id, previousOkrIds, project.SourceOKRId);
             await RecalculateProjectProgressAsync(project.Id);
             AddAuditLog("UPDATE", "WorkProjects", oldData, $"{project.ProjectName} | {project.Status} | {project.Priority}");
             await _context.SaveChangesAsync();
@@ -659,7 +674,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
-            var goalLink = await NormalizeWorkItemGoalLinkAsync(kpiId, okrKeyResultId);
+            var validation = await _commandValidator.ValidateAsync(
+                project,
+                User,
+                assigneeId,
+                departmentId,
+                kpiId,
+                okrKeyResultId,
+                dueDate);
+            if (!validation.IsValid)
+            {
+                TempData["ToastErrorMessage"] = string.Join(" ", validation.Errors);
+                return RedirectToAction(nameof(Details), new { id = projectId });
+            }
+
             var task = new WorkItem
             {
                 WorkProjectId = projectId,
@@ -668,8 +696,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 AssigneeId = assigneeId,
                 ReporterId = currentEmployee?.Id,
                 DepartmentId = departmentId,
-                KPIId = goalLink.KpiId,
-                OKRKeyResultId = goalLink.KeyResultId,
+                KPIId = validation.KpiId,
+                OKRKeyResultId = validation.KeyResultId,
                 KpiImpactWeight = NormalizeImpactWeight(kpiImpactWeight),
                 Priority = NormalizePriority(priority),
                 KanbanStatus = NormalizeKanbanStatus(kanbanStatus),
@@ -687,8 +715,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             await RecalculateProjectProgressAsync(projectId);
             AddAuditLog("CREATE", "WorkItems", null, $"Tạo task #{task.Id} trong dự án #{projectId}");
             await _context.SaveChangesAsync();
-            await SyncTaskGoalProgressAsync(task);
-            await _context.SaveChangesAsync();
+            await SyncTaskGoalProgressAndQueueAsync(task);
 
             TempData["ToastSuccessMessage"] = "Đã thêm công việc vào Kanban.";
             return RedirectToAction(nameof(Details), new { id = projectId });
@@ -716,17 +743,37 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return RedirectToAction(nameof(Details), new { id = task.WorkProjectId });
             }
 
+            var project = await _context.WorkProjects
+                .FirstOrDefaultAsync(item => item.Id == task.WorkProjectId && item.IsActive == true);
+            if (project == null)
+            {
+                return NotFound();
+            }
+
             var oldData = $"{task.Title} | {task.KanbanStatus} | {task.Priority} | {task.ProgressPercentage:0.##}%";
             var oldAssigneeId = task.AssigneeId;
             var oldKpiId = task.KPIId;
             var oldKeyResultId = task.OKRKeyResultId;
-            var goalLink = await NormalizeWorkItemGoalLinkAsync(kpiId, okrKeyResultId);
+            var validation = await _commandValidator.ValidateAsync(
+                project,
+                User,
+                assigneeId,
+                departmentId,
+                kpiId,
+                okrKeyResultId,
+                dueDate);
+            if (!validation.IsValid)
+            {
+                TempData["ToastErrorMessage"] = string.Join(" ", validation.Errors);
+                return RedirectToAction(nameof(Details), new { id = task.WorkProjectId });
+            }
+
             task.Title = title.Trim();
             task.Description = description?.Trim();
             task.AssigneeId = assigneeId;
             task.DepartmentId = departmentId;
-            task.KPIId = goalLink.KpiId;
-            task.OKRKeyResultId = goalLink.KeyResultId;
+            task.KPIId = validation.KpiId;
+            task.OKRKeyResultId = validation.KeyResultId;
             task.KpiImpactWeight = NormalizeImpactWeight(kpiImpactWeight);
             task.Priority = NormalizePriority(priority);
             task.KanbanStatus = NormalizeKanbanStatus(kanbanStatus);
@@ -743,8 +790,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             await RecalculateProjectProgressAsync(task.WorkProjectId);
             AddAuditLog("UPDATE", "WorkItems", oldData, $"{task.Title} | {task.KanbanStatus} | {task.Priority} | {task.ProgressPercentage:0.##}%");
             await _context.SaveChangesAsync();
-            await SyncTaskGoalProgressAsync(task, oldKpiId, oldKeyResultId, oldAssigneeId);
-            await _context.SaveChangesAsync();
+            await SyncTaskGoalProgressAndQueueAsync(task, oldKpiId, oldKeyResultId, oldAssigneeId);
 
             TempData["ToastSuccessMessage"] = "Đã cập nhật công việc.";
             return RedirectToAction(nameof(Details), new { id = task.WorkProjectId });
@@ -790,8 +836,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             await RecalculateProjectProgressAsync(task.WorkProjectId);
             AddAuditLog("STATUS", "WorkItems", oldStatus, task.KanbanStatus);
             await _context.SaveChangesAsync();
-            await SyncTaskGoalProgressAsync(task);
-            await _context.SaveChangesAsync();
+            await SyncTaskGoalProgressAndQueueAsync(task);
 
             if (isAjaxRequest)
             {
@@ -916,50 +961,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         private async Task<List<int>> GetAccessibleProjectIdsAsync(bool includeArchived = false)
         {
-            if (AccessScopeHelper.IsAdmin(User) || AccessScopeHelper.IsDirector(User) || User.IsInRole("HR"))
-            {
-                return await _context.WorkProjects
-                    .Where(p => p.IsActive == true || includeArchived)
-                    .Select(p => p.Id)
-                    .ToListAsync();
-            }
-
-            var employee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
-            if (employee == null)
-            {
-                return new List<int>();
-            }
-
-            var departmentIds = await AccessScopeHelper.GetEmployeeDepartmentIdsAsync(_context, employee.Id);
-            if (AccessScopeHelper.IsManagerScoped(User))
-            {
-                var managedDepartmentIds = await AccessScopeHelper.GetManagedDepartmentIdsAsync(_context, employee);
-                departmentIds = departmentIds.Concat(managedDepartmentIds).Distinct().ToList();
-            }
-
-            var accessibleProjectIdsQuery = _context.WorkProjects
-                .Where(p => (p.IsActive == true || includeArchived) && (p.OwnerId == employee.Id || p.CreatedById == employee.Id))
-                .Select(p => p.Id);
-
-            if (departmentIds.Any())
-            {
-                accessibleProjectIdsQuery = accessibleProjectIdsQuery.Concat(
-                    _context.WorkProjectDepartments
-                    .Where(pd => pd.IsActive == true && departmentIds.Contains(pd.DepartmentId))
-                    .Select(pd => pd.WorkProjectId));
-            }
-
-            accessibleProjectIdsQuery = accessibleProjectIdsQuery.Concat(
-                _context.WorkItems
-                    .Where(t => t.IsActive == true &&
-                                (t.AssigneeId == employee.Id ||
-                                 t.ReporterId == employee.Id ||
-                                 (t.DepartmentId.HasValue && departmentIds.Contains(t.DepartmentId.Value))))
-                    .Select(t => t.WorkProjectId));
-
-            return await accessibleProjectIdsQuery
-                .Distinct()
-                .ToListAsync();
+            return await ProjectAccessScopeHelper.GetAccessibleProjectIdsAsync(
+                _context,
+                User,
+                includeArchived);
         }
 
         private async Task<bool> CanAccessProjectAsync(int projectId)
@@ -1261,7 +1266,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     KPIId = kpiId,
                     EmployeeId = employeeId,
                     SubmittedById = currentEmployee?.Id,
-                    ReviewStatus = ReviewStatusApproved,
+                    ReviewStatus = ReviewStatusPending,
                     ReviewComment = AutoWorkItemSyncMarker
                 };
                 _context.KPICheckIns.Add(checkIn);
@@ -1273,9 +1278,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
             checkIn.DeadlineAt = deadlineAt;
             checkIn.IsLate = isLate;
             checkIn.StatusId = await ResolveAutoCheckInStatusIdAsync(isLate, scheduleProgress, progress);
-            checkIn.ReviewStatus = ReviewStatusApproved;
-            checkIn.ReviewedById = currentEmployee?.Id;
-            checkIn.ReviewedAt = submittedAt;
+            checkIn.ReviewStatus = ReviewStatusPending;
+            checkIn.ReviewedById = null;
+            checkIn.ReviewedAt = null;
             checkIn.ReviewComment = AutoWorkItemSyncMarker;
 
             var detail = await _context.CheckInDetails.FirstOrDefaultAsync(d => d.CheckInId == checkIn.Id);
@@ -1290,18 +1295,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
             detail.ExpectedValueAtDeadline = expectedValueAtDeadline;
             detail.ScheduleProgressPercentage = Math.Round(scheduleProgress, 2);
             detail.Note = $"{AutoWorkItemSyncMarker}: Tự động tổng hợp từ {tasks.Count} công việc dự án có liên kết KPI.";
-
-            var passThreshold = kpiDetail?.PassThreshold ?? kpiDetail?.TargetValue ?? 100m;
-            var passProgress = passThreshold > 0
-                ? ProgressHelper.CalculateProgress(achievedValue, passThreshold, kpiDetail?.IsInverse ?? false)
-                : progress;
-            kpi.StatusId = await ResolveAutoOverallKpiStatusIdAsync(progress, passProgress, period);
+            _pendingAiCheckInIds.Add(checkIn.Id);
 
             AddAuditLog(
                 "AUTO_SYNC",
                 "KPICheckIns",
                 null,
-                $"KPI #{kpiId} nhân viên #{employeeId} tự cập nhật từ task: {progress:0.##}%");
+                $"KPI #{kpiId} nhân viên #{employeeId} tạo check-in chờ duyệt từ task: {progress:0.##}%");
         }
 
         private async Task SyncKeyResultFromWorkItemsAsync(int keyResultId)
@@ -1325,14 +1325,58 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var progress = CalculateWeightedTaskProgress(tasks);
             var targetValue = keyResult.TargetValue ?? 100m;
-            keyResult.CurrentValue = Math.Round(targetValue * progress / 100m, 2);
-            keyResult.ResultStatus = ProgressHelper.GetResultStatus(keyResult.Progress);
+            var suggestedValue = Math.Round(targetValue * progress / 100m, 2);
 
             AddAuditLog(
-                "AUTO_SYNC",
+                "AUTO_SYNC_PROPOSAL",
                 "OKRKeyResults",
                 null,
-                $"KR #{keyResultId} tự cập nhật từ {tasks.Count} task: {keyResult.CurrentValue:0.##}/{targetValue:0.##}");
+                $"KR #{keyResultId} có giá trị đề xuất từ {tasks.Count} task: {suggestedValue:0.##}/{targetValue:0.##}; chưa thay đổi kết quả chính thức.");
+        }
+
+        private async Task SyncTaskGoalProgressAndQueueAsync(
+            WorkItem task,
+            int? previousKpiId = null,
+            int? previousKeyResultId = null,
+            int? previousAssigneeId = null)
+        {
+            await using var transaction = _context.Database.IsRelational()
+                ? await _context.Database.BeginTransactionAsync()
+                : null;
+            await SyncTaskGoalProgressAsync(task, previousKpiId, previousKeyResultId, previousAssigneeId);
+            await _context.SaveChangesAsync();
+            await EnqueuePendingAiCheckInsAsync();
+            await _context.SaveChangesAsync();
+            if (transaction != null)
+            {
+                await transaction.CommitAsync();
+            }
+        }
+
+        private async Task EnqueuePendingAiCheckInsAsync()
+        {
+            if (_pendingAiCheckInIds.Count == 0)
+            {
+                return;
+            }
+
+            var systemUserIdValue = User.FindFirstValue("SystemUserId") ??
+                                    User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var systemUserId = int.TryParse(systemUserIdValue, out var parsedSystemUserId)
+                ? parsedSystemUserId
+                : (int?)null;
+            foreach (var checkInId in _pendingAiCheckInIds)
+            {
+                if (_aiEvaluationQueue != null)
+                {
+                    await _aiEvaluationQueue.EnqueueAsync(new CheckInAiEvaluationWorkItem(
+                        checkInId,
+                        _tenantContext?.TenantId,
+                        systemUserId,
+                        User.FindFirstValue(ClaimTypes.Role)));
+                }
+            }
+            _pendingAiCheckInIds.Clear();
         }
 
         private async Task PopulateFormListsAsync(
@@ -1415,7 +1459,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 project.SourceKPIId = sourceKpi?.Id;
             }
 
-            var sourceOkrId = project.SourceOKRId ?? project.LinkedOKRId;
+            var sourceOkrId = project.SourceOKRId;
             if (sourceOkrId.HasValue)
             {
                 var okrExists = await _context.OKRs
@@ -1440,37 +1484,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             project.SourceOKRId = sourceOkrId;
-            project.LinkedOKRId = sourceOkrId;
-        }
-
-        private async Task SyncProjectOkrLinkAsync(int projectId, IEnumerable<int?> previousOkrIds, int? newOkrId)
-        {
-            var previousIds = previousOkrIds
-                .Where(id => id.HasValue)
-                .Select(id => id!.Value)
-                .Distinct()
-                .Where(id => !newOkrId.HasValue || id != newOkrId.Value)
-                .ToList();
-
-            if (previousIds.Any())
-            {
-                var previousOkrs = await _context.OKRs
-                    .Where(o => previousIds.Contains(o.Id) && o.LinkedWorkProjectId == projectId)
-                    .ToListAsync();
-                foreach (var okr in previousOkrs)
-                {
-                    okr.LinkedWorkProjectId = null;
-                }
-            }
-
-            if (newOkrId.HasValue)
-            {
-                var okr = await _context.OKRs.FirstOrDefaultAsync(o => o.Id == newOkrId.Value);
-                if (okr != null)
-                {
-                    okr.LinkedWorkProjectId = projectId;
-                }
-            }
         }
 
         private async Task ReplaceProjectDepartmentsAsync(int projectId, IEnumerable<int> departmentIds)

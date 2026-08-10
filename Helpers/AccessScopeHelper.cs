@@ -22,6 +22,11 @@ namespace Manage_KPI_or_OKR_System.Helpers
             return IsInRole(user, "Manager");
         }
 
+        public static bool IsHumanResources(ClaimsPrincipal user)
+        {
+            return IsInRole(user, "HR") || IsInRole(user, "Human Resources");
+        }
+
         public static bool IsManagerScoped(ClaimsPrincipal user)
         {
             return IsManager(user) && !IsAdmin(user) && !IsDirector(user);
@@ -88,7 +93,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
 
         public static async Task<bool> CanAccessKpiAsync(MiniERPDbContext context, ClaimsPrincipal user, KPI kpi)
         {
-            if (IsAdmin(user) || IsDirector(user))
+            if (IsAdmin(user) || IsDirector(user) || IsHumanResources(user))
             {
                 return true;
             }
@@ -155,12 +160,14 @@ namespace Manage_KPI_or_OKR_System.Helpers
                     .AnyAsync(a => a.KPIId == kpi.Id && employeeDepartmentIds.Contains(a.DepartmentId));
             }
 
-            return true;
+            // Unknown/custom roles must not inherit unrestricted KPI access.
+            // Access is granted only by the explicit role branches above.
+            return false;
         }
 
         public static async Task<bool> CanManageEmployeeAsync(MiniERPDbContext context, ClaimsPrincipal user, int employeeId)
         {
-            if (IsAdmin(user) || IsDirector(user))
+            if (IsAdmin(user) || IsDirector(user) || IsHumanResources(user))
             {
                 return true;
             }

@@ -28,9 +28,9 @@ namespace Manage_KPI_or_OKR_System.Services
 
                 if (string.IsNullOrWhiteSpace(senderEmail) || string.IsNullOrWhiteSpace(senderPassword))
                 {
-                    _logger.LogWarning("SMTP credentials not configured. Simulating email send.");
-                    _logger.LogInformation($"[SIMULATED EMAIL] To: {toEmail}\nSubject: {subject}\nBody: {body}");
-                    // Just simulation if no credentials are provided.
+                    // Email bodies may contain password-reset links or other secrets.
+                    // Never write recipients, subjects, or bodies to application logs.
+                    _logger.LogWarning("SMTP credentials are not configured; email delivery was skipped.");
                     return;
                 }
 
@@ -56,7 +56,7 @@ namespace Manage_KPI_or_OKR_System.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi gửi email.");
-                throw new Exception($"Lỗi SMTP: {ex.Message} - Vui lòng kiểm tra lại Email và App Password!");
+                throw new InvalidOperationException("Lỗi SMTP: Không thể gửi email.", ex);
             }
         }
     }

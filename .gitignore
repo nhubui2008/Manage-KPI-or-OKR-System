@@ -79,9 +79,15 @@ App_Data/DataProtection-Keys/
 publish/
 
 ## Local QA and runtime artifacts
+.build-check/
+artifacts/verify-build/
 artifacts/*.log
 artifacts/*.out
 artifacts/*.txt
+
+## Python generator caches
+__pycache__/
+*.py[cod]
 artifacts/*.pid
 qa-http-*.json
 

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace ManageKpiOkrSystem.Tests;
@@ -16,14 +17,14 @@ namespace ManageKpiOkrSystem.Tests;
 public sealed class OKRsControllerKeyResultTests
 {
     [Theory]
-    [InlineData(nameof(OKRsController.SuggestKeyResultsAPI), typeof(int))]
-    [InlineData(nameof(OKRsController.EditKeyResult), typeof(OKRKeyResult))]
-    public void StateChangingActions_AcceptPostOnly(string actionName, Type parameterType)
+    [InlineData(nameof(OKRsController.SuggestKeyResultsAPI))]
+    [InlineData(nameof(OKRsController.RefineKeyResultSuggestions))]
+    [InlineData(nameof(OKRsController.EditKeyResult))]
+    public void StateChangingActions_AcceptPostOnly(string actionName)
     {
-        var method = typeof(OKRsController).GetMethod(actionName, new[] { parameterType });
+        var method = typeof(OKRsController).GetMethods().Single(candidate => candidate.Name == actionName);
 
-        Assert.NotNull(method);
-        Assert.NotNull(method!.GetCustomAttribute<HttpPostAttribute>());
+        Assert.NotNull(method.GetCustomAttribute<HttpPostAttribute>());
         Assert.Null(method.GetCustomAttribute<HttpGetAttribute>());
     }
 
@@ -98,12 +99,12 @@ public sealed class OKRsControllerKeyResultTests
     }
 
     [Fact]
-    public async Task AddKeyResult_WhenLinkedViaLinkedOKRId_DoesNotDuplicateWorkItem()
+    public async Task AddKeyResult_WhenLinkedViaCanonicalSourceOkr_DoesNotDuplicateWorkItem()
     {
         await using var context = CreateContext();
         var okr = new OKR
         {
-            ObjectiveName = "LinkedOKRId objective",
+            ObjectiveName = "Canonical project objective",
             Cycle = "Q2-2026",
             IsActive = true,
             CreatedAt = DateTime.Now
@@ -113,11 +114,11 @@ public sealed class OKRsControllerKeyResultTests
 
         var project = new WorkProject
         {
-            ProjectCode = "PRJ-LEGACY",
-            ProjectName = "Legacy linked project",
+            ProjectCode = "PRJ-CANONICAL",
+            ProjectName = "Canonical linked project",
             Status = "Active",
             Priority = "Normal",
-            LinkedOKRId = okr.Id,
+            SourceOKRId = okr.Id,
             IsActive = true,
             CreatedAt = DateTime.Now
         };
@@ -342,15 +343,11 @@ public sealed class OKRsControllerKeyResultTests
             Status = "Active",
             Priority = "Normal",
             SourceOKRId = okr.Id,
-            LinkedOKRId = okr.Id,
             IsActive = true,
             CreatedAt = DateTime.Now,
             DueDate = new DateTime(2026, 6, 30)
         };
         context.WorkProjects.Add(project);
-        await context.SaveChangesAsync();
-
-        okr.LinkedWorkProjectId = project.Id;
         await context.SaveChangesAsync();
 
         return (okr, project);
@@ -363,7 +360,11 @@ public sealed class OKRsControllerKeyResultTests
             User = AdminPrincipal()
         };
 
-        return new OKRsController(context, new NoopGeminiService(), workflow ?? new OKRWorkflowService(context))
+        return new OKRsController(
+            context,
+            workflow ?? new OKRWorkflowService(context),
+            new NoopOkrKeyResultSuggestionAdvisor(),
+            NullLogger<OKRsController>.Instance)
         {
             ControllerContext = new ControllerContext
             {
@@ -419,18 +420,6 @@ public sealed class OKRsControllerKeyResultTests
             new Claim(ClaimTypes.NameIdentifier, "1"),
             new Claim(ClaimTypes.Role, "Admin")
         }, "Test"));
-    }
-
-    private sealed class NoopGeminiService : IGeminiService
-    {
-        public Task<string> GenerateTextAsync(
-            string systemInstruction,
-            string prompt,
-            GeminiGenerationOptions? options = null,
-            CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult("[]");
-        }
     }
 
     private sealed class TestTempDataProvider : ITempDataProvider

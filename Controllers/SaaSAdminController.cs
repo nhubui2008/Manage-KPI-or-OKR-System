@@ -4,19 +4,25 @@ using Microsoft.EntityFrameworkCore;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Models;
+using Manage_KPI_or_OKR_System.Services.Tenancy;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Linq;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
-    [Authorize(Roles = "Admin,Administrator")]
+    [Authorize(Policy = AuthRoleHelper.PlatformAdminPolicyName)]
     public class SaaSAdminController : Controller
     {
         private readonly MiniERPDbContext _context;
+        private readonly ITenantProvisioningService _tenantProvisioningService;
 
-        public SaaSAdminController(MiniERPDbContext context)
+        public SaaSAdminController(
+            MiniERPDbContext context,
+            ITenantProvisioningService tenantProvisioningService)
         {
             _context = context;
+            _tenantProvisioningService = tenantProvisioningService;
         }
 
         public async Task<IActionResult> Index()
@@ -80,24 +86,56 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return RedirectToAction(nameof(Registrations));
             }
 
+            await using var transaction = await _context.Database.BeginTransactionAsync();
             switch (actionType)
             {
                 case "upgrade":
+                    var reg = await _context.PurchaseRegistrations
+                        .Where(r => r.Email == user.Email && r.Status == "Chờ xử lý")
+                        .OrderByDescending(r => r.CreatedAt)
+                        .FirstOrDefaultAsync();
+                    if (reg == null)
+                    {
+                        TempData["ErrorMessage"] = "Không có yêu cầu đăng ký gói đang chờ xác minh cho tài khoản này.";
+                        return RedirectToAction(nameof(Registrations));
+                    }
+
                     user.TrialEndTime = null;
-                    if (!user.RoleId.HasValue)
-                    {
-                        var selfServiceRole = await AuthRoleHelper.EnsureDefaultSelfServiceRoleAsync(_context);
-                        user.RoleId = selfServiceRole.Id;
-                    }
-                    var reg = await _context.PurchaseRegistrations.FirstOrDefaultAsync(r => r.Email == user.Email);
-                    if (reg != null)
-                    {
-                        reg.Status = "Đã kích hoạt";
-                    }
+                    user.IsActive = true;
+                    await _tenantProvisioningService.EnsureCustomerTenantAsync(
+                        user,
+                        GetCurrentSystemUserId());
+                    reg.Status = "Đã kích hoạt";
+                    reg.AdminNotes = $"Được kích hoạt thủ công bởi {User.Identity?.Name ?? "Admin"} lúc {DateTime.Now:g}.";
                     TempData["SuccessMessage"] = "Đã kích hoạt bản quyền chính thức cho khách hàng.";
                     break;
                 case "extend":
+                    var pendingTrial = await _context.PurchaseRegistrations
+                        .Where(r => r.Email == user.Email && r.Status == "Chờ xử lý")
+                        .OrderByDescending(r => r.CreatedAt)
+                        .FirstOrDefaultAsync();
+                    var hasCustomerTenant = await _context.TenantMemberships
+                        .AnyAsync(membership =>
+                            membership.SystemUserId == user.Id &&
+                            membership.Tenant != null &&
+                            membership.Tenant.Code == $"tenant-{user.Id}");
+                    if (pendingTrial == null && !hasCustomerTenant)
+                    {
+                        TempData["ErrorMessage"] = "Không có yêu cầu dùng thử đang chờ xác minh cho tài khoản này.";
+                        return RedirectToAction(nameof(Registrations));
+                    }
+
+                    user.IsActive = true;
                     user.TrialEndTime = (user.TrialEndTime ?? DateTime.Now).AddHours(24);
+                    await _tenantProvisioningService.EnsureCustomerTenantAsync(
+                        user,
+                        GetCurrentSystemUserId());
+                    if (pendingTrial != null)
+                    {
+                        pendingTrial.Status = "Đã kích hoạt";
+                        pendingTrial.AdminNotes =
+                            $"Được cấp dùng thử bởi {User.Identity?.Name ?? "Admin"} lúc {DateTime.Now:g}.";
+                    }
                     TempData["SuccessMessage"] = "Đã gia hạn dùng thử thêm 24 giờ.";
                     break;
                 case "lock":
@@ -114,6 +152,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
             return RedirectToAction(nameof(Registrations));
         }
 
@@ -124,14 +163,38 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var user = await _context.SystemUsers.FindAsync(userId);
             if (user != null)
             {
-                var regs = await _context.PurchaseRegistrations.Where(r => r.Email == user.Email).ToListAsync();
-                _context.PurchaseRegistrations.RemoveRange(regs);
-                
-                _context.SystemUsers.Remove(user);
+                user.IsActive = false;
+                var memberships = await _context.TenantMemberships
+                    .Where(membership => membership.SystemUserId == user.Id)
+                    .ToListAsync();
+                foreach (var membership in memberships)
+                {
+                    membership.IsActive = false;
+                }
+
+                var pendingRegistrations = await _context.PurchaseRegistrations
+                    .Where(registration =>
+                        registration.Email == user.Email &&
+                        registration.Status == "Chờ xử lý")
+                    .ToListAsync();
+                foreach (var registration in pendingRegistrations)
+                {
+                    registration.Status = "Đã hủy";
+                    registration.AdminNotes =
+                        $"Tài khoản được ngừng kích hoạt bởi {User.Identity?.Name ?? "Admin"} lúc {DateTime.Now:g}.";
+                }
+
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Đã xóa tài khoản khách hàng thành công.";
+                TempData["SuccessMessage"] = "Đã vô hiệu hóa tài khoản và quyền truy cập tenant; dữ liệu lịch sử được giữ lại.";
             }
             return RedirectToAction(nameof(Registrations));
+        }
+
+        private int? GetCurrentSystemUserId()
+        {
+            var value = User.FindFirstValue("SystemUserId") ??
+                        User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(value, out var userId) ? userId : null;
         }
 
         public async Task<IActionResult> Packages()

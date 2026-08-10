@@ -1,0 +1,491 @@
+@model Manage_KPI_or_OKR_System.Models.ViewModels.KnowledgeDocumentsIndexViewModel
+@using Manage_KPI_or_OKR_System.Services.AI
+@using Manage_KPI_or_OKR_System.Services
+@{
+    ViewData["Title"] = "Vận hành AI và kho tri thức";
+    string StatusClass(string state) => state switch
+    {
+        "Indexed" or "Completed" => "text-bg-success",
+        "DeadLetter" or "Failed" => "text-bg-danger",
+        "Cancelled" or "Superseded" => "text-bg-secondary",
+        "Leased" or "WaitingForMinerU" or "Indexing" => "text-bg-info",
+        _ => "text-bg-warning"
+    };
+    string FormatBytes(long bytes) => bytes >= 1024 * 1024
+        ? $"{bytes / 1024d / 1024d:N1} MB"
+        : $"{Math.Max(1, bytes / 1024d):N0} KB";
+    string FormatRate(double? value) => value.HasValue ? value.Value.ToString("P0") : "—";
+    string FormatMinutes(double? value) => value.HasValue ? $"{value.Value:N1} phút" : "—";
+    var canViewAuditLogs = User.IsInRole("Admin") ||
+                           User.IsInRole("Administrator") ||
+                           User.HasClaim(PermissionClaimsTransformation.PermissionClaimType, "AUDITLOGS_VIEW");
+}
+
+<div class="container-fluid py-4" id="mainContent">
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+        <div>
+            <div class="text-uppercase text-primary fw-semibold small mb-1">AI-native · Operations · RAG</div>
+            <h1 class="h3 mb-2">Vận hành AI và kho tri thức</h1>
+            <p class="text-muted mb-0">Theo dõi hàng đợi đánh giá check-in và quản trị nguồn RAG riêng theo tenant.</p>
+        </div>
+        @if (canViewAuditLogs)
+        {
+            <a asp-controller="AuditLogs" asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-journal-text me-1" aria-hidden="true"></i> Xem audit
+            </a>
+        }
+    </div>
+
+    @if (TempData["SuccessMessage"] is string success)
+    {
+        <div class="alert alert-success" role="status">@success</div>
+    }
+    @if (TempData["ErrorMessage"] is string error)
+    {
+        <div class="alert alert-danger" role="alert">@error</div>
+    }
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+    @if (!Model.PipelineConfigured)
+    {
+        <div class="alert alert-warning" role="alert">
+            <strong>Ingestion đang khóa an toàn.</strong>
+            Cấu hình <code>DocumentIngestion__PipelineVersion</code> bằng phiên bản MinerU/BGE-M3/index schema đã pin trước khi upload hoặc retry.
+        </div>
+    }
+
+    <div class="row g-3 mb-4" aria-label="Tổng quan vận hành RAG">
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <div class="text-muted small">Nguồn đang hoạt động</div>
+                <div class="display-6 fw-semibold">@Model.ActiveDocumentCount</div>
+            </div></div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <div class="text-muted small">Job đang xử lý</div>
+                <div class="display-6 fw-semibold text-primary">@Model.PendingJobCount</div>
+            </div></div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <div class="text-muted small">Job cần xem lại</div>
+                <div class="display-6 fw-semibold @(Model.FailedJobCount > 0 ? "text-danger" : "text-success")">@Model.FailedJobCount</div>
+            </div></div>
+        </div>
+    </div>
+
+    <section class="card border-0 shadow-sm mb-4" aria-labelledby="operationalMetricsHeading">
+        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between gap-2">
+            <div>
+                <h2 id="operationalMetricsHeading" class="h5 mb-1">Chất lượng vận hành AI/RAG</h2>
+                <p class="text-muted small mb-0">Metadata tenant trong @Model.Metrics.WindowDays ngày gần nhất; không chứa prompt hay nội dung tài liệu.</p>
+            </div>
+            <span class="badge text-bg-light border align-self-start">Cửa sổ @Model.Metrics.WindowDays ngày</span>
+        </div>
+        <div class="card-body">
+            <div class="row g-3" role="list" aria-label="Chỉ số vận hành AI và RAG">
+                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small">Index hoàn tất</div>
+                        <div class="h4 mb-1">@Model.Metrics.CompletedIndexJobCount</div>
+                        <small class="text-danger">@Model.Metrics.DeadLetterIndexJobCount dead-letter</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small">Tỷ lệ index thành công</div>
+                        <div class="h4 mb-1">@FormatRate(Model.Metrics.IngestionSuccessRate)</div>
+                        <small class="text-muted">Completed / terminal</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small">Job có retry</div>
+                        <div class="h4 mb-1">@FormatRate(Model.Metrics.RetriedJobRate)</div>
+                        <small class="text-muted">Attempt count &gt; 0</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small">Latency index</div>
+                        <div class="fw-semibold">TB @FormatMinutes(Model.Metrics.AverageLatencyMinutes)</div>
+                        <small class="text-muted">P95 @FormatMinutes(Model.Metrics.P95LatencyMinutes)</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small">Proposal có citation</div>
+                        <div class="h4 mb-1">@FormatRate(Model.Metrics.ProposalCitationCoverage)</div>
+                        <small class="text-muted">@Model.Metrics.ProposalCount proposal</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small">Citation hiện hành/trực tiếp</div>
+                        <div class="h4 mb-1">@FormatRate(Model.Metrics.CurrentDirectCitationRate)</div>
+                        <small class="text-muted">Abstain @FormatRate(Model.Metrics.AbstainRate)</small>
+                    </div>
+                </div>
+            </div>
+            <p class="small text-muted mt-3 mb-0">
+                Coverage ở đây đo proposal có ít nhất một citation metadata; không thay thế kiểm mẫu citation precision trước pilot.
+            </p>
+        </div>
+    </section>
+
+    <section class="card border-0 shadow-sm mb-4" aria-labelledby="checkInOutboxHeading">
+        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between gap-2">
+            <div>
+                <h2 id="checkInOutboxHeading" class="h5 mb-1">Hàng đợi AI đánh giá check-in</h2>
+                <p class="text-muted small mb-0">Chỉ lưu metadata vận chuyển; không hiển thị prompt, ghi chú check-in hay exception nội bộ.</p>
+            </div>
+            <div class="d-flex gap-2 align-self-start">
+                <span class="badge text-bg-primary">@Model.CheckInOutbox.ActiveCount đang xử lý</span>
+                <span class="badge @(Model.CheckInOutbox.DeadLetterCount > 0 ? "text-bg-danger" : "text-bg-success")">
+                    @Model.CheckInOutbox.DeadLetterCount dead-letter
+                </span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            @if (Model.CheckInOutbox.Rows.Count == 0)
+            {
+                <p class="text-muted text-center py-4 px-3 mb-0">Chưa có job đánh giá check-in trong tenant này.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <caption class="visually-hidden">Tối đa 50 job AI đánh giá check-in gần nhất của tenant hiện tại</caption>
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Check-in</th>
+                                <th scope="col">Nhân viên / KPI</th>
+                                <th scope="col">Trạng thái</th>
+                                <th scope="col">Lần chạy</th>
+                                <th scope="col">Mã lỗi</th>
+                                <th scope="col" class="text-end">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var job in Model.CheckInOutbox.Rows)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="fw-semibold">#@job.CheckInId</span>
+                                        <div class="small text-muted">@job.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">@job.EmployeeName</div>
+                                        <div class="small text-muted">@job.KpiName</div>
+                                    </td>
+                                    <td><span class="badge @StatusClass(job.State)">@job.State</span></td>
+                                    <td>@job.AttemptCount</td>
+                                    <td>
+                                        @if (string.IsNullOrWhiteSpace(job.FailureCode))
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                        else
+                                        {
+                                            <code>@job.FailureCode</code>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        @if (job.CanRetry)
+                                        {
+                                            <form asp-action="RetryCheckInAi" method="post" class="d-inline">
+                                                <input type="hidden" name="OutboxId" value="@job.Id" />
+                                                <input type="hidden" name="RowVersion" value="@job.RowVersion" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i> Chạy lại
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <span class="small text-muted">Tự động</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+        <div class="card-footer bg-white small text-muted">
+            Chạy lại chỉ áp dụng cho DeadLetter và server sẽ kiểm tra lại check-in Pending, nguồn hiện hành, tenant và row-version.
+        </div>
+    </section>
+
+    <section class="card border-0 shadow-sm mb-4" aria-labelledby="uploadHeading">
+        <div class="card-header bg-white py-3">
+            <h2 id="uploadHeading" class="h5 mb-1">Thêm nguồn tài liệu</h2>
+            <p class="text-muted small mb-0">Tệp tối đa 25 MB. Không lưu SAS, nội dung hoặc prompt trong SQL.</p>
+        </div>
+        <div class="card-body">
+            <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                <input asp-for="Upload.SubmissionId" type="hidden" />
+                <div class="row g-3">
+                    <div class="col-12 col-lg-5">
+                        <label asp-for="Upload.Title" class="form-label"></label>
+                        <input asp-for="Upload.Title" class="form-control" maxlength="256" placeholder="Ví dụ: Quy chế đánh giá KPI 2026" />
+                        <span asp-validation-for="Upload.Title" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12 col-lg-7">
+                        <label asp-for="Upload.File" class="form-label"></label>
+                        <input asp-for="Upload.File" class="form-control" type="file"
+                               accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.doc,.docx,.ppt,.pptx,.xls,.xlsx" />
+                        <span asp-validation-for="Upload.File" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <fieldset class="mt-4">
+                    <legend class="h6">Ai được dùng nguồn này?</legend>
+                    <p class="text-muted small">Chọn ít nhất một người dùng, vai trò hoặc phòng ban. Server kiểm tra lại mọi lựa chọn theo tenant.</p>
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-4">
+                            <div class="border rounded-3 p-3 h-100">
+                                <div class="fw-semibold mb-2">Vai trò</div>
+                                @for (var roleIndex = 0; roleIndex < Model.Roles.Count; roleIndex++)
+                                {
+                                    var option = Model.Roles[roleIndex];
+                                    var id = $"upload-role-{roleIndex}";
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="Upload.SelectedRoles" value="@option.Value" id="@id"
+                                               checked="@(Model.Upload.SelectedRoles.Contains(option.Value, StringComparer.OrdinalIgnoreCase))" />
+                                        <label class="form-check-label" for="@id">@option.Label</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <div class="border rounded-3 p-3 h-100" style="max-height: 220px; overflow:auto;">
+                                <div class="fw-semibold mb-2">Phòng ban</div>
+                                @foreach (var option in Model.Departments)
+                                {
+                                    var id = $"upload-department-{option.Value}";
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="Upload.SelectedDepartmentIds" value="@option.Value" id="@id"
+                                               checked="@(Model.Upload.SelectedDepartmentIds.Contains(option.Value))" />
+                                        <label class="form-check-label" for="@id">@option.Label</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <div class="border rounded-3 p-3 h-100" style="max-height: 220px; overflow:auto;">
+                                <div class="fw-semibold mb-2">Người dùng cụ thể</div>
+                                @foreach (var option in Model.Users)
+                                {
+                                    var id = $"upload-user-{option.Value}";
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="Upload.SelectedUserIds" value="@option.Value" id="@id"
+                                               checked="@(Model.Upload.SelectedUserIds.Contains(option.Value))" />
+                                        <label class="form-check-label" for="@id">@option.Label</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-4">
+                    <small class="text-muted">Pipeline: @(Model.PipelineVersion ?? "chưa cấu hình")</small>
+                    <button class="btn btn-primary" type="submit" disabled="@(!Model.PipelineConfigured)">
+                        <i class="bi bi-cloud-arrow-up me-1" aria-hidden="true"></i> Upload và xếp hàng
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section aria-labelledby="sourcesHeading">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 id="sourcesHeading" class="h5 mb-0">Nguồn và phiên bản</h2>
+            <span class="badge text-bg-light border">@Model.Documents.Count nguồn</span>
+        </div>
+
+        @if (Model.Documents.Count == 0)
+        {
+            <div class="card border-0 shadow-sm"><div class="card-body text-center py-5">
+                <i class="bi bi-database-add display-5 text-muted" aria-hidden="true"></i>
+                <p class="mt-3 mb-0 text-muted">Chưa có nguồn RAG nào trong tenant này.</p>
+            </div></div>
+        }
+        else
+        {
+            <div class="accordion" id="knowledgeSourcesAccordion">
+                @for (var documentIndex = 0; documentIndex < Model.Documents.Count; documentIndex++)
+                {
+                    var document = Model.Documents[documentIndex];
+                    var headingId = $"source-heading-{document.Id:N}";
+                    var collapseId = $"source-collapse-{document.Id:N}";
+                    <article class="accordion-item border-0 shadow-sm mb-3">
+                        <h3 class="accordion-header" id="@headingId">
+                            <button class="accordion-button @(documentIndex == 0 ? "" : "collapsed")" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#@collapseId"
+                                    aria-expanded="@(documentIndex == 0 ? "true" : "false")" aria-controls="@collapseId">
+                                <span class="d-flex flex-wrap align-items-center gap-2">
+                                    <strong>@document.Title</strong>
+                                    @if (document.IsDeleted)
+                                    {
+                                        <span class="badge text-bg-secondary">Đã xóa mềm</span>
+                                    }
+                                    else if (!document.AccessPolicyValid)
+                                    {
+                                        <span class="badge text-bg-danger">ACL lỗi</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-success">Đang hoạt động</span>
+                                    }
+                                </span>
+                            </button>
+                        </h3>
+                        <div id="@collapseId" class="accordion-collapse collapse @(documentIndex == 0 ? "show" : "")" aria-labelledby="@headingId">
+                            <div class="accordion-body">
+                                <div class="row g-2 small text-muted mb-3">
+                                    <div class="col-12 col-md-4">Owner: <strong class="text-body">@document.OwnerName</strong></div>
+                                    <div class="col-12 col-md-4">ACL v@document.AccessPolicyVersion: @document.UserPrincipalCount user · @document.RolePrincipalCount role · @document.DepartmentPrincipalCount phòng ban</div>
+                                    <div class="col-12 col-md-4">Cập nhật: @document.UpdatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle">
+                                        <caption class="visually-hidden">Phiên bản và trạng thái xử lý của nguồn @document.Title</caption>
+                                        <thead><tr>
+                                            <th>Phiên bản</th><th>Tệp</th><th>Trạng thái</th><th>Job gần nhất</th><th>Thời gian</th><th class="text-end">Thao tác</th>
+                                        </tr></thead>
+                                        <tbody>
+                                        @foreach (var version in document.Versions)
+                                        {
+                                            <tr>
+                                                <td><strong>v@version.VersionNumber</strong><div class="text-muted font-monospace small">@version.ContentSha256[..12]</div></td>
+                                                <td>@version.OriginalFileName<div class="text-muted small">@FormatBytes(version.FileSizeBytes)</div></td>
+                                                <td><span class="badge @StatusClass(version.Status)">@version.Status</span></td>
+                                                <td>
+                                                    @if (version.LatestJob == null)
+                                                    {
+                                                        <span class="text-muted">Chưa có job</span>
+                                                        @if (version.Status == "Failed")
+                                                        {
+                                                            <div class="small text-danger mt-1">Chọn lại đúng tệp ở mục “Thêm phiên bản mới” để tiếp tục upload an toàn.</div>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge @StatusClass(version.LatestJob.State)">@version.LatestJob.State</span>
+                                                        <div class="small text-muted mt-1">Lần thử: @version.LatestJob.AttemptCount</div>
+                                                        @if (!string.IsNullOrWhiteSpace(version.LatestJob.FailureCode))
+                                                        {
+                                                            <code class="small">@version.LatestJob.FailureCode</code>
+                                                        }
+                                                    }
+                                                </td>
+                                                <td class="text-muted small">@version.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                                <td class="text-end">
+                                                    @if (!document.IsDeleted && version.LatestJob?.CanRetry == true)
+                                                    {
+                                                        <form asp-action="Retry" method="post" class="d-inline">
+                                                            <input type="hidden" name="VersionId" value="@version.Id" />
+                                                            <input type="hidden" name="JobId" value="@version.LatestJob.Id" />
+                                                            <input type="hidden" name="RowVersion" value="@version.LatestJob.RowVersion" />
+                                                            <button type="submit" class="btn btn-sm btn-outline-primary" disabled="@(!Model.PipelineConfigured)">
+                                                                Chạy lại
+                                                            </button>
+                                                        </form>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                @if (!document.IsDeleted)
+                                {
+                                    <div class="row g-3 mt-2">
+                                        <div class="col-12 col-xl-5">
+                                            <div class="border rounded-3 p-3 h-100">
+                                                <h4 class="h6">Thêm phiên bản mới</h4>
+                                                <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                                                    <input type="hidden" name="Upload.DocumentId" value="@document.Id" />
+                                                    <input type="hidden" name="Upload.SubmissionId" value="@Guid.NewGuid()" />
+                                                    <label class="form-label" for="version-file-@document.Id">Tệp thay thế</label>
+                                                    <input class="form-control form-control-sm" id="version-file-@document.Id" name="Upload.File" type="file" required
+                                                           accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.doc,.docx,.ppt,.pptx,.xls,.xlsx" />
+                                                    <button type="submit" class="btn btn-sm btn-primary mt-3" disabled="@(!Model.PipelineConfigured)">Upload phiên bản</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-xl-7">
+                                            <div class="border rounded-3 p-3 h-100">
+                                                <h4 class="h6">Cập nhật ACL</h4>
+                                                <form asp-action="UpdateAccess" method="post">
+                                                    <input type="hidden" name="DocumentId" value="@document.Id" />
+                                                    <input type="hidden" name="RowVersion" value="@document.RowVersion" />
+                                                    <div class="row g-2 small">
+                                                        <div class="col-12 col-md-4">
+                                                            <div class="fw-semibold mb-1">Vai trò</div>
+                                                            @for (var roleIndex = 0; roleIndex < Model.Roles.Count; roleIndex++)
+                                                            {
+                                                                var option = Model.Roles[roleIndex];
+                                                                var rolePrincipal = KnowledgeDocumentAccessPolicy.CreateRolePrincipal(option.Value);
+                                                                var id = $"acl-role-{document.Id:N}-{roleIndex}";
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="SelectedRoles" value="@option.Value" id="@id"
+                                                                           checked="@(rolePrincipal != null && document.SelectedRolePrincipals.Contains(rolePrincipal, StringComparer.Ordinal))" />
+                                                                    <label class="form-check-label" for="@id">@option.Label</label>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                        <div class="col-12 col-md-4">
+                                                            <div class="fw-semibold mb-1">Phòng ban</div>
+                                                            @foreach (var option in Model.Departments)
+                                                            {
+                                                                var id = $"acl-department-{document.Id:N}-{option.Value}";
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="SelectedDepartmentIds" value="@option.Value" id="@id"
+                                                                           checked="@(document.SelectedDepartmentIds.Contains(option.Value))" />
+                                                                    <label class="form-check-label" for="@id">@option.Label</label>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                        <div class="col-12 col-md-4">
+                                                            <div class="fw-semibold mb-1">Người dùng</div>
+                                                            @foreach (var option in Model.Users)
+                                                            {
+                                                                var id = $"acl-user-{document.Id:N}-{option.Value}";
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="SelectedUserIds" value="@option.Value" id="@id"
+                                                                           checked="@(document.SelectedUserIds.Contains(option.Value))" />
+                                                                    <label class="form-check-label" for="@id">@option.Label</label>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary mt-3" disabled="@(!Model.PipelineConfigured)">Lưu ACL và re-index</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <form asp-action="Delete" method="post" class="mt-3 text-end" onsubmit="return confirm('Xóa mềm nguồn này? Retrieval sẽ bị khóa ngay.');">
+                                        <input type="hidden" name="DocumentId" value="@document.Id" />
+                                        <input type="hidden" name="RowVersion" value="@document.RowVersion" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Xóa mềm nguồn</button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

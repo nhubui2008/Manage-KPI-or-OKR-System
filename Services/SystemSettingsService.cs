@@ -129,9 +129,9 @@ namespace Manage_KPI_or_OKR_System.Services
         private static readonly Regex UnsafeCustomCssRegex = new(
             @"(?:<|@import\b|expression\s*\(|javascript\s*:|behavior\s*:|-moz-binding\s*:)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        private static readonly SemaphoreSlim BrandingCacheGate = new(1, 1);
-        private static AppBrandingSettings? _cachedBranding;
-        private static DateTime _brandingCacheExpiresAtUtc;
+        private readonly SemaphoreSlim _brandingCacheGate = new(1, 1);
+        private AppBrandingSettings? _cachedBranding;
+        private DateTime _brandingCacheExpiresAtUtc;
         private static readonly TimeSpan BrandingCacheTtl = TimeSpan.FromMinutes(5);
 
         private readonly MiniERPDbContext _context;
@@ -149,7 +149,7 @@ namespace Manage_KPI_or_OKR_System.Services
                 return cachedBranding;
             }
 
-            await BrandingCacheGate.WaitAsync(cancellationToken);
+            await _brandingCacheGate.WaitAsync(cancellationToken);
             try
             {
                 cachedBranding = Volatile.Read(ref _cachedBranding);
@@ -215,7 +215,7 @@ namespace Manage_KPI_or_OKR_System.Services
             }
             finally
             {
-                BrandingCacheGate.Release();
+                _brandingCacheGate.Release();
             }
         }
 

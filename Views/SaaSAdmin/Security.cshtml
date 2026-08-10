@@ -41,14 +41,18 @@
                         <tbody>
                             @foreach (var admin in admins)
                             {
+                                var username = admin.Username ?? string.Empty;
+                                var initials = username.Length >= 2
+                                    ? username[..2].ToUpperInvariant()
+                                    : username.ToUpperInvariant();
                                 <tr>
                                     <td class="ps-4">
                                         <div class="d-flex align-items-center">
                                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold me-3" style="width: 36px; height: 36px;">
-                                                @(admin.Username.Substring(0, 2).ToUpper())
+                                                @initials
                                             </div>
                                             <div>
-                                                <div class="fw-bold text-dark">@admin.Username</div>
+                                                <div class="fw-bold text-dark">@username</div>
                                                 <div class="text-muted small">@admin.Email</div>
                                             </div>
                                         </div>

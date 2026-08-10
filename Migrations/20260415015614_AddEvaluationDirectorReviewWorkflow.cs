@@ -37,7 +37,8 @@ namespace Manage_KPI_or_OKR_System.Migrations
                 maxLength: 30,
                 nullable: true);
 
-            migrationBuilder.Sql("UPDATE [EvaluationResults] SET [SubmissionStatus] = N'Draft' WHERE [SubmissionStatus] IS NULL");
+            migrationBuilder.Sql(
+                "EXEC(N'UPDATE [EvaluationResults] SET [SubmissionStatus] = N''Draft'' WHERE [SubmissionStatus] IS NULL')");
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "SubmittedAt",

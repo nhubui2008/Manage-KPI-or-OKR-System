@@ -192,11 +192,12 @@ def write_chapter4_1(doc):
         "├── Views/                                      # Giao diện Razor HTML (.cshtml)\n"
         "│   ├── Shared/                                 # Giao diện dùng chung cho hệ thống\n"
         "│   │   ├── _Layout.cshtml                      # Giao diện khung (Sidebar, Navbar)\n"
-        "│   │   └── _AIChatWidget.cshtml                # Widget Trợ lý AI Gemini\n"
+        "│   │   └── _AIChatWidget.cshtml                # Widget Chat Advisor có citation\n"
         "│   ├── Dashboard/                              # Thư mục Views trang chủ\n"
         "│   └── KPIs/                                   # Thư mục Views CRUD & Giao KPI\n"
         "├── Services/                                   # Lớp xử lý nghiệp vụ chính (Business Logic)\n"
-        "│   ├── GeminiService.cs                        # Gọi và cấu hình tham số Gemini API\n"
+        "│   ├── AI/DeepSeekModelClient.cs               # Adapter model gateway\n"
+        "│   ├── AI/OkrKeyResultSuggestionAdvisor.cs     # Bản nháp KR có nguồn và kiểm soát\n"
         "│   ├── AIDataService.cs                        # Xử lý nạp dữ liệu ngữ cảnh (6 partial classes)\n"
         "│   ├── AIAlertService.cs                       # Quét và sinh cảnh báo rủi ro tự động\n"
         "│   ├── OKRProgressService.cs                   # Tính toán tiến độ OKR liên cấp\n"
@@ -225,7 +226,7 @@ def write_chapter4_1(doc):
         "Dự án được xây dựng dựa trên sự kết hợp giữa mô hình kiến trúc MVC (Model-View-Controller) "
         "truyền thống của ASP.NET Core và mô hình Layered Architecture (Kiến trúc phân tầng) hiện đại. "
         "Sự kết hợp này giúp phân tách rõ ràng trách nhiệm của từng thành phần, dễ bảo trì, dễ viết test case "
-        "và thuận tiện cho việc tích hợp các API bên thứ ba (như Google Gemini API). Dự án chia làm 5 lớp chính:"
+        "và thuận tiện cho việc tích hợp model provider qua một gateway có kiểm soát. Dự án chia làm 5 lớp chính:"
     )
 
     layers = [
@@ -237,8 +238,8 @@ def write_chapter4_1(doc):
         
         ("Service Layer (Lớp xử lý nghiệp vụ - Business Logic)",
          "Đây là 'trái tim' của hệ thống, chứa toàn bộ các business rules của doanh nghiệp. "
-         "Services (như OKRProgressService, AIAlertService, GeminiService) trực tiếp xử lý các phép toán, "
-         "cấu hình tham số Prompt và kiểm soát tiến độ. Đặc biệt, AIDataService được chia thành 6 tệp partial classes "
+         "Services (như OKRProgressService, AIAlertService và các advisor) trực tiếp xử lý các phép toán, "
+         "kiểm tra scope/source và kiểm soát tiến độ. Đặc biệt, AIDataService được chia thành các tệp partial classes "
          "để tách biệt ngữ cảnh lấy dữ liệu (OKR context, Customer context, Alerts context...) giúp mã nguồn không bị phình to."),
         
         ("Data Access Layer (Lớp truy cập dữ liệu)",
@@ -275,9 +276,9 @@ def write_chapter4_1(doc):
         "Mô hình giao tiếp tuần tự của một request (ví dụ: yêu cầu tư vấn AI trên Dashboard) sẽ đi qua các bước:\n"
         "1. Trình duyệt gửi Ajax request tới Action trong AIController.\n"
         "2. HasPermissionAttribute xác thực quyền truy cập của người dùng.\n"
-        "3. AIController gọi xuống IAIDataService để lấy context dữ liệu hiện tại từ Database.\n"
-        "4. AIController gửi context đó sang IGeminiService để đóng gói prompt và gọi API Google Gemini.\n"
-        "5. Gemini trả kết quả về Service, Service lưu lịch sử và AIController trả kết quả JSON về cho client hiển thị.",
+        "3. PerformanceAnalysisAdvisor gọi IAIDataService để lấy snapshot check-in đã duyệt trong đúng tenant/scope.\n"
+        "4. Advisor gửi context tạm thời qua IAIModelClient, kiểm tra strict JSON/citation rồi dựng lại fingerprint nguồn trong transaction.\n"
+        "5. AIController trả advisory JSON cho client; hệ thống chỉ lưu AgentRun/citation metadata, không lưu prompt hoặc raw provider response.",
         italic=True, space_before=4, space_after=12
     )
 

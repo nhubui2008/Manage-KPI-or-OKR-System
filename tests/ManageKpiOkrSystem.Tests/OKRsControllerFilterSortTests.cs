@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace ManageKpiOkrSystem.Tests;
@@ -112,7 +113,15 @@ public sealed class OKRsControllerFilterSortTests
         context.OKRs.AddRange(mine, noKr, withProject, low);
         await context.SaveChangesAsync();
 
-        withProject.LinkedWorkProjectId = 99;
+        context.WorkProjects.Add(new WorkProject
+        {
+            ProjectCode = "PRJ-FILTER",
+            ProjectName = "Project filter relation",
+            SourceOKRId = withProject.Id,
+            Status = "Active",
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        });
         context.OKR_Employee_Allocations.Add(new OKR_Employee_Allocation { OKRId = mine.Id, EmployeeId = employee.Id });
         context.OKR_Employee_Allocations.Add(new OKR_Employee_Allocation { OKRId = withProject.Id, EmployeeId = employee.Id });
         context.OKR_Employee_Allocations.Add(new OKR_Employee_Allocation { OKRId = low.Id, EmployeeId = employee.Id });
@@ -379,7 +388,11 @@ public sealed class OKRsControllerFilterSortTests
     private static OKRsController CreateController(MiniERPDbContext context, ClaimsPrincipal? user = null)
     {
         var httpContext = new DefaultHttpContext { User = user ?? AdminPrincipal(1) };
-        return new OKRsController(context, new NoopGeminiService(), new OKRWorkflowService(context))
+        return new OKRsController(
+            context,
+            new OKRWorkflowService(context),
+            new NoopOkrKeyResultSuggestionAdvisor(),
+            NullLogger<OKRsController>.Instance)
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext },
             TempData = new TempDataDictionary(httpContext, new TestTempDataProvider())
@@ -399,15 +412,6 @@ public sealed class OKRsControllerFilterSortTests
             new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
             new Claim(ClaimTypes.Role, "Admin")
         }, "Test"));
-
-    private sealed class NoopGeminiService : IGeminiService
-    {
-        public Task<string> GenerateTextAsync(
-            string systemInstruction,
-            string prompt,
-            GeminiGenerationOptions? options = null,
-            CancellationToken cancellationToken = default) => Task.FromResult("[]");
-    }
 
     private sealed class TestTempDataProvider : ITempDataProvider
     {

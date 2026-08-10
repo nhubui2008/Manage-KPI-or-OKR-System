@@ -99,7 +99,7 @@ Vi du:
 - [x] Viet test baseline cho `OKRsController.Index`: active only, search, paging, Admin va restricted role.
   - Test: `OKRsControllerIndexTests` 5/5 pass; full suite 65 pass.
 - [x] Ra luong `AddKeyResult` va `OKRWorkflowService`; dam bao moi KR chi sinh toi da mot WorkItem cho project lien ket.
-  - Test: `AddKeyResult_WithLinkedProject_CreatesExactlyOneWorkItem` + legacy LinkedOKRId path pass; bo path tao WorkItem trung trong controller.
+  - Test: `AddKeyResult_WithLinkedProject_CreatesExactlyOneWorkItem` + canonical SourceOKRId path pass; bo path tao WorkItem trung trong controller.
   - Feedback fix: khi workflow loi, KR van duoc luu nhung co retry 2 lan, verify WorkItem, canh bao TempData (khong nuot loi im lang). Test: `AddKeyResult_WhenWorkflowAlwaysFails_*`, `AddKeyResult_WhenWorkflowFailsOnce_*` pass.
 - [x] Dong bo `AddMultipleKeyResults` voi `AddKeyResult`, dung chung mot duong sinh task idempotent.
   - Test: `AddMultipleKeyResults_RetryDoesNotCreateDuplicateWorkItems` pass; ca hai action goi `PersistNewKeyResultAndCreateTaskAsync`; tra warning neu mot phan KR chua sync WorkItem.

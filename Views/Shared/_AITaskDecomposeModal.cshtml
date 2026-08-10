@@ -5,8 +5,8 @@
                 <div class="d-flex align-items-start gap-3 min-w-0">
                     <span class="ai-task-modal__icon"><i class="bi bi-stars"></i></span>
                     <div class="min-w-0">
-                        <div class="ai-task-modal__eyebrow">Gemini task planner</div>
-                        <h5 class="modal-title fw-bold mb-1">AI gợi ý task Kanban</h5>
+                        <div class="ai-task-modal__eyebrow">DeepSeek GoalPlanningAgent + RAG</div>
+                        <h5 class="modal-title fw-bold mb-1">Agent lập kế hoạch có trích nguồn</h5>
                         <div class="text-muted small text-truncate" id="aiTaskSourceName"></div>
                     </div>
                 </div>
@@ -26,7 +26,7 @@
                         <div class="col-lg-4">
                             <button type="button" class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-2" id="aiTaskRunBtn">
                                 <i class="bi bi-magic"></i>
-                                <span>Tạo gợi ý</span>
+                                <span>Chạy agent</span>
                             </button>
                         </div>
                     </div>
@@ -37,7 +37,7 @@
                 <div id="aiTaskLoading" class="ai-task-loading d-none" aria-live="polite">
                     <div class="d-flex align-items-center gap-2 mb-3">
                         <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
-                        <strong>Gemini đang phân tích mục tiêu và dữ liệu Kanban...</strong>
+                        <strong>Agent đang đối chiếu mục tiêu, lịch sử và nguồn được phép truy cập...</strong>
                     </div>
                     <div class="ai-task-skeleton"></div>
                     <div class="ai-task-skeleton ai-task-skeleton--short"></div>
@@ -45,6 +45,7 @@
                 </div>
 
                 <div id="aiTaskPreview" class="d-none">
+                    <div id="aiTaskAgentMeta" class="alert alert-light border py-2 px-3 small mb-3" role="status"></div>
                     <div class="ai-task-target mb-3">
                         <div id="aiTaskProjectLinkHint" class="alert alert-info py-2 px-3 small mb-3 d-none" role="status"></div>
                         <div class="row g-3">
@@ -77,7 +78,7 @@
 
                     <div id="aiTaskEmpty" class="ai-task-empty d-none">
                         <i class="bi bi-inbox"></i>
-                        <span>Gemini chưa trả về task phù hợp. Hãy bổ sung gợi ý cụ thể hơn rồi tạo lại.</span>
+                        <span>Agent chưa đủ dữ liệu để trả về task phù hợp. Hãy bổ sung ngữ cảnh rồi chạy lại.</span>
                     </div>
 
                     <div id="aiTaskTableBody" class="ai-task-review-list"></div>
@@ -85,6 +86,9 @@
             </div>
             <div class="modal-footer ai-task-modal__footer border-0">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-outline-danger d-none" id="aiTaskRejectBtn" disabled>
+                    <i class="bi bi-x-circle me-1"></i>Không sử dụng đề xuất
+                </button>
                 <button type="button" class="btn btn-success d-inline-flex align-items-center gap-2" id="aiTaskConfirmBtn" disabled>
                     <i class="bi bi-check2-circle"></i>
                     <span>Xác nhận tạo task</span>
@@ -302,6 +306,10 @@
         gap: 8px;
     }
 
+    .ai-task-field--wide {
+        grid-column: 1 / -1;
+    }
+
     .ai-task-meta-strip {
         display: flex;
         flex-wrap: wrap;
@@ -488,8 +496,23 @@
             tasks: [],
             sourceType: '',
             sourceId: null,
+            planningSourceType: '',
+            planningSourceId: null,
+            planningSourceVersion: '',
+            agentRunId: '',
+            draftActionId: null,
+            agentRunRowVersion: '',
+            draftRowVersion: '',
+            approvalToken: '',
+            confirmationIdempotencyKey: '',
+            rejectionIdempotencyKey: '',
+            sourceOkrId: null,
+            availableAssignees: [],
+            canCreateProject: false,
             isRunning: false,
-            isConfirming: false
+            isAwaitingConfirmation: false,
+            isConfirming: false,
+            isRejecting: false
         };
 
         const statusLabels = {
@@ -508,6 +531,47 @@
         };
         const statuses = Object.keys(statusLabels);
         const priorities = Object.keys(priorityLabels);
+        const fitBandLabels = {
+            0: 'Không khuyến nghị',
+            1: 'Cần xem xét',
+            2: 'Phù hợp tốt',
+            3: 'Phù hợp cao',
+            NotRecommended: 'Không khuyến nghị',
+            Review: 'Cần xem xét',
+            GoodFit: 'Phù hợp tốt',
+            StrongFit: 'Phù hợp cao'
+        };
+        const confidenceBandLabels = {
+            0: 'Từ chối kết luận',
+            1: 'Thấp',
+            2: 'Vừa',
+            3: 'Cao',
+            Abstain: 'Từ chối kết luận',
+            Low: 'Thấp',
+            Moderate: 'Vừa',
+            High: 'Cao'
+        };
+        const criticVerdictLabels = {
+            0: 'Đạt kiểm tra',
+            1: 'Cần người xem lại',
+            2: 'Chưa đủ dữ liệu',
+            Pass: 'Đạt kiểm tra',
+            NeedsHumanReview: 'Cần người xem lại',
+            Abstain: 'Chưa đủ dữ liệu'
+        };
+        const generationModeLabels = {
+            AgentWithRag: 'DeepSeek + RAG',
+            AgentWithoutRag: 'DeepSeek, không có nguồn RAG bổ sung',
+            DeterministicFallback: 'Mẫu rule-based dự phòng',
+            RecoveredDraft: 'Bản nháp bền vững đã tải lại'
+        };
+        const fitMethodLabels = {
+            TaskGoalStructuralHeuristic_NotAssigneeFit: 'heuristic task–mục tiêu, không chấm độ phù hợp nhân sự',
+            AssigneeWorkloadEvidenceWeighted_v1: 'server 35/25/20/10/10 theo mục tiêu, lịch sử nhóm, vai trò, workload và bằng chứng'
+        };
+        const outcomeMethodLabels = {
+            SameSourceWorkItemHistory_NotCohortModel: 'lịch sử task của chính nguồn, chưa phải mô hình cohort'
+        };
 
         function byId(id) {
             return document.getElementById(id);
@@ -525,6 +589,11 @@
         function canonical(value, allowed, fallback) {
             const match = allowed.find(item => item.toLowerCase() === String(value ?? '').trim().toLowerCase());
             return match || fallback;
+        }
+
+        function enumLabel(value, labels, fallback) {
+            const key = String(value ?? '');
+            return labels[key] || fallback;
         }
 
         function showAlert(message, tone = 'warning') {
@@ -546,6 +615,13 @@
             };
         }
 
+        function idempotencyKey() {
+            if (!window.crypto?.randomUUID) {
+                throw new Error('Trình duyệt không hỗ trợ tạo khóa xác nhận an toàn.');
+            }
+            return window.crypto.randomUUID();
+        }
+
         function setBusy(mode, busy) {
             if (mode === 'run') {
                 state.isRunning = busy;
@@ -553,26 +629,38 @@
             if (mode === 'confirm') {
                 state.isConfirming = busy;
             }
+            if (mode === 'reject') {
+                state.isRejecting = busy;
+            }
 
             const runBtn = byId('aiTaskRunBtn');
             const confirmBtn = byId('aiTaskConfirmBtn');
+            const rejectBtn = byId('aiTaskRejectBtn');
             const validCount = collectTasks().length;
 
-            runBtn.disabled = state.isRunning || state.isConfirming;
+            runBtn.disabled = state.isRunning || state.isAwaitingConfirmation || state.isConfirming || state.isRejecting;
             runBtn.innerHTML = state.isRunning
                 ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>Đang tạo...</span>'
-                : '<i class="bi bi-magic"></i><span>Tạo gợi ý</span>';
+                : '<i class="bi bi-magic"></i><span>Chạy agent</span>';
 
-            confirmBtn.disabled = state.isRunning || state.isConfirming || validCount === 0;
+            confirmBtn.disabled = state.isRunning || state.isAwaitingConfirmation || state.isConfirming || state.isRejecting || validCount === 0;
             confirmBtn.innerHTML = state.isConfirming
                 ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>Đang tạo task...</span>'
                 : '<i class="bi bi-check2-circle"></i><span>Xác nhận tạo task</span>';
+            rejectBtn.disabled = state.isRunning || state.isAwaitingConfirmation || state.isConfirming || state.isRejecting || !state.draftActionId;
+            rejectBtn.innerHTML = state.isRejecting
+                ? '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>Đang từ chối...</span>'
+                : '<i class="bi bi-x-circle me-1"></i><span>Không sử dụng đề xuất</span>';
         }
 
         function renderProjectOptions(data) {
             const select = byId('aiTaskProjectSelect');
             const preferredProjectId = byId('aiTaskPreferredProjectId').value;
-            select.innerHTML = '<option value="">Tạo project mới</option>';
+            const canCreateProject = data.canCreateProject === true || data.CanCreateProject === true;
+            state.canCreateProject = canCreateProject;
+            select.innerHTML = canCreateProject
+                ? '<option value="">Tạo project mới</option>'
+                : '';
 
             (data.availableProjects || data.AvailableProjects || []).forEach(project => {
                 const option = document.createElement('option');
@@ -592,6 +680,8 @@
                 select.value = suggestedProjectId;
             }
 
+            select.disabled = select.options.length === 0;
+
             byId('aiTaskNewProjectName').value = data.sourceObjective || data.SourceObjective
                 ? `[AI] ${data.sourceObjective || data.SourceObjective}`
                 : '';
@@ -608,15 +698,60 @@
                 return;
             }
 
-            input.disabled = usesExistingProject;
+            input.disabled = usesExistingProject || !state.canCreateProject;
             input.title = usesExistingProject
                 ? 'Tên này chỉ dùng khi chọn tạo project mới.'
+                : !state.canCreateProject
+                    ? 'Bạn không có quyền tạo project mới.'
                 : '';
-            field?.classList.toggle('is-muted', usesExistingProject);
+            field?.classList.toggle('is-muted', usesExistingProject || !state.canCreateProject);
         }
 
         function fieldValue(task, camelName, pascalName, fallback = '') {
             return task[camelName] ?? task[pascalName] ?? fallback;
+        }
+
+        function dateInputValue(value) {
+            if (!value) {
+                return '';
+            }
+            const match = String(value).match(/^\d{4}-\d{2}-\d{2}/);
+            return match ? match[0] : '';
+        }
+
+        function assigneeOptions(selectedId, suggestedAssignee) {
+            const options = [...state.availableAssignees];
+            const suggestedId = Number(fieldValue(suggestedAssignee || {}, 'employeeId', 'EmployeeId', 0));
+            if (suggestedId && !options.some(item => Number(fieldValue(item, 'employeeId', 'EmployeeId', 0)) === suggestedId)) {
+                options.unshift(suggestedAssignee);
+            }
+            return [
+                '<option value="">Chưa gán — người duyệt quyết định</option>',
+                ...options.map(item => {
+                    const employeeId = Number(fieldValue(item, 'employeeId', 'EmployeeId', 0));
+                    const name = fieldValue(item, 'employeeName', 'EmployeeName', `Nhân sự #${employeeId}`);
+                    const departmentId = fieldValue(item, 'departmentId', 'DepartmentId', '');
+                    const departmentName = fieldValue(item, 'departmentName', 'DepartmentName', 'Chưa có phòng ban');
+                    const active = Number(fieldValue(item, 'activeTaskCount', 'ActiveTaskCount', 0));
+                    const overdue = Number(fieldValue(item, 'overdueTaskCount', 'OverdueTaskCount', 0));
+                    const direct = fieldValue(item, 'directlyAssignedToSource', 'DirectlyAssignedToSource', false) === true;
+                    const label = `${name} · ${departmentName} · ${active} đang mở/${overdue} quá hạn${direct ? ' · được phân bổ trực tiếp' : ''}`;
+                    return `<option value="${escapeHtml(employeeId)}" data-department-id="${escapeHtml(departmentId)}" ${String(employeeId) === String(selectedId || '') ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+                })
+            ].join('');
+        }
+
+        function planningDescription(task, plan) {
+            const parts = [fieldValue(task, 'description', 'Description', '').trim()];
+            const contribution = fieldValue(plan, 'contribution', 'Contribution', '');
+            const dependencies = fieldValue(plan, 'dependencies', 'Dependencies', []) || [];
+            const risks = fieldValue(plan, 'risks', 'Risks', []) || [];
+            const dataGaps = fieldValue(plan, 'dataGaps', 'DataGaps', []) || [];
+            if (contribution) parts.push(`Đóng góp: ${contribution}`);
+            if (dependencies.length) parts.push(`Phụ thuộc: ${dependencies.join('; ')}`);
+            if (risks.length) parts.push(`Rủi ro: ${risks.join(' ')}`);
+            if (dataGaps.length) parts.push(`Khoảng trống dữ liệu: ${dataGaps.join(' ')}`);
+            return parts.filter(Boolean).join('\n\n').slice(0, 2000);
         }
 
         function selectedValue(task) {
@@ -632,14 +767,90 @@
             state.tasks.forEach((task, index) => {
                 const priority = canonical(fieldValue(task, 'priority', 'Priority', 'Normal'), priorities, 'Normal');
                 const status = canonical(fieldValue(task, 'kanbanStatus', 'KanbanStatus', 'Todo'), statuses, 'Todo');
-                const assigneeId = fieldValue(task, 'assigneeId', 'AssigneeId', '');
-                const departmentId = fieldValue(task, 'departmentId', 'DepartmentId', '');
+                const plan = fieldValue(task, 'plan', 'Plan', {}) || {};
+                const suggestedAssignee = fieldValue(task, 'suggestedAssignee', 'SuggestedAssignee', null);
+                const assigneeId = fieldValue(
+                    task,
+                    'assigneeId',
+                    'AssigneeId',
+                    fieldValue(suggestedAssignee || {}, 'employeeId', 'EmployeeId', ''));
+                const departmentId = fieldValue(
+                    task,
+                    'departmentId',
+                    'DepartmentId',
+                    fieldValue(suggestedAssignee || {}, 'departmentId', 'DepartmentId', ''));
                 const assigneeName = fieldValue(task, 'assigneeName', 'AssigneeName', '') || (assigneeId ? `Nhân sự #${assigneeId}` : 'Chưa gán');
                 const departmentName = fieldValue(task, 'departmentName', 'DepartmentName', '') || (departmentId ? `Phòng ban #${departmentId}` : 'Chưa gán');
-                const kpiId = fieldValue(task, 'kpiId', 'KPIId', '');
-                const okrKeyResultId = fieldValue(task, 'okrKeyResultId', 'OKRKeyResultId', '');
+                const kpiId = fieldValue(task, 'kpiId', 'KPIId', fieldValue(plan, 'kpiId', 'KpiId', ''));
+                const okrKeyResultId = fieldValue(task, 'okrKeyResultId', 'OKRKeyResultId', fieldValue(plan, 'keyResultId', 'KeyResultId', ''));
                 const keyResultName = fieldValue(task, 'keyResultName', 'KeyResultName', '');
                 const isSelected = selectedValue(task);
+                const fit = fieldValue(task, 'fit', 'Fit', {}) || {};
+                const confidence = fieldValue(task, 'confidence', 'Confidence', {}) || {};
+                const evidence = fieldValue(task, 'evidence', 'Evidence', []) || [];
+                const critique = fieldValue(task, 'critique', 'Critique', null);
+                const likelihood = fieldValue(task, 'outcomeLikelihood', 'OutcomeLikelihood', null);
+                const rawFitScore = fieldValue(fit, 'score', 'Score', null);
+                const hasSufficientFitEvidence = fieldValue(
+                    fit,
+                    'hasSufficientEvidence',
+                    'HasSufficientEvidence',
+                    rawFitScore != null) === true;
+                const fitScore = rawFitScore == null ? null : Number(rawFitScore);
+                const fitBand = enumLabel(
+                    fieldValue(fit, 'band', 'Band', ''),
+                    fitBandLabels,
+                    'Chưa phân loại');
+                const fitSummary = hasSufficientFitEvidence && Number.isFinite(fitScore)
+                    ? `${fitScore.toFixed(0)}% · ${fitBand}`
+                    : 'Không đủ dữ liệu';
+                const confidenceScore = Number(fieldValue(confidence, 'score', 'Score', 0)) * 100;
+                const confidenceBand = enumLabel(
+                    fieldValue(confidence, 'band', 'Band', ''),
+                    confidenceBandLabels,
+                    'Chưa phân loại');
+                const shouldAbstain = fieldValue(confidence, 'shouldAbstain', 'ShouldAbstain', false) === true;
+                const criticVerdict = critique
+                    ? fieldValue(critique, 'verdict', 'Verdict', 'NeedsHumanReview')
+                    : 'NeedsHumanReview';
+                const criticReasons = critique
+                    ? fieldValue(critique, 'reasons', 'Reasons', []) || []
+                    : ['Critic chưa trả về kết quả; cần người dùng kiểm tra thủ công.'];
+                const criticLabel = enumLabel(criticVerdict, criticVerdictLabels, 'Cần người xem lại');
+                const sourceLabels = evidence.map(source => {
+                    const sourceType = fieldValue(source, 'sourceType', 'SourceType', 'source');
+                    const sourceId = fieldValue(source, 'sourceId', 'SourceId', '?');
+                    const title = fieldValue(source, 'title', 'Title', sourceType);
+                    const version = fieldValue(source, 'versionId', 'VersionId', '');
+                    const page = fieldValue(source, 'page', 'Page', '');
+                    const section = fieldValue(source, 'section', 'Section', '');
+                    const isCurrent = fieldValue(source, 'isCurrent', 'IsCurrent', false) === true;
+                    const location = [
+                        version ? `bản ${version}` : '',
+                        page ? `trang ${page}` : '',
+                        section ? `mục ${section}` : ''
+                    ].filter(Boolean).join(', ');
+                    return `${title} #${sourceId}${location ? ` (${location})` : ''}${isCurrent ? '' : ' [nguồn cũ/không rõ ngày]'}`;
+                });
+                const probability = likelihood
+                    ? fieldValue(likelihood, 'probability', 'Probability', null)
+                    : null;
+                const likelihoodStatus = likelihood
+                    ? fieldValue(likelihood, 'calibrationStatus', 'CalibrationStatus', 'InsufficientData')
+                    : 'InsufficientData';
+                const likelihoodSampleSize = likelihood
+                    ? Number(fieldValue(likelihood, 'sampleSize', 'SampleSize', 0))
+                    : 0;
+                const likelihoodBasis = likelihood
+                    ? fieldValue(likelihood, 'basis', 'Basis', '')
+                    : '';
+                const dependencies = fieldValue(plan, 'dependencies', 'Dependencies', []) || [];
+                const contribution = fieldValue(plan, 'contribution', 'Contribution', '');
+                const risks = fieldValue(plan, 'risks', 'Risks', []) || [];
+                const dataGaps = fieldValue(plan, 'dataGaps', 'DataGaps', []) || [];
+                const dueDate = dateInputValue(fieldValue(task, 'dueDate', 'DueDate', fieldValue(plan, 'suggestedDueDate', 'SuggestedDueDate', '')));
+                const estimatedDays = fieldValue(task, 'estimatedDays', 'EstimatedDays', fieldValue(plan, 'estimatedDays', 'EstimatedDays', 7));
+                const persistedDescription = planningDescription(task, plan);
 
                 const card = document.createElement('article');
                 card.className = `ai-task-review-card${isSelected ? '' : ' ai-task-review-card--unselected'}`;
@@ -654,7 +865,6 @@
                             <div class="ai-task-field ai-task-field--title">
                                 <label class="form-label small fw-semibold text-secondary mb-1">Tên task</label>
                                 <input class="form-control form-control-sm js-ai-task-field" data-field="title" value="${escapeHtml(fieldValue(task, 'title', 'Title'))}" maxlength="220" required>
-                                <input type="hidden" class="js-ai-task-field" data-field="assigneeId" value="${escapeHtml(assigneeId)}">
                                 <input type="hidden" class="js-ai-task-field" data-field="departmentId" value="${escapeHtml(departmentId)}">
                                 <input type="hidden" class="js-ai-task-field" data-field="kpiId" value="${escapeHtml(kpiId)}">
                                 <input type="hidden" class="js-ai-task-field" data-field="okrKeyResultId" value="${escapeHtml(okrKeyResultId)}">
@@ -673,16 +883,43 @@
                                 <div class="ai-task-meta-chip" title="${escapeHtml(keyResultName || (okrKeyResultId ? `KR #${okrKeyResultId}` : 'Không liên kết KR'))}">
                                     <i class="bi bi-crosshair"></i><span>${escapeHtml(keyResultName || (okrKeyResultId ? `KR #${okrKeyResultId}` : 'Không liên kết KR'))}</span>
                                 </div>
+                                <div class="ai-task-meta-chip js-ai-task-fit" title="Điểm server 35/25/20/10/10; bị ẩn khi độ phủ bằng chứng dưới 60%">
+                                    <i class="bi bi-patch-check"></i><span>Fit ${escapeHtml(fitSummary)}</span>
+                                </div>
+                                <div class="ai-task-meta-chip" title="${escapeHtml(shouldAbstain ? 'Bằng chứng chưa đủ; agent chủ động từ chối kết luận chắc chắn' : 'Độ tin cậy từ các nguồn độc lập, hiện hành và liên quan')}">
+                                    <i class="bi bi-shield-check"></i><span>Độ tin cậy nguồn ${escapeHtml(confidenceScore.toFixed(0))}% · ${escapeHtml(shouldAbstain ? 'Từ chối kết luận' : confidenceBand)}</span>
+                                </div>
+                                <div class="ai-task-meta-chip" title="${escapeHtml(criticReasons.join(' '))}">
+                                    <i class="bi bi-clipboard-check"></i><span>Critic: ${escapeHtml(criticLabel)}</span>
+                                </div>
+                                <div class="ai-task-meta-chip" title="${escapeHtml(`${likelihoodBasis || likelihoodStatus} Mẫu n=${likelihoodSampleSize}. Đây là lịch sử task của chính nguồn, không phải dự báo cohort.`)}">
+                                    <i class="bi bi-graph-up-arrow"></i><span>Lịch sử nguồn ${probability == null ? 'chưa đủ mẫu' : `${(Number(probability) * 100).toFixed(0)}%`} · n=${escapeHtml(likelihoodSampleSize)}</span>
+                                </div>
+                                <div class="ai-task-meta-chip" title="${escapeHtml(sourceLabels.join(', ') || 'Không có nguồn')}">
+                                    <i class="bi bi-journal-text"></i><span>Nguồn: ${escapeHtml(sourceLabels.join(', ') || 'Không có nguồn')}</span>
+                                </div>
+                            </div>
+
+                            <div class="small text-secondary mt-2 js-ai-task-critic" role="status">
+                                <strong>Critic: ${escapeHtml(criticLabel)}.</strong>
+                                ${escapeHtml(criticReasons.join(' '))}
                             </div>
 
                             <div class="ai-task-card-grid">
                                 <div class="ai-task-field ai-task-field--description">
                                     <label class="form-label small fw-semibold text-secondary mb-1">Mô tả</label>
-                                    <textarea class="form-control form-control-sm js-ai-task-field" data-field="description" rows="3" maxlength="2000">${escapeHtml(fieldValue(task, 'description', 'Description'))}</textarea>
+                                    <textarea class="form-control form-control-sm js-ai-task-field" data-field="description" rows="6" maxlength="2000">${escapeHtml(persistedDescription)}</textarea>
                                 </div>
 
                                 <div class="ai-task-side-panel">
                                     <div class="ai-task-quick-grid">
+                                        <div class="ai-task-field ai-task-field--wide">
+                                            <label class="form-label small fw-semibold text-secondary mb-1">Người phụ trách đề xuất</label>
+                                            <select class="form-select form-select-sm js-ai-task-field js-ai-task-assignee" data-field="assigneeId">
+                                                ${assigneeOptions(assigneeId, suggestedAssignee)}
+                                            </select>
+                                            <div class="form-text">Chỉ dùng assignment và tải task trong phạm vi nguồn; không suy đoán năng lực.</div>
+                                        </div>
                                         <div class="ai-task-field">
                                             <label class="form-label small fw-semibold text-secondary mb-1">Ưu tiên</label>
                                             <select class="form-select form-select-sm js-ai-task-field" data-field="priority">
@@ -697,7 +934,11 @@
                                         </div>
                                         <div class="ai-task-field">
                                             <label class="form-label small fw-semibold text-secondary mb-1">Số ngày</label>
-                                            <input type="number" min="1" max="365" class="form-control form-control-sm js-ai-task-field" data-field="estimatedDays" value="${escapeHtml(fieldValue(task, 'estimatedDays', 'EstimatedDays', 7))}">
+                                            <input type="number" min="1" max="365" class="form-control form-control-sm js-ai-task-field" data-field="estimatedDays" value="${escapeHtml(estimatedDays)}">
+                                        </div>
+                                        <div class="ai-task-field">
+                                            <label class="form-label small fw-semibold text-secondary mb-1">Deadline</label>
+                                            <input type="date" class="form-control form-control-sm js-ai-task-field" data-field="dueDate" value="${escapeHtml(dueDate)}">
                                         </div>
                                         <div class="ai-task-field">
                                             <label class="form-label small fw-semibold text-secondary mb-1">Trọng số</label>
@@ -705,6 +946,12 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="alert alert-light border small mt-3 mb-0">
+                                <div><strong>Đóng góp:</strong> ${escapeHtml(contribution || 'Chưa xác định')}</div>
+                                <div class="mt-1"><strong>Phụ thuộc:</strong> ${escapeHtml(dependencies.join('; ') || 'Không có')}</div>
+                                <div class="mt-1"><strong>Rủi ro:</strong> ${escapeHtml(risks.join(' ') || 'Chưa ghi nhận')}</div>
+                                <div class="mt-1"><strong>Khoảng trống dữ liệu:</strong> ${escapeHtml(dataGaps.join(' ') || 'Không có')}</div>
                             </div>
                         </div>
                     </div>
@@ -764,7 +1011,11 @@
 
             byId('aiTaskSummary').textContent = `${selectedCount}/${totalCount} task được chọn để tạo`;
             byId('aiTaskEmpty').classList.toggle('d-none', cards.length > 0);
-            byId('aiTaskConfirmBtn').disabled = state.isRunning || state.isConfirming || selectedCount === 0;
+            byId('aiTaskConfirmBtn').disabled = state.isRunning
+                || state.isAwaitingConfirmation
+                || state.isConfirming
+                || state.isRejecting
+                || selectedCount === 0;
 
             if (selectAll) {
                 const isAllSelected = totalCount > 0 && selectedCount === totalCount;
@@ -779,6 +1030,81 @@
             }
         }
 
+        function renderDraftResponse(data) {
+            const sourceName = data.sourceName || data.SourceName || byId('aiTaskSourceName').textContent;
+            const generationMode = data.generationMode || data.GenerationMode || 'DeterministicFallback';
+            const fitMethod = data.fitMethod || data.FitMethod || 'AssigneeWorkloadEvidenceWeighted_v1';
+            const outcomeMethod = data.outcomeMethod || data.OutcomeMethod || 'SameSourceWorkItemHistory_NotCohortModel';
+            const warnings = data.warnings || data.Warnings || [];
+            const modeLabel = generationModeLabels[generationMode] || generationMode;
+            const fitMethodLabel = fitMethodLabels[fitMethod] || fitMethod;
+            const outcomeMethodLabel = outcomeMethodLabels[outcomeMethod] || outcomeMethod;
+            const modeTone = generationMode === 'DeterministicFallback'
+                ? 'warning'
+                : generationMode === 'AgentWithRag'
+                    ? 'success'
+                    : 'info';
+            const meta = byId('aiTaskAgentMeta');
+            meta.className = `alert alert-${modeTone} py-2 px-3 small mb-3`;
+            meta.textContent = `Chế độ: ${modeLabel}. Fit: ${fitMethodLabel}. Outcome: ${outcomeMethodLabel}. Con người là người quyết định cuối cùng.`;
+            renderProjectOptions({
+                sourceObjective: sourceName,
+                availableProjects: data.availableProjects || data.AvailableProjects || [],
+                suggestedProjectId: data.suggestedProjectId || data.SuggestedProjectId || byId('aiTaskPreferredProjectId').value,
+                suggestedProjectName: data.suggestedProjectName || data.SuggestedProjectName || '',
+                canCreateProject: data.canCreateProject ?? data.CanCreateProject ?? false
+            });
+            state.sourceType = data.sourceType || data.SourceType || state.sourceType;
+            state.sourceId = Number(data.sourceId || data.SourceId || state.sourceId || 0) || null;
+            state.agentRunId = data.agentRunId || data.AgentRunId || '';
+            state.planningSourceType = data.sourceType || data.SourceType || '';
+            state.planningSourceId = Number(data.sourceId || data.SourceId || 0) || null;
+            state.planningSourceVersion = data.sourceVersion || data.SourceVersion || '';
+            state.draftActionId = Number(data.draftActionId || data.DraftActionId || 0) || null;
+            state.agentRunRowVersion = data.agentRunRowVersion || data.AgentRunRowVersion || '';
+            state.draftRowVersion = data.draftRowVersion || data.DraftRowVersion || '';
+            state.approvalToken = data.approvalToken || data.ApprovalToken || '';
+            state.confirmationIdempotencyKey = '';
+            state.rejectionIdempotencyKey = '';
+            state.sourceOkrId = Number(data.sourceOkrId || data.SourceOkrId || 0) || null;
+            state.availableAssignees = data.availableAssignees || data.AvailableAssignees || [];
+            byId('aiTaskSourceType').value = state.sourceType;
+            byId('aiTaskSourceId').value = state.sourceId || '';
+            byId('aiTaskSourceName').textContent = sourceName;
+            byId('aiTaskRejectBtn').classList.toggle('d-none', !state.draftActionId);
+            const candidates = (data.tasks || data.Tasks || []).map(task => ({
+                title: fieldValue(task, 'title', 'Title'),
+                description: fieldValue(task, 'description', 'Description'),
+                priority: 'Normal',
+                kanbanStatus: 'Todo',
+                kpiImpactWeight: 1,
+                fit: fieldValue(task, 'fit', 'Fit', {}),
+                confidence: fieldValue(task, 'confidence', 'Confidence', {}),
+                evidence: fieldValue(task, 'evidence', 'Evidence', []),
+                critique: fieldValue(task, 'critique', 'Critique', null),
+                outcomeLikelihood: fieldValue(task, 'outcomeLikelihood', 'OutcomeLikelihood', null),
+                suggestedAssignee: fieldValue(task, 'suggestedAssignee', 'SuggestedAssignee', null),
+                plan: fieldValue(task, 'plan', 'Plan', {}),
+                isSelected: true
+            }));
+            renderTasks(candidates);
+            byId('aiTaskPreview').classList.remove('d-none');
+            const notices = [...warnings];
+            if (candidates.some(task => {
+                const critique = fieldValue(task, 'critique', 'Critique', null);
+                const verdict = critique ? fieldValue(critique, 'verdict', 'Verdict', 1) : 1;
+                return String(verdict) !== '0' && String(verdict) !== 'Pass';
+            })) {
+                notices.push('Critic đã đánh dấu ít nhất một task cần con người kiểm tra hoặc bổ sung dữ liệu trước khi xác nhận.');
+            }
+            if (candidates.some(task => fieldValue(task.confidence, 'shouldAbstain', 'ShouldAbstain', false) === true)) {
+                notices.push('Một hoặc nhiều task có bằng chứng chưa đủ; hãy kiểm tra nguồn, chỉnh sửa hoặc bỏ chọn trước khi tạo.');
+            }
+            if (notices.length) {
+                showAlert(notices.join(' '), generationMode === 'DeterministicFallback' ? 'warning' : 'info');
+            }
+        }
+
         async function runDecompose() {
             showAlert('');
             byId('aiTaskLoading').classList.remove('d-none');
@@ -789,14 +1115,12 @@
 
             const body = state.sourceType === 'KPI'
                 ? { kpiId: state.sourceId, additionalContext: byId('aiTaskAdditionalContext').value }
-                : state.sourceType === 'PROJECT'
+                : ['PROJECT', 'WORKPROJECT'].includes(String(state.sourceType).toUpperCase())
                     ? { workProjectId: state.sourceId, additionalContext: byId('aiTaskAdditionalContext').value }
+                    : ['KR', 'OKRKEYRESULT'].includes(String(state.sourceType).toUpperCase())
+                        ? { okrKeyResultId: state.sourceId, additionalContext: byId('aiTaskAdditionalContext').value }
                     : { okrId: state.sourceId, additionalContext: byId('aiTaskAdditionalContext').value };
-            const endpoint = state.sourceType === 'KPI'
-                ? '/AI/DecomposeKPI'
-                : state.sourceType === 'PROJECT'
-                    ? '/AI/DecomposeProject'
-                    : '/AI/DecomposeOKR';
+            const endpoint = '/AI/CreateGoalPlanningDraft';
 
             try {
                 const response = await fetch(endpoint, {
@@ -809,13 +1133,7 @@
                     throw new Error((data.warnings || data.Warnings || ['Không thể tạo gợi ý AI.']).join(' '));
                 }
 
-                renderProjectOptions(data);
-                renderTasks(data.tasks || data.Tasks || []);
-                byId('aiTaskPreview').classList.remove('d-none');
-                const warnings = data.warnings || data.Warnings || [];
-                if (warnings.length) {
-                    showAlert(warnings.join(' '), 'warning');
-                }
+                renderDraftResponse(data);
             } catch (error) {
                 showAlert(error.message || 'Không thể tạo gợi ý AI.', 'danger');
                 byId('aiTaskPreview').classList.add('d-none');
@@ -827,6 +1145,10 @@
         }
 
         async function confirmTasks() {
+            if (state.isRunning || state.isAwaitingConfirmation || state.isConfirming) {
+                return;
+            }
+
             const tasks = collectTasks();
             if (!tasks.length) {
                 showAlert('Vui lòng chọn ít nhất một task để tạo.', 'warning');
@@ -834,17 +1156,59 @@
                 return;
             }
 
+            const projectSelect = byId('aiTaskProjectSelect');
+            const selectedProjectId = projectSelect.value;
+            const newProjectName = byId('aiTaskNewProjectName').value.trim();
+            if (!selectedProjectId && !state.canCreateProject) {
+                showAlert('Bạn không có quyền tạo project mới và chưa có project đích được phép.', 'warning');
+                return;
+            }
+            const destinationName = selectedProjectId
+                ? projectSelect.selectedOptions[0]?.textContent?.trim() || `Project #${selectedProjectId}`
+                : newProjectName || 'project mới';
+
             const payload = {
-                workProjectId: byId('aiTaskProjectSelect').value ? parseInt(byId('aiTaskProjectSelect').value, 10) : null,
-                newProjectName: byId('aiTaskNewProjectName').value,
-                sourceOKRId: state.sourceType === 'OKR' ? state.sourceId : null,
+                agentRunId: state.agentRunId || null,
+                draftActionId: state.draftActionId,
+                agentRunRowVersion: state.agentRunRowVersion || null,
+                draftRowVersion: state.draftRowVersion || null,
+                approvalToken: state.approvalToken || null,
+                planningSourceType: state.planningSourceType || null,
+                planningSourceId: state.planningSourceId,
+                planningSourceVersion: state.planningSourceVersion || null,
+                workProjectId: selectedProjectId ? parseInt(selectedProjectId, 10) : null,
+                newProjectName,
+                sourceOKRId: state.sourceOkrId || (state.sourceType === 'OKR' ? state.sourceId : null),
                 sourceKPIId: state.sourceType === 'KPI' ? state.sourceId : null,
                 tasks
             };
 
+            state.isAwaitingConfirmation = true;
+            refreshPreviewState();
+            let confirmed = false;
+            try {
+                confirmed = await window.AppFeedback.confirm({
+                    title: 'Xác nhận tạo task từ AI',
+                    message: selectedProjectId
+                        ? `Tạo ${tasks.length} task đã chọn trong project “${destinationName}”?`
+                        : `Tạo project mới “${destinationName}” cùng ${tasks.length} task đã chọn?`,
+                    tone: 'info',
+                    confirmText: 'Tạo task',
+                    cancelText: 'Quay lại chỉnh sửa'
+                });
+            } finally {
+                state.isAwaitingConfirmation = false;
+            }
+            if (!confirmed) {
+                refreshPreviewState();
+                return;
+            }
+
             setBusy('confirm', true);
 
             try {
+                state.confirmationIdempotencyKey ||= idempotencyKey();
+                payload.idempotencyKey = state.confirmationIdempotencyKey;
                 const response = await fetch('/AI/ConfirmDecompose', {
                     method: 'POST',
                     headers: jsonHeaders(),
@@ -863,8 +1227,60 @@
             }
         }
 
+        async function rejectDraft() {
+            if (state.isRunning || state.isAwaitingConfirmation || state.isConfirming || state.isRejecting || !state.draftActionId) {
+                return;
+            }
+            const confirmed = await window.AppFeedback.confirm({
+                title: 'Không sử dụng đề xuất AI?',
+                message: 'Bản nháp sẽ được ghi nhận là đã từ chối và không thể áp dụng lại.',
+                tone: 'warning',
+                confirmText: 'Từ chối đề xuất',
+                cancelText: 'Quay lại'
+            });
+            if (!confirmed) {
+                return;
+            }
+            setBusy('reject', true);
+            try {
+                state.rejectionIdempotencyKey ||= idempotencyKey();
+                const response = await fetch('/AI/RejectGoalPlanningDraft', {
+                    method: 'POST',
+                    headers: jsonHeaders(),
+                    body: JSON.stringify({
+                        agentRunId: state.agentRunId,
+                        draftActionId: state.draftActionId,
+                        agentRunRowVersion: state.agentRunRowVersion,
+                        draftRowVersion: state.draftRowVersion,
+                        approvalToken: state.approvalToken,
+                        idempotencyKey: state.rejectionIdempotencyKey,
+                        planningSourceType: state.planningSourceType,
+                        planningSourceId: state.planningSourceId,
+                        planningSourceVersion: state.planningSourceVersion
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok || data.success === false || data.Success === false) {
+                    throw new Error((data.warnings || data.Warnings || ['Không thể từ chối đề xuất.']).join(' '));
+                }
+                state.tasks = [];
+                state.draftActionId = null;
+                state.approvalToken = '';
+                byId('aiTaskTableBody').innerHTML = '';
+                byId('aiTaskPreview').classList.add('d-none');
+                byId('aiTaskRejectBtn').classList.add('d-none');
+                showAlert('Đã ghi nhận không sử dụng đề xuất AI. Không có project/task nào được tạo.', 'success');
+            } catch (error) {
+                showAlert(error.message || 'Không thể từ chối đề xuất.', 'danger');
+            } finally {
+                setBusy('reject', false);
+                refreshPreviewState();
+            }
+        }
+
         byId('aiTaskRunBtn')?.addEventListener('click', runDecompose);
         byId('aiTaskConfirmBtn')?.addEventListener('click', confirmTasks);
+        byId('aiTaskRejectBtn')?.addEventListener('click', rejectDraft);
         byId('aiTaskSelectAll')?.addEventListener('change', event => {
             getTaskCards().forEach(card => {
                 const checkbox = card.querySelector('.js-ai-task-selected');
@@ -874,15 +1290,52 @@
             });
             refreshPreviewState();
         });
-        byId('aiTaskTableBody')?.addEventListener('input', refreshPreviewState);
+        byId('aiTaskTableBody')?.addEventListener('input', event => {
+            if (['title', 'description'].includes(event.target?.dataset?.field)) {
+                const critic = event.target.closest('.ai-task-review-card')?.querySelector('.js-ai-task-critic');
+                if (critic) {
+                    critic.innerHTML = '<strong>Critic: cần kiểm tra lại.</strong> Nội dung đã được người dùng chỉnh sửa sau lần critic gần nhất.';
+                }
+            }
+            refreshPreviewState();
+        });
         byId('aiTaskTableBody')?.addEventListener('change', refreshPreviewState);
+        byId('aiTaskTableBody')?.addEventListener('change', event => {
+            if (!event.target?.classList?.contains('js-ai-task-assignee')) {
+                return;
+            }
+            const card = event.target.closest('.ai-task-review-card');
+            const department = card?.querySelector('[data-field="departmentId"]');
+            if (department) {
+                department.value = event.target.selectedOptions[0]?.dataset?.departmentId || '';
+            }
+            const fit = card?.querySelector('.js-ai-task-fit span');
+            if (fit) {
+                fit.textContent = 'Fit cần chạy lại sau khi đổi assignee';
+            }
+        });
         byId('aiTaskProjectSelect')?.addEventListener('change', syncProjectNameState);
 
         window.openAiTaskDecomposeModal = function (sourceType, sourceId, sourceName, preferredProjectId, preferredProjectName) {
             state.sourceType = sourceType;
             state.sourceId = parseInt(sourceId, 10);
+            state.planningSourceType = '';
+            state.planningSourceId = null;
+            state.planningSourceVersion = '';
+            state.agentRunId = '';
+            state.draftActionId = null;
+            state.agentRunRowVersion = '';
+            state.draftRowVersion = '';
+            state.approvalToken = '';
+            state.confirmationIdempotencyKey = '';
+            state.rejectionIdempotencyKey = '';
+            state.sourceOkrId = null;
+            state.availableAssignees = [];
+            state.canCreateProject = false;
             state.isRunning = false;
+            state.isAwaitingConfirmation = false;
             state.isConfirming = false;
+            state.isRejecting = false;
             byId('aiTaskSourceType').value = sourceType;
             byId('aiTaskSourceId').value = sourceId;
             byId('aiTaskPreferredProjectId').value = preferredProjectId || '';
@@ -894,6 +1347,7 @@
             byId('aiTaskSelectAll').checked = true;
             byId('aiTaskSelectAll').indeterminate = false;
             byId('aiTaskPreview').classList.add('d-none');
+            byId('aiTaskRejectBtn').classList.add('d-none');
             byId('aiTaskLoading').classList.add('d-none');
             byId('aiTaskEmpty').classList.add('d-none');
             const hint = byId('aiTaskProjectLinkHint');
@@ -913,6 +1367,44 @@
             setBusy('run', false);
 
             bootstrap.Modal.getOrCreateInstance(byId('aiTaskDecomposeModal')).show();
+        };
+
+        window.resumeAiGoalPlanningDraft = async function (agentRunId) {
+            if (!agentRunId || typeof agentRunId !== 'string') {
+                throw new Error('Mã bản chạy Goal Planning không hợp lệ.');
+            }
+            window.openAiTaskDecomposeModal('', 0, 'Đang tải bản nháp...', '', '');
+            const hint = byId('aiTaskProjectLinkHint');
+            if (hint) {
+                hint.classList.remove('d-none');
+                hint.textContent = 'Đang tái kiểm tra quyền, nguồn và bằng chứng của bản nháp đã lưu.';
+            }
+            byId('aiTaskLoading').classList.remove('d-none');
+            setBusy('run', true);
+            try {
+                const response = await fetch('/AI/ViewGoalPlanningDraft', {
+                    method: 'POST',
+                    headers: jsonHeaders(),
+                    body: JSON.stringify({ agentRunId })
+                });
+                const data = await response.json();
+                if (!response.ok || data.success === false || data.Success === false) {
+                    throw new Error((data.warnings || data.Warnings || ['Không thể tải lại bản nháp Goal Planning.']).join(' '));
+                }
+                renderDraftResponse(data);
+                if (hint) {
+                    hint.textContent = 'Bản nháp đã được tải lại với approval token mới; token cũ không còn hiệu lực.';
+                }
+                return true;
+            } catch (error) {
+                byId('aiTaskPreview').classList.add('d-none');
+                showAlert(error.message || 'Không thể tải lại bản nháp Goal Planning.', 'danger');
+                return false;
+            } finally {
+                byId('aiTaskLoading').classList.add('d-none');
+                setBusy('run', false);
+                refreshPreviewState();
+            }
         };
     })();
 </script>

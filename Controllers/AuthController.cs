@@ -4,16 +4,23 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Globalization;
+using System.Data.Common;
+using System.Text.Encodings.Web;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Models;
+using Manage_KPI_or_OKR_System.Models.ViewModels;
 using Manage_KPI_or_OKR_System.Services;
+using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -23,6 +30,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly IEmailService _emailService;
         private readonly ISystemSettingsService _settingsService;
         private readonly IWebHostEnvironment _environment;
+        private readonly IPasswordResetService _passwordResetService;
+        private readonly IPasswordResetRateLimiter _passwordResetRateLimiter;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<AuthController> _logger;
+        private const string PasswordResetRequestMessage = "Nếu email này có tài khoản, chúng tôi đã gửi liên kết đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn.";
         private static readonly HashSet<string> AllowedPreferredLanguages = new(StringComparer.Ordinal)
         {
             "Auto",
@@ -42,18 +54,27 @@ namespace Manage_KPI_or_OKR_System.Controllers
             MiniERPDbContext context,
             IEmailService emailService,
             ISystemSettingsService settingsService,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            IPasswordResetService passwordResetService,
+            IPasswordResetRateLimiter passwordResetRateLimiter,
+            IConfiguration configuration,
+            ILogger<AuthController> logger)
         {
             _context = context;
             _emailService = emailService;
             _settingsService = settingsService;
             _environment = environment;
+            _passwordResetService = passwordResetService;
+            _passwordResetRateLimiter = passwordResetRateLimiter;
+            _configuration = configuration;
+            _logger = logger;
         }
 
         private async Task<string> SignInSystemUserAsync(
             SystemUser user,
             bool remember = false,
-            string? email = null)
+            string? email = null,
+            int? selectedTenantId = null)
         {
             var role = await AuthRoleHelper.EnsureUserHasLoginRoleAsync(_context, user);
             var roleName = AuthRoleHelper.GetRoleNameOrDefault(role);
@@ -66,6 +87,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 new Claim(ClaimTypes.Role, roleName),
                 new Claim(AuthRoleHelper.PasswordChangedClaimType, GetPasswordChangedStamp(user))
             };
+            if (AuthRoleHelper.IsReservedPlatformRoleName(role?.RoleName))
+            {
+                claims.Add(new Claim(AuthRoleHelper.PlatformAdminClaimType, bool.TrueString));
+            }
 
             var resolvedEmail = email ?? user.Email;
             if (!string.IsNullOrWhiteSpace(resolvedEmail))
@@ -81,6 +106,47 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (user.TrialEndTime.HasValue)
             {
                 claims.Add(new Claim("TrialEndTime", user.TrialEndTime.Value.ToString("O")));
+            }
+
+            // A single active membership can be selected automatically. Users
+            // belonging to several tenants select one explicitly with the
+            // X-Tenant-Id request header; the middleware verifies membership
+            // before applying the tenant scope.
+            try
+            {
+                var tenantIds = await _context.TenantMemberships
+                    .AsNoTracking()
+                    .Where(membership => membership.SystemUserId == user.Id &&
+                                         membership.IsActive &&
+                                         membership.RoleId.HasValue &&
+                                         membership.Role != null &&
+                                         membership.Role.IsActive == true &&
+                                         membership.Tenant != null &&
+                                         membership.Tenant.IsActive)
+                    .Select(membership => membership.TenantId)
+                    .ToListAsync();
+                if (selectedTenantId.HasValue)
+                {
+                    if (!tenantIds.Contains(selectedTenantId.Value))
+                    {
+                        throw new UnauthorizedAccessException("The selected tenant membership is not active.");
+                    }
+
+                    claims.Add(new Claim(
+                        "TenantId",
+                        selectedTenantId.Value.ToString(CultureInfo.InvariantCulture)));
+                }
+                else if (tenantIds.Count == 1)
+                {
+                    claims.Add(new Claim("TenantId", tenantIds[0].ToString(CultureInfo.InvariantCulture)));
+                }
+            }
+            catch (Exception exception) when (exception is DbException or InvalidOperationException)
+            {
+                // Keep authentication compatible with a database that has
+                // not applied the tenancy migration yet. Production requests
+                // still fail closed in TenantResolutionMiddleware.
+                _logger.LogDebug(exception, "Tenant membership claim was unavailable during sign-in.");
             }
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -99,7 +165,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private static string GetPasswordChangedStamp(SystemUser user) =>
             (user.LastPasswordChange?.Ticks ?? 0L).ToString(CultureInfo.InvariantCulture);
 
-        public IActionResult Login(string returnUrl = null, string username = null, string password = null)
+        public IActionResult Login(string? returnUrl = null, string? username = null)
         {
             ViewData["IsLoginPage"] = true;
             ViewBag.ReturnUrl = returnUrl;
@@ -113,10 +179,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 ViewBag.Username = username;
             }
 
-            if (!string.IsNullOrEmpty(password))
-            {
-                ViewBag.Password = password;
-            }
+            ViewBag.ShowDemoCredentials = _environment.IsDevelopment();
 
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
@@ -128,7 +191,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(string username, string password, bool remember = false, string returnUrl = null)
+        [EnableRateLimiting("LoginAttempts")]
+        public async Task<IActionResult> Login(string? username, string? password, bool remember = false, string? returnUrl = null)
         {
             ViewData["IsLoginPage"] = true;
 
@@ -181,17 +245,88 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             await SignInSystemUserAsync(user, remember);
 
+            var activeTenantIds = await _context.TenantMemberships
+                .AsNoTracking()
+                .Where(membership =>
+                    membership.SystemUserId == user.Id &&
+                    membership.IsActive &&
+                    membership.RoleId.HasValue &&
+                    membership.Role != null &&
+                    membership.Role.IsActive == true &&
+                    membership.Tenant != null &&
+                    membership.Tenant.IsActive)
+                .Select(membership => membership.TenantId)
+                .Take(2)
+                .ToListAsync();
+            var globalRole = user.RoleId.HasValue
+                ? await _context.Roles.FindAsync(user.RoleId.Value)
+                : null;
+            if (activeTenantIds.Count == 0 &&
+                !AuthRoleHelper.IsReservedPlatformRoleName(globalRole?.RoleName))
+            {
+                return RedirectToAction(nameof(PendingActivation));
+            }
+
+            if (activeTenantIds.Count > 1)
+            {
+                return RedirectToAction(nameof(SelectTenant), new { returnUrl });
+            }
+
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
             }
 
-            if (user.RoleId == null)
+            return RedirectToAction("Index", "Dashboard");
+        }
+
+        [Authorize]
+        public async Task<IActionResult> PendingActivation()
+        {
+            var userIdValue = User.FindFirstValue("SystemUserId") ??
+                              User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdValue, out var userId))
             {
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction(nameof(Login));
             }
 
-            return RedirectToAction("Index", "Dashboard");
+            var activeTenantIds = await _context.TenantMemberships
+                .AsNoTracking()
+                .Where(membership =>
+                    membership.SystemUserId == userId &&
+                    membership.IsActive &&
+                    membership.RoleId.HasValue &&
+                    membership.Role != null &&
+                    membership.Role.IsActive == true &&
+                    membership.Tenant != null &&
+                    membership.Tenant.IsActive)
+                .Select(membership => membership.TenantId)
+                .Take(2)
+                .ToListAsync();
+            if (activeTenantIds.Count > 1)
+            {
+                return RedirectToAction(nameof(SelectTenant));
+            }
+            if (activeTenantIds.Count == 1)
+            {
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            var email = await _context.SystemUsers
+                .Where(user => user.Id == userId)
+                .Select(user => user.Email ?? user.Username)
+                .FirstOrDefaultAsync();
+            ViewBag.Email = email;
+            ViewBag.PendingPlan = string.IsNullOrWhiteSpace(email)
+                ? null
+                : await _context.PurchaseRegistrations
+                    .Where(registration =>
+                        registration.Email == email &&
+                        registration.Status == "Chờ xử lý")
+                    .OrderByDescending(registration => registration.CreatedAt)
+                    .Select(registration => registration.SelectedPlan)
+                    .FirstOrDefaultAsync();
+            return View();
         }
 
         public IActionResult Register()
@@ -230,60 +365,145 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(string username, string email, string password, string confirmPassword)
+        public async Task<IActionResult> Register(RegisterViewModel model)
         {
             ViewData["IsLoginPage"] = true;
 
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+            model.Username = model.Username?.Trim() ?? string.Empty;
+            model.Email = model.Email?.Trim().ToLowerInvariant() ?? string.Empty;
+
+            if (!ModelState.IsValid)
             {
-                ViewBag.Error = "Vui lòng điền đầy đủ các thông tin bắt buộc.";
-                return View();
+                return View(model);
             }
 
-            username = username.Trim();
-            email = email.Trim().ToLowerInvariant();
-            if (username.Length > 255 || email.Length > 255)
-            {
-                ViewBag.Error = "Tên đăng nhập và Email không được vượt quá 255 ký tự.";
-                return View();
-            }
-
-            if (password != confirmPassword)
-            {
-                ViewBag.Error = "Mật khẩu xác nhận không khớp.";
-                return View();
-            }
-
-            var normalizedUsername = username.ToLowerInvariant();
+            var normalizedUsername = model.Username.ToLowerInvariant();
             if (await _context.SystemUsers.AnyAsync(u =>
                     (u.Username != null && u.Username.ToLower() == normalizedUsername) ||
-                    (u.Email != null && u.Email.ToLower() == email)))
+                    (u.Email != null && u.Email.ToLower() == model.Email)))
             {
-                ViewBag.Error = "Tên đăng nhập hoặc Email đã tồn tại trong hệ thống.";
-                return View();
+                ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc Email đã tồn tại trong hệ thống.");
+                return View(model);
             }
 
+            var now = DateTime.Now;
             var newUser = new SystemUser
             {
-                Username = username,
-                Email = email,
-                PasswordHash = PasswordHelper.HashPassword(password),
+                Username = model.Username,
+                Email = model.Email,
+                PasswordHash = PasswordHelper.HashPassword(model.Password),
+                LastPasswordChange = now,
                 RoleId = null, // Customer role outside the system
                 IsActive = true,
-                CreatedAt = DateTime.Now
+                CreatedAt = now,
+                CreatedById = null,
+                TrialEndTime = null,
+                PreferredLanguage = "Tiếng Việt"
             };
 
             _context.SystemUsers.Add(newUser);
-            await _context.SaveChangesAsync();
+            _context.PurchaseRegistrations.Add(new PurchaseRegistration
+            {
+                Email = model.Email,
+                SelectedPlan = "Free Trial",
+                Status = "Chờ xử lý",
+                AdminNotes = "Tài khoản tự đăng ký; chờ quản trị viên kích hoạt tenant.",
+                CreatedAt = now
+            });
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+            {
+                ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc Email đã tồn tại trong hệ thống.");
+                return View(model);
+            }
 
-            TempData["SuccessMessage"] = "Đăng ký thành công! Vui lòng dùng tài khoản vừa tạo để đăng nhập.";
+            TempData["SuccessMessage"] = "Đăng ký thành công. Tài khoản đang chờ quản trị viên kích hoạt không gian làm việc.";
             return RedirectToAction("Login");
+        }
+
+        private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+        {
+            return ex.GetBaseException() is SqlException { Number: 2601 or 2627 };
         }
 
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
             return Redirect("/Home/Index");
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> SelectTenant(string? returnUrl = null)
+        {
+            var userIdValue = User.FindFirstValue("SystemUserId") ??
+                              User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdValue, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var tenants = await _context.TenantMemberships
+                .AsNoTracking()
+                .Where(membership => membership.SystemUserId == userId &&
+                                     membership.IsActive &&
+                                     membership.RoleId.HasValue &&
+                                     membership.Role != null &&
+                                     membership.Role.IsActive == true &&
+                                     membership.Tenant != null &&
+                                     membership.Tenant.IsActive)
+                .Select(membership => membership.Tenant!)
+                .OrderBy(tenant => tenant.Name)
+                .ToListAsync();
+
+            ViewBag.ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null;
+            return View(tenants);
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SelectTenant(int tenantId, string? returnUrl = null)
+        {
+            var userIdValue = User.FindFirstValue("SystemUserId") ??
+                              User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdValue, out var userId) || tenantId <= 0)
+            {
+                return Unauthorized();
+            }
+
+            var isMember = await _context.TenantMemberships
+                .AsNoTracking()
+                .AnyAsync(membership => membership.SystemUserId == userId &&
+                                        membership.TenantId == tenantId &&
+                                        membership.IsActive &&
+                                        membership.RoleId.HasValue &&
+                                        membership.Role != null &&
+                                        membership.Role.IsActive == true &&
+                                        membership.Tenant != null &&
+                                        membership.Tenant.IsActive);
+            if (!isMember)
+            {
+                return Forbid();
+            }
+
+            var user = await _context.SystemUsers.FirstOrDefaultAsync(candidate =>
+                candidate.Id == userId && candidate.IsActive == true);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            await SignInSystemUserAsync(
+                user,
+                remember: false,
+                selectedTenantId: tenantId);
+            return Url.IsLocalUrl(returnUrl)
+                ? LocalRedirect(returnUrl!)
+                : RedirectToAction("Index", "Dashboard");
         }
 
 
@@ -300,7 +520,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         // ==========================================
-        // QUÊN MẬT KHẨU (BƯỚC 1: GỬI MÃ OTP)
+        // QUÊN MẬT KHẨU (LIÊN KẾT DÙNG MỘT LẦN)
         // ==========================================
         public IActionResult ForgotPassword()
         {
@@ -313,268 +533,127 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> ForgotPassword(string email)
         {
             ViewData["IsLoginPage"] = true;
-
-            if (string.IsNullOrEmpty(email))
-            {
-                ViewBag.Error = "Vui lòng nhập email.";
-                return View();
-            }
-
-            email = email.Trim().ToLowerInvariant();
-
-            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == email);
-
-            if (user == null)
-            {
-                ViewBag.Error = "Không tìm thấy tài khoản với email này.";
-                return View();
-            }
-
-            // 1. Tạo mã xác nhận OTP 6 số ngẫu nhiên
-            Random rnd = new Random();
-            string resetCode = rnd.Next(100000, 999999).ToString();
-
-            // 2. Lưu mã OTP và username vào TempData để kiểm tra ở trang tiếp theo
-            TempData["ResetCode"] = resetCode;
-            TempData["ResetUsername"] = user.Username;
-
-            // 3. GỬI MÃ OTP VỀ GMAIL
-            try
-            {
-                var branding = await _settingsService.GetBrandingAsync();
-                string subject = $"Mã xác nhận khôi phục mật khẩu - {branding.ProductName}";
-                string body = $@"
-                    <h3>Chào {user.Username},</h3>
-                    <p>Bạn đã yêu cầu khôi phục mật khẩu cho tài khoản trên hệ thống {branding.ProductName}.</p>
-                    <p>Mã xác nhận (OTP) của bạn là: <strong style='color:#0d6efd; font-size:24px; letter-spacing: 3px;'>{resetCode}</strong></p>
-                    <p>Vui lòng nhập mã này trên trang web để tạo mật khẩu mới. Nếu không phải bạn yêu cầu, vui lòng bỏ qua email này.</p>
-                    <br/>
-                    <p>Trân trọng,<br/>{branding.CompanyName}</p>";
-
-                await _emailService.SendEmailAsync(user.Email ?? "", subject, body);
-
-                TempData["SuccessMessage"] = "Mã xác nhận đã được gửi đến Email của bạn!";
-                // SỬA: Chuyển sang màn hình xác nhận mã OTP
-                return RedirectToAction("VerifyOTP");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                ViewBag.Error = "Không thể gửi Email. Vui lòng liên hệ Admin hoặc thử lại sau.";
-                return View();
-            }
+            await RequestPasswordResetAsync(email);
+            TempData["SuccessMessage"] = PasswordResetRequestMessage;
+            return RedirectToAction(nameof(ForgotPassword));
         }
 
-        public class ForgotPasswordAjaxDto { public string email { get; set; } }
+        public sealed class ForgotPasswordAjaxDto
+        {
+            public string? Email { get; set; }
+        }
 
         [HttpPost]
         [AllowAnonymous]
-        [IgnoreAntiforgeryToken]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForgotPasswordAjax([FromBody] ForgotPasswordAjaxDto model)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.email))
-                return Json(new { success = false, message = "Vui lòng nhập email." });
+            await RequestPasswordResetAsync(model?.Email);
+            return Json(new { success = true, message = PasswordResetRequestMessage });
+        }
 
-            var normalizedEmail = model.email.Trim().ToLowerInvariant();
+        [HttpGet]
+        public async Task<IActionResult> ResetPassword(string? token)
+        {
+            ViewData["IsLoginPage"] = true;
+            if (!await _passwordResetService.IsTokenUsableAsync(token))
+            {
+                TempData["ErrorMessage"] = "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
 
-            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == normalizedEmail);
-            if (user == null)
-                return Json(new { success = false, message = "Không tìm thấy tài khoản với email này." });
+            return View(new ResetPasswordViewModel { Token = token! });
+        }
 
-            Random rnd = new Random();
-            string resetCode = rnd.Next(100000, 999999).ToString();
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            ViewData["IsLoginPage"] = true;
+            if (!ModelState.IsValid || !await _passwordResetService.IsTokenUsableAsync(model.Token))
+            {
+                ViewBag.Error = "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.";
+                return View(model);
+            }
 
-            // Cache the code. In a real app we'd use MemoryCache or DB, but here TempData or static dict
-            // For simplicity in this AJAX flow without session issues, we'll temporarily store it in the user record or just use memory cache.
-            // Wait, we can't easily use TempData with stateless fetch API sometimes. 
-            // Let's use HttpContext.Session if available, or just update the user record temporarily.
-            // Actually, we can just save it to TempData, but return it in response (encrypted) or rely on TempData if cookies work.
-            // Since this is a simple app, let's use TempData but make sure to Keep() it.
-            TempData["AjaxResetCode_" + normalizedEmail] = resetCode;
+            if (!await _passwordResetService.TryResetPasswordAsync(model.Token, model.NewPassword))
+            {
+                ViewBag.Error = "Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.";
+                return View(model);
+            }
+
+            TempData["SuccessMessage"] = "Đổi mật khẩu thành công! Vui lòng đăng nhập.";
+            return RedirectToAction(nameof(Login));
+        }
+
+        [NonAction]
+        private async Task RequestPasswordResetAsync(string? email)
+        {
+            var normalizedEmail = email?.Trim().ToLowerInvariant();
+            if (normalizedEmail?.Length > 255)
+            {
+                normalizedEmail = null;
+            }
+            var remoteAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            if (!_passwordResetRateLimiter.TryAcquire(remoteAddress, normalizedEmail))
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedEmail))
+            {
+                return;
+            }
+
+            var user = await _context.SystemUsers.FirstOrDefaultAsync(
+                candidate => candidate.Email != null
+                    && candidate.Email.ToLower() == normalizedEmail
+                    && candidate.IsActive == true);
+            if (user?.Email == null)
+            {
+                return;
+            }
 
             try
             {
-                string subject = "Mã xác nhận khôi phục mật khẩu - VietMach System";
-                string body = $@"
-                    <h3>Chào bạn,</h3>
-                    <p>Bạn đã yêu cầu khôi phục mật khẩu cho tài khoản trên hệ thống VietMach MiniERP.</p>
-                    <p>Mã xác nhận (OTP) của bạn là: <strong style='color:#0d6efd; font-size:24px; letter-spacing: 3px;'>{resetCode}</strong></p>
-                    <p>Vui lòng nhập mã này để tạo mật khẩu mới.</p>";
+                var resetUrl = BuildPasswordResetUrl(await _passwordResetService.CreateTokenAsync(user));
+                if (resetUrl == null)
+                {
+                    _logger.LogError("Password reset email was not sent because PasswordReset:PublicBaseUrl is not configured.");
+                    return;
+                }
 
-                await _emailService.SendEmailAsync(user.Email ?? normalizedEmail, subject, body);
-                return Json(new { success = true, message = "Mã OTP đã được gửi đến email!" });
+                var branding = await _settingsService.GetBrandingAsync();
+                var productName = HtmlEncoder.Default.Encode(branding.ProductName);
+                var companyName = HtmlEncoder.Default.Encode(branding.CompanyName);
+                var username = HtmlEncoder.Default.Encode(user.Username ?? "bạn");
+                var encodedUrl = HtmlEncoder.Default.Encode(resetUrl);
+                var subject = $"Đặt lại mật khẩu - {branding.ProductName}";
+                var body = $@"<h3>Chào {username},</h3>
+<p>Bạn đã yêu cầu đặt lại mật khẩu cho {productName}.</p>
+<p><a href=""{encodedUrl}"">Đặt lại mật khẩu</a></p>
+<p>Liên kết này chỉ dùng được một lần và hết hạn sau 15 phút. Nếu bạn không gửi yêu cầu này, hãy bỏ qua email.</p>
+<p>Trân trọng,<br/>{companyName}</p>";
+                await _emailService.SendEmailAsync(user.Email, subject, body);
             }
-            catch
+            catch (Exception exception)
             {
-                return Json(new { success = false, message = "Không thể gửi Email." });
+                _logger.LogError(exception, "Password reset email delivery failed.");
             }
         }
 
-        // ==========================================
-        // BƯỚC 2: XÁC NHẬN MÃ OTP
-        // ==========================================
-        public IActionResult VerifyOTP()
+        private string? BuildPasswordResetUrl(string token)
         {
-            ViewData["IsLoginPage"] = true;
-            // Nếu chưa có mã trong bộ nhớ tạm thì đuổi về trang Quên mật khẩu
-            if (TempData["ResetCode"] == null) return RedirectToAction("ForgotPassword");
-
-            // Giữ lại dữ liệu cho lần tải trang tiếp theo
-            TempData.Keep("ResetCode");
-            TempData.Keep("ResetUsername");
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult VerifyOTP(string code)
-        {
-            ViewData["IsLoginPage"] = true;
-            TempData.Keep("ResetCode");
-            TempData.Keep("ResetUsername");
-
-            if (string.IsNullOrEmpty(code))
+            var publicBaseUrl = _configuration["PasswordReset:PublicBaseUrl"];
+            if (!Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out var baseUri) ||
+                baseUri.Scheme != Uri.UriSchemeHttps &&
+                (!(_environment.IsDevelopment() && baseUri.Scheme == Uri.UriSchemeHttp)))
             {
-                ViewBag.Error = "Vui lòng nhập mã xác nhận.";
-                return View();
+                return null;
             }
 
-            string? savedCode = TempData["ResetCode"] as string;
-
-            // So sánh mã người dùng nhập với mã đã gửi
-            if (code != savedCode)
-            {
-                ViewBag.Error = "Mã xác nhận (OTP) không chính xác.";
-                return View();
-            }
-
-            // Nếu MÃ ĐÚNG -> Bật cờ cho phép đổi mật khẩu và chuyển trang
-            TempData["IsOtpVerified"] = true;
-            TempData.Keep("IsOtpVerified");
-
-            TempData["SuccessMessage"] = "Xác nhận mã thành công! Vui lòng tạo mật khẩu mới.";
-            return RedirectToAction("SetNewPassword");
-        }
-
-        public class VerifyOtpAjaxDto { public string email { get; set; } public string code { get; set; } }
-
-        [HttpPost]
-        [AllowAnonymous]
-        [IgnoreAntiforgeryToken]
-        public IActionResult VerifyOTPAjax([FromBody] VerifyOtpAjaxDto model)
-        {
-            if (model == null || string.IsNullOrEmpty(model.email) || string.IsNullOrEmpty(model.code))
-                return Json(new { success = false, message = "Thiếu thông tin." });
-
-            var normalizedEmail = model.email.Trim().ToLowerInvariant();
-
-            string savedCode = TempData["AjaxResetCode_" + normalizedEmail] as string;
-            TempData.Keep("AjaxResetCode_" + normalizedEmail);
-
-            if (string.IsNullOrEmpty(savedCode) || model.code != savedCode)
-            {
-                return Json(new { success = false, message = "Mã xác nhận không hợp lệ hoặc đã hết hạn." });
-            }
-
-            return Json(new { success = true, message = "Xác nhận mã thành công." });
-        }
-
-        // ==========================================
-        // BƯỚC 3: ĐẶT MẬT KHẨU MỚI (CHỈ KHI ĐÃ XÁC NHẬN MÃ)
-        // ==========================================
-        public IActionResult SetNewPassword()
-        {
-            ViewData["IsLoginPage"] = true;
-            TempData.Keep("ResetUsername");
-            TempData.Keep("IsOtpVerified");
-
-            // Kiểm tra bảo mật: Nếu chưa qua bước nhập OTP đúng thì không cho vào trang này
-            if (TempData["IsOtpVerified"] is not bool isVerified || !isVerified)
-            {
-                return RedirectToAction("ForgotPassword");
-            }
-
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SetNewPassword(string newPassword, string confirmPassword)
-        {
-            ViewData["IsLoginPage"] = true;
-            TempData.Keep("ResetUsername");
-            TempData.Keep("IsOtpVerified");
-
-            if (TempData["IsOtpVerified"] is not bool isVerified || !isVerified)
-            {
-                return RedirectToAction("ForgotPassword");
-            }
-
-            var newPasswordValidation = ValidateNewPassword(newPassword, confirmPassword);
-            if (newPasswordValidation != null)
-            {
-                ViewBag.Error = newPasswordValidation;
-                return View();
-            }
-
-            string? username = TempData["ResetUsername"] as string;
-            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Username == username);
-
-            if (user != null)
-            {
-                // Lưu mật khẩu mới
-                user.PasswordHash = PasswordHelper.HashPassword(newPassword);
-                user.LastPasswordChange = DateTime.Now;
-
-                _context.SystemUsers.Update(user);
-                await _context.SaveChangesAsync();
-
-                // Đổi thành công thì dọn dẹp sạch sẽ bộ nhớ tạm
-                TempData.Remove("ResetCode");
-                TempData.Remove("ResetUsername");
-                TempData.Remove("IsOtpVerified");
-
-                TempData["SuccessMessage"] = "Đổi mật khẩu thành công! Vui lòng đăng nhập.";
-                return RedirectToAction("Login");
-            }
-
-            ViewBag.Error = "Có lỗi xảy ra, không tìm thấy người dùng.";
-            return View();
-        }
-
-        public class SetNewPasswordAjaxDto { public string email { get; set; } public string code { get; set; } public string newPassword { get; set; } public string confirmPassword { get; set; } }
-
-        [HttpPost]
-        [AllowAnonymous]
-        [IgnoreAntiforgeryToken]
-        public async Task<IActionResult> SetNewPasswordAjax([FromBody] SetNewPasswordAjaxDto model)
-        {
-            if (model == null || string.IsNullOrEmpty(model.email) || string.IsNullOrEmpty(model.code) || string.IsNullOrEmpty(model.newPassword))
-                return Json(new { success = false, message = "Thiếu thông tin." });
-
-            var normalizedEmail = model.email.Trim().ToLowerInvariant();
-
-            string savedCode = TempData["AjaxResetCode_" + normalizedEmail] as string;
-
-            if (string.IsNullOrEmpty(savedCode) || model.code != savedCode)
-                return Json(new { success = false, message = "Xác thực không hợp lệ." });
-
-            var newPasswordValidation = ValidateNewPassword(model.newPassword, model.confirmPassword);
-            if (newPasswordValidation != null)
-                return Json(new { success = false, message = newPasswordValidation });
-
-            var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == normalizedEmail);
-            if (user == null)
-                return Json(new { success = false, message = "Người dùng không tồn tại." });
-
-            user.PasswordHash = PasswordHelper.HashPassword(model.newPassword);
-            user.LastPasswordChange = DateTime.Now;
-            _context.SystemUsers.Update(user);
-            await _context.SaveChangesAsync();
-
-            TempData.Remove("AjaxResetCode_" + normalizedEmail);
-
-            return Json(new { success = true, message = "Khôi phục mật khẩu thành công! Vui lòng đăng nhập." });
+            var path = Url.Action(nameof(ResetPassword), "Auth", new { token });
+            return path == null ? null : new Uri(baseUri, path).ToString();
         }
 
         // ==========================================
@@ -627,10 +706,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             user.LastPasswordChange = DateTime.Now;
 
             _context.SystemUsers.Update(user);
+            await _passwordResetService.InvalidateUnusedTokensAsync(user.Id);
             await _context.SaveChangesAsync();
 
             // Cập nhật lại Identity để xóa claim RequiresPasswordChange
-            var claims = ((ClaimsIdentity)User.Identity).Claims.ToList();
+            var identity = User.Identity as ClaimsIdentity;
+            if (identity == null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            var claims = identity.Claims.ToList();
             var requiresChangeClaim = claims.FirstOrDefault(c => c.Type == "RequiresPasswordChange");
             if (requiresChangeClaim != null)
             {
@@ -694,10 +780,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             user.LastPasswordChange = DateTime.Now;
 
             _context.SystemUsers.Update(user);
+            await _passwordResetService.InvalidateUnusedTokensAsync(user.Id);
             await _context.SaveChangesAsync();
 
             // Xoá claim RequiresPasswordChange nếu có
-            var claims = ((ClaimsIdentity)User.Identity).Claims.ToList();
+            var identity = User.Identity as ClaimsIdentity;
+            if (identity == null)
+            {
+                return BadRequest(new { success = false, message = "Phiên đăng nhập không hợp lệ." });
+            }
+
+            var claims = identity.Claims.ToList();
             var requiresChangeClaim = claims.FirstOrDefault(c => c.Type == "RequiresPasswordChange");
             if (requiresChangeClaim != null)
             {
@@ -819,15 +912,20 @@ public async Task<IActionResult> GoogleResponse()
 
     var email = result.Principal.FindFirstValue(ClaimTypes.Email);
     var name = result.Principal.FindFirstValue(ClaimTypes.Name);
+    var externalSubject = result.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    if (string.IsNullOrEmpty(email))
+    if (string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(externalSubject))
     {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         TempData["ErrorMessage"] = "Không thể lấy thông tin Email từ tài khoản Google của bạn.";
         return RedirectToAction("Login");
     }
 
-    // 1. Tìm người dùng theo Email
-    var user = await _context.SystemUsers.FirstOrDefaultAsync(u => u.Email == email);
+    // External identities are linked by provider subject, never by an
+    // unverified local email match. This prevents account pre-hijacking.
+    var user = await _context.SystemUsers.FirstOrDefaultAsync(candidate =>
+        candidate.ExternalProvider == "Google" &&
+        candidate.ExternalSubject == externalSubject);
 
     // 2. Nếu chưa có, tạo tự động (hoặc liên kết)
     if (user == null)
@@ -836,24 +934,40 @@ public async Task<IActionResult> GoogleResponse()
         var defaultUsername = email.Split('@')[0];
         
         // Kiểm tra xem username đã tồn tại chưa (nếu có thì thêm số ngẫu nhiên)
-        if (await _context.SystemUsers.AnyAsync(u => u.Username == defaultUsername))
+        if (await _context.SystemUsers.AnyAsync(u => u.Email == email))
         {
-            defaultUsername += new Random().Next(100, 999).ToString();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            TempData["ErrorMessage"] = "Email này đã có tài khoản cục bộ. Hãy đăng nhập bằng mật khẩu rồi liên kết Google trong phần cài đặt tài khoản.";
+            return RedirectToAction("Login");
         }
 
-        var defaultRole = await AuthRoleHelper.EnsureDefaultSelfServiceRoleAsync(_context);
+        if (await _context.SystemUsers.AnyAsync(u => u.Username == defaultUsername))
+        {
+            defaultUsername += "-" + Guid.NewGuid().ToString("N")[..8];
+        }
 
         user = new SystemUser
         {
             Username = defaultUsername,
             Email = email,
             PasswordHash = PasswordHelper.HashPassword(Guid.NewGuid().ToString()),
-            RoleId = defaultRole.Id,
+            RoleId = null,
             IsActive = true,
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.Now,
+            LastPasswordChange = DateTime.Now,
+            ExternalProvider = "Google",
+            ExternalSubject = externalSubject
         };
 
         _context.SystemUsers.Add(user);
+        _context.PurchaseRegistrations.Add(new PurchaseRegistration
+        {
+            Email = email,
+            SelectedPlan = "Free Trial",
+            Status = "Chờ xử lý",
+            AdminNotes = "Đăng ký qua Google; chờ quản trị viên kích hoạt tenant.",
+            CreatedAt = DateTime.Now
+        });
         await _context.SaveChangesAsync();
     }
 
@@ -865,6 +979,17 @@ public async Task<IActionResult> GoogleResponse()
 
     // 3. Đăng nhập vào hệ thống MiniERP qua Cookie
     await SignInSystemUserAsync(user, email: email);
+
+    var hasTenant = await _context.TenantMemberships.AnyAsync(membership =>
+        membership.SystemUserId == user.Id &&
+        membership.IsActive &&
+        membership.Tenant != null &&
+        membership.Tenant.IsActive);
+    if (!hasTenant)
+    {
+        TempData["SuccessMessage"] = "Tài khoản Google đã được xác thực và đang chờ quản trị viên kích hoạt không gian làm việc.";
+        return RedirectToAction(nameof(PendingActivation));
+    }
 
     return RedirectToAction("Index", "Dashboard");
 }
