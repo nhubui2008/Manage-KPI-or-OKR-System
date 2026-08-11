@@ -81,41 +81,43 @@ Chat và gợi ý/refine KR đã rời Gemini, đi qua model gateway cùng lifec
 Luồng mục tiêu:
 
 ```text
-Tài liệu -> MinerU -> chunk -> BGE-M3 (1024 chiều)
-         -> Azure AI Search
-         -> hybrid retrieval có TenantId + ACL
+Tài liệu -> MinIO private bucket -> MinerU -> chunk -> BGE-M3 (1024 chiều)
+         -> Qdrant dense-vector retrieval
+         -> typed filter TenantId + IsCurrent + ACL
+         -> SQL authority recheck
          -> citation/confidence -> agent
 ```
 
-Các adapter MinerU, BGE-M3 và Azure AI Search đã có. Lớp persistence SQL có `KnowledgeDocument`, version bất biến, metadata chunk và `DocumentIngestionJob`. `DocumentIngestionQueue` tạo intent idempotent theo `(TenantId, DocumentVersionId, Operation, PipelineVersion, AccessPolicyVersion)` và từ chối tài liệu bị xóa, ACL sai, checksum/URI không hợp lệ hoặc requester giả mạo. Nội dung nguồn/chunk vẫn ở private Blob; SQL chỉ giữ metadata, URI và checksum.
+Các adapter MinerU, BGE-M3, Qdrant và MinIO đã có. Lớp persistence SQL có `KnowledgeDocument`, version bất biến, metadata chunk và `DocumentIngestionJob`. `DocumentIngestionQueue` tạo intent idempotent theo `(TenantId, DocumentVersionId, Operation, PipelineVersion, AccessPolicyVersion)` và từ chối tài liệu bị xóa, ACL sai, checksum/URI không hợp lệ hoặc requester giả mạo. Nội dung nguồn/chunk nằm trong bucket MinIO riêng tư; SQL chỉ giữ metadata, URI và checksum.
 
-Ingestion worker đã nối đủ MinerU -> parse -> BGE-M3 -> Azure Search với các rào chắn sau:
+Ingestion worker đã nối đủ MinIO -> MinerU -> parse -> BGE-M3 -> Qdrant với các rào chắn sau:
 
 - claim có lease, heartbeat bằng DbContext riêng trong suốt external call, retry/backoff và `DeadLetter`;
-- gọi MinerU đồng bộ dưới lease heartbeat theo mô hình at-least-once; kết quả được ghi về private Blob bằng khóa intent ổn định và search key ổn định theo document version/pipeline/ACL;
-- chỉ nhận HTTPS exact origin, tắt redirect/cookie cho client RAG và loại built-in logger khỏi client mang SAS;
+- gọi MinerU đồng bộ dưới lease heartbeat theo mô hình at-least-once; kết quả được ghi về bucket MinIO riêng tư bằng khóa intent ổn định và search key ổn định theo document version/pipeline/ACL;
+- chỉ nhận exact origin đã cho phép; endpoint remote bắt buộc HTTPS, chỉ loopback local được dùng HTTP; client RAG tắt redirect/cookie và không ghi log credential MinIO/Qdrant;
 - kiểm tra magic/package của tệp và bắt buộc quét ClamAV trước khi gửi tài liệu sang MinerU;
-- ghi chunk SQL ở trạng thái inactive trước khi upsert Azure; transaction `Serializable` khóa theo document, chỉ intent pipeline hợp lệ mới nhất được kích hoạt và vô hiệu hóa atomically các pipeline cũ;
-- truy vấn Azure luôn thêm `IsCurrent`, tenant/ACL phía server rồi đối chiếu từng `ChunkId` với SQL active, ACL hiện tại, version `Indexed` và trạng thái xóa;
-- xóa mềm tạo durable `Delete` intent, khóa chunk trong SQL trước rồi retry de-index Azure.
+- ghi chunk SQL ở trạng thái inactive trước khi upsert Qdrant; transaction `Serializable` khóa theo document, chỉ intent pipeline hợp lệ mới nhất được kích hoạt và vô hiệu hóa atomically các pipeline cũ;
+- truy vấn Qdrant dùng dense vector BGE-M3 và typed filter `TenantId`, `IsCurrent`, `AllowedPrincipalIds` do server sinh, rồi đối chiếu từng `ChunkId` với SQL active, ACL hiện tại, version `Indexed` và trạng thái xóa;
+- xóa mềm tạo durable `Delete` intent, khóa chunk trong SQL trước rồi retry de-index Qdrant.
 
-Code worker đã hoàn thành nhưng RAG chưa được coi production-ready cho tới khi index, private Blob/SAS, ClamAV và các provider thật được cấu hình và kiểm thử trên staging. Mỗi truy vấn production phải có:
+Code worker đã hoàn thành nhưng RAG chưa được coi production-ready cho tới khi collection Qdrant, bucket/credential MinIO riêng tư, ClamAV và các provider thật được cấu hình và kiểm thử trên staging. Mỗi truy vấn production phải có:
 
 - `TenantId` do middleware xác định từ membership hợp lệ;
 - ACL filter do server sinh từ `user:{id}`, `role:{role}` và `department:{id}`; department claim được nạp lại từ assignment đang hoạt động của đúng tenant;
-- kiểm tra lại `TenantId` trên từng kết quả;
+- typed payload filter `TenantId`, `IsCurrent` và `AllowedPrincipalIds` ở Qdrant, sau đó kiểm tra lại từng kết quả với SQL authoritative;
 - vector đúng 1024 chiều.
 
-Index Azure AI Search tối thiểu cần các field:
+Collection Qdrant tối thiểu cần vector 1024 chiều và các payload field sau:
 
 | Field | Kiểu/đặc tính |
 |---|---|
-| `TenantId` | `Edm.Int32`, filterable |
-| `AllowedPrincipalIds` | `Collection(Edm.String)`, filterable |
+| `TenantId` | integer payload, indexed và exact-match |
+| `AllowedPrincipalIds` | string-array payload, indexed và match-any |
 | `DocumentId`, `VersionId`, `ChunkId` | key/metadata có thể truy vết |
-| `Title`, `Content` | searchable |
-| `ObservedAt`, `Reliability`, `IsCurrent` | metadata confidence |
-| `contentVector` | vector 1024 chiều |
+| `Title`, `Content` | payload trả về để dựng citation/excerpt; không phải keyword retrieval |
+| `ObservedAt`, `Reliability` | metadata confidence |
+| `IsCurrent` | boolean payload, indexed và exact-match |
+| vector | dense vector BGE-M3, đúng 1024 chiều |
 
 Không nhận filter từ browser hoặc prompt. Tài liệu chưa có ACL hợp lệ không được index vào kho production.
 
@@ -137,8 +139,8 @@ Dùng secret store hoặc biến môi trường; `.env` chỉ dành cho local. M
    - `20260810204208_AddGoalPlanningApprovalProof`
    - `20260810214630_AddVersionedCheckInEvaluationRubrics`
 2. Giữ `AiAdvisoryRollout:KillSwitch=true` và `CheckInEvaluationMode=Disabled` cho tới khi hoàn tất kiểm thử. Mở `Shadow` trước; chỉ chuyển `Pilot` khi đã cấu hình ít nhất một `PilotTenantIds` và tùy chọn `PilotDepartmentIds`. `GeneralAvailability` chỉ dùng sau khi cổng chất lượng được phê duyệt.
-3. Tạo index Azure AI Search với schema/ACL ở trên.
-4. Cấu hình DeepSeek, BGE-M3, Azure Search, MinerU, private Blob, exact `KnowledgeStorage:AllowedReadOrigins` và pin `DocumentIngestion:PipelineVersion` qua secret store/biến môi trường.
+3. Khởi tạo collection Qdrant với vector cosine 1024 chiều, các payload index typed ở trên và API key; tạo bucket MinIO riêng tư, không anonymous access.
+4. Cấu hình DeepSeek, BGE-M3, Qdrant, MinerU, MinIO, exact `KnowledgeStorage:AllowedReadOrigins` và pin `DocumentIngestion:PipelineVersion` qua secret store/biến môi trường.
 5. Triển khai ClamAV và cấu hình `MalwareScanner`; lỗi cấu hình phải làm job retry/dead-letter, không được bypass quét.
 6. Kiểm thử tenant A không thể truy xuất citation của tenant B và kiểm thử de-index trên staging trước khi bật ingestion.
 
@@ -150,7 +152,7 @@ Trang `/KnowledgeDocuments` đồng thời là điểm vận hành AI/RAG cho ro
 
 Queue ingestion chụp tenant/ACL/version/pipeline tại lúc enqueue và unique index chống tạo trùng. Worker nạp lại document/version/ACL trước external write, dừng khi lease mất, không kích hoạt chunk nếu ACL/version stale, và cho phép enqueue lại intent đã `Cancelled`/`DeadLetter` sau khi người có quyền yêu cầu retry.
 
-Luồng quản trị nguồn đã có tại `/KnowledgeDocuments` cho role tenant `Admin`/`Administrator`/`Director`/`HR`: upload nguồn mới hoặc version mới vào private Blob, ACL có cấu trúc, trạng thái version/job, retry có kiểm soát, cập nhật ACL để re-index và xóa mềm. Submission ID chống upload lặp; ACL/xóa/retry mang row-version để từ chối form stale. Controller không nhận tenant/owner/status/URI/checksum từ browser, không có endpoint download công khai và audit chỉ ghi metadata giới hạn. Upload tạo reservation SQL `Failed` trước external write; reservation đồng thời được tuần tự hóa bằng transaction-scoped application lock theo tenant/document hoặc submission và có retry hẹp cho SQL deadlock. Sau đó hệ thống conditional-create Blob (`If-None-Match: *`) và chỉ cuối cùng mới enqueue/audit trong transaction khác. Vì vậy lỗi mạng, crash hoặc lỗi mở/finalize transaction vẫn để lại URI/checksum bền vững để cùng nội dung tiếp tục, không tạo Blob vô chủ và không có request thua nào được xóa Blob của request thắng.
+Luồng quản trị nguồn đã có tại `/KnowledgeDocuments` cho role tenant `Admin`/`Administrator`/`Director`/`HR`: upload nguồn mới hoặc version mới vào bucket MinIO riêng tư, ACL có cấu trúc, trạng thái version/job, retry có kiểm soát, cập nhật ACL để re-index và xóa mềm. Submission ID chống upload lặp; ACL/xóa/retry mang row-version để từ chối form stale. Controller không nhận tenant/owner/status/URI/checksum từ browser, không có endpoint download công khai và audit chỉ ghi metadata giới hạn. Upload tạo reservation SQL `Failed` trước external write; reservation đồng thời được tuần tự hóa bằng transaction-scoped application lock theo tenant/document hoặc submission và có retry hẹp cho SQL deadlock. Sau đó hệ thống conditional-create object (`If-None-Match: *`) qua API S3-compatible của MinIO và chỉ cuối cùng mới enqueue/audit trong transaction khác. Vì vậy lỗi mạng, crash hoặc lỗi mở/finalize transaction vẫn để lại URI/checksum bền vững để cùng nội dung tiếp tục, không tạo object vô chủ và không có request thua nào được xóa object của request thắng.
 
 Trang này cũng tổng hợp metadata 30 ngày theo tenant: số index hoàn tất/dead-letter, success rate, tỷ lệ có retry, latency trung bình/P95, proposal citation coverage, tỷ lệ citation vừa current vừa directly relevant và abstain rate. Citation coverage chỉ đo proposal có ít nhất một citation metadata; không được trình bày như citation precision và không thay thế kiểm mẫu trước pilot.
 
@@ -164,7 +166,7 @@ Migration được kiểm tra bằng `dotnet-ef 10.0.5`, gồm chạy từ datab
 
 - Chốt chính sách thời hạn lưu rồi mới bổ sung retention purge vật lý; không tự đặt thời gian xóa tài liệu doanh nghiệp.
 - Theo dõi trang vận hành AI/RAG hiện đã xem/retry được ingestion job và check-in outbox `DeadLetter`; chỉ mở thêm generic outbox/step khi agent workflow dùng chung được triển khai.
-- Chạy rehearsal với MinerU/BGE-M3/Azure Search/ClamAV thật, gồm provider timeout, partial batch và cross-tenant leakage.
+- Chạy rehearsal với MinIO/MinerU/BGE-M3/Qdrant/ClamAV thật, gồm provider timeout, partial batch và cross-tenant leakage.
 - Đánh giá retrieval bằng precision@k, citation coverage và cross-tenant leakage test.
 
 ### Multi-agent có kiểm soát

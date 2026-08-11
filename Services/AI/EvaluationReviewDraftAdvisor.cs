@@ -510,12 +510,13 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
                 new AIRetrievalQuery(
                     $"evaluation result {source.Result.Id} performance evidence",
                     MaxResults: 3,
-                    SecurityFilter: _securityFilterBuilder.Build(user)),
+                    SecurityFilter: _securityFilterBuilder.Build(user),
+                    AllowedPrincipalIds: _securityFilterBuilder.BuildPrincipalIds(user)),
                 cancellationToken);
             foreach (var item in retrieved.Take(3))
             {
                 item.Citation.Validate();
-                if (!string.Equals(item.Citation.SourceType, "azure-search", StringComparison.Ordinal))
+                if (!KnowledgeEvidenceSourceTypes.IsKnowledgeDocument(item.Citation.SourceType))
                 {
                     continue;
                 }
@@ -709,7 +710,10 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
     {
         var ragCitations = await _context.EvidenceReferenceMetadata
             .AsNoTracking()
-            .Where(item => item.AgentRunId == agentRunId && item.SourceType == "azure-search")
+            .Where(item =>
+                item.AgentRunId == agentRunId &&
+                (item.SourceType == KnowledgeEvidenceSourceTypes.Qdrant ||
+                 item.SourceType == KnowledgeEvidenceSourceTypes.LegacyAzureSearch))
             .Select(item => new { item.SourceId, item.SourceVersionId })
             .ToListAsync(cancellationToken);
         if (ragCitations.Count == 0)

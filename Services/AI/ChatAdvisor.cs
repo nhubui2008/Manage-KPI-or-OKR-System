@@ -280,7 +280,8 @@ public sealed class AIChatAdvisor : IAIChatAdvisor
                     question,
                     MaxResults: 3,
                     TenantId: tenantId,
-                    SecurityFilter: _securityFilterBuilder.Build(securityPrincipal)),
+                    SecurityFilter: _securityFilterBuilder.Build(securityPrincipal),
+                    AllowedPrincipalIds: _securityFilterBuilder.BuildPrincipalIds(securityPrincipal)),
                 cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -308,7 +309,7 @@ public sealed class AIChatAdvisor : IAIChatAdvisor
         var seenDocuments = new HashSet<Guid>();
         foreach (var item in retrieved.Take(3))
         {
-            if (!string.Equals(item.Citation.SourceType, "azure-search", StringComparison.Ordinal) ||
+            if (!KnowledgeEvidenceSourceTypes.IsKnowledgeDocument(item.Citation.SourceType) ||
                 !item.Citation.IsCurrent ||
                 !item.Citation.IsDirectlyRelevant ||
                 item.Citation.Reliability < .2d ||
@@ -330,7 +331,7 @@ public sealed class AIChatAdvisor : IAIChatAdvisor
                 continue;
             }
             var citation = new EvidenceRef(
-                "azure-search",
+                item.Citation.SourceType,
                 documentId.ToString("N"),
                 item.Citation.ObservedAt,
                 Math.Clamp(item.Citation.Reliability, 0, 1),

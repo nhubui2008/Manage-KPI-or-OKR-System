@@ -562,7 +562,7 @@ def write_chapter_3(doc: DocumentType, docs_dir: Path):
         ["1", "Presentation", "Razor Views, Bootstrap, JavaScript và ViewModel; hiển thị theo permission/scope."],
         ["2", "Controller", "Nhận request, antiforgery, authorization, mapping DTO và điều phối workflow."],
         ["3", "Domain/Application", "Validator, calculator, advisor, persistence, queue và policy dùng chung."],
-        ["4", "Infrastructure", "EF Core/SQL Server, HttpClient provider, private storage, Azure Search và worker."],
+        ["4", "Infrastructure", "EF Core/SQL Server, HttpClient provider, MinIO private storage, Qdrant và worker."],
         ["5", "Cross-cutting", "Tenant context, RLS session context, audit, rate limit, row-version và telemetry."],
     ]
     add_table_with_caption(doc, ["STT", "Lớp", "Trách nhiệm"], layers, "Phân lớp kiến trúc ứng dụng", [1.3, 3.5, 13.0])
@@ -619,9 +619,10 @@ def write_chapter_4(doc: DocumentType, docs_dir: Path):
         ["Bootstrap + JavaScript", "Repo-native", "Giao diện responsive, modal, loading và tương tác form."],
         ["xUnit", "2.9", "Unit/integration/security/SQL Server regression tests."],
         ["EPPlus", "7.7", "Nhập/xuất dữ liệu Excel cho nghiệp vụ nhân sự và báo cáo."],
-        ["DeepSeek adapter", "IAIModelClient", "Cổng mô hình strict JSON qua typed HttpClient."],
+        ["DeepSeek V4 Pro adapter", "deepseek-v4-pro", "Cổng mô hình strict JSON qua typed HttpClient."],
         ["MinerU + BGE-M3", "HTTP adapters", "Trích xuất tài liệu và embedding 1.024 chiều."],
-        ["Azure AI Search", "Hybrid/RAG", "Chỉ mục chunk, hybrid retrieval và security trimming."],
+        ["Qdrant", "Dense vector/RAG", "Chỉ mục chunk/vector BGE-M3; typed tenant/ACL filter và SQL authority recheck."],
+        ["MinIO", "S3-compatible private storage", "Lưu tài liệu gốc và kết quả MinerU trong bucket không anonymous access."],
         ["ClamAV", "Private daemon", "Quét nội dung trước pipeline ingestion tài liệu."],
     ]
     add_table_with_caption(doc, ["Công nghệ", "Phiên bản/contract", "Vai trò"], tech, "Công nghệ và thành phần kỹ thuật", [4.5, 3.5, 10.0])
@@ -679,12 +680,12 @@ def write_chapter_4(doc: DocumentType, docs_dir: Path):
     add_heading(doc, "4.8. Pipeline tài liệu RAG", 2)
     steps = [
         ["1", "Tiếp nhận", "Kiểm tra loại/kích thước, chữ ký tệp, checksum, nguồn và ACL."],
-        ["2", "An toàn", "Quét ClamAV và lưu bản gốc trong private storage."],
+        ["2", "An toàn", "Quét ClamAV và lưu bản gốc trong bucket MinIO riêng tư."],
         ["3", "Trích xuất", "Gọi MinerU đồng bộ dưới lease heartbeat; retry hội tụ về khóa kết quả ổn định."],
         ["4", "Chuẩn hóa", "Parse UTF-8 Markdown, giới hạn chunk và suy ra section từ heading."],
         ["5", "Embedding", "Tạo vector BGE-M3 đúng 1.024 chiều và lưu model version."],
-        ["6", "Index", "Upsert Azure Search với tenant/ACL, reliability và source version."],
-        ["7", "Truy xuất", "Hybrid search dùng filter do server sinh; nguồn được đối chiếu lại với SQL."],
+        ["6", "Index", "Upsert Qdrant với vector BGE-M3, tenant/ACL, reliability và source version."],
+        ["7", "Truy xuất", "Dense-vector search dùng typed filter do server sinh; nguồn được đối chiếu lại với SQL authoritative."],
     ]
     add_table_with_caption(doc, ["Bước", "Giai đoạn", "Kiểm soát"], steps, "Pipeline ingestion và retrieval RAG", [1.5, 3.2, 13.5])
 
@@ -931,7 +932,7 @@ def parse_args():
     )
     parser.add_argument(
         "--test-count",
-        default="563",
+        default="586",
         help="Verified full-suite count embedded in the submission report.",
     )
     return parser.parse_args()

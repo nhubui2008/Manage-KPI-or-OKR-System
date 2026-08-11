@@ -1469,7 +1469,8 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
                 new AIRetrievalQuery(
                     boundedQuery,
                     maxResults,
-                    SecurityFilter: _securityFilterBuilder?.Build(user)),
+                    SecurityFilter: _securityFilterBuilder?.Build(user),
+                    AllowedPrincipalIds: _securityFilterBuilder?.BuildPrincipalIds(user)),
                 cancellationToken);
             var boundedRetrieved = retrieved.Take(maxResults).ToList();
             var retrievedCount = 0;

@@ -672,7 +672,8 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
                 new AIRetrievalQuery(
                     queryText,
                     MaxResults: 3,
-                    SecurityFilter: _securityFilterBuilder?.Build(user)),
+                    SecurityFilter: _securityFilterBuilder?.Build(user),
+                    AllowedPrincipalIds: _securityFilterBuilder?.BuildPrincipalIds(user)),
                 cancellationToken);
             foreach (var result in results)
             {

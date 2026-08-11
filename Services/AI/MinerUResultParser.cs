@@ -28,7 +28,7 @@ public sealed class MinerUResultParser : IMinerUResultParser
     public IReadOnlyList<ParsedKnowledgeChunk> Parse(PrivateKnowledgeObject result)
     {
         ArgumentNullException.ThrowIfNull(result);
-        _options.ValidateAndGetContainerUri();
+        _options.ValidateLimitsAndReadOrigins();
         string text;
         try
         {

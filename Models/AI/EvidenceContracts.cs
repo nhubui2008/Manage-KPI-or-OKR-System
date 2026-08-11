@@ -44,7 +44,8 @@ public sealed record AIRetrievalQuery(
     string QueryText,
     int MaxResults = 8,
     int? TenantId = null,
-    string? SecurityFilter = null);
+    string? SecurityFilter = null,
+    IReadOnlyList<string>? AllowedPrincipalIds = null);
 
 public sealed record AIRetrievalResult(EvidenceRef Citation, string SanitizedExcerpt, double Relevance);
 

@@ -20,7 +20,8 @@ internal static class AgentEvidenceAuthorization
                 (item.AgentRunId == agentRunId ||
                  aiEvaluationProposalId.HasValue &&
                  item.AiEvaluationProposalId == aiEvaluationProposalId.Value) &&
-                item.SourceType == "azure-search")
+                (item.SourceType == KnowledgeEvidenceSourceTypes.Qdrant ||
+                 item.SourceType == KnowledgeEvidenceSourceTypes.LegacyAzureSearch))
             .Select(item => new { item.SourceId, item.SourceVersionId })
             .ToListAsync(cancellationToken);
         if (ragCitations.Count == 0)

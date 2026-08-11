@@ -17,7 +17,7 @@ Mọi hành động ghi dữ liệu của AI phải đi qua bản nháp, kiểm 
 
 ### Bảo mật và xác thực
 
-- Thu hồi và xoay vòng ngay credential SMTP đã từng được commit trong [repository công khai](https://github.com/nhubui2008/Manage-KPI-or-OKR-System). Xóa giá trị khỏi phiên bản hiện tại, dùng User Secrets/biến môi trường khi phát triển và Azure Key Vault ở production. Theo lựa chọn đã chốt, không viết lại lịch sử Git; vì vậy credential cũ bắt buộc phải bị vô hiệu hóa.
+- Thu hồi và xoay vòng ngay credential SMTP đã từng được commit trong [repository công khai](https://github.com/nhubui2008/Manage-KPI-or-OKR-System). Xóa giá trị khỏi phiên bản hiện tại, dùng User Secrets/biến môi trường khi phát triển và secret store của nền tảng triển khai ở production. Theo lựa chọn đã chốt, không viết lại lịch sử Git; vì vậy credential cũ bắt buộc phải bị vô hiệu hóa.
 - Thay toàn bộ mã reset mật khẩu sáu chữ số dùng `Random`/`TempData` bằng liên kết dùng một lần:
   - Token ngẫu nhiên mật mã, chỉ lưu SHA-256 hash.
   - Hết hạn sau 15 phút, một token đang hoạt động cho mỗi tài khoản, dùng một lần.
@@ -80,8 +80,8 @@ Mọi hành động ghi dữ liệu của AI phải đi qua bản nháp, kiểm 
   - Tool calls và JSON output bám theo [tài liệu DeepSeek](https://api-docs.deepseek.com/guides/tool_calls); JSON phải được schema-validate, retry tối đa một lần và chuyển sang `Abstained/Failed` nếu vẫn sai vì JSON mode có thể trả output rỗng theo [hướng dẫn chính thức](https://api-docs.deepseek.com/guides/json_mode/).
 - MinerU chạy trong GPU service riêng, private network; worker gọi đồng bộ `/file_parse` dưới lease heartbeat và chấp nhận at-least-once compute với khóa lưu trữ hội tụ. Tệp PDF/image/DOCX/PPTX/XLSX được quét loại/kích thước/malware, parse thành Markdown rồi chia chunk có section metadata; pin phiên bản source/model/image và hoàn tất rà soát license từ [MinerU chính thức](https://github.com/opendatalab/MinerU).
 - BGE-M3 self-host tạo embedding 1024 chiều; lưu model version/checksum để tái index khi đổi model. Đặc tính vector được xác nhận trong [model card BGE-M3](https://huggingface.co/BAAI/bge-m3).
-- Azure AI Search lưu chunk và vector. Dùng hybrid keyword+dense search, nhưng bắt buộc lọc `TenantId` cùng ACL user/role/department ở cả truy vấn văn bản và vector theo [hybrid search](https://learn.microsoft.com/en-us/azure/search/hybrid-search-how-to-query) và [security trimming](https://learn.microsoft.com/en-us/azure/search/search-security-trimming-for-azure-search).
-- Tài liệu gốc và kết quả MinerU nằm trong private Azure Blob. Số liệu thay đổi thường xuyên như tiến độ, trọng số, workload và check-in được đọc qua tool SQL có whitelist, không vector hóa.
+- Qdrant self-host lưu chunk payload và vector BGE-M3. Truy xuất hiện dùng dense vector; server bắt buộc tạo typed filter `TenantId`, `IsCurrent` và ACL user/role/department, sau đó tái kiểm tra từng nguồn với metadata SQL authoritative. Không mô tả đường này là hybrid keyword search khi chưa triển khai keyword retrieval.
+- Tài liệu gốc và kết quả MinerU nằm trong bucket MinIO riêng tư qua API S3-compatible; bucket không anonymous access và credential chỉ ở secret store. Số liệu thay đổi thường xuyên như tiến độ, trọng số, workload và check-in được đọc qua tool SQL có whitelist, không vector hóa.
 
 ### Dữ liệu và API mới
 
@@ -179,7 +179,7 @@ Mọi hành động ghi dữ liệu của AI phải đi qua bản nháp, kiểm 
 - Một cơ sở dữ liệu SQL Server dùng chung cho nhiều tenant.
 - Một KR có nhiều task; một OKR có nhiều dự án.
 - AI Evaluator phản hồi ngay khi gửi check-in, nhưng đó là bản dự kiến và được làm mới sau phê duyệt.
-- DeepSeek V4 + MinerU GPU + BGE-M3 + Azure AI Search là stack chính; không thêm LangChain/Semantic Kernel ở bản đầu.
+- DeepSeek V4 + MinerU GPU + BGE-M3 + Qdrant + MinIO là stack chính; không thêm LangChain/Semantic Kernel ở bản đầu.
 - Không viết lại lịch sử Git; credential bị lộ phải được xoay vòng.
 - Giữ nguyên và tích hợp cẩn thận các thay đổi chưa commit hiện có của người dùng, không revert.
 - Format drift toàn repository là maintenance riêng; đợt sửa lỗi chỉ format file được chạm tới để giữ diff nhỏ và có thể review.

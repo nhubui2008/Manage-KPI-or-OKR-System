@@ -10,11 +10,25 @@ namespace Manage_KPI_or_OKR_System.Services.AI;
 public interface IAIEvidenceSecurityFilterBuilder
 {
     string Build(ClaimsPrincipal user);
+
+    IReadOnlyList<string> BuildPrincipalIds(ClaimsPrincipal user);
 }
 
 public sealed class EvidenceSecurityFilterBuilder : IAIEvidenceSecurityFilterBuilder
 {
     public string Build(ClaimsPrincipal user)
+    {
+        var principals = BuildPrincipalIds(user);
+        if (principals.Count == 0)
+        {
+            return "AllowedPrincipalIds/any(principal: principal eq '__none__')";
+        }
+
+        var values = string.Join(",", principals);
+        return $"AllowedPrincipalIds/any(principal: search.in(principal, '{values}', ','))";
+    }
+
+    public IReadOnlyList<string> BuildPrincipalIds(ClaimsPrincipal user)
     {
         ArgumentNullException.ThrowIfNull(user);
         var principals = new HashSet<string>(StringComparer.Ordinal);
@@ -42,12 +56,6 @@ public sealed class EvidenceSecurityFilterBuilder : IAIEvidenceSecurityFilterBui
             }
         }
 
-        if (principals.Count == 0)
-        {
-            return "AllowedPrincipalIds/any(principal: principal eq '__none__')";
-        }
-
-        var values = string.Join(",", principals.OrderBy(value => value, StringComparer.Ordinal));
-        return $"AllowedPrincipalIds/any(principal: search.in(principal, '{values}', ','))";
+        return principals.OrderBy(value => value, StringComparer.Ordinal).ToArray();
     }
 }

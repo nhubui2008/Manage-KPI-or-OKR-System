@@ -21,11 +21,6 @@ using System.Threading.RateLimiting;
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 var builder = WebApplication.CreateBuilder(args);
-// Defense in depth for the Blob client. Its built-in HttpClient loggers are also
-// removed at registration because request URIs carry short-lived SAS credentials.
-builder.Logging.AddFilter(
-    "System.Net.Http.HttpClient.PrivateKnowledgeBlobStore",
-    LogLevel.Warning);
 // Local .env values are development fallbacks only. Production must use the
 // hosting provider's environment/secret store.
 if (builder.Environment.IsDevelopment())
@@ -81,8 +76,10 @@ builder.Services.AddScoped<Manage_KPI_or_OKR_System.Services.IOKRWorkflowService
 builder.Services.AddScoped<IAIDataService, AIDataService>();
 builder.Services.AddScoped<IAIAlertService, AIAlertService>();
 builder.Services.AddScoped<IAITaskDecompositionService, AITaskDecompositionService>();
-builder.Services.Configure<Manage_KPI_or_OKR_System.Options.AzureSearchOptions>(
-    builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.AzureSearchOptions.SectionName));
+builder.Services.Configure<Manage_KPI_or_OKR_System.Options.QdrantOptions>(
+    builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.QdrantOptions.SectionName));
+builder.Services.Configure<Manage_KPI_or_OKR_System.Options.MinioOptions>(
+    builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.MinioOptions.SectionName));
 builder.Services.Configure<Manage_KPI_or_OKR_System.Options.BgeM3Options>(
     builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.BgeM3Options.SectionName));
 builder.Services.Configure<Manage_KPI_or_OKR_System.Options.MinerUOptions>(
@@ -118,13 +115,15 @@ builder.Services.AddHttpClient<IBgeM3EmbeddingClient, BgeM3EmbeddingClient>()
         AllowAutoRedirect = false,
         UseCookies = false
     });
-builder.Services.AddHttpClient<IAIEvidenceRetriever, AzureSearchEvidenceRetriever>()
+builder.Services.AddHttpClient<IAIEvidenceRetriever, QdrantEvidenceRetriever>()
+    .RemoveAllLoggers()
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {
         AllowAutoRedirect = false,
         UseCookies = false
     });
-builder.Services.AddHttpClient<IAzureSearchIndexWriter, AzureSearchIndexWriter>()
+builder.Services.AddHttpClient<IAzureSearchIndexWriter, QdrantIndexWriter>()
+    .RemoveAllLoggers()
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {
         AllowAutoRedirect = false,
@@ -137,8 +136,8 @@ builder.Services.AddHttpClient<IMinerUClient, MinerUClient>(client =>
         AllowAutoRedirect = false,
         UseCookies = false
     });
-builder.Services.AddHttpClient<IPrivateKnowledgeBlobStore, PrivateKnowledgeBlobStore>(
-        "PrivateKnowledgeBlobStore")
+builder.Services.AddHttpClient<IPrivateKnowledgeBlobStore, MinioKnowledgeObjectStore>(
+        "MinioKnowledgeObjectStore")
     .RemoveAllLoggers()
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {

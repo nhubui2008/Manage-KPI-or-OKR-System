@@ -5,12 +5,12 @@ public sealed class KnowledgeStorageOptions
     public const string SectionName = "KnowledgeStorage";
 
     /// <summary>
-    /// Private Azure Blob container SAS URI used to persist normalized MinerU
-    /// output. The SAS query remains configuration-only and is never stored in SQL.
+    /// Legacy Azure Blob SAS configuration retained only for the unregistered
+    /// compatibility adapter. The active MinIO adapter has separate credentials.
     /// </summary>
     public string ContainerSasUri { get; set; } = string.Empty;
 
-    /// <summary>Exact HTTPS origins, including a non-default port when used.</summary>
+    /// <summary>Exact logical HTTPS origins allowed in persisted object metadata.</summary>
     public string[] AllowedReadOrigins { get; set; } = Array.Empty<string>();
 
     public long MaxSourceBytes { get; set; } = 25 * 1024 * 1024;
@@ -20,6 +20,7 @@ public sealed class KnowledgeStorageOptions
 
     public Uri ValidateAndGetContainerUri()
     {
+        ValidateLimitsAndReadOrigins();
         if (!Uri.TryCreate(ContainerSasUri, UriKind.Absolute, out var containerUri) ||
             containerUri.Scheme != Uri.UriSchemeHttps ||
             string.IsNullOrWhiteSpace(containerUri.Query))
@@ -28,18 +29,23 @@ public sealed class KnowledgeStorageOptions
                 "KnowledgeStorage:ContainerSasUri must be a private HTTPS container SAS URI.");
         }
 
-        if (AllowedReadOrigins.Length == 0 ||
-            AllowedReadOrigins.Any(origin => !IsExactHttpsOrigin(origin)))
-        {
-            throw new InvalidOperationException(
-                "KnowledgeStorage:AllowedReadOrigins must contain exact HTTPS origins.");
-        }
-
         var containerOrigin = containerUri.GetLeftPart(UriPartial.Authority);
         if (!AllowedReadOrigins.Contains(containerOrigin, StringComparer.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
                 "KnowledgeStorage:AllowedReadOrigins must include the configured container origin.");
+        }
+
+        return containerUri;
+    }
+
+    public void ValidateLimitsAndReadOrigins()
+    {
+        if (AllowedReadOrigins.Length == 0 ||
+            AllowedReadOrigins.Any(origin => !IsExactHttpsOrigin(origin)))
+        {
+            throw new InvalidOperationException(
+                "KnowledgeStorage:AllowedReadOrigins must contain exact HTTPS origins.");
         }
 
         if (MaxSourceBytes is < 1 or > 250 * 1024 * 1024 ||
@@ -50,7 +56,6 @@ public sealed class KnowledgeStorageOptions
             throw new InvalidOperationException("KnowledgeStorage limits are invalid.");
         }
 
-        return containerUri;
     }
 
     private static bool IsExactHttpsOrigin(string value) =>

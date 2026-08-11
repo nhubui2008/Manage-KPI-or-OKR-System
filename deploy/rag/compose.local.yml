@@ -1,6 +1,33 @@
 name: kpi-rag
 
 services:
+  qdrant:
+    image: qdrant/qdrant:v1.18.2@sha256:75eab8c4ba42096724fdcfde8b4de0b5713d529dde32f285a1f86fdcb2c9e50c
+    container_name: kpi-qdrant
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6333:6333"
+    environment:
+      QDRANT__SERVICE__API_KEY: ${Qdrant__ApiKey:?Qdrant API key is required}
+    volumes:
+      - qdrant-data:/qdrant/storage
+
+  minio:
+    build:
+      context: ../..
+      dockerfile: deploy/rag/Minio.Dockerfile
+    image: kpi-minio:RELEASE.2025-10-15T17-29-55Z
+    container_name: kpi-minio
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9100:9000"
+      - "127.0.0.1:9101:9001"
+    environment:
+      MINIO_ROOT_USER: ${Minio__AccessKey:?MinIO access key is required}
+      MINIO_ROOT_PASSWORD: ${Minio__SecretKey:?MinIO secret key is required}
+    volumes:
+      - minio-data:/data
+
   clamav:
     image: clamav/clamav:1.4.5@sha256:4de20bd9ab45a4b763c5412b769217ef5082572ebc8a63aff1a77943419e5dd8
     container_name: kpi-clamav
@@ -67,6 +94,10 @@ services:
       - bge-cache:/data
 
 volumes:
+  qdrant-data:
+    name: kpi-qdrant-data
+  minio-data:
+    name: kpi-minio-data
   clamav-db:
     name: kpi-clamav-db
   mineru-output:

@@ -14,6 +14,41 @@ Initialize the pinned source after cloning this application:
 git submodule update --init --depth 1 external/MinerU
 ```
 
+Start the private Qdrant vector index and MinIO object store, then create the
+1,024-dimension Cosine collection, payload indexes, and private bucket with the
+pinned MinIO CLI image:
+
+The MinIO server is built from the checksum-pinned security release
+`RELEASE.2025-10-15T17-29-55Z` (commit
+`9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a`) by
+`deploy/rag/Minio.Dockerfile`; both build and runtime base images are pinned by
+digest and the container runs as UID/GID `10001`.
+
+```bash
+./deploy/rag/bootstrap-qdrant-minio.sh .env
+curl --fail http://127.0.0.1:6333/healthz
+curl --fail http://127.0.0.1:9100/minio/health/live
+```
+
+The services bind to loopback only. Qdrant rejects requests without its API
+key, and the MinIO bucket has anonymous access disabled. The application stores
+query-free logical HTTPS object identities under
+`https://knowledge.local/kpi-knowledge`; the MinIO adapter maps only that exact
+base URI to the fixed local endpoint, so credentials never enter SQL or URLs.
+
+```dotenv
+Qdrant__Endpoint=http://127.0.0.1:6333
+Qdrant__CollectionName=kpi-knowledge-v1
+Qdrant__ApiKey=<generated-secret>
+Qdrant__Dimensions=1024
+Minio__Endpoint=http://127.0.0.1:9100
+Minio__AccessKey=<generated-access-key>
+Minio__SecretKey=<generated-secret>
+Minio__BucketName=kpi-knowledge
+Minio__UseSsl=false
+Minio__StableBaseUri=https://knowledge.local/kpi-knowledge
+```
+
 Start only ClamAV:
 
 ```bash
@@ -66,7 +101,7 @@ MinerU__ApiKey=
 MinerU__TimeoutSeconds=3600
 MalwareScanner__Host=127.0.0.1
 MalwareScanner__Port=3310
-DocumentIngestion__PipelineVersion=mineru-0dfc9460-pipeline-ed6b654c|bge-m3-5617a9f6-tei-939883b2|azure-schema-v1
+DocumentIngestion__PipelineVersion=mineru-0dfc9460-pipeline-ed6b654c|bge-m3-5617a9f6-tei-939883b2|qdrant-schema-v1
 ```
 
 MinerU documents a minimum of 16 GB system RAM and 4 GB VRAM for the pipeline
@@ -81,6 +116,6 @@ sensitive workloads.
 
 The worker calls synchronous `/file_parse` under its SQL lease heartbeat.
 MinerU may compute again after a timeout or lost connection, while the private
-Blob result and Azure Search records converge on deterministic ingestion-intent
-keys. This is at-least-once compute with convergent persisted state, not an
+MinIO result and Qdrant points converge on deterministic ingestion-intent keys.
+This is at-least-once compute with convergent persisted state, not an
 exactly-once promise from the upstream process-local task manager.

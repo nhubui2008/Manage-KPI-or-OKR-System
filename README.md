@@ -210,7 +210,7 @@ AIController (API endpoints)
 | **Goal Planning Agent** | Lập đúng ba task plan có assignee/deadline/phụ thuộc/rủi ro/citation; Fit 35/25/20/10/10 do server tính, draft bền vững chỉ được tạo task sau khi người dùng xác nhận |
 | **KPI Check-in Evaluator** | Projected score/classification định lượng do server tính; rubric định tính được version hóa, confidence 40/25/20/15 và dưới 0,60 chỉ abstain phần định tính; proposal cũ chuyển `Stale`, con người chỉnh bản nháp và quyết định cuối |
 | **OKR KR Advisor** | Đánh giá candidate KR có nguồn trước khi con người cập nhật giá trị chính thức |
-| **AI operations & RAG admin** | Check-in outbox DeadLetter retry có kiểm tra source/row-version, private Blob, upload/version idempotent, ACL user/role/department, signature/ClamAV, MinerU, BGE-M3, Azure Search, ingestion retry, metrics 30 ngày và SQL-authoritative de-index; còn cần retention policy và staging provider QA |
+| **AI operations & RAG admin** | Check-in outbox DeadLetter retry có kiểm tra source/row-version, bucket MinIO riêng tư, upload/version idempotent, ACL user/role/department, signature/ClamAV, MinerU, BGE-M3, Qdrant dense-vector retrieval với typed tenant/ACL filter, ingestion retry, metrics 30 ngày và SQL-authoritative recheck/de-index; còn cần retention policy và staging provider QA |
 | **Gợi ý/refine KR** | Trả bản nháp KR strict JSON có citation; server kiểm tra quyền, scope, source fingerprint, đơn vị và độ chính xác; con người chọn rồi gửi qua luồng tạo KR chuẩn |
 | **Lịch sử AI legacy** | Không còn reader/writer runtime; bảng cũ chỉ được giữ để tương thích migration và tác vụ retention, còn các advisor mới chỉ lưu AgentRun/citation metadata |
 

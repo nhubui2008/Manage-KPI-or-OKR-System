@@ -320,7 +320,7 @@ public sealed class DocumentIngestionProcessor : IDocumentIngestionProcessor
                 await DeleteIndexedVersionAsync(snapshot, lease, cancellationToken);
                 return;
             }
-            _options.ValidateAndGetContainerUri();
+            _options.ValidateLimitsAndReadOrigins();
             var invalidCode = await ValidateSnapshotAsync(snapshot, lease, cancellationToken);
             if (invalidCode != null)
             {
