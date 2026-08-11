@@ -680,8 +680,8 @@ def write_chapter_4(doc: DocumentType, docs_dir: Path):
     steps = [
         ["1", "Tiếp nhận", "Kiểm tra loại/kích thước, chữ ký tệp, checksum, nguồn và ACL."],
         ["2", "An toàn", "Quét ClamAV và lưu bản gốc trong private storage."],
-        ["3", "Trích xuất", "Gửi job idempotent sang MinerU; poll bằng durable lease."],
-        ["4", "Chuẩn hóa", "Parse UTF-8/JSON, giới hạn chunk và gắn page/section/table metadata."],
+        ["3", "Trích xuất", "Gọi MinerU đồng bộ dưới lease heartbeat; retry hội tụ về khóa kết quả ổn định."],
+        ["4", "Chuẩn hóa", "Parse UTF-8 Markdown, giới hạn chunk và suy ra section từ heading."],
         ["5", "Embedding", "Tạo vector BGE-M3 đúng 1.024 chiều và lưu model version."],
         ["6", "Index", "Upsert Azure Search với tenant/ACL, reliability và source version."],
         ["7", "Truy xuất", "Hybrid search dùng filter do server sinh; nguồn được đối chiếu lại với SQL."],
@@ -931,7 +931,7 @@ def parse_args():
     )
     parser.add_argument(
         "--test-count",
-        default="540",
+        default="563",
         help="Verified full-suite count embedded in the submission report.",
     )
     return parser.parse_args()

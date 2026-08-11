@@ -562,7 +562,7 @@ def build_deck() -> Presentation:
     # 15 · Verification
     slide = new_slide(prs)
     add_slide_header(slide, 15, "KIỂM CHỨNG", "Build, test và SQL Server thật: bằng chứng chất lượng", "Snapshot local được ghi nhận ngày 11/08/2026")
-    add_metric(slide, "540/540", "test solution chạy xanh", 0.78, 2.08, 2.75, GREEN, "unit + integration + SQL tests")
+    add_metric(slide, "563/563", "test solution chạy xanh", 0.78, 2.08, 2.75, GREEN, "unit + integration + SQL tests")
     add_metric(slide, "0", "warning khi build", 3.79, 2.08, 2.75, INDIGO, "solution build")
     add_metric(slide, "0", "error khi build", 6.8, 2.08, 2.75, INDIGO, "solution build")
     add_metric(slide, "57", "bảng RLS được kiểm tra", 9.81, 2.08, 2.75, CYAN, "real SQL Server")
@@ -610,7 +610,7 @@ def assert_deck(prs: Presentation) -> None:
             if hasattr(shape, "text") and shape.text:
                 all_text.append(shape.text.lower())
     joined = "\n".join(all_text)
-    assert "540/540" in joined, "Verification metric is missing"
+    assert "563/563" in joined, "Verification metric is missing"
 
 
 def main() -> int:

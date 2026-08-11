@@ -57,7 +57,7 @@ Tài liệu có ACL ──► RAG/Citation ──► Check-in AI ──► Bản
 | **Nhật** | Giao diện vận hành | Trình bày màn hình vận hành AI/RAG, trạng thái, metrics và calibration |
 | **Bảo** | Chức năng vận hành | Trình bày upload/ACL/index/outbox/retry và cơ chế fail-safe |
 | **Phong** | Frontend SEO và chức năng nền | Trình bày landing, điều hướng, responsive, role-based UI và nền sản phẩm |
-| **Khánh** | Tester | Trình bày chiến lược kiểm thử, `540/540`, SQL Server/RLS/concurrency; đồng thời giữ thời gian |
+| **Khánh** | Tester | Trình bày chiến lược kiểm thử, `563/563`, SQL Server/RLS/concurrency; đồng thời giữ thời gian |
 
 ### Quy tắc chuyển người
 
@@ -80,7 +80,7 @@ Tài liệu có ACL ──► RAG/Citation ──► Check-in AI ──► Bản
 | **08:15–10:45** | Quân | Check-in AI Evaluator | Baseline, projected score, confidence, citation và nút áp dụng bản nháp |
 | **10:45–12:45** | Nhật | Giao diện vận hành AI/RAG | Dashboard metrics, calibration, outbox |
 | **12:45–14:45** | Bảo | Chức năng vận hành bền vững | Document/ACL/index status/retry có kiểm soát |
-| **14:45–17:30** | Khánh | Bằng chứng chất lượng | Build sạch, `540/540`, SQL/RLS/concurrency |
+| **14:45–17:30** | Khánh | Bằng chứng chất lượng | Build sạch, `563/563`, SQL/RLS/concurrency |
 | **17:30–20:00** | Quân | Tổng kết bốn điểm đột phá | Slide kết luận, sẵn sàng phản biện |
 
 ### Các mốc bắt buộc
@@ -299,7 +299,7 @@ Trong buổi demo, Planner/Critic sử dụng **DeepSeek V4 Pro** qua adapter Op
 **Trình bày theo thứ tự:**
 
 1. Build solution: **0 warning, 0 error**.
-2. Full suite: **540/540 test chạy xanh**.
+2. Full suite: **563/563 test chạy xanh**.
 3. Nêu bốn nhóm regression quan trọng:
    - Cross-tenant/RLS và pooled connection.
    - Double-confirm, idempotency và concurrency.
@@ -309,7 +309,7 @@ Trong buổi demo, Planner/Critic sử dụng **DeepSeek V4 Pro** qua adapter Op
 
 **Lời nói gợi ý:**
 
-> “Nhóm kiểm thử theo rủi ro, không chỉ theo màn hình. Unit test kiểm tra công thức và parser; integration test kiểm tra advisor/workflow; SQL Server test kiểm tra transaction, lock, migration và RLS. Snapshot bàn giao hiện có 540/540 test xanh, build không warning và không error.”
+> “Nhóm kiểm thử theo rủi ro, không chỉ theo màn hình. Unit test kiểm tra công thức và parser; integration test kiểm tra advisor/workflow; SQL Server test kiểm tra transaction, lock, migration và RLS. Snapshot bàn giao hiện có 563/563 test xanh, build không warning và không error.”
 
 **Lưu ý:**
 
@@ -360,7 +360,7 @@ Trong buổi demo, Planner/Critic sử dụng **DeepSeek V4 Pro** qua adapter Op
 - [ ] Xác nhận cấu hình AI demo và rollout gate cho tenant demo; không chiếu API key.
 - [ ] Xác nhận runtime dùng `DeepSeek__Model=deepseek-v4-pro`; không dựa vào tên model cũ hoặc cấu hình cache.
 - [ ] Đối chiếu model ID bằng endpoint `/models` hoặc [tài liệu model chính thức của DeepSeek](https://api-docs.deepseek.com/quick_start/pricing) trước khi lên sân khấu.
-- [ ] Mở sẵn terminal chứa output build và `540/540`.
+- [ ] Mở sẵn terminal chứa output build và `563/563`.
 - [ ] Tắt notification hệ điều hành, đóng tab cá nhân và tăng zoom trình duyệt 110–125%.
 
 ### Các tab mở sẵn theo thứ tự
@@ -447,7 +447,7 @@ Trong buổi demo, Planner/Critic sử dụng **DeepSeek V4 Pro** qua adapter Op
 | 08:15 | Quân | Mở AI check-in | “Điểm server tính; AI chỉ giải thích và đề xuất.” |
 | 10:45 | Nhật | Mở Operations | “Chất lượng AI được quan sát theo tenant.” |
 | 12:45 | Bảo | Chỉ pipeline/outbox | “Retry bền vững và fail-closed khi nguồn đổi.” |
-| 14:45 | Khánh | Hiện `540/540` | “Kiểm thử cả SQL, concurrency và RLS.” |
+| 14:45 | Khánh | Hiện `563/563` | “Kiểm thử cả SQL, concurrency và RLS.” |
 | 17:30 | Quân | Kết luận | “Liên thông, có nguồn, con người quyết định, vận hành được.” |
 
 ---
@@ -457,7 +457,7 @@ Trong buổi demo, Planner/Critic sử dụng **DeepSeek V4 Pro** qua adapter Op
 - Không demo toàn bộ CRUD, đăng ký tài khoản hoặc cấu hình danh mục.
 - Không đọc danh sách công nghệ như một bài thuộc lòng.
 - Không upload file lớn hoặc chờ pipeline index từ đầu.
-- Không chạy toàn bộ 540 test trực tiếp trên sân khấu.
+- Không chạy toàn bộ 563 test trực tiếp trên sân khấu.
 - Không gọi FitScore/confidence là “xác suất thành công”.
 - Không chiếu API key, connection string, dữ liệu cá nhân hoặc log exception chi tiết.
 - Không tuyên bố production rollout nếu chỉ đang trình bày bằng chứng local/SQL rehearsal.
