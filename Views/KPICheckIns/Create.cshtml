@@ -46,24 +46,31 @@
     ViewData["Title"] = progressPageTitle;
 }
 
-<div class="cf-page checkin-create-page" data-create-form>
-    <header class="cf-header">
-        <div class="cf-header__content">
-            <h1>@progressPageTitle</h1>
-            <nav class="cf-breadcrumb" aria-label="Điều hướng trang">
-                <a href="/">Trang chủ</a>
-                <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                <a asp-action="Index">Check-in KPI</a>
-                <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                <span aria-current="page">Cập nhật mới</span>
-            </nav>
-            <p class="cf-header__description">Ghi nhận giá trị lũy kế hiện tại, nêu rõ trở ngại và kiểm tra tiến độ trước khi gửi.</p>
+<link rel="stylesheet" href="~/css/velzon-kpi.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/velzon-kpi-checkins.css" asp-append-version="true" />
+
+<div class="cf-page checkin-create-page kpi-checkins-wrapper" data-create-form>
+    <!-- PAGE TITLE HEADER -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-sm-flex align-items-center justify-content-between mb-3 evaluation-page-header">
+                <div>
+                    <h4 class="mb-sm-0 fw-bold">@progressPageTitle</h4>
+                    <ol class="breadcrumb m-0 me-3 evaluation-breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+                        <li class="breadcrumb-item"><a asp-action="Index">Check-in KPI</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Cập nhật mới</li>
+                    </ol>
+                </div>
+                <div class="page-title-right">
+                    <a href="@safeReturnUrl" class="btn btn-soft-secondary btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
+                        <i class="bi bi-arrow-left"></i>
+                        <span>Quay lại</span>
+                    </a>
+                </div>
+            </div>
         </div>
-        <a href="@safeReturnUrl" class="cf-back-action">
-            <i class="bi bi-arrow-left" aria-hidden="true"></i>
-            <span>Quay lại</span>
-        </a>
-    </header>
+    </div>
 
     <div class="cf-layout">
         <section class="cf-panel" aria-labelledby="checkInFormHeading">

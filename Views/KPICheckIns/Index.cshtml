@@ -97,51 +97,110 @@
             : "evaluation-chip";
 }
 
-<div class="evaluation-page checkins-page">
-    <header class="evaluation-page-header">
-        <div>
-            <h1>@progressPageTitle</h1>
-            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
-                <a href="/">Trang chủ</a>
-                <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                <a asp-controller="KPIs" asp-action="Index">Quản lý KPI</a>
-                <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                <span aria-current="page">Check-in KPI</span>
-            </nav>
-        </div>
-        <a asp-action="Create" class="evaluation-primary-action">
-            <i class="bi bi-plus-lg" aria-hidden="true"></i>
-            <span>@progressActionLabel</span>
-        </a>
-    </header>
+<link rel="stylesheet" href="~/css/velzon-kpi.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/velzon-kpi-checkins.css" asp-append-version="true" />
 
-    <section class="evaluation-summary ci-summary" aria-label="Tổng quan check-in">
-        <article>
-            <span>Check-in hiển thị</span>
-            <strong>@totalCount</strong>
-            <small>Trong phạm vi và bộ lọc hiện tại</small>
-        </article>
-        <article>
-            <span>Đúng tiến độ</span>
-            <strong>@onTrackCount</strong>
-            <small>Đúng hạn, vượt hoặc hoàn thành</small>
-        </article>
-        <article>
-            <span>Có rủi ro</span>
-            <strong>@riskCount</strong>
-            <small>Cần trao đổi và tháo gỡ</small>
-        </article>
-        <article>
-            <span>Chậm tiến độ</span>
-            <strong>@lateCount</strong>
-            <small>Cần kế hoạch khắc phục</small>
-        </article>
-        <article>
-            <span>Chờ xác nhận</span>
-            <strong>@pendingCount</strong>
-            <small>Quản lý cần xem xét</small>
-        </article>
-    </section>
+<div class="evaluation-page checkins-page kpi-checkins-wrapper">
+    <!-- PAGE TITLE HEADER -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-sm-flex align-items-center justify-content-between mb-3 evaluation-page-header">
+                <div>
+                    <h4 class="mb-sm-0 fw-bold">@progressPageTitle</h4>
+                    <ol class="breadcrumb m-0 me-3 evaluation-breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+                        <li class="breadcrumb-item"><a asp-controller="KPIs" asp-action="Index">Quản lý KPI</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Check-in KPI</li>
+                    </ol>
+                </div>
+                <div class="page-title-right d-flex align-items-center gap-2">
+                    <a asp-action="Create" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm d-flex align-items-center gap-1">
+                        <i class="bi bi-plus-lg"></i>
+                        <span>@progressActionLabel</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUMMARY STATS WIDGETS -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">Check-in hiển thị</p>
+                            <h4 class="fs-22 fw-bold mb-0 text-primary">@totalCount</h4>
+                        </div>
+                        <div class="avatar-sm flex-shrink-0">
+                            <span class="avatar-title bg-primary-subtle text-primary rounded-3 fs-3">
+                                <i class="bi bi-file-earmark-check"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-primary-subtle text-primary"><i class="bi bi-funnel"></i> Tất cả</span> Trong phạm vi hiện tại</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">Đúng tiến độ</p>
+                            <h4 class="fs-22 fw-bold mb-0 text-success">@onTrackCount</h4>
+                        </div>
+                        <div class="avatar-sm flex-shrink-0">
+                            <span class="avatar-title bg-success-subtle text-success rounded-3 fs-3">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i> Tốt</span> Đúng hạn, vượt/hoàn thành</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">Có rủi ro / Chậm</p>
+                            <h4 class="fs-22 fw-bold mb-0 text-warning">@(riskCount + lateCount)</h4>
+                        </div>
+                        <div class="avatar-sm flex-shrink-0">
+                            <span class="avatar-title bg-warning-subtle text-warning rounded-3 fs-3">
+                                <i class="bi bi-exclamation-triangle"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-warning-subtle text-warning"><i class="bi bi-clock-history me-1"></i> Chú ý</span> Cần hỗ trợ & tháo gỡ</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">Chờ xác nhận</p>
+                            <h4 class="fs-22 fw-bold mb-0 text-info">@pendingCount</h4>
+                        </div>
+                        <div class="avatar-sm flex-shrink-0">
+                            <span class="avatar-title bg-info-subtle text-info rounded-3 fs-3">
+                                <i class="bi bi-hourglass-split"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-info-subtle text-info"><i class="bi bi-person-check me-1"></i> Quản lý</span> Cần duyệt kết quả</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <section class="evaluation-filter-panel" aria-labelledby="checkInFiltersHeading">
         <div class="evaluation-filter-heading">
@@ -151,8 +210,9 @@
             </div>
             @if (hasActiveFilters)
             {
-                <a asp-action="Index" class="evaluation-clear-link">
-                    <i class="bi bi-x-lg" aria-hidden="true"></i> Xóa lọc
+                <a asp-action="Index" class="kpi-clear-filter-btn" title="Xóa tất cả bộ lọc đang áp dụng">
+                    <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
+                    <span>Xóa lọc</span>
                 </a>
             }
         </div>

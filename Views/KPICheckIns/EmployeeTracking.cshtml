@@ -59,76 +59,102 @@
     var reviewPageEnd = Math.Min(Model.PendingReviews.TotalPages, Model.PendingReviews.PageIndex + 2);
 }
 
-<div class="evaluation-page checkins-page employee-tracking-page" data-employee-tracking-page>
-    <header class="evaluation-page-header et-page-header">
-        <div>
-            <h1>Theo dõi thực hiện KPI</h1>
-            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
-                <a asp-controller="Home" asp-action="Index">Trang chủ</a>
-                <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                @if (Model.CanViewTracking)
-                {
-                    <a asp-action="Index">Check-in KPI</a>
-                }
-                else
-                {
-                    <span>Check-in KPI</span>
-                }
-                <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                <span aria-current="page">Theo dõi thực hiện</span>
-            </nav>
+<link rel="stylesheet" href="~/css/velzon-kpi.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/velzon-kpi-checkins.css" asp-append-version="true" />
+
+<div class="evaluation-page checkins-page employee-tracking-page kpi-checkins-wrapper" data-employee-tracking-page>
+    <!-- PAGE TITLE HEADER -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-sm-flex align-items-center justify-content-between mb-3 evaluation-page-header">
+                <div>
+                    <h4 class="mb-sm-0 fw-bold">Theo dõi thực hiện KPI</h4>
+                    <ol class="breadcrumb m-0 me-3 evaluation-breadcrumb">
+                        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                        <li class="breadcrumb-item"><a asp-action="Index">Check-in KPI</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Theo dõi thực hiện</li>
+                    </ol>
+                </div>
+                <div class="page-title-right">
+                    @if (Model.CanViewTracking)
+                    {
+                        <a asp-action="Index" class="btn btn-soft-secondary btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Lịch sử check-in</span>
+                        </a>
+                    }
+                </div>
+            </div>
         </div>
-        @if (Model.CanViewTracking)
-        {
-            <a asp-action="Index" class="evaluation-secondary-action et-history-link">
-                <i class="bi bi-clock-history" aria-hidden="true"></i>
-                <span>Lịch sử check-in</span>
-            </a>
-        }
-    </header>
+    </div>
 
     @if (TempData["SuccessMessage"] is string successMessage && !string.IsNullOrWhiteSpace(successMessage))
     {
-        <div class="et-alert et-alert--success" role="status">
-            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-            <span>@successMessage</span>
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@successMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
     @if (TempData["ErrorMessage"] is string errorMessage && !string.IsNullOrWhiteSpace(errorMessage))
     {
-        <div class="et-alert et-alert--danger" role="alert">
-            <i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i>
-            <span>@errorMessage</span>
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+            <i class="bi bi-exclamation-octagon-fill me-2"></i>@errorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <section class="evaluation-summary et-summary" aria-label="Tổng quan theo dõi KPI">
-        <article class="et-summary__urgent">
-            <span>Chờ xác nhận</span>
-            <strong>@Model.Summary.PendingReviewCount</strong>
-            <small>Cần quản lý xử lý</small>
-        </article>
-        <article class="et-summary__danger">
-            <span>Trễ hạn</span>
-            <strong>@Model.Summary.LateCount</strong>
-            <small>Check-in chính thức bị trễ</small>
-        </article>
-        <article class="et-summary__warning">
-            <span>Có rủi ro</span>
-            <strong>@Model.Summary.RiskCount</strong>
-            <small>Check-in chính thức cần chú ý</small>
-        </article>
-        <article>
-            <span>KPI trong phạm vi</span>
-            <strong>@Model.Summary.TotalKpiCount</strong>
-            <small>Chỉ tiêu đang theo dõi</small>
-        </article>
-        <article>
-            <span>Nhân sự</span>
-            <strong>@Model.Summary.EmployeeCount</strong>
-            <small>Có quyền truy cập</small>
-        </article>
-    </section>
+    <!-- SUMMARY STATS WIDGETS -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-2 col-md-4">
+            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body">
+                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">Chờ xác nhận</p>
+                    <h4 class="fs-22 fw-bold mb-0 text-warning">@Model.Summary.PendingReviewCount</h4>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-warning-subtle text-warning">Xử lý ngay</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4">
+            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body">
+                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">Trễ hạn</p>
+                    <h4 class="fs-22 fw-bold mb-0 text-danger">@Model.Summary.LateCount</h4>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-danger-subtle text-danger">Chính thức</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-4">
+            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body">
+                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">Có rủi ro</p>
+                    <h4 class="fs-22 fw-bold mb-0 text-info">@Model.Summary.RiskCount</h4>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-info-subtle text-info">Cần chú ý</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body">
+                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">KPI trong phạm vi</p>
+                    <h4 class="fs-22 fw-bold mb-0 text-primary">@Model.Summary.TotalKpiCount</h4>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-primary-subtle text-primary">Theo dõi</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body">
+                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">Nhân sự</p>
+                    <h4 class="fs-22 fw-bold mb-0 text-success">@Model.Summary.EmployeeCount</h4>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-success-subtle text-success">Truy cập</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <nav class="et-tabs" aria-label="Không gian làm việc check-in">
         @if (Model.CanViewTracking)

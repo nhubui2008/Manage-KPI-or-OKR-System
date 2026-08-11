@@ -1,0 +1,123 @@
+/* Velzon KPICheckIns module custom stylesheet */
+
+.kpi-checkins-wrapper {
+    margin-bottom: 2rem;
+}
+
+/* Card glassmorphism & accent headers */
+.kpi-checkins-wrapper .card {
+    border: 1px solid rgba(233, 235, 236, 0.8);
+    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.05);
+    transition: all 0.25s ease-in-out;
+}
+
+.kpi-checkins-wrapper .card:hover {
+    box-shadow: 0 5px 12px rgba(56, 65, 74, 0.08);
+}
+
+.kpi-checkins-wrapper .card-animate {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-checkins-wrapper .card-animate:hover {
+    transform: translateY(-3px);
+}
+
+/* Quick Filter Pills */
+.kpi-checkins-wrapper .nav-pills-custom .nav-link {
+    color: var(--vz-muted, #6d7080);
+    background-color: #f3f3f9;
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 0.45rem 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.kpi-checkins-wrapper .nav-pills-custom .nav-link.active {
+    color: #ffffff;
+    background-color: #405189;
+    box-shadow: 0 2px 6px rgba(64, 81, 137, 0.35);
+}
+
+/* Status Badges */
+.badge-soft-primary {
+    color: #405189;
+    background-color: rgba(64, 81, 137, 0.1);
+}
+
+.badge-soft-success {
+    color: #0ab39c;
+    background-color: rgba(10, 179, 156, 0.1);
+}
+
+.badge-soft-warning {
+    color: #f7b84b;
+    background-color: rgba(247, 184, 75, 0.1);
+}
+
+.badge-soft-danger {
+    color: #f06548;
+    background-color: rgba(240, 101, 72, 0.1);
+}
+
+.badge-soft-info {
+    color: #299cdb;
+    background-color: rgba(41, 156, 219, 0.1);
+}
+
+.badge-soft-secondary {
+    color: #3577f1;
+    background-color: rgba(53, 119, 241, 0.1);
+}
+
+/* Progress bar styling */
+.progress-sm {
+    height: 6px;
+    border-radius: 4px;
+}
+
+.progress-md {
+    height: 10px;
+    border-radius: 6px;
+}
+
+/* AI Assistant Glow Effect */
+.ai-glow-card {
+    border: 1px solid rgba(85, 110, 230, 0.3) !important;
+    background: linear-gradient(135deg, rgba(85, 110, 230, 0.03) 0%, rgba(41, 156, 219, 0.05) 100%);
+    box-shadow: 0 4px 15px rgba(85, 110, 230, 0.1) !important;
+}
+
+.ai-pulse-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #556ee6;
+    box-shadow: 0 0 0 0 rgba(85, 110, 230, 0.7);
+    animation: aiPulse 1.6s infinite;
+}
+
+@keyframes aiPulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(85, 110, 230, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(85, 110, 230, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(85, 110, 230, 0);
+    }
+}
+
+/* Fix combobox (select) arrow position & padding */
+.kpi-checkins-wrapper select,
+.kpi-checkins-wrapper .form-select,
+.evaluation-filter-form select {
+    padding-right: 2.2rem !important;
+    background-position: right 0.75rem center !important;
+}
+

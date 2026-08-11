@@ -21,12 +21,20 @@ public sealed class KpiIndexViewModel
     public bool HasActiveFilters { get; init; }
     public bool IsFilteredEmpty { get; init; }
 
+    /// <summary>Số filter đang active (SearchString, PeriodId, StatusId, QuickFilter).</summary>
+    public int ActiveFilterCount =>
+        (string.IsNullOrWhiteSpace(SearchString) ? 0 : 1) +
+        (PeriodId.HasValue ? 1 : 0) +
+        (StatusId.HasValue ? 1 : 0) +
+        (string.IsNullOrWhiteSpace(QuickFilter) ? 0 : 1);
+
     public KpiIndexSummaryViewModel Summary { get; init; } = new();
     public IReadOnlyList<KpiIndexOptionViewModel> PeriodOptions { get; init; } =
         Array.Empty<KpiIndexOptionViewModel>();
     public IReadOnlyList<KpiIndexOptionViewModel> StatusOptions { get; init; } =
         Array.Empty<KpiIndexOptionViewModel>();
 }
+
 
 public sealed class KpiIndexSummaryViewModel
 {

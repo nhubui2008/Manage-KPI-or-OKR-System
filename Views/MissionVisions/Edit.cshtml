@@ -6,8 +6,13 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/mission-visions.css" asp-append-version="true" />
+}
+
 <partial name="_MissionVisionForm" model="Model" />
 
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <script src="~/js/mission-visions.js" asp-append-version="true"></script>
 }

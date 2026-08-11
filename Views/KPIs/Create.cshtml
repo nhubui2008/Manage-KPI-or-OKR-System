@@ -32,29 +32,32 @@
 }
 
 <div class="cf-page kpi-create-page" data-create-form data-kpi-create data-create-ai="@isAiOpen.ToString().ToLowerInvariant()">
-    <header class="cf-header">
-        <div class="cf-header__content">
-            <h1>Tạo KPI mới</h1>
-            <nav class="cf-breadcrumb" aria-label="Điều hướng trang">
-                <a href="/">Trang chủ</a>
-                <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                <a asp-action="Index">Quản lý KPI</a>
-                <i class="bi bi-chevron-right" aria-hidden="true"></i>
-                <span aria-current="page">Tạo mới</span>
-            </nav>
-            <p class="cf-header__description">Đặt một chỉ tiêu có thể đo lường, gắn đúng kỳ đánh giá và phân bổ rõ người chịu trách nhiệm.</p>
+    <!-- PAGE TITLE HEADER VELZON -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="page-title-box d-sm-flex align-items-center justify-content-between mb-3 cf-header">
+                <div class="cf-header__content">
+                    <h4 class="mb-sm-0 fw-bold">Tạo KPI mới</h4>
+                    <ol class="breadcrumb m-0 me-3 cf-breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+                        <li class="breadcrumb-item"><a asp-action="Index">Quản lý KPI</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Tạo mới</li>
+                    </ol>
+                    <p class="text-muted mb-0 fs-13 mt-1 cf-header__description">Đặt một chỉ tiêu có thể đo lường, gắn đúng kỳ đánh giá và phân bổ rõ người chịu trách nhiệm.</p>
+                </div>
+                <div class="d-flex align-items-center gap-2 kpi-create-header-actions">
+                    <button type="button" class="btn btn-soft-info d-inline-flex align-items-center gap-1 cf-secondary-action" data-bs-toggle="modal" data-bs-target="#aiKpiSuggestModal">
+                        <i class="bi bi-stars" aria-hidden="true"></i>
+                        <span>Gợi ý bằng AI</span>
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 cf-back-action">
+                        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                        <span>Quay lại</span>
+                    </a>
+                </div>
+            </div>
         </div>
-        <div class="kpi-create-header-actions">
-            <button type="button" class="cf-secondary-action" data-bs-toggle="modal" data-bs-target="#aiKpiSuggestModal">
-                <i class="bi bi-stars" aria-hidden="true"></i>
-                <span>Gợi ý bằng AI</span>
-            </button>
-            <a asp-action="Index" class="cf-back-action">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i>
-                <span>Quay lại</span>
-            </a>
-        </div>
-    </header>
+    </div>
 
     <div class="cf-layout">
         <section class="cf-panel" aria-labelledby="kpiFormHeading">
@@ -442,6 +445,7 @@
     <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/kpi-create.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/velzon-kpi.css" asp-append-version="true" />
 }
 
 @section Scripts {
