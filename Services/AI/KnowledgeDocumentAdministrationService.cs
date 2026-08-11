@@ -48,6 +48,8 @@ public interface IKnowledgeDocumentAdministrationService
 public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentAdministrationService
 {
     private const int OperationalWindowDays = 30;
+    private const string CheckInCalibrationMigration =
+        "20260810214630_AddVersionedCheckInEvaluationRubrics";
     private const int MinimumCalibrationSampleSize = 20;
     private const decimal ScoreEditThreshold = .01m;
     private static readonly HashSet<string> AppliedReviewDecisions = new(StringComparer.OrdinalIgnoreCase)
@@ -190,7 +192,12 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
             .Select(job => job!)
             .ToArray();
         var metrics = await BuildOperationalMetricsAsync(cancellationToken);
-        var checkInCalibration = await BuildCheckInAiCalibrationMetricsAsync(cancellationToken);
+        var calibrationSchemaReady = !_context.Database.IsRelational() ||
+            (await _context.Database.GetAppliedMigrationsAsync(cancellationToken))
+                .Contains(CheckInCalibrationMigration, StringComparer.Ordinal);
+        var checkInCalibration = calibrationSchemaReady
+            ? await BuildCheckInAiCalibrationMetricsAsync(cancellationToken)
+            : CheckInAiCalibrationMetrics.Empty;
         return new KnowledgeDocumentsIndexViewModel
         {
             Upload = upload ?? new KnowledgeDocumentUploadInput(),

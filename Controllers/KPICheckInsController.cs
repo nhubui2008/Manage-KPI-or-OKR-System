@@ -198,23 +198,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     : checkInQuery.Where(c => false);
             }
 
-            var summary = await checkInQuery
-                .GroupBy(_ => 1)
-                .Select(group => new
-                {
-                    Total = group.Count(),
-                    OnTrack = group.Count(checkIn => checkIn.StatusId.HasValue && onTrackStatusIds.Contains(checkIn.StatusId.Value)),
-                    Risk = group.Count(checkIn => checkIn.StatusId.HasValue && riskStatusIds.Contains(checkIn.StatusId.Value)),
-                    Late = group.Count(checkIn => checkIn.StatusId.HasValue && lateStatusIds.Contains(checkIn.StatusId.Value)),
-                    Pending = group.Count(checkIn => checkIn.ReviewStatus != null &&
-                        checkIn.ReviewStatus.Trim().ToUpper() == ReviewStatusPending.ToUpper())
-                })
-                .FirstOrDefaultAsync();
-            var totalCount = summary?.Total ?? 0;
-            var onTrackCount = summary?.OnTrack ?? 0;
-            var riskCount = summary?.Risk ?? 0;
-            var lateCount = summary?.Late ?? 0;
-            var pendingCount = summary?.Pending ?? 0;
+            var totalCount = await checkInQuery.CountAsync();
+            var onTrackCount = onTrackStatusIds.Count == 0
+                ? 0
+                : await checkInQuery.CountAsync(checkIn =>
+                    checkIn.StatusId.HasValue && onTrackStatusIds.Contains(checkIn.StatusId.Value));
+            var riskCount = riskStatusIds.Count == 0
+                ? 0
+                : await checkInQuery.CountAsync(checkIn =>
+                    checkIn.StatusId.HasValue && riskStatusIds.Contains(checkIn.StatusId.Value));
+            var lateCount = lateStatusIds.Count == 0
+                ? 0
+                : await checkInQuery.CountAsync(checkIn =>
+                    checkIn.StatusId.HasValue && lateStatusIds.Contains(checkIn.StatusId.Value));
+            var pendingCount = await checkInQuery.CountAsync(checkIn =>
+                checkIn.ReviewStatus != null &&
+                checkIn.ReviewStatus.Trim().ToUpper() == ReviewStatusPending.ToUpper());
 
             const int pageSize = 10;
             var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
