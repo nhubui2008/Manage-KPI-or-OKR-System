@@ -16,6 +16,21 @@
         : $"{Math.Max(1, bytes / 1024d):N0} KB";
     string FormatRate(double? value) => value.HasValue ? value.Value.ToString("P0") : "—";
     string FormatMinutes(double? value) => value.HasValue ? $"{value.Value:N1} phút" : "—";
+    string FormatSampledRate(double? value, int sampleSize) => value.HasValue
+        ? value.Value.ToString("P0")
+        : $"Chưa đủ mẫu ({sampleSize}/{Model.CheckInCalibration.MinimumSampleSize})";
+    string FormatSignedPoints(decimal? value) => value.HasValue
+        ? $"{value.Value:+0.##;-0.##;0} điểm"
+        : "—";
+    string FormatAbsolutePoints(decimal? value) => value.HasValue
+        ? $"{value.Value:0.##} điểm"
+        : "—";
+    string ConfidenceBandClass(string code) => code switch
+    {
+        "High" => "text-bg-success",
+        "Moderate" => "text-bg-warning",
+        _ => "text-bg-secondary"
+    };
     var canViewAuditLogs = User.IsInRole("Admin") ||
                            User.IsInRole("Administrator") ||
                            User.HasClaim(PermissionClaimsTransformation.PermissionClaimType, "AUDITLOGS_VIEW");
@@ -130,6 +145,110 @@
             </div>
             <p class="small text-muted mt-3 mb-0">
                 Coverage ở đây đo proposal có ít nhất một citation metadata; không thay thế kiểm mẫu citation precision trước pilot.
+            </p>
+        </div>
+    </section>
+
+    <section class="card border-0 shadow-sm mb-4" aria-labelledby="checkInCalibrationHeading">
+        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between gap-2">
+            <div>
+                <h2 id="checkInCalibrationHeading" class="h5 mb-1">Hiệu chỉnh AI đánh giá check-in</h2>
+                <p class="text-muted small mb-0">
+                    Cohort proposal check-in provisional được tạo trong @Model.CheckInCalibration.WindowDays ngày; chỉ dùng metadata tổng hợp của tenant, không hiển thị nhân viên, người duyệt, comment hay rationale.
+                </p>
+            </div>
+            <span class="badge text-bg-light border align-self-start">
+                Tỷ lệ/delta cần ≥ @Model.CheckInCalibration.MinimumSampleSize mẫu
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row g-3" role="list" aria-label="Chỉ số hiệu chỉnh AI đánh giá check-in">
+                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small">Proposal provisional</div>
+                        <div class="h4 mb-1">@Model.CheckInCalibration.ProposalCount</div>
+                        <small class="text-muted">@Model.CheckInCalibration.AwaitingHumanReviewCount đang chờ người duyệt</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small">Quyết định phân loại</div>
+                        <div class="h4 mb-1">@Model.CheckInCalibration.ClassifiedDecisionCount</div>
+                        <small class="text-muted">Dùng @Model.CheckInCalibration.AdoptedCount · không dùng @Model.CheckInCalibration.RejectedCount</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small">Tỷ lệ dùng đề xuất</div>
+                        <div class="h5 mb-1">@FormatSampledRate(Model.CheckInCalibration.AdoptionRate, Model.CheckInCalibration.ClassifiedDecisionCount)</div>
+                        <small class="text-muted">Review duyệt @Model.CheckInCalibration.AppliedToApprovedReviewCount · review từ chối @Model.CheckInCalibration.AppliedToRejectedReviewCount</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small">Điểm được chỉnh</div>
+                        <div class="h5 mb-1">@FormatSampledRate(Model.CheckInCalibration.ScoreEditRate, Model.CheckInCalibration.ComparedScoreCount)</div>
+                        <small class="text-muted">@Model.CheckInCalibration.ScoreEditedCount/@Model.CheckInCalibration.ComparedScoreCount bản áp dụng có đủ hai điểm</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small">Chênh AI–người duyệt</div>
+                        <div class="fw-semibold">MAE @FormatAbsolutePoints(Model.CheckInCalibration.AverageAbsoluteAiReviewerDelta)</div>
+                        <small class="text-muted">Có dấu @FormatSignedPoints(Model.CheckInCalibration.AverageSignedAiReviewerDelta) · n=@Model.CheckInCalibration.ComparedScoreCount</small>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted small">Abstain định tính</div>
+                        <div class="h5 mb-1">@FormatSampledRate(Model.CheckInCalibration.QualitativeAbstainRate, Model.CheckInCalibration.QualitativeProposalCount)</div>
+                        <small class="text-muted">@Model.CheckInCalibration.QualitativeAbstainCount/@Model.CheckInCalibration.QualitativeProposalCount proposal có ít nhất một tiêu chí abstain</small>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.CheckInCalibration.UnclassifiedDecisionCount > 0)
+            {
+                <div class="alert alert-warning py-2 mt-3 mb-0" role="status">
+                    Có @Model.CheckInCalibration.UnclassifiedDecisionCount quyết định metadata chưa thuộc contract hiện hành; các dòng này không đi vào mẫu số dùng/không dùng.
+                </div>
+            }
+
+            <div class="table-responsive mt-3">
+                <table class="table table-sm align-middle mb-0">
+                    <caption class="visually-hidden">Hiệu chỉnh đề xuất AI đánh giá check-in theo dải confidence</caption>
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Confidence band</th>
+                            <th scope="col" class="text-end">Proposal</th>
+                            <th scope="col" class="text-end">Quyết định</th>
+                            <th scope="col" class="text-end">Đã dùng</th>
+                            <th scope="col" class="text-end">Không dùng</th>
+                            <th scope="col">Tỷ lệ dùng</th>
+                            <th scope="col">MAE AI–người duyệt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var band in Model.CheckInCalibration.ConfidenceBands)
+                        {
+                            <tr>
+                                <th scope="row"><span class="badge @ConfidenceBandClass(band.Code)">@band.Label</span></th>
+                                <td class="text-end">@band.ProposalCount</td>
+                                <td class="text-end">@band.ClassifiedDecisionCount</td>
+                                <td class="text-end">@band.AdoptedCount</td>
+                                <td class="text-end">@band.RejectedCount</td>
+                                <td>@FormatSampledRate(band.AdoptionRate, band.ClassifiedDecisionCount)</td>
+                                <td>
+                                    @FormatAbsolutePoints(band.AverageAbsoluteAiReviewerDelta)
+                                    <span class="text-muted small">(n=@band.ComparedScoreCount)</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="small text-muted mt-3 mb-0">
+                “Đã dùng” gồm quyết định accept metadata hoặc proposal được gắn vào review; không đồng nghĩa check-in được duyệt. “Điểm được chỉnh” chỉ so sánh điểm số ở precision hai chữ số, không suy đoán thay đổi comment. Dải Abstain dùng ngưỡng của đúng rubric/version gắn với từng proposal. Confidence là độ tin cậy dữ liệu, không phải xác suất AI đúng.
             </p>
         </div>
     </section>

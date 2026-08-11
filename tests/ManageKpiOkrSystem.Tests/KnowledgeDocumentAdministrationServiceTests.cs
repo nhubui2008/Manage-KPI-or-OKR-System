@@ -115,6 +115,18 @@ public sealed class KnowledgeDocumentAdministrationServiceTests
         var input = Upload("policy.pdf", "%PDF-1.7 tenant one only", "Private policy");
         input.SelectedRoles = new[] { "Admin" };
         var tenantOneResult = await scenario.Service.UploadAsync(input);
+        scenario.Context.AiEvaluationProposals.Add(new AiEvaluationProposal
+        {
+            SourceEntityType = "KPICheckIn",
+            SourceEntityId = 501,
+            SourceVersion = 1,
+            Status = "AwaitingHumanReview",
+            CandidateIsProvisional = true,
+            ConfidenceScore = .75d,
+            RequiresHumanReview = true,
+            CreatedAtUtc = DateTimeOffset.UtcNow
+        });
+        await scenario.Context.SaveChangesAsync();
 
         await using (var setup = new MiniERPDbContext(
                          new DbContextOptionsBuilder<MiniERPDbContext>()
@@ -153,6 +165,8 @@ public sealed class KnowledgeDocumentAdministrationServiceTests
         Assert.Equal(0, index.Metrics.CompletedIndexJobCount);
         Assert.Null(index.Metrics.RetriedJobRate);
         Assert.Equal(0, index.Metrics.ProposalCount);
+        Assert.Equal(0, index.CheckInCalibration.ProposalCount);
+        Assert.Null(index.CheckInCalibration.AdoptionRate);
         Assert.False(await tenantTwoService.SoftDeleteAsync(new KnowledgeDocumentMutationInput
         {
             DocumentId = tenantOneResult.DocumentId,
@@ -280,6 +294,268 @@ public sealed class KnowledgeDocumentAdministrationServiceTests
         Assert.Equal(.5d, model.Metrics.ProposalCitationCoverage.Value, 3);
         Assert.Equal(1d, model.Metrics.CurrentDirectCitationRate.Value, 3);
         Assert.Equal(.5d, model.Metrics.AbstainRate.Value, 3);
+    }
+
+    [Fact]
+    public async Task BuildIndexAsync_ComputesCheckInCalibrationWithMinimumSampleAndExactDelta()
+    {
+        await using var scenario = await CreateScenarioAsync();
+        var now = DateTimeOffset.UtcNow;
+        var kpi = new KPI { KPIName = "Calibration KPI", IsActive = true };
+        scenario.Context.KPIs.Add(kpi);
+        await scenario.Context.SaveChangesAsync();
+        var rubric = new EvaluationRubric
+        {
+            KPIId = kpi.Id,
+            Version = 1,
+            Name = "Calibration rubric",
+            IsActive = true,
+            MinimumConfidenceToPropose = .80m,
+            CreatedAtUtc = now.AddDays(-2),
+            EffectiveFromUtc = now.AddDays(-2)
+        };
+        scenario.Context.EvaluationRubrics.Add(rubric);
+        await scenario.Context.SaveChangesAsync();
+        var criterion = new EvaluationCriterion
+        {
+            EvaluationRubricId = rubric.Id,
+            Ordinal = 1,
+            Name = "Evidence quality",
+            MeasurementType = "Qualitative",
+            WeightPercent = 100m,
+            MinimumConfidenceToScore = .60m,
+            MinimumScorePercent = 0m,
+            MaximumScorePercent = 100m,
+            IsActive = true
+        };
+        scenario.Context.EvaluationCriteria.Add(criterion);
+        await scenario.Context.SaveChangesAsync();
+
+        var applied = new List<AiEvaluationProposal>();
+        for (var index = 0; index < 20; index++)
+        {
+            var delta = index < 10 ? 0m : index < 15 ? 4m : -2m;
+            applied.Add(new AiEvaluationProposal
+            {
+                EvaluationRubricId = rubric.Id,
+                RubricVersion = rubric.Version,
+                SourceEntityType = "KPICheckIn",
+                SourceEntityId = 1000 + index,
+                SourceVersion = 1,
+                Status = "Stale",
+                CandidateIsProvisional = true,
+                ProjectedScore = 70m,
+                ProposedProgressPercent = 70m,
+                HumanReviewScore = 70m + delta,
+                HumanDecision = index < 18
+                    ? "AppliedToApprovedReview"
+                    : "AppliedToRejectedReview",
+                ConfidenceScore = index < 19 ? .85d : .70d,
+                RequiresHumanReview = true,
+                CreatedAtUtc = now.AddDays(-1),
+                DecidedAtUtc = now.AddHours(-1)
+            });
+        }
+        scenario.Context.AiEvaluationProposals.AddRange(applied);
+        for (var index = 0; index < 5; index++)
+        {
+            scenario.Context.AiEvaluationProposals.Add(new AiEvaluationProposal
+            {
+                SourceEntityType = "KPICheckIn",
+                SourceEntityId = 1100 + index,
+                SourceVersion = 1,
+                Status = "RejectedByHuman",
+                CandidateIsProvisional = true,
+                HumanDecision = "Rejected",
+                ConfidenceScore = .70d,
+                RequiresHumanReview = true,
+                CreatedAtUtc = now.AddDays(-1),
+                DecidedAtUtc = now.AddHours(-1)
+            });
+        }
+        scenario.Context.AiEvaluationProposals.AddRange(
+            new AiEvaluationProposal
+            {
+                SourceEntityType = "KPICheckIn",
+                SourceEntityId = 1200,
+                SourceVersion = 1,
+                Status = "AcceptedByHuman",
+                CandidateIsProvisional = true,
+                HumanDecision = "Accepted",
+                ConfidenceScore = .70d,
+                RequiresHumanReview = true,
+                CreatedAtUtc = now.AddDays(-1),
+                DecidedAtUtc = now.AddHours(-1)
+            },
+            new AiEvaluationProposal
+            {
+                SourceEntityType = "KPICheckIn",
+                SourceEntityId = 1201,
+                SourceVersion = 1,
+                Status = "AwaitingHumanReview",
+                CandidateIsProvisional = true,
+                ConfidenceScore = .55d,
+                RequiresHumanReview = true,
+                CreatedAtUtc = now.AddDays(-1)
+            },
+            new AiEvaluationProposal
+            {
+                SourceEntityType = "KPICheckIn",
+                SourceEntityId = 1202,
+                SourceVersion = 1,
+                Status = "Stale",
+                CandidateIsProvisional = true,
+                HumanDecision = "LegacyUnknown",
+                ConfidenceScore = .70d,
+                RequiresHumanReview = true,
+                CreatedAtUtc = now.AddDays(-1)
+            },
+            new AiEvaluationProposal
+            {
+                SourceEntityType = "KPICheckIn",
+                SourceEntityId = 1203,
+                SourceVersion = 1,
+                Status = "ObservedOfficial",
+                CandidateIsProvisional = false,
+                ConfidenceScore = .90d,
+                CreatedAtUtc = now.AddDays(-1)
+            },
+            new AiEvaluationProposal
+            {
+                SourceEntityType = "KPICheckIn",
+                SourceEntityId = 1204,
+                SourceVersion = 1,
+                Status = "Stale",
+                CandidateIsProvisional = true,
+                HumanDecision = "Rejected",
+                ConfidenceScore = .70d,
+                RequiresHumanReview = true,
+                CreatedAtUtc = now.AddDays(-31)
+            },
+            new AiEvaluationProposal
+            {
+                SourceEntityType = "OKRKeyResult",
+                SourceEntityId = 1205,
+                SourceVersion = 1,
+                Status = "RejectedByHuman",
+                CandidateIsProvisional = true,
+                HumanDecision = "Rejected",
+                ConfidenceScore = .70d,
+                RequiresHumanReview = true,
+                CreatedAtUtc = now.AddDays(-1)
+            });
+        await scenario.Context.SaveChangesAsync();
+
+        for (var index = 0; index < 20; index++)
+        {
+            scenario.Context.AiEvaluationCriterionResults.Add(new AiEvaluationCriterionResult
+            {
+                AiEvaluationProposalId = applied[index].Id,
+                EvaluationCriterionId = criterion.Id,
+                RubricVersion = rubric.Version,
+                ProposedStatus = index < 5 ? "InsufficientEvidence" : "OnTrack",
+                ProposedScorePercent = index < 5 ? null : 80m,
+                ConfidenceScore = index < 5 ? .55d : .75d,
+                CitationCount = index < 5 ? 0 : 1,
+                CreatedAtUtc = now.AddDays(-1)
+            });
+        }
+        await scenario.Context.SaveChangesAsync();
+
+        var calibration = (await scenario.Service.BuildIndexAsync()).CheckInCalibration;
+
+        Assert.Equal(30, calibration.WindowDays);
+        Assert.Equal(20, calibration.MinimumSampleSize);
+        Assert.Equal(28, calibration.ProposalCount);
+        Assert.Equal(1, calibration.AwaitingHumanReviewCount);
+        Assert.Equal(26, calibration.ClassifiedDecisionCount);
+        Assert.Equal(1, calibration.UnclassifiedDecisionCount);
+        Assert.Equal(21, calibration.AdoptedCount);
+        Assert.Equal(5, calibration.RejectedCount);
+        Assert.Equal(18, calibration.AppliedToApprovedReviewCount);
+        Assert.Equal(2, calibration.AppliedToRejectedReviewCount);
+        Assert.Equal(20, calibration.QualitativeProposalCount);
+        Assert.Equal(5, calibration.QualitativeAbstainCount);
+        Assert.Equal(.25d, calibration.QualitativeAbstainRate!.Value, 3);
+        Assert.Equal(20, calibration.ComparedScoreCount);
+        Assert.Equal(10, calibration.ScoreEditedCount);
+        Assert.Equal(21d / 26d, calibration.AdoptionRate!.Value, 3);
+        Assert.Equal(5d / 26d, calibration.RejectionRate!.Value, 3);
+        Assert.Equal(.5d, calibration.ScoreEditRate!.Value, 3);
+        Assert.Equal(.5m, calibration.AverageSignedAiReviewerDelta);
+        Assert.Equal(1.5m, calibration.AverageAbsoluteAiReviewerDelta);
+        var high = Assert.Single(calibration.ConfidenceBands, band => band.Code == "High");
+        Assert.Equal(19, high.ProposalCount);
+        Assert.Equal(19, high.ClassifiedDecisionCount);
+        Assert.Null(high.AdoptionRate);
+        Assert.Null(high.AverageAbsoluteAiReviewerDelta);
+        var moderate = Assert.Single(calibration.ConfidenceBands, band => band.Code == "Moderate");
+        Assert.Equal(7, moderate.ProposalCount);
+        Assert.Equal(6, moderate.ClassifiedDecisionCount);
+        Assert.Null(moderate.AdoptionRate);
+        Assert.Null(moderate.AverageAbsoluteAiReviewerDelta);
+        var abstain = Assert.Single(calibration.ConfidenceBands, band => band.Code == "Abstain");
+        Assert.Equal(2, abstain.ProposalCount);
+        Assert.Equal(1, abstain.ClassifiedDecisionCount);
+        Assert.Null(abstain.AdoptionRate);
+        Assert.Null(abstain.AverageAbsoluteAiReviewerDelta);
+    }
+
+    [Fact]
+    public async Task BuildIndexAsync_UsesLegacyApprovalAndHumanReviewStatusWhenDecisionIsMissing()
+    {
+        await using var scenario = await CreateScenarioAsync();
+        var runId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow.AddDays(-1);
+        scenario.Context.AgentRuns.Add(new AgentRunRecord
+        {
+            Id = runId,
+            RunType = "CheckInEvaluation",
+            CorrelationId = $"legacy-calibration-{Guid.NewGuid():N}",
+            State = "Completed",
+            CreatedAtUtc = now
+        });
+        await scenario.Context.SaveChangesAsync();
+        scenario.Context.AiEvaluationProposals.AddRange(
+            new AiEvaluationProposal
+            {
+                AgentRunId = runId,
+                SourceEntityType = "KPICheckIn",
+                SourceEntityId = 1300,
+                SourceVersion = 1,
+                Status = "Stale",
+                CandidateIsProvisional = true,
+                ConfidenceScore = .75d,
+                RequiresHumanReview = true,
+                CreatedAtUtc = now
+            },
+            new AiEvaluationProposal
+            {
+                SourceEntityType = "KPICheckIn",
+                SourceEntityId = 1301,
+                SourceVersion = 1,
+                Status = "RejectedByHuman",
+                CandidateIsProvisional = true,
+                ConfidenceScore = .75d,
+                RequiresHumanReview = true,
+                CreatedAtUtc = now
+            });
+        scenario.Context.AgentApprovals.Add(new AgentApproval
+        {
+            AgentRunId = runId,
+            ApprovedBySystemUserId = 99,
+            Decision = "Accepted",
+            DecidedAtUtc = now.AddHours(1)
+        });
+        await scenario.Context.SaveChangesAsync();
+
+        var calibration = (await scenario.Service.BuildIndexAsync()).CheckInCalibration;
+
+        Assert.Equal(2, calibration.ProposalCount);
+        Assert.Equal(2, calibration.ClassifiedDecisionCount);
+        Assert.Equal(0, calibration.UnclassifiedDecisionCount);
+        Assert.Equal(1, calibration.AdoptedCount);
+        Assert.Equal(1, calibration.RejectedCount);
     }
 
     [Fact]

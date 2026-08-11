@@ -552,7 +552,7 @@ def write_chapter_2(doc: DocumentType):
     add_heading(doc, "2.4.2. Goal Planning có phê duyệt", 3)
     add_para(doc, "Người có quyền chọn KPI/OKR/KR/project → server dựng snapshot và tìm nguồn trong ACL → model trả ba phương án strict JSON → server validate/critic và tính fit → người dùng xem, chỉnh và xác nhận → domain validator tạo task trong transaction → tiến độ task được tổng hợp thành check-in Pending và durable outbox.")
     add_heading(doc, "2.4.3. Check-in AI Evaluator", 3)
-    add_para(doc, "Check-in được ghi thành công cùng outbox → rollout gate kiểm tra kill switch/mode/tenant/phòng ban → worker claim job theo tenant → evaluator nạp baseline Approved, candidate và rubric đang hiệu lực → server tính projected progress/classification/confidence → model chỉ chấm tiêu chí định tính đủ nguồn → proposal được lưu. Shadow mode chỉ phục vụ quan sát; Pilot/General Availability mới cho quản lý áp dụng vào bản nháp, sửa và tự gửi review.")
+    add_para(doc, "Check-in được ghi thành công cùng outbox → rollout gate kiểm tra kill switch/mode/tenant/phòng ban → worker claim job theo tenant → evaluator nạp baseline Approved, candidate và rubric đang hiệu lực → server tính projected progress/classification/confidence → model chỉ chấm tiêu chí định tính đủ nguồn → proposal được lưu. Shadow mode chỉ phục vụ quan sát; Pilot/General Availability mới cho người duyệt áp dụng vào bản nháp, sửa và tự gửi review. Trang vận hành tổng hợp cohort 30 ngày theo tenant, confidence band theo đúng ngưỡng rubric/version, quyết định dùng/không dùng, chỉnh điểm, abstain định tính và chênh AI–người duyệt; rate/delta chỉ hiện từ 20 mẫu và không chứa dữ liệu nhận diện.")
 
 
 def write_chapter_3(doc: DocumentType, docs_dir: Path):
@@ -714,7 +714,7 @@ def write_chapter_5(doc: DocumentType, test_count: str):
         ["Migration lifecycle", "Đạt", "Database rỗng → latest; Down/Up/reapply nhóm migration AI trên SQL Server."],
         ["Tenant RLS", "Đạt", "Raw SQL/IgnoreQueryFilters bị lọc; INSERT/UPDATE chéo tenant bị chặn."],
         ["Pooled connection", "Đạt", "SESSION_CONTEXT được đặt lại khi connection tái sử dụng."],
-        ["Outbox và rollout", "Đạt", "Atomic claim/lease/retry; kill switch, Shadow và Pilot chặn đúng enqueue, worker, UI/server apply."],
+        ["Outbox, rollout và calibration", "Đạt", "Atomic claim/lease/retry; kill switch, Shadow/Pilot; dashboard 30 ngày được kiểm tra tenant, mẫu số và delta trên SQL Server."],
         ["Goal Planning", "Đạt", "Concurrent draft, double-confirm, stale source, token rotation và reject."],
         ["Check-in rubric", "Đạt", "Cạnh tranh writer hội tụ, version tuần tự, một active rubric và requeue đúng source."],
         ["Proposal safety", "Đạt", "Citation giả/thu hồi, malformed JSON, low-confidence và row-version bị chặn đúng contract."],
@@ -931,7 +931,7 @@ def parse_args():
     )
     parser.add_argument(
         "--test-count",
-        default="536",
+        default="539",
         help="Verified full-suite count embedded in the submission report.",
     )
     return parser.parse_args()

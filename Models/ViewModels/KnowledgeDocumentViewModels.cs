@@ -132,6 +132,69 @@ public sealed record RagOperationalMetrics(
         30, 0, 0, null, null, null, null, 0, null, null, null);
 }
 
+public sealed record CheckInAiConfidenceBandMetrics(
+    string Code,
+    string Label,
+    int ProposalCount,
+    int ClassifiedDecisionCount,
+    int AdoptedCount,
+    int RejectedCount,
+    int ComparedScoreCount,
+    double? AdoptionRate,
+    decimal? AverageAbsoluteAiReviewerDelta);
+
+public sealed record CheckInAiCalibrationMetrics(
+    int WindowDays,
+    int MinimumSampleSize,
+    int ProposalCount,
+    int AwaitingHumanReviewCount,
+    int ClassifiedDecisionCount,
+    int UnclassifiedDecisionCount,
+    int AdoptedCount,
+    int RejectedCount,
+    int AppliedToApprovedReviewCount,
+    int AppliedToRejectedReviewCount,
+    int QualitativeProposalCount,
+    int QualitativeAbstainCount,
+    double? QualitativeAbstainRate,
+    int ComparedScoreCount,
+    int ScoreEditedCount,
+    double? AdoptionRate,
+    double? RejectionRate,
+    double? ScoreEditRate,
+    decimal? AverageSignedAiReviewerDelta,
+    decimal? AverageAbsoluteAiReviewerDelta,
+    IReadOnlyList<CheckInAiConfidenceBandMetrics> ConfidenceBands)
+{
+    public static CheckInAiCalibrationMetrics Empty { get; } = new(
+        30,
+        20,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        null,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        new[]
+        {
+            new CheckInAiConfidenceBandMetrics("Abstain", "Abstain (dưới ngưỡng rubric)", 0, 0, 0, 0, 0, null, null),
+            new CheckInAiConfidenceBandMetrics("Moderate", "Trung bình (đạt ngưỡng, <80%)", 0, 0, 0, 0, 0, null, null),
+            new CheckInAiConfidenceBandMetrics("High", "Cao (≥80% và đạt ngưỡng)", 0, 0, 0, 0, 0, null, null)
+        });
+}
+
 public sealed class KnowledgeDocumentsIndexViewModel
 {
     public KnowledgeDocumentUploadInput Upload { get; init; } = new();
@@ -145,5 +208,7 @@ public sealed class KnowledgeDocumentsIndexViewModel
     public int PendingJobCount { get; init; }
     public int FailedJobCount { get; init; }
     public RagOperationalMetrics Metrics { get; init; } = RagOperationalMetrics.Empty;
+    public CheckInAiCalibrationMetrics CheckInCalibration { get; init; } =
+        CheckInAiCalibrationMetrics.Empty;
     public CheckInAiOutboxOverview CheckInOutbox { get; set; } = CheckInAiOutboxOverview.Empty;
 }

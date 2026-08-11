@@ -47,6 +47,27 @@ public interface IKnowledgeDocumentAdministrationService
 
 public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentAdministrationService
 {
+    private const int OperationalWindowDays = 30;
+    private const int MinimumCalibrationSampleSize = 20;
+    private const decimal ScoreEditThreshold = .01m;
+    private static readonly HashSet<string> AppliedReviewDecisions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "AppliedToApprovedReview",
+        "AppliedToRejectedReview"
+    };
+    private static readonly HashSet<string> AdoptedDecisions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Accepted",
+        "AcceptedByHuman",
+        "AppliedByHuman",
+        "AppliedToApprovedReview",
+        "AppliedToRejectedReview"
+    };
+    private static readonly HashSet<string> RejectedDecisions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Rejected",
+        "RejectedByHuman"
+    };
     private static readonly IReadOnlyDictionary<string, string> ContentTypesByExtension =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -172,6 +193,7 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
             .Select(job => job!)
             .ToArray();
         var metrics = await BuildOperationalMetricsAsync(cancellationToken);
+        var checkInCalibration = await BuildCheckInAiCalibrationMetricsAsync(cancellationToken);
         return new KnowledgeDocumentsIndexViewModel
         {
             Upload = upload ?? new KnowledgeDocumentUploadInput(),
@@ -188,15 +210,15 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
                 DocumentIngestionJobStates.WaitingForMinerU or
                 DocumentIngestionJobStates.Indexing),
             FailedJobCount = actionableJobs.Count(job => job.CanRetry),
-            Metrics = metrics
+            Metrics = metrics,
+            CheckInCalibration = checkInCalibration
         };
     }
 
     private async Task<RagOperationalMetrics> BuildOperationalMetricsAsync(
         CancellationToken cancellationToken)
     {
-        const int windowDays = 30;
-        var windowStart = DateTimeOffset.UtcNow.AddDays(-windowDays);
+        var windowStart = DateTimeOffset.UtcNow.AddDays(-OperationalWindowDays);
         var jobs = await _context.DocumentIngestionJobs
             .AsNoTracking()
             .Where(job =>
@@ -244,7 +266,7 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
             .Count();
 
         return new RagOperationalMetrics(
-            windowDays,
+            OperationalWindowDays,
             completedJobs.Length,
             deadLetterCount,
             Ratio(completedJobs.Length, terminalCount),
@@ -262,6 +284,194 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
                     "InsufficientEvidence",
                     StringComparison.Ordinal)),
                 proposals.Count));
+    }
+
+    private async Task<CheckInAiCalibrationMetrics> BuildCheckInAiCalibrationMetricsAsync(
+        CancellationToken cancellationToken)
+    {
+        var windowStart = DateTimeOffset.UtcNow.AddDays(-OperationalWindowDays);
+        var proposals = await _context.AiEvaluationProposals
+            .AsNoTracking()
+            .Where(proposal =>
+                proposal.SourceEntityType == "KPICheckIn" &&
+                proposal.CandidateIsProvisional &&
+                proposal.CreatedAtUtc >= windowStart)
+            .Select(proposal => new CheckInCalibrationProposalSnapshot(
+                proposal.Status,
+                proposal.HumanDecision ??
+                _context.AgentApprovals
+                    .Where(approval =>
+                        proposal.AgentRunId.HasValue &&
+                        approval.TenantId == proposal.TenantId &&
+                        approval.AgentRunId == proposal.AgentRunId.Value)
+                    .Select(approval => approval.Decision)
+                    .FirstOrDefault() ??
+                (proposal.Status == "AcceptedByHuman"
+                    ? "Accepted"
+                    : proposal.Status == "RejectedByHuman"
+                        ? "Rejected"
+                        : proposal.Status == "AppliedByHuman"
+                            ? "AppliedByHuman"
+                            : null),
+                proposal.ConfidenceScore,
+                _context.EvaluationRubrics
+                    .Where(rubric => rubric.Id == proposal.EvaluationRubricId)
+                    .Select(rubric => (decimal?)rubric.MinimumConfidenceToPropose)
+                    .FirstOrDefault() ?? .60m,
+                proposal.ProjectedScore ?? proposal.ProposedProgressPercent,
+                proposal.HumanReviewScore))
+            .ToListAsync(cancellationToken);
+        var qualitativeResults = await _context.AiEvaluationCriterionResults
+            .AsNoTracking()
+            .Where(result =>
+                result.Proposal != null &&
+                result.Proposal.SourceEntityType == "KPICheckIn" &&
+                result.Proposal.CandidateIsProvisional &&
+                result.Proposal.CreatedAtUtc >= windowStart &&
+                result.Criterion != null &&
+                (result.Criterion.MeasurementType == "Qualitative" ||
+                 result.Criterion.MeasurementType == "Behavioral"))
+            .Select(result => new CheckInQualitativeResultSnapshot(
+                result.AiEvaluationProposalId,
+                result.ProposedStatus,
+                result.ProposedScorePercent))
+            .ToListAsync(cancellationToken);
+
+        var classified = proposals
+            .Where(proposal => IsAdopted(proposal.HumanDecision) || IsRejected(proposal.HumanDecision))
+            .ToArray();
+        var adopted = classified.Count(proposal => IsAdopted(proposal.HumanDecision));
+        var rejected = classified.Length - adopted;
+        var compared = proposals
+            .Where(proposal =>
+                IsAppliedReview(proposal.HumanDecision) &&
+                proposal.AiScore.HasValue &&
+                proposal.HumanScore.HasValue)
+            .Select(proposal => proposal.HumanScore!.Value - proposal.AiScore!.Value)
+            .ToArray();
+        var scoreEditedCount = compared.Count(delta => Math.Abs(delta) >= ScoreEditThreshold);
+        var qualitativeProposalCount = qualitativeResults
+            .Select(result => result.ProposalId)
+            .Distinct()
+            .Count();
+        var abstainCount = qualitativeResults
+            .Where(result =>
+                !result.ScorePercent.HasValue ||
+                string.Equals(
+                    result.ProposedStatus,
+                    "InsufficientEvidence",
+                    StringComparison.OrdinalIgnoreCase))
+            .Select(result => result.ProposalId)
+            .Distinct()
+            .Count();
+        var nonBlankDecisionCount = proposals.Count(proposal =>
+            !string.IsNullOrWhiteSpace(proposal.HumanDecision));
+        var bands = new[]
+        {
+            BuildCalibrationBand(
+                "Abstain",
+                "Abstain (dưới ngưỡng rubric)",
+                proposals.Where(IsAbstain)),
+            BuildCalibrationBand(
+                "Moderate",
+                "Trung bình (đạt ngưỡng, <80%)",
+                proposals.Where(proposal =>
+                    !IsAbstain(proposal) &&
+                    proposal.ConfidenceScore < .80d)),
+            BuildCalibrationBand(
+                "High",
+                "Cao (≥80% và đạt ngưỡng)",
+                proposals.Where(proposal =>
+                    !IsAbstain(proposal) &&
+                    proposal.ConfidenceScore >= .80d))
+        };
+
+        return new CheckInAiCalibrationMetrics(
+            OperationalWindowDays,
+            MinimumCalibrationSampleSize,
+            proposals.Count,
+            proposals.Count(proposal => string.Equals(
+                proposal.Status,
+                "AwaitingHumanReview",
+                StringComparison.Ordinal)),
+            classified.Length,
+            Math.Max(0, nonBlankDecisionCount - classified.Length),
+            adopted,
+            rejected,
+            proposals.Count(proposal => string.Equals(
+                proposal.HumanDecision,
+                "AppliedToApprovedReview",
+                StringComparison.OrdinalIgnoreCase)),
+            proposals.Count(proposal => string.Equals(
+                proposal.HumanDecision,
+                "AppliedToRejectedReview",
+                StringComparison.OrdinalIgnoreCase)),
+            qualitativeProposalCount,
+            abstainCount,
+            SampledRatio(abstainCount, qualitativeProposalCount),
+            compared.Length,
+            scoreEditedCount,
+            SampledRatio(adopted, classified.Length),
+            SampledRatio(rejected, classified.Length),
+            SampledRatio(scoreEditedCount, compared.Length),
+            SampledAverage(compared),
+            SampledAverage(compared.Select(Math.Abs)),
+            bands);
+    }
+
+    private static CheckInAiConfidenceBandMetrics BuildCalibrationBand(
+        string code,
+        string label,
+        IEnumerable<CheckInCalibrationProposalSnapshot> source)
+    {
+        var proposals = source.ToArray();
+        var classified = proposals
+            .Where(proposal => IsAdopted(proposal.HumanDecision) || IsRejected(proposal.HumanDecision))
+            .ToArray();
+        var adopted = classified.Count(proposal => IsAdopted(proposal.HumanDecision));
+        var compared = proposals
+            .Where(proposal =>
+                IsAppliedReview(proposal.HumanDecision) &&
+                proposal.AiScore.HasValue &&
+                proposal.HumanScore.HasValue)
+            .Select(proposal => Math.Abs(proposal.HumanScore!.Value - proposal.AiScore!.Value))
+            .ToArray();
+        return new CheckInAiConfidenceBandMetrics(
+            code,
+            label,
+            proposals.Length,
+            classified.Length,
+            adopted,
+            classified.Length - adopted,
+            compared.Length,
+            SampledRatio(adopted, classified.Length),
+            SampledAverage(compared));
+    }
+
+    private static bool IsAppliedReview(string? decision) =>
+        decision != null && AppliedReviewDecisions.Contains(decision);
+
+    private static bool IsAbstain(CheckInCalibrationProposalSnapshot proposal) =>
+        proposal.ConfidenceScore < Math.Clamp(
+            (double)proposal.MinimumConfidenceToPropose,
+            CheckInAiConfidenceCalculator.MinimumQualitativeConfidence,
+            1d);
+
+    private static bool IsAdopted(string? decision) =>
+        decision != null && AdoptedDecisions.Contains(decision);
+
+    private static bool IsRejected(string? decision) =>
+        decision != null && RejectedDecisions.Contains(decision);
+
+    private static double? SampledRatio(int numerator, int denominator) =>
+        denominator < MinimumCalibrationSampleSize ? null : Ratio(numerator, denominator);
+
+    private static decimal? SampledAverage(IEnumerable<decimal> values)
+    {
+        var samples = values.ToArray();
+        return samples.Length < MinimumCalibrationSampleSize
+            ? null
+            : Math.Round(samples.Average(), 2);
     }
 
     private static double? Ratio(int numerator, int denominator) =>
@@ -1173,6 +1383,19 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
         DateTimeOffset? CompletedAtUtc);
 
     private sealed record OperationalProposalSnapshot(int Id, string? ProposedStatus);
+
+    private sealed record CheckInCalibrationProposalSnapshot(
+        string Status,
+        string? HumanDecision,
+        double ConfidenceScore,
+        decimal MinimumConfidenceToPropose,
+        decimal? AiScore,
+        decimal? HumanScore);
+
+    private sealed record CheckInQualitativeResultSnapshot(
+        int ProposalId,
+        string ProposedStatus,
+        decimal? ScorePercent);
 
     private sealed record OperationalCitationSnapshot(
         int ProposalId,
