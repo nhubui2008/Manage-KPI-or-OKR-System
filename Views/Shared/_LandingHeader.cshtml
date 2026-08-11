@@ -713,6 +713,69 @@
 
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
+    <style>
+        #changePasswordModal.reg-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 999999;
+            align-items: center;
+            justify-content: center;
+        }
+        #changePasswordModal.reg-modal-overlay.active {
+            display: flex !important;
+        }
+        #changePasswordModal .reg-modal-premium {
+            background: #ffffff;
+            border-radius: 16px;
+            max-width: 800px;
+            width: 90%;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+        #changePasswordModal .reg-modal-left {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: #ffffff;
+            padding: 2rem;
+            flex: 1;
+            position: relative;
+        }
+        #changePasswordModal .reg-modal-left h2 { font-size: 1.5rem; font-weight: 700; color: #fff; margin-top: 1rem; }
+        #changePasswordModal .reg-modal-left p { color: rgba(255,255,255,0.85); font-size: 0.9rem; margin-top: 0.5rem; }
+        #changePasswordModal .reg-modal-benefits { list-style: none; padding: 0; margin-top: 1.5rem; }
+        #changePasswordModal .reg-modal-benefits li { font-size: 0.85rem; margin-bottom: 0.5rem; color: rgba(255,255,255,0.9); }
+        #changePasswordModal .reg-modal-right {
+            padding: 2rem;
+            flex: 1.2;
+            position: relative;
+            background: #ffffff;
+        }
+        #changePasswordModal .reg-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            border: none;
+            background: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #64748b;
+        }
+        #changePasswordModal .form-group { margin-bottom: 1rem; }
+        #changePasswordModal .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; }
+        #changePasswordModal .input-icon-wrapper { position: relative; }
+        #changePasswordModal .input-icon-wrapper i { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+        #changePasswordModal .input-icon-wrapper input { width: 100%; padding: 0.6rem 0.85rem 0.6rem 2.5rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; }
+        @@media (max-width: 768px) {
+            #changePasswordModal .reg-modal-premium { flex-direction: column; }
+            #changePasswordModal .reg-modal-left { display: none; }
+        }
+    </style>
+
     <!-- ===== CHANGE PASSWORD MODAL ===== -->
     <div id="changePasswordModal" class="reg-modal-overlay">
         <div class="reg-modal-premium">
