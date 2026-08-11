@@ -1111,13 +1111,21 @@
                     @Html.AntiForgeryToken()
                     <input type="hidden" id="regPlanInput" name="plan" />
                     
-                    <div class="form-group">
+                    <div class="form-group" style="margin-bottom: 1rem;">
                         <label for="regEmail">Email đăng nhập hệ thống</label>
                         <div class="input-icon-wrapper">
                             <i class="bi bi-envelope"></i>
                             <input type="email" id="regEmail" name="email" required placeholder="name@company.com" />
                         </div>
-                        <small class="form-text text-muted mt-2 d-block"><i class="bi bi-shield-lock"></i> Mật khẩu an toàn sẽ được tạo tự động và gửi qua email này.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="regPassword">Mật khẩu của bạn</label>
+                        <div class="input-icon-wrapper">
+                            <i class="bi bi-key"></i>
+                            <input type="password" id="regPassword" name="password" required minlength="6" placeholder="Tạo mật khẩu đăng nhập" />
+                        </div>
+                        <small class="form-text text-muted mt-2 d-block"><i class="bi bi-shield-check"></i> Mật khẩu này dùng để đăng nhập hệ thống sau khi đăng ký.</small>
                     </div>
                     
                     <button type="submit" id="regSubmitBtn" class="btn-primary-lg w-100 mt-4" style="justify-content: center; gap: 0.5rem; border: none; cursor: pointer;">
@@ -1481,10 +1489,12 @@
         if (isRegistrationSubmitting) return;
         
         const emailInput = document.getElementById('regEmail');
+        const passwordInput = document.getElementById('regPassword');
         const email = emailInput.value.trim();
+        const password = passwordInput ? passwordInput.value : '';
         const plan = regPlanInput.value;
 
-        if (!email) return;
+        if (!email || !password) return;
 
         isRegistrationSubmitting = true;
         emailInput.value = email;
@@ -1496,6 +1506,7 @@
             const formData = new FormData();
             formData.append('email', email);
             formData.append('plan', plan);
+            formData.append('password', password);
             const token = regForm.querySelector('input[name="__RequestVerificationToken"]')?.value;
             if (!token) throw new Error('Không thể xác thực yêu cầu. Vui lòng tải lại trang.');
             formData.append('__RequestVerificationToken', token);
@@ -1509,21 +1520,17 @@
 
             if (result.success) {
                 registrationCompleted = true;
-                // Pre-fill the login email
-                document.getElementById('loginUsername').value = email;
-                
                 window.AppFeedback.toast({ tone: 'success', title: 'Đăng ký thành công', message: result.message });
                 
-                // Switch to the login tab inside the modal instead of redirecting
-                setTimeout(() => {
-                    switchRegTab('login');
-                }, 1500);
-
-                const heroBtn = document.querySelector('.lp-hero-actions .btn-primary-lg');
-                if (heroBtn) {
-                    heroBtn.innerHTML = '<i class="bi bi-grid-1x2-fill"></i> Truy cập Hệ thống';
-                    heroBtn.onclick = null;
-                    heroBtn.href = '/Dashboard/Index';
+                if (result.autoLogin && result.redirectUrl) {
+                    setTimeout(() => {
+                        window.location.href = result.redirectUrl;
+                    }, 1000);
+                } else {
+                    document.getElementById('loginUsername').value = email;
+                    setTimeout(() => {
+                        switchRegTab('login');
+                    }, 1500);
                 }
             } else {
                 window.AppFeedback.toast({ tone: 'error', title: 'Không thể đăng ký', message: result.message });
