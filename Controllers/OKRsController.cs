@@ -2306,20 +2306,5 @@ namespace Manage_KPI_or_OKR_System.Controllers
             public int CycleSortPeriod { get; init; }
         }
 
-        [HttpPost]
-        [HasPermission("OKRS_EDIT")]
-        public JsonResult RefineAiOutput([FromBody] List<ChatMessageModel> conversationHistory)
-        {
-            if (conversationHistory == null || conversationHistory.Count == 0)
-            {
-                return Json(new { success = false, message = "Dữ liệu không hợp lệ." });
-            }
-
-            return Json(new
-            {
-                success = false,
-                message = "Tính năng tinh chỉnh cũ đã được tắt. Hãy dùng Goal Planning Agent có trích nguồn."
-            });
-        }
     }
 }

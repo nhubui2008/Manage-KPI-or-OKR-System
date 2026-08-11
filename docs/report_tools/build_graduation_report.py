@@ -931,7 +931,7 @@ def parse_args():
     )
     parser.add_argument(
         "--test-count",
-        default="539",
+        default="540",
         help="Verified full-suite count embedded in the submission report.",
     )
     return parser.parse_args()

@@ -4,7 +4,7 @@ Cập nhật ngày 11/08/2026. Trạng thái được đối chiếu từ mã ng
 
 | Nhóm trong kế hoạch | Trạng thái | Bằng chứng hiện tại | Việc còn lại |
 |---|---|---|---|
-| Build và test solution | DONE | Test project đã nằm trong solution; build sạch `0 warning/0 error` và toàn bộ 539 test đã chạy xanh, gồm các test SQL Server thật cho migration/RLS/concurrency/rollout worker/calibration tenant. | Duy trì cổng build/test ở mỗi thay đổi. |
+| Build và test solution | DONE | Test project đã nằm trong solution; build sạch `0 warning/0 error` và toàn bộ 540 test đã chạy xanh, gồm các test SQL Server thật cho migration/RLS/concurrency/rollout worker/calibration tenant. | Duy trì cổng build/test ở mỗi thay đổi. |
 | Reset mật khẩu, CSRF, rate limit, session invalidation | DONE | `PasswordResetService`, `PasswordResetRateLimiter`, `AuthController` và regression tests. | QA email/reset trên staging. |
 | Secret SMTP | PARTIAL | Cấu hình repository để trống; production yêu cầu secret từ môi trường. | Xác nhận credential lịch sử đã được rotate ngoài repository. |
 | Phân quyền fail-closed, search theo quyền, mua gói chờ duyệt | DONE | Controller và security tests đã chặn role không rõ, dữ liệu ngoài quyền và tự kích hoạt gói. | QA theo ma trận role production. |

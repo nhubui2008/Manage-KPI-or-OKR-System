@@ -29,6 +29,14 @@ public sealed class OKRsControllerKeyResultTests
     }
 
     [Fact]
+    public void LegacyRawRefinementAction_IsNotExposed()
+    {
+        Assert.DoesNotContain(
+            typeof(OKRsController).GetMethods(BindingFlags.Instance | BindingFlags.Public),
+            method => method.Name == "RefineAiOutput");
+    }
+
+    [Fact]
     public async Task AddKeyResult_WithLinkedProject_CreatesExactlyOneWorkItem()
     {
         await using var context = CreateContext();
