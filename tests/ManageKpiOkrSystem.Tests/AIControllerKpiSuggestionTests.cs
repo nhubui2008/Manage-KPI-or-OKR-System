@@ -98,7 +98,8 @@ public sealed class AIControllerKpiSuggestionTests
             chatAdvisor: null!,
             kpiSuggestionAdvisor: new ThrowingKpiSuggestionAdvisor(exception),
             context: null!,
-            logger: NullLogger<AIController>.Instance);
+            logger: NullLogger<AIController>.Instance,
+            checkInAiRolloutGate: null!);
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext

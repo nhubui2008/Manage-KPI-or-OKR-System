@@ -285,6 +285,12 @@ DeepSeek__BaseUrl=https://api.deepseek.com/v1/
 DeepSeek__Model=deepseek-chat
 DeepSeek__ApiKey=your-deepseek-api-key
 
+# Fail-closed mặc định; mở Shadow trước, rồi Pilot theo tenant/phòng ban.
+AiAdvisoryRollout__KillSwitch=true
+AiAdvisoryRollout__CheckInEvaluationMode=Disabled
+# AiAdvisoryRollout__PilotTenantIds__0=1
+# AiAdvisoryRollout__PilotDepartmentIds__0=10
+
 SmtpSettings__Server=smtp.gmail.com
 SmtpSettings__Port=587
 SmtpSettings__SenderName=KPI_System
@@ -320,6 +326,12 @@ dotnet run
 ```json
 {
   "DeepSeek": { "BaseUrl": "https://api.deepseek.com", "Model": "deepseek-chat" },
+  "AiAdvisoryRollout": {
+    "KillSwitch": true,
+    "CheckInEvaluationMode": "Disabled",
+    "PilotTenantIds": [],
+    "PilotDepartmentIds": []
+  },
   "DataProtection": { "KeysPath": "App_Data/DataProtection-Keys" },
   "ForwardedHeaders": {
     "Enabled": true,

@@ -81,7 +81,8 @@ public sealed class AIControllerCustomerSegmentTests
             chatAdvisor: null!,
             kpiSuggestionAdvisor: null!,
             context: null!,
-            logger: NullLogger<AIController>.Instance);
+            logger: NullLogger<AIController>.Instance,
+            checkInAiRolloutGate: null!);
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext

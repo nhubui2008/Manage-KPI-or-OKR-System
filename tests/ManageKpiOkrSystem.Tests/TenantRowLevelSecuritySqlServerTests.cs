@@ -249,12 +249,19 @@ public sealed class TenantRowLevelSecuritySqlServerTests
             await SeedWorkerItemsAsync(connectionString, tenantOneId, systemUser.Id, "one");
             await SeedWorkerItemsAsync(connectionString, tenantTwo.Id, systemUser.Id, "two");
 
-            var services = new ServiceCollection();
-            services.AddScoped<TenantContext>();
-            services.AddScoped<ITenantContext>(provider => provider.GetRequiredService<TenantContext>());
-            services.AddDbContext<MiniERPDbContext>((provider, options) =>
-                options.UseSqlServer(connectionString));
-            await using var provider = services.BuildServiceProvider();
+            await using (var disabledProvider = CreateWorkerServiceProvider(
+                             connectionString,
+                             killSwitch: true))
+            {
+                var disabledWorker = new CheckInAiEvaluationWorker(
+                    disabledProvider.GetRequiredService<IServiceScopeFactory>(),
+                    NullLogger<CheckInAiEvaluationWorker>.Instance);
+                Assert.Null(await InvokeClaimTenantOrNullAsync(disabledWorker));
+            }
+
+            await using var provider = CreateWorkerServiceProvider(
+                connectionString,
+                killSwitch: false);
             var scopeFactory = provider.GetRequiredService<IServiceScopeFactory>();
 
             var checkInWorker = new CheckInAiEvaluationWorker(
@@ -330,12 +337,322 @@ public sealed class TenantRowLevelSecuritySqlServerTests
         }
     }
 
+    [Fact]
+    public async Task CheckInWorker_RolloutClosureAfterClaimReleasesWithoutAttemptCost()
+    {
+        var baseConnection = Environment.GetEnvironmentVariable("KPI_SQLSERVER_TEST_CONNECTION");
+        if (string.IsNullOrWhiteSpace(baseConnection))
+        {
+            return;
+        }
+
+        var builder = new SqlConnectionStringBuilder(baseConnection)
+        {
+            InitialCatalog = $"KpiRolloutWorker_{Guid.NewGuid():N}",
+            MaxPoolSize = 2,
+            MinPoolSize = 0
+        };
+        var connectionString = builder.ConnectionString;
+        await using var migrationDb = CreateContext(connectionString, new TenantContext());
+        try
+        {
+            await migrationDb.Database.MigrateAsync();
+            var tenantId = await migrationDb.Tenants
+                .Where(tenant => tenant.IsActive)
+                .OrderBy(tenant => tenant.Id)
+                .Select(tenant => tenant.Id)
+                .FirstAsync();
+            var role = new Role { RoleName = "Admin", IsActive = true };
+            var systemUser = new SystemUser
+            {
+                Username = $"rollout-worker-{Guid.NewGuid():N}",
+                Email = $"rollout-worker-{Guid.NewGuid():N}@example.test",
+                PasswordHash = "hash",
+                IsActive = true
+            };
+            migrationDb.AddRange(role, systemUser);
+            await migrationDb.SaveChangesAsync();
+            migrationDb.TenantMemberships.Add(new TenantMembership
+            {
+                TenantId = tenantId,
+                SystemUserId = systemUser.Id,
+                RoleId = role.Id,
+                IsActive = true
+            });
+            await migrationDb.SaveChangesAsync();
+
+            var tenantContext = new TenantContext();
+            tenantContext.SetBackgroundTenant(tenantId, systemUser.Id);
+            await using var tenantDb = CreateContext(connectionString, tenantContext);
+            var employee = new Employee
+            {
+                EmployeeCode = "ROLLOUT-WORKER",
+                FullName = "Rollout Worker Employee",
+                Email = $"rollout-employee-{Guid.NewGuid():N}@example.test",
+                Phone = "0000000001",
+                IsActive = true
+            };
+            var kpi = new KPI
+            {
+                KPIName = "Rollout worker KPI",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            tenantDb.AddRange(employee, kpi);
+            await tenantDb.SaveChangesAsync();
+            tenantDb.KPIDetails.Add(new KPIDetail
+            {
+                KPIId = kpi.Id,
+                TargetValue = 100m,
+                MeasurementUnit = "%"
+            });
+            var checkIn = new KPICheckIn
+            {
+                EmployeeId = employee.Id,
+                KPIId = kpi.Id,
+                CheckInDate = DateTime.UtcNow,
+                ReviewStatus = "Pending"
+            };
+            tenantDb.KPICheckIns.Add(checkIn);
+            await tenantDb.SaveChangesAsync();
+            tenantDb.CheckInDetails.Add(new CheckInDetail
+            {
+                CheckInId = checkIn.Id,
+                AchievedValue = 60m,
+                ProgressPercentage = 60m
+            });
+            await tenantDb.SaveChangesAsync();
+            var sourceVersion = await CheckInAiSourceVersion.ResolveAsync(tenantDb, checkIn);
+            var outboxId = Guid.NewGuid();
+            tenantDb.CheckInAiEvaluationOutbox.Add(new CheckInAiEvaluationOutbox
+            {
+                Id = outboxId,
+                TenantId = tenantId,
+                CheckInId = checkIn.Id,
+                SourceVersion = sourceVersion,
+                RequestedBySystemUserId = systemUser.Id,
+                State = "Pending",
+                AvailableAtUtc = DateTimeOffset.UtcNow.AddMinutes(-1),
+                CreatedAtUtc = DateTimeOffset.UtcNow.AddMinutes(-1)
+            });
+            await tenantDb.SaveChangesAsync();
+
+            await using var provider = CreateWorkerServiceProvider(
+                connectionString,
+                killSwitch: false,
+                evaluator: new RolloutClosedEvaluator());
+            var worker = new CheckInAiEvaluationWorker(
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                NullLogger<CheckInAiEvaluationWorker>.Instance);
+            var claim = await InvokeClaimItemOrNullAsync(worker)
+                ?? throw new InvalidOperationException("Worker did not claim the rollout test item.");
+
+            await InvokeProcessAsync(worker, claim);
+
+            tenantDb.ChangeTracker.Clear();
+            var released = await tenantDb.CheckInAiEvaluationOutbox.SingleAsync(item => item.Id == outboxId);
+            Assert.Equal("Pending", released.State);
+            Assert.Equal(0, released.AttemptCount);
+            Assert.Equal("kill_switch", released.LastFailureCode);
+            Assert.Null(released.LeaseId);
+            Assert.Null(released.LeaseExpiresAtUtc);
+            Assert.Null(released.CompletedAtUtc);
+        }
+        finally
+        {
+            await migrationDb.Database.CloseConnectionAsync();
+            await migrationDb.Database.EnsureDeletedAsync();
+            SqlConnection.ClearAllPools();
+        }
+    }
+
+    [Fact]
+    public async Task CheckInWorker_PilotClaimsAllowedDepartmentPastOlderOutsideJob()
+    {
+        var baseConnection = Environment.GetEnvironmentVariable("KPI_SQLSERVER_TEST_CONNECTION");
+        if (string.IsNullOrWhiteSpace(baseConnection))
+        {
+            return;
+        }
+
+        var builder = new SqlConnectionStringBuilder(baseConnection)
+        {
+            InitialCatalog = $"KpiPilotWorker_{Guid.NewGuid():N}",
+            MaxPoolSize = 2,
+            MinPoolSize = 0
+        };
+        var connectionString = builder.ConnectionString;
+        await using var migrationDb = CreateContext(connectionString, new TenantContext());
+        try
+        {
+            await migrationDb.Database.MigrateAsync();
+            var tenantId = await migrationDb.Tenants
+                .Where(tenant => tenant.IsActive)
+                .OrderBy(tenant => tenant.Id)
+                .Select(tenant => tenant.Id)
+                .FirstAsync();
+            var tenantContext = new TenantContext();
+            tenantContext.SetBackgroundTenant(tenantId);
+            await using var tenantDb = CreateContext(connectionString, tenantContext);
+            var allowedDepartment = new Department
+            {
+                DepartmentCode = "PILOT-ALLOWED",
+                DepartmentName = "Pilot allowed",
+                IsActive = true
+            };
+            var outsideDepartment = new Department
+            {
+                DepartmentCode = "PILOT-OUTSIDE",
+                DepartmentName = "Pilot outside",
+                IsActive = true
+            };
+            var allowedEmployee = new Employee
+            {
+                EmployeeCode = "PILOT-EMP-ALLOWED",
+                FullName = "Pilot Allowed Employee",
+                Email = $"pilot-allowed-{Guid.NewGuid():N}@example.test",
+                Phone = "0000000002",
+                IsActive = true
+            };
+            var outsideEmployee = new Employee
+            {
+                EmployeeCode = "PILOT-EMP-OUTSIDE",
+                FullName = "Pilot Outside Employee",
+                Email = $"pilot-outside-{Guid.NewGuid():N}@example.test",
+                Phone = "0000000003",
+                IsActive = true
+            };
+            tenantDb.AddRange(
+                allowedDepartment,
+                outsideDepartment,
+                allowedEmployee,
+                outsideEmployee);
+            await tenantDb.SaveChangesAsync();
+            tenantDb.EmployeeAssignments.AddRange(
+                new EmployeeAssignment
+                {
+                    EmployeeId = allowedEmployee.Id,
+                    DepartmentId = allowedDepartment.Id,
+                    IsActive = true
+                },
+                new EmployeeAssignment
+                {
+                    EmployeeId = outsideEmployee.Id,
+                    DepartmentId = outsideDepartment.Id,
+                    IsActive = true
+                });
+            var allowedCheckIn = new KPICheckIn
+            {
+                EmployeeId = allowedEmployee.Id,
+                CheckInDate = DateTime.UtcNow,
+                ReviewStatus = "Pending"
+            };
+            var outsideCheckIn = new KPICheckIn
+            {
+                EmployeeId = outsideEmployee.Id,
+                CheckInDate = DateTime.UtcNow,
+                ReviewStatus = "Pending"
+            };
+            tenantDb.KPICheckIns.AddRange(allowedCheckIn, outsideCheckIn);
+            await tenantDb.SaveChangesAsync();
+            var now = DateTimeOffset.UtcNow.AddMinutes(-1);
+            tenantDb.CheckInAiEvaluationOutbox.AddRange(
+                new CheckInAiEvaluationOutbox
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    CheckInId = outsideCheckIn.Id,
+                    SourceVersion = 1,
+                    State = "Pending",
+                    AvailableAtUtc = now.AddMinutes(-1),
+                    CreatedAtUtc = now.AddMinutes(-1)
+                },
+                new CheckInAiEvaluationOutbox
+                {
+                    Id = Guid.NewGuid(),
+                    TenantId = tenantId,
+                    CheckInId = allowedCheckIn.Id,
+                    SourceVersion = 1,
+                    State = "Pending",
+                    AvailableAtUtc = now,
+                    CreatedAtUtc = now
+                });
+            await tenantDb.SaveChangesAsync();
+
+            await using var provider = CreateWorkerServiceProvider(
+                connectionString,
+                killSwitch: false,
+                mode: Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutMode.Pilot,
+                pilotTenantIds: new[] { tenantId },
+                pilotDepartmentIds: new[] { allowedDepartment.Id });
+            var worker = new CheckInAiEvaluationWorker(
+                provider.GetRequiredService<IServiceScopeFactory>(),
+                NullLogger<CheckInAiEvaluationWorker>.Instance);
+            var claim = await InvokeClaimItemOrNullAsync(worker)
+                ?? throw new InvalidOperationException("Worker did not claim the pilot item.");
+
+            Assert.Equal(
+                allowedCheckIn.Id,
+                (int)(claim.GetType().GetProperty("CheckInId")?.GetValue(claim)
+                    ?? throw new InvalidOperationException("Claimed item did not expose CheckInId.")));
+            tenantDb.ChangeTracker.Clear();
+            Assert.Equal(
+                "Pending",
+                await tenantDb.CheckInAiEvaluationOutbox
+                    .Where(item => item.CheckInId == outsideCheckIn.Id)
+                    .Select(item => item.State)
+                    .SingleAsync());
+            Assert.Equal(
+                "Leased",
+                await tenantDb.CheckInAiEvaluationOutbox
+                    .Where(item => item.CheckInId == allowedCheckIn.Id)
+                    .Select(item => item.State)
+                    .SingleAsync());
+        }
+        finally
+        {
+            await migrationDb.Database.CloseConnectionAsync();
+            await migrationDb.Database.EnsureDeletedAsync();
+            SqlConnection.ClearAllPools();
+        }
+    }
+
     private static MiniERPDbContext CreateContext(string connectionString, ITenantContext tenantContext) =>
         new(
             new DbContextOptionsBuilder<MiniERPDbContext>()
                 .UseSqlServer(connectionString)
                 .Options,
             tenantContext);
+
+    private static ServiceProvider CreateWorkerServiceProvider(
+        string connectionString,
+        bool killSwitch,
+        ICheckInAiEvaluator? evaluator = null,
+        Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutMode mode =
+            Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutMode.GeneralAvailability,
+        int[]? pilotTenantIds = null,
+        int[]? pilotDepartmentIds = null)
+    {
+        var services = new ServiceCollection();
+        services.AddScoped<TenantContext>();
+        services.AddScoped<ITenantContext>(provider => provider.GetRequiredService<TenantContext>());
+        services.AddOptions<Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutOptions>()
+            .Configure(options =>
+            {
+                options.KillSwitch = killSwitch;
+                options.CheckInEvaluationMode = mode.ToString();
+                options.PilotTenantIds = pilotTenantIds ?? Array.Empty<int>();
+                options.PilotDepartmentIds = pilotDepartmentIds ?? Array.Empty<int>();
+            });
+        services.AddScoped<ICheckInAiRolloutGate, CheckInAiRolloutGate>();
+        if (evaluator != null)
+        {
+            services.AddSingleton(evaluator);
+        }
+        services.AddDbContext<MiniERPDbContext>((_, options) =>
+            options.UseSqlServer(connectionString));
+        return services.BuildServiceProvider();
+    }
 
     private static async Task SeedWorkerItemsAsync(
         string connectionString,
@@ -410,6 +727,19 @@ public sealed class TenantRowLevelSecuritySqlServerTests
     }
 
     private static async Task<int> InvokeClaimTenantAsync(object worker)
+        => await InvokeClaimTenantOrNullAsync(worker)
+           ?? throw new InvalidOperationException("Worker did not claim a tenant item.");
+
+    private static async Task<int?> InvokeClaimTenantOrNullAsync(object worker)
+    {
+        var claim = await InvokeClaimItemOrNullAsync(worker);
+        return claim == null
+            ? null
+            : (int)(claim.GetType().GetProperty("TenantId")?.GetValue(claim)
+                ?? throw new InvalidOperationException("Claimed item did not expose TenantId."));
+    }
+
+    private static async Task<object?> InvokeClaimItemOrNullAsync(object worker)
     {
         var method = worker.GetType().GetMethod(
             "TryClaimAsync",
@@ -418,10 +748,27 @@ public sealed class TenantRowLevelSecuritySqlServerTests
         var claimTask = method.Invoke(worker, new object[] { CancellationToken.None }) as Task
             ?? throw new InvalidOperationException("Worker claim did not return a task.");
         await claimTask;
-        var claim = claimTask.GetType().GetProperty("Result")?.GetValue(claimTask)
-            ?? throw new InvalidOperationException("Worker did not claim a tenant item.");
-        return (int)(claim.GetType().GetProperty("TenantId")?.GetValue(claim)
-            ?? throw new InvalidOperationException("Claimed item did not expose TenantId."));
+        return claimTask.GetType().GetProperty("Result")?.GetValue(claimTask);
+    }
+
+    private static async Task InvokeProcessAsync(object worker, object claim)
+    {
+        var method = worker.GetType().GetMethod(
+            "ProcessAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Worker process method was not found.");
+        var processTask = method.Invoke(worker, new[] { claim, CancellationToken.None }) as Task
+            ?? throw new InvalidOperationException("Worker process did not return a task.");
+        await processTask;
+    }
+
+    private sealed class RolloutClosedEvaluator : ICheckInAiEvaluator
+    {
+        public Task<CheckInAiEvaluationResponse> EvaluateAsync(
+            CheckInAiEvaluationRequest request,
+            System.Security.Claims.ClaimsPrincipal user,
+            CancellationToken cancellationToken = default) =>
+            throw new CheckInAiRolloutUnavailableException("kill_switch");
     }
 
     private static Task<int> SessionTenantIdAsync(MiniERPDbContext context) =>

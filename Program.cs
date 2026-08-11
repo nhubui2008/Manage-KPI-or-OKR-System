@@ -95,6 +95,14 @@ builder.Services.Configure<Manage_KPI_or_OKR_System.Options.DocumentIngestionOpt
     builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.DocumentIngestionOptions.SectionName));
 builder.Services.Configure<Manage_KPI_or_OKR_System.Options.DeepSeekOptions>(
     builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.DeepSeekOptions.SectionName));
+builder.Services
+    .AddOptions<Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutOptions>()
+    .Bind(builder.Configuration.GetSection(
+        Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutOptions.SectionName))
+    .Validate(
+        Manage_KPI_or_OKR_System.Services.AI.CheckInAiRolloutGate.IsValid,
+        "AiAdvisoryRollout must use a valid mode and positive pilot identifiers; Pilot mode requires at least one tenant.")
+    .ValidateOnStart();
 builder.Services.AddHttpClient<
     Manage_KPI_or_OKR_System.Models.AI.IAIModelClient,
     Manage_KPI_or_OKR_System.Services.AI.DeepSeekModelClient>(client =>
@@ -137,6 +145,7 @@ builder.Services.AddHttpClient<IPrivateKnowledgeBlobStore, PrivateKnowledgeBlobS
         UseCookies = false
     });
 builder.Services.AddSingleton<IAIEvidenceSecurityFilterBuilder, EvidenceSecurityFilterBuilder>();
+builder.Services.AddScoped<ICheckInAiRolloutGate, CheckInAiRolloutGate>();
 builder.Services.AddScoped<IAiProposalPersistence, AiProposalPersistence>();
 builder.Services.AddScoped<IOkrKeyResultAiProposalPersistence,
     OkrKeyResultAiProposalPersistence>();

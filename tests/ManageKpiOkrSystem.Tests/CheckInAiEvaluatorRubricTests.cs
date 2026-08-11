@@ -251,6 +251,7 @@ public sealed class CheckInAiEvaluatorRubricTests
             context,
             model,
             NullLogger<CheckInAiEvaluator>.Instance,
+            TestAiAdvisoryRollout.CreateGate(context),
             retriever);
 
         var result = await evaluator.EvaluateAsync(
@@ -289,6 +290,7 @@ public sealed class CheckInAiEvaluatorRubricTests
             context,
             model,
             NullLogger<CheckInAiEvaluator>.Instance,
+            TestAiAdvisoryRollout.CreateGate(context),
             retriever);
 
         var result = await evaluator.EvaluateAsync(
@@ -357,6 +359,7 @@ public sealed class CheckInAiEvaluatorRubricTests
             context,
             model,
             NullLogger<CheckInAiEvaluator>.Instance,
+            TestAiAdvisoryRollout.CreateGate(context),
             retriever,
             persistence);
 
@@ -386,6 +389,7 @@ public sealed class CheckInAiEvaluatorRubricTests
             context,
             model,
             NullLogger<CheckInAiEvaluator>.Instance,
+            TestAiAdvisoryRollout.CreateGate(context),
             proposalPersistence: persistence);
 
         var afterRevocation = await evaluatorWithoutRevokedRetriever.EvaluateAsync(
@@ -461,6 +465,7 @@ public sealed class CheckInAiEvaluatorRubricTests
             context,
             model,
             NullLogger<CheckInAiEvaluator>.Instance,
+            TestAiAdvisoryRollout.CreateGate(context),
             retriever);
 
         var result = await evaluator.EvaluateAsync(
@@ -559,7 +564,8 @@ public sealed class CheckInAiEvaluatorRubricTests
         var evaluator = new CheckInAiEvaluator(
             context,
             model,
-            NullLogger<CheckInAiEvaluator>.Instance);
+            NullLogger<CheckInAiEvaluator>.Instance,
+            TestAiAdvisoryRollout.CreateGate(context));
         return await evaluator.EvaluateAsync(
             new CheckInAiEvaluationRequest(checkInId),
             AdminPrincipal());

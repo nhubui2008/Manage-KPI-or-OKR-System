@@ -29,11 +29,16 @@ public sealed class CheckInAiEvaluationQueue : ICheckInAiEvaluationQueue
     private const string Pending = "Pending";
     private readonly MiniERPDbContext _context;
     private readonly ITenantContext _tenantContext;
+    private readonly ICheckInAiRolloutGate _rolloutGate;
 
-    public CheckInAiEvaluationQueue(MiniERPDbContext context, ITenantContext tenantContext)
+    public CheckInAiEvaluationQueue(
+        MiniERPDbContext context,
+        ITenantContext tenantContext,
+        ICheckInAiRolloutGate rolloutGate)
     {
         _context = context;
         _tenantContext = tenantContext;
+        _rolloutGate = rolloutGate;
     }
 
     public async Task<bool> EnqueueAsync(
@@ -53,6 +58,11 @@ public sealed class CheckInAiEvaluationQueue : ICheckInAiEvaluationQueue
         if (checkIn == null ||
             !string.Equals(reviewStatus, "Pending", StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(reviewStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+        var rollout = await _rolloutGate.EvaluateAsync(workItem.CheckInId, cancellationToken);
+        if (!rollout.CanGenerate)
         {
             return false;
         }
@@ -237,6 +247,13 @@ public sealed class CheckInAiEvaluationWorker : BackgroundService
         var tenantContext = scope.ServiceProvider.GetRequiredService<TenantContext>();
         tenantContext.SetBackgroundTenant(tenantId);
         var context = scope.ServiceProvider.GetRequiredService<MiniERPDbContext>();
+        var rolloutGate = scope.ServiceProvider.GetRequiredService<ICheckInAiRolloutGate>();
+        var tenantRollout = rolloutGate.GetTenantScope(tenantId);
+        if (!tenantRollout.CanGenerate)
+        {
+            return null;
+        }
+
         var now = DateTimeOffset.UtcNow;
         await context.CheckInAiEvaluationOutbox
             .Where(item =>
@@ -250,13 +267,31 @@ public sealed class CheckInAiEvaluationWorker : BackgroundService
                 .SetProperty(item => item.LeaseId, (Guid?)null)
                 .SetProperty(item => item.LeaseExpiresAtUtc, (DateTimeOffset?)null),
                 cancellationToken);
-        var candidateId = await context.CheckInAiEvaluationOutbox
+        var candidateQuery = context.CheckInAiEvaluationOutbox
             .AsNoTracking()
             .Where(item =>
                 item.AttemptCount < MaxAttempts &&
                 item.AvailableAtUtc <= now &&
                 (item.State == Pending ||
-                 (item.State == Leased && item.LeaseExpiresAtUtc < now)))
+                 (item.State == Leased && item.LeaseExpiresAtUtc < now)));
+        if (tenantRollout.RequiresDepartmentMatch)
+        {
+            var pilotDepartmentIds = tenantRollout.PilotDepartmentIds.ToArray();
+            candidateQuery = candidateQuery.Where(item =>
+                context.KPICheckIns.Any(checkIn =>
+                    checkIn.Id == item.CheckInId &&
+                    checkIn.EmployeeId.HasValue &&
+                    context.EmployeeAssignments.Any(assignment =>
+                        assignment.EmployeeId == checkIn.EmployeeId.Value &&
+                        assignment.IsActive == true &&
+                        assignment.DepartmentId.HasValue &&
+                        pilotDepartmentIds.Contains(assignment.DepartmentId.Value) &&
+                        context.Departments.Any(department =>
+                            department.Id == assignment.DepartmentId.Value &&
+                            department.IsActive == true))));
+        }
+
+        var candidateId = await candidateQuery
             .OrderBy(item => item.AvailableAtUtc)
             .ThenBy(item => item.CreatedAtUtc)
             .Select(item => (Guid?)item.Id)
@@ -338,6 +373,17 @@ public sealed class CheckInAiEvaluationWorker : BackgroundService
                 await MarkTerminalAsync(context, workItem, Cancelled, "source_changed", cancellationToken);
                 return;
             }
+            var rolloutGate = scope.ServiceProvider.GetRequiredService<ICheckInAiRolloutGate>();
+            var rollout = await rolloutGate.EvaluateAsync(workItem.CheckInId, cancellationToken);
+            if (!rollout.CanGenerate)
+            {
+                await ReleaseForRolloutAsync(
+                    context,
+                    workItem,
+                    rollout.ReasonCode,
+                    cancellationToken);
+                return;
+            }
 
             var claims = new[]
             {
@@ -381,6 +427,18 @@ public sealed class CheckInAiEvaluationWorker : BackgroundService
         {
             // Leave the lease intact. Another worker can recover it after expiry.
             throw;
+        }
+        catch (CheckInAiRolloutUnavailableException exception)
+        {
+            using var recoveryScope = _scopeFactory.CreateScope();
+            var recoveryTenant = recoveryScope.ServiceProvider.GetRequiredService<TenantContext>();
+            recoveryTenant.SetBackgroundTenant(workItem.TenantId, workItem.SystemUserId);
+            var recoveryContext = recoveryScope.ServiceProvider.GetRequiredService<MiniERPDbContext>();
+            await ReleaseForRolloutAsync(
+                recoveryContext,
+                workItem,
+                exception.ReasonCode,
+                cancellationToken);
         }
         catch (Exception exception)
         {
@@ -466,6 +524,26 @@ public sealed class CheckInAiEvaluationWorker : BackgroundService
                 .SetProperty(item => item.State, state)
                 .SetProperty(item => item.CompletedAtUtc, DateTimeOffset.UtcNow)
                 .SetProperty(item => item.LastFailureCode, failureCode)
+                .SetProperty(item => item.LeaseId, (Guid?)null)
+                .SetProperty(item => item.LeaseExpiresAtUtc, (DateTimeOffset?)null),
+                cancellationToken);
+
+    private static Task ReleaseForRolloutAsync(
+        MiniERPDbContext context,
+        ClaimedWorkItem workItem,
+        string reasonCode,
+        CancellationToken cancellationToken) =>
+        context.CheckInAiEvaluationOutbox
+            .Where(item =>
+                item.Id == workItem.Id &&
+                item.State == Leased &&
+                item.LeaseId == workItem.LeaseId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(item => item.State, Pending)
+                .SetProperty(item => item.AttemptCount, item => item.AttemptCount - 1)
+                .SetProperty(item => item.AvailableAtUtc, DateTimeOffset.UtcNow)
+                .SetProperty(item => item.CompletedAtUtc, (DateTimeOffset?)null)
+                .SetProperty(item => item.LastFailureCode, reasonCode)
                 .SetProperty(item => item.LeaseId, (Guid?)null)
                 .SetProperty(item => item.LeaseExpiresAtUtc, (DateTimeOffset?)null),
                 cancellationToken);

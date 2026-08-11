@@ -29,12 +29,14 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
     private readonly IAIEvidenceRetriever? _evidenceRetriever;
     private readonly IAiProposalPersistence? _proposalPersistence;
     private readonly IAIEvidenceSecurityFilterBuilder? _securityFilterBuilder;
+    private readonly ICheckInAiRolloutGate _rolloutGate;
     private readonly ILogger<CheckInAiEvaluator> _logger;
 
     public CheckInAiEvaluator(
         MiniERPDbContext context,
         IAIModelClient modelClient,
         ILogger<CheckInAiEvaluator> logger,
+        ICheckInAiRolloutGate rolloutGate,
         IAIEvidenceRetriever? evidenceRetriever = null,
         IAiProposalPersistence? proposalPersistence = null,
         IAIEvidenceSecurityFilterBuilder? securityFilterBuilder = null)
@@ -42,6 +44,7 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
         _context = context;
         _modelClient = modelClient;
         _logger = logger;
+        _rolloutGate = rolloutGate;
         _evidenceRetriever = evidenceRetriever;
         _proposalPersistence = proposalPersistence;
         _securityFilterBuilder = securityFilterBuilder;
@@ -82,6 +85,11 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
             !await AccessScopeHelper.CanManageEmployeeAsync(_context, user, checkIn.EmployeeId.Value))
         {
             throw new UnauthorizedAccessException("You do not have access to evaluate this check-in.");
+        }
+        var rollout = await _rolloutGate.EvaluateAsync(checkIn.Id, cancellationToken);
+        if (!rollout.CanGenerate)
+        {
+            throw new CheckInAiRolloutUnavailableException(rollout.ReasonCode);
         }
 
         var candidateDetail = await _context.CheckInDetails
@@ -189,6 +197,7 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
                         persisted.RubricVersion,
                         ServerClassification: persisted.ProposedStatus,
                         CanApplyToDraft: persisted.CandidateIsProvisional &&
+                                         rollout.CanApply &&
                                          string.Equals(
                                              persisted.LifecycleStatus,
                                              "AwaitingHumanReview",
@@ -196,7 +205,8 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
                     persisted.AgentRunId,
                     persisted.ProposalId,
                     persisted.LifecycleStatus,
-                    persisted.RowVersion);
+                    persisted.RowVersion,
+                    rollout.Mode.ToString());
             }
         }
 
@@ -315,6 +325,15 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
               $"approved baseline={approvedProgress:0.##}%; authorized evidence sources={citations.Count}. " +
               "A human reviewer makes the final decision.";
 
+        // Model/RAG work can outlive a rollout configuration or assignment change.
+        // Recheck immediately before persistence/return so a newly closed scope
+        // cannot publish a fresh proposal and Shadow never advertises apply.
+        rollout = await _rolloutGate.EvaluateAsync(checkIn.Id, cancellationToken);
+        if (!rollout.CanGenerate)
+        {
+            throw new CheckInAiRolloutUnavailableException(rollout.ReasonCode);
+        }
+
         var response = new CheckInAiEvaluationResponse(
             checkIn.Id,
             Math.Round(approvedProgress, 2),
@@ -333,8 +352,9 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
                 versionedRubric?.Rubric.Id,
                 versionedRubric?.Rubric.Version,
                 ServerClassification: proposedStatus,
-                CanApplyToDraft: isPending),
-            ProposalLifecycleStatus: isApproved ? "ObservedOfficial" : null);
+                CanApplyToDraft: isPending && rollout.CanApply),
+            ProposalLifecycleStatus: isApproved ? "ObservedOfficial" : null,
+            RolloutMode: rollout.Mode.ToString());
 
         if (_proposalPersistence != null)
         {

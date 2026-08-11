@@ -80,7 +80,10 @@ public sealed class AITaskDecompositionServiceTests
         };
         context.AddRange(run, action);
         await context.SaveChangesAsync();
-        var queue = new CheckInAiEvaluationQueue(context, tenantContext);
+        var queue = new CheckInAiEvaluationQueue(
+            context,
+            tenantContext,
+            TestAiAdvisoryRollout.CreateGate(context));
         var service = CreateService(context, queue, tenantContext);
 
         var response = await service.ConfirmDecomposeAsync(

@@ -25,6 +25,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly IAIChatAdvisor _chatAdvisor;
         private readonly IKpiSuggestionAdvisor _kpiSuggestionAdvisor;
         private readonly IOkrKeyResultAiAdvisor? _okrKeyResultAiAdvisor;
+        private readonly ICheckInAiRolloutGate _checkInAiRolloutGate;
         private readonly Manage_KPI_or_OKR_System.Data.MiniERPDbContext _context;
         private readonly ILogger<AIController> _logger;
         public AIController(
@@ -40,6 +41,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             IKpiSuggestionAdvisor kpiSuggestionAdvisor,
             Manage_KPI_or_OKR_System.Data.MiniERPDbContext context,
             ILogger<AIController> logger,
+            ICheckInAiRolloutGate checkInAiRolloutGate,
             IOkrKeyResultAiAdvisor? okrKeyResultAiAdvisor = null)
         {
             _dataService = dataService;
@@ -52,6 +54,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _performanceAnalysisAdvisor = performanceAnalysisAdvisor;
             _chatAdvisor = chatAdvisor;
             _kpiSuggestionAdvisor = kpiSuggestionAdvisor;
+            _checkInAiRolloutGate = checkInAiRolloutGate;
             _context = context;
             _logger = logger;
             _okrKeyResultAiAdvisor = okrKeyResultAiAdvisor;
@@ -434,6 +437,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 return StatusCode(403, new AITextResponse { Success = false, Warnings = { "Ban khong co quyen truy cap check-in nay." } });
             }
+            catch (CheckInAiRolloutUnavailableException)
+            {
+                return StatusCode(503, new AITextResponse
+                {
+                    Success = false,
+                    Warnings = { "AI đánh giá check-in chưa được mở cho phạm vi rollout hiện tại." }
+                });
+            }
             catch (Exception exception) when (exception is ArgumentException or KeyNotFoundException or InvalidOperationException)
             {
                 return BadRequest(new AITextResponse { Success = false, Warnings = { "Khong the tao de xuat cho check-in nay." } });
@@ -523,6 +534,23 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     OfficialDataChanged: false,
                     "Quyết định này đã được ghi nhận trước đó; dữ liệu chính thức không bị AI thay đổi."));
             }
+            var decision = string.Equals(request.Decision, "Accepted", StringComparison.OrdinalIgnoreCase)
+                ? "Accepted"
+                : "Rejected";
+            if (decision == "Accepted")
+            {
+                var rollout = await _checkInAiRolloutGate.EvaluateAsync(
+                    checkIn.Id,
+                    cancellationToken);
+                if (!rollout.CanApply)
+                {
+                    return Conflict(new AITextResponse
+                    {
+                        Success = false,
+                        Warnings = { "Chế độ rollout hiện tại chỉ cho phép quan sát đề xuất AI, chưa cho phép áp dụng." }
+                    });
+                }
+            }
             if (!string.Equals(proposal.Status, "AwaitingHumanReview", StringComparison.Ordinal))
             {
                 return Conflict(new AITextResponse
@@ -533,9 +561,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
             _context.Entry(proposal).Property(item => item.RowVersion).OriginalValue = expectedRowVersion;
 
-            var decision = string.Equals(request.Decision, "Accepted", StringComparison.OrdinalIgnoreCase)
-                ? "Accepted"
-                : "Rejected";
             if (proposal.AgentRunId is not Guid runId || runId == Guid.Empty)
             {
                 return BadRequest(new AITextResponse
@@ -618,6 +643,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     Success = false,
                     Warnings = { "Phiên AI này đã kết thúc hoặc không còn chờ con người quyết định." }
                 });
+            }
+
+            if (decision == "Accepted")
+            {
+                var latestRollout = await _checkInAiRolloutGate.EvaluateAsync(
+                    checkIn.Id,
+                    cancellationToken);
+                if (!latestRollout.CanApply)
+                {
+                    return Conflict(new AITextResponse
+                    {
+                        Success = false,
+                        Warnings = { "Chế độ rollout vừa thay đổi; đề xuất AI chưa được áp dụng." }
+                    });
+                }
             }
 
             _context.AgentApprovals.Add(new AgentApproval

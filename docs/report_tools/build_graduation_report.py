@@ -538,7 +538,7 @@ def write_chapter_2(doc: DocumentType):
         ("Cô lập dữ liệu", "Tenant context xuyên request/worker, global query filter, SaveChanges guard và SQL Server RLS."),
         ("Toàn vẹn", "Transaction, FK, unique index, row-version, idempotency key và source fingerprint."),
         ("Khả năng giải thích", "Mọi nhận định AI dùng source ID hợp lệ; UI hiển thị citation, confidence và data gap."),
-        ("An toàn AI", "Strict JSON, giới hạn input/history/tool call, timeout/retry hữu hạn và abstain khi thiếu bằng chứng."),
+        ("An toàn AI", "Strict JSON, timeout/retry hữu hạn, abstain khi thiếu bằng chứng và rollout fail-closed bằng kill switch, Shadow/Pilot."),
         ("Khả năng phục hồi", "Outbox/ingestion worker có atomic claim, lease heartbeat, backoff, dead-letter và recovery."),
         ("Khả năng bảo trì", "ASP.NET Core MVC, EF Core, service interface và test project nằm trong solution."),
         ("Khả dụng", "Giao diện Razor/Bootstrap nhất quán, trạng thái loading rõ ràng và thao tác chính có phản hồi lỗi cụ thể."),
@@ -552,7 +552,7 @@ def write_chapter_2(doc: DocumentType):
     add_heading(doc, "2.4.2. Goal Planning có phê duyệt", 3)
     add_para(doc, "Người có quyền chọn KPI/OKR/KR/project → server dựng snapshot và tìm nguồn trong ACL → model trả ba phương án strict JSON → server validate/critic và tính fit → người dùng xem, chỉnh và xác nhận → domain validator tạo task trong transaction → tiến độ task được tổng hợp thành check-in Pending và durable outbox.")
     add_heading(doc, "2.4.3. Check-in AI Evaluator", 3)
-    add_para(doc, "Check-in được ghi thành công cùng outbox → worker claim job theo tenant → evaluator nạp baseline Approved, candidate và rubric đang hiệu lực → server tính projected progress/classification/confidence → model chỉ chấm tiêu chí định tính đủ nguồn → proposal được lưu để quản lý áp dụng vào bản nháp, sửa và tự gửi review.")
+    add_para(doc, "Check-in được ghi thành công cùng outbox → rollout gate kiểm tra kill switch/mode/tenant/phòng ban → worker claim job theo tenant → evaluator nạp baseline Approved, candidate và rubric đang hiệu lực → server tính projected progress/classification/confidence → model chỉ chấm tiêu chí định tính đủ nguồn → proposal được lưu. Shadow mode chỉ phục vụ quan sát; Pilot/General Availability mới cho quản lý áp dụng vào bản nháp, sửa và tự gửi review.")
 
 
 def write_chapter_3(doc: DocumentType, docs_dir: Path):
@@ -714,7 +714,7 @@ def write_chapter_5(doc: DocumentType, test_count: str):
         ["Migration lifecycle", "Đạt", "Database rỗng → latest; Down/Up/reapply nhóm migration AI trên SQL Server."],
         ["Tenant RLS", "Đạt", "Raw SQL/IgnoreQueryFilters bị lọc; INSERT/UPDATE chéo tenant bị chặn."],
         ["Pooled connection", "Đạt", "SESSION_CONTEXT được đặt lại khi connection tái sử dụng."],
-        ["Outbox", "Đạt", "Atomic claim, lease, heartbeat, retry, dead-letter và idempotency."],
+        ["Outbox và rollout", "Đạt", "Atomic claim/lease/retry; kill switch, Shadow và Pilot chặn đúng enqueue, worker, UI/server apply."],
         ["Goal Planning", "Đạt", "Concurrent draft, double-confirm, stale source, token rotation và reject."],
         ["Check-in rubric", "Đạt", "Cạnh tranh writer hội tụ, version tuần tự, một active rubric và requeue đúng source."],
         ["Proposal safety", "Đạt", "Citation giả/thu hồi, malformed JSON, low-confidence và row-version bị chặn đúng contract."],
@@ -774,7 +774,7 @@ def write_chapter_6(doc: DocumentType):
     add_heading(doc, "6.3.1. Goal Planning Agent", 3)
     add_para(doc, "Từ KPI/OKR/KR hoặc dự án, chọn tạo kế hoạch bằng AI. Kiểm tra ba phương án, citation, data gap, dependency và fit. Chọn phương án phù hợp, chỉnh assignee/deadline/đóng góp, sau đó xác nhận. Hệ thống kiểm tra lại nguồn và quyền trước khi tạo task.")
     add_heading(doc, "6.3.2. Check-in AI Evaluator", 3)
-    add_para(doc, "Sau khi check-in được gửi, proposal xuất hiện tại trang theo dõi nhân viên. Đọc official baseline, projected score, phân loại định lượng, confidence breakdown, tiêu chí rubric và nguồn. Nút áp dụng chỉ sao chép đề xuất còn hiệu lực vào form review; quản lý chỉnh và tự quyết định Duyệt/Từ chối.")
+    add_para(doc, "Sau khi check-in được gửi, proposal xuất hiện tại trang theo dõi nhân viên. Đọc official baseline, projected score, phân loại định lượng, confidence breakdown, tiêu chí rubric và nguồn. Ở Shadow mode, giao diện ghi rõ chế độ quan sát và không hiển thị khả năng áp dụng. Khi Pilot/General Availability được mở đúng tenant/phòng ban, nút áp dụng mới sao chép đề xuất còn hiệu lực vào form review; quản lý chỉnh và tự quyết định Duyệt/Từ chối.")
     add_heading(doc, "6.3.3. Gợi ý KPI và KR", 3)
     add_para(doc, "Chọn đúng kỳ và phạm vi trước khi gọi advisor. Mỗi gợi ý có source ID và đã qua validator về tên, đơn vị, target, ngưỡng và quan hệ. Áp dụng bản nháp vào form, kiểm tra lại rồi gửi form nghiệp vụ chuẩn để tạo bản ghi chính thức.")
     add_heading(doc, "6.3.4. Chat và phân tích hiệu suất", 3)
@@ -931,7 +931,7 @@ def parse_args():
     )
     parser.add_argument(
         "--test-count",
-        default="520",
+        default="536",
         help="Verified full-suite count embedded in the submission report.",
     )
     return parser.parse_args()

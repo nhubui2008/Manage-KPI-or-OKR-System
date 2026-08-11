@@ -22,7 +22,8 @@ public sealed record CheckInAiEvaluationResponse(
     Guid? AgentRunId = null,
     int? ProposalId = null,
     string? ProposalLifecycleStatus = null,
-    string? ProposalRowVersion = null);
+    string? ProposalRowVersion = null,
+    string RolloutMode = "GeneralAvailability");
 
 public sealed record CheckInAiProposal(
     string ProposedStatus,

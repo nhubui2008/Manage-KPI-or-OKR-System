@@ -173,7 +173,10 @@ public sealed class CheckInRubricSqlServerTests
             var controller = new EvaluationRubricsController(
                 context,
                 tenantContext,
-                new CheckInAiEvaluationQueue(context, tenantContext))
+                new CheckInAiEvaluationQueue(
+                    context,
+                    tenantContext,
+                    TestAiAdvisoryRollout.CreateGate(context)))
             {
                 ControllerContext = new ControllerContext { HttpContext = http },
                 TempData = new TempDataDictionary(http, new TestTempDataProvider())

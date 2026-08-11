@@ -40,6 +40,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly MiniERPDbContext _context;
         private readonly ICheckInAiEvaluationQueue? _aiEvaluationQueue;
         private readonly ITenantContext? _tenantContext;
+        private readonly ICheckInAiRolloutGate _checkInAiRolloutGate;
         private readonly SemaphoreSlim _indexLookupCacheGate = new(1, 1);
         private List<CheckInStatus>? _cachedCheckInStatuses;
         private List<FailReason>? _cachedFailReasons;
@@ -70,10 +71,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         public KPICheckInsController(
             MiniERPDbContext context,
+            ICheckInAiRolloutGate checkInAiRolloutGate,
             ICheckInAiEvaluationQueue? aiEvaluationQueue = null,
             ITenantContext? tenantContext = null)
         {
             _context = context;
+            _checkInAiRolloutGate = checkInAiRolloutGate;
             _aiEvaluationQueue = aiEvaluationQueue;
             _tenantContext = tenantContext;
         }
@@ -1387,6 +1390,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     await transaction.RollbackAsync();
                     return Forbid();
                 }
+                if (aiProposalId.HasValue)
+                {
+                    var rollout = await _checkInAiRolloutGate.EvaluateAsync(
+                        checkIn.Id,
+                        HttpContext.RequestAborted);
+                    if (!rollout.CanApply)
+                    {
+                        await transaction.RollbackAsync();
+                        TempData["ErrorMessage"] =
+                            "Chế độ rollout hiện tại chỉ cho phép quan sát đề xuất AI; hãy duyệt thủ công hoặc chờ pilot được mở.";
+                        return RedirectBack(returnUrl);
+                    }
+                }
 
                 var formulaBaseline = await _context.CheckInDetails
                     .AsNoTracking()
@@ -1416,6 +1432,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     TempData["ErrorMessage"] =
                         "Đề xuất AI đã thay đổi hoặc không còn chờ xử lý. Hãy phân tích lại trước khi áp dụng.";
                     return RedirectBack(returnUrl);
+                }
+
+                if (aiProposalId.HasValue)
+                {
+                    var latestRollout = await _checkInAiRolloutGate.EvaluateAsync(
+                        checkIn.Id,
+                        HttpContext.RequestAborted);
+                    if (!latestRollout.CanApply)
+                    {
+                        await transaction.RollbackAsync();
+                        TempData["ErrorMessage"] =
+                            "Chế độ rollout vừa thay đổi; đề xuất AI chưa được áp dụng và check-in chưa bị chỉnh sửa.";
+                        return RedirectBack(returnUrl);
+                    }
                 }
 
                 if (_context.Database.IsRelational())

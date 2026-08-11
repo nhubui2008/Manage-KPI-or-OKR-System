@@ -20,6 +20,114 @@ namespace ManageKpiOkrSystem.Tests;
 public sealed class AIPlanningAndCheckInEvaluatorTests
 {
     [Fact]
+    public async Task EvaluateAsync_HonorsShadowModeAndKillSwitchBeforeModelCall()
+    {
+        await using var context = CreateContext();
+        var kpi = new KPI { KPIName = "Shadow KPI", IsActive = true };
+        context.KPIs.Add(kpi);
+        await context.SaveChangesAsync();
+        context.KPIDetails.Add(new KPIDetail { KPIId = kpi.Id, TargetValue = 100m });
+        var checkIn = new KPICheckIn
+        {
+            EmployeeId = 8,
+            KPIId = kpi.Id,
+            CheckInDate = DateTime.UtcNow,
+            ReviewStatus = "Pending"
+        };
+        context.KPICheckIns.Add(checkIn);
+        await context.SaveChangesAsync();
+        context.CheckInDetails.Add(new CheckInDetail
+        {
+            CheckInId = checkIn.Id,
+            AchievedValue = 70m,
+            ProgressPercentage = 70m
+        });
+        await context.SaveChangesAsync();
+        var evaluator = new CheckInAiEvaluator(
+            context,
+            new SequencedModelClient(),
+            NullLogger<CheckInAiEvaluator>.Instance,
+            TestAiAdvisoryRollout.CreateGate(
+                context,
+                AiAdvisoryRolloutMode.Shadow));
+
+        var result = await evaluator.EvaluateAsync(
+            new CheckInAiEvaluationRequest(checkIn.Id),
+            AdminPrincipal());
+
+        Assert.Equal("Shadow", result.RolloutMode);
+        Assert.False(result.Proposal.CanApplyToDraft);
+        Assert.True(result.Proposal.RequiresHumanReview);
+
+        var disabledModel = new SequencedModelClient();
+        var disabledEvaluator = new CheckInAiEvaluator(
+            context,
+            disabledModel,
+            NullLogger<CheckInAiEvaluator>.Instance,
+            TestAiAdvisoryRollout.CreateGate(
+                context,
+                AiAdvisoryRolloutMode.GeneralAvailability,
+                killSwitch: true));
+        await Assert.ThrowsAsync<CheckInAiRolloutUnavailableException>(() =>
+            disabledEvaluator.EvaluateAsync(
+                new CheckInAiEvaluationRequest(checkIn.Id),
+                AdminPrincipal()));
+        Assert.Equal(0, disabledModel.CallCount);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_RechecksRolloutBeforePublishingFreshProposal()
+    {
+        await using var context = CreateContext();
+        var kpi = new KPI { KPIName = "Rollout race KPI", IsActive = true };
+        context.KPIs.Add(kpi);
+        await context.SaveChangesAsync();
+        context.KPIDetails.Add(new KPIDetail { KPIId = kpi.Id, TargetValue = 100m });
+        var checkIn = new KPICheckIn
+        {
+            EmployeeId = 8,
+            KPIId = kpi.Id,
+            CheckInDate = DateTime.UtcNow,
+            ReviewStatus = "Pending"
+        };
+        context.KPICheckIns.Add(checkIn);
+        await context.SaveChangesAsync();
+        context.CheckInDetails.Add(new CheckInDetail
+        {
+            CheckInId = checkIn.Id,
+            AchievedValue = 70m,
+            ProgressPercentage = 70m
+        });
+        await context.SaveChangesAsync();
+        var rolloutGate = new SequencedRolloutGate(
+            new CheckInAiRolloutDecision(
+                AiAdvisoryRolloutMode.GeneralAvailability,
+                CanGenerate: true,
+                CanApply: true,
+                "general_availability"),
+            new CheckInAiRolloutDecision(
+                AiAdvisoryRolloutMode.Disabled,
+                CanGenerate: false,
+                CanApply: false,
+                "kill_switch"));
+        var evaluator = new CheckInAiEvaluator(
+            context,
+            new SequencedModelClient(),
+            NullLogger<CheckInAiEvaluator>.Instance,
+            rolloutGate);
+
+        var error = await Assert.ThrowsAsync<CheckInAiRolloutUnavailableException>(() =>
+            evaluator.EvaluateAsync(
+                new CheckInAiEvaluationRequest(checkIn.Id),
+                AdminPrincipal()));
+
+        Assert.Equal("kill_switch", error.ReasonCode);
+        Assert.Equal(2, rolloutGate.EvaluationCount);
+        Assert.Empty(context.AiEvaluationProposals);
+        Assert.Empty(context.AgentRuns);
+    }
+
+    [Fact]
     public async Task EvaluateAsync_UsesOnlyApprovedCheckInForOfficialBaseline_AndKeepsCandidateProvisional()
     {
         await using var context = CreateContext();
@@ -41,7 +149,11 @@ public sealed class AIPlanningAndCheckInEvaluatorTests
             new CheckInDetail { CheckInId = rows[3].Id, AchievedValue = 75m });
         await context.SaveChangesAsync();
 
-        var evaluator = new CheckInAiEvaluator(context, new FakeModelClient("{\"rationale\":\"Quantitative evidence requires human review.\"}"), NullLogger<CheckInAiEvaluator>.Instance);
+        var evaluator = new CheckInAiEvaluator(
+            context,
+            new FakeModelClient("{\"rationale\":\"Quantitative evidence requires human review.\"}"),
+            NullLogger<CheckInAiEvaluator>.Instance,
+            TestAiAdvisoryRollout.CreateGate(context));
         var result = await evaluator.EvaluateAsync(new CheckInAiEvaluationRequest(rows[3].Id), AdminPrincipal());
 
         Assert.Equal(40m, result.OfficialApprovedBaselinePercent);
@@ -397,7 +509,8 @@ public sealed class AIPlanningAndCheckInEvaluatorTests
         var evaluator = new CheckInAiEvaluator(
             context,
             model,
-            NullLogger<CheckInAiEvaluator>.Instance);
+            NullLogger<CheckInAiEvaluator>.Instance,
+            TestAiAdvisoryRollout.CreateGate(context));
 
         var result = await evaluator.EvaluateAsync(
             new CheckInAiEvaluationRequest(checkIn.Id),
@@ -445,7 +558,8 @@ public sealed class AIPlanningAndCheckInEvaluatorTests
         var evaluator = new CheckInAiEvaluator(
             context,
             new SequencedModelClient(),
-            NullLogger<CheckInAiEvaluator>.Instance);
+            NullLogger<CheckInAiEvaluator>.Instance,
+            TestAiAdvisoryRollout.CreateGate(context));
         var hr = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
             new Claim(ClaimTypes.NameIdentifier, "99"),
@@ -794,7 +908,8 @@ public sealed class AIPlanningAndCheckInEvaluatorTests
             chatAdvisor: null!,
             kpiSuggestionAdvisor: null!,
             context: null!,
-            logger: NullLogger<AIController>.Instance);
+            logger: NullLogger<AIController>.Instance,
+            checkInAiRolloutGate: null!);
 
     private static void AssertNullBodyBadRequest(IActionResult result)
     {
@@ -821,6 +936,24 @@ public sealed class AIPlanningAndCheckInEvaluatorTests
         {
             Assert.True(_index < responses.Length);
             return Task.FromResult(responses[_index++]);
+        }
+    }
+
+    private sealed class SequencedRolloutGate(
+        params CheckInAiRolloutDecision[] decisions) : ICheckInAiRolloutGate
+    {
+        private int _index;
+        public int EvaluationCount => _index;
+
+        public CheckInAiTenantRolloutScope GetTenantScope(int tenantId) =>
+            throw new NotSupportedException();
+
+        public Task<CheckInAiRolloutDecision> EvaluateAsync(
+            int checkInId,
+            CancellationToken cancellationToken = default)
+        {
+            Assert.True(_index < decisions.Length);
+            return Task.FromResult(decisions[_index++]);
         }
     }
 

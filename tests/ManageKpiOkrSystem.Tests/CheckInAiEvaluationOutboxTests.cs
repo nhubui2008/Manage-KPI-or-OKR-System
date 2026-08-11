@@ -11,11 +11,55 @@ namespace ManageKpiOkrSystem.Tests;
 public sealed class CheckInAiEvaluationOutboxTests
 {
     [Fact]
+    public async Task EnqueueAsync_KillSwitchDoesNotCreateBackgroundWork()
+    {
+        var setup = await CreateScenarioAsync();
+        await using var context = setup.Context;
+        var queue = new CheckInAiEvaluationQueue(
+            context,
+            setup.TenantContext,
+            TestAiAdvisoryRollout.CreateGate(
+                context,
+                Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutMode.GeneralAvailability,
+                killSwitch: true));
+
+        var accepted = await queue.EnqueueAsync(
+            new CheckInAiEvaluationWorkItem(setup.CheckInId, 1, 99, "Admin"));
+        await context.SaveChangesAsync();
+
+        Assert.False(accepted);
+        Assert.Empty(context.CheckInAiEvaluationOutbox);
+    }
+
+    [Fact]
+    public async Task EnqueueAsync_ShadowModeCreatesMetadataOnlyBackgroundWork()
+    {
+        var setup = await CreateScenarioAsync();
+        await using var context = setup.Context;
+        var queue = new CheckInAiEvaluationQueue(
+            context,
+            setup.TenantContext,
+            TestAiAdvisoryRollout.CreateGate(
+                context,
+                Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutMode.Shadow));
+
+        Assert.True(await queue.EnqueueAsync(
+            new CheckInAiEvaluationWorkItem(setup.CheckInId, 1, 99, "Admin")));
+        await context.SaveChangesAsync();
+
+        var job = Assert.Single(context.CheckInAiEvaluationOutbox);
+        Assert.Equal("Pending", job.State);
+    }
+
+    [Fact]
     public async Task EnqueueAsync_IsIdempotentForTheSameTenantCheckInVersion()
     {
         var setup = await CreateScenarioAsync();
         await using var context = setup.Context;
-        var queue = new CheckInAiEvaluationQueue(context, setup.TenantContext);
+        var queue = new CheckInAiEvaluationQueue(
+            context,
+            setup.TenantContext,
+            TestAiAdvisoryRollout.CreateGate(context));
         var workItem = new CheckInAiEvaluationWorkItem(setup.CheckInId, 1, 99, "Admin");
 
         Assert.True(await queue.EnqueueAsync(workItem));
@@ -33,7 +77,10 @@ public sealed class CheckInAiEvaluationOutboxTests
     {
         var setup = await CreateScenarioAsync();
         await using var context = setup.Context;
-        var queue = new CheckInAiEvaluationQueue(context, setup.TenantContext);
+        var queue = new CheckInAiEvaluationQueue(
+            context,
+            setup.TenantContext,
+            TestAiAdvisoryRollout.CreateGate(context));
         var workItem = new CheckInAiEvaluationWorkItem(setup.CheckInId, 1, 99, "Admin");
         Assert.True(await queue.EnqueueAsync(workItem));
         await context.SaveChangesAsync();
@@ -55,7 +102,10 @@ public sealed class CheckInAiEvaluationOutboxTests
     {
         var setup = await CreateScenarioAsync();
         await using var context = setup.Context;
-        var queue = new CheckInAiEvaluationQueue(context, setup.TenantContext);
+        var queue = new CheckInAiEvaluationQueue(
+            context,
+            setup.TenantContext,
+            TestAiAdvisoryRollout.CreateGate(context));
 
         var accepted = await queue.EnqueueAsync(
             new CheckInAiEvaluationWorkItem(setup.CheckInId, 2, 99, "Admin"));

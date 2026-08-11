@@ -218,7 +218,10 @@ public sealed class EvaluationRubricsControllerTests
         return new EvaluationRubricsController(
             context,
             tenantContext,
-            new CheckInAiEvaluationQueue(context, tenantContext))
+            new CheckInAiEvaluationQueue(
+                context,
+                tenantContext,
+                TestAiAdvisoryRollout.CreateGate(context)))
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext },
             TempData = new TempDataDictionary(httpContext, new TestTempDataProvider())

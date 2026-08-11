@@ -821,6 +821,8 @@
                         result.replaceChildren();
                         const summary = document.createElement('div');
                         const advisoryStatus = proposal.serverClassification || proposal.proposedStatus || 'Chưa phân loại';
+                        const rolloutMode = String(payload.rolloutMode || 'Disabled');
+                        const isShadowMode = rolloutMode === 'Shadow';
                         const snapshotLabel = payload.candidateIsProvisional === false
                             ? 'Snapshot chính thức sau duyệt'
                             : 'Dự kiến – check-in chưa duyệt';
@@ -833,7 +835,9 @@
                         confidenceLine.textContent = `Độ tin cậy dữ liệu ${(Number(confidence.score || 0) * 100).toFixed(0)}% (${confidenceBand}) · phủ ${(Number(confidenceBreakdown.evidenceCoverage || 0) * 100).toFixed(0)}% · thẩm quyền ${(Number(confidenceBreakdown.sourceAuthority || 0) * 100).toFixed(0)}% · nhất quán ${(Number(confidenceBreakdown.consistency || 0) * 100).toFixed(0)}% · độ mới ${(Number(confidenceBreakdown.freshness || 0) * 100).toFixed(0)}%.`;
                         const citationsLine = document.createElement('div');
                         citationsLine.className = 'small text-muted mt-1';
-                        citationsLine.textContent = `Nguồn: ${sourceText}. Đề xuất provisional; chưa thay đổi dữ liệu chính thức.`;
+                        citationsLine.textContent = isShadowMode
+                            ? `Nguồn: ${sourceText}. Chế độ quan sát: đề xuất được lưu để đo chất lượng và chưa thể áp dụng.`
+                            : `Nguồn: ${sourceText}. Đề xuất provisional; chưa thay đổi dữ liệu chính thức.`;
                         result.append(summary, rationale, confidenceLine, citationsLine);
                         if (dataGaps.length) {
                             const gapList = document.createElement('ul');
@@ -876,7 +880,9 @@
                                     : 'ci-review-button ci-review-button--reject';
                                 decisionButton.textContent = decision === 'ApplyDraft'
                                     ? 'Áp dụng vào bản nháp'
-                                    : (canApplyDraft ? 'Không sử dụng đề xuất' : 'Ghi nhận không đủ bằng chứng');
+                                    : (canApplyDraft || isShadowMode
+                                        ? 'Không sử dụng đề xuất'
+                                        : 'Ghi nhận không đủ bằng chứng');
                                 decisionButton.addEventListener('click', async () => {
                                     if (decision === 'ApplyDraft') {
                                         if (!reviewForm) return;

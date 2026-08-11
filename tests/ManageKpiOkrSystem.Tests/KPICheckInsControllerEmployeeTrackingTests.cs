@@ -113,6 +113,99 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
     }
 
     [Fact]
+    public async Task Review_RolloutChangeBeforeMutationRejectsAiDraft()
+    {
+        await using var context = CreateContext();
+        var employee = new Employee
+        {
+            Id = 1,
+            EmployeeCode = "NV001",
+            FullName = "Nhân viên shadow",
+            Email = "shadow-employee@example.test",
+            Phone = "001",
+            IsActive = true
+        };
+        var kpi = new KPI { Id = 10, KPIName = "KPI shadow", IsActive = true };
+        var checkIn = new KPICheckIn
+        {
+            Id = 100,
+            EmployeeId = employee.Id,
+            KPIId = kpi.Id,
+            CheckInDate = DateTime.UtcNow,
+            ReviewStatus = "Pending"
+        };
+        context.AddRange(employee, kpi, checkIn);
+        context.CheckInDetails.Add(new CheckInDetail
+        {
+            CheckInId = checkIn.Id,
+            AchievedValue = 72m,
+            ProgressPercentage = 72m
+        });
+        await context.SaveChangesAsync();
+        var run = new AgentRunRecord
+        {
+            Id = Guid.NewGuid(),
+            TenantId = 1,
+            RunType = "CheckInEvaluation",
+            CorrelationId = "shadow-review-draft-test",
+            State = nameof(AgentRunState.AwaitingReview)
+        };
+        var proposal = new AiEvaluationProposal
+        {
+            TenantId = 1,
+            AgentRunId = run.Id,
+            KPICheckInId = checkIn.Id,
+            SourceEntityType = "KPICheckIn",
+            SourceEntityId = checkIn.Id,
+            SourceVersion = await CheckInAiSourceVersion.ResolveAsync(context, checkIn),
+            Status = "AwaitingHumanReview",
+            ProposedStatus = "AtRisk",
+            ProposedProgressPercent = 72m,
+            ConfidenceScore = .82d,
+            RequiresHumanReview = true,
+            RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
+        };
+        context.AddRange(run, proposal);
+        await context.SaveChangesAsync();
+        var rolloutGate = TestAiAdvisoryRollout.CreateSequencedGate(
+            new CheckInAiRolloutDecision(
+                Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutMode.GeneralAvailability,
+                CanGenerate: true,
+                CanApply: true,
+                "general_availability"),
+            new CheckInAiRolloutDecision(
+                Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutMode.Shadow,
+                CanGenerate: true,
+                CanApply: false,
+                "shadow_mode"));
+        var controller = CreateController(
+            context,
+            99,
+            new[] { "Admin" },
+            new[] { "KPICHECKINS_REVIEW" },
+            rolloutGate: rolloutGate);
+
+        var result = await controller.Review(
+            checkIn.Id,
+            "Approved",
+            "Client cố gắn bản nháp AI trong shadow mode.",
+            "72",
+            "/KPICheckIns/EmployeeTracking?tab=pending",
+            proposal.Id,
+            Convert.ToBase64String(proposal.RowVersion));
+
+        Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("Pending", checkIn.ReviewStatus);
+        Assert.Null(checkIn.ReviewedAt);
+        Assert.Null(checkIn.ReviewScore);
+        Assert.Equal("AwaitingHumanReview", proposal.Status);
+        Assert.Equal(nameof(AgentRunState.AwaitingReview), run.State);
+        Assert.Empty(context.AgentApprovals);
+        Assert.Contains("vừa thay đổi", controller.TempData["ErrorMessage"]?.ToString());
+        Assert.Equal(2, rolloutGate.EvaluationCount);
+    }
+
+    [Fact]
     public async Task Review_RevokedRagEvidence_StalesDraftBeforeOfficialFieldsChange()
     {
         await using var context = CreateContext();
@@ -463,7 +556,10 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
             ProgressPercentage = 75m
         });
         await context.SaveChangesAsync();
-        var queue = new CheckInAiEvaluationQueue(context, tenantContext);
+        var queue = new CheckInAiEvaluationQueue(
+            context,
+            tenantContext,
+            TestAiAdvisoryRollout.CreateGate(context));
         var controller = CreateController(
             context,
             99,
@@ -1091,7 +1187,8 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
         IEnumerable<string> roles,
         IEnumerable<string>? permissions = null,
         ICheckInAiEvaluationQueue? evaluationQueue = null,
-        ITenantContext? tenantContext = null)
+        ITenantContext? tenantContext = null,
+        ICheckInAiRolloutGate? rolloutGate = null)
     {
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, userId.ToString()) };
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
@@ -1105,7 +1202,11 @@ public sealed class KPICheckInsControllerEmployeeTrackingTests
             httpContext,
             new RouteData(),
             new ControllerActionDescriptor());
-        var controller = new KPICheckInsController(context, evaluationQueue, tenantContext)
+        var controller = new KPICheckInsController(
+            context,
+            rolloutGate ?? TestAiAdvisoryRollout.CreateGate(context),
+            evaluationQueue,
+            tenantContext)
         {
             ControllerContext = new ControllerContext(actionContext),
             Url = new UrlHelper(actionContext),

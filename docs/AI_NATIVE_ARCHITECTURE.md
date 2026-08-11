@@ -19,6 +19,7 @@ Hệ thống hiện có chín luồng AI-native hoạt động theo nguyên tắ
    - Rubric định tính/behavioral được version hóa theo KPI/chu kỳ bằng `EvaluationRubrics` và `EvaluationCriteria`. Trang quản lý rubric nằm trong KPI Details, chỉ tạo version mới; version đã phát hành là bất biến và version mới làm proposal đang chờ trở thành `Stale`, rồi requeue bằng rubric đang hiệu lực tại thời điểm đánh giá.
    - Trả official baseline, projected progress, classification do server suy ra, nguồn, data gaps và confidence 40% coverage + 25% authority + 20% consistency + 15% freshness. Dưới 0,60 chỉ abstain phần chấm định tính; kết quả định lượng vẫn do công thức hệ thống quyết định.
    - Lưu metadata kiểm toán của run/proposal/citation; không lưu prompt, ghi chú check-in hoặc đoạn tài liệu.
+   - Cổng rollout trung tâm có kill switch và bốn mode `Disabled`, `Shadow`, `Pilot`, `GeneralAvailability`. `Shadow` vẫn lưu proposal để đo chất lượng nhưng trả `CanApplyToDraft=false`; `Pilot` chỉ xử lý check-in thuộc tenant cho phép và, nếu cấu hình, phòng ban đang hoạt động của chính nhân viên được đánh giá. Queue, worker, evaluator và hai đường áp dụng phía server đều kiểm tra lại gate nên request giả hoặc thay đổi assignment sau enqueue đều fail-closed.
    - Chấp nhận/từ chối đề xuất AI không thay đổi điểm, trạng thái duyệt, xếp hạng hay thưởng. Quy trình review của con người vẫn là cổng cuối.
    - Quản lý có thể đưa đề xuất có row-version còn hiệu lực vào form review dưới dạng bản nháp, chỉnh sửa rồi tự gửi quyết định. Proposal chỉ được ghi `AppliedByHuman` trong cùng transaction với quyết định review; điểm cuối lệch hơn 10 điểm so với baseline công thức bắt buộc có lý do. Khi duyệt, snapshot `Approved` được enqueue lại trong cùng transaction để tạo quan sát chính thức; bản nháp hoặc thao tác AI riêng lẻ không tự duyệt hay thay đổi thưởng/xếp hạng.
 
@@ -135,12 +136,13 @@ Dùng secret store hoặc biến môi trường; `.env` chỉ dành cho local. M
    - `20260810105645_AddGenericAgentDraftActions`
    - `20260810204208_AddGoalPlanningApprovalProof`
    - `20260810214630_AddVersionedCheckInEvaluationRubrics`
-2. Tạo index Azure AI Search với schema/ACL ở trên.
-3. Cấu hình DeepSeek, BGE-M3, Azure Search, MinerU, private Blob, exact `KnowledgeStorage:AllowedReadOrigins` và pin `DocumentIngestion:PipelineVersion` qua secret store/biến môi trường.
-4. Triển khai ClamAV và cấu hình `MalwareScanner`; lỗi cấu hình phải làm job retry/dead-letter, không được bypass quét.
-5. Kiểm thử tenant A không thể truy xuất citation của tenant B và kiểm thử de-index trên staging trước khi bật ingestion.
+2. Giữ `AiAdvisoryRollout:KillSwitch=true` và `CheckInEvaluationMode=Disabled` cho tới khi hoàn tất kiểm thử. Mở `Shadow` trước; chỉ chuyển `Pilot` khi đã cấu hình ít nhất một `PilotTenantIds` và tùy chọn `PilotDepartmentIds`. `GeneralAvailability` chỉ dùng sau khi cổng chất lượng được phê duyệt.
+3. Tạo index Azure AI Search với schema/ACL ở trên.
+4. Cấu hình DeepSeek, BGE-M3, Azure Search, MinerU, private Blob, exact `KnowledgeStorage:AllowedReadOrigins` và pin `DocumentIngestion:PipelineVersion` qua secret store/biến môi trường.
+5. Triển khai ClamAV và cấu hình `MalwareScanner`; lỗi cấu hình phải làm job retry/dead-letter, không được bypass quét.
+6. Kiểm thử tenant A không thể truy xuất citation của tenant B và kiểm thử de-index trên staging trước khi bật ingestion.
 
-Queue đánh giá check-in dùng SQL outbox tenant-scoped và commit cùng transaction tạo/cập nhật check-in. Worker claim bằng lease có điều kiện, phục hồi lease hết hạn sau restart, retry có exponential backoff và chuyển `DeadLetter` sau giới hạn. Job được idempotent theo `(TenantId, CheckInId, SourceVersion)`; membership/role luôn được nạp lại trước khi chạy. Outbox chỉ lưu metadata vận chuyển và mã lỗi giới hạn, không lưu prompt, ghi chú hay exception text. `AgentRun` vẫn bắt đầu khi proposal được tạo thành công và tiếp tục là lifecycle review của con người, không bị dùng làm transport queue.
+Queue đánh giá check-in dùng SQL outbox tenant-scoped và commit cùng transaction tạo/cập nhật check-in. Gate chặn enqueue khi feature dừng/ngoài pilot; worker lọc tenant/phòng ban trước claim và kiểm tra lại trước model call. Nếu cấu hình hoặc assignment đổi trong khoảng claim, lease được trả về `Pending` mà không tiêu hao attempt để có thể tiếp tục an toàn khi scope được mở lại. Worker claim bằng lease có điều kiện, phục hồi lease hết hạn sau restart, retry có exponential backoff và chuyển `DeadLetter` sau giới hạn. Job được idempotent theo `(TenantId, CheckInId, SourceVersion)`; membership/role luôn được nạp lại trước khi chạy. Outbox chỉ lưu metadata vận chuyển và mã lỗi giới hạn, không lưu prompt, ghi chú hay exception text. `AgentRun` vẫn bắt đầu khi proposal được tạo thành công và tiếp tục là lifecycle review của con người, không bị dùng làm transport queue.
 
 SQL Server RLS là lớp phòng vệ sau global query filter: 57 bảng nghiệp vụ tenant-scoped có filter predicate cùng block predicate cho `AFTER INSERT` và `AFTER UPDATE`. Mỗi logical SQL connection được gắn `TenantId` và `SystemUserId` read-only qua `SESSION_CONTEXT`; unresolved context dùng sentinel fail-closed. Không có runtime bypass. Hai worker nền đọc danh sách tenant hoạt động từ bảng platform `Tenants`, sau đó claim từng hàng trong tenant context riêng và luân phiên tenant để tránh bỏ đói hàng đợi.
 
@@ -179,4 +181,4 @@ Các agent chia sẻ `AgentRunId`, giới hạn số bước/tool, deadline và 
 - Lưu quyết định accept/reject và lý do dạng mã, tránh lưu PII tự do.
 - Theo dõi calibration theo confidence band, tỷ lệ abstain, citation validity và mức chênh với review cuối.
 - Chỉ hiển thị xác suất dự đoán sau khi đạt cỡ mẫu tối thiểu và vượt kiểm thử calibration theo từng tenant/phòng ban.
-- Thêm canary rollout, cost/latency budget và kill switch riêng cho từng agent.
+- Mở rộng cùng hợp đồng rollout/canary đã dùng cho Check-in AI sang các advisor khác sau khi từng luồng có dashboard chất lượng và cổng staging tương ứng.

@@ -57,7 +57,9 @@ public sealed class KPICheckInsControllerIndexTests
         };
         httpContext.Request.Path = "/KPICheckIns";
 
-        return new KPICheckInsController(context)
+        return new KPICheckInsController(
+            context,
+            TestAiAdvisoryRollout.CreateGate(context))
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext }
         };

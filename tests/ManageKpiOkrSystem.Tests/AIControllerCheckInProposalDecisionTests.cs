@@ -15,6 +15,82 @@ namespace ManageKpiOkrSystem.Tests;
 public sealed class AIControllerCheckInProposalDecisionTests
 {
     [Fact]
+    public async Task DecideCheckInProposal_RolloutChangeBeforeMutationRejectsAcceptance()
+    {
+        await using var context = CreateContext();
+        var kpi = new KPI { Id = 10, KPIName = "Shadow decision KPI", IsActive = true };
+        var checkIn = new KPICheckIn
+        {
+            Id = 20,
+            KPIId = kpi.Id,
+            EmployeeId = 7,
+            CheckInDate = DateTime.UtcNow,
+            ReviewStatus = "Pending"
+        };
+        context.AddRange(kpi, checkIn);
+        context.CheckInDetails.Add(new CheckInDetail
+        {
+            CheckInId = checkIn.Id,
+            AchievedValue = 65m,
+            ProgressPercentage = 65m
+        });
+        await context.SaveChangesAsync();
+        var run = new AgentRunRecord
+        {
+            Id = Guid.NewGuid(),
+            TenantId = 1,
+            RunType = "check-in-evaluation",
+            CorrelationId = "shadow-decision-test",
+            State = nameof(AgentRunState.AwaitingReview)
+        };
+        var proposal = new AiEvaluationProposal
+        {
+            TenantId = 1,
+            AgentRunId = run.Id,
+            KPICheckInId = checkIn.Id,
+            SourceEntityType = "KPICheckIn",
+            SourceEntityId = checkIn.Id,
+            SourceVersion = await CheckInAiSourceVersion.ResolveAsync(context, checkIn),
+            Status = "AwaitingHumanReview",
+            ProposedStatus = "AtRisk",
+            ProposedProgressPercent = 65m,
+            ConfidenceScore = .75d,
+            RequiresHumanReview = true,
+            RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }
+        };
+        context.AddRange(run, proposal);
+        await context.SaveChangesAsync();
+        var rolloutGate = TestAiAdvisoryRollout.CreateSequencedGate(
+            new CheckInAiRolloutDecision(
+                Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutMode.GeneralAvailability,
+                CanGenerate: true,
+                CanApply: true,
+                "general_availability"),
+            new CheckInAiRolloutDecision(
+                Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutMode.Shadow,
+                CanGenerate: true,
+                CanApply: false,
+                "shadow_mode"));
+        var controller = CreateController(context, rolloutGate: rolloutGate);
+
+        var result = await controller.DecideCheckInProposal(
+            new CheckInAiProposalDecisionRequest(
+                proposal.Id,
+                "Accepted",
+                Convert.ToBase64String(proposal.RowVersion),
+                Guid.NewGuid()),
+            CancellationToken.None);
+
+        Assert.IsType<ConflictObjectResult>(result);
+        Assert.Equal("AwaitingHumanReview", proposal.Status);
+        Assert.Equal(nameof(AgentRunState.AwaitingReview), run.State);
+        Assert.Empty(context.AgentApprovals);
+        Assert.Equal("Pending", checkIn.ReviewStatus);
+        Assert.Null(checkIn.ReviewScore);
+        Assert.Equal(2, rolloutGate.EvaluationCount);
+    }
+
+    [Fact]
     public async Task DecideCheckInProposal_RequiresRowVersionAndIdempotencyKey()
     {
         await using var context = CreateContext();
@@ -236,7 +312,11 @@ public sealed class AIControllerCheckInProposalDecisionTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
             .Options);
 
-    private static AIController CreateController(MiniERPDbContext context)
+    private static AIController CreateController(
+        MiniERPDbContext context,
+        Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutMode rolloutMode =
+            Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutMode.GeneralAvailability,
+        ICheckInAiRolloutGate? rolloutGate = null)
     {
         var controller = new AIController(
             dataService: null!,
@@ -250,7 +330,8 @@ public sealed class AIControllerCheckInProposalDecisionTests
             chatAdvisor: null!,
             kpiSuggestionAdvisor: null!,
             context: context,
-            logger: NullLogger<AIController>.Instance);
+            logger: NullLogger<AIController>.Instance,
+            checkInAiRolloutGate: rolloutGate ?? TestAiAdvisoryRollout.CreateGate(context, rolloutMode));
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext
