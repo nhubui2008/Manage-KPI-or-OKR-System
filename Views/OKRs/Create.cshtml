@@ -15,7 +15,7 @@
     var selectedEmployeeId = ViewData["SelectedEmployeeId"] is int employeeIdValue ? (int?)employeeIdValue : null;
 }
 
-<div class="cf-page" data-create-form data-okr-create>
+<div class="cf-page okr-form-page" data-create-form data-okr-create>
     <header class="cf-header">
         <div class="cf-header__content">
             <h1>Khởi tạo OKR</h1>
@@ -260,6 +260,7 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/okr-form.css" asp-append-version="true" />
 }
 
 @section Scripts {

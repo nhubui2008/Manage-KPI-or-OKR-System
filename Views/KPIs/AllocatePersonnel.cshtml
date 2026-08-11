@@ -12,19 +12,19 @@
 }
 
 <div class="container-fluid px-0 kpi-allocation-page">
-    <div class="page-header d-flex justify-content-between align-items-center mb-4 kpi-allocation-header">
-        <div>
-            <h1 class="h3 font-weight-bold mb-1">Phân bổ KPI: @Model.KPIName</h1>
-            <div class="page-breadcrumb">
-                <a href="/">Trang chủ</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <a asp-action="Index">Danh sách KPI</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <a asp-action="Details" asp-route-id="@Model.Id">Chi tiết</a>
-                <i class="bi bi-chevron-right separator"></i>
-                <span>Phân bổ phòng ban/nhân sự</span>
-            </div>
-        </div>
+    <!-- PAGE TITLE HEADER VELZON -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="page-title-box d-sm-flex align-items-center justify-content-between mb-3 kpi-allocation-header">
+                <div>
+                    <h4 class="mb-sm-0 fw-bold">Phân bổ KPI: @Model.KPIName</h4>
+                    <ol class="breadcrumb m-0 me-3 page-breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+                        <li class="breadcrumb-item"><a asp-action="Index">Danh sách KPI</a></li>
+                        <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Id">Chi tiết</a></li>
+                        <li class="breadcrumb-item active">Phân bổ phòng ban/nhân sự</li>
+                    </ol>
+                </div>
         <div>
             <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary rounded-pill px-4">
                 <i class="bi bi-arrow-left me-1"></i> Quay lại
@@ -469,3 +469,7 @@
         });
     });
 </script>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/velzon-kpi.css" asp-append-version="true" />
+}

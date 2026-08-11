@@ -61,20 +61,32 @@
     text-underline-offset: 0.18em;
 }
 
+/* Hide scrollbars globally on main container and menu */
+html,
+body,
 .velzon-shell,
-.velzon-shell * {
-    scrollbar-color: #bdc5d0 transparent;
-    scrollbar-width: thin;
+.velzon-shell *,
+#layout-wrapper,
+.main-content,
+.page-content,
+.sidebar-nav,
+.navbar-menu {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
 }
 
-.velzon-shell ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-.velzon-shell ::-webkit-scrollbar-thumb {
-    background: #bdc5d0;
-    border-radius: 8px;
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.velzon-shell::-webkit-scrollbar,
+.velzon-shell *::-webkit-scrollbar,
+#layout-wrapper::-webkit-scrollbar,
+.main-content::-webkit-scrollbar,
+.page-content::-webkit-scrollbar,
+.sidebar-nav::-webkit-scrollbar,
+.navbar-menu::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 .velzon-shell .app-blob-container {
@@ -1546,4 +1558,136 @@ html.sidebar-expanded .velzon-shell .main-content {
         padding-left: 16px !important;
         padding-right: 16px !important;
     }
+}
+
+/* Specific Filter Form fixes for Search Icon, Select Arrows, and Button Alignment */
+.velzon-shell .evaluation-filter-form {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: flex-end !important;
+    gap: 12px !important;
+    margin-top: 0.9rem !important;
+}
+
+.velzon-shell .evaluation-search-field {
+    position: relative !important;
+    flex: 1 1 240px !important;
+    min-width: 220px !important;
+    margin-bottom: 0 !important;
+}
+
+.velzon-shell .evaluation-search-field i {
+    position: absolute !important;
+    left: 10px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    bottom: auto !important;
+    color: var(--vz-muted) !important;
+    font-size: 0.9rem !important;
+    pointer-events: none !important;
+    z-index: 5 !important;
+}
+
+.velzon-shell .evaluation-search-field input {
+    padding-left: 32px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+}
+
+.velzon-shell .evaluation-filter-form label {
+    flex: 1 1 140px !important;
+    min-width: 130px !important;
+    margin-bottom: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+}
+
+.velzon-shell .evaluation-filter-form label > span:not(.visually-hidden) {
+    display: block !important;
+    margin-bottom: 4px !important;
+    color: #5f6673 !important;
+    font-size: 0.72rem !important;
+    font-weight: 500 !important;
+}
+
+.velzon-shell .evaluation-filter-form select,
+.velzon-shell select.no-select2 {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding-right: 28px !important;
+    padding-left: 10px !important;
+    background-position: right 8px center !important;
+    box-sizing: border-box !important;
+}
+
+.velzon-shell .evaluation-filter-button {
+    height: 36px !important;
+    min-height: 36px !important;
+    margin-bottom: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    align-self: flex-end !important;
+    padding: 0 16px !important;
+    line-height: 1 !important;
+}
+
+/* ── Nút "Xóa lọc" kiểu pill đẹp ──────────────────────────────── */
+.velzon-shell .kpi-clear-filter-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 5px 11px 5px 9px !important;
+    border: 1px solid #f5c2c7 !important;
+    border-radius: 20px !important;
+    background: #fff3f4 !important;
+    color: #c0392b !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    line-height: 1.4 !important;
+    white-space: nowrap !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+                box-shadow 0.15s ease !important;
+    vertical-align: middle !important;
+}
+
+.velzon-shell .kpi-clear-filter-btn:hover {
+    border-color: #e74c3c !important;
+    background: #fde8ea !important;
+    color: #922b21 !important;
+    box-shadow: 0 2px 8px rgba(192, 57, 43, 0.15) !important;
+    text-decoration: none !important;
+}
+
+.velzon-shell .kpi-clear-filter-btn:active {
+    background: #fad4d7 !important;
+    box-shadow: none !important;
+    transform: scale(0.97) !important;
+}
+
+.velzon-shell .kpi-clear-filter-btn > i {
+    font-size: 0.85rem !important;
+    opacity: 0.85 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Badge số bộ lọc đang active */
+.velzon-shell .kpi-clear-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 18px !important;
+    height: 18px !important;
+    padding: 0 5px !important;
+    border-radius: 9px !important;
+    background: #e74c3c !important;
+    color: #fff !important;
+    font-size: 0.65rem !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    letter-spacing: 0 !important;
 }
