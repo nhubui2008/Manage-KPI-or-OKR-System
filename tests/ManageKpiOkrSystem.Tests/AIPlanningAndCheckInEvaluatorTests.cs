@@ -338,6 +338,10 @@ public sealed class AIPlanningAndCheckInEvaluatorTests
 
         Assert.Equal(2, model.CallCount);
         Assert.Equal(1, retriever.CallCount);
+        Assert.Equal(2, retriever.RequestedMaxResults);
+        Assert.Contains("doc-1", model.Requests[1].Messages[2].Content, StringComparison.Ordinal);
+        Assert.Contains("doc-2", model.Requests[1].Messages[2].Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("doc-3", model.Requests[1].Messages[2].Content, StringComparison.Ordinal);
         Assert.Equal("AgentWithRag", draft.GenerationMode);
         Assert.NotNull(draft.Warnings);
         Assert.NotEmpty(draft.Warnings);
@@ -929,12 +933,14 @@ public sealed class AIPlanningAndCheckInEvaluatorTests
     {
         private int _index;
         public int CallCount => _index;
+        public List<AIModelRequest> Requests { get; } = new();
 
         public Task<AIModelResponse> CompleteAsync(
             AIModelRequest request,
             CancellationToken cancellationToken = default)
         {
             Assert.True(_index < responses.Length);
+            Requests.Add(request);
             return Task.FromResult(responses[_index++]);
         }
     }
@@ -960,19 +966,29 @@ public sealed class AIPlanningAndCheckInEvaluatorTests
     private sealed class FakeEvidenceRetriever : IAIEvidenceRetriever
     {
         public int CallCount { get; private set; }
+        public int? RequestedMaxResults { get; private set; }
 
         public Task<IReadOnlyList<AIRetrievalResult>> RetrieveAsync(
             AIRetrievalQuery query,
             CancellationToken cancellationToken = default)
         {
             CallCount++;
+            RequestedMaxResults = query.MaxResults;
             Assert.Contains("AllowedPrincipalIds", query.SecurityFilter);
             IReadOnlyList<AIRetrievalResult> result = new[]
             {
                 new AIRetrievalResult(
                     new EvidenceRef("azure-search", "doc-1", DateTimeOffset.UtcNow, .85, true, true),
                     "Sanitized internal evidence.",
-                    .9)
+                    .9),
+                new AIRetrievalResult(
+                    new EvidenceRef("azure-search", "doc-2", DateTimeOffset.UtcNow, .8, true, true),
+                    "Second authorized result.",
+                    .8),
+                new AIRetrievalResult(
+                    new EvidenceRef("azure-search", "doc-3", DateTimeOffset.UtcNow, .75, true, true),
+                    "Provider result beyond the requested bound.",
+                    .7)
             };
             return Task.FromResult(result);
         }

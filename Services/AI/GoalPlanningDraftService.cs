@@ -1471,9 +1471,10 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
                     maxResults,
                     SecurityFilter: _securityFilterBuilder?.Build(user)),
                 cancellationToken);
+            var boundedRetrieved = retrieved.Take(maxResults).ToList();
             var retrievedCount = 0;
 
-            foreach (var result in retrieved)
+            foreach (var result in boundedRetrieved)
             {
                 result.Citation.Validate();
                 if (!evidence.Any(existing =>
@@ -1488,7 +1489,7 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
             var observation = JsonSerializer.Serialize(new
             {
                 source = sourcePayload,
-                evidence = retrieved.Select(result => new
+                evidence = boundedRetrieved.Select(result => new
                 {
                     result.Citation.SourceType,
                     result.Citation.SourceId,
