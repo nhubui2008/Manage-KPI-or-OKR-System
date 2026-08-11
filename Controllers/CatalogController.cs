@@ -6,7 +6,9 @@ using Manage_KPI_or_OKR_System.Models;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
-    [Authorize(Roles = "Admin,Administrator")]
+    [Authorize(Roles = "Admin,Administrator,CatalogDeveloper")]
+    [HasPermission("CATALOG_VIEW")]
+    [HasPermission("CATALOG_EDIT")]
     public class CatalogController : Controller
     {
         private readonly MiniERPDbContext _context;
@@ -23,7 +25,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (string.Equals(tab, "systemparameter", StringComparison.OrdinalIgnoreCase))
             {
-                return RedirectToAction("Index", "SystemParameters");
+                if (User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("HR"))
+                {
+                    return RedirectToAction("Index", "SystemParameters");
+                }
+
+                tab = "kpitype";
             }
 
             ViewBag.ActiveTab = tab;

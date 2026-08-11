@@ -119,7 +119,7 @@ namespace Manage_KPI_or_OKR_System.Services
                 return true;
             }
 
-            var userRoles = user.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
+            var userRoles = ProjectRoleProfileHelper.GetAuthorizationRoleNames(user);
             if (!userRoles.Any())
             {
                 return false;

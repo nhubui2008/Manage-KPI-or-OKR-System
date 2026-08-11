@@ -7,12 +7,23 @@ using Manage_KPI_or_OKR_System.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace ManageKpiOkrSystem.Tests;
 
 public sealed class WorkProjectsControllerIndexTests
 {
+    [Fact]
+    public void DependencyInjection_SelectsTheAnnotatedControllerConstructor()
+    {
+        var factory = ActivatorUtilities.CreateFactory(
+            typeof(WorkProjectsController),
+            Type.EmptyTypes);
+
+        Assert.NotNull(factory);
+    }
+
     [Fact]
     public async Task Index_WithArchivedStatus_IncludesInactiveArchivedProjects()
     {

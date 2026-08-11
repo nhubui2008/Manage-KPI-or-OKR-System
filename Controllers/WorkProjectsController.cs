@@ -9,6 +9,7 @@ using Manage_KPI_or_OKR_System.Services.Tenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Manage_KPI_or_OKR_System.Controllers
 {
@@ -55,6 +56,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
         }
 
+        [ActivatorUtilitiesConstructor]
         public WorkProjectsController(
             MiniERPDbContext context,
             IWorkItemCommandValidator commandValidator,

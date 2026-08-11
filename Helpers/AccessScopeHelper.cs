@@ -19,7 +19,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
 
         public static bool IsManager(ClaimsPrincipal user)
         {
-            return IsInRole(user, "Manager");
+            return IsInRole(user, "Manager") || ProjectRoleProfileHelper.IsProjectManagerAi(user);
         }
 
         public static bool IsHumanResources(ClaimsPrincipal user)
@@ -34,7 +34,9 @@ namespace Manage_KPI_or_OKR_System.Helpers
 
         public static bool IsEmployeeOrSales(ClaimsPrincipal user)
         {
-            return IsInRole(user, "Employee") || IsInRole(user, "Sales");
+            return IsInRole(user, "Employee") ||
+                   IsInRole(user, "Sales") ||
+                   ProjectRoleProfileHelper.IsEmployeeProfile(user);
         }
 
         public static async Task<Employee?> GetCurrentEmployeeAsync(MiniERPDbContext context, ClaimsPrincipal user)

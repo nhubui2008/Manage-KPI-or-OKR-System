@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Models.AI;
 using Manage_KPI_or_OKR_System.Services.Tenancy;
 using Microsoft.EntityFrameworkCore;
@@ -36,7 +37,12 @@ public sealed class AIChatAdvisor : IAIChatAdvisor
     private static readonly string[] AllowedRoles =
     {
         "Admin", "Administrator", "Director", "Manager", "HR",
-        "Human Resources", "Employee", "Sales"
+        "Human Resources", "Employee", "Sales",
+        ProjectRoleProfileHelper.ProjectManagerAiRole,
+        ProjectRoleProfileHelper.KpiOkrDeveloperRole,
+        ProjectRoleProfileHelper.OperationsDeveloperRole,
+        ProjectRoleProfileHelper.TesterRole,
+        ProjectRoleProfileHelper.CatalogDeveloperRole
     };
 
     private readonly MiniERPDbContext _context;

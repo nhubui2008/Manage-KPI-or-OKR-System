@@ -24,11 +24,7 @@ namespace Manage_KPI_or_OKR_System.Services
                 return principal;
             }
 
-            var roleNames = identity.Claims
-                .Where(c => c.Type == ClaimTypes.Role && !string.IsNullOrWhiteSpace(c.Value))
-                .Select(c => c.Value)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            var roleNames = ProjectRoleProfileHelper.GetAuthorizationRoleNames(principal);
 
             if (!roleNames.Any())
             {

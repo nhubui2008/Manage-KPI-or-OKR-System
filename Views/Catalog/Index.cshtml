@@ -16,6 +16,7 @@
     var gradingRanks = ViewBag.GradingRanks as List<Manage_KPI_or_OKR_System.Models.GradingRank> ?? new List<Manage_KPI_or_OKR_System.Models.GradingRank>();
     var statuses = ViewBag.Statuses as List<Manage_KPI_or_OKR_System.Models.Status> ?? new List<Manage_KPI_or_OKR_System.Models.Status>();
     var totalCatalogEntries = kpiTypes.Count + okrTypes.Count + kpiProperties.Count + checkInStatuses.Count + failReasons.Count + gradingRanks.Count + statuses.Count;
+    var canManageSystemParameters = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("HR");
 }
 
 @section Styles {
@@ -36,10 +37,13 @@
                 <span>Danh mục hệ thống</span>
             </nav>
         </div>
-        <a asp-controller="SystemParameters" asp-action="Index" class="evaluation-secondary-action catalog-system-link">
-            <i class="bi bi-sliders" aria-hidden="true"></i>
-            <span>Tham số hệ thống</span>
-        </a>
+        @if (canManageSystemParameters)
+        {
+            <a asp-controller="SystemParameters" asp-action="Index" class="evaluation-secondary-action catalog-system-link">
+                <i class="bi bi-sliders" aria-hidden="true"></i>
+                <span>Tham số hệ thống</span>
+            </a>
+        }
     </header>
 
     <section class="evaluation-summary catalog-summary" aria-label="Tổng quan danh mục">
@@ -111,11 +115,14 @@
                         </button>
                     </li>
 
-                    <li class="nav-item" role="presentation">
-                        <a class="nav-link catalog-tab" asp-controller="SystemParameters" asp-action="Index">
-                            <i class="bi bi-gear" aria-hidden="true"></i> Tham số hệ thống
-                        </a>
-                    </li>
+                    @if (canManageSystemParameters)
+                    {
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link catalog-tab" asp-controller="SystemParameters" asp-action="Index">
+                                <i class="bi bi-gear" aria-hidden="true"></i> Tham số hệ thống
+                            </a>
+                        </li>
+                    }
                 </ul>
             </div>
 

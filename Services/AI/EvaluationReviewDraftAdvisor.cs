@@ -778,7 +778,7 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
         {
             principals.Add($"user:{userId}");
         }
-        foreach (var role in user.FindAll(ClaimTypes.Role).Select(item => item.Value))
+        foreach (var role in ProjectRoleProfileHelper.GetAuthorizationRoleNames(user))
         {
             var principal = KnowledgeDocumentAccessPolicy.CreateRolePrincipal(role);
             if (principal != null)

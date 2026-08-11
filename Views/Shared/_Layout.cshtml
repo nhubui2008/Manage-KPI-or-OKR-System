@@ -149,132 +149,156 @@
 
                 <div class="sidebar-nav">
                     @{
-                        // TÁCH RÕ RÀNG CÁC QUYỀN ĐỂ FRONTEND DỄ KIỂM SOÁT
                         bool isAdmin = User.IsInRole("Admin") || User.IsInRole("Administrator");
-                        
-                        // Permission claims are loaded per request by PermissionClaimsTransformation.
+                        bool isPlatformAdmin = User.HasClaim(
+                            Manage_KPI_or_OKR_System.Helpers.AuthRoleHelper.PlatformAdminClaimType,
+                            bool.TrueString);
+                        bool isManagerWorkflow = Manage_KPI_or_OKR_System.Helpers.AccessScopeHelper.IsManagerScoped(User);
+                        bool isEmployeeWorkflow = Manage_KPI_or_OKR_System.Helpers.AccessScopeHelper.IsEmployeeOrSales(User);
+                        bool isProjectManagerAi = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsProjectManagerAi(User);
+                        bool isKpiOkrDeveloper = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsKpiOkrDeveloper(User);
+                        bool isOperationsDeveloper = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsOperationsDeveloper(User);
+                        bool isTester = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsTester(User);
+                        bool isCatalogDeveloper = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsCatalogDeveloper(User);
+                        bool hasSpecializedProjectRole = isProjectManagerAi || isKpiOkrDeveloper ||
+                            isOperationsDeveloper || isTester || isCatalogDeveloper;
+
                         var userPermissions = User.Claims
                             .Where(c => c.Type == Manage_KPI_or_OKR_System.Services.PermissionClaimsTransformation.PermissionClaimType)
                             .Select(c => c.Value)
                             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                        if (isAdmin)
-                        {
-                            // Admin có toàn quyền
-                            userPermissions = new HashSet<string> {
-                                "MISSIONS_VIEW", "OKRS_VIEW", "EVALPERIODS_VIEW", "KPIS_VIEW",
-                                "KPICHECKINS_VIEW", "EVALRESULTS_VIEW", "EVALREPORTS_VIEW",
-                                "BONUSRULES_VIEW", "EMPLOYEES_VIEW", "DEPARTMENTS_VIEW",
-                                "POSITIONS_VIEW", "SYSUSERS_VIEW", "ROLES_VIEW", "AUDITLOGS_VIEW",
-                                "WORKPROJECTS_VIEW", "WORKPROJECTS_CREATE", "WORKPROJECTS_EDIT",
-                                "WORKITEMS_CREATE", "WORKITEMS_EDIT", "WORKITEMS_COMMENT"
-                            };
-                        }
-
-                        // Helper: kiểm tra user có permission không
                         bool HasPerm(string code) => isAdmin || userPermissions.Contains(code);
-                        bool canViewEvaluationReports = HasPerm("EVALREPORTS_VIEW") || HasPerm("REPORTS_VIEW");
+                        bool showDashboard = HasPerm("DASHBOARD_VIEW");
+                        bool showWorkProjects = HasPerm("WORKPROJECTS_VIEW");
+                        bool showMissionSetup = !isManagerWorkflow && !isEmployeeWorkflow && HasPerm("MISSIONS_VIEW");
+                        bool showOkrs = HasPerm("OKRS_VIEW") &&
+                            (!hasSpecializedProjectRole || isProjectManagerAi || isKpiOkrDeveloper);
+                        bool showEvaluationPeriods = !isManagerWorkflow && !isEmployeeWorkflow && HasPerm("EVALPERIODS_VIEW");
+                        bool showKpis = HasPerm("KPIS_VIEW");
+                        bool showSelfCheckIns = !isManagerWorkflow && HasPerm("KPICHECKINS_VIEW");
+                        bool showManagerTracking = isManagerWorkflow &&
+                            (HasPerm("KPICHECKINS_VIEW") || HasPerm("KPICHECKINS_REVIEW") || HasPerm("KPIS_VIEW"));
+                        bool showEvaluationResults = !isEmployeeWorkflow && HasPerm("EVALRESULTS_VIEW");
+                        bool showEvaluationReview = !isManagerWorkflow && !isEmployeeWorkflow && HasPerm("EVALRESULTS_REVIEW");
+                        bool showEvaluationReports = !isManagerWorkflow && !isEmployeeWorkflow &&
+                            (HasPerm("EVALREPORTS_VIEW") || HasPerm("REPORTS_VIEW"));
+                        bool showBonusRules = !isManagerWorkflow && !isEmployeeWorkflow && HasPerm("BONUSRULES_VIEW");
+                        bool showEmployees = !isManagerWorkflow && !isEmployeeWorkflow && HasPerm("EMPLOYEES_VIEW");
+                        bool showDepartments = !isManagerWorkflow && !isEmployeeWorkflow && HasPerm("DEPARTMENTS_VIEW");
+                        bool showPositions = !isManagerWorkflow && !isEmployeeWorkflow && HasPerm("POSITIONS_VIEW");
+                        bool canUseQuickSearch = HasPerm("EMPLOYEES_VIEW") || HasPerm("KPIS_VIEW") ||
+                            HasPerm("OKRS_VIEW") || HasPerm("DEPARTMENTS_VIEW");
+                        bool canUseAiAdvisor = hasSpecializedProjectRole
+                            ? isProjectManagerAi || isKpiOkrDeveloper
+                            : HasPerm("KPIS_VIEW") || HasPerm("OKRS_VIEW") ||
+                              HasPerm("KPICHECKINS_VIEW") || HasPerm("KPICHECKINS_REVIEW");
                         bool canOpenSystemParameters = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("HR");
                         bool canViewSystemUsers = HasPerm("SYSUSERS_VIEW");
-                        bool canViewRoles = HasPerm("ROLES_VIEW");
+                        bool canViewRoles = isPlatformAdmin && HasPerm("ROLES_VIEW");
                         bool canViewAuditLogs = HasPerm("AUDITLOGS_VIEW");
-                        bool canOpenAdminTools = isAdmin;
-                        bool canManageKnowledgeDocuments = isAdmin || User.IsInRole("Director") || User.IsInRole("HR");
+                        bool canOpenCatalog = isAdmin || isCatalogDeveloper;
+                        bool canOpenPlatformAdminTools = isPlatformAdmin;
+                        bool canManageKnowledgeDocuments = isAdmin || User.IsInRole("Director") ||
+                            User.IsInRole("HR");
                     }
 
-                    <div class="sidebar-group">
-                        <div class="sidebar-group-label">Overview</div>
-                        <a href="/Dashboard/Index" class="sidebar-link">
-                            <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
-                        </a>
-                    </div>
-
-                    @if (HasPerm("WORKPROJECTS_VIEW"))
+                    @if (showDashboard)
                     {
                         <div class="sidebar-group">
-                            <div class="sidebar-group-label">Vận hành & Cộng tác</div>
-                            <a href="/WorkProjects" class="sidebar-link">
-                                <i class="bi bi-kanban-fill"></i> <span>Công việc & Dự án</span>
+                            <div class="sidebar-group-label">Tổng quan</div>
+                            <a href="/Dashboard/Index" class="sidebar-link">
+                                <i class="bi bi-grid-1x2-fill"></i> <span>Tổng quan công việc</span>
                             </a>
                         </div>
                     }
 
-                    @if (HasPerm("MISSIONS_VIEW") || HasPerm("OKRS_VIEW"))
+                    @if (showWorkProjects)
                     {
                         <div class="sidebar-group">
-                            <div class="sidebar-group-label">Mục tiêu chiến lược</div>
-                            @if (HasPerm("MISSIONS_VIEW"))
+                            <div class="sidebar-group-label">@(isManagerWorkflow ? "Điều phối" : "Công việc của tôi")</div>
+                            <a href="/WorkProjects" class="sidebar-link">
+                                <i class="bi bi-kanban-fill"></i>
+                                <span>@(isManagerWorkflow ? "Dự án & phân công" : "Công việc được giao")</span>
+                            </a>
+                        </div>
+                    }
+
+                    @if (showMissionSetup || showOkrs)
+                    {
+                        <div class="sidebar-group">
+                            <div class="sidebar-group-label">Mục tiêu</div>
+                            @if (showMissionSetup)
                             {
                                 <a href="/MissionVisions" class="sidebar-link">
                                     <i class="bi bi-compass-fill"></i> <span>Thiết lập tầm nhìn & sứ mệnh</span>
                                 </a>
                             }
-                            @if (HasPerm("OKRS_VIEW"))
+                            @if (showOkrs)
                             {
                                 <a href="/OKRs" class="sidebar-link">
-                                    <i class="bi bi-bullseye"></i> <span>Quản lý OKR / Mục tiêu</span>
+                                    <i class="bi bi-bullseye"></i>
+                                    <span>@(isManagerWorkflow ? "OKR của nhóm" : isEmployeeWorkflow ? "Mục tiêu được giao" : "Quản lý OKR / Mục tiêu")</span>
                                 </a>
                             }
                         </div>
                     }
 
-                    @if (HasPerm("EVALPERIODS_VIEW") || HasPerm("KPIS_VIEW") || HasPerm("KPICHECKINS_VIEW") || HasPerm("KPICHECKINS_REVIEW"))
+                    @if (showEvaluationPeriods || showKpis || showSelfCheckIns || showManagerTracking)
                     {
                         <div class="sidebar-group">
-                            <div class="sidebar-group-label">Đo lường hiệu suất</div>
-                            @if (HasPerm("EVALPERIODS_VIEW"))
+                            <div class="sidebar-group-label">Tiến độ & KPI</div>
+                            @if (showEvaluationPeriods)
                             {
                                 <a href="/EvaluationPeriods" class="sidebar-link">
                                     <i class="bi bi-calendar3"></i> <span>Kỳ đánh giá</span>
                                 </a>
                             }
-                            @if (HasPerm("KPIS_VIEW"))
+                            @if (showKpis)
                             {
-                                <a href="/KPIs" class="sidebar-link" data-instant-nav="kpi" data-instant-title="Giao & Xem KPI cá nhân">
-                                    <i class="bi bi-speedometer2"></i> <span>Giao & Xem KPI cá nhân</span>
+                                <a href="/KPIs" class="sidebar-link" data-instant-nav="kpi" data-instant-title="KPI">
+                                    <i class="bi bi-speedometer2"></i>
+                                    <span>@(isManagerWorkflow ? "KPI của nhóm" : isEmployeeWorkflow ? "KPI cá nhân" : "Quản lý KPI")</span>
                                 </a>
                             }
-                            @if (HasPerm("KPICHECKINS_VIEW"))
+                            @if (showSelfCheckIns)
                             {
-                                <a href="/KPICheckIns" class="sidebar-link" data-instant-nav="kpi" data-instant-title="@(HasPerm("KPICHECKINS_REVIEW") ? "Ghi nhận tiến độ KPI" : "Cập nhật tiến độ KPI")">
-                                    <i class="bi bi-check2-square"></i> <span>@(HasPerm("KPICHECKINS_REVIEW") ? "Ghi nhận tiến độ KPI" : "Cập nhật tiến độ KPI")</span>
-                                </a>
-                                <a href="/KPICheckIns/EmployeeTracking" class="sidebar-link" data-instant-nav="kpi" data-instant-title="Theo dõi KPI nhân viên">
-                                    <i class="bi bi-person-lines-fill"></i> <span>Theo dõi KPI nhân viên</span>
+                                <a href="/KPICheckIns" class="sidebar-link" data-instant-nav="kpi" data-instant-title="Cập nhật tiến độ KPI">
+                                    <i class="bi bi-check2-square"></i> <span>Cập nhật tiến độ KPI</span>
                                 </a>
                             }
-                            @if (HasPerm("KPICHECKINS_REVIEW"))
+                            @if (showManagerTracking)
                             {
-                                <a href="/KPICheckIns/ReviewQueue" class="sidebar-link">
-                                    <i class="bi bi-patch-check-fill"></i> <span>Xác nhận check-in KPI</span>
+                                <a href="/KPICheckIns/EmployeeTracking" class="sidebar-link" data-instant-nav="kpi" data-instant-title="Theo dõi và duyệt check-in">
+                                    <i class="bi bi-person-check-fill"></i> <span>Theo dõi & duyệt check-in</span>
                                 </a>
                             }
                         </div>
                     }
 
-                    @if (HasPerm("EVALRESULTS_VIEW") || HasPerm("EVALRESULTS_REVIEW") || canViewEvaluationReports || HasPerm("BONUSRULES_VIEW"))
+                    @if (showEvaluationResults || showEvaluationReview || showEvaluationReports || showBonusRules)
                     {
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Đánh giá & Thưởng</div>
-                            @if (HasPerm("EVALRESULTS_VIEW"))
+                            @if (showEvaluationResults)
                             {
                                 <a href="/EvaluationResults" class="sidebar-link">
-                                    <i class="bi bi-award-fill"></i> <span>Đánh giá 1-1 / Kết quả</span>
+                                    <i class="bi bi-award-fill"></i> <span>@(isManagerWorkflow ? "Đánh giá thành viên" : "Đánh giá 1-1 / Kết quả")</span>
                                 </a>
                             }
-                            @if (HasPerm("EVALRESULTS_REVIEW"))
+                            @if (showEvaluationReview)
                             {
                                 <a href="/EvaluationResults/ReviewBoard" class="sidebar-link">
                                     <i class="bi bi-clipboard-check-fill"></i> <span>Duyệt đánh giá & kết quả</span>
                                 </a>
                             }
-                            @if (canViewEvaluationReports)
+                            @if (showEvaluationReports)
                             {
                                 <a href="/EvaluationReports" class="sidebar-link">
                                     <i class="bi bi-file-earmark-bar-graph-fill text-info"></i> <span>Báo cáo Đánh giá (V.Director)</span>
                                 </a>
                             }
-                            @if (HasPerm("BONUSRULES_VIEW"))
+                            @if (showBonusRules)
                             {
                                 <a href="/BonusRules" class="sidebar-link">
                                     <i class="bi bi-cash-coin"></i> <span>Quy tắc thưởng</span>
@@ -283,28 +307,38 @@
                         </div>
                     }
 
-                    @if (HasPerm("EMPLOYEES_VIEW") || HasPerm("DEPARTMENTS_VIEW") || HasPerm("POSITIONS_VIEW"))
+                    @if (showEmployees || showDepartments || showPositions)
                     {
                         <div class="sidebar-group">
                             <div class="sidebar-group-label">Nhân sự</div>
-                            @if (HasPerm("EMPLOYEES_VIEW"))
+                            @if (showEmployees)
                             {
                                 <a href="/Employees" class="sidebar-link">
                                     <i class="bi bi-people-fill"></i> <span>Nhân sự</span>
                                 </a>
                             }
-                            @if (HasPerm("DEPARTMENTS_VIEW"))
+                            @if (showDepartments)
                             {
                                 <a href="/Departments" class="sidebar-link">
                                     <i class="bi bi-diagram-3-fill"></i> <span>Phòng ban</span>
                                 </a>
                             }
-                            @if (HasPerm("POSITIONS_VIEW"))
+                            @if (showPositions)
                             {
                                 <a href="/Positions" class="sidebar-link">
                                     <i class="bi bi-person-badge-fill"></i> <span>Chức vụ</span>
                                 </a>
                             }
+                        </div>
+                    }
+
+                    @if (isCatalogDeveloper && canOpenCatalog)
+                    {
+                        <div class="sidebar-group">
+                            <div class="sidebar-group-label">Công cụ chuyên môn</div>
+                            <a href="/Catalog" class="sidebar-link">
+                                <i class="bi bi-collection-fill"></i> <span>Danh mục chung</span>
+                            </a>
                         </div>
                     }
 
@@ -424,7 +458,7 @@
                         </a>
                     </div>
 
-                    @if (canOpenSystemParameters || canViewSystemUsers || canViewRoles || canViewAuditLogs || canManageKnowledgeDocuments || canOpenAdminTools)
+                    @if (canOpenSystemParameters || canViewSystemUsers || canViewRoles || canViewAuditLogs || canManageKnowledgeDocuments)
                     {
                         <div class="settings-panel__section">
                             <div class="settings-panel__label">Hệ thống</div>
@@ -481,24 +515,30 @@
                         </div>
                     }
 
-                    @if (canOpenAdminTools)
+                    @if (canOpenCatalog || canOpenPlatformAdminTools)
                     {
                         <div class="settings-panel__section">
                             <div class="settings-panel__label">Quản trị</div>
-                            <a href="/Catalog" class="settings-panel__item">
-                                <span class="settings-panel__icon"><i class="bi bi-collection-fill"></i></span>
-                                <span>
-                                    <strong>Danh mục nền</strong>
-                                    <small>Dữ liệu dùng chung cho các module nghiệp vụ</small>
-                                </span>
-                            </a>
-                            <a href="/SaaSAdmin" class="settings-panel__item">
-                                <span class="settings-panel__icon"><i class="bi bi-building-gear"></i></span>
-                                <span>
-                                    <strong>Quản trị khách hàng</strong>
-                                    <small>Gói dịch vụ, đăng ký và cấu hình SaaS</small>
-                                </span>
-                            </a>
+                            @if (canOpenCatalog)
+                            {
+                                <a href="/Catalog" class="settings-panel__item">
+                                    <span class="settings-panel__icon"><i class="bi bi-collection-fill"></i></span>
+                                    <span>
+                                        <strong>Danh mục nền</strong>
+                                        <small>Dữ liệu dùng chung cho các module nghiệp vụ</small>
+                                    </span>
+                                </a>
+                            }
+                            @if (canOpenPlatformAdminTools)
+                            {
+                                <a href="/SaaSAdmin" class="settings-panel__item">
+                                    <span class="settings-panel__icon"><i class="bi bi-building-gear"></i></span>
+                                    <span>
+                                        <strong>Quản trị khách hàng</strong>
+                                        <small>Gói dịch vụ, đăng ký và cấu hình SaaS</small>
+                                    </span>
+                                </a>
+                            }
                         </div>
                     }
                 </aside>
@@ -513,16 +553,19 @@
                         <button type="button" id="sidebarToggle" class="sidebar-toggle" aria-label="Thu gọn hoặc mở rộng thanh điều hướng" aria-expanded="false" aria-controls="sidebar">
                             <i class="bi bi-list"></i>
                         </button>
-                        <button type="button" id="mobileSearchToggle" class="header-icon-btn mobile-search-toggle" aria-label="Mở tìm kiếm nhanh" aria-expanded="false" aria-controls="headerSearch">
-                            <i class="bi bi-search" aria-hidden="true"></i>
-                        </button>
-                        <div id="headerSearch" class="header-search">
-                            <i class="bi bi-search" aria-hidden="true"></i>
-                            <input type="search" aria-label="Tìm kiếm nhanh nhân viên, KPI, OKR, phòng ban" placeholder="Tìm kiếm nhanh nhân viên, KPI, OKR, phòng ban..." autocomplete="off">
-                            <button type="button" id="mobileSearchClose" class="header-search-close" aria-label="Đóng tìm kiếm nhanh">
-                                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                        @if (canUseQuickSearch)
+                        {
+                            <button type="button" id="mobileSearchToggle" class="header-icon-btn mobile-search-toggle" aria-label="Mở tìm kiếm nhanh" aria-expanded="false" aria-controls="headerSearch">
+                                <i class="bi bi-search" aria-hidden="true"></i>
                             </button>
-                        </div>
+                            <div id="headerSearch" class="header-search">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                                <input type="search" aria-label="Tìm kiếm nhanh theo phạm vi được cấp quyền" placeholder="Tìm kiếm trong phạm vi của bạn..." autocomplete="off">
+                                <button type="button" id="mobileSearchClose" class="header-search-close" aria-label="Đóng tìm kiếm nhanh">
+                                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        }
                     </div>
 
                     <div class="header-right">
@@ -653,7 +696,10 @@
                 </footer>
             </div>
         </div>
-        @await Html.PartialAsync("_AIChatWidget")
+        @if (canUseAiAdvisor)
+        {
+            @await Html.PartialAsync("_AIChatWidget")
+        }
     }
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

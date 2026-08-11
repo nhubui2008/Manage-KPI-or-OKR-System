@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Models.AI;
 using Microsoft.EntityFrameworkCore;
 
@@ -83,7 +84,7 @@ internal static class AgentEvidenceAuthorization
         {
             principals.Add($"user:{userId}");
         }
-        foreach (var role in user.FindAll(ClaimTypes.Role).Select(item => item.Value))
+        foreach (var role in ProjectRoleProfileHelper.GetAuthorizationRoleNames(user))
         {
             var principal = KnowledgeDocumentAccessPolicy.CreateRolePrincipal(role);
             if (principal != null)

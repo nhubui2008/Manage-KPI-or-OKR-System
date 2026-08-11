@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Manage_KPI_or_OKR_System.Helpers;
 
 namespace Manage_KPI_or_OKR_System.Services.AI;
 
@@ -39,7 +40,7 @@ public sealed class EvidenceSecurityFilterBuilder : IAIEvidenceSecurityFilterBui
             principals.Add($"user:{userId}");
         }
 
-        foreach (var role in user.FindAll(ClaimTypes.Role).Select(claim => claim.Value))
+        foreach (var role in ProjectRoleProfileHelper.GetAuthorizationRoleNames(user))
         {
             var rolePrincipal = KnowledgeDocumentAccessPolicy.CreateRolePrincipal(role);
             if (rolePrincipal != null)

@@ -64,11 +64,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
                 return result;
             }
 
-            var userRoles = user.Claims
-                .Where(c => c.Type == ClaimTypes.Role)
-                .Select(c => c.Value)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            var userRoles = ProjectRoleProfileHelper.GetAuthorizationRoleNames(user);
 
             if (!userRoles.Any())
             {

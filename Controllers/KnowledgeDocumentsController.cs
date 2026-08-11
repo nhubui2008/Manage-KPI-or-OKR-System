@@ -1,3 +1,4 @@
+using Manage_KPI_or_OKR_System.Helpers;
 using Manage_KPI_or_OKR_System.Models.ViewModels;
 using Manage_KPI_or_OKR_System.Services.AI;
 using Manage_KPI_or_OKR_System.Services.Tenancy;
@@ -189,9 +190,7 @@ public sealed class KnowledgeDocumentsController : Controller
         {
             return false;
         }
-        return User.Claims
-            .Where(claim => claim.Type == System.Security.Claims.ClaimTypes.Role)
-            .Select(claim => claim.Value)
+        return ProjectRoleProfileHelper.GetAuthorizationRoleNames(User)
             .Any(ManagerRoles.Contains);
     }
 }

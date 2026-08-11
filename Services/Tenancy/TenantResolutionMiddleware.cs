@@ -272,6 +272,13 @@ public sealed class TenantResolutionMiddleware
 
         var tenantRoleName = membership.Role.RoleName.Trim();
         targetIdentity.AddClaim(new Claim(ClaimTypes.Role, tenantRoleName));
+        var baseRoleName = ProjectRoleProfileHelper.GetBaseRoleName(tenantRoleName);
+        if (!string.IsNullOrWhiteSpace(baseRoleName))
+        {
+            // Compatibility only for existing Manager/Employee data-scope branches.
+            // Permission and knowledge ACL lookups exclude this marked claim.
+            targetIdentity.AddClaim(ProjectRoleProfileHelper.CreateScopeOnlyRoleClaim(baseRoleName));
+        }
 
         var configuredPermissions = await dbContext.Role_Permissions
             .Where(rolePermission => rolePermission.RoleId == membership.RoleId.Value)

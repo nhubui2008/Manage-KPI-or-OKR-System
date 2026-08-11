@@ -49,7 +49,7 @@ public class HasPermissionFilter : IAuthorizationFilter
 
         // 3. Lấy tên Role của User hiện tại từ Claims
         // ClaimsIdentity.Role thông thường chứa RoleName
-        var userRoles = user.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
+        var userRoles = ProjectRoleProfileHelper.GetAuthorizationRoleNames(user);
         
         if (!userRoles.Any())
         {
