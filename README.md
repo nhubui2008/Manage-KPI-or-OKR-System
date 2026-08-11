@@ -282,7 +282,7 @@ ConnectionStrings__DefaultConnection=Server=localhost;Database=KPIorOKRSystem;Us
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 DeepSeek__BaseUrl=https://api.deepseek.com/v1/
-DeepSeek__Model=deepseek-chat
+DeepSeek__Model=deepseek-v4-pro
 DeepSeek__ApiKey=your-deepseek-api-key
 
 # Fail-closed mặc định; mở Shadow trước, rồi Pilot theo tenant/phòng ban.
@@ -325,7 +325,7 @@ dotnet run
 
 ```json
 {
-  "DeepSeek": { "BaseUrl": "https://api.deepseek.com", "Model": "deepseek-chat" },
+  "DeepSeek": { "BaseUrl": "https://api.deepseek.com", "Model": "deepseek-v4-pro" },
   "AiAdvisoryRollout": {
     "KillSwitch": true,
     "CheckInEvaluationMode": "Disabled",
