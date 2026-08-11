@@ -171,18 +171,13 @@ public class HomeController : Controller
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
-    [HttpPost]
-    [AllowAnonymous]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> RegisterPurchase(
         string email, 
         string plan,
-        string? password,
         [FromServices] IEmailService emailService)
     {
         var normalizedEmail = email?.Trim().ToLowerInvariant();
         var selectedPlan = plan?.Trim() ?? string.Empty;
-        var userPassword = password?.Trim();
 
         if (string.IsNullOrWhiteSpace(normalizedEmail))
         {
@@ -219,10 +214,8 @@ public class HomeController : Controller
                 return Json(new { success = false, message = "Email này đã được đăng ký. Vui lòng chọn thẻ Đăng Nhập." });
             }
 
-            var rawPassword = string.IsNullOrWhiteSpace(userPassword)
-                ? Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
-                : userPassword;
-            var passwordHash = Manage_KPI_or_OKR_System.Helpers.PasswordHelper.HashPassword(rawPassword);
+            var bootstrapSecret = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+            var passwordHash = Manage_KPI_or_OKR_System.Helpers.PasswordHelper.HashPassword(bootstrapSecret);
             await using var transaction = await _context.Database.BeginTransactionAsync();
 
             var requestedPlan = string.IsNullOrEmpty(selectedPlan) ? "Free Trial" : selectedPlan;
@@ -236,7 +229,7 @@ public class HomeController : Controller
                 IsActive = true,
                 CreatedAt = DateTime.Now,
                 TrialEndTime = null,
-                LastPasswordChange = string.IsNullOrWhiteSpace(userPassword) ? null : DateTime.Now
+                LastPasswordChange = null
             };
 
             _context.SystemUsers.Add(newUser);
@@ -248,40 +241,49 @@ public class HomeController : Controller
             {
                 await _tenantProvisioningService.EnsureCustomerTenantAsync(newUser, newUser.Id);
             }
-
-            try
+            string? setupUrl = null;
+            if (_passwordResetService != null)
             {
-                string emailSubject = "Tài khoản VIETMACH của bạn đã được tạo";
-                string emailBody = $@"
-<div style=""font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;"">
-    <div style=""background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 30px 20px; text-align: center;"">
-        <h1 style=""color: #ffffff; margin: 0; font-size: 24px; font-weight: 800;"">VIETMACH</h1>
+                var token = await _passwordResetService.CreateTokenAsync(newUser);
+                var publicBaseUrl = _configuration?["PasswordReset:PublicBaseUrl"];
+                if (Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out var baseUri) &&
+                    (baseUri.Scheme == Uri.UriSchemeHttps ||
+                     HttpContext.RequestServices.GetRequiredService<IHostEnvironment>().IsDevelopment()))
+                {
+                    setupUrl =
+                        $"{publicBaseUrl!.TrimEnd('/')}/Auth/ResetPassword?token={Uri.EscapeDataString(token)}";
+                }
+            }
+            var encodedSetupUrl = string.IsNullOrWhiteSpace(setupUrl)
+                ? null
+                : HtmlEncoder.Default.Encode(setupUrl);
+
+            string emailSubject = "Tài khoản VIETMACH của bạn đã được tạo";
+            string emailBody = $@"
+<div style=""font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);"">
+    <div style=""background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 40px 20px; text-align: center;"">
+        <h1 style=""color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;"">VIETMACH</h1>
+        <p style=""color: #bfdbfe; margin: 10px 0 0 0; font-size: 16px; font-weight: 500;"">Nền tảng Quản trị Hiệu suất Toàn diện</p>
     </div>
-    <div style=""padding: 30px 20px;"">
-        <h2>Chào mừng bạn đến với VIETMACH!</h2>
-        <p>Tài khoản <strong>{normalizedEmail}</strong> của bạn đã được đăng ký thành công cho gói <strong>{requestedPlan}</strong>.</p>
-        <p>Bạn có thể sử dụng mật khẩu đã đặt để đăng nhập và trải nghiệm hệ thống bất cứ lúc nào.</p>
+    <div style=""padding: 40px 30px;"">
+	        <h2 style=""color: #0f172a; margin-top: 0; font-size: 22px; font-weight: 700;"">Chào bạn,</h2>
+	        <p style=""color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 24px;"">Tài khoản <strong>{normalizedEmail}</strong> đã được tạo và đang chờ quản trị viên kích hoạt không gian làm việc.</p>
+            {(encodedSetupUrl == null
+                ? "<p>Vui lòng dùng chức năng Quên mật khẩu để thiết lập mật khẩu sau khi tài khoản được kích hoạt.</p>"
+                : $"<p><a href=\"{encodedSetupUrl}\" style=\"display:inline-block;background:#2563eb;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600\">Thiết lập mật khẩu</a></p><p style=\"color:#64748b;font-size:14px\">Liên kết dùng một lần và hết hạn sau 15 phút.</p>")}
+    </div>
+    <div style=""background-color: #f1f5f9; padding: 20px; text-align: center; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;"">
+        <p style=""margin: 0; font-weight: 600;"">&copy; {DateTime.Now.Year} VietMach System. Mọi quyền được bảo lưu.</p>
+        <p style=""margin: 8px 0 0 0;"">Email hỗ trợ: support@vietmach.com | Hotline: 1900 0000</p>
     </div>
 </div>";
-                await emailService.SendEmailAsync(normalizedEmail, emailSubject, emailBody);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Registration notification email delivery skipped/failed for {Email}", normalizedEmail);
-            }
 
+            await emailService.SendEmailAsync(normalizedEmail, emailSubject, emailBody);
             await transaction.CommitAsync();
 
-            // Auto-login the new user with their chosen password
-            await SignInSystemUserAsync(newUser, normalizedEmail);
-
-            return Json(new
-            {
-                success = true,
-                autoLogin = true,
-                redirectUrl = Url.Action("Index", "Dashboard"),
-                message = $"Đăng ký thành công gói {requestedPlan}! Bạn đã được tự động đăng nhập."
-            });
+            var successMessage =
+                $"Tài khoản đã được tạo và yêu cầu gói {requestedPlan} đang chờ quản trị viên xác minh. Vui lòng kiểm tra email để thiết lập mật khẩu.";
+            return Json(new { success = true, autoLogin = false, message = successMessage });
         }
         catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
         {
