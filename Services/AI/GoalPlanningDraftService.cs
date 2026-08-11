@@ -200,13 +200,13 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
                 currentSource.Id,
                 currentAuthorization.Principal,
                 cancellationToken);
-            var outcomeLikelihood = await EstimateOutcomeLikelihoodAsync(
+            var outcomeHistory = await LoadOutcomeHistoryAsync(
                 currentSource,
                 cancellationToken);
             var tasks = BuildTasks(
                 currentSource,
                 evidence,
-                outcomeLikelihood,
+                outcomeHistory,
                 agentResult.Tasks,
                 assigneeOptions);
             var critiques = _critic.Review(currentSource.HasMeasurableTarget, tasks);
@@ -422,11 +422,11 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
             source.Id,
             currentAuthorization.Principal,
             cancellationToken);
-        var outcomeLikelihood = await EstimateOutcomeLikelihoodAsync(source, cancellationToken);
+        var outcomeHistory = await LoadOutcomeHistoryAsync(source, cancellationToken);
         var tasks = BuildRecoveredTasks(
             source,
             evidence,
-            outcomeLikelihood,
+            outcomeHistory,
             storedTasks,
             assigneeOptions);
         var critiques = _critic.Review(source.HasMeasurableTarget, tasks);
@@ -1271,7 +1271,7 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
     private static IReadOnlyList<GoalPlanningTaskCandidate> BuildTasks(
         PlanningSource source,
         IReadOnlyList<EvidenceRef> evidence,
-        OutcomeLikelihoodEstimate outcomeLikelihood,
+        OutcomeHistorySummary outcomeHistory,
         IReadOnlyList<AgentTaskText>? agentTasks,
         IReadOnlyList<GoalPlanningAssigneeOption> assigneeOptions)
     {
@@ -1311,7 +1311,7 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
                 fit,
                 confidence,
                 taskEvidence,
-                outcomeLikelihood,
+                outcomeHistory,
                 SuggestedAssignee: suggestedAssignee,
                 Plan: plan);
         }).ToList();
@@ -1320,7 +1320,7 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
     private static IReadOnlyList<GoalPlanningTaskCandidate> BuildRecoveredTasks(
         PlanningSource source,
         IReadOnlyList<EvidenceRef> evidence,
-        OutcomeLikelihoodEstimate outcomeLikelihood,
+        OutcomeHistorySummary outcomeHistory,
         IReadOnlyList<StoredAgentTaskText> storedTasks,
         IReadOnlyList<GoalPlanningAssigneeOption> assigneeOptions)
     {
@@ -1372,7 +1372,7 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
                 CreateTaskGoalFit(source, task, confidence, taskEvidence, assignee),
                 confidence,
                 taskEvidence,
-                outcomeLikelihood,
+                outcomeHistory,
                 SuggestedAssignee: assignee,
                 Plan: plan);
         }).ToList();
@@ -1623,7 +1623,7 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
         return actual.Count == allowed.Count && actual.All(allowed.Contains);
     }
 
-    private async Task<OutcomeLikelihoodEstimate> EstimateOutcomeLikelihoodAsync(
+    private async Task<OutcomeHistorySummary> LoadOutcomeHistoryAsync(
         PlanningSource source,
         CancellationToken cancellationToken)
     {
@@ -1647,7 +1647,7 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
         var successful = statuses.Count(status =>
             string.Equals(status?.Trim(), "Done", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(status?.Trim(), "Completed", StringComparison.OrdinalIgnoreCase));
-        return OutcomeLikelihoodCalculator.Calculate(successful, statuses.Count);
+        return OutcomeHistorySummarizer.Summarize(successful, statuses.Count);
     }
 
     private static GoalTaskFitBreakdown CreateTaskGoalFit(

@@ -101,6 +101,13 @@ public sealed class GoalPlanningCriticTests
             source,
             StringComparison.Ordinal);
         Assert.Contains(
+            "outcomeHistory: fieldValue(task, 'outcomeHistory', 'OutcomeHistory', null)",
+            source,
+            StringComparison.Ordinal);
+        Assert.Contains("historyCompletedCount", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("outcomeLikelihood", source, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("'probability'", source, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
             "state.availableAssignees = data.availableAssignees || data.AvailableAssignees || []",
             source,
             StringComparison.Ordinal);

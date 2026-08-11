@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Manage_KPI_or_OKR_System.Models.AI;
 using Manage_KPI_or_OKR_System.Services.AI;
 using Xunit;
@@ -94,23 +95,40 @@ public class AiFitAndConfidenceCalculatorTests
     }
 
     [Fact]
-    public void OutcomeLikelihood_WithTooFewOutcomes_DeclaresInsufficientData()
+    public void OutcomeHistory_SummarizesCountsWithoutCalculatingProbability()
     {
-        var result = OutcomeLikelihoodCalculator.Calculate(successful: 9, total: 10);
+        var empty = OutcomeHistorySummarizer.Summarize(completed: 0, total: 0);
+        var populated = OutcomeHistorySummarizer.Summarize(completed: 15, total: 20);
 
-        Assert.Null(result.Probability);
-        Assert.Equal("InsufficientData", result.CalibrationStatus);
-        Assert.Equal(10, result.SampleSize);
+        Assert.Equal(0, empty.CompletedCount);
+        Assert.Equal(0, empty.SampleSize);
+        Assert.Contains("Chưa có", empty.Basis);
+        Assert.Equal(15, populated.CompletedCount);
+        Assert.Equal(20, populated.SampleSize);
+        Assert.Contains("15/20", populated.Basis);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            OutcomeHistorySummarizer.Summarize(completed: 2, total: 1));
     }
 
     [Fact]
-    public void OutcomeLikelihood_WithEnoughOutcomes_UsesAuditableSmoothing()
+    public void GoalPlanningCandidate_SerializationNeverExposesOutcomeProbability()
     {
-        var result = OutcomeLikelihoodCalculator.Calculate(successful: 15, total: 20);
+        var candidate = new GoalPlanningTaskCandidate(
+            "Task",
+            "Description",
+            new GoalTaskFitBreakdown(80, 0, 80, 80, 80, 100, 60, FitScoreBand.Review, true),
+            new EvidenceConfidence(.8, EvidenceConfidenceBand.High, false, 1),
+            Array.Empty<EvidenceRef>(),
+            new OutcomeHistorySummary(15, 20, "15/20 task lịch sử đã hoàn tất."));
 
-        Assert.Equal(17d / 24d, result.Probability!.Value, precision: 4);
-        Assert.Equal("Provisional", result.CalibrationStatus);
-        Assert.Contains("15/20", result.Basis);
+        var json = JsonSerializer.Serialize(
+            candidate,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.Contains("outcomeHistory", json);
+        Assert.Contains("completedCount", json);
+        Assert.DoesNotContain("probability", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("likelihood", json, StringComparison.OrdinalIgnoreCase);
     }
 
     private static EvidenceRef Evidence(string type, string id, double reliability) =>

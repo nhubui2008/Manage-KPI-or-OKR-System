@@ -569,8 +569,8 @@
             TaskGoalStructuralHeuristic_NotAssigneeFit: 'heuristic task–mục tiêu, không chấm độ phù hợp nhân sự',
             AssigneeWorkloadEvidenceWeighted_v1: 'server 35/25/20/10/10 theo mục tiêu, lịch sử nhóm, vai trò, workload và bằng chứng'
         };
-        const outcomeMethodLabels = {
-            SameSourceWorkItemHistory_NotCohortModel: 'lịch sử task của chính nguồn, chưa phải mô hình cohort'
+        const historyMethodLabels = {
+            SameSourceWorkItemHistory_v1: 'số đếm task lịch sử của chính nguồn, không phải dự báo'
         };
 
         function byId(id) {
@@ -789,7 +789,7 @@
                 const confidence = fieldValue(task, 'confidence', 'Confidence', {}) || {};
                 const evidence = fieldValue(task, 'evidence', 'Evidence', []) || [];
                 const critique = fieldValue(task, 'critique', 'Critique', null);
-                const likelihood = fieldValue(task, 'outcomeLikelihood', 'OutcomeLikelihood', null);
+                const outcomeHistory = fieldValue(task, 'outcomeHistory', 'OutcomeHistory', null);
                 const rawFitScore = fieldValue(fit, 'score', 'Score', null);
                 const hasSufficientFitEvidence = fieldValue(
                     fit,
@@ -832,17 +832,14 @@
                     ].filter(Boolean).join(', ');
                     return `${title} #${sourceId}${location ? ` (${location})` : ''}${isCurrent ? '' : ' [nguồn cũ/không rõ ngày]'}`;
                 });
-                const probability = likelihood
-                    ? fieldValue(likelihood, 'probability', 'Probability', null)
-                    : null;
-                const likelihoodStatus = likelihood
-                    ? fieldValue(likelihood, 'calibrationStatus', 'CalibrationStatus', 'InsufficientData')
-                    : 'InsufficientData';
-                const likelihoodSampleSize = likelihood
-                    ? Number(fieldValue(likelihood, 'sampleSize', 'SampleSize', 0))
+                const historyCompletedCount = outcomeHistory
+                    ? Number(fieldValue(outcomeHistory, 'completedCount', 'CompletedCount', 0))
                     : 0;
-                const likelihoodBasis = likelihood
-                    ? fieldValue(likelihood, 'basis', 'Basis', '')
+                const historySampleSize = outcomeHistory
+                    ? Number(fieldValue(outcomeHistory, 'sampleSize', 'SampleSize', 0))
+                    : 0;
+                const historyBasis = outcomeHistory
+                    ? fieldValue(outcomeHistory, 'basis', 'Basis', '')
                     : '';
                 const dependencies = fieldValue(plan, 'dependencies', 'Dependencies', []) || [];
                 const contribution = fieldValue(plan, 'contribution', 'Contribution', '');
@@ -892,8 +889,8 @@
                                 <div class="ai-task-meta-chip" title="${escapeHtml(criticReasons.join(' '))}">
                                     <i class="bi bi-clipboard-check"></i><span>Critic: ${escapeHtml(criticLabel)}</span>
                                 </div>
-                                <div class="ai-task-meta-chip" title="${escapeHtml(`${likelihoodBasis || likelihoodStatus} Mẫu n=${likelihoodSampleSize}. Đây là lịch sử task của chính nguồn, không phải dự báo cohort.`)}">
-                                    <i class="bi bi-graph-up-arrow"></i><span>Lịch sử nguồn ${probability == null ? 'chưa đủ mẫu' : `${(Number(probability) * 100).toFixed(0)}%`} · n=${escapeHtml(likelihoodSampleSize)}</span>
+                                <div class="ai-task-meta-chip" title="${escapeHtml(`${historyBasis} Đây chỉ là số đếm task lịch sử của chính nguồn, không phải xác suất thành công.`)}">
+                                    <i class="bi bi-clock-history"></i><span>Lịch sử nguồn ${escapeHtml(historyCompletedCount)}/${escapeHtml(historySampleSize)} hoàn tất</span>
                                 </div>
                                 <div class="ai-task-meta-chip" title="${escapeHtml(sourceLabels.join(', ') || 'Không có nguồn')}">
                                     <i class="bi bi-journal-text"></i><span>Nguồn: ${escapeHtml(sourceLabels.join(', ') || 'Không có nguồn')}</span>
@@ -1034,11 +1031,11 @@
             const sourceName = data.sourceName || data.SourceName || byId('aiTaskSourceName').textContent;
             const generationMode = data.generationMode || data.GenerationMode || 'DeterministicFallback';
             const fitMethod = data.fitMethod || data.FitMethod || 'AssigneeWorkloadEvidenceWeighted_v1';
-            const outcomeMethod = data.outcomeMethod || data.OutcomeMethod || 'SameSourceWorkItemHistory_NotCohortModel';
+            const historyMethod = data.historyMethod || data.HistoryMethod || 'SameSourceWorkItemHistory_v1';
             const warnings = data.warnings || data.Warnings || [];
             const modeLabel = generationModeLabels[generationMode] || generationMode;
             const fitMethodLabel = fitMethodLabels[fitMethod] || fitMethod;
-            const outcomeMethodLabel = outcomeMethodLabels[outcomeMethod] || outcomeMethod;
+            const historyMethodLabel = historyMethodLabels[historyMethod] || historyMethod;
             const modeTone = generationMode === 'DeterministicFallback'
                 ? 'warning'
                 : generationMode === 'AgentWithRag'
@@ -1046,7 +1043,7 @@
                     : 'info';
             const meta = byId('aiTaskAgentMeta');
             meta.className = `alert alert-${modeTone} py-2 px-3 small mb-3`;
-            meta.textContent = `Chế độ: ${modeLabel}. Fit: ${fitMethodLabel}. Outcome: ${outcomeMethodLabel}. Con người là người quyết định cuối cùng.`;
+            meta.textContent = `Chế độ: ${modeLabel}. Fit: ${fitMethodLabel}. Lịch sử: ${historyMethodLabel}. Con người là người quyết định cuối cùng.`;
             renderProjectOptions({
                 sourceObjective: sourceName,
                 availableProjects: data.availableProjects || data.AvailableProjects || [],
@@ -1082,7 +1079,7 @@
                 confidence: fieldValue(task, 'confidence', 'Confidence', {}),
                 evidence: fieldValue(task, 'evidence', 'Evidence', []),
                 critique: fieldValue(task, 'critique', 'Critique', null),
-                outcomeLikelihood: fieldValue(task, 'outcomeLikelihood', 'OutcomeLikelihood', null),
+                outcomeHistory: fieldValue(task, 'outcomeHistory', 'OutcomeHistory', null),
                 suggestedAssignee: fieldValue(task, 'suggestedAssignee', 'SuggestedAssignee', null),
                 plan: fieldValue(task, 'plan', 'Plan', {}),
                 isSelected: true

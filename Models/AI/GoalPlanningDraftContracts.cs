@@ -90,7 +90,7 @@ public sealed record GoalPlanningTaskCandidate(
     GoalTaskFitBreakdown Fit,
     EvidenceConfidence Confidence,
     IReadOnlyList<EvidenceRef> Evidence,
-    OutcomeLikelihoodEstimate? OutcomeLikelihood = null,
+    OutcomeHistorySummary? OutcomeHistory = null,
     GoalPlanningTaskCritique? Critique = null,
     GoalPlanningAssigneeOption? SuggestedAssignee = null,
     GoalPlanningTaskPlanDetails? Plan = null);
@@ -102,7 +102,7 @@ public sealed record GoalPlanningDraftResponse(
     IReadOnlyList<GoalPlanningTaskCandidate> Tasks,
     string GenerationMode = "DeterministicFallback",
     string FitMethod = "AssigneeWorkloadEvidenceWeighted_v1",
-    string OutcomeMethod = "SameSourceWorkItemHistory_NotCohortModel",
+    string HistoryMethod = "SameSourceWorkItemHistory_v1",
     IReadOnlyList<string>? Warnings = null,
     IReadOnlyList<WorkProjectOption>? AvailableProjects = null,
     int? SuggestedProjectId = null,
