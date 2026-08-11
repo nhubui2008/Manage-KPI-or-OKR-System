@@ -1,6 +1,7 @@
 @using Manage_KPI_or_OKR_System.Models
 @{
     ViewData["Title"] = "Dashboard";
+
     var totalEmployees = (int)(ViewBag.TotalEmployees ?? 0);
     var totalOKRs = (int)(ViewBag.TotalOKRs ?? 0);
     var totalKPIs = (int)(ViewBag.TotalKPIs ?? 0);
@@ -10,59 +11,94 @@
     var recentCheckIns = ViewBag.RecentCheckIns as List<KPICheckIn> ?? new List<KPICheckIn>();
     var employeeNames = ViewBag.EmployeeNames as Dictionary<int, string> ?? new Dictionary<int, string>();
     var kpiNames = ViewBag.KPINames as Dictionary<int, string> ?? new Dictionary<int, string>();
-    
-    // DỮ LIỆU THỰC từ Controller
-    var kpiAchievementRate = ViewBag.KPIAchievementRate ?? 0.0;
-    var okrProgressRate = ViewBag.OKRProgressRate ?? 0.0;
-    
-    // Selected period
+    var kpiAchievementRate = (double)(ViewBag.KPIAchievementRate ?? 0.0);
+    var okrProgressRate = (double)(ViewBag.OKRProgressRate ?? 0.0);
     var selectedPeriod = ViewBag.SelectedPeriod as EvaluationPeriod;
     var allPeriods = ViewBag.AllPeriods as List<EvaluationPeriod> ?? new List<EvaluationPeriod>();
-
-    // Top employees
     var topEmployees = ViewBag.TopEmployees as IEnumerable<dynamic>;
 
-    // Helpers
-    string GetKpiStatusColor(double rate) {
+    string GetKpiStatusColor(double rate)
+    {
         if (rate >= 80) return "success";
         if (rate >= 50) return "warning";
         return "danger";
     }
-    string GetKpiStatusText(double rate) {
+
+    string GetKpiStatusText(double rate)
+    {
         if (rate >= 80) return "Tốt";
         if (rate >= 50) return "Trung bình";
         if (rate > 0) return "Cần cải thiện";
         return "Chưa có dữ liệu";
     }
-    string GetOkrStatusColor(double rate) {
+
+    string GetOkrStatusColor(double rate)
+    {
         if (rate >= 70) return "success";
         if (rate >= 40) return "warning";
         return "danger";
     }
-    string GetOkrStatusText(double rate) {
+
+    string GetOkrStatusText(double rate)
+    {
         if (rate >= 70) return "Đúng tiến độ";
         if (rate >= 40) return "Đang bám sát";
         if (rate > 0) return "Chậm tiến độ";
         return "Chưa có dữ liệu";
     }
+
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("Administrator");
+    var isManagerWorkflow = Manage_KPI_or_OKR_System.Helpers.AccessScopeHelper.IsManagerScoped(User);
+    var isEmployeeWorkflow = Manage_KPI_or_OKR_System.Helpers.AccessScopeHelper.IsEmployeeOrSales(User);
+    var isProjectManagerAi = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsProjectManagerAi(User);
+    var isKpiOkrDeveloper = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsKpiOkrDeveloper(User);
+    var isOperationsDeveloper = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsOperationsDeveloper(User);
+    var isTester = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsTester(User);
+    var isCatalogDeveloper = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsCatalogDeveloper(User);
+    var hasSpecializedProjectRole = isProjectManagerAi || isKpiOkrDeveloper || isOperationsDeveloper || isTester || isCatalogDeveloper;
+    var userPermissions = User.Claims
+        .Where(c => c.Type == Manage_KPI_or_OKR_System.Services.PermissionClaimsTransformation.PermissionClaimType)
+        .Select(c => c.Value)
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    bool HasDashboardPermission(string code) => isAdmin || userPermissions.Contains(code);
+
+    var showEmployees = !isManagerWorkflow && !isEmployeeWorkflow && HasDashboardPermission("EMPLOYEES_VIEW");
+    var showKpis = HasDashboardPermission("KPIS_VIEW");
+    var showOkrs = HasDashboardPermission("OKRS_VIEW") && (!hasSpecializedProjectRole || isProjectManagerAi || isKpiOkrDeveloper);
+    var showEvaluationResults = !isEmployeeWorkflow && HasDashboardPermission("EVALRESULTS_VIEW");
+    var showSelfCheckIns = !isManagerWorkflow && HasDashboardPermission("KPICHECKINS_VIEW");
+    var showManagerTracking = isManagerWorkflow &&
+        (HasDashboardPermission("KPICHECKINS_VIEW") || HasDashboardPermission("KPICHECKINS_REVIEW") || HasDashboardPermission("KPIS_VIEW"));
+    var showDepartments = !isManagerWorkflow && !isEmployeeWorkflow && HasDashboardPermission("DEPARTMENTS_VIEW");
+
+    var quickActions = new[]
+    {
+        new { Visible = showEmployees, Href = "/Employees", Icon = "bi-people", Label = "Nhân sự" },
+        new { Visible = showKpis, Href = "/KPIs", Icon = "bi-speedometer2", Label = isEmployeeWorkflow ? "KPI cá nhân" : "Quản lý KPI" },
+        new { Visible = showOkrs, Href = "/OKRs", Icon = "bi-bullseye", Label = isEmployeeWorkflow ? "Mục tiêu được giao" : "Quản lý OKR" },
+        new { Visible = showEvaluationResults, Href = "/EvaluationResults", Icon = "bi-award", Label = "Đánh giá" },
+        new { Visible = showSelfCheckIns || showManagerTracking, Href = showManagerTracking ? "/KPICheckIns/EmployeeTracking" : "/KPICheckIns", Icon = "bi-check2-square", Label = showManagerTracking ? "Theo dõi check-in" : "Check-in" },
+        new { Visible = showDepartments, Href = "/Departments", Icon = "bi-diagram-3", Label = "Phòng ban" }
+    }.Where(action => action.Visible).ToList();
 }
 
 <div class="dashboard-page">
-<div class="page-header dashboard-header mb-4 align-items-end">
-    <div>
-        <h1 class="h3 font-weight-bold mb-1">Tổng quan hệ thống</h1>
-        <div class="page-breadcrumb text-muted" style="font-size: 0.85rem;">
-            <a href="/" class="text-decoration-none text-primary fw-medium">Trang chủ</a>
-            <i class="bi bi-chevron-right separator mx-1"></i>
-            <span>Dashboard</span>
+    <header class="dashboard-page-header">
+        <div class="dashboard-page-heading">
+            <h1>Tổng quan hệ thống</h1>
+            <ol class="breadcrumb mb-0" aria-label="Breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+            </ol>
         </div>
-    </div>
-    <div class="ms-auto">
-        <form method="get" asp-action="Index" class="dashboard-period-filter d-flex align-items-center flex-nowrap bg-white p-1 px-3 rounded-pill shadow-sm border border-light">
-            <i class="bi bi-funnel-fill text-primary me-2" style="font-size: 0.9rem;"></i>
-            <span class="text-muted small fw-bold text-uppercase me-2 d-none d-sm-inline-block" style="font-size: 0.7rem; white-space: nowrap; letter-spacing: 0.5px;">Kỳ báo cáo:</span>
-            <select name="periodId" aria-label="Chọn kỳ báo cáo" class="form-select form-select-sm border-0 fw-bold text-primary no-select2" style="outline: none; box-shadow: none; width: auto; min-width: 140px; max-width: 250px; background-color: transparent; cursor: pointer; font-size: 0.85rem;" onchange="this.form.submit()">
-                <option value="" selected="@(selectedPeriod == null ? "selected" : null)">-- Tất cả kỳ --</option>
+        <form method="get" asp-action="Index" class="dashboard-period-filter">
+            <label for="dashboardPeriod">
+                <i class="bi bi-calendar3" aria-hidden="true"></i>
+                <span>Kỳ báo cáo</span>
+            </label>
+            <select id="dashboardPeriod" name="periodId" class="form-select form-select-sm no-select2" onchange="this.form.submit()">
+                <option value="" selected="@(selectedPeriod == null ? "selected" : null)">Tất cả kỳ</option>
                 @foreach (var period in allPeriods)
                 {
                     var isSelected = selectedPeriod?.Id == period.Id;
@@ -76,684 +112,340 @@
                 }
             </select>
         </form>
-    </div>
-</div>
+    </header>
 
-@* ============ STAT CARDS ============ *@
-<div class="row g-4 mb-4">
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card dashboard-stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-primary border-4">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Tỉ lệ KPI đạt</div>
-                    <div class="stat-value h4 mb-0 fw-bold text-dark mt-1">@kpiAchievementRate%</div>
-                </div>
-                <div class="stat-icon text-primary bg-primary bg-opacity-10 p-2 rounded">
-                    <i class="bi bi-speedometer2 fs-4"></i>
-                </div>
-            </div>
-            <div class="mt-2">
-                <span class="text-@GetKpiStatusColor((double)kpiAchievementRate) fw-bold" style="font-size: 0.75rem;">
-                    <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> @GetKpiStatusText((double)kpiAchievementRate)
-                </span>
-                <span class="text-muted ms-1" style="font-size: 0.75rem;">(Tổng: @totalKPIs KPI)</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card dashboard-stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-success border-4">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Tiến độ OKR Công Ty</div>
-                    <div class="stat-value h4 mb-0 fw-bold text-dark mt-1">@okrProgressRate%</div>
-                </div>
-                <div class="stat-icon text-success bg-success bg-opacity-10 p-2 rounded">
-                    <i class="bi bi-bullseye fs-4"></i>
-                </div>
-            </div>
-            <div class="mt-2">
-                <span class="text-@GetOkrStatusColor((double)okrProgressRate) fw-bold" style="font-size: 0.75rem;">
-                    <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> @GetOkrStatusText((double)okrProgressRate)
-                </span>
-                <span class="text-muted ms-1" style="font-size: 0.75rem;">(Tổng: @totalOKRs mục tiêu)</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card dashboard-stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-info border-4">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Tổng Nhân Viên</div>
-                    <div class="stat-value h4 mb-0 fw-bold text-dark mt-1">@totalEmployees</div>
-                </div>
-                <div class="stat-icon text-info bg-info bg-opacity-10 p-2 rounded">
-                    <i class="bi bi-people-fill fs-4"></i>
-                </div>
-            </div>
-            <div class="mt-2">
-                <span class="text-muted" style="font-size: 0.75rem;">Đang hoạt động trên hệ thống</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="stat-card dashboard-stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-warning border-4">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Lượt Check-in</div>
-                    <div class="stat-value h4 mb-0 fw-bold text-dark mt-1">@totalCheckIns</div>
-                </div>
-                <div class="stat-icon text-warning bg-warning bg-opacity-10 p-2 rounded">
-                    <i class="bi bi-check2-square fs-4"></i>
-                </div>
-            </div>
-            <div class="mt-2">
-                <span class="text-muted" style="font-size: 0.75rem;">
-                    @if (selectedPeriod != null) { <text>Trong kỳ @selectedPeriod.PeriodName</text> } else { <text>Toàn hệ thống</text> }
-                </span>
-            </div>
-        </div>
-    </div>
-</div>
-
-@* ============ AI PERFORMANCE ANALYSIS ============ *@
-<div class="row g-4 mb-4">
-    <div class="col-lg-6">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-stars text-primary"></i> AI Phân tích Hiệu suất</h5>
-                <button type="button" class="btn btn-sm btn-outline-primary" id="runAiPerformanceAnalysis" data-period-id="@(selectedPeriod?.Id)">
-                    <i class="bi bi-magic me-1"></i> Phân tích
-                </button>
-            </div>
-            <div class="card-body">
-                <div id="aiPerformanceAnalysisResult" class="text-muted small" role="status" aria-live="polite">
-                    Chọn kỳ báo cáo rồi bấm phân tích để nhận tổng quan, rủi ro và hành động tham khảo có nguồn từ check-in đã duyệt.
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-6">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-person-lines-fill text-success"></i> AI Gợi ý tệp khách hàng</h5>
-                <button type="button" class="btn btn-sm btn-outline-success" id="runAiCustomerSegments" data-period-id="@(selectedPeriod?.Id)">
-                    <i class="bi bi-lightbulb me-1"></i> Gợi ý
-                </button>
-            </div>
-            <div class="card-body">
-                <div id="aiCustomerSegmentsResult" class="text-muted small" role="status" aria-live="polite">
-                    AI sẽ dựa vào phạm vi KPI/OKR và dữ liệu doanh thu được phép để đề xuất phân khúc tham khảo có nguồn; không chấm điểm hoặc dự báo xác suất tiềm năng.
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-    .dashboard-page {
-        min-width: 0;
-        overflow-x: clip;
-    }
-
-    .dashboard-header {
-        display: flex;
-        gap: 1rem;
-    }
-
-    .dashboard-page .card,
-    .dashboard-page .card-body,
-    .dashboard-page .table-responsive {
-        min-width: 0;
-    }
-
-    .dashboard-page canvas {
-        max-width: 100%;
-    }
-
-    #aiPerformanceAnalysisResult,
-    #aiCustomerSegmentsResult,
-    #aiPerformanceAnalysisResult .ai-result-card,
-    #aiCustomerSegmentsResult .ai-result-card,
-    #aiPerformanceAnalysisResult .ai-analysis-content {
-        width: 100%;
-        max-width: 100%;
-        white-space: normal;
-        overflow: visible;
-        overflow-wrap: anywhere;
-        word-break: normal;
-        line-height: 1.7;
-    }
-
-    #aiPerformanceAnalysisResult .ai-result-card,
-    #aiCustomerSegmentsResult .ai-result-card {
-        color: var(--text-secondary);
-    }
-
-    #aiPerformanceAnalysisResult .ai-analysis-content p {
-        margin: 0 0 0.75rem;
-    }
-
-    #aiPerformanceAnalysisResult .ai-analysis-content p:last-child,
-    #aiPerformanceAnalysisResult .ai-analysis-content ul:last-child {
-        margin-bottom: 0;
-    }
-
-    #aiPerformanceAnalysisResult .ai-analysis-content ul {
-        margin: 0 0 0.75rem;
-        padding-left: 1.1rem;
-    }
-
-    #aiPerformanceAnalysisResult .ai-analysis-content li {
-        margin-bottom: 0.35rem;
-    }
-
-    #aiCustomerSegmentsResult .ai-segment-card {
-        background: #fff;
-    }
-
-    @@media (max-width: 767.98px) {
-        .dashboard-header {
-            align-items: stretch !important;
-            flex-direction: column;
-        }
-
-        .dashboard-header > .ms-auto,
-        .dashboard-period-filter {
-            width: 100%;
-        }
-
-        .dashboard-period-filter {
-            border-radius: 0.65rem !important;
-            padding: 0.35rem 0.75rem !important;
-        }
-
-        .dashboard-period-filter .form-select {
-            width: 100% !important;
-            min-width: 0 !important;
-        }
-
-        .dashboard-page .row.g-4 {
-            --bs-gutter-x: 0.85rem;
-            --bs-gutter-y: 0.85rem;
-        }
-
-        .dashboard-page .card-body {
-            padding: 1rem;
-        }
-
-        .dashboard-page .card-header .btn {
-            min-height: 40px;
-        }
-    }
-
-    @@media (max-width: 390px) {
-        .dashboard-page .dashboard-stat-card {
-            padding: 0.85rem !important;
-        }
-
-        .dashboard-page .card-header {
-            align-items: stretch !important;
-            flex-direction: column;
-        }
-
-        .dashboard-page .card-header .btn {
-            width: 100%;
-        }
-    }
-</style>
-
-@* ============ MAIN CHART + RECENT CHECKINS ============ *@
-<div class="row g-4 mb-4">
-    <div class="col-lg-8">
-        <div class="card shadow-sm h-100 border-0">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-bar-chart-fill text-primary"></i> Xu hướng tiến độ KPI (6 tháng gần nhất)</h5>
-            </div>
-            <div class="card-body d-flex align-items-center justify-content-center p-4">
-                <div class="w-100" style="position: relative; height: 350px;">
-                    <canvas id="mainDashboardChart" role="img" aria-label="Biểu đồ xu hướng tiến độ KPI trong 6 tháng gần nhất"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-4">
-        <div class="card shadow-sm h-100 border-0">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-activity text-danger"></i> Hoạt động Check-in gần đây</h5>
-            </div>
-            <div class="card-body pt-3" style="max-height: 400px; overflow-y: auto;">
-                @if (recentCheckIns.Any())
-                {
-                    <ul class="list-group list-group-flush">
-                    @foreach (var ci in recentCheckIns)
-                    {
-                        var empName = ci.EmployeeId.HasValue && employeeNames.ContainsKey(ci.EmployeeId.Value) ? employeeNames[ci.EmployeeId.Value] : "N/A";
-                        var kpiName = ci.KPIId.HasValue && kpiNames.ContainsKey(ci.KPIId.Value) ? kpiNames[ci.KPIId.Value] : "N/A";
-                        
-                        <li class="list-group-item px-0 border-bottom">
-                            <div class="d-flex w-100 justify-content-between align-items-center">
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 me-3">
-                                        <i class="bi bi-check-lg"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold fs-6" style="font-size: 0.9rem;">@empName</div>
-                                        <small class="text-muted">Đã check-in: @kpiName</small>
-                                    </div>
-                                </div>
-                                <small class="text-muted">@(ci.CheckInDate?.ToString("dd/MM HH:mm") ?? "")</small>
+    <section class="row g-3 dashboard-section" aria-label="Chỉ số tổng quan">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="card dashboard-card dashboard-stat-card h-100">
+                <div class="card-body">
+                    <div class="dashboard-stat-content">
+                        <div class="min-w-0">
+                            <p class="dashboard-stat-label">Tỷ lệ KPI đạt</p>
+                            <p class="dashboard-stat-value">@kpiAchievementRate%</p>
+                            <div class="dashboard-stat-meta">
+                                <span class="badge bg-@GetKpiStatusColor(kpiAchievementRate)-subtle text-@GetKpiStatusColor(kpiAchievementRate)">@GetKpiStatusText(kpiAchievementRate)</span>
+                                <span>@totalKPIs KPI</span>
                             </div>
-                        </li>
-                    }
-                    </ul>
-                }
-                else
-                {
-                    <div class="text-center text-muted py-4">
-                        <i class="bi bi-inbox opacity-50" style="font-size: 3rem;"></i>
-                        <p class="mt-2 mb-0">Chưa có hoạt động check-in nào</p>
+                        </div>
+                        <span class="dashboard-stat-icon bg-primary-subtle text-primary"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
                     </div>
-                }
-            </div>
+                </div>
+            </article>
         </div>
-    </div>
-</div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="card dashboard-card dashboard-stat-card h-100">
+                <div class="card-body">
+                    <div class="dashboard-stat-content">
+                        <div class="min-w-0">
+                            <p class="dashboard-stat-label">Tiến độ OKR</p>
+                            <p class="dashboard-stat-value">@okrProgressRate%</p>
+                            <div class="dashboard-stat-meta">
+                                <span class="badge bg-@GetOkrStatusColor(okrProgressRate)-subtle text-@GetOkrStatusColor(okrProgressRate)">@GetOkrStatusText(okrProgressRate)</span>
+                                <span>@totalOKRs mục tiêu</span>
+                            </div>
+                        </div>
+                        <span class="dashboard-stat-icon bg-success-subtle text-success"><i class="bi bi-bullseye" aria-hidden="true"></i></span>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="card dashboard-card dashboard-stat-card h-100">
+                <div class="card-body">
+                    <div class="dashboard-stat-content">
+                        <div class="min-w-0">
+                            <p class="dashboard-stat-label">Nhân viên trong phạm vi</p>
+                            <p class="dashboard-stat-value">@totalEmployees</p>
+                            <div class="dashboard-stat-meta"><span>Đang hoạt động</span></div>
+                        </div>
+                        <span class="dashboard-stat-icon bg-info-subtle text-info"><i class="bi bi-people" aria-hidden="true"></i></span>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="card dashboard-card dashboard-stat-card h-100">
+                <div class="card-body">
+                    <div class="dashboard-stat-content">
+                        <div class="min-w-0">
+                            <p class="dashboard-stat-label">Check-in đã duyệt</p>
+                            <p class="dashboard-stat-value">@totalCheckIns</p>
+                            <div class="dashboard-stat-meta"><span>@(selectedPeriod != null ? $"Trong kỳ {selectedPeriod.PeriodName}" : "Trong phạm vi dữ liệu")</span></div>
+                        </div>
+                        <span class="dashboard-stat-icon bg-warning-subtle text-warning"><i class="bi bi-check2-square" aria-hidden="true"></i></span>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
 
-@* ============ QUICK ACCESS + SYSTEM DETAILS ============ *@
-<div class="row g-4 mb-4">
-    <div class="col-lg-6">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-lightning-charge-fill text-warning"></i> Truy cập nhanh</h5>
-            </div>
-            <div class="card-body pt-3 dashboard-quick-links">
-                <div class="row g-2">
-                    <div class="col-6"><a href="/Employees" class="btn btn-outline-primary w-100 py-2"><i class="bi bi-people me-2"></i>Nhân sự</a></div>
-                    <div class="col-6"><a href="/KPIs" class="btn btn-outline-success w-100 py-2"><i class="bi bi-speedometer2 me-2"></i>Quản lý KPI</a></div>
-                    <div class="col-6"><a href="/OKRs" class="btn btn-outline-info w-100 py-2"><i class="bi bi-bullseye me-2"></i>Quản lý OKR</a></div>
-                    <div class="col-6"><a href="/EvaluationResults" class="btn btn-outline-danger w-100 py-2"><i class="bi bi-award me-2"></i>Đánh giá</a></div>
-                    <div class="col-6"><a href="/KPICheckIns" class="btn btn-outline-secondary w-100 py-2"><i class="bi bi-check2-square me-2"></i>Check-in</a></div>
-                    <div class="col-6"><a href="/Departments" class="btn btn-outline-dark w-100 py-2"><i class="bi bi-diagram-3 me-2"></i>Phòng ban</a></div>
+    <section class="row g-3 dashboard-section" aria-label="Tiến độ và hoạt động">
+        <div class="col-xl-8">
+            <article class="card dashboard-card h-100" aria-labelledby="kpiTrendHeading">
+                <div class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title" id="kpiTrendHeading">Xu hướng tiến độ KPI</h2>
+                        <p>6 tháng gần nhất · dữ liệu check-in đã duyệt</p>
+                    </div>
                 </div>
-            </div>
+                <div class="card-body">
+                    <div class="dashboard-chart dashboard-chart--trend" data-dashboard-chart="trend">
+                        <canvas id="mainDashboardChart" role="img" aria-label="Biểu đồ xu hướng tiến độ KPI trong 6 tháng gần nhất"></canvas>
+                        <div class="dashboard-empty-state" id="mainDashboardChartState" role="status" hidden>
+                            <i class="bi bi-graph-up" aria-hidden="true"></i>
+                            <strong>Chưa có dữ liệu tiến độ</strong>
+                            <span>Check-in đã duyệt sẽ tạo xu hướng tại đây.</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
         </div>
-    </div>
-
-    <div class="col-lg-6">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-info-circle-fill text-primary"></i> Chi tiết hệ thống</h5>
-            </div>
-            <div class="card-body pt-3">
-                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <span class="text-muted"><i class="bi bi-diagram-3 me-2"></i>Phòng ban</span>
-                    <span class="fw-bold">@totalDepartments</span>
+        <div class="col-xl-4">
+            <article class="card dashboard-card h-100" aria-labelledby="recentCheckinHeading">
+                <div class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title" id="recentCheckinHeading">Check-in gần đây</h2>
+                        <p>Tối đa 5 hoạt động mới nhất</p>
+                    </div>
                 </div>
-                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <span class="text-muted"><i class="bi bi-person-badge me-2"></i>Chức vụ</span>
-                    <span class="fw-bold">@totalPositions</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <span class="text-muted"><i class="bi bi-people me-2"></i>Nhân viên</span>
-                    <span class="fw-bold">@totalEmployees</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <span class="text-muted"><i class="bi bi-bullseye me-2"></i>OKR đang hoạt động</span>
-                    <span class="fw-bold">@totalOKRs</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <span class="text-muted"><i class="bi bi-speedometer2 me-2"></i>KPI đang hoạt động</span>
-                    <span class="fw-bold">@totalKPIs</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center py-2">
-                    <span class="text-muted"><i class="bi bi-check2-square me-2"></i>Lượt Check-in</span>
-                    <span class="fw-bold">@totalCheckIns</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@* ============ CHARTS ROW ============ *@
-<div class="row g-4 mb-4">
-    <div class="col-lg-6">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-pie-chart-fill text-success"></i> Phân bổ trạng thái OKR</h5>
-            </div>
-            <div class="card-body d-flex align-items-center justify-content-center p-4">
-                <div class="w-100" style="position: relative; height: 320px;">
-                    <canvas id="okrStatusChart" role="img" aria-label="Biểu đồ phân bổ trạng thái OKR"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-6">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-graph-up-arrow text-info"></i> Hiệu suất theo Phòng ban</h5>
-            </div>
-            <div class="card-body d-flex align-items-center justify-content-center p-4">
-                <div class="w-100" style="position: relative; height: 320px;">
-                    <canvas id="deptPerformanceChart" role="img" aria-label="Biểu đồ hiệu suất trung bình theo phòng ban"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@* ============ TOP EMPLOYEES ============ *@
-@if (topEmployees != null && topEmployees.Any())
-{
-<div class="row g-4 mb-4">
-    <div class="col-12">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0 fs-6 fw-bold"><i class="bi bi-trophy-fill text-warning"></i> Top 5 nhân viên hiệu suất cao</h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="px-4 py-3" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Xếp hạng</th>
-                                <th class="px-4 py-3" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Nhân viên</th>
-                                <th class="px-4 py-3" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Tiến độ TB (%)</th>
-                                <th class="px-4 py-3" style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Lượt Check-in</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @{ int rank = 1; }
-                            @foreach (var emp in topEmployees)
+                <div class="card-body dashboard-activity-list">
+                    @if (recentCheckIns.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var checkIn in recentCheckIns)
                             {
-                                var medalIcon = rank switch {
-                                    1 => "🥇",
-                                    2 => "🥈",
-                                    3 => "🥉",
-                                    _ => $"#{rank}"
-                                };
-                                double progress = (double)emp.AvgProgress;
+                                var employeeName = checkIn.EmployeeId.HasValue && employeeNames.ContainsKey(checkIn.EmployeeId.Value)
+                                    ? employeeNames[checkIn.EmployeeId.Value]
+                                    : "N/A";
+                                var kpiName = checkIn.KPIId.HasValue && kpiNames.ContainsKey(checkIn.KPIId.Value)
+                                    ? kpiNames[checkIn.KPIId.Value]
+                                    : "N/A";
+                                <li class="list-group-item">
+                                    <span class="dashboard-activity-icon"><i class="bi bi-check-lg" aria-hidden="true"></i></span>
+                                    <span class="dashboard-activity-content">
+                                        <strong title="@employeeName">@employeeName</strong>
+                                        <span title="@kpiName">@kpiName</span>
+                                    </span>
+                                    <time datetime="@(checkIn.CheckInDate?.ToString("O"))">@(checkIn.CheckInDate?.ToString("dd/MM HH:mm") ?? "")</time>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="dashboard-empty-state" role="status">
+                            <i class="bi bi-inbox" aria-hidden="true"></i>
+                            <strong>Chưa có check-in</strong>
+                            <span>Hoạt động mới sẽ hiển thị tại đây.</span>
+                        </div>
+                    }
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="row g-3 dashboard-section" aria-label="Phân tích hiệu suất">
+        <div class="col-xl-4">
+            <article class="card dashboard-card h-100" aria-labelledby="okrStatusHeading">
+                <div class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title" id="okrStatusHeading">Trạng thái OKR</h2>
+                        <p>Phân bổ theo trạng thái hiện tại</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="dashboard-chart dashboard-chart--donut" data-dashboard-chart="okr-status">
+                        <canvas id="okrStatusChart" role="img" aria-label="Biểu đồ phân bổ trạng thái OKR"></canvas>
+                    </div>
+                    <p class="dashboard-chart-note" id="okrStatusChartNote" role="status" hidden>Chưa có OKR trong phạm vi đã chọn.</p>
+                </div>
+            </article>
+        </div>
+        <div class="col-xl-8">
+            <article class="card dashboard-card h-100" aria-labelledby="departmentPerformanceHeading">
+                <div class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title" id="departmentPerformanceHeading">Hiệu suất theo phòng ban</h2>
+                        <p>5 phòng ban có dữ liệu tiến độ nổi bật</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="dashboard-chart dashboard-chart--departments" data-dashboard-chart="departments">
+                        <canvas id="deptPerformanceChart" role="img" aria-label="Biểu đồ hiệu suất trung bình theo phòng ban"></canvas>
+                        <div class="dashboard-empty-state" id="deptPerformanceChartState" role="status" hidden>
+                            <i class="bi bi-bar-chart" aria-hidden="true"></i>
+                            <strong>Chưa có dữ liệu phòng ban</strong>
+                            <span>Dữ liệu hiệu suất đã duyệt sẽ hiển thị tại đây.</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="dashboard-section">
+        <article class="card dashboard-card" aria-labelledby="topEmployeesHeading">
+            <div class="card-header dashboard-card-header">
+                <div>
+                    <h2 class="card-title" id="topEmployeesHeading">Top 5 nhân viên hiệu suất cao</h2>
+                    <p>Xếp hạng từ check-in đã duyệt trong phạm vi dữ liệu</p>
+                </div>
+            </div>
+            @if (topEmployees != null && topEmployees.Any())
+            {
+                <div class="table-responsive dashboard-ranking-table-wrap">
+                    <table class="table table-hover table-nowrap align-middle mb-0 dashboard-ranking-table">
+                        <thead><tr><th scope="col">Xếp hạng</th><th scope="col">Nhân viên</th><th scope="col">Tiến độ trung bình</th><th scope="col">Check-in</th></tr></thead>
+                        <tbody>
+                            @{ var rank = 1; }
+                            @foreach (var employee in topEmployees)
+                            {
+                                var progress = (double)employee.AvgProgress;
                                 var progressColor = progress >= 100 ? "success" : progress >= 70 ? "primary" : progress >= 40 ? "warning" : "danger";
                                 <tr>
-                                    <td class="px-4 py-3 fw-bold">@medalIcon</td>
-                                    <td class="px-4 py-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 0.75rem; font-weight: 700;">
-                                                @(((string)emp.Name)?[0])
-                                            </div>
-                                            <span class="fw-medium">@emp.Name</span>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">#@rank</span></td>
+                                    <td>
+                                        <div class="dashboard-employee-cell">
+                                            <span class="dashboard-employee-avatar">@(((string)employee.Name)?[0])</span>
+                                            <span class="fw-medium">@employee.Name</span>
                                         </div>
                                     </td>
-                                    <td class="px-4 py-3">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="progress flex-grow-1" style="height: 8px; border-radius: 4px;">
-                                                <div class="progress-bar bg-@progressColor" role="progressbar" style="width: @(Math.Min(progress, 100))%"></div>
-                                            </div>
-                                            <span class="fw-bold text-@progressColor" style="min-width: 50px; font-size: 0.85rem;">@emp.AvgProgress%</span>
+                                    <td>
+                                        <div class="dashboard-rank-progress">
+                                            <div class="progress"><div class="progress-bar bg-@progressColor" role="progressbar" style="width: @(Math.Min(progress, 100))%" aria-valuenow="@Math.Min(progress, 100)" aria-valuemin="0" aria-valuemax="100"></div></div>
+                                            <span class="text-@progressColor">@employee.AvgProgress%</span>
                                         </div>
                                     </td>
-                                    <td class="px-4 py-3">
-                                        <span class="badge bg-light text-dark border">@emp.CheckInCount lần</span>
-                                    </td>
+                                    <td><span class="badge bg-light text-body border">@employee.CheckInCount lần</span></td>
                                 </tr>
                                 rank++;
                             }
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-}
-
-</div>
-
-@section Scripts {
-    <script>
-        // Lấy dữ liệu THỰC từ Controller (đã được serialize thành JSON)
-        const okrLabels = @Html.Raw(ViewBag.OKRStatusLabels ?? "[]");
-        const okrData = @Html.Raw(ViewBag.OKRStatusData ?? "[]");
-        const deptLabels = @Html.Raw(ViewBag.DeptLabels ?? "[]");
-        const deptProgress = @Html.Raw(ViewBag.DeptProgress ?? "[]");
-        const mainLabels = @Html.Raw(ViewBag.MainChartLabels ?? "[]");
-        const mainData = @Html.Raw(ViewBag.MainChartData ?? "[]");
-
-        document.getElementById('runAiPerformanceAnalysis')?.addEventListener('click', async function () {
-            const btn = this;
-            const result = document.getElementById('aiPerformanceAnalysisResult');
-            const originalHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> AI đang phân tích...';
-            result.innerHTML = '<div class="text-muted small">Đang tổng hợp dữ liệu KPI/OKR...</div>';
-
-            try {
-                const response = await fetch('/AI/AnalyzePerformance', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...window.antiForgeryHeaders()
-                    },
-                    body: JSON.stringify({ periodId: btn.dataset.periodId ? parseInt(btn.dataset.periodId, 10) : null })
-                });
-                const data = await response.json();
-                if (!response.ok || data.success === false) {
-                    result.innerHTML = `<div class="alert alert-warning mb-0">${escapeHtml(data.warnings?.[0] || 'Không thể phân tích AI.')}</div>`;
-                    return;
-                }
-                result.innerHTML = renderPerformanceAnalysis(data);
-            } catch {
-                result.innerHTML = '<div class="alert alert-danger mb-0">Không thể kết nối AI. Vui lòng thử lại sau.</div>';
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalHtml;
             }
-        });
-
-        document.getElementById('runAiCustomerSegments')?.addEventListener('click', async function () {
-            const btn = this;
-            const result = document.getElementById('aiCustomerSegmentsResult');
-            const originalHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> AI đang gợi ý...';
-            result.innerHTML = '<div class="text-muted small">Đang đọc hồ sơ nhân viên, KPI kỳ trước và dữ liệu doanh thu...</div>';
-
-            try {
-                const response = await fetch('/AI/SuggestCustomerSegments', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...window.antiForgeryHeaders()
-                    },
-                    body: JSON.stringify({ periodId: btn.dataset.periodId ? parseInt(btn.dataset.periodId, 10) : null })
-                });
-                const data = await response.json();
-                if (!response.ok || data.success === false) {
-                    result.innerHTML = `<div class="alert alert-warning mb-0">${escapeHtml(data.warnings?.[0] || 'Không thể gợi ý tệp khách hàng.')}</div>`;
-                    return;
-                }
-                result.innerHTML = renderCustomerSegments(data.segments || [], data.citations || []);
-            } catch {
-                result.innerHTML = '<div class="alert alert-danger mb-0">Không thể kết nối AI. Vui lòng thử lại sau.</div>';
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalHtml;
-            }
-        });
-
-        function renderPerformanceAnalysis(data) {
-            if (!data?.overview) {
-                return `<div class="alert alert-light border mb-0">${escapeHtml(data?.warnings?.[0] || 'Chưa đủ check-in đã duyệt để tạo phân tích có căn cứ.')}</div>`;
-            }
-
-            const citationLabels = new Map((data.citations || []).map(citation => [
-                `${citation.sourceType || ''}:${citation.sourceId || ''}`,
-                citation.title || `${citation.sourceType || 'Nguồn'} #${citation.sourceId || ''}`
-            ]));
-            const renderInsight = (item, accentClass = 'border-start border-3 border-secondary') => {
-                const sourceLabels = (item?.sourceIds || [])
-                    .map(sourceId => citationLabels.get(sourceId))
-                    .filter(Boolean);
-                return `
-                    <div class="${accentClass} ps-3 py-1 mb-3">
-                        <div class="fw-semibold text-dark">${escapeHtml(item?.title || 'Nhận định')}</div>
-                        <div class="small mt-1">${escapeHtml(item?.detail || '')}</div>
-                        ${sourceLabels.length ? `<div class="small text-muted mt-1"><strong>Nguồn:</strong> ${sourceLabels.map(escapeHtml).join('; ')}</div>` : ''}
+            else
+            {
+                <div class="card-body">
+                    <div class="dashboard-empty-state dashboard-empty-state--compact" role="status">
+                        <i class="bi bi-trophy" aria-hidden="true"></i>
+                        <strong>Chưa đủ dữ liệu xếp hạng</strong>
+                        <span>Cần thêm check-in đã duyệt để xác định top nhân viên.</span>
                     </div>
-                `;
-            };
-            const renderSection = (title, items, accentClass) => {
-                if (!items?.length) return '';
-                return `
-                    <section class="mt-3" aria-label="${escapeHtml(title)}">
-                        <div class="small fw-bold text-uppercase text-muted mb-2">${escapeHtml(title)}</div>
-                        ${items.map(item => renderInsight(item, accentClass)).join('')}
-                    </section>
-                `;
-            };
-
-            return `
-                <div class="ai-result-card">
-                    ${renderInsight(data.overview, 'border-start border-3 border-primary')}
-                    ${renderSection('Điểm mạnh', data.strengths || [], 'border-start border-3 border-success')}
-                    ${renderSection('Rủi ro', data.risks || [], 'border-start border-3 border-warning')}
-                    ${renderSection('Hành động đề xuất', data.recommendedActions || [], 'border-start border-3 border-info')}
-                    <div class="small text-muted mt-2">Phân tích chỉ mang tính tham khảo; không thay đổi điểm, xếp loại, trạng thái duyệt hoặc thưởng.</div>
                 </div>
-            `;
-        }
-
-        function renderCustomerSegments(segments, citations) {
-            if (!segments.length) {
-                return '<div class="text-muted small">AI chưa tìm thấy tệp khách hàng phù hợp từ dữ liệu hiện có.</div>';
             }
+        </article>
+    </section>
 
-            const citationLabels = new Map((citations || []).map(citation => [
-                `${citation.sourceType || ''}:${citation.sourceId || ''}`,
-                citation.title || `${citation.sourceType || 'Nguồn'} #${citation.sourceId || ''}`
-            ]));
-            const cards = segments.map(item => {
-                const sourceLabels = (item.sourceIds || [])
-                    .map(sourceId => citationLabels.get(sourceId))
-                    .filter(Boolean);
-                return `
-                    <div class="ai-segment-card border rounded p-3 mb-2">
-                        <div class="d-flex justify-content-between gap-2 align-items-start mb-2">
-                            <div>
-                                <div class="fw-bold text-dark">${escapeHtml(item.segmentName || 'Tệp khách hàng')}</div>
-                                <div class="text-muted">${escapeHtml(item.employeeFit || 'Chưa đủ dữ liệu khớp nhân viên.')}</div>
-                            </div>
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary border rounded-pill">Đề xuất tham khảo</span>
-                        </div>
-                        <div class="row g-2 small">
-                            <div class="col-sm-6"><strong>Sản phẩm/ngành:</strong> ${escapeHtml(item.productOrService || 'Chưa rõ')}</div>
-                            <div class="col-sm-6"><strong>Khu vực:</strong> ${escapeHtml(item.region || 'Chưa rõ')}</div>
-                            <div class="col-sm-6"><strong>Vòng đời:</strong> ${escapeHtml(item.customerLifecycle || 'Mới/cũ/lâu năm chưa rõ')}</div>
-                            <div class="col-sm-6"><strong>Căn cứ doanh thu:</strong> ${escapeHtml(item.revenueBasis || 'Thiếu dữ liệu doanh thu chi tiết')}</div>
-                        </div>
-                        <div class="mt-2 small"><strong>Căn cứ đề xuất:</strong> ${escapeHtml(item.evidenceBasis || 'Chưa đủ căn cứ')}</div>
-                        <div class="mt-1 small"><strong>Hành động:</strong> ${escapeHtml(item.recommendedAction || 'N/A')}</div>
-                        ${item.dataGaps ? `<div class="mt-2 small text-muted"><i class="bi bi-info-circle me-1"></i>${escapeHtml(item.dataGaps)}</div>` : ''}
-                        ${sourceLabels.length ? `<div class="mt-2 small text-muted"><strong>Nguồn:</strong> ${sourceLabels.map(escapeHtml).join('; ')}</div>` : ''}
+    <section class="row g-3 dashboard-section" aria-label="Trợ lý AI">
+        <div class="col-lg-6">
+            <article class="card dashboard-card dashboard-ai-card h-100" aria-labelledby="aiPerformanceHeading">
+                <div class="card-header dashboard-card-header dashboard-ai-header">
+                    <div>
+                        <h2 class="card-title" id="aiPerformanceHeading"><i class="bi bi-stars" aria-hidden="true"></i>AI phân tích hiệu suất</h2>
+                        <p>Tổng hợp rủi ro và hành động từ dữ liệu được phép</p>
                     </div>
-                `;
-            }).join('');
+                    <button type="button" class="btn btn-sm btn-outline-primary dashboard-ai-action" id="runAiPerformanceAnalysis" data-period-id="@(selectedPeriod?.Id)">
+                        <i class="bi bi-magic" aria-hidden="true"></i><span>Phân tích</span>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="aiPerformanceAnalysisResult" class="dashboard-ai-result text-muted" role="status" aria-live="polite">Chọn kỳ báo cáo rồi bấm phân tích để nhận tổng quan, rủi ro và hành động tham khảo có nguồn từ check-in đã duyệt.</div>
+                </div>
+            </article>
+        </div>
+        <div class="col-lg-6">
+            <article class="card dashboard-card dashboard-ai-card h-100" aria-labelledby="aiSegmentHeading">
+                <div class="card-header dashboard-card-header dashboard-ai-header">
+                    <div>
+                        <h2 class="card-title" id="aiSegmentHeading"><i class="bi bi-person-lines-fill" aria-hidden="true"></i>AI gợi ý tệp khách hàng</h2>
+                        <p>Đề xuất có nguồn, không chấm điểm xác suất</p>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary dashboard-ai-action" id="runAiCustomerSegments" data-period-id="@(selectedPeriod?.Id)">
+                        <i class="bi bi-lightbulb" aria-hidden="true"></i><span>Gợi ý</span>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="aiCustomerSegmentsResult" class="dashboard-ai-result text-muted" role="status" aria-live="polite">AI dựa trên phạm vi KPI/OKR và dữ liệu doanh thu được phép để đề xuất phân khúc khách hàng có căn cứ.</div>
+                </div>
+            </article>
+        </div>
+    </section>
 
-            return `<div class="ai-result-card">${cards}<div class="small text-muted mt-2">Các phân khúc không được xếp hạng và không phải xác suất thành công.</div></div>`;
-        }
-
-        // --- 1. BIỂU ĐỒ XU HƯỚNG 6 THÁNG GẦN NHẤT ---
-        const ctxMain = document.getElementById('mainDashboardChart').getContext('2d');
-        new Chart(ctxMain, {
-            type: 'line',
-            data: {
-                labels: mainLabels,
-                datasets: [{
-                    label: 'Tiến độ trung bình (%)',
-                    data: mainData,
-                    borderColor: '#7b68ee',
-                    backgroundColor: 'rgba(123, 104, 238, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 5,
-                    pointBackgroundColor: '#7b68ee',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointHoverRadius: 7
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: { 
-                    legend: { display: true, position: 'top', labels: { usePointStyle: true, font: { size: 12 } } },
-                    tooltip: { 
-                        backgroundColor: 'rgba(0,0,0,0.8)', padding: 12,
-                        callbacks: { label: ctx => `Tiến độ: ${ctx.parsed.y}%` }
+    <section class="row g-3 dashboard-section" aria-label="Điều hướng và chi tiết hệ thống">
+        <div class="col-xl-7">
+            <article class="card dashboard-card h-100" aria-labelledby="quickLinksHeading">
+                <div class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title" id="quickLinksHeading">Truy cập nhanh</h2>
+                        <p>Các chức năng phù hợp với quyền hiện tại</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (quickActions.Any())
+                    {
+                        <nav class="dashboard-quick-actions" aria-label="Truy cập nhanh">
+                            @foreach (var action in quickActions)
+                            {
+                                <a href="@action.Href" class="btn btn-light border dashboard-quick-action">
+                                    <i class="bi @action.Icon" aria-hidden="true"></i><span>@action.Label</span><i class="bi bi-arrow-right-short dashboard-quick-action-arrow" aria-hidden="true"></i>
+                                </a>
+                            }
+                        </nav>
                     }
-                },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { beginAtZero: true, max: 100, ticks: { callback: value => value + '%' } }
-                }
-            }
-        });
-
-        // --- 2. BIỂU ĐỒ TRẠNG THÁI OKR ---
-        const ctxStatus = document.getElementById('okrStatusChart').getContext('2d');
-        const hasOkrData = okrData.some(v => v > 0);
-        new Chart(ctxStatus, {
-            type: 'doughnut',
-            data: {
-                labels: hasOkrData ? okrLabels : ['Chưa có dữ liệu'],
-                datasets: [{
-                    data: hasOkrData ? okrData : [1],
-                    backgroundColor: hasOkrData ? ['#0f9d58', '#f29900', '#7b68ee', '#d93025', '#514b81', '#0091ff'] : ['#e8e8e8'],
-                    borderWidth: 0,
-                    hoverOffset: 15
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                cutout: '72%',
-                plugins: {
-                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { size: 11 } } }
-                }
-            }
-        });
-
-        // --- 3. BIỂU ĐỒ HIỆU SUẤT PHÒNG BAN ---
-        const ctxDept = document.getElementById('deptPerformanceChart').getContext('2d');
-        const hasDeptData = deptProgress.length > 0 && deptProgress.some(v => v > 0);
-        if (hasDeptData) {
-            new Chart(ctxDept, {
-                type: 'bar',
-                data: {
-                    labels: deptLabels,
-                    datasets: [{
-                        label: 'Hiệu suất TB (%)',
-                        data: deptProgress,
-                        backgroundColor: deptProgress.map(v => v >= 70 ? '#0f9d58' : v >= 40 ? '#f29900' : '#d93025'),
-                        hoverBackgroundColor: '#6647f0',
-                        borderRadius: 8,
-                        barThickness: 24
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { grid: { display: false }, ticks: { padding: 10 } },
-                        x: { beginAtZero: true, max: 100, ticks: { callback: value => value + '%' } }
+                    else
+                    {
+                        <div class="dashboard-empty-state dashboard-empty-state--compact" role="status">
+                            <i class="bi bi-shield-check" aria-hidden="true"></i>
+                            <strong>Chưa có chức năng truy cập nhanh</strong>
+                            <span>Các lối tắt sẽ xuất hiện khi tài khoản được cấp quyền.</span>
+                        </div>
                     }
-                }
-            });
-        } else {
-            ctxDept.canvas.parentElement.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-bar-chart opacity-25" style="font-size: 3rem;"></i><p class="mt-2 mb-0">Chưa có dữ liệu hiệu suất phòng ban</p></div>';
+                </div>
+            </article>
+        </div>
+        <div class="col-xl-5">
+            <article class="card dashboard-card h-100" aria-labelledby="systemDetailHeading">
+                <div class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title" id="systemDetailHeading">Chi tiết hệ thống</h2>
+                        <p>Số liệu trong phạm vi dữ liệu hiện tại</p>
+                    </div>
+                </div>
+                <div class="table-responsive dashboard-system-table-wrap">
+                    <table class="table table-sm table-nowrap align-middle mb-0 dashboard-system-table">
+                        <tbody>
+                            <tr><th scope="row"><i class="bi bi-diagram-3" aria-hidden="true"></i>Phòng ban</th><td>@totalDepartments</td></tr>
+                            <tr><th scope="row"><i class="bi bi-person-badge" aria-hidden="true"></i>Chức vụ</th><td>@totalPositions</td></tr>
+                            <tr><th scope="row"><i class="bi bi-people" aria-hidden="true"></i>Nhân viên</th><td>@totalEmployees</td></tr>
+                            <tr><th scope="row"><i class="bi bi-bullseye" aria-hidden="true"></i>OKR đang hoạt động</th><td>@totalOKRs</td></tr>
+                            <tr><th scope="row"><i class="bi bi-speedometer2" aria-hidden="true"></i>KPI đang hoạt động</th><td>@totalKPIs</td></tr>
+                            <tr><th scope="row"><i class="bi bi-check2-square" aria-hidden="true"></i>Check-in đã duyệt</th><td>@totalCheckIns</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <script type="application/json" id="dashboardData">
+        {
+            "okrLabels": @Html.Raw(ViewBag.OKRStatusLabels ?? "[]"),
+            "okrData": @Html.Raw(ViewBag.OKRStatusData ?? "[]"),
+            "departmentLabels": @Html.Raw(ViewBag.DeptLabels ?? "[]"),
+            "departmentProgress": @Html.Raw(ViewBag.DeptProgress ?? "[]"),
+            "trendLabels": @Html.Raw(ViewBag.MainChartLabels ?? "[]"),
+            "trendData": @Html.Raw(ViewBag.MainChartData ?? "[]"),
+            "totalOkrs": @totalOKRs,
+            "totalCheckIns": @totalCheckIns
         }
     </script>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
 }

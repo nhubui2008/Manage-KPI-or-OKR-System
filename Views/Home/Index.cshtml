@@ -5,10 +5,6 @@
     ViewData["Description"] = "Phần mềm SaaS chuyên nghiệp quản trị OKR, đo lường KPI, đánh giá nhân sự 360 độ và hỗ trợ quyết định bằng AI có nguồn.";
 }
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
 <style>
     /* ===== DESIGN TOKENS ===== */
     :root {
@@ -56,12 +52,12 @@
     a, button, .tab-btn, .nav-link, i, .clickable { cursor: pointer !important; }
 
     body {
-        font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+        font-family: hkgrotesk, Poppins, system-ui, -apple-system, sans-serif;
         color: var(--text-secondary); background: var(--surface-0);
         overflow-x: clip; -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
     }
-    h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; color: var(--text-primary); }
+    h1, h2, h3, h4, h5 { font-family: hkgrotesk, Poppins, sans-serif; color: var(--text-primary); }
 
     /* ===== UTILITY ===== */
     .gradient-text {
@@ -110,7 +106,7 @@
     }
     .lp-brand {
         display: flex; align-items: center; gap: 10px; text-decoration: none;
-        font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-weight: 900; font-size: 1.5rem;
+        font-family: hkgrotesk, Poppins, sans-serif; font-weight: 900; font-size: 1.5rem;
         color: var(--text-primary); letter-spacing: 0;
     }
     .lp-brand i { font-size: 1.6rem; color: var(--primary); }
@@ -248,7 +244,7 @@
     }
     .stat-item { padding: 1.5rem; }
     .stat-number {
-        font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-size: 2.8rem; font-weight: 900;
+        font-family: hkgrotesk, Poppins, sans-serif; font-size: 2.8rem; font-weight: 900;
         color: var(--primary); line-height: 1; margin-bottom: 0.5rem;
     }
     .stat-number .stat-suffix { font-size: 1.5rem; color: var(--secondary); }
@@ -432,7 +428,7 @@
     .wf-step-num {
         width: 72px; height: 72px; border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-size: 1.5rem; font-weight: 900;
+        font-family: hkgrotesk, Poppins, sans-serif; font-size: 1.5rem; font-weight: 900;
         margin: 0 auto 1.2rem; transition: all 0.4s;
         border: 2px solid var(--border); background: white; color: var(--text-tertiary);
     }
@@ -455,7 +451,7 @@
     .pricing-badge { position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%); background: var(--primary); color: white; padding: 0.4rem 1.2rem; border-radius: 54px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; white-space: nowrap; box-shadow: var(--shadow-sm); }
     .pricing-card h3 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
     .pricing-card p { color: var(--text-tertiary); font-size: 0.95rem; margin-bottom: 2rem; }
-    .pricing-price { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-size: 3rem; font-weight: 900; color: var(--text-primary); margin-bottom: 2.5rem; line-height: 1; }
+    .pricing-price { font-family: hkgrotesk, Poppins, sans-serif; font-size: 3rem; font-weight: 900; color: var(--text-primary); margin-bottom: 2.5rem; line-height: 1; }
     .pricing-price span { font-size: 1rem; color: var(--text-tertiary); font-weight: 500; }
     .pricing-features { list-style: none; margin-bottom: 2.5rem; display: flex; flex-direction: column; gap: 1rem; }
     .pricing-features li { display: flex; align-items: flex-start; gap: 12px; font-size: 0.95rem; color: var(--text-secondary); font-weight: 500; }
@@ -600,6 +596,8 @@
 <!-- ===== BG ===== -->
 <div class="landing-bg"><div class="grid-pattern"></div></div>
 
+<a class="app-skip-link" href="#mainContent">Chuyển đến nội dung chính</a>
+
 <!-- ===== NAVBAR ===== -->
 <nav class="lp-nav" id="lp-nav">
     <div class="lp-nav-inner">
@@ -665,6 +663,7 @@
     </div>
 </nav>
 
+<main id="mainContent" tabindex="-1">
 <!-- ===== HERO ===== -->
 <section class="lp-hero">
     <div class="lp-hero-inner">
@@ -1038,6 +1037,8 @@
     </div>
 </section>
 
+</main>
+
 <!-- ===== FOOTER ===== -->
 <footer class="lp-footer">
     <div class="lp-footer-inner">
@@ -1185,12 +1186,12 @@
                 <h3>Bảo mật tài khoản</h3>
                 <p class="reg-form-subtitle">Vui lòng nhập mật khẩu mới để tiếp tục sử dụng hệ thống.</p>
                 
-                <div id="cpAlertError" class="alert-error" style="display:none; background: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; padding: 0.75rem 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.5rem; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 500;">
+                <div id="cpAlertError" class="alert-error" style="display:none; background: #fef2f2; border: 1px solid #ef4444; color: #991b1b; padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1.5rem; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 500;">
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <span id="cpErrorMsg"></span>
                 </div>
 
-                <div id="cpAlertSuccess" class="alert-success" style="display:none; background: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; padding: 0.75rem 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.5rem; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 500;">
+                <div id="cpAlertSuccess" class="alert-success" style="display:none; background: #f0fdf4; border: 1px solid #22c55e; color: #166534; padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1.5rem; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 500;">
                     <i class="bi bi-check-circle-fill"></i>
                     <span id="cpSuccessMsg"></span>
                 </div>

@@ -1,0 +1,18 @@
+# Project-scoped Codex defaults for the Manage KPI/OKR System repository.
+# Codex loads this file only when this trusted repository is the active project.
+
+model = "gpt-5.6-sol"
+model_reasoning_effort = "medium"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+web_search = "live"
+personality = "pragmatic"
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 1
+
+[features]
+multi_agent = true
+shell_snapshot = true
+goals = true

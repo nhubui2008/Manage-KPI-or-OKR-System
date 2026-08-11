@@ -2,6 +2,21 @@
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostingEnvironment
 @{
     var appBranding = await SystemSettingsService.GetBrandingAsync();
+    var currentController = Convert.ToString(ViewContext.RouteData.Values["Controller"]) ?? string.Empty;
+    var currentAction = Convert.ToString(ViewContext.RouteData.Values["Action"]) ?? string.Empty;
+    var publicAuthActions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "Login", "Register", "ForgotPassword", "ResetPassword", "SelectTenant", "AccessDenied", "PendingActivation"
+    };
+    var isLoginPage = ViewData["IsLoginPage"] is true ||
+        (currentController.Equals("Auth", StringComparison.OrdinalIgnoreCase) && publicAuthActions.Contains(currentAction));
+    var isLandingPage = ViewData["IsLandingPage"] is true ||
+        (currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) &&
+         (currentAction.Equals("Index", StringComparison.OrdinalIgnoreCase) ||
+          currentAction.Equals("Privacy", StringComparison.OrdinalIgnoreCase) ||
+          currentAction.Equals("PurchaseHistory", StringComparison.OrdinalIgnoreCase)));
+    var isInternalPage = !isLoginPage && !isLandingPage;
+    var bodyVariant = isLoginPage ? "velzon-auth" : isLandingPage ? "velzon-public" : "velzon-shell";
     var canonicalUrl = SeoHelper.GetCanonicalUrl(ViewContext, appBranding.PublicBaseUrl);
     var seoImageUrl = appBranding.SeoImageUrl;
     if (!string.IsNullOrWhiteSpace(seoImageUrl) && !seoImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
@@ -10,7 +25,7 @@
     }
 }
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-bs-theme="light" data-layout="vertical" data-layout-width="fluid" data-layout-position="fixed" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -56,12 +71,10 @@
     }
     </script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/vendor/velzon/css/app.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <style id="brand-theme">
@@ -88,7 +101,7 @@
             --primary-bg: color-mix(in srgb, @appBranding.PrimaryColor 8%, transparent);
             --info: @appBranding.PrimaryColor;
             --info-bg: color-mix(in srgb, @appBranding.PrimaryColor 12%, #ffffff);
-            --sidebar-bg: linear-gradient(180deg, @appBranding.SidebarColor 0%, color-mix(in srgb, @appBranding.SidebarColor 55%, @appBranding.SidebarGradientEnd) 50%, @appBranding.SidebarGradientEnd 100%);
+            --sidebar-bg: @appBranding.SidebarColor;
             --sidebar-bg-solid: @appBranding.SidebarColor;
             --sidebar-text: @appBranding.SidebarTextColor;
             --sidebar-text-active: @appBranding.SidebarTextColor;
@@ -111,14 +124,18 @@
         })();
     </script>
     @await RenderSectionAsync("Styles", required: false)
+    <link rel="stylesheet" href="~/css/velzon-kpi.css" asp-append-version="true" />
 </head>
-<body>
-    <div class="app-blob-container">
-        <div class="app-blob app-blob-1"></div>
-        <div class="app-blob app-blob-2"></div>
-        <div class="app-blob app-blob-3"></div>
-    </div>
-    @if (ViewData["IsLoginPage"] is true || ViewData["IsLandingPage"] is true)
+<body class="@bodyVariant">
+    <!--
+    THESIS: KPI/OKR work reads as a compact Velzon operations console, refusing decorative dashboard chrome.
+    OWN-WORLD: Indigo navigation, a light command bar, pale canvas, compact white surfaces, Poppins body copy, and HK Grotesk headings.
+    STORY: Users orient by responsibility, scan risk and progress, then move directly into the authorized workflow.
+    FIRST VIEWPORT: Internal routes use a fixed navigation rail and command bar; public and authentication routes inherit the same restrained tokens.
+    FORM: Velzon Default operations system, position 1, key VELZON-OPERATIONS-SHELL-2026.
+    FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
+    @if (isLoginPage || isLandingPage)
     {
         @RenderBody()
     }
@@ -128,9 +145,9 @@
         <form id="globalAntiForgeryForm" class="d-none">
             @Html.AntiForgeryToken()
         </form>
-        <div class="app-wrapper">
-            <nav id="sidebar" class="sidebar">
-                <div class="sidebar-brand">
+        <div id="layout-wrapper" class="app-wrapper velzon-layout-wrapper">
+            <nav id="sidebar" class="sidebar app-menu navbar-menu" aria-label="Điều hướng chính">
+                <div class="sidebar-brand navbar-brand-box">
                     <div class="brand-icon">
                         @if (appBranding.HasLogo)
                         {
@@ -548,7 +565,7 @@
             <button type="button" id="sidebarOverlay" class="sidebar-overlay" aria-label="Đóng thanh điều hướng" tabindex="-1"></button>
 
             <div class="main-content">
-                <header class="top-header">
+                <header id="page-topbar" class="top-header layout-width navbar-header">
                     <div class="header-left">
                         <button type="button" id="sidebarToggle" class="sidebar-toggle" aria-label="Thu gọn hoặc mở rộng thanh điều hướng" aria-expanded="false" aria-controls="sidebar">
                             <i class="bi bi-list"></i>
@@ -687,7 +704,7 @@
                     </div>
                 </header>
 
-                <main id="mainContent" class="page-content" role="main" tabindex="-1">
+                <main id="mainContent" class="page-content container-fluid" role="main" tabindex="-1">
                     @RenderBody()
                 </main>
 

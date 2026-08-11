@@ -1,0 +1,1549 @@
+/* Velzon Default application layer for operational, authentication and public surfaces. */
+
+.velzon-shell {
+    --primary: #556ee6;
+    --primary-dark: #465dcc;
+    --primary-darker: #394da9;
+    --primary-light: #e9edff;
+    --primary-bg: rgba(85, 110, 230, 0.1);
+    --vz-sidebar-bg: #4b63d3;
+    --vz-sidebar-bg-deep: #4056bd;
+    --vz-sidebar-ink: #f7f8ff;
+    --vz-sidebar-muted: #d9deff;
+    --vz-sidebar-active: #ffffff;
+    --vz-canvas: #f3f3f9;
+    --vz-surface: #ffffff;
+    --vz-border: #e9ebec;
+    --vz-ink: #212529;
+    --vz-muted: #6d7080;
+    --vz-header-height: 70px;
+    --vz-sidebar-width: 70px;
+    --vz-sidebar-width-expanded: 250px;
+    --sidebar-width: var(--vz-sidebar-width);
+    --sidebar-width-expanded: var(--vz-sidebar-width-expanded);
+    --header-height: var(--vz-header-height);
+    --body-bg: var(--vz-canvas);
+    --card-bg: var(--vz-surface);
+    --card-border: var(--vz-border);
+    --border-color: var(--vz-border);
+    --text-primary: var(--vz-ink);
+    --text-secondary: #495057;
+    --text-muted: var(--vz-muted);
+    --radius-sm: 3px;
+    --radius-md: 4px;
+    --radius-lg: 5px;
+    --radius-xl: 6px;
+    margin: 0;
+    background: var(--vz-canvas) !important;
+    color: var(--vz-ink);
+    font-family: hkgrotesk, Poppins, system-ui, -apple-system, "Segoe UI", sans-serif !important;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    text-rendering: optimizeLegibility;
+}
+
+.velzon-shell ::selection {
+    background: color-mix(in srgb, var(--primary) 24%, #dce4ff);
+    color: #172033;
+}
+
+.velzon-shell :is(input, textarea, [contenteditable="true"]) {
+    caret-color: var(--primary);
+}
+
+.velzon-shell :is(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--primary) 68%, #ffffff);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+.velzon-shell :is(a:not(.btn), .dropdown-item) {
+    text-underline-offset: 0.18em;
+}
+
+.velzon-shell,
+.velzon-shell * {
+    scrollbar-color: #bdc5d0 transparent;
+    scrollbar-width: thin;
+}
+
+.velzon-shell ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.velzon-shell ::-webkit-scrollbar-thumb {
+    background: #bdc5d0;
+    border-radius: 8px;
+}
+
+.velzon-shell .app-blob-container {
+    display: none !important;
+}
+
+.velzon-shell #layout-wrapper {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    overflow: clip;
+    background: var(--vz-canvas) !important;
+}
+
+/* Sidebar --------------------------------------------------------------- */
+.velzon-shell .navbar-menu.sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    margin-left: 0;
+    z-index: 1040;
+    width: var(--vz-sidebar-width);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    border: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--vz-sidebar-bg) !important;
+    box-shadow: none;
+    transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.sidebar-expanded .velzon-shell .navbar-menu.sidebar {
+    width: var(--vz-sidebar-width-expanded);
+}
+
+.velzon-shell .navbar-brand-box.sidebar-brand {
+    height: var(--vz-header-height);
+    min-height: var(--vz-header-height);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    background: rgba(31, 42, 62, 0.12);
+}
+
+.velzon-shell .sidebar-brand::after {
+    left: 16px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.velzon-shell .sidebar-brand .brand-icon {
+    width: 36px;
+    height: 36px;
+    margin: 0;
+    flex: 0 0 36px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+}
+
+.velzon-shell .sidebar-brand .brand-logo-img {
+    padding: 5px;
+}
+
+.velzon-shell .sidebar-brand .brand-icon i,
+.velzon-shell .sidebar-settings-trigger i,
+.velzon-shell .sidebar-user .user-dots {
+    color: inherit !important;
+}
+
+.velzon-shell .sidebar-brand .brand-info {
+    min-width: 0;
+    margin-left: 11px;
+}
+
+.velzon-shell .sidebar-brand .brand-text {
+    overflow: hidden;
+    color: #fff !important;
+    font-family: hkgrotesk, Poppins, sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-overflow: ellipsis;
+}
+
+.velzon-shell .sidebar-brand .brand-sub {
+    overflow: hidden;
+    max-width: 165px;
+    margin-top: 1px;
+    color: #e2e6ff !important;
+    font-size: 0.6875rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.velzon-shell .sidebar-nav {
+    padding: 12px 0 8px;
+    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.velzon-shell .sidebar-group {
+    margin: 0 0 7px;
+}
+
+.velzon-shell .sidebar-group-label {
+    padding: 13px 22px 5px;
+    color: var(--vz-sidebar-muted) !important;
+    font-family: hkgrotesk, Poppins, sans-serif;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+}
+
+.velzon-shell .sidebar-link {
+    min-height: 38px;
+    margin: 1px 10px;
+    padding: 8px 13px;
+    justify-content: center;
+    border: 0 !important;
+    border-radius: 4px !important;
+    background: transparent;
+    color: var(--vz-sidebar-ink) !important;
+    font-family: hkgrotesk, Poppins, sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.25;
+    transform: none;
+    box-shadow: none;
+}
+
+.velzon-shell .sidebar .sidebar-link span,
+.velzon-shell .sidebar .sidebar-link i {
+    color: inherit !important;
+}
+
+.velzon-shell .sidebar-link i {
+    width: 20px;
+    margin: 0;
+    font-size: 1.05rem;
+    opacity: 0.9;
+    transform: none;
+}
+
+html.sidebar-expanded .velzon-shell .sidebar-link {
+    width: auto;
+    min-width: 0;
+    justify-content: flex-start;
+}
+
+html.sidebar-expanded .velzon-shell .sidebar-link i {
+    margin-right: 10px;
+}
+
+.velzon-shell .sidebar-link:hover {
+    background: var(--vz-sidebar-bg-deep) !important;
+    color: #fff !important;
+    transform: none;
+}
+
+.velzon-shell .sidebar-link.active,
+.velzon-shell .sidebar-link.is-pending {
+    background: var(--primary-darker) !important;
+    color: var(--vz-sidebar-active) !important;
+    font-weight: 600;
+}
+
+.velzon-shell .sidebar-link.active::before {
+    content: "";
+    position: absolute;
+    left: -10px;
+    width: 3px;
+    height: 20px;
+    border-radius: 0 3px 3px 0;
+    background: #ffffff;
+}
+
+.velzon-shell .sidebar-footer {
+    padding: 8px 10px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.09) !important;
+    background: var(--vz-sidebar-bg) !important;
+}
+
+.velzon-shell .sidebar-settings-trigger,
+.velzon-shell .sidebar-user {
+    min-height: 40px;
+    margin: 0;
+    padding: 8px 10px;
+    border: 0 !important;
+    border-radius: 4px !important;
+    background: transparent !important;
+    color: var(--vz-sidebar-ink) !important;
+    box-shadow: none !important;
+}
+
+.velzon-shell .sidebar-settings-trigger:hover,
+.velzon-shell .sidebar-user:hover {
+    background: var(--vz-sidebar-bg-deep) !important;
+    color: #fff !important;
+}
+
+.velzon-shell .sidebar-settings-trigger i {
+    width: 28px;
+    font-size: 1rem;
+}
+
+.velzon-shell .sidebar-user .user-avatar {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    border-radius: 50%;
+    background: var(--primary-darker) !important;
+    color: #fff !important;
+    font-size: 0.6875rem;
+    box-shadow: none;
+}
+
+.velzon-shell .sidebar-user .user-name,
+.velzon-shell .sidebar-user .user-role {
+    color: #fff;
+}
+
+.velzon-shell .sidebar-user .user-role {
+    color: #e2e6ff !important;
+}
+
+.velzon-shell .sidebar-user-menu {
+    overflow: hidden;
+    border: 1px solid var(--vz-border) !important;
+    border-radius: 5px !important;
+    background: #fff !important;
+    box-shadow: 0 10px 28px rgba(30, 41, 59, 0.18) !important;
+}
+
+.velzon-shell .sidebar-user-menu .dropdown-header {
+    color: var(--primary-dark) !important;
+}
+
+.velzon-shell .sidebar-user-menu .dropdown-item:hover,
+.velzon-shell .sidebar-user-menu .dropdown-item:focus,
+.velzon-shell .sidebar-user-menu .dropdown-item:active {
+    background: var(--primary-light) !important;
+    color: var(--primary-darker) !important;
+}
+
+/* Topbar and content ----------------------------------------------------- */
+.velzon-shell .main-content {
+    min-width: 0;
+    min-height: 100vh;
+    margin-left: var(--vz-sidebar-width);
+    background: var(--vz-canvas) !important;
+    transition: none;
+}
+
+html.sidebar-expanded .velzon-shell .main-content {
+    margin-left: var(--vz-sidebar-width-expanded);
+}
+
+.velzon-shell #page-topbar.top-header {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    left: 0 !important;
+    right: auto !important;
+    width: 100% !important;
+    max-width: none;
+    margin: 0 !important;
+    height: var(--vz-header-height);
+    padding: 0 24px;
+    border: 0;
+    border-bottom: 1px solid var(--vz-border);
+    background: rgba(255, 255, 255, 0.98) !important;
+    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.04) !important;
+    backdrop-filter: none !important;
+}
+
+.velzon-shell .header-left,
+.velzon-shell .header-right {
+    gap: 10px;
+}
+
+.velzon-shell .sidebar-toggle,
+.velzon-shell .header-icon-btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border: 1px solid transparent !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: #495057 !important;
+    box-shadow: none !important;
+}
+
+.velzon-shell .sidebar-toggle:hover,
+.velzon-shell .header-icon-btn:hover {
+    border-color: #e4e7eb !important;
+    background: #f3f6f9 !important;
+    color: var(--primary) !important;
+    box-shadow: none !important;
+}
+
+.velzon-shell .header-search input {
+    width: min(370px, 32vw);
+    height: 38px;
+    padding: 0 40px 0 38px;
+    border: 1px solid transparent !important;
+    border-radius: 4px !important;
+    background: #f3f3f9 !important;
+    color: #343a40 !important;
+    font-size: 0.8125rem;
+}
+
+.velzon-shell .header-search input::placeholder {
+    color: #646a76;
+    opacity: 1;
+}
+
+.velzon-shell .header-search input:focus {
+    border-color: color-mix(in srgb, var(--primary) 46%, #d8dce3) !important;
+    background: #fff !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent) !important;
+}
+
+.velzon-shell .header-search > i {
+    left: 13px;
+    color: #878a99;
+}
+
+.velzon-shell .notification-bell-btn.has-unread {
+    background: color-mix(in srgb, var(--primary) 10%, #fff);
+    color: var(--primary);
+    box-shadow: none;
+}
+
+.velzon-shell .notification-bell-btn.has-unread::after {
+    display: none;
+}
+
+.velzon-shell .header-right .btn {
+    min-height: 36px;
+    padding: 7px 13px !important;
+    border-radius: 4px !important;
+    font-size: 0.75rem !important;
+    box-shadow: none !important;
+}
+
+.velzon-shell .page-content.container-fluid {
+    flex: 1;
+    width: 100%;
+    max-width: none;
+    padding: 20px 24px 28px;
+    background: var(--vz-canvas) !important;
+}
+
+.velzon-shell .page-header {
+    margin-bottom: 16px;
+    gap: 10px;
+    padding: 0 0 14px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--vz-border) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.velzon-shell .page-header h1,
+.velzon-shell .page-header h2,
+.velzon-shell .page-title,
+.velzon-shell h1,
+.velzon-shell h2,
+.velzon-shell h3,
+.velzon-shell h4,
+.velzon-shell h5,
+.velzon-shell h6 {
+    color: #212529;
+    font-family: hkgrotesk, Poppins, sans-serif;
+    letter-spacing: -0.015em;
+}
+
+.velzon-shell .page-header h1,
+.velzon-shell .page-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.velzon-shell .page-breadcrumb,
+.velzon-shell .breadcrumb {
+    margin-top: 3px;
+    margin-bottom: 0;
+    font-size: 0.72rem;
+}
+
+/* Operational surfaces -------------------------------------------------- */
+.velzon-shell :is(.card, .content-card, .stat-card, .glass-card) {
+    border: 1px solid var(--vz-border) !important;
+    border-radius: 4px !important;
+    background: var(--vz-surface) !important;
+    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.04) !important;
+    transform: none !important;
+    backdrop-filter: none !important;
+}
+
+.velzon-shell .content-card h5 > .bi {
+    background: none !important;
+    background-image: none !important;
+    color: var(--primary) !important;
+    -webkit-text-fill-color: currentColor !important;
+}
+
+.velzon-shell :is(.card, .content-card, .stat-card, .glass-card):hover {
+    border-color: #dfe2e6 !important;
+    box-shadow: 0 3px 10px rgba(56, 65, 74, 0.07) !important;
+    transform: none !important;
+}
+
+.velzon-shell :is(.card-header, .card-header-custom) {
+    min-height: 48px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--vz-border) !important;
+    border-radius: 4px 4px 0 0 !important;
+    background: #fff !important;
+}
+
+.velzon-shell :is(.card-body, .card-body-custom) {
+    padding: 16px;
+}
+
+.velzon-shell .stat-card {
+    padding: 16px;
+}
+
+.velzon-shell .stat-card .stat-icon {
+    width: 38px;
+    height: 38px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.velzon-shell .stat-card .stat-value {
+    margin-bottom: 5px;
+    font-size: 1.45rem;
+    font-weight: 600;
+}
+
+.velzon-shell :is(.toolbar, .filter-bar, .page-actions, .action-bar) {
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.velzon-shell :is(.btn, .btn-primary-custom, .btn-outline-custom) {
+    min-height: 34px;
+    padding: 6px 12px;
+    border-radius: 4px !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    line-height: 1.35;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.velzon-shell :is(.btn-primary, .btn-primary-custom) {
+    border-color: var(--primary) !important;
+    background: var(--primary) !important;
+    color: #fff !important;
+}
+
+.velzon-shell :is(.btn-primary, .btn-primary-custom):hover {
+    border-color: var(--primary-dark) !important;
+    background: var(--primary-dark) !important;
+    color: #fff !important;
+    transform: none !important;
+    box-shadow: 0 3px 8px color-mix(in srgb, var(--primary) 22%, transparent) !important;
+}
+
+.velzon-shell :is(.form-control, .form-select, .filter-select, .toolbar-search input) {
+    min-height: 36px;
+    border: 1px solid #ced4da !important;
+    border-radius: 4px !important;
+    background-color: #fff !important;
+    color: #212529 !important;
+    font-size: 0.8125rem !important;
+}
+
+.velzon-shell :is(.form-control, .form-select, .filter-select, .toolbar-search input)::placeholder {
+    color: #666c78;
+    opacity: 1;
+}
+
+.velzon-shell :is(.form-control, .form-select, .filter-select, .toolbar-search input):focus {
+    border-color: color-mix(in srgb, var(--primary) 58%, #ced4da) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 11%, transparent) !important;
+}
+
+.velzon-shell .select2-container--default .select2-selection--single,
+.velzon-shell .select2-container--default .select2-selection--multiple {
+    min-height: 36px;
+    border-color: #ced4da;
+    border-radius: 4px;
+}
+
+.velzon-shell .select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #666c78 !important;
+    opacity: 1;
+}
+
+.velzon-shell :is(.table, .data-table) {
+    margin-bottom: 0;
+    color: #212529;
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.velzon-shell :is(.table, .data-table) thead th {
+    padding: 9px 12px;
+    border-top: 0;
+    border-bottom: 1px solid #dfe2e6;
+    background: #f3f6f9;
+    color: #4b5360;
+    font-family: hkgrotesk, Poppins, sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.velzon-shell :is(.table, .data-table) tbody td {
+    padding: 10px 12px;
+    border-color: #edf0f2;
+    vertical-align: middle;
+}
+
+.velzon-shell :is(.table, .data-table) tbody tr:hover > * {
+    background: #f8f9fb;
+}
+
+.velzon-shell :is(.badge, .status-badge) {
+    border-radius: 3px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+}
+
+.velzon-shell .progress,
+.velzon-shell .progress-custom {
+    height: 5px !important;
+    border-radius: 2px !important;
+    background: #e9ecef !important;
+}
+
+.velzon-shell .dropdown-menu {
+    padding: 6px;
+    border: 1px solid var(--vz-border) !important;
+    border-radius: 4px !important;
+    background: #fff;
+    box-shadow: 0 5px 16px rgba(30, 41, 59, 0.12) !important;
+}
+
+.velzon-shell .dropdown-item {
+    border-radius: 3px;
+    font-size: 0.78rem;
+}
+
+.velzon-shell .dropdown-item:hover,
+.velzon-shell .dropdown-item:focus {
+    background: #f3f6f9;
+}
+
+.velzon-shell .modal-content {
+    border: 1px solid var(--vz-border);
+    border-radius: 5px;
+    box-shadow: 0 12px 30px rgba(30, 41, 59, 0.15);
+}
+
+.velzon-shell .modal-header,
+.velzon-shell .modal-footer {
+    padding: 12px 16px;
+    border-color: var(--vz-border);
+}
+
+.velzon-shell .modal-body {
+    padding: 16px;
+}
+
+/* Existing interactive surfaces keep their IDs and data contracts. */
+.velzon-shell .search-results-dropdown,
+.velzon-shell .notification-menu {
+    border: 1px solid var(--vz-border);
+    border-radius: 5px;
+    background: #fff;
+    backdrop-filter: none;
+    box-shadow: 0 8px 24px rgba(30, 41, 59, 0.14);
+}
+
+.velzon-shell .notification-menu__header,
+.velzon-shell .notification-menu__metrics,
+.velzon-shell .notification-menu__tabs,
+.velzon-shell .notification-menu__footer {
+    border-color: var(--vz-border);
+    background: #fff;
+}
+
+.velzon-shell .notification-menu__eyebrow,
+.velzon-shell .notification-menu__live-pill {
+    letter-spacing: 0.035em;
+}
+
+.velzon-shell .settings-panel {
+    z-index: 1080 !important;
+    border-left: 1px solid var(--vz-border);
+    background: #fff;
+    box-shadow: -8px 0 24px rgba(30, 41, 59, 0.14);
+}
+
+.velzon-shell .settings-panel__header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    min-height: var(--vz-header-height);
+    align-items: center;
+    border-bottom: 1px solid var(--vz-border);
+    background: var(--vz-sidebar-bg);
+}
+
+.velzon-shell .settings-panel__header,
+.velzon-shell .settings-panel__header h2,
+.velzon-shell .settings-panel__eyebrow {
+    color: #fff;
+}
+
+.velzon-shell .settings-panel__item {
+    border-radius: 4px;
+}
+
+.velzon-shell .settings-panel__item:hover {
+    background: var(--primary-light);
+    color: var(--primary-darker);
+}
+
+.velzon-shell .settings-panel__item:hover .settings-panel__icon,
+.velzon-shell .settings-panel__item.active .settings-panel__icon {
+    color: var(--primary) !important;
+}
+
+.velzon-shell .settings-panel-backdrop {
+    z-index: 1070 !important;
+}
+
+.velzon-shell .ai-chat-toggle {
+    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+.velzon-shell .ai-chat-panel {
+    border: 1px solid var(--vz-border);
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 0 10px 28px rgba(30, 41, 59, 0.16);
+}
+
+.velzon-shell .app-footer {
+    min-height: 52px;
+    padding: 17px 24px;
+    border-top: 1px solid var(--vz-border);
+    background: #fff;
+    color: #666c78;
+    font-size: 0.72rem;
+}
+
+@media (max-width: 991.98px) {
+    .velzon-shell .navbar-menu.sidebar {
+        width: var(--vz-sidebar-width-expanded);
+        transform: translateX(-100%);
+        box-shadow: 8px 0 24px rgba(30, 41, 59, 0.18);
+    }
+
+    html.sidebar-expanded .velzon-shell .navbar-menu.sidebar {
+        width: var(--vz-sidebar-width-expanded);
+        transform: translateX(0);
+    }
+
+    .velzon-shell .sidebar-brand .brand-info,
+    .velzon-shell .sidebar-group-label,
+    .velzon-shell .sidebar-link span,
+    .velzon-shell .sidebar-user .user-info,
+    .velzon-shell .sidebar-user .user-dots {
+        display: block;
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .velzon-shell .sidebar-link {
+        width: auto;
+        min-width: 0;
+        justify-content: flex-start;
+    }
+
+    .velzon-shell .sidebar-link i {
+        margin-right: 10px;
+    }
+
+    .velzon-shell .main-content,
+    html.sidebar-expanded .velzon-shell .main-content {
+        margin-left: 0;
+    }
+
+    .velzon-shell #page-topbar.top-header {
+        padding: 0 16px;
+    }
+
+    .velzon-shell .sidebar-overlay {
+        background: rgba(23, 31, 47, 0.58);
+    }
+}
+
+@media (max-width: 767.98px) {
+    .velzon-shell .page-content.container-fluid {
+        padding: 16px;
+    }
+
+    .velzon-shell .header-search {
+        background: #fff;
+    }
+
+    .velzon-shell .header-search input {
+        width: 100%;
+    }
+
+    .velzon-shell .notification-menu {
+        width: min(94vw, 430px);
+    }
+
+    .velzon-shell :is(.card-header, .card-header-custom, .card-body, .card-body-custom) {
+        padding-left: 13px;
+        padding-right: 13px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .velzon-shell #page-topbar.top-header {
+        height: 62px;
+        min-height: 62px;
+        padding: 0 12px;
+    }
+
+    .velzon-shell .header-right {
+        gap: 4px;
+    }
+
+    .velzon-shell .header-right .btn {
+        max-width: 144px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .velzon-shell .page-content.container-fluid {
+        padding: 12px;
+    }
+
+    .velzon-shell :is(.toolbar, .filter-bar, .page-actions, .action-bar) {
+        align-items: stretch;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .velzon-shell *,
+    .velzon-shell *::before,
+    .velzon-shell *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Full application cutover: normalize legacy page patterns into Velzon.
+   This layer intentionally keeps existing Razor/JavaScript contracts intact.
+   -------------------------------------------------------------------------- */
+
+.velzon-shell {
+    --cf-border: var(--vz-border);
+    --cf-border-strong: #ced4da;
+    --cf-muted: var(--vz-muted);
+    --cf-soft: #f3f6f9;
+    --cf-soft-accent: color-mix(in srgb, var(--primary) 9%, #fff);
+    --cf-text: var(--vz-ink);
+    --cf-accent: var(--primary);
+    --cf-accent-dark: var(--primary-dark);
+    --evaluation-ink: var(--vz-ink);
+    --evaluation-muted: var(--vz-muted);
+    --evaluation-line: var(--vz-border);
+    --evaluation-surface: #fff;
+    --evaluation-soft: #f3f6f9;
+    --evaluation-brand: var(--primary);
+    --evaluation-brand-dark: var(--primary-dark);
+    --evaluation-brand-soft: color-mix(in srgb, var(--primary) 9%, #fff);
+    --evaluation-radius: 4px;
+}
+
+.velzon-shell :is(.rounded-3, .rounded-4) {
+    border-radius: 4px !important;
+}
+
+.velzon-shell :is(.shadow, .shadow-sm) {
+    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.05) !important;
+}
+
+.velzon-shell .shadow-lg {
+    box-shadow: 0 10px 28px rgba(30, 41, 59, 0.15) !important;
+}
+
+.velzon-shell :is(.transition-hover, .card-animate, .bento-card, .pricing-card):hover {
+    transform: none !important;
+}
+
+.velzon-shell :is(.glass-card, [class*="-glass"], [class*="glass-"]) {
+    border: 1px solid var(--vz-border) !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+}
+
+.velzon-shell :is(.page-header, .evaluation-page-header, .cf-header) {
+    min-width: 0;
+    margin: 0 0 16px !important;
+    padding: 0 0 14px !important;
+    border-bottom: 1px solid var(--vz-border) !important;
+}
+
+.velzon-shell :is(.page-header, .evaluation-page-header, .cf-header) h1,
+.velzon-shell :is(.page-header, .evaluation-page-header, .cf-header) h2 {
+    margin: 0 0 3px !important;
+    font-size: 1.25rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.015em !important;
+}
+
+.velzon-shell :is(.page-breadcrumb, .evaluation-breadcrumb, .cf-breadcrumb) {
+    color: var(--vz-muted) !important;
+    font-size: 0.72rem !important;
+}
+
+.velzon-shell :is(.cf-page, .evaluation-page, .dashboard-page) {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 0 24px !important;
+}
+
+.velzon-shell .cf-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 300px) !important;
+    gap: 16px !important;
+}
+
+.velzon-shell :is(.cf-panel, .cf-guide, .evaluation-filter-panel, .evaluation-results,
+    .evaluation-period-card, .detail-section, .settings-group, .info-box, .task-edit-section,
+    .catalog-table-shell, .catalog-pane, .rq-stat-card, .permission-stat-card,
+    .mv-foundation-card, .kpi-item, .ops-summary, .okr-summary) {
+    border: 1px solid var(--vz-border) !important;
+    border-radius: 4px !important;
+    background: #fff !important;
+    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.04) !important;
+}
+
+.velzon-shell :is(.cf-panel__header, .catalog-pane-header, .detail-section-title,
+    .evaluation-card-topline, .task-section-title) {
+    border-color: var(--vz-border) !important;
+    background: #fff !important;
+}
+
+.velzon-shell :is(.cf-panel__header, .cf-form, .cf-guide, .evaluation-filter-panel,
+    .evaluation-results, .detail-section, .settings-group, .info-box) {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+}
+
+.velzon-shell :is(.cf-section__icon, .cf-guide__icon, .catalog-pane-icon, .header-icon-box,
+    .detail-info-icon, .settings-section-icon, .permission-stat-icon, .rq-stat-icon,
+    .evaluation-empty-icon, .mv-foundation-card__icon, .kpi-item-icon, .icon-circle) {
+    border: 1px solid color-mix(in srgb, var(--primary) 14%, var(--vz-border)) !important;
+    border-radius: 4px !important;
+    background: color-mix(in srgb, var(--primary) 8%, #fff) !important;
+    color: var(--primary) !important;
+    box-shadow: none !important;
+}
+
+.velzon-shell :is(.cf-back-action, .cf-secondary-action, .cf-primary-action,
+    .evaluation-primary-action, .evaluation-secondary-action, .evaluation-filter-button,
+    .catalog-add-action, .mv-setup-action, .ci-review-button, .role-manage-action) {
+    min-height: 34px !important;
+    padding: 6px 12px !important;
+    border-radius: 4px !important;
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    line-height: 1.35 !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.velzon-shell :is(.cf-primary-action, .evaluation-primary-action, .evaluation-filter-button,
+    .catalog-add-action, .mv-setup-action) {
+    border-color: var(--primary) !important;
+    background: var(--primary) !important;
+    color: #fff !important;
+}
+
+.velzon-shell :is(.cf-primary-action, .evaluation-primary-action, .evaluation-filter-button,
+    .catalog-add-action, .mv-setup-action):hover {
+    border-color: var(--primary-dark) !important;
+    background: var(--primary-dark) !important;
+}
+
+.velzon-shell :is(.cf-back-action, .cf-secondary-action, .evaluation-secondary-action,
+    .ci-review-button, .role-manage-action) {
+    border-color: #ced4da !important;
+    background: #fff !important;
+    color: #495057 !important;
+}
+
+.velzon-shell :is(.cf-control, .evaluation-filter-form input, .evaluation-filter-form select,
+    .evaluation-modal input, .evaluation-modal select, .evaluation-modal textarea,
+    .settings-field input, .settings-field select, .settings-field textarea,
+    .filter-field input, .filter-field select, .system-param-input) {
+    min-height: 36px !important;
+    padding: 7px 10px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 4px !important;
+    background: #fff !important;
+    color: #212529 !important;
+    font-size: 0.8125rem !important;
+    box-shadow: none !important;
+}
+
+.velzon-shell :is(.cf-control, .evaluation-filter-form input, .evaluation-filter-form select,
+    .evaluation-modal input, .evaluation-modal select, .evaluation-modal textarea,
+    .settings-field input, .settings-field select, .settings-field textarea,
+    .filter-field input, .filter-field select, .system-param-input):focus {
+    border-color: color-mix(in srgb, var(--primary) 58%, #ced4da) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 11%, transparent) !important;
+}
+
+.velzon-shell :is(.cf-field label, .cf-label-row, .settings-field label, .filter-field label,
+    .evaluation-filter-form label > span:not(.visually-hidden), .info-label, .detail-info-label,
+    .summary-label, .stats-label, .stat-label) {
+    color: #5f6673 !important;
+    font-size: 0.72rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+}
+
+.velzon-shell :is(.cf-hint, .cf-header__description, .cf-section__description,
+    .settings-field-hint, .evaluation-form-hint, .detail-info-label, .meta-text) {
+    color: var(--vz-muted) !important;
+    font-size: 0.72rem !important;
+    line-height: 1.5 !important;
+}
+
+.velzon-shell :is(.cf-section__heading h3, .cf-panel__header h2, .cf-guide h2,
+    .evaluation-results-heading strong, .catalog-pane-title, .detail-section-title,
+    .settings-group-title, .task-section-title) {
+    color: #212529 !important;
+    font-family: hkgrotesk, Poppins, sans-serif !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+}
+
+.velzon-shell :is(.evaluation-summary, .okr-summary, .mv-summary, .ops-summary) {
+    overflow: hidden;
+    border: 1px solid var(--vz-border) !important;
+    border-radius: 4px !important;
+    background: #fff !important;
+}
+
+.velzon-shell :is(.evaluation-summary article, .okr-summary__item, .mv-summary__item,
+    .ops-summary__item) {
+    padding: 13px 16px !important;
+    border-color: var(--vz-border) !important;
+    background: #fff !important;
+}
+
+.velzon-shell :is(.evaluation-summary strong, .okr-summary__value, .mv-summary__value,
+    .ops-summary__value, .permission-stat-value, .rq-stat-value, .stats-value, .summary-value) {
+    color: #212529 !important;
+    font-size: 1.35rem !important;
+    font-weight: 600 !important;
+    font-variant-numeric: tabular-nums;
+}
+
+.velzon-shell :is(.evaluation-table, .catalog-table, .data-table) {
+    width: 100%;
+    margin: 0 !important;
+    border-collapse: collapse;
+    color: #212529 !important;
+    font-size: 0.78rem !important;
+}
+
+.velzon-shell :is(.evaluation-table, .catalog-table, .data-table) th {
+    padding: 9px 12px !important;
+    border-bottom: 1px solid #dfe2e6 !important;
+    background: #f3f6f9 !important;
+    color: #4b5360 !important;
+    font-family: hkgrotesk, Poppins, sans-serif !important;
+    font-size: 0.6875rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.035em !important;
+    text-transform: uppercase;
+}
+
+.velzon-shell :is(.evaluation-table, .catalog-table, .data-table) td {
+    padding: 10px 12px !important;
+    border-color: #edf0f2 !important;
+    background: #fff;
+    vertical-align: middle;
+}
+
+.velzon-shell :is(.evaluation-icon-button, .okr-icon-btn, .mv-icon-button, .auditlog-detail-button) {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    padding: 0 !important;
+    border: 1px solid #dfe3e8 !important;
+    border-radius: 4px !important;
+    background: #fff !important;
+    color: #495057 !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.velzon-shell :is(.evaluation-icon-button, .okr-icon-btn, .mv-icon-button, .auditlog-detail-button):hover {
+    border-color: color-mix(in srgb, var(--primary) 34%, #dfe3e8) !important;
+    background: color-mix(in srgb, var(--primary) 7%, #fff) !important;
+    color: var(--primary) !important;
+}
+
+.velzon-shell :is(.evaluation-status, .status-badge, .status-badge-soft, .priority-badge,
+    .okr-risk-badge, .meta-chip, .okr-chip, .quick-chip, .ai-task-meta-chip) {
+    min-height: 24px !important;
+    padding: 3px 7px !important;
+    border-radius: 3px !important;
+    font-size: 0.6875rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
+    box-shadow: none !important;
+}
+
+.velzon-shell :is(.evaluation-chip, .catalog-tab, .kanban-filter-btn, .okr-filter-chip) {
+    min-height: 32px !important;
+    padding: 5px 9px !important;
+    border: 1px solid var(--vz-border) !important;
+    border-radius: 4px !important;
+    background: #fff !important;
+    color: #495057 !important;
+    font-size: 0.72rem !important;
+    transform: none !important;
+}
+
+.velzon-shell :is(.evaluation-chip, .catalog-tab, .kanban-filter-btn, .okr-filter-chip).active,
+.velzon-shell :is(.evaluation-chip, .catalog-tab, .kanban-filter-btn, .okr-filter-chip).is-active {
+    border-color: var(--primary) !important;
+    background: color-mix(in srgb, var(--primary) 8%, #fff) !important;
+    color: var(--primary) !important;
+}
+
+.velzon-shell :is(.detail-info-row, .detail-row, .summary-row, .info-item) {
+    min-width: 0;
+    padding: 10px 0 !important;
+    border-color: var(--vz-border) !important;
+}
+
+.velzon-shell :is(.detail-info-value, .info-value, .summary-value) {
+    overflow-wrap: anywhere;
+    color: #212529 !important;
+    font-weight: 500 !important;
+}
+
+.velzon-shell :is(.evaluation-empty, .cf-empty-state, .okr-empty, .et-empty,
+    .catalog-empty-cell, .empty-state) {
+    padding: 36px 16px !important;
+    color: var(--vz-muted) !important;
+    text-align: center;
+}
+
+.velzon-shell :is(.evaluation-modal, .catalog-modal, .modal-content,
+    .modal-header-soft, .modal-body-soft) {
+    border-color: var(--vz-border) !important;
+    border-radius: 5px !important;
+    background: #fff !important;
+    box-shadow: none;
+}
+
+.velzon-shell :is(.dept-banner, .registration-card, .review-board-banner,
+    .kpi-hero, .project-hero, .okr-hero) {
+    border: 1px solid var(--vz-border) !important;
+    border-radius: 4px !important;
+    background: #fff !important;
+    color: #212529 !important;
+    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.04) !important;
+}
+
+.velzon-shell :is(.dept-banner, .registration-card, .review-board-banner,
+    .kpi-hero, .project-hero, .okr-hero) :is(h1, h2, h3, h4, p, span) {
+    color: inherit;
+}
+
+.velzon-shell [style*="linear-gradient"],
+.velzon-shell [style*="radial-gradient"] {
+    background-image: none !important;
+}
+
+.velzon-shell .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+@media (max-width: 1199.98px) {
+    .velzon-shell .cf-layout {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .velzon-shell .cf-guide {
+        position: static !important;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .velzon-shell :is(.page-header, .evaluation-page-header, .cf-header) {
+        align-items: stretch !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    .velzon-shell :is(.cf-field-grid, .cf-field-grid--three, .evaluation-filter-form,
+        .kpi-measurement-grid, .settings-fields) {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .velzon-shell :is(.evaluation-summary, .okr-summary, .mv-summary, .ops-summary) {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 479.98px) {
+    .velzon-shell :is(.evaluation-summary, .okr-summary, .mv-summary, .ops-summary) {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+}
+
+/* Authentication status and standard Bootstrap auth cards ----------------- */
+.velzon-auth {
+    --vz-canvas: #f3f3f9;
+    --vz-surface: #fff;
+    --vz-border: #e5e8ec;
+    --vz-ink: #212529;
+    --vz-muted: #6d7080;
+    background: var(--vz-canvas);
+    color: var(--vz-ink);
+    font-family: Poppins, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 0.8125rem;
+}
+
+.velzon-auth > .container.py-5,
+.velzon-auth > main.container,
+.velzon-auth .auth-status-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.velzon-auth > .container.py-5 > .row {
+    width: 100%;
+}
+
+.velzon-auth :is(.card, .auth-status-card) {
+    width: min(100%, 560px);
+    margin-inline: auto;
+    border: 1px solid var(--vz-border) !important;
+    border-radius: 6px !important;
+    background: #fff !important;
+    box-shadow: 0 5px 18px rgba(30, 41, 59, 0.08) !important;
+}
+
+.velzon-auth .auth-status-card {
+    max-width: 600px;
+}
+
+.velzon-auth .auth-status-icon {
+    width: 50px;
+    height: 50px;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 5px;
+    background: color-mix(in srgb, currentColor 8%, #fff);
+    font-size: 1.35rem;
+}
+
+.velzon-auth :is(h1, h2, h3, h4) {
+    color: var(--vz-ink);
+    font-family: hkgrotesk, Poppins, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+}
+
+.velzon-auth :is(.form-control, .form-select) {
+    min-height: 40px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 0.8125rem;
+}
+
+.velzon-auth :is(.form-control, .form-select):focus {
+    border-color: color-mix(in srgb, var(--primary) 58%, #ced4da);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 11%, transparent);
+}
+
+.velzon-auth .btn {
+    min-height: 38px;
+    padding: 7px 13px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Public Velzon landing surfaces ------------------------------------------ */
+.velzon-public {
+    --vz-public-canvas: #f3f3f9;
+    --vz-public-surface: #fff;
+    --vz-public-border: #e5e8ec;
+    --vz-public-ink: #212529;
+    --vz-public-muted: #6d7080;
+    margin: 0;
+    background: #fff;
+    color: var(--vz-public-ink);
+    font-family: Poppins, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 0.8125rem;
+}
+
+.velzon-public :is(.landing-bg, .grid-pattern, .reg-modal-bg-blob,
+    .floating-shapes, .soft-blob) {
+    display: none !important;
+}
+
+.velzon-public .lp-nav {
+    min-height: 70px !important;
+    padding: 0 5% !important;
+    border-bottom: 1px solid var(--vz-public-border) !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: none !important;
+    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.04) !important;
+}
+
+.velzon-public .lp-brand {
+    color: #212529 !important;
+    font-family: hkgrotesk, Poppins, sans-serif !important;
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em !important;
+}
+
+.velzon-public :is(.lp-nav-link, .lp-nav-link-btn) {
+    color: #495057 !important;
+    font-size: 0.78rem !important;
+    font-weight: 500 !important;
+}
+
+.velzon-public :is(.lp-cta-btn, .btn-primary-lg, .btn-outline-lg, .btn-white-lg,
+    .pricing-btn, .lp-cart-btn) {
+    min-height: 38px !important;
+    padding: 8px 14px !important;
+    border-radius: 4px !important;
+    font-size: 0.78rem !important;
+    font-weight: 500 !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.velzon-public :is(.lp-cta-btn, .btn-primary-lg) {
+    border: 1px solid var(--primary) !important;
+    background: var(--primary) !important;
+    color: #fff !important;
+}
+
+.velzon-public :is(.btn-outline-lg, .pricing-btn.outline) {
+    border: 1px solid #ced4da !important;
+    background: #fff !important;
+    color: #343a40 !important;
+}
+
+.velzon-public .lp-hero {
+    min-height: auto !important;
+    padding: 132px 5% 64px !important;
+    background: var(--vz-public-canvas) !important;
+}
+
+.velzon-public .lp-hero-inner {
+    gap: clamp(32px, 6vw, 72px) !important;
+}
+
+.velzon-public .lp-hero-badge,
+.velzon-public .section-label {
+    border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--vz-public-border)) !important;
+    border-radius: 3px !important;
+    background: color-mix(in srgb, var(--primary) 7%, #fff) !important;
+    color: var(--primary) !important;
+    box-shadow: none !important;
+}
+
+.velzon-public .lp-hero h1 {
+    max-width: 720px;
+    color: #212529 !important;
+    font-family: hkgrotesk, Poppins, sans-serif !important;
+    font-size: clamp(2.3rem, 4.4vw, 3.7rem) !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.035em !important;
+    line-height: 1.08 !important;
+}
+
+.velzon-public .gradient-text {
+    background: none !important;
+    color: var(--primary) !important;
+    -webkit-text-fill-color: currentColor !important;
+}
+
+.velzon-public .lp-hero p,
+.velzon-public .section-desc {
+    color: var(--vz-public-muted) !important;
+    font-size: 0.95rem !important;
+    line-height: 1.65 !important;
+}
+
+.velzon-public .lp-hero-img-wrap,
+.velzon-public .browser-mockup {
+    overflow: hidden;
+    border: 1px solid #dfe3e8 !important;
+    border-radius: 6px !important;
+    background: #fff !important;
+    box-shadow: 0 8px 24px rgba(30, 41, 59, 0.1) !important;
+    transform: none !important;
+}
+
+.velzon-public :is(.lp-stats, .lp-showcase, .sticky-showcase, .bento-features,
+    .lp-workflow, .lp-pricing, .lp-tech, .lp-footer) {
+    border-color: var(--vz-public-border) !important;
+    background: #fff !important;
+}
+
+.velzon-public :is(.sticky-showcase, .lp-pricing, .lp-footer) {
+    background: var(--vz-public-canvas) !important;
+}
+
+.velzon-public :is(.section-title, .sticky-block h3, .bento-title, .pricing-card h3,
+    .lp-tech-inner h3, .lp-cta-box h2, .reg-form-container h3) {
+    color: #212529 !important;
+    font-family: hkgrotesk, Poppins, sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.02em !important;
+}
+
+.velzon-public :is(.bento-card, .pricing-card, .lp-tabs-body, .stat-item,
+    .purchase-card, .history-card, .registration-card) {
+    border: 1px solid var(--vz-public-border) !important;
+    border-radius: 4px !important;
+    background: #fff !important;
+    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.04) !important;
+    transform: none !important;
+}
+
+.velzon-public .pricing-card.popular {
+    border-color: color-mix(in srgb, var(--primary) 48%, var(--vz-public-border)) !important;
+    transform: none !important;
+}
+
+.velzon-public :is(.bento-icon, .wf-step-num, .catalog-pane-icon) {
+    border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--vz-public-border)) !important;
+    border-radius: 4px !important;
+    background: color-mix(in srgb, var(--primary) 8%, #fff) !important;
+    color: var(--primary) !important;
+    box-shadow: none !important;
+}
+
+.velzon-public :is(.bento-visual, .bv-ai, .bv-tree, .bv-bonus, .bv-chart,
+    .bv-log, .bv-lock) {
+    border-color: var(--vz-public-border) !important;
+    border-radius: 4px !important;
+    background: #f3f6f9 !important;
+    background-image: none !important;
+}
+
+.velzon-public .lp-user-avatar {
+    background: var(--primary) !important;
+    background-image: none !important;
+}
+
+.velzon-public :is(.bv-msg.user, .bv-msg.bot) {
+    border-radius: 4px !important;
+}
+
+.velzon-public :is(.lp-tab-btn, .catalog-tab) {
+    border: 1px solid var(--vz-public-border) !important;
+    border-radius: 4px !important;
+    background: #fff !important;
+    color: #495057 !important;
+    transform: none !important;
+}
+
+.velzon-public :is(.lp-tab-btn.active, .catalog-tab.active) {
+    border-color: var(--primary) !important;
+    background: color-mix(in srgb, var(--primary) 8%, #fff) !important;
+    color: var(--primary) !important;
+}
+
+.velzon-public .lp-cta-box {
+    border-radius: 6px !important;
+    background: #4b63d3 !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+.velzon-public .lp-cta-box::before {
+    display: none !important;
+}
+
+.velzon-public :is(.reg-modal-premium, .reg-modal-right) {
+    border-radius: 6px !important;
+    background: #fff !important;
+    box-shadow: 0 14px 38px rgba(30, 41, 59, 0.18) !important;
+}
+
+.velzon-public .reg-modal-left {
+    background: #4b63d3 !important;
+    background-image: none !important;
+}
+
+.velzon-public .reveal,
+.velzon-public .sticky-block,
+.velzon-public .sticky-img {
+    opacity: 1;
+}
+
+.velzon-public .reveal {
+    transform: none !important;
+}
+
+@media (max-width: 767.98px) {
+    .velzon-public .lp-nav {
+        min-height: 62px !important;
+        padding: 0 12px !important;
+    }
+
+    .velzon-public .lp-hero {
+        padding: 104px 16px 48px !important;
+    }
+
+    .velzon-public .lp-hero h1 {
+        font-size: clamp(2rem, 10vw, 2.65rem) !important;
+    }
+
+    .velzon-public :is(.lp-showcase, .sticky-showcase, .bento-features,
+        .lp-workflow, .lp-pricing, .lp-tech, .lp-cta, .lp-footer) {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+}

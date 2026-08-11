@@ -11,6 +11,30 @@ In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the re
 If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
 <!-- CODEGRAPH_END -->
 
+## Vibe-Coding Default
+
+The user works outcome-first and normally sends short Vietnamese prompts. When a prompt clearly asks to build, change, or fix something, own the normal local workflow from discovery through implementation and verification.
+
+- Turn the requested outcome into concrete acceptance criteria from the relevant parts of `PRODUCT.md`, `README.md`, the current behavior, and existing repository patterns.
+- Do not require the user to name files, choose an architecture, describe implementation details, or provide build and test commands.
+- Resolve low-risk ambiguity by inspecting the product and choosing the smallest reasonable assumption. Continue working and mention only material assumptions in the final report.
+- Ask a question only when the answer would materially change product behavior, requires a secret or external decision, or authorizes a destructive or irreversible action.
+- For build/change/fix requests, trace the real flow, implement the complete smallest vertical slice, run relevant checks, fix failures caused by the change, and review the final diff. Do not stop at a plan, tutorial, patch suggestion, TODO, or partial implementation.
+- For diagnose, explain, audit, review, or status requests, remain read-only unless the prompt also asks for a fix.
+- Never ask the user to read code. Communicate in concise, beginner-friendly Vietnamese and normally report only the outcome, verification, and an important caveat if one remains.
+- Full local tool access removes execution friction; it does not authorize deployment, publishing, pushing, purchases, account changes, secret rotation, messages to third parties, or deletion/reset of material data unless the user explicitly requests that action.
+
+For vague but actionable UI prompts such as "làm trang này đẹp và dễ dùng hơn", preserve the existing business behavior, validation, authorization, and data contracts; improve the responsive and accessible experience; then verify the actual page in the required Chrome profile when the app can run locally.
+
+## Default Local Workflow
+
+- Use CodeGraph first when its index is usable. If the checked-in `.codegraph/` directory is unavailable or the command reports that no index exists, continue immediately with `rg`, targeted file reads, and normal repository tools; never initialize or rebuild the index without a user request.
+- Use the solution as the default verification boundary: `dotnet build Manage-KPI-or-OKR-System.sln`.
+- After a successful solution build, run `dotnet test tests/ManageKpiOkrSystem.Tests/ManageKpiOkrSystem.Tests.csproj --no-build`; use a focused filter first only when it gives sufficient coverage, then expand when risk warrants it.
+- Run the app with `dotnet run --project Manage-KPI-or-OKR-System.csproj --launch-profile https` when browser or runtime verification is relevant.
+- Do not reset, reseed, or destructively migrate a real database as part of routine verification. Schema or seed changes must be directly required by the requested feature and handled with data-loss prevention in mind.
+- Before finishing, preserve unrelated user changes, inspect the diff, and confirm that no temporary debug code, generated junk, credentials, or unrelated formatting changes remain.
+
 ## Ponytail-Style Minimalism
 
 This project uses Ponytail-style guidance for agent work. It is an instruction-only fit for this ASP.NET Core MVC app, not a runtime dependency.

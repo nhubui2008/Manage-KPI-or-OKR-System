@@ -1,21 +1,14 @@
 @{
     ViewData["Title"] = "Đang chờ kích hoạt";
-    Layout = null;
+    ViewData["IsLoginPage"] = true;
 }
-<!doctype html>
-<html lang="vi">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>@ViewData["Title"] - VIETMACH</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-</head>
-<body class="bg-light">
-    <main class="container d-flex min-vh-100 align-items-center justify-content-center py-4">
-        <section class="card border-0 shadow-sm w-100" style="max-width: 600px" aria-labelledby="pending-title">
+
+<main class="auth-status-page container d-flex min-vh-100 align-items-center justify-content-center py-4">
+        <section class="auth-status-card card w-100" aria-labelledby="pending-title">
             <div class="card-body p-4 p-md-5">
-                <span class="badge text-bg-warning mb-3">Chờ xác minh</span>
-                <h1 id="pending-title" class="h3">Không gian làm việc chưa được kích hoạt</h1>
+                <div class="auth-status-icon text-warning mb-3"><i class="bi bi-hourglass-split" aria-hidden="true"></i></div>
+                <span class="badge bg-warning-subtle text-warning-emphasis mb-3">Chờ xác minh</span>
+                <h1 id="pending-title" class="h3">Không gian làm việc đang chờ kích hoạt</h1>
                 <p class="text-secondary mb-3">
                     Tài khoản <strong>@(ViewBag.Email ?? "của bạn")</strong> đã xác thực thành công.
                     Quản trị viên vẫn cần phê duyệt yêu cầu và cấp tenant trước khi bạn truy cập dữ liệu KPI/OKR.
@@ -32,6 +25,4 @@
                 </div>
             </div>
         </section>
-    </main>
-</body>
-</html>
+</main>

@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-11T16:31:39.6053987+07:00",
+  "title": "Design System: Velzon Operations Console",
+  "extensions": {
+    "shadows": [
+      {
+        "name": "resting-surface",
+        "value": "0 1px 2px rgba(56, 65, 74, 0.04)",
+        "purpose": "Cards and the sticky command bar at rest."
+      },
+      {
+        "name": "hover-surface",
+        "value": "0 3px 10px rgba(56, 65, 74, 0.07)",
+        "purpose": "Actionable cards on hover without translation."
+      },
+      {
+        "name": "floating-menu",
+        "value": "0 5px 16px rgba(30, 41, 59, 0.12)",
+        "purpose": "Dropdown menus above the working plane."
+      },
+      {
+        "name": "modal-surface",
+        "value": "0 12px 30px rgba(30, 41, 59, 0.15)",
+        "purpose": "Modal dialogs requiring clear separation from page content."
+      },
+      {
+        "name": "mobile-sidebar",
+        "value": "8px 0 24px rgba(30, 41, 59, 0.18)",
+        "purpose": "Directional separation for the mobile off-canvas sidebar."
+      }
+    ],
+    "motion": [
+      {
+        "name": "sidebar-reveal",
+        "value": "180ms cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Sidebar transform when the off-canvas navigation opens or closes."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Near-instant animation and transition duration under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "shell-off-canvas",
+        "value": "991.98px"
+      },
+      {
+        "name": "compact-content",
+        "value": "767.98px"
+      },
+      {
+        "name": "phone-command-bar",
+        "value": "575.98px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Compact tenant-colored action for the primary workflow step.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Lưu thay đổi</button>",
+      "css": ".ds-btn-primary { min-height: 34px; padding: 6px 12px; border: 1px solid var(--primary); border-radius: 4px; background: var(--primary); color: #fff; font: 500 0.75rem/1.35 Poppins, sans-serif; box-shadow: none; cursor: pointer; } .ds-btn-primary:hover { border-color: var(--primary-dark); background: var(--primary-dark); box-shadow: 0 3px 8px color-mix(in srgb, var(--primary) 22%, transparent); } .ds-btn-primary:focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 68%, #fff); outline-offset: 2px; } .ds-btn-primary:active { box-shadow: none; }"
+    },
+    {
+      "name": "Operational Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "White bordered container for a compact metric or workflow region.",
+      "html": "<section class=\"ds-card\"><header class=\"ds-card__header\">Tiến độ KPI</header><div class=\"ds-card__body\"><strong class=\"ds-card__value\">0%</strong><p>Chưa có dữ liệu</p></div></section>",
+      "css": ".ds-card { width: 280px; overflow: hidden; border: 1px solid #e9ebec; border-radius: 4px; background: #fff; color: #212529; font-family: Poppins, sans-serif; box-shadow: 0 1px 2px rgba(56, 65, 74, 0.04); } .ds-card:hover { border-color: #dfe2e6; box-shadow: 0 3px 10px rgba(56, 65, 74, 0.07); } .ds-card:focus-within { outline: 2px solid color-mix(in srgb, var(--primary) 68%, #fff); outline-offset: 2px; } .ds-card__header { min-height: 48px; padding: 12px 16px; border-bottom: 1px solid #e9ebec; font: 600 0.8125rem/1.45 hkgrotesk, Poppins, sans-serif; } .ds-card__body { padding: 16px; } .ds-card__value { display: block; margin-bottom: 5px; font-size: 1.45rem; font-weight: 600; } .ds-card p { margin: 0; color: #6d7080; font-size: 0.8125rem; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Compact bordered field for filters and operational forms.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field__label\">Nhân viên</span><input class=\"ds-field__input\" type=\"text\" placeholder=\"Tìm theo tên...\"></label>",
+      "css": ".ds-field { display: grid; gap: 6px; width: 260px; color: #212529; font-family: Poppins, sans-serif; } .ds-field__label { font-size: 0.75rem; font-weight: 500; } .ds-field__input { min-height: 36px; padding: 0 12px; border: 1px solid #ced4da; border-radius: 4px; background: #fff; color: #212529; font: 400 0.8125rem/1.45 Poppins, sans-serif; } .ds-field__input::placeholder { color: #666c78; opacity: 1; } .ds-field__input:hover { border-color: #bdc5d0; } .ds-field__input:focus { border-color: color-mix(in srgb, var(--primary) 58%, #ced4da); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 11%, transparent); }"
+    },
+    {
+      "name": "Sidebar Navigation Item",
+      "kind": "nav",
+      "refersTo": "navigation-item",
+      "description": "Compact row for persistent operational navigation on indigo.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Điều hướng mẫu\"><a class=\"ds-nav__item ds-nav__item--active\" href=\"#\"><span class=\"ds-nav__marker\" aria-hidden=\"true\"></span>Tổng quan công việc</a><a class=\"ds-nav__item\" href=\"#\">Quản lý KPI</a></nav>",
+      "css": ".ds-nav { width: 230px; padding: 10px; background: #405189; font-family: Poppins, sans-serif; } .ds-nav__item { position: relative; display: flex; align-items: center; min-height: 38px; padding: 8px 13px; border-radius: 4px; color: #cbd3df; font-size: 0.8125rem; font-weight: 400; line-height: 1.25; text-decoration: none; } .ds-nav__item:hover { background: rgba(255,255,255,0.075); color: #fff; } .ds-nav__item:focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 68%, #fff); outline-offset: 2px; } .ds-nav__item--active { background: rgba(255,255,255,0.12); color: #fff; font-weight: 500; } .ds-nav__marker { position: absolute; left: -10px; width: 3px; height: 20px; border-radius: 0 3px 3px 0; background: color-mix(in srgb, var(--primary) 72%, #fff); }"
+    },
+    {
+      "name": "Compact Data Table",
+      "kind": "custom",
+      "refersTo": "table-header",
+      "description": "Dense tabular surface for operational lists and numeric scanning.",
+      "html": "<table class=\"ds-table\"><thead><tr><th>Mục tiêu</th><th>Tiến độ</th></tr></thead><tbody><tr tabindex=\"0\"><td>Tăng chất lượng giao hàng</td><td>72%</td></tr><tr tabindex=\"0\"><td>Chuẩn hóa báo cáo</td><td>45%</td></tr></tbody></table>",
+      "css": ".ds-table { width: 100%; border-collapse: collapse; color: #212529; background: #fff; font: 400 0.78rem/1.45 Poppins, sans-serif; font-variant-numeric: tabular-nums; } .ds-table th { padding: 9px 12px; border-bottom: 1px solid #dfe2e6; background: #f3f6f9; color: #4b5360; font: 600 0.6875rem/1.45 hkgrotesk, Poppins, sans-serif; letter-spacing: 0.035em; text-align: left; text-transform: uppercase; } .ds-table td { padding: 10px 12px; border-bottom: 1px solid #edf0f2; } .ds-table tbody tr:hover > * { background: #f8f9fb; } .ds-table tbody tr:focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 68%, #fff); outline-offset: -2px; } .ds-table tbody tr:active > * { background: #f3f6f9; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Velzon Operations Console",
+    "overview": "Velzon Operations Console is a calm, professional control surface for repeated operational work. Its dark indigo navigation rail, light command bar, pale canvas, and compact white surfaces keep orientation stable while KPI, OKR, project, and administrative data remain the focus.\n\nThe system is dense but readable: short controls, restrained corners, thin borders, and limited ambient elevation create a dependable working rhythm. Brand color is functional and tenant-aware; decoration never competes with blocked, overdue, urgent, or assigned work.",
+    "keyCharacteristics": [
+      "Dark indigo navigation paired with a light sticky command bar.",
+      "Compact white operational surfaces on a pale neutral canvas.",
+      "Poppins body copy with HK Grotesk-led headings and labels.",
+      "Tenant-aware primary actions and visible keyboard focus.",
+      "Desktop information density that resolves to a single-column mobile flow."
+    ],
+    "rules": [
+      {
+        "name": "The Functional Color Rule",
+        "body": "Use color to communicate navigation, state, focus, or action; do not turn operational pages into decorative color fields.",
+        "section": "colors"
+      },
+      {
+        "name": "The Compact Hierarchy Rule",
+        "body": "Create hierarchy with weight, role, and restrained scale changes; never use oversized display typography inside the authenticated console.",
+        "section": "typography"
+      },
+      {
+        "name": "The First-Viewport Rule",
+        "body": "Put blocked, overdue, urgent, assigned, and summary state before secondary charts or explanatory content.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat-by-Default Rule",
+        "body": "Keep ordinary content surfaces quiet; reserve obvious elevation for hover feedback and temporary layers.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Four-Pixel Rule",
+        "body": "Default to the medium corner for operational UI and depart from it only for compact badges, elevated containers, or explicitly circular controls.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do keep controls, cards, and tables compact enough for repeated daily operations.",
+      "Do preserve the dark navigation, light command bar, pale canvas, and white-surface hierarchy.",
+      "Do surface blocked, overdue, urgent, and assigned work early in the reading order.",
+      "Do keep keyboard focus visible and provide reduced-motion behavior.",
+      "Do let tenant configuration own the primary action color."
+    ],
+    "donts": [
+      "Don't use marketing-style hero layouts or oversized cards inside authenticated workflows.",
+      "Don't add decorative gradients, glass effects, blobs, or ornamental dashboard chrome.",
+      "Don't hide workflow actions behind ambiguous affordances or excessive scrolling.",
+      "Don't use oversized typography or vague AI-generated copy as a substitute for operational hierarchy.",
+      "Don't change KPI, OKR, authorization, validation, or data contracts to satisfy a visual treatment."
+    ]
+  }
+}
