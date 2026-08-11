@@ -1,0 +1,4 @@
+[submodule "external/MinerU"]
+	path = external/MinerU
+	url = https://github.com/opendatalab/MinerU.git
+	shallow = true

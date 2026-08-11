@@ -707,6 +707,23 @@ public sealed class KnowledgeDocumentAdministrationServiceTests
         Assert.Equal(0, scenario.BlobStore.PutCount);
     }
 
+    [Theory]
+    [InlineData("legacy.doc")]
+    [InlineData("legacy.ppt")]
+    [InlineData("legacy.xls")]
+    public async Task UploadAsync_RejectsLegacyOfficeFormatsBeforeBlobWrite(string fileName)
+    {
+        await using var scenario = await CreateScenarioAsync();
+        var input = Upload(fileName, "legacy office content", "Legacy");
+        input.SelectedRoles = new[] { "Admin" };
+
+        var exception = await Assert.ThrowsAsync<KnowledgeDocumentAdministrationException>(
+            () => scenario.Service.UploadAsync(input));
+
+        Assert.Contains("DOCX", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, scenario.BlobStore.PutCount);
+    }
+
     private static KnowledgeDocumentUploadInput Upload(
         string fileName,
         string content,

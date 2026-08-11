@@ -92,7 +92,7 @@ Các adapter MinerU, BGE-M3 và Azure AI Search đã có. Lớp persistence SQL 
 Ingestion worker đã nối đủ MinerU -> parse -> BGE-M3 -> Azure Search với các rào chắn sau:
 
 - claim có lease, heartbeat bằng DbContext riêng trong suốt external call, retry/backoff và `DeadLetter`;
-- gửi idempotency key ổn định theo job cho MinerU và dùng search key ổn định theo document version/pipeline/ACL;
+- gọi MinerU đồng bộ dưới lease heartbeat theo mô hình at-least-once; kết quả được ghi về private Blob bằng khóa intent ổn định và search key ổn định theo document version/pipeline/ACL;
 - chỉ nhận HTTPS exact origin, tắt redirect/cookie cho client RAG và loại built-in logger khỏi client mang SAS;
 - kiểm tra magic/package của tệp và bắt buộc quét ClamAV trước khi gửi tài liệu sang MinerU;
 - ghi chunk SQL ở trạng thái inactive trước khi upsert Azure; transaction `Serializable` khóa theo document, chỉ intent pipeline hợp lệ mới nhất được kích hoạt và vô hiệu hóa atomically các pipeline cũ;

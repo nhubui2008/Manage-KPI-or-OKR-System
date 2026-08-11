@@ -1,0 +1,8 @@
+**
+!external/
+!external/MinerU/
+!external/MinerU/**
+!deploy/
+!deploy/rag/
+!deploy/rag/**
+external/MinerU/.git

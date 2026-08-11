@@ -1,4 +1,6 @@
+using System.Net;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using Manage_KPI_or_OKR_System.Options;
 using Microsoft.Extensions.Options;
@@ -6,12 +8,15 @@ using Microsoft.Extensions.Options;
 namespace Manage_KPI_or_OKR_System.Services.AI;
 
 /// <summary>
-/// Small, provider-neutral adapter for a private MinerU HTTP service.
-/// Uploads are bounded and filenames are reduced to a safe leaf name; raw
-/// documents and response bodies are never written to logs.
+/// Bounded adapter for the synchronous parsing endpoint from the pinned
+/// mineru-3.4.4-released source tag. That tag self-reports runtime version
+/// 3.4.3; parsing stays inside the durable worker lease instead of depending
+/// on MinerU's process-local asynchronous task registry.
 /// </summary>
 public sealed class MinerUClient : IMinerUClient
 {
+    private const string ExpectedRuntimeVersion = "3.4.3";
+    private const long MaximumResultBytes = 100L * 1024 * 1024;
     private readonly HttpClient _httpClient;
     private readonly MinerUOptions _options;
     private readonly ILogger<MinerUClient> _logger;
@@ -26,71 +31,87 @@ public sealed class MinerUClient : IMinerUClient
         _logger = logger;
     }
 
-    public async Task<MinerUJob> SubmitAsync(
+    public async Task<MinerUResult> ParseAsync(
         MinerUDocumentUpload upload,
+        long maximumBytes,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(upload);
-        _options.Validate();
+        var endpoint = _options.ValidateAndGetFileParseEndpoint();
         ValidateUpload(upload);
+        if (maximumBytes is < 1 or > MaximumResultBytes)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maximumBytes));
+        }
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(_options.TimeoutSeconds));
         using var form = new MultipartFormDataContent();
         using var content = new StreamContent(upload.Content);
         content.Headers.ContentType = new MediaTypeHeaderValue(upload.ContentType);
-        form.Add(content, "file", SafeFileName(upload.FileName));
-        using var request = new HttpRequestMessage(HttpMethod.Post, _options.Endpoint)
+        form.Add(content, "files", SafeFileName(upload.FileName));
+        form.Add(new StringContent("pipeline", Encoding.UTF8), "backend");
+        form.Add(new StringContent("true", Encoding.UTF8), "return_md");
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
         {
             Content = form
         };
-        request.Headers.TryAddWithoutValidation("Idempotency-Key", upload.IdempotencyKey);
         AddAuthentication(request);
 
         using var response = await _httpClient.SendAsync(
             request,
             HttpCompletionOption.ResponseHeadersRead,
             timeout.Token);
-        if (!response.IsSuccessStatusCode)
+        if (response.StatusCode != HttpStatusCode.OK)
         {
-            _logger.LogWarning("MinerU submission failed with HTTP {StatusCode}.", (int)response.StatusCode);
-            throw new HttpRequestException($"MinerU submission failed with HTTP {(int)response.StatusCode}.");
+            _logger.LogWarning(
+                "MinerU parsing failed with HTTP {StatusCode}.",
+                (int)response.StatusCode);
+            throw new HttpRequestException(
+                $"MinerU parsing failed with HTTP {(int)response.StatusCode}.");
         }
 
-        return await ParseJobAsync(response, timeout.Token);
+        EnsureJsonContentType(response);
+        var responseBytes = await ReadBoundedAsync(
+            response.Content,
+            maximumBytes,
+            timeout.Token);
+        using var document = ParseJson(responseBytes);
+        return ParseResult(document.RootElement, maximumBytes);
     }
 
-    public async Task<MinerUJob> GetStatusAsync(
-        string jobId,
-        CancellationToken cancellationToken = default)
+    private static MinerUResult ParseResult(JsonElement root, long maximumBytes)
     {
-        if (string.IsNullOrWhiteSpace(jobId) || jobId.Length > 200 ||
-            jobId.Any(character => char.IsControl(character) || character is '/' or '\\' or '?' or '#'))
+        if (root.ValueKind != JsonValueKind.Object ||
+            !string.Equals(ReadRequiredString(root, "backend"), "pipeline", StringComparison.Ordinal) ||
+            !string.Equals(
+                ReadRequiredString(root, "version"),
+                ExpectedRuntimeVersion,
+                StringComparison.Ordinal) ||
+            !root.TryGetProperty("results", out var results) ||
+            results.ValueKind != JsonValueKind.Object)
         {
-            throw new ArgumentException("MinerU job ID is invalid.", nameof(jobId));
+            throw new InvalidOperationException("MinerU result response is invalid.");
         }
 
-        _options.Validate();
-        var path = _options.StatusPathTemplate.Replace(
-            "{jobId}",
-            Uri.EscapeDataString(jobId),
-            StringComparison.Ordinal);
-        var endpoint = $"{_options.Endpoint.TrimEnd('/')}/{path.TrimStart('/')}";
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(_options.TimeoutSeconds));
-        using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
-        AddAuthentication(request);
-        using var response = await _httpClient.SendAsync(
-            request,
-            HttpCompletionOption.ResponseHeadersRead,
-            timeout.Token);
-        if (!response.IsSuccessStatusCode)
+        var files = results.EnumerateObject().ToArray();
+        if (files.Length != 1 ||
+            string.IsNullOrWhiteSpace(files[0].Name) ||
+            files[0].Name.Length > 255 ||
+            files[0].Value.ValueKind != JsonValueKind.Object ||
+            !files[0].Value.TryGetProperty("md_content", out var markdownValue) ||
+            markdownValue.ValueKind != JsonValueKind.String)
         {
-            _logger.LogWarning("MinerU status lookup failed with HTTP {StatusCode}.", (int)response.StatusCode);
-            throw new HttpRequestException($"MinerU status lookup failed with HTTP {(int)response.StatusCode}.");
+            throw new InvalidOperationException("MinerU result response is invalid.");
         }
 
-        return await ParseJobAsync(response, timeout.Token);
+        var markdown = markdownValue.GetString();
+        if (string.IsNullOrWhiteSpace(markdown) || Encoding.UTF8.GetByteCount(markdown) > maximumBytes)
+        {
+            throw new InvalidOperationException("MinerU Markdown result is invalid or exceeds the limit.");
+        }
+
+        return new MinerUResult(Encoding.UTF8.GetBytes(markdown), "text/markdown");
     }
 
     private void AddAuthentication(HttpRequestMessage request)
@@ -101,66 +122,93 @@ public sealed class MinerUClient : IMinerUClient
         }
     }
 
-    private async Task<MinerUJob> ParseJobAsync(
-        HttpResponseMessage response,
-        CancellationToken cancellationToken)
-    {
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-        var root = document.RootElement;
-        var jobId = ReadString(root, "jobId") ??
-                    ReadString(root, "id") ??
-                    ReadString(root, "taskId");
-        if (string.IsNullOrWhiteSpace(jobId) || jobId.Length > 200)
-        {
-            throw new InvalidOperationException("MinerU response did not contain a valid job ID.");
-        }
-
-        var status = ReadString(root, "status") ??
-                     ReadString(root, "state") ??
-                     "queued";
-        var resultText = ReadString(root, "resultUri") ??
-                         ReadString(root, "resultUrl") ??
-                         ReadString(root, "downloadUrl");
-        Uri? resultUri = null;
-        if (!string.IsNullOrWhiteSpace(resultText) &&
-            Uri.TryCreate(resultText, UriKind.Absolute, out var parsed) &&
-            (parsed.Scheme == Uri.UriSchemeHttps || parsed.Scheme == Uri.UriSchemeHttp))
-        {
-            resultUri = parsed;
-        }
-
-        return new MinerUJob(jobId, status[..Math.Min(status.Length, 32)], resultUri);
-    }
-
     private void ValidateUpload(MinerUDocumentUpload upload)
     {
         if (upload.Content == null || !upload.Content.CanRead)
         {
             throw new ArgumentException("MinerU upload stream is not readable.", nameof(upload));
         }
-
         if (upload.Length <= 0 || upload.Length > _options.MaxFileBytes)
         {
             throw new ArgumentException("MinerU upload exceeds the configured size limit.", nameof(upload));
         }
-
         if (!MinerUSupportedContentTypes.Contains(upload.ContentType))
         {
             throw new ArgumentException("MinerU file type is not allowed.", nameof(upload));
         }
-
         if (string.IsNullOrWhiteSpace(upload.FileName) || upload.FileName.Length > 255)
         {
             throw new ArgumentException("MinerU filename is invalid.", nameof(upload));
         }
+    }
 
-        if (string.IsNullOrWhiteSpace(upload.IdempotencyKey) || upload.IdempotencyKey.Length > 128 ||
-            upload.IdempotencyKey.Any(character =>
-                !(char.IsLetterOrDigit(character) || character is '-' or '_')))
+    private static async Task<byte[]> ReadBoundedAsync(
+        HttpContent content,
+        long maximumBytes,
+        CancellationToken cancellationToken)
+    {
+        var contentLength = content.Headers.ContentLength;
+        if (contentLength.HasValue && contentLength.Value > maximumBytes)
         {
-            throw new ArgumentException("MinerU idempotency key is invalid.", nameof(upload));
+            throw new InvalidOperationException("MinerU response exceeds the configured limit.");
         }
+
+        await using var source = await content.ReadAsStreamAsync(cancellationToken);
+        using var destination = new MemoryStream();
+        var buffer = new byte[81_920];
+        while (true)
+        {
+            var read = await source.ReadAsync(buffer, cancellationToken);
+            if (read == 0)
+            {
+                break;
+            }
+            if (destination.Length + read > maximumBytes)
+            {
+                throw new InvalidOperationException("MinerU response exceeds the configured limit.");
+            }
+            await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+        }
+        return destination.ToArray();
+    }
+
+    private static JsonDocument ParseJson(byte[] content)
+    {
+        try
+        {
+            return JsonDocument.Parse(content, new JsonDocumentOptions
+            {
+                AllowTrailingCommas = false,
+                CommentHandling = JsonCommentHandling.Disallow,
+                MaxDepth = 16
+            });
+        }
+        catch (JsonException exception)
+        {
+            throw new InvalidOperationException("MinerU returned invalid JSON.", exception);
+        }
+    }
+
+    private static void EnsureJsonContentType(HttpResponseMessage response)
+    {
+        if (!string.Equals(
+                response.Content.Headers.ContentType?.MediaType,
+                "application/json",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("MinerU response content type is invalid.");
+        }
+    }
+
+    private static string ReadRequiredString(JsonElement root, string property)
+    {
+        if (!root.TryGetProperty(property, out var value) ||
+            value.ValueKind != JsonValueKind.String ||
+            string.IsNullOrWhiteSpace(value.GetString()))
+        {
+            throw new InvalidOperationException($"MinerU response field {property} is invalid.");
+        }
+        return value.GetString()!;
     }
 
     private static string SafeFileName(string fileName)
@@ -168,11 +216,8 @@ public sealed class MinerUClient : IMinerUClient
         var leaf = Path.GetFileName(fileName);
         var filtered = new string(leaf.Where(character =>
             char.IsLetterOrDigit(character) || character is '.' or '-' or '_' or ' ').ToArray());
-        return string.IsNullOrWhiteSpace(filtered) ? "document.bin" : filtered[..Math.Min(filtered.Length, 180)];
+        return string.IsNullOrWhiteSpace(filtered)
+            ? "document.bin"
+            : filtered[..Math.Min(filtered.Length, 180)];
     }
-
-    private static string? ReadString(JsonElement root, string property) =>
-        root.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String
-            ? value.GetString()
-            : null;
 }

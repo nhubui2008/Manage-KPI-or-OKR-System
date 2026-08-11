@@ -77,9 +77,6 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
             [".jpeg"] = "image/jpeg",
             [".tif"] = "image/tiff",
             [".tiff"] = "image/tiff",
-            [".doc"] = "application/msword",
-            [".ppt"] = "application/vnd.ms-powerpoint",
-            [".xls"] = "application/vnd.ms-excel",
             [".docx"] = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             [".pptx"] = "application/vnd.openxmlformats-officedocument.presentationml.presentation",
             [".xlsx"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -1189,7 +1186,7 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
             !MinerUSupportedContentTypes.Contains(contentType))
         {
             throw new KnowledgeDocumentAdministrationException(
-                "Chỉ hỗ trợ PDF, ảnh, DOC/DOCX, PPT/PPTX và XLS/XLSX hợp lệ.");
+                "Chỉ hỗ trợ PDF, ảnh, DOCX, PPTX và XLSX hợp lệ.");
         }
 
         await using var source = file.OpenReadStream();

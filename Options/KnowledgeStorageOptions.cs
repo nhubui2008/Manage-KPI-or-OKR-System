@@ -17,7 +17,6 @@ public sealed class KnowledgeStorageOptions
     public long MaxParsedResultBytes { get; set; } = 10 * 1024 * 1024;
     public int MaxChunkCharacters { get; set; } = 6_000;
     public int MaxChunksPerDocument { get; set; } = 1_000;
-    public int MinerUPollSeconds { get; set; } = 10;
 
     public Uri ValidateAndGetContainerUri()
     {
@@ -46,8 +45,7 @@ public sealed class KnowledgeStorageOptions
         if (MaxSourceBytes is < 1 or > 250 * 1024 * 1024 ||
             MaxParsedResultBytes is < 1 or > 100 * 1024 * 1024 ||
             MaxChunkCharacters is < 500 or > 16_000 ||
-            MaxChunksPerDocument is < 1 or > 10_000 ||
-            MinerUPollSeconds is < 2 or > 300)
+            MaxChunksPerDocument is < 1 or > 10_000)
         {
             throw new InvalidOperationException("KnowledgeStorage limits are invalid.");
         }

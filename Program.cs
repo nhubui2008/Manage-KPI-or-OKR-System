@@ -130,7 +130,8 @@ builder.Services.AddHttpClient<IAzureSearchIndexWriter, AzureSearchIndexWriter>(
         AllowAutoRedirect = false,
         UseCookies = false
     });
-builder.Services.AddHttpClient<IMinerUClient, MinerUClient>()
+builder.Services.AddHttpClient<IMinerUClient, MinerUClient>(client =>
+        client.Timeout = Timeout.InfiniteTimeSpan)
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {
         AllowAutoRedirect = false,

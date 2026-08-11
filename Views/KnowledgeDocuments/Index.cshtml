@@ -355,7 +355,7 @@
                     <div class="col-12 col-lg-7">
                         <label asp-for="Upload.File" class="form-label"></label>
                         <input asp-for="Upload.File" class="form-control" type="file"
-                               accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.doc,.docx,.ppt,.pptx,.xls,.xlsx" />
+                               accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.docx,.pptx,.xlsx" />
                         <span asp-validation-for="Upload.File" class="text-danger small"></span>
                     </div>
                 </div>
@@ -534,7 +534,7 @@
                                                     <input type="hidden" name="Upload.SubmissionId" value="@Guid.NewGuid()" />
                                                     <label class="form-label" for="version-file-@document.Id">Tệp thay thế</label>
                                                     <input class="form-control form-control-sm" id="version-file-@document.Id" name="Upload.File" type="file" required
-                                                           accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.doc,.docx,.ppt,.pptx,.xls,.xlsx" />
+                                                           accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.docx,.pptx,.xlsx" />
                                                     <button type="submit" class="btn btn-sm btn-primary mt-3" disabled="@(!Model.PipelineConfigured)">Upload phiên bản</button>
                                                 </form>
                                             </div>

@@ -17,7 +17,7 @@ namespace ManageKpiOkrSystem.Tests;
 public sealed class DocumentIngestionWorkerTests
 {
     [Fact]
-    public async Task ProcessAsync_PersistsMinerUJobAndNeverSubmitsItTwice()
+    public async Task ProcessAsync_PersistsSynchronousMinerUResultAndDoesNotParseItTwice()
     {
         var setup = await CreateScenarioAsync();
         await using var context = setup.Context;
@@ -25,27 +25,27 @@ public sealed class DocumentIngestionWorkerTests
         blob.Add(setup.SourceUri, setup.SourceContent, "application/pdf");
         var minerU = new FakeMinerUClient
         {
-            SubmitResult = new MinerUJob("mineru-123", "queued"),
-            StatusResult = new MinerUJob("mineru-123", "processing")
+            ParseResult = new MinerUResult(
+                Encoding.UTF8.GetBytes("parsed KPI evidence"),
+                "text/markdown")
         };
         var processor = CreateProcessor(context, blob, minerU);
 
         await processor.ProcessAsync(setup.Lease);
 
-        var waiting = await context.DocumentIngestionJobs.SingleAsync();
-        Assert.Equal(DocumentIngestionJobStates.WaitingForMinerU, waiting.State);
-        Assert.Equal("mineru-123", waiting.MinerUJobId);
-        Assert.Equal(1, minerU.SubmitCount);
-        Assert.Equal($"rag-{setup.Lease.JobId:N}", minerU.LastIdempotencyKey);
+        var indexing = await context.DocumentIngestionJobs.SingleAsync();
+        Assert.Equal(DocumentIngestionJobStates.Indexing, indexing.State);
+        Assert.Null(indexing.MinerUJobId);
+        Assert.NotNull(indexing.ParserResultBlobUri);
+        Assert.Equal(1, minerU.ParseCount);
 
-        var secondLease = await LeaseAgainAsync(context, waiting);
+        var secondLease = await LeaseAgainAsync(context, indexing);
         await processor.ProcessAsync(secondLease);
 
-        waiting = await context.DocumentIngestionJobs.SingleAsync();
-        Assert.Equal(DocumentIngestionJobStates.WaitingForMinerU, waiting.State);
-        Assert.Equal(1, minerU.SubmitCount);
-        Assert.Equal(1, minerU.StatusCount);
-        Assert.Equal(0, waiting.AttemptCount);
+        var completed = await context.DocumentIngestionJobs.SingleAsync();
+        Assert.Equal(DocumentIngestionJobStates.Completed, completed.State);
+        Assert.Equal(1, minerU.ParseCount);
+        Assert.Equal(0, completed.AttemptCount);
     }
 
     [Fact]
@@ -210,7 +210,7 @@ public sealed class DocumentIngestionWorkerTests
         Assert.Equal(DocumentIngestionJobStates.Cancelled, job.State);
         Assert.Equal("acl_changed", job.LastFailureCode);
         Assert.Equal(0, blob.ReadCount);
-        Assert.Equal(0, minerU.SubmitCount);
+        Assert.Equal(0, minerU.ParseCount);
         Assert.Equal(0, embedding.CallCount);
         Assert.Empty(writer.Upserted);
     }
@@ -235,37 +235,76 @@ public sealed class DocumentIngestionWorkerTests
     }
 
     [Fact]
-    public async Task ProcessAsync_CompletedMinerUResultIsCopiedToPrivateBlobBeforeIndexing()
+    public async Task ProcessAsync_MinerUTimeoutRetriesAndConvergesOnDeterministicPrivateBlob()
     {
         var setup = await CreateScenarioAsync();
         await using var context = setup.Context;
         var job = await context.DocumentIngestionJobs.SingleAsync();
-        job.MinerUJobId = "mineru-123";
+        job.MinerUJobId = "legacy-in-memory-task-id";
         await context.SaveChangesAsync();
-        var resultUri = "https://mineru.example.test/result/123?token=temporary";
         var blob = new FakeBlobStore();
-        blob.Add(resultUri, Encoding.UTF8.GetBytes("parsed evidence"), "text/markdown");
+        blob.Add(setup.SourceUri, setup.SourceContent, "application/pdf");
+        var markdown = Encoding.UTF8.GetBytes("parsed evidence");
         var minerU = new FakeMinerUClient
         {
-            StatusResult = new MinerUJob(
-                "mineru-123",
-                "completed",
-                new Uri(resultUri))
+            FailuresRemaining = 1,
+            ParseResult = new MinerUResult(markdown, "text/markdown")
         };
         var processor = CreateProcessor(context, blob, minerU);
 
         await processor.ProcessAsync(setup.Lease);
 
         job = await context.DocumentIngestionJobs.SingleAsync();
+        Assert.Equal(DocumentIngestionJobStates.Pending, job.State);
+        Assert.Equal(1, job.AttemptCount);
+        Assert.Null(job.MinerUJobId);
+        Assert.Null(job.ParserResultBlobUri);
+
+        var retryLease = await LeaseAgainAsync(context, job);
+        await processor.ProcessAsync(retryLease);
+
+        job = await context.DocumentIngestionJobs.SingleAsync();
         Assert.Equal(DocumentIngestionJobStates.Indexing, job.State);
-        Assert.NotNull(job.ParserResultBlobUri);
-        Assert.StartsWith(
-            $"https://blob.example.test/container/rag/1/{setup.VersionId:N}/parser/",
-            job.ParserResultBlobUri,
-            StringComparison.Ordinal);
-        Assert.DoesNotContain('?', job.ParserResultBlobUri);
-        Assert.Equal(0, minerU.SubmitCount);
-        Assert.Equal(1, minerU.StatusCount);
+        Assert.Equal(
+            $"https://blob.example.test/container/rag/1/{setup.VersionId:N}/parser/{setup.Lease.JobId:N}.md",
+            job.ParserResultBlobUri);
+        Assert.DoesNotContain('?', job.ParserResultBlobUri!);
+        Assert.Equal(2, minerU.ParseCount);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_ChangedRetryOutputTargetsSameDurableIntentBlob()
+    {
+        var setup = await CreateScenarioAsync();
+        await using var context = setup.Context;
+        var blob = new FakeBlobStore { PutFailuresRemaining = 1 };
+        blob.Add(setup.SourceUri, setup.SourceContent, "application/pdf");
+        var minerU = new FakeMinerUClient();
+        minerU.ParseResults.Enqueue(new MinerUResult(
+            Encoding.UTF8.GetBytes("first transient output"),
+            "text/markdown"));
+        minerU.ParseResults.Enqueue(new MinerUResult(
+            Encoding.UTF8.GetBytes("second converged output"),
+            "text/markdown"));
+        var processor = CreateProcessor(context, blob, minerU);
+
+        await processor.ProcessAsync(setup.Lease);
+
+        var job = await context.DocumentIngestionJobs.SingleAsync();
+        Assert.Equal(DocumentIngestionJobStates.Pending, job.State);
+        Assert.Null(job.ParserResultBlobUri);
+        var retryLease = await LeaseAgainAsync(context, job);
+
+        await processor.ProcessAsync(retryLease);
+
+        job = await context.DocumentIngestionJobs.SingleAsync();
+        var expectedPath = $"rag/1/{setup.VersionId:N}/parser/{setup.Lease.JobId:N}.md";
+        Assert.Equal(new[] { expectedPath, expectedPath }, blob.AttemptedPutPaths);
+        Assert.Equal(
+            $"https://blob.example.test/container/{expectedPath}",
+            job.ParserResultBlobUri);
+        Assert.Equal(DocumentIngestionJobStates.Indexing, job.State);
+        Assert.Equal(2, minerU.ParseCount);
     }
 
     [Fact]
@@ -288,7 +327,7 @@ public sealed class DocumentIngestionWorkerTests
         var job = await context.DocumentIngestionJobs.SingleAsync();
         Assert.Equal(DocumentIngestionJobStates.Cancelled, job.State);
         Assert.Equal("source_signature_mismatch", job.LastFailureCode);
-        Assert.Equal(0, minerU.SubmitCount);
+        Assert.Equal(0, minerU.ParseCount);
     }
 
     [Fact]
@@ -414,11 +453,21 @@ public sealed class DocumentIngestionWorkerTests
 
     [Theory]
     [InlineData("application/pdf")]
+    [InlineData("application/vnd.openxmlformats-officedocument.wordprocessingml.document")]
     [InlineData("application/vnd.openxmlformats-officedocument.presentationml.presentation")]
     [InlineData("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
     public void MinerUSupportedContentTypes_CoversPlannedOfficeFormats(string contentType)
     {
         Assert.True(MinerUSupportedContentTypes.Contains(contentType));
+    }
+
+    [Theory]
+    [InlineData("application/msword")]
+    [InlineData("application/vnd.ms-powerpoint")]
+    [InlineData("application/vnd.ms-excel")]
+    public void MinerUSupportedContentTypes_RejectsLegacyOfficeFormats(string contentType)
+    {
+        Assert.False(MinerUSupportedContentTypes.Contains(contentType));
     }
 
     private static DocumentIngestionProcessor CreateProcessor(
@@ -445,8 +494,7 @@ public sealed class DocumentIngestionWorkerTests
     private static KnowledgeStorageOptions CreateOptions() => new()
     {
         ContainerSasUri = "https://blob.example.test/container?sig=secret",
-        AllowedReadOrigins = new[] { "https://blob.example.test", "https://mineru.example.test" },
-        MinerUPollSeconds = 2
+        AllowedReadOrigins = new[] { "https://blob.example.test" }
     };
 
     private static async Task<Scenario> CreateScenarioAsync(bool parserResultReady = false)
@@ -561,6 +609,8 @@ public sealed class DocumentIngestionWorkerTests
     {
         private readonly Dictionary<string, PrivateKnowledgeObject> _objects = new(StringComparer.Ordinal);
         public int ReadCount { get; private set; }
+        public int PutFailuresRemaining { get; set; }
+        public List<string> AttemptedPutPaths { get; } = new();
 
         public void Add(string uri, byte[] content, string contentType) =>
             _objects[uri] = new PrivateKnowledgeObject(content, contentType, new Uri(uri));
@@ -582,6 +632,12 @@ public sealed class DocumentIngestionWorkerTests
             string contentType,
             CancellationToken cancellationToken = default)
         {
+            AttemptedPutPaths.Add(relativePath);
+            if (PutFailuresRemaining > 0)
+            {
+                PutFailuresRemaining--;
+                throw new HttpRequestException("simulated private Blob outage");
+            }
             var uri = new Uri($"https://blob.example.test/container/{relativePath}");
             _objects[uri.AbsoluteUri] = new PrivateKnowledgeObject(content.ToArray(), contentType, uri);
             return Task.FromResult(uri);
@@ -614,27 +670,27 @@ public sealed class DocumentIngestionWorkerTests
 
     private sealed class FakeMinerUClient : IMinerUClient
     {
-        public int SubmitCount { get; private set; }
-        public int StatusCount { get; private set; }
-        public MinerUJob SubmitResult { get; set; } = new("unused", "queued");
-        public MinerUJob StatusResult { get; set; } = new("unused", "processing");
-        public string? LastIdempotencyKey { get; private set; }
+        public int ParseCount { get; private set; }
+        public int FailuresRemaining { get; set; }
+        public Queue<MinerUResult> ParseResults { get; } = new();
+        public MinerUResult ParseResult { get; set; } = new(
+            Encoding.UTF8.GetBytes("unused"),
+            "text/markdown");
 
-        public Task<MinerUJob> SubmitAsync(
+        public Task<MinerUResult> ParseAsync(
             MinerUDocumentUpload upload,
+            long maximumBytes,
             CancellationToken cancellationToken = default)
         {
-            SubmitCount++;
-            LastIdempotencyKey = upload.IdempotencyKey;
-            return Task.FromResult(SubmitResult);
-        }
-
-        public Task<MinerUJob> GetStatusAsync(
-            string jobId,
-            CancellationToken cancellationToken = default)
-        {
-            StatusCount++;
-            return Task.FromResult(StatusResult);
+            ParseCount++;
+            if (FailuresRemaining > 0)
+            {
+                FailuresRemaining--;
+                throw new TaskCanceledException("simulated MinerU timeout");
+            }
+            var result = ParseResults.Count > 0 ? ParseResults.Dequeue() : ParseResult;
+            Assert.True(result.Content.LongLength <= maximumBytes);
+            return Task.FromResult(result);
         }
     }
 

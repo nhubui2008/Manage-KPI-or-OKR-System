@@ -1,4 +1,5 @@
-using System.Net.Http.Json;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using Manage_KPI_or_OKR_System.Options;
 using Microsoft.Extensions.Options;
@@ -11,12 +12,12 @@ public interface IBgeM3EmbeddingClient
 }
 
 /// <summary>
-/// Adapter for the private BGE-M3 service. The service contract accepts
-/// { "input": "..." } and returns either { "embedding": [...] } or an OpenAI-like
-/// { "data": [{ "embedding": [...] }] } response.
+/// Adapter for the OpenAI-compatible Hugging Face Text Embeddings Inference endpoint.
 /// </summary>
 public sealed class BgeM3EmbeddingClient : IBgeM3EmbeddingClient
 {
+    private const int MaximumResponseBytes = 128 * 1024;
+
     private readonly HttpClient _httpClient;
     private readonly BgeM3Options _options;
 
@@ -40,18 +41,31 @@ public sealed class BgeM3EmbeddingClient : IBgeM3EmbeddingClient
             throw new ArgumentException("Embedding text is too large.", nameof(text));
         }
 
-        _options.Validate();
+        var endpoint = _options.ValidateAndGetEmbeddingsEndpoint();
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(_options.TimeoutSeconds));
-        using var response = await _httpClient.PostAsJsonAsync(
-            _options.Endpoint,
-            new { input = text },
-            cancellationToken: timeout.Token);
-        response.EnsureSuccessStatusCode();
 
-        await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
-        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: timeout.Token);
-        var vector = TryReadVector(document.RootElement);
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        if (!string.IsNullOrWhiteSpace(_options.ApiKey))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
+        }
+        request.Content = new StringContent(
+            JsonSerializer.Serialize(new { input = text, model = _options.Model }),
+            Encoding.UTF8,
+            "application/json");
+
+        using var response = await _httpClient.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            timeout.Token);
+        response.EnsureSuccessStatusCode();
+        EnsureJsonContentType(response);
+
+        var responseBytes = await ReadBoundedAsync(response.Content, timeout.Token);
+        using var document = ParseJson(responseBytes);
+        var vector = ReadOpenAiVector(document.RootElement, _options.Model);
         if (vector.Count != _options.Dimensions)
         {
             throw new InvalidOperationException(
@@ -61,22 +75,23 @@ public sealed class BgeM3EmbeddingClient : IBgeM3EmbeddingClient
         return vector;
     }
 
-    private static IReadOnlyList<float> TryReadVector(JsonElement root)
+    private static IReadOnlyList<float> ReadOpenAiVector(JsonElement root, string expectedModel)
     {
-        if (root.TryGetProperty("embedding", out var direct))
-        {
-            return ReadArray(direct);
-        }
-
-        if (root.TryGetProperty("data", out var data) &&
+        if (root.ValueKind == JsonValueKind.Object &&
+            root.TryGetProperty("model", out var model) &&
+            model.ValueKind == JsonValueKind.String &&
+            string.Equals(model.GetString(), expectedModel, StringComparison.Ordinal) &&
+            root.TryGetProperty("data", out var data) &&
             data.ValueKind == JsonValueKind.Array &&
-            data.GetArrayLength() > 0 &&
+            data.GetArrayLength() == 1 &&
+            data[0].ValueKind == JsonValueKind.Object &&
             data[0].TryGetProperty("embedding", out var nested))
         {
             return ReadArray(nested);
         }
 
-        throw new InvalidOperationException("BGE-M3 response did not contain an embedding.");
+        throw new InvalidOperationException(
+            "BGE-M3 response must contain exactly one OpenAI-compatible embedding.");
     }
 
     private static IReadOnlyList<float> ReadArray(JsonElement value)
@@ -89,7 +104,7 @@ public sealed class BgeM3EmbeddingClient : IBgeM3EmbeddingClient
         var result = new List<float>(value.GetArrayLength());
         foreach (var item in value.EnumerateArray())
         {
-            if (!item.TryGetSingle(out var number) || float.IsNaN(number) || float.IsInfinity(number))
+            if (!item.TryGetSingle(out var number) || !float.IsFinite(number))
             {
                 throw new InvalidOperationException("BGE-M3 returned an invalid vector value.");
             }
@@ -97,5 +112,61 @@ public sealed class BgeM3EmbeddingClient : IBgeM3EmbeddingClient
         }
 
         return result;
+    }
+
+    private static async Task<byte[]> ReadBoundedAsync(
+        HttpContent content,
+        CancellationToken cancellationToken)
+    {
+        if (content.Headers.ContentLength is > MaximumResponseBytes)
+        {
+            throw new InvalidOperationException("BGE-M3 response exceeds the configured limit.");
+        }
+
+        await using var source = await content.ReadAsStreamAsync(cancellationToken);
+        using var destination = new MemoryStream();
+        var buffer = new byte[16 * 1024];
+        while (true)
+        {
+            var read = await source.ReadAsync(buffer, cancellationToken);
+            if (read == 0)
+            {
+                break;
+            }
+            if (destination.Length + read > MaximumResponseBytes)
+            {
+                throw new InvalidOperationException("BGE-M3 response exceeds the configured limit.");
+            }
+            await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+        }
+        return destination.ToArray();
+    }
+
+    private static JsonDocument ParseJson(byte[] content)
+    {
+        try
+        {
+            return JsonDocument.Parse(content, new JsonDocumentOptions
+            {
+                AllowTrailingCommas = false,
+                CommentHandling = JsonCommentHandling.Disallow,
+                MaxDepth = 8
+            });
+        }
+        catch (JsonException exception)
+        {
+            throw new InvalidOperationException("BGE-M3 returned invalid JSON.", exception);
+        }
+    }
+
+    private static void EnsureJsonContentType(HttpResponseMessage response)
+    {
+        if (!string.Equals(
+                response.Content.Headers.ContentType?.MediaType,
+                "application/json",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("BGE-M3 response content type is invalid.");
+        }
     }
 }

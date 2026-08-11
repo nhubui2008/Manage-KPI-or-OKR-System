@@ -1,0 +1,75 @@
+name: kpi-rag
+
+services:
+  clamav:
+    image: clamav/clamav:1.4.5@sha256:4de20bd9ab45a4b763c5412b769217ef5082572ebc8a63aff1a77943419e5dd8
+    container_name: kpi-clamav
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3310:3310"
+    volumes:
+      - clamav-db:/var/lib/clamav
+
+  mineru:
+    profiles: ["mineru"]
+    build:
+      context: ../..
+      dockerfile: deploy/rag/MinerU.Dockerfile
+    image: kpi-mineru:0dfc9460
+    container_name: kpi-mineru
+    restart: unless-stopped
+    init: true
+    gpus: all
+    shm_size: "2gb"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      MINERU_MODEL_SOURCE: local
+      MINERU_API_MAX_CONCURRENT_REQUESTS: "1"
+      MINERU_API_OUTPUT_ROOT: /var/lib/mineru/output
+    volumes:
+      - mineru-output:/var/lib/mineru/output
+
+  bge-m3:
+    profiles: ["bge"]
+    image: ghcr.io/huggingface/text-embeddings-inference:86-1.9@sha256:939883b22ab4616bebce5c35ab72b2132b40949955eac9e94661552312e1eaa9
+    container_name: kpi-bge-m3
+    restart: unless-stopped
+    gpus: all
+    ports:
+      - "127.0.0.1:8080:80"
+    command:
+      - --model-id
+      - BAAI/bge-m3
+      - --revision
+      - 5617a9f61b028005a4858fdac845db406aefb181
+      - --served-model-name
+      - BAAI/bge-m3
+      - --dtype
+      - float16
+      - --auto-truncate
+      - "false"
+      - --max-concurrent-requests
+      - "1"
+      - --max-client-batch-size
+      - "1"
+      - --max-batch-requests
+      - "1"
+      - --max-batch-tokens
+      - "8192"
+      - --payload-limit
+      - "100000"
+    volumes:
+      - bge-cache:/data
+
+volumes:
+  clamav-db:
+    name: kpi-clamav-db
+  mineru-output:
+    name: kpi-mineru-output
+  bge-cache:
+    name: kpi-bge-m3-cache

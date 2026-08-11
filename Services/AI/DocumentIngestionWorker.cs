@@ -332,13 +332,9 @@ public sealed class DocumentIngestionProcessor : IDocumentIngestionProcessor
             {
                 await IndexAsync(snapshot, lease, cancellationToken);
             }
-            else if (!string.IsNullOrWhiteSpace(snapshot.MinerUJobId))
-            {
-                await PollMinerUAsync(snapshot, lease, cancellationToken);
-            }
             else
             {
-                await SubmitToMinerUAsync(snapshot, lease, cancellationToken);
+                await ParseWithMinerUAsync(snapshot, lease, cancellationToken);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -363,7 +359,7 @@ public sealed class DocumentIngestionProcessor : IDocumentIngestionProcessor
                 "Document ingestion job {JobId} failed with {FailureType}.",
                 lease.JobId,
                 exception.GetType().Name);
-            await ScheduleRetryAsync(lease, "ingestion_failed", clearMinerUJob: false, cancellationToken);
+            await ScheduleRetryAsync(lease, "ingestion_failed", cancellationToken);
         }
     }
 
@@ -384,7 +380,6 @@ public sealed class DocumentIngestionProcessor : IDocumentIngestionProcessor
                 job.RequestedBySystemUserId,
                 job.Operation,
                 job.PipelineVersion,
-                job.MinerUJobId,
                 job.ParserResultBlobUri,
                 job.DocumentVersion.DocumentId,
                 job.DocumentVersion.VersionNumber,
@@ -522,7 +517,7 @@ public sealed class DocumentIngestionProcessor : IDocumentIngestionProcessor
         return null;
     }
 
-    private async Task SubmitToMinerUAsync(
+    private async Task ParseWithMinerUAsync(
         IngestionSnapshot snapshot,
         DocumentIngestionLease lease,
         CancellationToken cancellationToken)
@@ -552,62 +547,25 @@ public sealed class DocumentIngestionProcessor : IDocumentIngestionProcessor
             token => _threatScanner.ScanAsync(source.Content, token),
             cancellationToken);
         await using var stream = new MemoryStream(source.Content, writable: false);
-        var response = await _leaseHeartbeat.RunAsync(
+        var result = await _leaseHeartbeat.RunAsync(
             lease,
-            token => _minerUClient.SubmitAsync(
+            token => _minerUClient.ParseAsync(
                 new MinerUDocumentUpload(
                     snapshot.OriginalFileName,
                     snapshot.ContentType,
                     snapshot.FileSizeBytes,
-                    stream,
-                    $"rag-{snapshot.JobId:N}"),
-                token),
-            cancellationToken);
-        await ReleaseForMinerUPollAsync(lease, response.JobId, cancellationToken);
-    }
-
-    private async Task PollMinerUAsync(
-        IngestionSnapshot snapshot,
-        DocumentIngestionLease lease,
-        CancellationToken cancellationToken)
-    {
-        var response = await _leaseHeartbeat.RunAsync(
-            lease,
-            token => _minerUClient.GetStatusAsync(snapshot.MinerUJobId!, token),
-            cancellationToken);
-        var status = response.Status.Trim().ToLowerInvariant();
-        if (status is "queued" or "pending" or "processing" or "running" or "submitted")
-        {
-            await ReleaseForMinerUPollAsync(lease, snapshot.MinerUJobId!, cancellationToken);
-            return;
-        }
-        if (status is "failed" or "error" or "cancelled" or "canceled")
-        {
-            await ScheduleRetryAsync(lease, "mineru_failed", clearMinerUJob: true, cancellationToken);
-            return;
-        }
-        if (status is not ("completed" or "complete" or "succeeded" or "success") ||
-            response.ResultUri == null ||
-            !IsAllowedReadUri(response.ResultUri.AbsoluteUri))
-        {
-            throw new IngestionCancelledException("mineru_result_invalid");
-        }
-
-        var result = await _leaseHeartbeat.RunAsync(
-            lease,
-            token => _blobStore.ReadAsync(
-                response.ResultUri.AbsoluteUri,
+                    stream),
                 _options.MaxParsedResultBytes,
                 token),
             cancellationToken);
-        var resultHash = Convert.ToHexString(SHA256.HashData(result.Content)).ToLowerInvariant();
-        var extension = result.ContentType.Contains("json", StringComparison.OrdinalIgnoreCase)
-            ? "json"
-            : "md";
+        // The durable ingestion job, not provider output bytes, owns this key so
+        // retries with slightly different parser output cannot orphan objects.
+        var parserResultPath =
+            $"rag/{snapshot.TenantId}/{snapshot.DocumentVersionId:N}/parser/{snapshot.JobId:N}.md";
         var stableUri = await _leaseHeartbeat.RunAsync(
             lease,
             token => _blobStore.PutAsync(
-                $"rag/{snapshot.TenantId}/{snapshot.DocumentVersionId:N}/parser/{resultHash}.{extension}",
+                parserResultPath,
                 result.Content,
                 result.ContentType,
                 token),
@@ -1038,21 +996,6 @@ public sealed class DocumentIngestionProcessor : IDocumentIngestionProcessor
             cancellationToken);
     }
 
-    private Task ReleaseForMinerUPollAsync(
-        DocumentIngestionLease lease,
-        string minerUJobId,
-        CancellationToken cancellationToken) =>
-        UpdateJobAsync(
-            lease,
-            job =>
-            {
-                job.State = DocumentIngestionJobStates.WaitingForMinerU;
-                job.MinerUJobId = minerUJobId;
-                job.AvailableAtUtc = DateTimeOffset.UtcNow.AddSeconds(_options.MinerUPollSeconds);
-                job.LastFailureCode = null;
-            },
-            cancellationToken);
-
     private Task ReleaseForIndexingAsync(
         DocumentIngestionLease lease,
         string parserResultBlobUri,
@@ -1062,6 +1005,7 @@ public sealed class DocumentIngestionProcessor : IDocumentIngestionProcessor
             job =>
             {
                 job.State = DocumentIngestionJobStates.Indexing;
+                job.MinerUJobId = null;
                 job.ParserResultBlobUri = parserResultBlobUri;
                 job.AvailableAtUtc = DateTimeOffset.UtcNow;
                 job.LastFailureCode = null;
@@ -1085,7 +1029,6 @@ public sealed class DocumentIngestionProcessor : IDocumentIngestionProcessor
     private Task ScheduleRetryAsync(
         DocumentIngestionLease lease,
         string failureCode,
-        bool clearMinerUJob,
         CancellationToken cancellationToken) =>
         UpdateJobAsync(
             lease,
@@ -1098,13 +1041,9 @@ public sealed class DocumentIngestionProcessor : IDocumentIngestionProcessor
                     : DocumentIngestionJobStates.Pending;
                 job.AvailableAtUtc = DateTimeOffset.UtcNow.AddSeconds(
                     Math.Min(300, 1 << Math.Min(job.AttemptCount, 8)));
+                job.MinerUJobId = null;
                 job.LastFailureCode = failureCode;
                 job.CompletedAtUtc = terminal ? DateTimeOffset.UtcNow : null;
-                if (clearMinerUJob)
-                {
-                    job.MinerUJobId = null;
-                    job.ParserResultBlobUri = null;
-                }
             },
             cancellationToken,
             markVersionFailedWhenDeadLetter: true);
@@ -1202,7 +1141,6 @@ public sealed class DocumentIngestionProcessor : IDocumentIngestionProcessor
         int? RequestedBySystemUserId,
         string Operation,
         string PipelineVersion,
-        string? MinerUJobId,
         string? ParserResultBlobUri,
         Guid DocumentId,
         int VersionNumber,

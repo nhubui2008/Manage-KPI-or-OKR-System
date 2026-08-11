@@ -6,11 +6,8 @@ public static class MinerUSupportedContentTypes
     {
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/msword",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        "application/vnd.ms-powerpoint",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-excel",
         "image/png",
         "image/jpeg",
         "image/tiff"
@@ -23,21 +20,16 @@ public sealed record MinerUDocumentUpload(
     string FileName,
     string ContentType,
     long Length,
-    Stream Content,
-    string IdempotencyKey);
+    Stream Content);
 
-public sealed record MinerUJob(
-    string JobId,
-    string Status,
-    Uri? ResultUri = null);
+public sealed record MinerUResult(
+    byte[] Content,
+    string ContentType);
 
 public interface IMinerUClient
 {
-    Task<MinerUJob> SubmitAsync(
+    Task<MinerUResult> ParseAsync(
         MinerUDocumentUpload upload,
-        CancellationToken cancellationToken = default);
-
-    Task<MinerUJob> GetStatusAsync(
-        string jobId,
+        long maximumBytes,
         CancellationToken cancellationToken = default);
 }
