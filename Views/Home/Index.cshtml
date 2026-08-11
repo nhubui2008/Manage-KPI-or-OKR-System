@@ -637,12 +637,13 @@
                             <div style="font-size: 0.8rem; color: var(--text-tertiary);">Đăng nhập với</div>
                             <div style="font-weight: bold; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@username">@username</div>
                         </div>
-                        @if (!isCustomer)
+                        <a href="/Dashboard/Index"><i class="bi bi-grid-1x2-fill" style="color: var(--primary);"></i> Vào Hệ thống</a>
+                        @if (User.HasClaim(Manage_KPI_or_OKR_System.Helpers.AuthRoleHelper.PlatformAdminClaimType, bool.TrueString))
                         {
-                            <a href="/Auth/Login"><i class="bi bi-grid-1x2-fill" style="color: var(--primary);"></i> Vào Hệ thống</a>
+                            <a href="/SaaSAdmin"><i class="bi bi-speedometer2" style="color: #6366f1;"></i> Quản lý Bán hàng & Đơn hàng</a>
+                            <a href="/SaaSAdmin/Packages"><i class="bi bi-tags-fill" style="color: #f59e0b;"></i> Quản lý Gói & Chỉnh giá</a>
                         }
-                        
-                        @if (!(User.IsInRole("SaaSAdmin") || User.IsInRole("Administrator")))
+                        else
                         {
                             <a href="/Home/PurchaseHistory"><i class="bi bi-clock-history" style="color: var(--secondary);"></i> Lịch sử mua</a>
                         }

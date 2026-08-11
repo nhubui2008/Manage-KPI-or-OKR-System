@@ -26,17 +26,20 @@ public class HomeController : Controller
     private readonly ILogger<HomeController> _logger;
     private readonly IPasswordResetService? _passwordResetService;
     private readonly IConfiguration? _configuration;
+    private readonly Manage_KPI_or_OKR_System.Services.Tenancy.ITenantProvisioningService? _tenantProvisioningService;
 
     public HomeController(
         MiniERPDbContext context,
         ILogger<HomeController> logger,
         IPasswordResetService? passwordResetService = null,
-        IConfiguration? configuration = null)
+        IConfiguration? configuration = null,
+        Manage_KPI_or_OKR_System.Services.Tenancy.ITenantProvisioningService? tenantProvisioningService = null)
     {
         _context = context;
         _logger = logger;
         _passwordResetService = passwordResetService;
         _configuration = configuration;
+        _tenantProvisioningService = tenantProvisioningService;
     }
 
     public async Task<IActionResult> Index()
@@ -234,6 +237,10 @@ public class HomeController : Controller
             _context.PurchaseRegistrations.Add(reg);
 
             await _context.SaveChangesAsync();
+            if (_tenantProvisioningService != null)
+            {
+                await _tenantProvisioningService.EnsureCustomerTenantAsync(newUser, newUser.Id);
+            }
             string? setupUrl = null;
             if (_passwordResetService != null)
             {
@@ -316,8 +323,8 @@ public class HomeController : Controller
             var normalizedUsername = username.Trim().ToLowerInvariant();
 
             var user = await _context.SystemUsers.FirstOrDefaultAsync(u =>
-                u.Username != null &&
-                u.Username.ToLower() == normalizedUsername &&
+                ((u.Username != null && u.Username.ToLower() == normalizedUsername) ||
+                 (u.Email != null && u.Email.ToLower() == normalizedUsername)) &&
                 u.IsActive == true);
             if (user == null || user.PasswordHash == null || !Manage_KPI_or_OKR_System.Helpers.PasswordHelper.VerifyPassword(password, user.PasswordHash))
             {
@@ -353,6 +360,11 @@ public class HomeController : Controller
             else if (passwordHashUpgraded)
             {
                 await _context.SaveChangesAsync();
+            }
+
+            if (_tenantProvisioningService != null)
+            {
+                await _tenantProvisioningService.EnsureCustomerTenantAsync(user, user.Id);
             }
 
             await SignInSystemUserAsync(user, normalizedUsername);

@@ -34,6 +34,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly IPasswordResetRateLimiter _passwordResetRateLimiter;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthController> _logger;
+        private readonly Manage_KPI_or_OKR_System.Services.Tenancy.ITenantProvisioningService? _tenantProvisioningService;
         private const string PasswordResetRequestMessage = "Nếu email này có tài khoản, chúng tôi đã gửi liên kết đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn.";
         private static readonly HashSet<string> AllowedPreferredLanguages = new(StringComparer.Ordinal)
         {
@@ -58,7 +59,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             IPasswordResetService passwordResetService,
             IPasswordResetRateLimiter passwordResetRateLimiter,
             IConfiguration configuration,
-            ILogger<AuthController> logger)
+            ILogger<AuthController> logger,
+            Manage_KPI_or_OKR_System.Services.Tenancy.ITenantProvisioningService? tenantProvisioningService = null)
         {
             _context = context;
             _emailService = emailService;
@@ -68,6 +70,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _passwordResetRateLimiter = passwordResetRateLimiter;
             _configuration = configuration;
             _logger = logger;
+            _tenantProvisioningService = tenantProvisioningService;
         }
 
         private async Task<string> SignInSystemUserAsync(
@@ -218,8 +221,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             username = username.Trim();
             var user = await _context.SystemUsers
-                .FirstOrDefaultAsync(u => u.Username != null &&
-                    u.Username.ToLower() == username.ToLower() && u.IsActive == true);
+                .FirstOrDefaultAsync(u =>
+                    ((u.Username != null && u.Username.ToLower() == username.ToLower()) ||
+                     (u.Email != null && u.Email.ToLower() == username.ToLower())) &&
+                    u.IsActive == true);
 
             if (user == null || user.PasswordHash == null || !PasswordHelper.VerifyPassword(password, user.PasswordHash))
             {
@@ -241,6 +246,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 user.PasswordHash = PasswordHelper.HashPassword(password);
                 await _context.SaveChangesAsync();
+            }
+
+            if (_tenantProvisioningService != null)
+            {
+                await _tenantProvisioningService.EnsureCustomerTenantAsync(user, user.Id);
             }
 
             await SignInSystemUserAsync(user, remember);
@@ -548,8 +558,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForgotPasswordAjax([FromBody] ForgotPasswordAjaxDto model)
         {
-            await RequestPasswordResetAsync(model?.Email);
-            return Json(new { success = true, message = PasswordResetRequestMessage });
+            var resetUrl = await RequestPasswordResetAsync(model?.Email);
+            return Json(new { success = true, message = PasswordResetRequestMessage, resetUrl = _environment.IsDevelopment() ? resetUrl : null });
         }
 
         [HttpGet]
@@ -587,7 +597,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [NonAction]
-        private async Task RequestPasswordResetAsync(string? email)
+        private async Task<string?> RequestPasswordResetAsync(string? email)
         {
             var normalizedEmail = email?.Trim().ToLowerInvariant();
             if (normalizedEmail?.Length > 255)
@@ -597,12 +607,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var remoteAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             if (!_passwordResetRateLimiter.TryAcquire(remoteAddress, normalizedEmail))
             {
-                return;
+                return null;
             }
 
             if (string.IsNullOrWhiteSpace(normalizedEmail))
             {
-                return;
+                return null;
             }
 
             var user = await _context.SystemUsers.FirstOrDefaultAsync(
@@ -611,16 +621,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     && candidate.IsActive == true);
             if (user?.Email == null)
             {
-                return;
+                return null;
             }
 
+            string? resetUrl = null;
             try
             {
-                var resetUrl = BuildPasswordResetUrl(await _passwordResetService.CreateTokenAsync(user));
+                resetUrl = BuildPasswordResetUrl(await _passwordResetService.CreateTokenAsync(user));
                 if (resetUrl == null)
                 {
                     _logger.LogError("Password reset email was not sent because PasswordReset:PublicBaseUrl is not configured.");
-                    return;
+                    return null;
                 }
 
                 var branding = await _settingsService.GetBrandingAsync();
@@ -640,20 +651,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 _logger.LogError(exception, "Password reset email delivery failed.");
             }
+            return resetUrl;
         }
 
         private string? BuildPasswordResetUrl(string token)
         {
             var publicBaseUrl = _configuration["PasswordReset:PublicBaseUrl"];
-            if (!Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out var baseUri) ||
-                baseUri.Scheme != Uri.UriSchemeHttps &&
-                (!(_environment.IsDevelopment() && baseUri.Scheme == Uri.UriSchemeHttp)))
+            if (!Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out var baseUri))
             {
-                return null;
+                var req = HttpContext.Request;
+                publicBaseUrl = $"{req.Scheme}://{req.Host}";
+                Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out baseUri);
             }
 
             var path = Url.Action(nameof(ResetPassword), "Auth", new { token });
-            return path == null ? null : new Uri(baseUri, path).ToString();
+            return path == null ? null : new Uri(baseUri!, path).ToString();
         }
 
         // ==========================================
@@ -754,16 +766,24 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return BadRequest(new { success = false, message = validationMessage });
             }
 
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(userIdStr, out int userId))
+            var userIdStr = User.FindFirstValue("SystemUserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            SystemUser? user = null;
+            if (int.TryParse(userIdStr, out int userId))
             {
-                return Unauthorized(new { success = false, message = "Không thể xác thực tài khoản." });
+                user = await _context.SystemUsers.FindAsync(userId);
             }
 
-            var user = await _context.SystemUsers.FindAsync(userId);
+            if (user == null && !string.IsNullOrEmpty(User.Identity?.Name))
+            {
+                var identifierName = User.Identity.Name.Trim().ToLowerInvariant();
+                user = await _context.SystemUsers.FirstOrDefaultAsync(u =>
+                    (u.Username != null && u.Username.ToLower() == identifierName) ||
+                    (u.Email != null && u.Email.ToLower() == identifierName));
+            }
+
             if (user == null)
             {
-                return NotFound(new { success = false, message = "Không tìm thấy tài khoản." });
+                return Unauthorized(new { success = false, message = "Không thể xác thực tài khoản." });
             }
 
             if (user.PasswordHash == null || !PasswordHelper.VerifyPassword(model.oldPassword, user.PasswordHash))

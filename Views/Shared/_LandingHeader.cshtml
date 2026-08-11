@@ -685,7 +685,12 @@
                             <div style="font-weight: bold; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@username">@username</div>
                         </div>
                         <a href="/Dashboard/Index"><i class="bi bi-grid-1x2-fill" style="color: var(--primary);"></i> Vào Hệ thống</a>
-                        @if (!(User.IsInRole("Admin") || User.IsInRole("Administrator")))
+                        @if (User.HasClaim(Manage_KPI_or_OKR_System.Helpers.AuthRoleHelper.PlatformAdminClaimType, bool.TrueString))
+                        {
+                            <a href="/SaaSAdmin"><i class="bi bi-speedometer2" style="color: #6366f1;"></i> Quản lý Bán hàng & Đơn hàng</a>
+                            <a href="/SaaSAdmin/Packages"><i class="bi bi-tags-fill" style="color: #f59e0b;"></i> Quản lý Gói & Chỉnh giá</a>
+                        }
+                        else
                         {
                             <a href="/Home/PurchaseHistory"><i class="bi bi-clock-history" style="color: var(--secondary);"></i> Lịch sử mua</a>
                         }
@@ -705,3 +710,163 @@
         </div>
     </div>
 </nav>
+
+@if (User.Identity != null && User.Identity.IsAuthenticated)
+{
+    <!-- ===== CHANGE PASSWORD MODAL ===== -->
+    <div id="changePasswordModal" class="reg-modal-overlay">
+        <div class="reg-modal-premium">
+            <div class="reg-modal-left">
+                <div class="reg-modal-brand">
+                    <i class="bi bi-hexagon-fill"></i> VIETMACH
+                </div>
+                <h2>Đổi Mật Khẩu</h2>
+                <p>Bảo mật tài khoản của bạn để tiếp tục trải nghiệm hệ thống Quản trị Hiệu suất Toàn diện (OKR/KPI).</p>
+                <ul class="reg-modal-benefits">
+                    <li><i class="bi bi-shield-check"></i> An toàn dữ liệu tuyệt đối</li>
+                    <li><i class="bi bi-key-fill"></i> Mật khẩu mạnh & bảo vệ</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Cập nhật nhanh chóng</li>
+                </ul>
+                <div class="reg-modal-bg-blob"></div>
+            </div>
+            <div class="reg-modal-right">
+                <button type="button" class="reg-modal-close" onclick="closeChangePasswordModal()"><i class="bi bi-x-lg"></i></button>
+                <div class="reg-form-container">
+                    <h3>Bảo mật tài khoản</h3>
+                    <p class="reg-form-subtitle">Vui lòng nhập mật khẩu mới để tiếp tục sử dụng hệ thống.</p>
+                    
+                    <div id="cpAlertError" class="alert-error" style="display:none; background: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; padding: 0.75rem 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.5rem; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 500;">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span id="cpErrorMsg"></span>
+                    </div>
+
+                    <div id="cpAlertSuccess" class="alert-success" style="display:none; background: #f0fdf4; border-left: 4px solid #22c55e; color: #166534; padding: 0.75rem 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1.5rem; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 500;">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span id="cpSuccessMsg"></span>
+                    </div>
+
+                    <form id="changePasswordAjaxForm" onsubmit="submitChangePasswordAjax(event)">
+                        @Html.AntiForgeryToken()
+                        <div class="form-group">
+                            <label for="oldPasswordAjax">Mật khẩu hiện tại</label>
+                            <div class="input-icon-wrapper">
+                                <i class="bi bi-unlock"></i>
+                                <input type="password" id="oldPasswordAjax" name="oldPassword" required maxlength="128" autocomplete="current-password" placeholder="Nhập mật khẩu hiện tại" />
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="newPasswordAjax">Mật khẩu mới</label>
+                            <div class="input-icon-wrapper">
+                                <i class="bi bi-key"></i>
+                                <input type="password" id="newPasswordAjax" name="newPassword" required minlength="6" maxlength="128" autocomplete="new-password" placeholder="Nhập mật khẩu mới" />
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirmPasswordAjax">Xác nhận mật khẩu mới</label>
+                            <div class="input-icon-wrapper">
+                                <i class="bi bi-shield-lock"></i>
+                                <input type="password" id="confirmPasswordAjax" name="confirmPassword" required minlength="6" maxlength="128" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" />
+                            </div>
+                        </div>
+                        
+                        <button type="submit" id="cpSubmitBtn" class="btn-primary-lg w-100 mt-4" style="justify-content: center; border: none; cursor: pointer;">
+                            <i class="bi bi-check-circle-fill"></i> Cập nhật Mật khẩu
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openChangePasswordModal() {
+            var modal = document.getElementById('changePasswordModal');
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                var form = document.getElementById('changePasswordAjaxForm');
+                if (form) form.reset();
+                var err = document.getElementById('cpAlertError');
+                var succ = document.getElementById('cpAlertSuccess');
+                if (err) err.style.display = 'none';
+                if (succ) succ.style.display = 'none';
+            }
+        }
+
+        function closeChangePasswordModal() {
+            var modal = document.getElementById('changePasswordModal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        async function submitChangePasswordAjax(event) {
+            event.preventDefault();
+            var btn = document.getElementById('cpSubmitBtn');
+            var errAlert = document.getElementById('cpAlertError');
+            var errMsg = document.getElementById('cpErrorMsg');
+            var successAlert = document.getElementById('cpAlertSuccess');
+            var successMsg = document.getElementById('cpSuccessMsg');
+
+            if (errAlert) errAlert.style.display = 'none';
+            if (successAlert) successAlert.style.display = 'none';
+
+            var oldPw = document.getElementById('oldPasswordAjax').value;
+            var newPw = document.getElementById('newPasswordAjax').value;
+            var confirmPw = document.getElementById('confirmPasswordAjax').value;
+
+            if (newPw !== confirmPw) {
+                if (errMsg) errMsg.innerText = "Mật khẩu mới không khớp.";
+                if (errAlert) errAlert.style.display = 'flex';
+                return;
+            }
+
+            if (btn) {
+                btn.innerHTML = '<i class="spinner-border spinner-border-sm"></i> Đang xử lý...';
+                btn.disabled = true;
+            }
+
+            try {
+                var token = document.querySelector('#changePasswordAjaxForm input[name="__RequestVerificationToken"]')?.value;
+                if (!token) throw new Error('Không thể xác thực yêu cầu. Vui lòng tải lại trang.');
+                var response = await fetch('/Auth/ChangePasswordAjax', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        oldPassword: oldPw,
+                        newPassword: newPw,
+                        confirmPassword: confirmPw
+                    })
+                });
+
+                var result = await response.json();
+                if (result.success) {
+                    if (successMsg) successMsg.innerText = result.message || "Đổi mật khẩu thành công!";
+                    if (successAlert) successAlert.style.display = 'flex';
+                    var form = document.getElementById('changePasswordAjaxForm');
+                    if (form) form.style.display = 'none';
+                    setTimeout(function() {
+                        closeChangePasswordModal();
+                    }, 2000);
+                } else {
+                    if (errMsg) errMsg.innerText = result.message || "Có lỗi xảy ra.";
+                    if (errAlert) errAlert.style.display = 'flex';
+                }
+            } catch (err) {
+                if (errMsg) errMsg.innerText = "Lỗi kết nối. Vui lòng thử lại.";
+                if (errAlert) errAlert.style.display = 'flex';
+            } finally {
+                if (btn) {
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Cập nhật Mật khẩu';
+                    btn.disabled = false;
+                }
+            }
+        }
+    </script>
+}
