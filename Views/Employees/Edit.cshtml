@@ -5,341 +5,234 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="page-content py-4 container-fluid px-4">
-    <!-- HEADER -->
-    <div class="page-header d-flex align-items-center justify-content-between mb-4 animate__animated animate__fadeIn">
-        <div>
-            <h1 class="mb-2 fw-800 text-dark text-gradient">Chỉnh sửa Nhân Viên</h1>
-            <div class="page-breadcrumb">
-                <a href="/" class="text-decoration-none opacity-75">Trang chủ</a>
-                <span class="separator mx-2 text-muted">/</span>
-                <a asp-action="Index" class="text-decoration-none opacity-75">Danh sách nhân viên</a>
-                <span class="separator mx-2 text-muted">/</span>
-                <span class="text-primary fw-bold">@Model.FullName</span>
-            </div>
+<div class="cf-page employee-edit-page employees-page employee-form-page" data-create-form>
+    <header class="cf-header">
+        <div class="cf-header__content">
+            <h1>Chỉnh sửa nhân viên</h1>
+            <nav class="cf-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <a asp-action="Index">Nhân sự</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">@Model.FullName</span>
+            </nav>
+            <p class="cf-header__description">Cập nhật thông tin hồ sơ, phân công và liên kết tài khoản của nhân viên.</p>
         </div>
-        <div>
-            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-light shadow-sm border-0 bg-white px-4 py-2" style="border-radius: 12px; font-weight: 600; color: #475569; transition: all 0.3s;">
-                <i class="bi bi-person-lines-fill me-2"></i> Xem chi tiết
-            </a>
-        </div>
-    </div>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="cf-back-action">
+            <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
+            <span>Xem chi tiết</span>
+        </a>
+    </header>
 
-    <div class="row g-4">
-        <!-- FORM COLUMN -->
-        <div class="col-xl-8 animate__animated animate__fadeInLeft">
-            <div class="content-card border-0 shadow-lg overflow-visible" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 24px; position: relative;">
-                <div class="card-header-custom border-bottom bg-white bg-opacity-50 py-4 px-4" style="border-radius: 24px 24px 0 0;">
-                    <div class="d-flex align-items-center">
-                        <div class="bg-primary bg-opacity-10 p-3 rounded-4 me-3">
-                            <i class="bi bi-pencil-fill text-primary fs-4"></i>
-                        </div>
-                        <div>
-                            <h5 class="fw-bold fs-5 mb-0 text-dark">Cập nhật hồ sơ nhân sự</h5>
-                            <p class="text-muted small mb-0">Thay đổi thông tin và định hướng công tác của nhân viên</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="card-body-custom p-4 p-md-5">
-                    @if (ViewBag.ErrorMessage != null)
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 rounded-4 mb-4" role="alert">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-exclamation-octagon-fill fs-4 me-3"></i>
-                                <div>
-                                    <strong>Lỗi hệ thống!</strong> @ViewBag.ErrorMessage
-                                </div>
-                            </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    }
-
-                    <form asp-action="Edit" method="post" id="editEmployeeForm">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
-                        <input type="hidden" asp-for="Id" />
-
-                        <!-- SECTION 1: PERSONAL INFO -->
-                        <div class="form-section mb-5">
-                            <div class="d-flex align-items-center mb-4">
-                                <span class="badge bg-primary me-2" style="width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">1</span>
-                                <h6 class="text-uppercase fw-800 text-muted small mb-0 tracking-wider">Thông tin cá nhân & Liên hệ</h6>
-                            </div>
-
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label asp-for="EmployeeCode" class="form-label small fw-bold text-secondary">Mã nhân viên <span class="badge bg-light text-muted">Bảo mật</span></label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-lock-fill"></i>
-                                            <input asp-for="EmployeeCode" class="form-control border-0 bg-light" readonly style="padding-left: 45px; height: 50px;" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label asp-for="FullName" class="form-label small fw-bold text-secondary">Họ và tên <span class="text-danger">*</span></label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-person"></i>
-                                            <input asp-for="FullName" class="form-control border-0" placeholder="Nguyễn Văn A" required style="padding-left: 45px; height: 50px;" />
-                                        </div>
-                                        <span asp-validation-for="FullName" class="text-danger small mt-1"></span>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label asp-for="Phone" class="form-label small fw-bold text-secondary">Số điện thoại <span class="text-danger">*</span></label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-telephone"></i>
-                                            <input asp-for="Phone" class="form-control border-0" placeholder="090 123 4567" required style="padding-left: 45px; height: 50px;" />
-                                        </div>
-                                        <span asp-validation-for="Phone" class="text-danger small mt-1"></span>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label asp-for="Email" class="form-label small fw-bold text-secondary">Email công việc <span class="text-danger">*</span></label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-envelope"></i>
-                                            <input asp-for="Email" type="email" class="form-control border-0" placeholder="email@company.com" required style="padding-left: 45px; height: 50px;" />
-                                        </div>
-                                        <span asp-validation-for="Email" class="text-danger small mt-1"></span>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label asp-for="DateOfBirth" class="form-label small fw-bold text-secondary">Ngày sinh</label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-calendar-event"></i>
-                                            <input asp-for="DateOfBirth" type="date" class="form-control border-0" style="padding-left: 45px; height: 50px;" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label asp-for="TaxCode" class="form-label small fw-bold text-secondary">Mã số thuế</label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-card-text"></i>
-                                            <input asp-for="TaxCode" class="form-control border-0" placeholder="MST (nếu có)" style="padding-left: 45px; height: 50px;" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 2: JOB & ASSIGNMENT -->
-                        <div class="form-section mb-5">
-                            <div class="d-flex align-items-center mb-4">
-                                <span class="badge bg-success me-2" style="width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">2</span>
-                                <h6 class="text-uppercase fw-800 text-muted small mb-0 tracking-wider">Công việc & Tổ chức</h6>
-                            </div>
-
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label for="DepartmentId" class="form-label small fw-bold text-secondary">Phòng ban</label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-building"></i>
-                                            <select name="departmentId" class="form-select border-0" asp-items="ViewBag.DepartmentId" style="padding-left: 45px; height: 50px;">
-                                                <option value="">-- Chọn phòng ban --</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label for="PositionId" class="form-label small fw-bold text-secondary">Vị trí công việc</label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-briefcase"></i>
-                                            <select name="positionId" class="form-select border-0" asp-items="ViewBag.PositionId" style="padding-left: 45px; height: 50px;">
-                                                <option value="">-- Chọn vị trí --</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label asp-for="JoinDate" class="form-label small fw-bold text-secondary">Ngày vào làm</label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-calendar-check text-success"></i>
-                                            <input asp-for="JoinDate" type="date" class="form-control border-0" style="padding-left: 45px; height: 50px;" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="form-icon-group text-dark font-weight-bold">
-                                        <label asp-for="SystemUserId" class="form-label small fw-bold text-secondary">Tài khoản liên kết</label>
-                                        <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                            <i class="bi bi-person-badge"></i>
-                                            <select asp-for="SystemUserId" class="form-select border-0" asp-items="ViewBag.SystemUserId" style="padding-left: 45px; height: 50px;">
-                                                <option value="">-- Liên kết tài khoản (Không bắt buộc) --</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SECTION 3: STRATEGIC ALIGNMENT -->
-                        <div class="form-section mb-5">
-                            <div class="d-flex align-items-center mb-4">
-                                <span class="badge bg-warning text-dark me-2" style="width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">3</span>
-                                <h6 class="text-uppercase fw-800 text-muted small mb-0 tracking-wider">Định hướng & Mục tiêu chiến lược</h6>
-                            </div>
-
-                            <div class="form-icon-group text-dark font-weight-bold">
-                                <label asp-for="StrategicGoalId" class="form-label small fw-bold text-secondary">Mục tiêu chiến lược theo năm</label>
-                                <div class="input-wrapper shadow-sm rounded-3 overflow-hidden border">
-                                    <i class="bi bi-flag-fill text-warning"></i>
-                                    <select asp-for="StrategicGoalId" class="form-select border-0" asp-items="ViewBag.StrategicGoalId" style="padding-left: 45px; height: 50px;">
-                                        <option value="">-- Không gắn mục tiêu cụ thể --</option>
-                                    </select>
-                                </div>
-                                <div class="form-text mt-2 small text-muted">
-                                    <i class="bi bi-info-circle me-1"></i> Chỉ hiển thị mục tiêu theo năm đang hoạt động để theo dõi đóng góp của nhân viên.
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="form-check form-switch fs-5">
-                                <input type="checkbox" class="form-check-input" id="isActiveSwitch" name="IsActive" value="true" @(Model.IsActive == true ? "checked" : "") />
-                                <input type="hidden" name="IsActive" value="false" />
-                                <label class="form-check-label fw-bold text-dark ms-2" style="font-size: 1rem;" for="isActiveSwitch">Trạng thái: Đang làm việc</label>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-3 mt-5 pt-4 border-top">
-                            <a asp-action="Index" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 12px; font-weight: 600; border: 1.5px solid #e2e8f0;">
-                                Hủy bỏ
-                            </a>
-                            <button type="submit" class="btn btn-primary px-5 py-2 shadow-lg" style="border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%); border: none;">
-                                <i class="bi bi-save-fill me-2"></i> Lưu thay đổi
-                            </button>
-                        </div>
-                    </form>
+    <div class="cf-layout">
+        <section class="cf-panel" aria-labelledby="employeeEditHeading">
+            <div class="cf-panel__header">
+                <div>
+                    <h2 id="employeeEditHeading">Hồ sơ nhân sự</h2>
+                    <p>Các trường có dấu <span class="cf-required" aria-hidden="true">*</span> là bắt buộc.</p>
                 </div>
             </div>
-        </div>
 
-        <!-- SIDEBAR COLUMN -->
-        <div class="col-xl-4 animate__animated animate__fadeInRight">
-            <div class="sticky-top" style="top: 100px;">
-                <!-- AUDIT INFO -->
-                @if (Model.CreatedAt.HasValue)
+            <form asp-action="Edit" method="post" class="cf-form" id="editEmployeeForm" data-create-form-element>
+                <input type="hidden" asp-for="Id" />
+
+                @if (ViewBag.ErrorMessage != null)
                 {
-                    <div class="content-card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
-                        <h6 class="fw-bold text-dark mb-3">Thông tin bản ghi</h6>
-                        <div class="d-flex align-items-center text-muted small">
-                            <i class="bi bi-clock-history me-2"></i>
-                            Ngày tạo: @Model.CreatedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                    <div class="cf-alert employee-server-alert" role="alert">
+                        <i class="bi bi-exclamation-octagon" aria-hidden="true"></i>
+                        <div>
+                            <strong>Không thể cập nhật nhân viên.</strong>
+                            <span>@ViewBag.ErrorMessage</span>
                         </div>
                     </div>
                 }
 
-                <!-- TIPS CARD -->
-                <div class="content-card border-0 shadow-lg text-white mb-4 position-relative overflow-hidden" 
-                     style="background: linear-gradient(135deg, #1a73e8, #1557b0); border-radius: 24px;">
-                    <div class="card-body-custom p-4 position-relative z-index-1">
-                        <div class="d-flex align-items-center mb-4">
-                            <div class="bg-white bg-opacity-20 p-3 rounded-4 me-3">
-                                <i class="bi bi-info-circle fs-3 text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-0 opacity-75 fw-bold text-uppercase small">Lưu ý sửa đổi</h6>
-                                <h4 class="mb-0 fw-800">Cập nhật hồ sơ</h4>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <ul class="list-unstyled mb-0 small" style="opacity: 0.9; line-height: 1.8;">
-                                <li class="mb-3 d-flex align-items-start">
-                                    <i class="bi bi-shield-check me-2 mt-1 fs-5 text-warning"></i> 
-                                    <span><strong>Mã số thuế:</strong> Cần thiết cho việc quyết toán lương và bảo hiểm.</span>
-                                </li>
-                                <li class="mb-3 d-flex align-items-start">
-                                    <i class="bi bi-shield-check me-2 mt-1 fs-5 text-warning"></i> 
-                                    <span><strong>Trạng thái:</strong> Nếu nhân viên đã nghỉ việc, hãy gạt switch "Đang làm việc" sang OFF.</span>
-                                </li>
-                            </ul>
+                <div asp-validation-summary="All" class="cf-alert" role="alert" tabindex="-1" data-error-summary></div>
+
+                <section class="cf-section" aria-labelledby="employeePersonalHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-person-vcard"></i></span>
+                        <div>
+                            <h3 id="employeePersonalHeading">Thông tin cơ bản</h3>
+                            <p>Thông tin định danh và liên hệ chính.</p>
                         </div>
                     </div>
+
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <label asp-for="EmployeeCode">Mã nhân viên</label>
+                            <input asp-for="EmployeeCode" class="form-control cf-control" readonly aria-describedby="employeeCodeHint" />
+                            <span asp-validation-for="EmployeeCode" class="cf-validation"></span>
+                            <p id="employeeCodeHint" class="cf-hint">Mã nhân viên không thể thay đổi.</p>
+                        </div>
+
+                        <div class="cf-field">
+                            <label asp-for="FullName">Họ và tên <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <input asp-for="FullName" class="form-control cf-control" maxlength="100" autocomplete="name" required />
+                            <span asp-validation-for="FullName" class="cf-validation"></span>
+                        </div>
+
+                        <div class="cf-field">
+                            <label asp-for="DateOfBirth">Ngày sinh</label>
+                            <input asp-for="DateOfBirth" type="date" class="form-control cf-control" lang="vi" />
+                            <span asp-validation-for="DateOfBirth" class="cf-validation"></span>
+                        </div>
+
+                        <div class="cf-field">
+                            <label asp-for="TaxCode">Mã số thuế</label>
+                            <input asp-for="TaxCode" class="form-control cf-control" maxlength="50" autocomplete="off" />
+                            <span asp-validation-for="TaxCode" class="cf-validation"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cf-section" aria-labelledby="employeeContactHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-envelope"></i></span>
+                        <div>
+                            <h3 id="employeeContactHeading">Thông tin liên hệ</h3>
+                            <p>Điện thoại và email dùng cho liên lạc nội bộ.</p>
+                        </div>
+                    </div>
+
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <label asp-for="Phone">Số điện thoại <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <input asp-for="Phone" class="form-control cf-control" inputmode="tel" maxlength="15" autocomplete="tel" required />
+                            <span asp-validation-for="Phone" class="cf-validation"></span>
+                        </div>
+
+                        <div class="cf-field">
+                            <label asp-for="Email">Email công việc <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <input asp-for="Email" type="email" class="form-control cf-control" maxlength="255" autocomplete="email" required />
+                            <span asp-validation-for="Email" class="cf-validation"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cf-section" aria-labelledby="employeeWorkHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-diagram-3"></i></span>
+                        <div>
+                            <h3 id="employeeWorkHeading">Công việc và phân công</h3>
+                            <p>Phòng ban, vị trí và ngày bắt đầu công tác.</p>
+                        </div>
+                    </div>
+
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <label for="DepartmentId">Phòng ban</label>
+                            <select id="DepartmentId" name="departmentId" class="form-select cf-control" asp-items="ViewBag.DepartmentId">
+                                <option value="">-- Chọn phòng ban --</option>
+                            </select>
+                        </div>
+
+                        <div class="cf-field">
+                            <label for="PositionId">Vị trí công việc</label>
+                            <select id="PositionId" name="positionId" class="form-select cf-control" asp-items="ViewBag.PositionId">
+                                <option value="">-- Chọn vị trí --</option>
+                            </select>
+                        </div>
+
+                        <div class="cf-field">
+                            <label asp-for="JoinDate">Ngày vào làm</label>
+                            <input asp-for="JoinDate" type="date" class="form-control cf-control" lang="vi" />
+                            <span asp-validation-for="JoinDate" class="cf-validation"></span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cf-section" aria-labelledby="employeeAccountHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-shield-check"></i></span>
+                        <div>
+                            <h3 id="employeeAccountHeading">Tài khoản và trạng thái</h3>
+                            <p>Liên kết tài khoản hệ thống, mục tiêu chiến lược và trạng thái làm việc.</p>
+                        </div>
+                    </div>
+
+                    <div class="cf-field-grid cf-field-grid--wide-first">
+                        <div class="cf-field">
+                            <label asp-for="SystemUserId">Tài khoản liên kết</label>
+                            <select asp-for="SystemUserId" class="form-select cf-control" asp-items="ViewBag.SystemUserId" aria-describedby="systemUserHint">
+                                <option value="">-- Không liên kết tài khoản --</option>
+                            </select>
+                            <span asp-validation-for="SystemUserId" class="cf-validation"></span>
+                            <p id="systemUserHint" class="cf-hint">Mỗi tài khoản chỉ được liên kết với một nhân viên.</p>
+                        </div>
+
+                        <div class="cf-field">
+                            <label asp-for="StrategicGoalId">Mục tiêu chiến lược theo năm</label>
+                            <select asp-for="StrategicGoalId" class="form-select cf-control" asp-items="ViewBag.StrategicGoalId" aria-describedby="strategicGoalHint">
+                                <option value="">-- Không gắn mục tiêu cụ thể --</option>
+                            </select>
+                            <span asp-validation-for="StrategicGoalId" class="cf-validation"></span>
+                            <p id="strategicGoalHint" class="cf-hint">Chỉ hiển thị các mục tiêu theo năm đang hoạt động.</p>
+                        </div>
+
+                        <div class="cf-field">
+                            <span class="employee-status-label">Trạng thái hồ sơ</span>
+                            <label class="employee-status-option" for="isActiveSwitch">
+                                <input type="checkbox" id="isActiveSwitch" name="IsActive" value="true" @(Model.IsActive == true ? "checked" : "") />
+                                <span>
+                                    <strong>Đang làm việc</strong>
+                                    <small>Tắt để ngừng hoạt động và vô hiệu hóa phân công/tài khoản liên quan.</small>
+                                </span>
+                            </label>
+                            <input type="hidden" name="IsActive" value="false" />
+                        </div>
+                    </div>
+                </section>
+
+                <div class="cf-actions">
+                    <a asp-action="Index" class="cf-secondary-action">Hủy</a>
+                    <button type="submit"
+                            class="cf-primary-action"
+                            data-submit-button
+                            data-default-label="Lưu thay đổi"
+                            data-loading-label="Đang lưu...">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        <span data-submit-label>Lưu thay đổi</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="cf-guide employee-create-guide" aria-labelledby="employeeEditGuideHeading">
+            <div class="cf-guide__identity">
+                <span class="cf-guide__icon" aria-hidden="true"><i class="bi bi-info-circle"></i></span>
+                <div>
+                    <span class="cf-guide__eyebrow">Lưu ý chỉnh sửa</span>
+                    <h2 id="employeeEditGuideHeading">Trước khi lưu</h2>
                 </div>
             </div>
-        </div>
+            <p>Kiểm tra thông tin liên hệ và phân công trước khi xác nhận thay đổi.</p>
+
+            @if (Model.CreatedAt.HasValue)
+            {
+                <dl class="cf-preview-list">
+                    <div>
+                        <dt>Ngày tạo hồ sơ</dt>
+                        <dd>@Model.CreatedAt.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                    </div>
+                </dl>
+            }
+
+            <ul class="cf-guide__list employee-create-guide__list">
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Tắt trạng thái làm việc sẽ vô hiệu hóa phân công và tài khoản liên kết.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Tài khoản liên kết không được dùng bởi nhân viên khác.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Mục tiêu chiến lược phải thuộc phạm vi tenant hiện tại.</span></li>
+            </ul>
+        </aside>
     </div>
 </div>
 
-<style>
-    .fw-800 { font-weight: 800; }
-    .text-gradient { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .backdrop-blur { backdrop-filter: blur(10px); }
-    .tracking-wider { letter-spacing: 0.05em; }
-    
-    /* Premium Form Styling */
-    .form-icon-group {
-        position: relative;
-    }
-
-    .form-icon-group .input-wrapper {
-        position: relative;
-        transition: all 0.3s ease;
-        background: #fff;
-    }
-    
-    .form-icon-group .input-wrapper:focus-within {
-        border-color: #1a73e8 !important;
-        box-shadow: 0 8px 15px -5px rgba(0, 120, 212, 0.15) !important;
-        transform: translateY(-1px);
-    }
-    
-    .form-icon-group .input-wrapper i {
-        position: absolute;
-        left: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #94a3b8;
-        font-size: 1.1rem;
-        z-index: 10;
-        transition: color 0.3s;
-    }
-    
-    .form-control:focus, .form-select:focus {
-        box-shadow: none !important;
-        color: #1e293b;
-        background-color: transparent;
-    }
-    
-    .form-icon-group .input-wrapper:focus-within i {
-        color: #1a73e8;
-    }
-
-    /* Page effects */
-    .animate__animated { animation-duration: 0.8s; }
-    
-    .form-section {
-        background: rgba(248, 250, 252, 0.5);
-        padding: 20px;
-        border-radius: 16px;
-        border: 1px solid #f1f5f9;
-        transition: all 0.3s ease;
-    }
-
-    .form-section:hover {
-        background: rgba(248, 250, 252, 0.8);
-        border-color: #e2e8f0;
-    }
-</style>
+@section Styles {
+    <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/employees.css" asp-append-version="true" />
+}
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/create-form.js" asp-append-version="true"></script>
 }

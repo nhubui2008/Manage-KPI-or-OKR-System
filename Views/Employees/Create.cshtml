@@ -5,7 +5,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="cf-page employee-create-page" data-create-form>
+<div class="cf-page employee-create-page employees-page employee-form-page" data-create-form>
     <header class="cf-header">
         <div class="cf-header__content">
             <h1>Thêm nhân viên mới</h1>
@@ -253,78 +253,7 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
-    <style>
-        .employee-server-alert {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.65rem;
-        }
-
-        .employee-server-alert > i {
-            flex: 0 0 auto;
-            margin-top: 0.05rem;
-        }
-
-        .employee-server-alert strong,
-        .employee-server-alert span {
-            display: block;
-        }
-
-        .employee-status-label {
-            display: block;
-            margin-bottom: 0.45rem;
-            color: var(--cf-text);
-            font-size: 0.82rem;
-            font-weight: 750;
-        }
-
-        .employee-status-option {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.65rem;
-            min-height: 44px;
-            margin: 0;
-            border: 1px solid var(--cf-border-strong);
-            border-radius: 8px;
-            padding: 0.65rem 0.7rem;
-            background: #fff;
-            cursor: pointer;
-        }
-
-        .employee-status-option:has(input:checked) {
-            border-color: #9bd2b3;
-            background: #edf8f2;
-        }
-
-        .employee-status-option input {
-            width: 1.05rem;
-            height: 1.05rem;
-            flex: 0 0 auto;
-            margin: 0.15rem 0 0;
-            accent-color: var(--cf-success);
-        }
-
-        .employee-status-option strong,
-        .employee-status-option small {
-            display: block;
-        }
-
-        .employee-status-option strong {
-            color: var(--cf-text);
-            font-size: 0.8rem;
-        }
-
-        .employee-status-option small {
-            margin-top: 0.15rem;
-            color: var(--cf-muted);
-            font-size: 0.72rem;
-            line-height: 1.4;
-        }
-
-        .employee-create-guide__list {
-            margin-top: 1rem;
-        }
-    </style>
+    <link rel="stylesheet" href="~/css/employees.css" asp-append-version="true" />
 }
 
 @section Scripts {
