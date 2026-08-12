@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    document.addEventListener("DOMContentLoaded", function () {
+    function initWorkProjectCreate() {
         var root = document.querySelector("[data-workproject-create]");
         if (!root || root.dataset.workprojectCreateReady === "true") return;
         root.dataset.workprojectCreateReady = "true";
@@ -45,5 +45,13 @@
         okrSelect.addEventListener("change", updateRelationshipHint);
         kpiSelect.addEventListener("change", updateRelationshipHint);
         updateRelationshipHint();
-    });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initWorkProjectCreate);
+    } else {
+        initWorkProjectCreate();
+    }
+
+    document.addEventListener("instant:navigation-ready", initWorkProjectCreate);
 })();
