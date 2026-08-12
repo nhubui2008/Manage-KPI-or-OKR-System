@@ -16,189 +16,12 @@
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
-    <style>
-        .bonus-rules-page .bonus-rules-summary {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
-
-        .bonus-rules-page .bonus-rules-summary article {
-            border-right: 1px solid var(--evaluation-line);
-            border-bottom: 0;
-        }
-
-        .bonus-rules-page .bonus-rules-summary article:last-child {
-            border-right: 0;
-        }
-
-        .bonus-rules-page .bonus-rules-summary article:nth-child(1) strong {
-            color: #1d4ed8;
-        }
-
-        .bonus-rules-page .bonus-rules-summary article:nth-child(2) strong {
-            color: #15803d;
-        }
-
-        .bonus-rules-page .bonus-rules-summary article:nth-child(3) strong {
-            color: #a15c07;
-        }
-
-        .bonus-rules-page .bonus-rules-summary article:nth-child(4) strong {
-            color: #7c3aed;
-        }
-
-        .bonus-rules-page .bonus-rules-table {
-            min-width: 760px;
-        }
-
-        .bonus-rules-page .bonus-rule-rank {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            min-width: 220px;
-        }
-
-        .bonus-rules-page .bonus-rule-rank__mark {
-            display: inline-grid;
-            width: 38px;
-            height: 38px;
-            flex: 0 0 38px;
-            place-items: center;
-            border-radius: 8px;
-            background: var(--evaluation-brand-soft);
-            color: var(--evaluation-brand);
-        }
-
-        .bonus-rules-page .bonus-rule-rank strong,
-        .bonus-rules-page .bonus-rule-rank small {
-            display: block;
-        }
-
-        .bonus-rules-page .bonus-rule-rank small {
-            max-width: 360px;
-            margin-top: 0.15rem;
-            color: var(--evaluation-muted);
-            font-size: 0.75rem;
-        }
-
-        .bonus-rules-page .bonus-rule-percentage {
-            display: inline-flex;
-            align-items: center;
-            min-height: 30px;
-            border: 1px solid #b8dfcc;
-            border-radius: 7px;
-            padding: 0.3rem 0.6rem;
-            background: #edf8f2;
-            color: #126b38;
-            font-size: 0.78rem;
-            font-weight: 800;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .bonus-rules-page .bonus-rule-amount {
-            color: #172033;
-            font-size: 0.86rem;
-            font-weight: 750;
-            font-variant-numeric: tabular-nums;
-            white-space: nowrap;
-        }
-
-        .bonus-rules-page .bonus-rule-card h2 {
-            margin-bottom: 0.2rem;
-        }
-
-        .bonus-rules-page .bonus-rule-card .evaluation-card-footer {
-            justify-content: flex-end;
-        }
-
-        .bonus-rule-modal .bonus-rule-form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 0.85rem;
-        }
-
-        .bonus-rule-modal .bonus-rule-form-grid label {
-            min-width: 0;
-        }
-
-        .bonus-rule-modal .input-group {
-            display: flex;
-            flex-wrap: nowrap;
-            align-items: stretch;
-            width: 100%;
-        }
-
-        .bonus-rule-modal .input-group > input {
-            width: 1%;
-            min-width: 0;
-            flex: 1 1 auto;
-            border-top-right-radius: 0;
-            border-bottom-right-radius: 0;
-        }
-
-        .bonus-rule-modal .bonus-rule-form-field--full {
-            grid-column: 1 / -1;
-        }
-
-        .bonus-rule-modal .input-group-text {
-            display: inline-flex;
-            min-width: 58px;
-            flex: 0 0 auto;
-            align-items: center;
-            justify-content: center;
-            border-color: #d7dbe2;
-            border-left: 0;
-            border-radius: 0 8px 8px 0;
-            background: #f7f9fc;
-            color: #64748b;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .bonus-rule-modal .evaluation-form-hint {
-            margin-top: 0.35rem;
-        }
-
-        @@media (max-width: 900px) {
-            .bonus-rules-page .bonus-rules-summary {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .bonus-rules-page .bonus-rules-summary article:last-child {
-                grid-column: auto;
-            }
-
-            .bonus-rules-page .bonus-rules-summary article {
-                border-right: 1px solid var(--evaluation-line);
-                border-bottom: 0;
-            }
-
-            .bonus-rules-page .bonus-rules-summary article:nth-child(2n) {
-                border-right: 0;
-            }
-
-            .bonus-rules-page .bonus-rules-summary article:nth-child(-n + 2) {
-                border-bottom: 1px solid var(--evaluation-line);
-            }
-
-            .bonus-rules-page .bonus-rule-card .evaluation-actions {
-                justify-content: flex-end;
-            }
-        }
-
-        @@media (max-width: 575.98px) {
-            .bonus-rule-modal .bonus-rule-form-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .bonus-rule-modal .bonus-rule-form-field--full {
-                grid-column: auto;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="~/css/bonus-rules.css" asp-append-version="true" />
 }
 
 <div class="evaluation-page bonus-rules-page">
+    <div class="d-none">@Html.AntiForgeryToken()</div>
+
     <header class="evaluation-page-header">
         <div>
             <h1>Quy định Thưởng &amp; Phạt KPI</h1>
@@ -462,11 +285,11 @@
                         <label class="bonus-rule-form-field--full" for="editRankId">
                             <span>Xếp hạng áp dụng</span>
                             <select name="RankId" id="editRankId" required>
-                            <option value="">-- Chọn xếp hạng --</option>
-                            @foreach (var rk in allRanks)
-                            {
-                                <option value="@rk.Id">@rk.RankCode - @rk.Description</option>
-                            }
+                                <option value="">-- Chọn xếp hạng --</option>
+                                @foreach (var rk in allRanks)
+                                {
+                                    <option value="@rk.Id">@rk.RankCode - @rk.Description</option>
+                                }
                             </select>
                         </label>
                         <label for="editBonusPercentage">
@@ -498,38 +321,5 @@
 </div>
 
 @section Scripts {
-    <script>
-        function showEditModal(id, rankId, bonus, amount) {
-            $('#editId').val(id);
-            $('#editRankId').val(rankId);
-            
-            // Format bonus
-            $('#editBonusPercentage').val(bonus ? parseFloat(bonus).toString() : '');
-            
-            // Format amount with dots for display
-            let formattedAmount = amount ? amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : '';
-            $('#editFixedAmount').val(formattedAmount);
-            
-            const modal = new bootstrap.Modal(document.getElementById('editModal'));
-            modal.show();
-        }
-
-        $(document).ready(function() {
-            // Thousands separator formatting in real-time
-            $(document).on('input', '.number-format', function() {
-                // Get raw value (digits only)
-                let val = $(this).val().replace(/\D/g, '');
-                // Format with dots
-                $(this).val(val.replace(/\B(?=(\d{3})+(?!\d))/g, "."));
-            });
-
-            // Strip dots before any form submit on this page
-            $('form').on('submit', function() {
-                $(this).find('.number-format').each(function() {
-                    let rawValue = $(this).val().replace(/\./g, '');
-                    $(this).val(rawValue);
-                });
-            });
-        });
-    </script>
+    <script src="~/js/bonus-rules.js" asp-append-version="true"></script>
 }

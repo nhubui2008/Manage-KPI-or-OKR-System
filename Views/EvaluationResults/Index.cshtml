@@ -20,7 +20,7 @@
             description = r.Description ?? "Chưa phân loại",
             minScore = r.MinScore ?? 0
         }));
-    
+
     bool canManage = User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR");
     bool canSubmitEvaluation = ViewBag.CanSubmitEvaluation == true;
     bool canReviewEvaluation = ViewBag.CanReviewEvaluation == true;
@@ -48,340 +48,13 @@
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
-    <style>
-        .evaluation-results-page {
-            --result-warning-bg: #fff6df;
-            --result-warning-ink: #98620e;
-            --result-success-bg: #eaf7f3;
-            --result-success-ink: #087466;
-            --result-danger-bg: #fff0ee;
-            --result-danger-ink: #b42318;
-        }
-
-        .evaluation-results-actions {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 0.6rem;
-            flex-wrap: wrap;
-        }
-
-        .evaluation-results-summary {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
-
-        .evaluation-results-summary article:nth-child(2) strong {
-            color: var(--result-warning-ink);
-        }
-
-        .evaluation-results-summary article:nth-child(3) strong {
-            color: var(--result-success-ink);
-        }
-
-        .evaluation-results-summary article:nth-child(4) strong {
-            color: var(--result-danger-ink);
-        }
-
-        .evaluation-results-panel {
-            padding-bottom: 0.75rem;
-        }
-
-        .evaluation-results-table {
-            min-width: 1080px;
-        }
-
-        .evaluation-result-person {
-            display: flex;
-            align-items: center;
-            gap: 0.65rem;
-            min-width: 170px;
-        }
-
-        .evaluation-result-avatar {
-            display: inline-grid;
-            width: 34px;
-            height: 34px;
-            flex: 0 0 34px;
-            place-items: center;
-            border-radius: 8px;
-            background: var(--evaluation-brand-soft);
-            color: var(--evaluation-brand);
-            font-size: 0.72rem;
-            font-weight: 800;
-        }
-
-        .evaluation-result-person strong {
-            display: block;
-            color: var(--evaluation-ink);
-            font-size: 0.88rem;
-        }
-
-        .evaluation-result-period {
-            min-width: 150px;
-            color: var(--evaluation-muted);
-            font-size: 0.82rem;
-        }
-
-        .evaluation-result-score,
-        .evaluation-result-rank {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 28px;
-            border: 1px solid transparent;
-            border-radius: 7px;
-            padding: 0.3rem 0.55rem;
-            font-size: 0.74rem;
-            font-weight: 800;
-            white-space: nowrap;
-        }
-
-        .evaluation-result-score--success {
-            border-color: #c8ebe2;
-            background: var(--result-success-bg);
-            color: var(--result-success-ink);
-        }
-
-        .evaluation-result-score--primary {
-            border-color: var(--evaluation-brand-border);
-            background: var(--evaluation-brand-soft);
-            color: var(--evaluation-brand-dark);
-        }
-
-        .evaluation-result-score--warning {
-            border-color: #f5dfaa;
-            background: var(--result-warning-bg);
-            color: var(--result-warning-ink);
-        }
-
-        .evaluation-result-score--danger {
-            border-color: #f4c8c3;
-            background: var(--result-danger-bg);
-            color: var(--result-danger-ink);
-        }
-
-        .evaluation-result-rank {
-            border-color: var(--evaluation-brand);
-            background: var(--evaluation-brand);
-            color: #fff;
-        }
-
-        .evaluation-result-classification {
-            color: #344054;
-            font-size: 0.82rem;
-            font-weight: 650;
-            white-space: nowrap;
-        }
-
-        .evaluation-result-status {
-            display: inline-flex;
-            min-height: 28px;
-            align-items: center;
-            border-width: 1px;
-            border-style: solid;
-            border-radius: 7px;
-            padding: 0.3rem 0.55rem;
-            font-size: 0.72rem;
-            font-weight: 750;
-            white-space: nowrap;
-        }
-
-        .evaluation-result-submitter {
-            margin-top: 0.3rem;
-            color: var(--evaluation-muted);
-            font-size: 0.7rem;
-        }
-
-        .evaluation-result-comment {
-            display: inline-block;
-            max-width: 230px;
-            overflow: hidden;
-            color: var(--evaluation-muted);
-            font-size: 0.8rem;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .evaluation-results-page .evaluation-actions {
-            min-width: 92px;
-        }
-
-        .evaluation-results-page .evaluation-icon-button {
-            cursor: pointer;
-        }
-
-        .evaluation-result-card__header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 0.75rem;
-        }
-
-        .evaluation-result-card__period {
-            margin: 0.2rem 0 0;
-            color: var(--evaluation-muted);
-            font-size: 0.76rem;
-        }
-
-        .evaluation-result-card__details {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 0.55rem;
-            margin: 0.85rem 0;
-        }
-
-        .evaluation-result-card__details > div {
-            min-width: 0;
-            border-radius: 7px;
-            padding: 0.6rem;
-            background: var(--evaluation-soft);
-        }
-
-        .evaluation-result-card__details dt {
-            margin-bottom: 0.25rem;
-            color: var(--evaluation-muted);
-            font-size: 0.67rem;
-            font-weight: 700;
-        }
-
-        .evaluation-result-card__details dd {
-            margin: 0;
-            color: var(--evaluation-ink);
-            font-size: 0.8rem;
-        }
-
-        .evaluation-result-card__comment {
-            margin: 0;
-            color: var(--evaluation-muted);
-            font-size: 0.78rem;
-            line-height: 1.5;
-        }
-
-        .evaluation-result-card__footer {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 0.4rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid var(--evaluation-line);
-        }
-
-        .evaluation-result-card__footer form {
-            margin: 0;
-        }
-
-        .evaluation-results-page .evaluation-modal textarea {
-            width: 100%;
-            border: 1px solid #d7dbe2;
-            border-radius: 8px;
-            background: #fff;
-            color: var(--evaluation-ink);
-            padding: 0.65rem 0.75rem;
-            outline: none;
-            resize: vertical;
-        }
-
-        .evaluation-results-page .evaluation-modal textarea:focus {
-            border-color: var(--evaluation-brand);
-            box-shadow: 0 0 0 3px rgba(91, 66, 214, 0.18);
-        }
-
-        .evaluation-results-page .evaluation-modal input[readonly] {
-            background: var(--evaluation-soft);
-            color: #475467;
-        }
-
-        .evaluation-ai-action {
-            min-height: 34px;
-            padding: 0.45rem 0.65rem;
-            font-size: 0.74rem;
-        }
-
-        @@media (max-width: 1100px) {
-            .evaluation-results-summary {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .evaluation-results-summary article {
-                border-right: 1px solid var(--evaluation-line);
-                border-bottom: 1px solid var(--evaluation-line);
-            }
-
-            .evaluation-results-summary article:nth-child(2n) {
-                border-right: 0;
-            }
-
-            .evaluation-results-summary article:nth-child(n+3) {
-                border-bottom: 0;
-            }
-
-            .evaluation-results-summary article:nth-child(3) {
-                border-right: 1px solid var(--evaluation-line);
-            }
-
-            .evaluation-results-summary article:last-child {
-                grid-column: auto;
-            }
-        }
-
-        @@media (max-width: 900px) {
-            .evaluation-results-actions {
-                flex-wrap: nowrap;
-            }
-
-            .evaluation-results-actions .evaluation-primary-action,
-            .evaluation-results-actions .evaluation-secondary-action {
-                min-width: 44px;
-                padding-inline: 0.8rem;
-            }
-
-            .evaluation-results-actions .evaluation-primary-action span,
-            .evaluation-results-actions .evaluation-secondary-action span {
-                display: none;
-            }
-
-            .evaluation-result-card {
-                border: 1px solid var(--evaluation-line);
-                border-radius: 9px;
-                padding: 0.9rem;
-                background: #fff;
-            }
-        }
-
-        @@media (max-width: 520px) {
-            .evaluation-results-page .evaluation-page-header {
-                gap: 0.75rem;
-            }
-
-            .evaluation-results-summary {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .evaluation-results-summary article {
-                padding: 0.8rem;
-            }
-
-            .evaluation-results-summary article:last-child {
-                grid-column: auto;
-            }
-
-            .evaluation-result-card__details {
-                grid-template-columns: 1fr;
-            }
-
-            .evaluation-results-page .evaluation-modal .modal-footer {
-                grid-template-columns: 1fr;
-            }
-
-            .evaluation-results-page .evaluation-modal .modal-footer > * {
-                width: 100%;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="~/css/evaluation-results.css" asp-append-version="true" />
 }
 
 <div class="evaluation-page evaluation-results-page">
+    <div class="d-none">@Html.AntiForgeryToken()</div>
+    <script id="evaluationRankScaleConfig" type="application/json">@Html.Raw(rankScaleJson)</script>
+
     <header class="evaluation-page-header">
         <div>
             <h1>Kết quả Đánh giá</h1>
@@ -677,42 +350,42 @@
                 </div>
                 <form asp-action="Create" method="post">
                     <div class="modal-body">
-                        <label>
-                            <span>Nhân viên</span>
-                            <select name="EmployeeId" class="form-select" required>
+                        <div class="mb-3">
+                            <label class="form-label"><span>Nhân viên</span></label>
+                            <select name="EmployeeId" class="form-select evaluation-modal-control" required>
                                 <option value="">-- Chọn nhân viên --</option>
                                 @foreach (var e in allEmployees)
                                 {
                                     <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
                                 }
                             </select>
-                        </label>
-                        <label>
-                            <span>Kỳ đánh giá</span>
-                            <select name="PeriodId" class="form-select" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><span>Kỳ đánh giá</span></label>
+                            <select name="PeriodId" class="form-select evaluation-modal-control" required>
                                 <option value="">-- Chọn kỳ --</option>
                                 @foreach (var p in allPeriods)
                                 {
                                     <option value="@p.Id">@p.PeriodName</option>
                                 }
                             </select>
-                        </label>
-                        <label>
-                            <span>Tổng điểm</span>
-                            <input type="number" name="TotalScore" id="createTotalScore" class="form-control js-score-input" step="0.01" min="0" max="100" required data-rank-output="createRankDisplay" data-classification-output="createClassificationDisplay" />
-                        </label>
-                        <label>
-                            <span>Xếp hạng</span>
-                            <input type="text" id="createRankDisplay" class="form-control" value="Tự động theo tổng điểm" readonly />
-                        </label>
-                        <label>
-                            <span>Phân loại</span>
-                            <input type="text" id="createClassificationDisplay" class="form-control" value="Tự động theo tổng điểm" readonly />
-                        </label>
-                        <label>
-                            <span>Nhận xét đánh giá</span>
-                            <textarea name="ReviewComment" class="form-control" rows="4" maxlength="2000" placeholder="Nhập nhận xét hoặc để trống để bổ sung sau"></textarea>
-                        </label>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><span>Tổng điểm</span></label>
+                            <input type="number" name="TotalScore" id="createTotalScore" class="form-control evaluation-modal-control js-score-input" step="0.01" min="0" max="100" required data-rank-output="createRankDisplay" data-classification-output="createClassificationDisplay" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><span>Xếp hạng</span></label>
+                            <input type="text" id="createRankDisplay" class="form-control evaluation-modal-control" value="Tự động theo tổng điểm" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><span>Phân loại</span></label>
+                            <input type="text" id="createClassificationDisplay" class="form-control evaluation-modal-control" value="Tự động theo tổng điểm" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><span>Nhận xét đánh giá</span></label>
+                            <textarea name="ReviewComment" class="form-control evaluation-modal-control" rows="4" maxlength="2000" placeholder="Nhập nhận xét hoặc để trống để bổ sung sau"></textarea>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="evaluation-secondary-action" data-bs-dismiss="modal">Hủy</button>
@@ -733,39 +406,39 @@
                 </div>
                 <form asp-action="Edit" method="post">
                     <div class="modal-body">
-                    <input type="hidden" name="Id" id="editId" />
-                        <label>
-                            <span>Nhân viên</span>
-                            <select name="EmployeeId" id="editEmployeeId" class="form-select" required>
+                        <input type="hidden" name="Id" id="editId" />
+                        <div class="mb-3">
+                            <label class="form-label"><span>Nhân viên</span></label>
+                            <select name="EmployeeId" id="editEmployeeId" class="form-select evaluation-modal-control" required>
                                 <option value="">-- Chọn nhân viên --</option>
                                 @foreach (var e in allEmployees)
                                 {
                                     <option value="@e.Id">@e.FullName (@e.EmployeeCode)</option>
                                 }
                             </select>
-                        </label>
-                        <label>
-                            <span>Kỳ đánh giá</span>
-                            <select name="PeriodId" id="editPeriodId" class="form-select" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><span>Kỳ đánh giá</span></label>
+                            <select name="PeriodId" id="editPeriodId" class="form-select evaluation-modal-control" required>
                                 <option value="">-- Chọn kỳ --</option>
                                 @foreach (var p in allPeriods)
                                 {
                                     <option value="@p.Id">@p.PeriodName</option>
                                 }
                             </select>
-                        </label>
-                        <label>
-                            <span>Tổng điểm</span>
-                            <input type="number" name="TotalScore" id="editTotalScore" class="form-control js-score-input" step="0.01" min="0" max="100" required data-rank-output="editRankDisplay" data-classification-output="editClassificationDisplay" />
-                        </label>
-                        <label>
-                            <span>Xếp hạng</span>
-                            <input type="text" id="editRankDisplay" class="form-control" value="Tự động theo tổng điểm" readonly />
-                        </label>
-                        <label>
-                            <span>Phân loại</span>
-                            <input type="text" id="editClassificationDisplay" class="form-control" value="Tự động theo tổng điểm" readonly />
-                        </label>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><span>Tổng điểm</span></label>
+                            <input type="number" name="TotalScore" id="editTotalScore" class="form-control evaluation-modal-control js-score-input" step="0.01" min="0" max="100" required data-rank-output="editRankDisplay" data-classification-output="editClassificationDisplay" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><span>Xếp hạng</span></label>
+                            <input type="text" id="editRankDisplay" class="form-control evaluation-modal-control" value="Tự động theo tổng điểm" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><span>Phân loại</span></label>
+                            <input type="text" id="editClassificationDisplay" class="form-control evaluation-modal-control" value="Tự động theo tổng điểm" readonly />
+                        </div>
                         <div>
                             <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                                 <label for="editReviewComment" class="mb-0">
@@ -775,7 +448,7 @@
                                     <i class="bi bi-magic" aria-hidden="true"></i> AI Viết nhận xét
                                 </button>
                             </div>
-                            <textarea name="ReviewComment" id="editReviewComment" class="form-control" rows="5" maxlength="2000" placeholder="AI sẽ tạo bản nháp, quản lý có thể chỉnh sửa trước khi lưu"></textarea>
+                            <textarea name="ReviewComment" id="editReviewComment" class="form-control evaluation-modal-control" rows="5" maxlength="2000" placeholder="AI sẽ tạo bản nháp, quản lý có thể chỉnh sửa trước khi lưu"></textarea>
                             <div id="aiReviewDraftPanel" class="border rounded-3 bg-light p-3 mt-3 d-none" role="status" aria-live="polite">
                                 <div class="d-flex flex-wrap justify-content-between gap-2 align-items-start mb-2">
                                     <div>
@@ -806,263 +479,6 @@
     </div>
 </div>
 
-<script>
-    const evaluationRankScale = @Html.Raw(rankScaleJson);
-    let activeEvaluationReviewDraft = null;
-    let evaluationReviewSourceSnapshot = null;
-
-    function captureEvaluationReviewSource() {
-        const score = Number.parseFloat(normalizeDecimalValue(document.getElementById('editTotalScore')?.value || '0'));
-        return {
-            resultId: document.getElementById('editId')?.value || '',
-            employeeId: document.getElementById('editEmployeeId')?.value || '',
-            periodId: document.getElementById('editPeriodId')?.value || '',
-            score: Number.isNaN(score) ? null : score
-        };
-    }
-
-    function evaluationReviewSourceMatches(snapshot) {
-        if (!snapshot) return false;
-        const current = captureEvaluationReviewSource();
-        return current.resultId === snapshot.resultId &&
-            current.employeeId === snapshot.employeeId &&
-            current.periodId === snapshot.periodId &&
-            current.score === snapshot.score;
-    }
-
-    function syncEvaluationReviewDraftEligibility() {
-        if (!activeEvaluationReviewDraft) return;
-        const sourceMatches = evaluationReviewSourceMatches(activeEvaluationReviewDraft.sourceSnapshot);
-        document.getElementById('aiReviewDraftSourceWarning')?.classList.toggle('d-none', sourceMatches);
-        const applyButton = document.getElementById('aiApplyReviewDraftBtn');
-        if (applyButton) {
-            applyButton.disabled = !activeEvaluationReviewDraft.hasCitations || !sourceMatches;
-        }
-    }
-
-    function resetEvaluationReviewDraft() {
-        activeEvaluationReviewDraft = null;
-        evaluationReviewSourceSnapshot = null;
-        const panel = document.getElementById('aiReviewDraftPanel');
-        panel?.classList.add('d-none');
-        document.getElementById('aiReviewDraftSourceWarning')?.classList.add('d-none');
-        const text = document.getElementById('aiReviewDraftText');
-        if (text) text.textContent = '';
-        const citations = document.getElementById('aiReviewDraftCitations');
-        if (citations) citations.replaceChildren();
-    }
-
-    function showEvaluationReviewDraft(data) {
-        if (!evaluationReviewSourceSnapshot ||
-            String(data.evaluationResultId || '') !== evaluationReviewSourceSnapshot.resultId) {
-            window.AppFeedback.toast({
-                tone: 'warning',
-                eyebrow: 'AI Nhận xét',
-                title: 'Bản nháp không còn khớp',
-                message: 'Kết quả đang mở đã thay đổi. Hãy tạo lại bản nháp AI.'
-            });
-            return;
-        }
-        activeEvaluationReviewDraft = {
-            draftActionId: data.draftActionId,
-            rowVersion: data.rowVersion,
-            text: data.text || '',
-            hasCitations: Array.isArray(data.citations) && data.citations.length > 0,
-            sourceSnapshot: { ...evaluationReviewSourceSnapshot }
-        };
-        const text = document.getElementById('aiReviewDraftText');
-        if (text) text.textContent = activeEvaluationReviewDraft.text;
-        const citations = document.getElementById('aiReviewDraftCitations');
-        citations?.replaceChildren();
-        (data.citations || []).forEach(citation => {
-            const item = document.createElement('li');
-            const label = citation.title || `${citation.sourceType || 'Nguồn'} #${citation.sourceId || ''}`;
-            item.textContent = citation.versionId ? `${label} · phiên bản ${citation.versionId}` : label;
-            citations?.appendChild(item);
-        });
-        if (citations && !citations.children.length) {
-            const item = document.createElement('li');
-            item.textContent = 'Chưa có citation hợp lệ; không thể áp dụng bản nháp.';
-            citations.appendChild(item);
-        }
-        document.getElementById('aiReviewDraftPanel')?.classList.remove('d-none');
-        syncEvaluationReviewDraftEligibility();
-    }
-
-    function normalizeDecimalValue(value) {
-        return String(value ?? '').replace(',', '.');
-    }
-
-    function resolveRank(score) {
-        const numericScore = Number.parseFloat(normalizeDecimalValue(score));
-        if (Number.isNaN(numericScore)) return null;
-        return evaluationRankScale.find(rank => numericScore >= Number(rank.minScore));
-    }
-
-    function updateRankOutputs(scoreInput) {
-        const rankOutput = document.getElementById(scoreInput.dataset.rankOutput);
-        const classificationOutput = document.getElementById(scoreInput.dataset.classificationOutput);
-        const rank = resolveRank(scoreInput.value);
-        if (rank) {
-            if (rankOutput) rankOutput.value = rank.rankCode;
-            if (classificationOutput) classificationOutput.value = rank.description;
-            return;
-        }
-
-        if (rankOutput) rankOutput.value = 'Chưa có hạng phù hợp';
-        if (classificationOutput) classificationOutput.value = 'Chưa phân loại';
-    }
-
-    function editResult(id, empId, periodId, score, rankId, classification, reviewComment) {
-        resetEvaluationReviewDraft();
-        const normalizedScore = normalizeDecimalValue(score || '0');
-        document.getElementById('editId').value = id;
-        document.getElementById('editEmployeeId').value = empId;
-        document.getElementById('editPeriodId').value = periodId;
-        document.getElementById('editTotalScore').value = normalizedScore;
-        updateRankOutputs(document.getElementById('editTotalScore'));
-        document.getElementById('editReviewComment').value = reviewComment || "";
-        evaluationReviewSourceSnapshot = captureEvaluationReviewSource();
-        document.getElementById('editModalScoreHeader').innerText = Number.parseFloat(normalizedScore || '0').toLocaleString('vi-VN');
-        
-        var editModal = new bootstrap.Modal(document.getElementById('editModal'));
-        editModal.show();
-    }
-
-    document.querySelectorAll('.js-edit-result').forEach(button => {
-        button.addEventListener('click', function () {
-            editResult(
-                this.dataset.id,
-                this.dataset.employeeId,
-                this.dataset.periodId,
-                this.dataset.score,
-                this.dataset.rankId,
-                this.dataset.classification,
-                this.dataset.reviewComment
-            );
-        });
-    });
-
-    document.querySelectorAll('.js-score-input').forEach(input => {
-        input.addEventListener('input', function () {
-            updateRankOutputs(this);
-            if (this.id === 'editTotalScore') {
-                const numericScore = Number.parseFloat(normalizeDecimalValue(this.value || '0'));
-                document.getElementById('editModalScoreHeader').innerText = Number.isNaN(numericScore)
-                    ? '0'
-                    : numericScore.toLocaleString('vi-VN');
-            }
-            syncEvaluationReviewDraftEligibility();
-        });
-        updateRankOutputs(input);
-    });
-
-    ['editEmployeeId', 'editPeriodId'].forEach(id => {
-        document.getElementById(id)?.addEventListener('change', syncEvaluationReviewDraftEligibility);
-    });
-
-    document.getElementById('aiGenerateReviewBtn')?.addEventListener('click', async function () {
-        const resultId = parseInt(document.getElementById('editId').value || '0', 10);
-        if (!resultId) return;
-        if (!evaluationReviewSourceMatches(evaluationReviewSourceSnapshot)) {
-            window.AppFeedback.toast({
-                tone: 'warning',
-                eyebrow: 'AI Nhận xét',
-                title: 'Dữ liệu chưa được lưu',
-                message: 'Hãy lưu nhân viên, kỳ và tổng điểm trước khi tạo bản nháp AI.'
-            });
-            return;
-        }
-
-        const btn = this;
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> AI đang viết...';
-
-        try {
-            const response = await fetch('/AI/GenerateReview', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...window.antiForgeryHeaders()
-                },
-                body: JSON.stringify({ evaluationResultId: resultId })
-            });
-            const data = await response.json();
-            if (!response.ok || data.success === false) {
-                const message = data.warnings?.[0] || 'Không thể sinh nhận xét AI.';
-                window.AppFeedback.toast({ tone: 'warning', eyebrow: 'AI Nhận xét', title: 'AI chưa sẵn sàng', message });
-                return;
-            }
-            showEvaluationReviewDraft(data);
-        } catch {
-            window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối AI', title: 'Lỗi kết nối', message: 'Không thể kết nối AI. Vui lòng thử lại sau.' });
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-        }
-    });
-
-    async function decideEvaluationReviewDraft(decision) {
-        if (!activeEvaluationReviewDraft) return;
-        if (decision === 'Accepted' &&
-            !evaluationReviewSourceMatches(activeEvaluationReviewDraft.sourceSnapshot)) {
-            syncEvaluationReviewDraftEligibility();
-            window.AppFeedback.toast({
-                tone: 'warning',
-                eyebrow: 'AI Nhận xét',
-                title: 'Nguồn đã thay đổi',
-                message: 'Hãy lưu kết quả trước rồi tạo lại bản nháp AI.'
-            });
-            return;
-        }
-        if (decision === 'Accepted') {
-            const currentText = document.getElementById('editReviewComment').value;
-            if (currentText.trim() && currentText !== activeEvaluationReviewDraft.text &&
-                !window.confirm('Ô nhận xét đang có nội dung. Bạn có muốn thay bằng bản nháp AI vừa duyệt không?')) {
-                return;
-            }
-        }
-        const applyButton = document.getElementById('aiApplyReviewDraftBtn');
-        const rejectButton = document.getElementById('aiRejectReviewDraftBtn');
-        applyButton.disabled = true;
-        rejectButton.disabled = true;
-        try {
-            const response = await fetch('/AI/DecideEvaluationReviewDraft', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...window.antiForgeryHeaders()
-                },
-                body: JSON.stringify({
-                    draftActionId: activeEvaluationReviewDraft.draftActionId,
-                    rowVersion: activeEvaluationReviewDraft.rowVersion,
-                    decision
-                })
-            });
-            const data = await response.json();
-            if (!response.ok || data.success === false) {
-                const message = data.warnings?.[0] || 'Bản nháp AI không còn hợp lệ.';
-                window.AppFeedback.toast({ tone: 'warning', eyebrow: 'AI Nhận xét', title: 'Không thể quyết định bản nháp', message });
-                return;
-            }
-
-            if (decision === 'Accepted') {
-                const input = document.getElementById('editReviewComment');
-                const draftText = data.text || activeEvaluationReviewDraft.text;
-                input.value = draftText;
-                window.AppFeedback.toast({ tone: 'success', eyebrow: 'AI Nhận xét', title: 'Đã chèn vào bản nháp', message: 'Hãy chỉnh sửa nếu cần và bấm Cập nhật kết quả để lưu chính thức.' });
-            }
-            resetEvaluationReviewDraft();
-        } catch {
-            window.AppFeedback.toast({ tone: 'error', eyebrow: 'Kết nối AI', title: 'Lỗi kết nối', message: 'Không thể cập nhật bản nháp AI. Vui lòng thử lại.' });
-        } finally {
-            applyButton.disabled = false;
-            rejectButton.disabled = false;
-        }
-    }
-
-    document.getElementById('aiApplyReviewDraftBtn')?.addEventListener('click', () => decideEvaluationReviewDraft('Accepted'));
-    document.getElementById('aiRejectReviewDraftBtn')?.addEventListener('click', () => decideEvaluationReviewDraft('Rejected'));
-    document.getElementById('editModal')?.addEventListener('hidden.bs.modal', resetEvaluationReviewDraft);
-</script>
+@section Scripts {
+    <script src="~/js/evaluation-results.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,240 @@
+/* Velzon Theme - Evaluation Results & Review Board Styles */
+:root {
+    --eval-result-bg: #f3f3f9;
+    --eval-result-card-bg: #ffffff;
+    --eval-result-border: #e9ebec;
+    --eval-result-primary: #556ee6;
+    --eval-result-primary-dark: #394da9;
+    --eval-result-ink: #495057;
+    --eval-result-heading: #343a40;
+    --eval-result-muted: #878a99;
+    --eval-result-radius: 4px;
+
+    --result-warning-bg: #fff6df;
+    --result-warning-ink: #98620e;
+    --result-success-bg: #eaf7f3;
+    --result-success-ink: #087466;
+    --result-danger-bg: #fff0ee;
+    --result-danger-ink: #b42318;
+}
+
+.evaluation-results-page {
+    color: var(--eval-result-ink);
+    max-width: 1440px;
+    margin: 0 auto;
+    padding-bottom: 2.5rem;
+}
+
+.evaluation-results-page .evaluation-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0 1.25rem;
+    border-bottom: 1px solid var(--eval-result-border);
+}
+
+.evaluation-results-page .evaluation-page-header h1 {
+    margin: 0 0 0.25rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--eval-result-heading);
+    line-height: 1.2;
+}
+
+.evaluation-results-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.evaluation-results-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.evaluation-results-summary article {
+    background: var(--eval-result-card-bg);
+    border: 1px solid var(--eval-result-border);
+    border-radius: var(--eval-result-radius);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.evaluation-results-summary span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--eval-result-muted);
+}
+
+.evaluation-results-summary strong {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--eval-result-heading);
+    margin: 0.35rem 0 0.15rem;
+}
+
+.evaluation-results-summary small {
+    font-size: 0.75rem;
+    color: var(--eval-result-muted);
+}
+
+.evaluation-results-summary article:nth-child(2) strong { color: var(--result-warning-ink); }
+.evaluation-results-summary article:nth-child(3) strong { color: var(--result-success-ink); }
+.evaluation-results-summary article:nth-child(4) strong { color: var(--result-danger-ink); }
+
+.evaluation-results-panel {
+    background: var(--eval-result-card-bg);
+    border: 1px solid var(--eval-result-border);
+    border-radius: var(--eval-result-radius);
+}
+
+.evaluation-results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.evaluation-result-person {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.evaluation-result-avatar {
+    display: inline-grid;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    place-items: center;
+    border-radius: var(--eval-result-radius);
+    background: rgba(85, 110, 230, 0.1);
+    color: var(--eval-result-primary);
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+.evaluation-result-person strong {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--eval-result-heading);
+}
+
+.evaluation-result-period {
+    color: var(--eval-result-muted);
+    font-size: 0.8125rem;
+}
+
+.evaluation-result-score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--eval-result-radius);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.evaluation-result-score--success {
+    background: var(--result-success-bg);
+    color: var(--result-success-ink);
+}
+
+.evaluation-result-score--primary {
+    background: rgba(85, 110, 230, 0.1);
+    color: var(--eval-result-primary-dark);
+}
+
+.evaluation-result-score--warning {
+    background: var(--result-warning-bg);
+    color: var(--result-warning-ink);
+}
+
+.evaluation-result-score--danger {
+    background: var(--result-danger-bg);
+    color: var(--result-danger-ink);
+}
+
+.evaluation-result-rank {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--eval-result-radius);
+    background: var(--eval-result-primary);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.evaluation-result-classification {
+    color: var(--eval-result-heading);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.evaluation-result-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--eval-result-radius);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.evaluation-result-submitter {
+    font-size: 0.75rem;
+    color: var(--eval-result-muted);
+    margin-top: 0.2rem;
+}
+
+.evaluation-result-comment {
+    display: inline-block;
+    max-width: 220px;
+    overflow: hidden;
+    color: var(--eval-result-muted);
+    font-size: 0.8125rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.evaluation-ai-action {
+    height: 30px;
+    padding: 0 0.6rem;
+    font-size: 0.75rem;
+}
+
+/* Review Board Specific Styles */
+.review-board-card {
+    background: var(--eval-result-card-bg);
+    border: 1px solid var(--eval-result-border);
+    border-radius: var(--eval-result-radius);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.review-board-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--eval-result-border);
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 991.98px) {
+    .evaluation-results-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    .evaluation-results-summary {
+        grid-template-columns: 1fr;
+    }
+}

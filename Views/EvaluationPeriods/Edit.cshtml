@@ -1,77 +1,178 @@
 @model Manage_KPI_or_OKR_System.Models.ViewModels.EvaluationPeriodInputViewModel
 @{
-    ViewData["Title"] = "Sửa Kỳ đánh giá";
+    ViewData["Title"] = "Sửa kỳ đánh giá";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="page-content">
-    <div class="page-header evaluation-form-header d-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h1 class="mb-2 fw-bold">Sửa kỳ đánh giá</h1>
-            <div class="page-breadcrumb">
+<div class="cf-page evaluation-edit" data-create-form data-evaluation-preview>
+    <header class="cf-header">
+        <div class="cf-header__content">
+            <h1>Sửa kỳ đánh giá</h1>
+            <nav class="cf-breadcrumb" aria-label="Điều hướng trang">
+                <a href="/">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
                 <a asp-action="Index">Kỳ đánh giá</a>
-                <span class="separator">/</span>
-                <span class="text-muted">@Model.PeriodName</span>
-            </div>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">@Model.PeriodName</span>
+            </nav>
+            <p class="cf-header__description">Cập nhật thông tin kỳ đánh giá. Nếu kỳ đã có dữ liệu liên kết, hệ thống sẽ bảo vệ cấu hình nghiệp vụ quan trọng.</p>
         </div>
-        <a asp-action="Index" class="btn-outline-custom">
-            <i class="bi bi-arrow-left me-2" aria-hidden="true"></i> Quay lại
+        <a asp-action="Index" class="cf-back-action">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Quay lại</span>
         </a>
-    </div>
+    </header>
 
-    <div class="content-card evaluation-edit-card border-0 shadow-sm mx-auto">
-        <div class="card-body-custom p-4 p-lg-5">
-            <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+    <div class="cf-layout">
+        <section class="cf-panel" aria-labelledby="evaluationFormHeading">
+            <div class="cf-panel__header">
+                <div>
+                    <h2 id="evaluationFormHeading">Thông tin kỳ</h2>
+                    <p>Các trường có dấu <span class="cf-required" aria-hidden="true">*</span> là bắt buộc.</p>
+                </div>
+            </div>
+
+            <form asp-action="Edit" asp-route-id="@Model.Id" method="post" class="cf-form" data-create-form-element>
                 <input asp-for="Id" type="hidden" />
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                <div asp-validation-summary="All" class="cf-alert" role="alert" tabindex="-1" data-error-summary></div>
 
-                <div class="mb-4">
-                    <label asp-for="PeriodName" class="form-label fw-semibold"></label>
-                    <input asp-for="PeriodName" class="form-control" autocomplete="off" />
-                    <span asp-validation-for="PeriodName" class="text-danger small"></span>
-                </div>
-
-                <div class="row g-4">
-                    <div class="col-md-4">
-                        <label asp-for="PeriodType" class="form-label fw-semibold"></label>
-                        <select asp-for="PeriodType" class="form-select no-select2">
-                            <option value="MONTH">Hàng tháng</option>
-                            <option value="QUARTER">Hàng quý</option>
-                            <option value="YEAR">Hàng năm</option>
-                        </select>
-                        <span asp-validation-for="PeriodType" class="text-danger small"></span>
+                <section class="cf-section" aria-labelledby="evaluationIdentityHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-pencil-square"></i></span>
+                        <div>
+                            <h3 id="evaluationIdentityHeading">Chỉnh sửa kỳ đánh giá</h3>
+                            <p>Cập nhật tên kỳ hoặc cấu hình thời gian.</p>
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label asp-for="StartDate" class="form-label fw-semibold"></label>
-                        <input asp-for="StartDate" type="date" class="form-control" />
-                        <span asp-validation-for="StartDate" class="text-danger small"></span>
+                    <div class="cf-field-grid cf-field-grid--wide-first">
+                        <div class="cf-field">
+                            <div class="cf-label-row">
+                                <label asp-for="PeriodName">Tên kỳ đánh giá <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                                <output id="periodNameCounter" class="cf-counter" for="PeriodName" data-character-counter>0/100</output>
+                            </div>
+                            <input asp-for="PeriodName"
+                                   class="form-control cf-control"
+                                   maxlength="100"
+                                   autocomplete="off"
+                                   placeholder="Ví dụ: Đánh giá quý 3/2026"
+                                   aria-describedby="periodNameHint periodNameCounter"
+                                   required />
+                            <span asp-validation-for="PeriodName" class="cf-validation"></span>
+                            <p id="periodNameHint" class="cf-hint">Tên phải khác các kỳ đang hoạt động và không vượt quá 100 ký tự.</p>
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="PeriodType">Loại kỳ <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <select asp-for="PeriodType"
+                                    class="form-select cf-control no-select2"
+                                    aria-describedby="periodTypeHint durationRule"
+                                    required>
+                                <option value="MONTH">Hàng tháng</option>
+                                <option value="QUARTER">Hàng quý</option>
+                                <option value="YEAR">Hàng năm</option>
+                            </select>
+                            <span asp-validation-for="PeriodType" class="cf-validation"></span>
+                            <p id="periodTypeHint" class="cf-hint">Loại kỳ quyết định khoảng số ngày hợp lệ.</p>
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label asp-for="EndDate" class="form-label fw-semibold"></label>
-                        <input asp-for="EndDate" type="date" class="form-control" />
-                        <span asp-validation-for="EndDate" class="text-danger small"></span>
+                </section>
+
+                <section class="cf-section" aria-labelledby="evaluationDatesHeading">
+                    <div class="cf-section__heading">
+                        <span class="cf-section__icon" aria-hidden="true"><i class="bi bi-calendar-range"></i></span>
+                        <div>
+                            <h3 id="evaluationDatesHeading">Khoảng thời gian</h3>
+                            <p>Server kiểm tra thứ tự ngày, độ dài theo loại kỳ và khoảng trùng cùng loại.</p>
+                        </div>
                     </div>
-                </div>
+                    <div class="cf-field-grid">
+                        <div class="cf-field">
+                            <label asp-for="StartDate">Ngày bắt đầu <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <input asp-for="StartDate"
+                                   asp-format="{0:yyyy-MM-dd}"
+                                   type="date"
+                                   class="form-control cf-control"
+                                   lang="vi"
+                                   aria-describedby="dateRangeHint durationRule"
+                                   required />
+                            <span asp-validation-for="StartDate" class="cf-validation"></span>
+                        </div>
+                        <div class="cf-field">
+                            <label asp-for="EndDate">Ngày kết thúc <span class="cf-required" aria-label="bắt buộc">*</span></label>
+                            <input asp-for="EndDate"
+                                   asp-format="{0:yyyy-MM-dd}"
+                                   type="date"
+                                   class="form-control cf-control"
+                                   lang="vi"
+                                   aria-describedby="dateRangeHint durationRule"
+                                   required />
+                            <span asp-validation-for="EndDate" class="cf-validation"></span>
+                        </div>
+                    </div>
+                    <p id="durationRule" class="cf-dynamic-hint evaluation-duration-rule" data-duration-rule>Chọn từ 28 đến 31 ngày cho kỳ tháng.</p>
+                    <p id="dateRangeHint" class="cf-hint">Ngày kết thúc không được trước ngày bắt đầu; hai kỳ đang hoạt động cùng loại không được chồng lấn.</p>
+                    <div class="cf-inline-note" role="status">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <span>Nếu kỳ đã có KPI, check-in hoặc kết quả đánh giá, hệ thống chỉ cho phép đổi tên để bảo toàn lịch sử.</span>
+                    </div>
+                </section>
 
-                <p class="text-muted small mt-4 mb-0">
-                    Nếu kỳ đã có KPI, check-in hoặc kết quả đánh giá, hệ thống chỉ cho phép đổi tên để bảo toàn lịch sử.
-                </p>
-
-                <div class="evaluation-form-actions d-flex flex-wrap justify-content-end gap-3 mt-4 pt-4 border-top">
-                    <a asp-action="Index" class="btn-outline-custom">Hủy</a>
-                    <button type="submit" class="btn-primary-custom">
-                        <i class="bi bi-check-lg me-2" aria-hidden="true"></i> Lưu thay đổi
+                <div class="cf-actions">
+                    <a asp-action="Index" class="cf-secondary-action">Hủy</a>
+                    <button type="submit"
+                            class="cf-primary-action"
+                            data-submit-button
+                            data-default-label="Lưu thay đổi"
+                            data-loading-label="Đang lưu...">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                        <span data-submit-label>Lưu thay đổi</span>
                     </button>
                 </div>
             </form>
-        </div>
+        </section>
+
+        <aside class="cf-guide evaluation-preview" aria-labelledby="evaluationPreviewHeading">
+            <div class="cf-guide__identity">
+                <span class="cf-guide__icon" aria-hidden="true"><i class="bi bi-calendar-check"></i></span>
+                <div>
+                    <span class="cf-guide__eyebrow">Xem trước</span>
+                    <h2 id="evaluationPreviewHeading"><span id="previewName">@Model.PeriodName</span></h2>
+                </div>
+            </div>
+            <p id="previewStatus" class="evaluation-preview__status" aria-live="polite">Nhập đủ ngày để kiểm tra độ dài kỳ.</p>
+            <dl class="cf-preview-list">
+                <div>
+                    <dt>Loại kỳ</dt>
+                    <dd id="previewType">Hàng tháng</dd>
+                </div>
+                <div>
+                    <dt>Bắt đầu</dt>
+                    <dd id="previewStart">@(Model.StartDate?.ToString("dd/MM/yyyy") ?? "Chưa chọn")</dd>
+                </div>
+                <div>
+                    <dt>Kết thúc</dt>
+                    <dd id="previewEnd">@(Model.EndDate?.ToString("dd/MM/yyyy") ?? "Chưa chọn")</dd>
+                </div>
+                <div>
+                    <dt>Độ dài</dt>
+                    <dd id="previewDuration">Chưa tính</dd>
+                </div>
+            </dl>
+            <ul class="cf-guide__list evaluation-preview__rules">
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Kỳ tháng: 28-31 ngày.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Kỳ quý: 89-92 ngày.</span></li>
+                <li><i class="bi bi-check2" aria-hidden="true"></i><span>Kỳ năm: 365-366 ngày.</span></li>
+            </ul>
+        </aside>
     </div>
 </div>
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
 }
 
 @section Scripts {
-    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/create-form.js" asp-append-version="true"></script>
+    <script src="~/js/evaluation-periods.js" asp-append-version="true"></script>
 }

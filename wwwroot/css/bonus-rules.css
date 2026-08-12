@@ -1,0 +1,214 @@
+/* Velzon Theme - Bonus Rules Styles */
+:root {
+    --bonus-rule-bg: #f3f3f9;
+    --bonus-rule-card-bg: #ffffff;
+    --bonus-rule-border: #e9ebec;
+    --bonus-rule-primary: #556ee6;
+    --bonus-rule-primary-dark: #394da9;
+    --bonus-rule-ink: #495057;
+    --bonus-rule-heading: #343a40;
+    --bonus-rule-muted: #878a99;
+    --bonus-rule-radius: 4px;
+}
+
+.bonus-rules-page {
+    color: var(--bonus-rule-ink);
+    max-width: 1440px;
+    margin: 0 auto;
+    padding-bottom: 2.5rem;
+}
+
+.bonus-rules-page .evaluation-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0 1.25rem;
+    border-bottom: 1px solid var(--bonus-rule-border);
+}
+
+.bonus-rules-page .evaluation-page-header h1 {
+    margin: 0 0 0.25rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--bonus-rule-heading);
+    line-height: 1.2;
+}
+
+.bonus-rules-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.bonus-rules-summary article {
+    background: var(--bonus-rule-card-bg);
+    border: 1px solid var(--bonus-rule-border);
+    border-radius: var(--bonus-rule-radius);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.bonus-rules-summary span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--bonus-rule-muted);
+}
+
+.bonus-rules-summary strong {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--bonus-rule-heading);
+    margin: 0.35rem 0 0.15rem;
+}
+
+.bonus-rules-summary small {
+    font-size: 0.75rem;
+    color: var(--bonus-rule-muted);
+}
+
+.bonus-rules-summary article:nth-child(1) strong { color: #3577f1; }
+.bonus-rules-summary article:nth-child(2) strong { color: #0ab39c; }
+.bonus-rules-summary article:nth-child(3) strong { color: #f7b84b; }
+.bonus-rules-summary article:nth-child(4) strong { color: #6559cc; }
+
+.bonus-rules-results {
+    background: var(--bonus-rule-card-bg);
+    border: 1px solid var(--bonus-rule-border);
+    border-radius: var(--bonus-rule-radius);
+}
+
+.bonus-rules-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.bonus-rule-rank {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.bonus-rule-rank__mark {
+    display: inline-grid;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    place-items: center;
+    border-radius: var(--bonus-rule-radius);
+    background: rgba(85, 110, 230, 0.1);
+    color: var(--bonus-rule-primary);
+    font-size: 0.9375rem;
+}
+
+.bonus-rule-rank strong {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--bonus-rule-heading);
+}
+
+.bonus-rule-rank small {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--bonus-rule-muted);
+}
+
+.bonus-rule-percentage {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--bonus-rule-radius);
+    background: #eaf7f3;
+    color: #087466;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.bonus-rule-amount {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--bonus-rule-heading);
+}
+
+.bonus-rule-modal .modal-content {
+    border-radius: var(--bonus-rule-radius);
+    border: 1px solid var(--bonus-rule-border);
+}
+
+.bonus-rule-modal .modal-header {
+    border-bottom: 1px solid var(--bonus-rule-border);
+    padding: 1rem 1.25rem;
+}
+
+.bonus-rule-modal .modal-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--bonus-rule-heading);
+}
+
+.bonus-rule-modal .modal-body {
+    padding: 1.25rem;
+}
+
+.bonus-rule-modal .modal-footer {
+    border-top: 1px solid var(--bonus-rule-border);
+    padding: 0.85rem 1.25rem;
+}
+
+.bonus-rule-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.bonus-rule-form-field--full {
+    grid-column: 1 / -1;
+}
+
+.bonus-rule-modal label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--bonus-rule-heading);
+}
+
+.bonus-rule-modal input,
+.bonus-rule-modal select {
+    height: 36px;
+    border: 1px solid var(--bonus-rule-border);
+    border-radius: var(--bonus-rule-radius);
+    padding: 0 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--bonus-rule-ink);
+}
+
+.bonus-rule-modal input:focus,
+.bonus-rule-modal select:focus {
+    border-color: var(--bonus-rule-primary);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(85, 110, 230, 0.15);
+}
+
+@media (max-width: 991.98px) {
+    .bonus-rules-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    .bonus-rules-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .bonus-rule-form-grid {
+        grid-template-columns: 1fr;
+    }
+}

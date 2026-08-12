@@ -1,0 +1,494 @@
+/* Velzon Theme - Evaluation Reports Styles */
+:root {
+    --eval-report-bg: #f3f3f9;
+    --eval-report-card-bg: #ffffff;
+    --eval-report-border: #e9ebec;
+    --eval-report-primary: #556ee6;
+    --eval-report-primary-dark: #394da9;
+    --eval-report-ink: #495057;
+    --eval-report-heading: #343a40;
+    --eval-report-muted: #878a99;
+    --eval-report-radius: 4px;
+}
+
+.evaluation-report-page {
+    color: var(--eval-report-ink);
+    max-width: 1440px;
+    margin: 0 auto;
+    padding-bottom: 2.5rem;
+}
+
+.evaluation-report-page .evaluation-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0 1.25rem;
+    border-bottom: 1px solid var(--eval-report-border);
+}
+
+.evaluation-report-page .evaluation-page-header h1 {
+    margin: 0 0 0.25rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--eval-report-heading);
+    line-height: 1.2;
+}
+
+.evaluation-report-page .evaluation-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--eval-report-muted);
+    font-size: 0.8125rem;
+}
+
+.evaluation-report-page .evaluation-breadcrumb a {
+    color: var(--eval-report-muted);
+    text-decoration: none;
+}
+
+.evaluation-report-page .evaluation-breadcrumb a:hover {
+    color: var(--eval-report-primary);
+}
+
+.evaluation-report-page .evaluation-report-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.evaluation-report-page .evaluation-primary-action,
+.evaluation-report-page .evaluation-secondary-action,
+.evaluation-report-page .evaluation-filter-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    height: 34px;
+    padding: 0 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    border-radius: var(--eval-report-radius);
+    border: 1px solid transparent;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.evaluation-report-page .evaluation-primary-action,
+.evaluation-report-page .evaluation-filter-button {
+    background-color: var(--eval-report-primary);
+    border-color: var(--eval-report-primary);
+    color: #ffffff;
+}
+
+.evaluation-report-page .evaluation-primary-action:hover,
+.evaluation-report-page .evaluation-filter-button:hover {
+    background-color: var(--eval-report-primary-dark);
+    border-color: var(--eval-report-primary-dark);
+    color: #ffffff;
+}
+
+.evaluation-report-page .evaluation-secondary-action {
+    background-color: #ffffff;
+    border-color: var(--eval-report-border);
+    color: var(--eval-report-ink);
+}
+
+.evaluation-report-page .evaluation-secondary-action:hover {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+    color: var(--eval-report-heading);
+}
+
+/* Summary Grid */
+.evaluation-report-page .evaluation-report-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.evaluation-report-page .evaluation-report-summary article {
+    background: var(--eval-report-card-bg);
+    border: 1px solid var(--eval-report-border);
+    border-radius: var(--eval-report-radius);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.evaluation-report-page .evaluation-report-summary span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--eval-report-muted);
+}
+
+.evaluation-report-page .evaluation-report-summary strong {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--eval-report-heading);
+    margin: 0.35rem 0 0.15rem;
+}
+
+.evaluation-report-page .evaluation-report-summary small {
+    font-size: 0.75rem;
+    color: var(--eval-report-muted);
+}
+
+.evaluation-report-page .evaluation-report-summary article:nth-child(1) strong { color: #3577f1; }
+.evaluation-report-page .evaluation-report-summary article:nth-child(2) strong { color: #0ab39c; }
+.evaluation-report-page .evaluation-report-summary article:nth-child(3) strong { color: #f7b84b; }
+.evaluation-report-page .evaluation-report-summary article:nth-child(4) strong { color: #f06548; }
+
+/* Filter Panel */
+.evaluation-report-page .evaluation-filter-panel {
+    background: var(--eval-report-card-bg);
+    border: 1px solid var(--eval-report-border);
+    border-radius: var(--eval-report-radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.evaluation-report-page .evaluation-filter-heading {
+    margin-bottom: 0.85rem;
+}
+
+.evaluation-report-page .evaluation-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--eval-report-primary);
+    margin: 0 0 0.15rem;
+}
+
+.evaluation-report-page .evaluation-filter-heading span {
+    font-size: 0.8125rem;
+    color: var(--eval-report-muted);
+}
+
+.evaluation-report-page .evaluation-report-filter-form {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.25fr) minmax(180px, 1fr) auto;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.evaluation-report-page .evaluation-report-filter-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--eval-report-heading);
+}
+
+.evaluation-report-page .evaluation-report-filter-form select {
+    height: 36px;
+    border: 1px solid var(--eval-report-border);
+    border-radius: var(--eval-report-radius);
+    padding: 0 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--eval-report-ink);
+    background-color: #ffffff;
+    width: 100%;
+}
+
+.evaluation-report-page .evaluation-report-filter-form select:focus {
+    border-color: var(--eval-report-primary);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(85, 110, 230, 0.15);
+}
+
+/* Card Table Shell */
+.evaluation-report-page .evaluation-report-table-card {
+    background: var(--eval-report-card-bg);
+    border: 1px solid var(--eval-report-border);
+    border-radius: var(--eval-report-radius);
+    margin-bottom: 1rem;
+}
+
+.evaluation-report-page .evaluation-results-heading {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--eval-report-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.evaluation-report-page .evaluation-results-heading strong {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--eval-report-heading);
+}
+
+.evaluation-report-page .evaluation-results-heading span {
+    font-size: 0.8125rem;
+    color: var(--eval-report-muted);
+}
+
+.evaluation-report-page .evaluation-report-table-shell {
+    overflow-x: auto;
+}
+
+.evaluation-report-page .evaluation-report-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.evaluation-report-page .evaluation-report-table th {
+    background-color: #f8f9fa;
+    color: var(--eval-report-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--eval-report-border);
+    white-space: nowrap;
+}
+
+.evaluation-report-page .evaluation-report-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--eval-report-border);
+    vertical-align: middle;
+    color: var(--eval-report-ink);
+}
+
+.evaluation-report-page .evaluation-report-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.evaluation-report-page .evaluation-report-table tbody tr:hover td {
+    background-color: #f8f9fa;
+}
+
+/* Progress & Badges */
+.evaluation-report-page .report-progress {
+    min-width: 120px;
+}
+
+.evaluation-report-page .report-progress .progress {
+    height: 6px;
+    border-radius: 3px;
+    background-color: #eff2f7;
+    overflow: hidden;
+}
+
+.evaluation-report-page .report-progress-value {
+    min-width: 38px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.evaluation-report-page .report-status-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--eval-report-radius);
+}
+
+/* Bottom Grid (Director Summary & Incidents) */
+.evaluation-report-page .evaluation-report-bottom-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.evaluation-report-page .evaluation-report-panel {
+    background: var(--eval-report-card-bg);
+    border: 1px solid var(--eval-report-border);
+    border-radius: var(--eval-report-radius);
+    padding: 1.25rem;
+}
+
+.evaluation-report-page .director-summary-input {
+    width: 100%;
+    min-height: 120px;
+    border: 1px solid var(--eval-report-border);
+    border-radius: var(--eval-report-radius);
+    padding: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--eval-report-ink);
+    resize: vertical;
+}
+
+.evaluation-report-page .director-summary-input:focus {
+    border-color: var(--eval-report-primary);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(85, 110, 230, 0.15);
+}
+
+.evaluation-report-page .print-director-summary {
+    display: none;
+}
+
+.evaluation-report-page .evaluation-report-incidents {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.evaluation-report-page .evaluation-report-incidents li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--eval-report-border);
+    font-size: 0.8125rem;
+}
+
+.evaluation-report-page .evaluation-report-incidents li:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.evaluation-report-page .evaluation-report-incidents__add {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--eval-report-primary);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.evaluation-report-page .evaluation-report-incidents__add:hover {
+    color: var(--eval-report-primary-dark);
+}
+
+.evaluation-report-page .evaluation-empty {
+    text-align: center;
+    padding: 3rem 1.5rem;
+}
+
+.evaluation-report-page .evaluation-empty-icon {
+    font-size: 2.5rem;
+    color: var(--eval-report-muted);
+    margin-bottom: 0.75rem;
+    display: inline-block;
+}
+
+.evaluation-report-page .evaluation-empty h2 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--eval-report-heading);
+    margin-bottom: 0.5rem;
+}
+
+.evaluation-report-page .evaluation-empty p {
+    font-size: 0.8125rem;
+    color: var(--eval-report-muted);
+    margin: 0;
+}
+
+/* Modal styling */
+.evaluation-modal .modal-content {
+    border-radius: var(--eval-report-radius);
+    border: 1px solid var(--eval-report-border);
+}
+
+.evaluation-modal .modal-header {
+    border-bottom: 1px solid var(--eval-report-border);
+    padding: 1rem 1.25rem;
+}
+
+.evaluation-modal .modal-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--eval-report-heading);
+}
+
+.evaluation-modal .modal-body {
+    padding: 1.25rem;
+}
+
+.evaluation-modal .modal-footer {
+    border-top: 1px solid var(--eval-report-border);
+    padding: 0.85rem 1.25rem;
+}
+
+/* Responsive */
+@media (max-width: 991.98px) {
+    .evaluation-report-page .evaluation-report-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .evaluation-report-page .evaluation-report-bottom-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .evaluation-report-page .evaluation-page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .evaluation-report-page .evaluation-report-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .evaluation-report-page .evaluation-report-filter-form {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .evaluation-report-page .evaluation-report-summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Print Rules */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    
+    .evaluation-report-page,
+    .evaluation-report-page * {
+        visibility: visible;
+    }
+    
+    .evaluation-report-page {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    .evaluation-report-page .no-print {
+        display: none !important;
+    }
+
+    .evaluation-report-page .director-summary-input {
+        display: none !important;
+    }
+
+    .evaluation-report-page .print-director-summary {
+        display: block !important;
+        white-space: pre-wrap;
+        font-size: 0.875rem;
+        padding: 0.5rem;
+        background: #f8f9fa;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+}
