@@ -1,0 +1,701 @@
+/* ========================================
+   Evaluation Results Module Styles
+   Primary: #556ee6 | Danger: #dc2626 | Success: #059669 | Warning: #b45309
+   ======================================== */
+
+:root {
+  --eval-primary: #556ee6;
+  --eval-primary-dark: #394da9;
+  --eval-canvas: #f3f3f9;
+  --eval-surface: #ffffff;
+  --eval-border: #dfe5ee;
+  --eval-text-primary: #1a2940;
+  --eval-text-secondary: #6b7c93;
+  --eval-success: #059669;
+  --eval-warning: #b45309;
+  --eval-danger: #dc2626;
+  --eval-radius: 4px;
+}
+
+/* ===== Page Container ===== */
+.evaluation-results-page,
+.evaluation-review-page {
+  --eval-bg: var(--eval-canvas);
+  --eval-card-border: var(--eval-border);
+  --eval-text: var(--eval-text-primary);
+  --eval-text-muted: var(--eval-text-secondary);
+}
+
+/* ===== Page Header & Layout ===== */
+.evaluation-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+}
+
+.evaluation-page-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--eval-text-primary);
+}
+
+.evaluation-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--eval-text-secondary);
+}
+
+.evaluation-breadcrumb a {
+  color: var(--eval-primary);
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.evaluation-breadcrumb a:hover {
+  color: var(--eval-primary-dark);
+  text-decoration: underline;
+}
+
+.evaluation-breadcrumb i {
+  opacity: 0.6;
+}
+
+/* ===== Summary Grid ===== */
+.evaluation-summary {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.evaluation-summary article {
+  background: var(--eval-surface);
+  border: 1px solid var(--eval-card-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  border-right: 3px solid transparent;
+}
+
+.evaluation-summary article span {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--eval-text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.evaluation-summary article strong {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.3rem;
+  line-height: 1;
+}
+
+.evaluation-summary article small {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--eval-text-secondary);
+  margin-top: 0.3rem;
+}
+
+/* ===== Actions Group ===== */
+.evaluation-results-actions,
+.evaluation-review-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.evaluation-primary-action,
+.evaluation-secondary-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 36px;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 160ms ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.evaluation-primary-action {
+  background: var(--eval-primary);
+  color: #fff;
+  border-color: var(--eval-primary);
+}
+
+.evaluation-primary-action:hover {
+  background: var(--eval-primary-dark);
+  border-color: var(--eval-primary-dark);
+  box-shadow: 0 2px 8px rgba(85, 110, 230, 0.2);
+}
+
+.evaluation-primary-action:focus-visible {
+  outline: 2px solid var(--eval-primary);
+  outline-offset: 2px;
+}
+
+.evaluation-secondary-action {
+  background: transparent;
+  color: var(--eval-primary);
+  border-color: var(--eval-border);
+}
+
+.evaluation-secondary-action:hover {
+  background: var(--eval-canvas);
+  border-color: var(--eval-primary);
+}
+
+.evaluation-secondary-action:focus-visible {
+  outline: 2px solid var(--eval-primary);
+  outline-offset: 2px;
+}
+
+/* ===== Results Container ===== */
+.evaluation-results,
+.evaluation-review-panel {
+  background: var(--eval-surface);
+  border: 1px solid var(--eval-card-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.evaluation-results-heading,
+.evaluation-review-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.evaluation-results-heading div,
+.evaluation-review-heading div {
+  flex: 1;
+  min-width: 180px;
+}
+
+.evaluation-eyebrow {
+  margin: 0 0 0.3rem 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--eval-text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.evaluation-results-heading strong,
+.evaluation-review-heading strong {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--eval-text-primary);
+}
+
+/* ===== Status Badge ===== */
+.evaluation-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.evaluation-status span:first-child {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.8;
+}
+
+.evaluation-status--ending {
+  background: #fef3c7;
+  color: var(--eval-warning);
+  border: 1px solid #fde68a;
+}
+
+.evaluation-status--approved {
+  background: #d1fae5;
+  color: var(--eval-success);
+  border: 1px solid #a7f3d0;
+}
+
+.evaluation-status--rejected {
+  background: #fee2e2;
+  color: var(--eval-danger);
+  border: 1px solid #fca5a5;
+}
+
+.evaluation-status--draft {
+  background: #e5e7eb;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+}
+
+/* ===== Table Shell ===== */
+.evaluation-table-shell,
+.evaluation-review-table-shell {
+  overflow-x: auto;
+  margin-bottom: 0;
+  border-radius: 6px;
+}
+
+.evaluation-table,
+.evaluation-review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.evaluation-table thead,
+.evaluation-review-table thead {
+  background: var(--eval-canvas);
+  border-bottom: 1px solid var(--eval-card-border);
+}
+
+.evaluation-table th,
+.evaluation-review-table th {
+  padding: 0.875rem 0.75rem;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--eval-text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.evaluation-table th:first-child,
+.evaluation-review-table th:first-child {
+  padding-left: 1rem;
+}
+
+.evaluation-table th:last-child,
+.evaluation-review-table th:last-child {
+  padding-right: 1rem;
+}
+
+.evaluation-table tbody tr,
+.evaluation-review-table tbody tr {
+  border-bottom: 1px solid var(--eval-card-border);
+  transition: background-color 160ms ease;
+}
+
+.evaluation-table tbody tr:last-child,
+.evaluation-review-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.evaluation-table tbody tr:hover,
+.evaluation-review-table tbody tr:hover {
+  background-color: var(--eval-canvas);
+}
+
+.evaluation-table td,
+.evaluation-review-table td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+}
+
+.evaluation-table td:first-child,
+.evaluation-review-table td:first-child {
+  padding-left: 1rem;
+}
+
+.evaluation-table td:last-child,
+.evaluation-review-table td:last-child {
+  padding-right: 1rem;
+}
+
+/* ===== Form Controls ===== */
+.evaluation-review-form,
+.evaluation-form {
+  min-width: 200px;
+}
+
+.evaluation-form-input,
+.evaluation-form-select,
+.form-control-sm {
+  display: block;
+  width: 100%;
+  height: 36px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--eval-card-border);
+  border-radius: 4px;
+  background: var(--eval-surface);
+  color: var(--eval-text-primary);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.evaluation-form-input:focus,
+.evaluation-form-select:focus,
+.form-control-sm:focus {
+  border-color: var(--eval-primary);
+  box-shadow: 0 0 0 3px rgba(85, 110, 230, 0.1);
+  outline: none;
+}
+
+textarea.form-control-sm,
+textarea.evaluation-form-input {
+  height: auto;
+  min-height: 70px;
+  resize: vertical;
+}
+
+.form-control-sm {
+  font-size: 0.8rem;
+  padding: 0.65rem 0.75rem;
+}
+
+/* ===== Badge & Score Display ===== */
+.evaluation-score-badge,
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.evaluation-rank-badge,
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border-radius: 4px;
+  background: var(--eval-text-primary);
+  color: #fff;
+  border: 1px solid var(--eval-text-primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* ===== Avatar ===== */
+.evaluation-avatar,
+.evaluation-review-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 6px;
+  background: var(--eval-primary);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* ===== Button Actions ===== */
+.evaluation-review-approve,
+.evaluation-review-reject {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 36px;
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 160ms ease;
+  white-space: nowrap;
+}
+
+.evaluation-review-approve {
+  background: var(--eval-success);
+  color: #fff;
+  border-color: var(--eval-success);
+}
+
+.evaluation-review-approve:hover {
+  background: #047857;
+  border-color: #047857;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.2);
+}
+
+.evaluation-review-approve:focus-visible {
+  outline: 2px solid var(--eval-success);
+  outline-offset: 2px;
+}
+
+.evaluation-review-approve:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.evaluation-review-reject {
+  background: transparent;
+  color: var(--eval-danger);
+  border-color: #fca5a5;
+}
+
+.evaluation-review-reject:hover {
+  background: #fee2e2;
+  border-color: var(--eval-danger);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+}
+
+.evaluation-review-reject:focus-visible {
+  outline: 2px solid var(--eval-danger);
+  outline-offset: 2px;
+}
+
+.evaluation-review-reject:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== Empty State ===== */
+.evaluation-empty,
+.rq-empty {
+  padding: 3.5rem 1rem;
+  text-align: center;
+}
+
+.evaluation-empty-icon,
+.rq-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.25rem;
+  border-radius: 50%;
+  background: #d1fae5;
+  color: var(--eval-success);
+  font-size: 2rem;
+}
+
+.evaluation-empty h2,
+.rq-empty-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--eval-text-primary);
+}
+
+.evaluation-empty p,
+.rq-empty-sub {
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+  color: var(--eval-text-secondary);
+}
+
+/* ===== Modal ===== */
+.modal-header {
+  border-bottom: 1px solid var(--eval-card-border);
+  padding: 1rem 1.5rem;
+}
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--eval-text-primary);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  border-top: 1px solid var(--eval-card-border);
+  padding: 1rem 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--eval-text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 160ms ease;
+}
+
+.modal-close:hover,
+.modal-close:focus-visible {
+  color: var(--eval-text-primary);
+  outline: 2px solid var(--eval-primary);
+  outline-offset: 2px;
+}
+
+/* ===== Responsive Mobile ===== */
+@media (max-width: 991.98px) {
+  .evaluation-results-actions,
+  .evaluation-review-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .evaluation-results-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767.98px) {
+  .evaluation-page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .evaluation-results-actions,
+  .evaluation-review-actions {
+    width: 100%;
+  }
+
+  .evaluation-primary-action,
+  .evaluation-secondary-action {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .evaluation-table-shell,
+  .evaluation-review-table-shell {
+    display: none;
+  }
+
+  .evaluation-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .evaluation-summary article {
+    border-right: none;
+    border-bottom: 3px solid transparent;
+  }
+
+  .evaluation-summary article:nth-child(1) {
+    border-bottom-color: #fbbf24;
+  }
+
+  .evaluation-summary article:nth-child(2) {
+    border-bottom-color: var(--eval-warning);
+  }
+
+  .evaluation-summary article:nth-child(3) {
+    border-bottom-color: var(--eval-success);
+  }
+
+  .evaluation-summary article:nth-child(4) {
+    border-bottom-color: var(--eval-danger);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .evaluation-page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .evaluation-results {
+    padding: 1rem;
+  }
+
+  .evaluation-summary article strong {
+    font-size: 1.75rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+}
+
+/* ===== Utility & Focus Management ===== */
+.d-flex {
+  display: flex;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+.justify-content-center {
+  justify-content: center;
+}
+
+.justify-content-end {
+  justify-content: flex-end;
+}
+
+.text-end {
+  text-align: right;
+}
+
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+
+.text-muted {
+  color: var(--eval-text-secondary);
+}
+
+.text-dark,
+.fw-semibold {
+  font-weight: 600;
+  color: var(--eval-text-primary);
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
