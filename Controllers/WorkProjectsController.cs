@@ -514,7 +514,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var currentEmployee = await AccessScopeHelper.GetCurrentEmployeeAsync(_context, User);
-            project.ProjectCode = await GenerateProjectCodeAsync();
+            project.ProjectCode = WorkProjectCodeGenerator.Create();
             project.Status = "Active";
             project.Priority = NormalizePriority(project.Priority);
             project.ProgressPercentage = 0;
@@ -1580,13 +1580,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 createdAt = comment.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? string.Empty,
                 isSystem = comment.IsSystem == true
             };
-        }
-
-        private async Task<string> GenerateProjectCodeAsync()
-        {
-            var datePart = DateTime.Now.ToString("yyyyMMdd");
-            var countToday = await _context.WorkProjects.CountAsync(p => p.ProjectCode != null && p.ProjectCode.StartsWith($"PRJ-{datePart}"));
-            return $"PRJ-{datePart}-{countToday + 1:000}";
         }
 
         private async Task<string> ResolveEmployeeNameAsync(int? employeeId)

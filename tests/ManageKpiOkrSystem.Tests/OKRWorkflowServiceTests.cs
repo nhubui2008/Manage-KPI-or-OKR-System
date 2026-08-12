@@ -1,5 +1,6 @@
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Models;
+using Manage_KPI_or_OKR_System.Services;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -7,6 +8,21 @@ namespace ManageKpiOkrSystem.Tests;
 
 public sealed class OKRWorkflowServiceTests
 {
+    [Fact]
+    public void WorkProjectCodeGenerator_Create_ProducesUniqueCodesWithinModelLimit()
+    {
+        var codes = Enumerable.Range(0, 1_000)
+            .Select(_ => WorkProjectCodeGenerator.Create())
+            .ToList();
+
+        Assert.Equal(codes.Count, codes.Distinct(StringComparer.Ordinal).Count());
+        Assert.All(codes, code =>
+        {
+            Assert.Matches("^PRJ-[0-9]{8}-[0-9A-F]{16}$", code);
+            Assert.True(code.Length <= 30);
+        });
+    }
+
     [Fact]
     public void ModelLinkProperties_ExposeOnlyCanonicalOneToManyRelationship()
     {
@@ -101,6 +117,102 @@ public sealed class OKRWorkflowServiceTests
         Assert.Equal(2, project.WorkItems.Count);
         Assert.Contains(project.WorkItems, item => item.OKRKeyResultId == newKr.Id && item.Title == "Convert first customer");
         Assert.All(project.WorkItems, item => Assert.Equal(new DateTime(2026, 12, 31), item.DueDate));
+    }
+
+    [Fact]
+    public async Task AutoCreateProjectFromOKRAsync_AddsEveryMissingTaskOnceForLargeKeyResultSet()
+    {
+        await using var context = CreateContext();
+        var keyResults = Enumerable.Range(1, 20)
+            .Select(number => new OKRKeyResult
+            {
+                KeyResultName = $"Key result {number}",
+                TargetValue = number,
+                Unit = "Item"
+            })
+            .ToArray();
+        var okr = await SeedOkrAsync(context, "Scale operations", "Q4-2026", keyResults);
+        var project = new WorkProject
+        {
+            ProjectCode = WorkProjectCodeGenerator.Create(),
+            ProjectName = "Existing project",
+            Status = "Active",
+            Priority = "Normal",
+            IsActive = true,
+            SourceOKRId = okr.Id,
+            CreatedAt = DateTime.Now.AddDays(-1),
+            DueDate = new DateTime(2026, 12, 31)
+        };
+        context.WorkProjects.Add(project);
+        await context.SaveChangesAsync();
+
+        context.WorkItems.AddRange(keyResults.Take(5).Select(keyResult => new WorkItem
+        {
+            WorkProjectId = project.Id,
+            OKRKeyResultId = keyResult.Id,
+            Title = keyResult.KeyResultName,
+            KanbanStatus = "Todo",
+            IsActive = true
+        }));
+        await context.SaveChangesAsync();
+
+        var service = CreateWorkflowService(context);
+        var result = await InvokeAsync<WorkProject>(
+            service,
+            "AutoCreateProjectFromOKRAsync",
+            okr.Id,
+            7,
+            null);
+
+        Assert.NotNull(result);
+        var tasks = await context.WorkItems
+            .Where(item => item.WorkProjectId == project.Id && item.IsActive == true)
+            .ToListAsync();
+        Assert.Equal(keyResults.Length, tasks.Count);
+        Assert.All(keyResults, keyResult =>
+            Assert.Single(tasks, item => item.OKRKeyResultId == keyResult.Id));
+    }
+
+    [Fact]
+    public async Task AutoCreateProjectFromOKRAsync_RepeatedCallIsIdempotent()
+    {
+        await using var context = CreateContext();
+        var keyResults = Enumerable.Range(1, 6)
+            .Select(number => new OKRKeyResult
+            {
+                KeyResultName = $"Repeat-safe key result {number}",
+                TargetValue = number,
+                Unit = "Item"
+            })
+            .ToArray();
+        var okr = await SeedOkrAsync(context, "Repeat-safe workflow", "Q1-2027", keyResults);
+        var service = CreateWorkflowService(context);
+
+        var first = await InvokeAsync<WorkProject>(
+            service,
+            "AutoCreateProjectFromOKRAsync",
+            okr.Id,
+            7,
+            null);
+        var second = await InvokeAsync<WorkProject>(
+            service,
+            "AutoCreateProjectFromOKRAsync",
+            okr.Id,
+            7,
+            null);
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Equal(first.Id, second.Id);
+        Assert.Single(await context.WorkProjects
+            .Where(project => project.SourceOKRId == okr.Id && project.IsActive == true)
+            .ToListAsync());
+        var tasks = await context.WorkItems
+            .Where(item => item.WorkProjectId == first.Id && item.IsActive == true)
+            .ToListAsync();
+        Assert.Equal(keyResults.Length, tasks.Count);
+        Assert.All(keyResults, keyResult =>
+            Assert.Single(tasks, item => item.OKRKeyResultId == keyResult.Id));
     }
 
     private static MiniERPDbContext CreateContext()

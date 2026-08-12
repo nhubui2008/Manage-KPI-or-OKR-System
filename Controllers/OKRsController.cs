@@ -1062,7 +1062,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HttpGet("Tree")]
         public async Task<IActionResult> GetTree()
         {
-            var okrQuery = _context.OKRs.Where(o => o.IsActive == true).Include(o => o.KeyResults).AsQueryable();
+            var okrQuery = _context.OKRs
+                .AsNoTracking()
+                .Where(o => o.IsActive == true)
+                .Include(o => o.KeyResults)
+                .AsQueryable();
             var currentEmployee = await GetCurrentEmployeeAsync();
 
             if (IsManagerScopedRole())
@@ -1127,10 +1131,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var okrs = await okrQuery.ToListAsync();
             var visibleTreeOkrIds = okrs.Select(o => o.Id).ToList();
             var missionMappings = await _context.OKR_Mission_Mappings
+                .AsNoTracking()
                 .Where(m => visibleTreeOkrIds.Contains(m.OKRId))
                 .ToListAsync();
             var missionIds = missionMappings.Select(m => m.MissionId).Distinct().ToList();
             var missions = await _context.MissionVisions
+                .AsNoTracking()
                 .Where(m => m.IsActive == true && missionIds.Contains(m.Id))
                 .ToListAsync();
 
@@ -2198,6 +2204,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 {
                     transaction = await _context.Database.BeginTransactionAsync();
                 }
+
+                // Keep one lock order for every automatic OKR workflow: lock the parent
+                // OKR first, then insert/read Key Results and WorkItems. This prevents a
+                // concurrent project sync from taking the same resources in reverse order.
+                await _workflowService.AcquireOkrWorkflowLockAsync(kr.OKRId.Value);
 
                 _context.OKRKeyResults.Add(kr);
                 await _context.SaveChangesAsync();

@@ -847,7 +847,7 @@ namespace Manage_KPI_or_OKR_System.Services
 
             return new WorkProject
             {
-                ProjectCode = await GenerateProjectCodeAsync(cancellationToken),
+                ProjectCode = WorkProjectCodeGenerator.Create(),
                 ProjectName = projectName,
                 Description = "Project duoc tao tu AI de chia nho OKR/KPI thanh task tren Kanban.",
                 OwnerId = currentEmployee?.Id,
@@ -1427,13 +1427,6 @@ namespace Manage_KPI_or_OKR_System.Services
                 totalWeight += weight;
             }
             return totalWeight > 0 ? Math.Round(weightedProgress / totalWeight, 2) : 0m;
-        }
-
-        private async Task<string> GenerateProjectCodeAsync(CancellationToken cancellationToken)
-        {
-            var datePart = DateTime.Now.ToString("yyyyMMdd");
-            var countToday = await _context.WorkProjects.CountAsync(p => p.ProjectCode != null && p.ProjectCode.StartsWith($"PRJ-{datePart}"), cancellationToken);
-            return $"PRJ-{datePart}-{countToday + 1:000}";
         }
 
         private void AddAuditLog(ClaimsPrincipal user, string action, string table, string? oldData, string? newData)

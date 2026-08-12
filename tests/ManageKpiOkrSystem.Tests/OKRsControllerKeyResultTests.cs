@@ -64,6 +64,26 @@ public sealed class OKRsControllerKeyResultTests
     }
 
     [Fact]
+    public async Task AddKeyResult_AcquiresParentOkrLockBeforeStartingAutomaticTaskWorkflow()
+    {
+        await using var context = CreateContext();
+        var (okr, _) = await SeedOkrWithLinkedProjectAsync(context);
+        var workflow = new RecordingWorkflowService();
+        var controller = CreateController(context, workflow);
+
+        var result = await controller.AddKeyResult(new OKRKeyResult
+        {
+            OKRId = okr.Id,
+            KeyResultName = "Lock order KR",
+            TargetValue = 1,
+            Unit = "Item"
+        });
+
+        Assert.IsType<RedirectToActionResult>(result);
+        Assert.Equal(new[] { "lock", "task" }, workflow.Calls);
+    }
+
+    [Fact]
     public async Task AddKeyResult_WhenWorkflowAlwaysFails_RollsBackKrAndReportsFailure()
     {
         await using var context = CreateContext();
@@ -384,6 +404,8 @@ public sealed class OKRsControllerKeyResultTests
 
     private sealed class ThrowingWorkflowService : IOKRWorkflowService
     {
+        public Task AcquireOkrWorkflowLockAsync(int okrId) => Task.CompletedTask;
+
         public Task<WorkProject?> AutoCreateProjectFromOKRAsync(int okrId, int? createdByEmployeeId, int? departmentId) =>
             Task.FromResult<WorkProject?>(null);
 
@@ -398,6 +420,9 @@ public sealed class OKRsControllerKeyResultTests
 
         public FailOnceWorkflowService(MiniERPDbContext context) => _inner = new OKRWorkflowService(context);
 
+        public Task AcquireOkrWorkflowLockAsync(int okrId) =>
+            _inner.AcquireOkrWorkflowLockAsync(okrId);
+
         public Task<WorkProject?> AutoCreateProjectFromOKRAsync(int okrId, int? createdByEmployeeId, int? departmentId) =>
             _inner.AutoCreateProjectFromOKRAsync(okrId, createdByEmployeeId, departmentId);
 
@@ -410,6 +435,29 @@ public sealed class OKRsControllerKeyResultTests
             }
 
             return await _inner.AutoCreateTaskFromKeyResultAsync(okrId, keyResult);
+        }
+    }
+
+    private sealed class RecordingWorkflowService : IOKRWorkflowService
+    {
+        public List<string> Calls { get; } = new();
+
+        public Task AcquireOkrWorkflowLockAsync(int okrId)
+        {
+            Calls.Add("lock");
+            return Task.CompletedTask;
+        }
+
+        public Task<WorkProject?> AutoCreateProjectFromOKRAsync(
+            int okrId,
+            int? createdByEmployeeId,
+            int? departmentId) =>
+            Task.FromResult<WorkProject?>(null);
+
+        public Task<bool> AutoCreateTaskFromKeyResultAsync(int okrId, OKRKeyResult keyResult)
+        {
+            Calls.Add("task");
+            return Task.FromResult(true);
         }
     }
 

@@ -1,11 +1,18 @@
+using System.Data;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Manage_KPI_or_OKR_System.Services
 {
     public interface IOKRWorkflowService
     {
+        /// <summary>
+        /// Acquires the per-OKR workflow lock inside the caller's current transaction.
+        /// Non-relational providers treat this as a no-op.
+        /// </summary>
+        Task AcquireOkrWorkflowLockAsync(int okrId);
         Task<WorkProject?> AutoCreateProjectFromOKRAsync(int okrId, int? createdByEmployeeId, int? departmentId);
         /// <summary>
         /// Ensures the key result has an active WorkItem on the linked/source project (creating project if needed).
@@ -23,7 +30,27 @@ namespace Manage_KPI_or_OKR_System.Services
             _context = context;
         }
 
-        public async Task<WorkProject?> AutoCreateProjectFromOKRAsync(int okrId, int? createdByEmployeeId, int? departmentId)
+        public Task<WorkProject?> AutoCreateProjectFromOKRAsync(int okrId, int? createdByEmployeeId, int? departmentId) =>
+            ExecuteWithOkrWorkflowLockAsync(
+                okrId,
+                () => AutoCreateProjectFromOKRCoreAsync(okrId, createdByEmployeeId, departmentId));
+
+        public Task<bool> AutoCreateTaskFromKeyResultAsync(int okrId, OKRKeyResult keyResult)
+        {
+            if (keyResult.Id <= 0)
+            {
+                return Task.FromResult(false);
+            }
+
+            return ExecuteWithOkrWorkflowLockAsync(
+                okrId,
+                () => AutoCreateTaskFromKeyResultCoreAsync(okrId, keyResult));
+        }
+
+        private async Task<WorkProject?> AutoCreateProjectFromOKRCoreAsync(
+            int okrId,
+            int? createdByEmployeeId,
+            int? departmentId)
         {
             var okr = await _context.OKRs
                 .Include(o => o.KeyResults)
@@ -49,7 +76,7 @@ namespace Manage_KPI_or_OKR_System.Services
             var now = DateTime.Now;
             project = new WorkProject
             {
-                ProjectCode = await GenerateProjectCodeAsync(),
+                ProjectCode = WorkProjectCodeGenerator.Create(),
                 ProjectName = $"[OKR] {okr.ObjectiveName}",
                 Description = $"Dự án tự động sinh từ OKR: {okr.ObjectiveName}. Chu kỳ: {okr.Cycle ?? "Chưa xác định"}.",
                 OwnerId = createdByEmployeeId,
@@ -85,13 +112,8 @@ namespace Manage_KPI_or_OKR_System.Services
             return project;
         }
 
-        public async Task<bool> AutoCreateTaskFromKeyResultAsync(int okrId, OKRKeyResult keyResult)
+        private async Task<bool> AutoCreateTaskFromKeyResultCoreAsync(int okrId, OKRKeyResult keyResult)
         {
-            if (keyResult.Id <= 0)
-            {
-                return false;
-            }
-
             var okr = await _context.OKRs.FirstOrDefaultAsync(o => o.Id == okrId);
             if (okr == null) return false;
 
@@ -108,7 +130,7 @@ namespace Manage_KPI_or_OKR_System.Services
 
             if (existingProject == null)
             {
-                existingProject = await AutoCreateProjectFromOKRAsync(okrId, okr.CreatedById, null);
+                existingProject = await AutoCreateProjectFromOKRCoreAsync(okrId, okr.CreatedById, null);
                 if (existingProject == null)
                 {
                     return false;
@@ -123,21 +145,111 @@ namespace Manage_KPI_or_OKR_System.Services
             return await HasActiveWorkItemAsync(keyResult.Id);
         }
 
-        private async Task EnsureWorkItemsForKeyResultsAsync(WorkProject project, IEnumerable<OKRKeyResult>? keyResults)
+        private async Task<T> ExecuteWithOkrWorkflowLockAsync<T>(int okrId, Func<Task<T>> action)
         {
-            foreach (var keyResult in keyResults ?? Enumerable.Empty<OKRKeyResult>())
+            if (!_context.Database.IsRelational())
             {
-                if (keyResult.Id <= 0)
+                return await action();
+            }
+
+            IDbContextTransaction? ownedTransaction = null;
+            try
+            {
+                if (_context.Database.CurrentTransaction == null)
                 {
-                    continue;
+                    ownedTransaction = await _context.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
                 }
 
-                var taskExists = await _context.WorkItems.AnyAsync(t =>
-                    t.WorkProjectId == project.Id &&
-                    t.OKRKeyResultId == keyResult.Id &&
-                    t.IsActive == true);
+                await AcquireOkrWorkflowLockAsync(okrId);
+                var result = await action();
 
-                if (!taskExists)
+                if (ownedTransaction != null)
+                {
+                    await ownedTransaction.CommitAsync();
+                }
+
+                return result;
+            }
+            catch
+            {
+                if (ownedTransaction != null)
+                {
+                    await ownedTransaction.RollbackAsync();
+                }
+
+                throw;
+            }
+            finally
+            {
+                if (ownedTransaction != null)
+                {
+                    await ownedTransaction.DisposeAsync();
+                }
+            }
+        }
+
+        public async Task AcquireOkrWorkflowLockAsync(int okrId)
+        {
+            if (!_context.Database.IsRelational())
+            {
+                return;
+            }
+
+            if (_context.Database.CurrentTransaction == null)
+            {
+                throw new InvalidOperationException(
+                    "The per-OKR workflow lock must be acquired inside an active database transaction.");
+            }
+
+            // Serialize only the automatic workflow for this OKR. The row lock avoids
+            // duplicate auto-created projects/tasks while preserving valid manual
+            // one-to-many projects and tasks elsewhere in the system.
+            await _context.OKRs
+                .FromSqlInterpolated($"SELECT * FROM [OKRs] WITH (UPDLOCK, HOLDLOCK) WHERE [Id] = {okrId}")
+                .Select(okr => okr.Id)
+                .SingleOrDefaultAsync();
+        }
+
+        private async Task EnsureWorkItemsForKeyResultsAsync(WorkProject project, IEnumerable<OKRKeyResult>? keyResults)
+        {
+            var persistedKeyResults = (keyResults ?? Enumerable.Empty<OKRKeyResult>())
+                .Where(keyResult => keyResult.Id > 0)
+                .GroupBy(keyResult => keyResult.Id)
+                .Select(group => group.First())
+                .ToList();
+
+            if (persistedKeyResults.Count == 0)
+            {
+                return;
+            }
+
+            var keyResultIds = persistedKeyResults.Select(keyResult => keyResult.Id).ToList();
+            var existingKeyResultIds = (await _context.WorkItems
+                    .AsNoTracking()
+                    .Where(item =>
+                        item.WorkProjectId == project.Id &&
+                        item.OKRKeyResultId.HasValue &&
+                        keyResultIds.Contains(item.OKRKeyResultId.Value) &&
+                        item.IsActive == true)
+                    .Select(item => item.OKRKeyResultId!.Value)
+                    .ToListAsync())
+                .ToHashSet();
+
+            foreach (var entry in _context.ChangeTracker.Entries<WorkItem>())
+            {
+                var item = entry.Entity;
+                if (entry.State != EntityState.Deleted &&
+                    item.WorkProjectId == project.Id &&
+                    item.OKRKeyResultId.HasValue &&
+                    item.IsActive == true)
+                {
+                    existingKeyResultIds.Add(item.OKRKeyResultId.Value);
+                }
+            }
+
+            foreach (var keyResult in persistedKeyResults)
+            {
+                if (existingKeyResultIds.Add(keyResult.Id))
                 {
                     AddWorkItem(project.Id, keyResult, project.DueDate);
                 }
@@ -198,13 +310,5 @@ namespace Manage_KPI_or_OKR_System.Services
             return DateTime.Today.AddMonths(3);
         }
 
-        private async Task<string> GenerateProjectCodeAsync()
-        {
-            var datePart = DateTime.Now.ToString("yyyyMMdd");
-            var countToday = await _context.WorkProjects
-                .CountAsync(p => p.ProjectCode != null && p.ProjectCode.StartsWith($"PRJ-{datePart}"));
-
-            return $"PRJ-{datePart}-{countToday + 1:000}";
-        }
     }
 }
