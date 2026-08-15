@@ -72,9 +72,9 @@
             }
             @if (canManage)
             {
-                <a asp-action="Create" class="evaluation-primary-action">
+                <a asp-action="Create" class="evaluation-primary-action page-create-action">
                     <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                    <span>Thêm kết quả</span>
+                    <span>Tạo kết quả</span>
                 </a>
             }
         </div>
@@ -329,9 +329,9 @@
                 <p>Kết quả sẽ xuất hiện tại đây sau khi điểm số và xếp hạng được lưu cho nhân viên.</p>
                 @if (canManage)
                 {
-                    <a asp-action="Create" class="evaluation-primary-action">
+                    <a asp-action="Create" class="evaluation-primary-action page-create-action">
                         <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                        Thêm kết quả đầu tiên
+                        <span>Tạo kết quả</span>
                     </a>
                 }
             </div>

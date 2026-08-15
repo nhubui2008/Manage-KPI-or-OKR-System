@@ -43,9 +43,9 @@
                 </div>
                 @if (canCreateOkr)
                 {
-                    <a asp-action="Create" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
+                    <a asp-action="Create" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 page-create-action">
                         <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                        <span>Tạo OKR mới</span>
+                        <span>Tạo OKR</span>
                     </a>
                 }
             </div>
@@ -268,7 +268,7 @@
                     <p>Thiết lập objective đầu tiên để theo dõi tiến độ và liên kết dự án vận hành.</p>
                     @if (canCreateOkr)
                     {
-                        <a asp-action="Create" class="btn btn-primary">Tạo OKR mới</a>
+                        <a asp-action="Create" class="btn btn-primary page-create-action"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Tạo OKR</span></a>
                     }
                 </div>
             }

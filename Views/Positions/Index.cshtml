@@ -29,9 +29,9 @@
         </div>
         @if (canCreatePosition)
         {
-            <a asp-action="Create" class="evaluation-primary-action">
+            <a asp-action="Create" class="evaluation-primary-action page-create-action">
                 <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                <span>Thêm chức vụ</span>
+                <span>Tạo chức vụ</span>
             </a>
         }
     </header>
@@ -112,7 +112,7 @@
                 }
                 else if (canCreatePosition)
                 {
-                    <a asp-action="Create" class="evaluation-primary-action">Thêm chức vụ</a>
+                    <a asp-action="Create" class="evaluation-primary-action page-create-action"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Tạo chức vụ</span></a>
                 }
             </div>
         }

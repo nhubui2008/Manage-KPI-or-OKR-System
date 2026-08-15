@@ -302,6 +302,8 @@
 .employees-page .employees-filter-form .employees-btn--filter {
     flex: 0 0 auto;
     align-self: flex-end;
+    min-height: 36px;
+    height: 36px;
     white-space: nowrap;
 }
 
@@ -1039,7 +1041,13 @@
     }
 
     .employees-page .employees-filter-form {
+        display: grid;
         grid-template-columns: 1fr 1fr;
+        align-items: end;
+    }
+
+    .employees-page .employees-filter-form label {
+        min-width: 0;
     }
 
     .employees-page .employees-filter-form .employees-search-field {

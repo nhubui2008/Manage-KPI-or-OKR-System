@@ -232,8 +232,8 @@
                         <span>Đồng bộ quyền</span>
                     </button>
                 </form>
-                <a asp-action="Create" class="evaluation-primary-action">
-                    <i class="bi bi-shield-plus" aria-hidden="true"></i>
+                <a asp-action="Create" class="evaluation-primary-action page-create-action">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
                     <span>Tạo vai trò</span>
                 </a>
             </div>
@@ -277,7 +277,7 @@
                 <p>Tạo vai trò đầu tiên để phân tách phạm vi truy cập theo chức năng và trách nhiệm.</p>
                 @if (canCreateRoles)
                 {
-                    <a asp-action="Create" class="evaluation-primary-action">Tạo vai trò</a>
+                    <a asp-action="Create" class="evaluation-primary-action page-create-action"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Tạo vai trò</span></a>
                 }
             </div>
         }

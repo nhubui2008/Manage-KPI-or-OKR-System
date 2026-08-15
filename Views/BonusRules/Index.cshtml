@@ -32,8 +32,8 @@
         </div>
         @if (canCreateRule)
         {
-            <button type="button" class="bonus-rules-primary-action" data-bs-toggle="modal" data-bs-target="#createModal">
-                <i class="bi bi-plus-lg" aria-hidden="true"></i><span>Thêm quy tắc</span>
+            <button type="button" class="bonus-rules-primary-action page-create-action" data-bs-toggle="modal" data-bs-target="#createModal">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i><span>Tạo quy tắc</span>
             </button>
         }
     </header>
@@ -59,7 +59,7 @@
         <div class="bonus-rules-list-heading"><div><h2 id="bonus-list-title">Danh sách quy tắc</h2><p>Thông tin hiển thị gồm xếp loại, mức thưởng và trạng thái cấu hình.</p></div><span aria-hidden="true">@rules.Count mục</span></div>
         @if (rules.Count == 0)
         {
-            <div class="bonus-rules-empty" role="status"><span><i class="bi bi-cash-coin" aria-hidden="true"></i></span><h2>Chưa có quy tắc thưởng</h2><p>Tạo quy tắc đầu tiên để liên kết xếp loại với tỷ lệ hoặc số tiền thưởng.</p>@if (canCreateRule) { <button type="button" class="bonus-rules-primary-action" data-bs-toggle="modal" data-bs-target="#createModal">Thêm quy tắc</button> }</div>
+            <div class="bonus-rules-empty" role="status"><span><i class="bi bi-cash-coin" aria-hidden="true"></i></span><h2>Chưa có quy tắc thưởng</h2><p>Tạo quy tắc đầu tiên để liên kết xếp loại với tỷ lệ hoặc số tiền thưởng.</p>@if (canCreateRule) { <button type="button" class="bonus-rules-primary-action page-create-action" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Tạo quy tắc</span></button> }</div>
         }
         else
         {

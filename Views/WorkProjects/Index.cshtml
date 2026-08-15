@@ -39,8 +39,8 @@
             <h1><i class="bi bi-kanban text-primary me-2" aria-hidden="true"></i>Dự án cộng tác</h1>
             <p class="text-muted mb-0">Quản lý dự án Agile/Kanban, giao việc theo phòng ban và theo dõi tiến độ tập trung.</p>
         </div>
-        <a asp-action="Create" class="btn btn-primary workprojects-create">
-            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Tạo dự án
+        <a asp-action="Create" class="btn btn-primary workprojects-create page-create-action">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i><span>Tạo dự án</span>
         </a>
     </div>
 
@@ -267,7 +267,7 @@
                 else
                 {
                     <p>Tạo dự án đầu tiên để bắt đầu giao việc và cộng tác giữa các phòng ban.</p>
-                    <a asp-action="Create" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Tạo dự án</a>
+                    <a asp-action="Create" class="btn btn-primary btn-sm page-create-action"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Tạo dự án</span></a>
                 }
             </div>
         }

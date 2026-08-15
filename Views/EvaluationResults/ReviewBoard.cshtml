@@ -84,7 +84,20 @@
             }
         </div>
 
-        <div class="evaluation-table-shell evaluation-review-table-shell">
+        @if (!hasResults)
+        {
+            <div class="evaluation-empty" role="status">
+                <span class="evaluation-empty-icon"><i class="bi bi-clipboard-check" aria-hidden="true"></i></span>
+                <h2>Tất cả đã được xử lý!</h2>
+                <p>Không có đánh giá nào đang chờ duyệt lúc này.</p>
+                <a asp-action="Index" class="evaluation-secondary-action">
+                    <i class="bi bi-arrow-left" aria-hidden="true"></i>Quay lại danh sách
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="evaluation-table-shell evaluation-review-table-shell">
                 <table class="evaluation-table evaluation-review-table" aria-label="Danh sách hồ sơ chờ duyệt">
                     <thead>
                         <tr>
@@ -98,16 +111,14 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @if (hasResults)
+                        @foreach (var result in results)
                         {
-                            foreach (var result in results)
-                            {
-                                var empName = result.EmployeeId.HasValue && employees.ContainsKey(result.EmployeeId.Value) ? employees[result.EmployeeId.Value] : "N/A";
-                                var periodName = result.PeriodId.HasValue && periods.ContainsKey(result.PeriodId.Value) ? periods[result.PeriodId.Value] : "N/A";
-                                var rankCode = result.RankId.HasValue && ranks.ContainsKey(result.RankId.Value) ? ranks[result.RankId.Value] : "N/A";
+                            var empName = result.EmployeeId.HasValue && employees.ContainsKey(result.EmployeeId.Value) ? employees[result.EmployeeId.Value] : "N/A";
+                            var periodName = result.PeriodId.HasValue && periods.ContainsKey(result.PeriodId.Value) ? periods[result.PeriodId.Value] : "N/A";
+                            var rankCode = result.RankId.HasValue && ranks.ContainsKey(result.RankId.Value) ? ranks[result.RankId.Value] : "N/A";
 
-                                string initials = string.Join("", empName.Split(' ').Select(n => n.Length > 0 ? n[0].ToString() : "")).ToUpper();
-                                if (initials.Length > 2) initials = initials.Substring(0, 2);
+                            string initials = string.Join("", empName.Split(' ').Select(n => n.Length > 0 ? n[0].ToString() : "")).ToUpper();
+                            if (initials.Length > 2) initials = initials.Substring(0, 2);
 
                                 <tr>
                                     <!-- Nhân viên -->
@@ -180,37 +191,19 @@
                                         }
                                     </td>
                                 </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="7" class="p-0">
-                                    <div class="evaluation-empty" role="status">
-                                        <span class="evaluation-empty-icon"><i class="bi bi-clipboard-check" aria-hidden="true"></i></span>
-                                        <h2>Tất cả đã được xử lý!</h2>
-                                        <p>Không có đánh giá nào đang chờ duyệt lúc này.</p>
-                                        <a asp-action="Index" class="evaluation-secondary-action">
-                                            <i class="bi bi-arrow-left" aria-hidden="true"></i>Quay lại danh sách
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
                         }
                     </tbody>
                 </table>
             </div>
             <div class="evaluation-review-mobile-list">
-                @if (hasResults)
+                @foreach (var result in results)
                 {
-                    foreach (var result in results)
-                    {
-                        var empName = result.EmployeeId.HasValue && employees.ContainsKey(result.EmployeeId.Value) ? employees[result.EmployeeId.Value] : "N/A";
-                        var periodName = result.PeriodId.HasValue && periods.ContainsKey(result.PeriodId.Value) ? periods[result.PeriodId.Value] : "N/A";
-                        var rankCode = result.RankId.HasValue && ranks.ContainsKey(result.RankId.Value) ? ranks[result.RankId.Value] : "N/A";
+                    var empName = result.EmployeeId.HasValue && employees.ContainsKey(result.EmployeeId.Value) ? employees[result.EmployeeId.Value] : "N/A";
+                    var periodName = result.PeriodId.HasValue && periods.ContainsKey(result.PeriodId.Value) ? periods[result.PeriodId.Value] : "N/A";
+                    var rankCode = result.RankId.HasValue && ranks.ContainsKey(result.RankId.Value) ? ranks[result.RankId.Value] : "N/A";
 
-                        string initials = string.Join("", empName.Split(' ').Select(n => n.Length > 0 ? n[0].ToString() : "")).ToUpper();
-                        if (initials.Length > 2) initials = initials.Substring(0, 2);
+                    string initials = string.Join("", empName.Split(' ').Select(n => n.Length > 0 ? n[0].ToString() : "")).ToUpper();
+                    if (initials.Length > 2) initials = initials.Substring(0, 2);
 
                         <article class="evaluation-review-card">
                             <div class="evaluation-review-card__header">
@@ -269,20 +262,9 @@
                                 </div>
                             </div>
                         </article>
-                    }
-                }
-                else
-                {
-                    <div class="evaluation-empty" role="status">
-                        <span class="evaluation-empty-icon"><i class="bi bi-clipboard-check" aria-hidden="true"></i></span>
-                        <h2>Tất cả đã được xử lý!</h2>
-                        <p>Không có đánh giá nào đang chờ duyệt lúc này.</p>
-                        <a asp-action="Index" class="evaluation-secondary-action">
-                            <i class="bi bi-arrow-left" aria-hidden="true"></i>Quay lại danh sách
-                        </a>
-                    </div>
                 }
             </div>
+        }
     </section>
 </div>
 

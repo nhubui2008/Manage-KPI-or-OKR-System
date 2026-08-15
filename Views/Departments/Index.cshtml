@@ -57,9 +57,9 @@
         </div>
         @if (canCreateDepartment)
         {
-            <a class="evaluation-primary-action" asp-action="Create" asp-controller="Departments">
+            <a class="evaluation-primary-action page-create-action" asp-action="Create" asp-controller="Departments">
                 <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                <span>Thêm phòng ban</span>
+                <span>Tạo phòng ban</span>
             </a>
         }
     </header>
@@ -180,7 +180,7 @@
                         }
                         else if (canCreateDepartment)
                         {
-                            <a asp-action="Create" class="evaluation-primary-action">Thêm phòng ban</a>
+                            <a asp-action="Create" class="evaluation-primary-action page-create-action"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Tạo phòng ban</span></a>
                         }
                     </div>
                 }

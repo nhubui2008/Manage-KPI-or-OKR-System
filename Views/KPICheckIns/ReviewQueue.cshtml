@@ -588,6 +588,19 @@
                         </article>
                     }
                 }
+                else
+                {
+                    <div class="rq-empty" role="status">
+                        <div class="rq-empty-icon">
+                            <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                        </div>
+                        <div class="rq-empty-title">Tất cả đã được xác nhận!</div>
+                        <div class="rq-empty-sub">Không có check-in nào đang chờ xác nhận lúc này.</div>
+                        <a asp-action="Index" class="btn btn-outline-primary rounded-pill mt-3 px-4" style="font-size:.85rem;">
+                            <i class="bi bi-clock-history me-1" aria-hidden="true"></i>Xem lịch sử check-in
+                        </a>
+                    </div>
+                }
             </div>
 
             @if (Model.TotalPages > 1)

@@ -27,9 +27,9 @@
         </div>
         @if (Model.CanCreateMission)
         {
-            <a asp-action="Create" asp-route-type="@MissionVision.TypeYearlyGoal" class="btn btn-primary mv-primary-action">
+            <a asp-action="Create" asp-route-type="@MissionVision.TypeYearlyGoal" class="btn btn-primary mv-primary-action page-create-action">
                 <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                <span>Thêm mục tiêu</span>
+                <span>Tạo mục tiêu</span>
             </a>
         }
     </header>
@@ -150,7 +150,7 @@
                     @if (Model.CanCreateMission)
                     {
                         <div>
-                            <a asp-action="Create" asp-route-type="@MissionVision.TypeVision" class="btn btn-outline-primary mv-setup-action">
+                            <a asp-action="Create" asp-route-type="@MissionVision.TypeVision" class="btn btn-outline-primary mv-setup-action page-create-action">
                                 <i class="bi bi-plus-lg" aria-hidden="true"></i>
                                 <span>Thiết lập Tầm nhìn</span>
                             </a>
@@ -224,7 +224,7 @@
                     @if (Model.CanCreateMission)
                     {
                         <div>
-                            <a asp-action="Create" asp-route-type="@MissionVision.TypeMission" class="btn btn-outline-primary mv-setup-action">
+                            <a asp-action="Create" asp-route-type="@MissionVision.TypeMission" class="btn btn-outline-primary mv-setup-action page-create-action">
                                 <i class="bi bi-plus-lg" aria-hidden="true"></i>
                                 <span>Thiết lập Sứ mệnh</span>
                             </a>
@@ -337,9 +337,9 @@
                 <p>Thiết lập mục tiêu cụ thể để chuyển định hướng dài hạn thành kế hoạch hành động.</p>
                 @if (Model.CanCreateMission)
                 {
-                    <a asp-action="Create" asp-route-type="@MissionVision.TypeYearlyGoal" class="btn btn-outline-primary mv-setup-action">
+                    <a asp-action="Create" asp-route-type="@MissionVision.TypeYearlyGoal" class="btn btn-outline-primary mv-setup-action page-create-action">
                         <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                        <span>Thêm mục tiêu</span>
+                        <span>Tạo mục tiêu</span>
                     </a>
                 }
             </div>

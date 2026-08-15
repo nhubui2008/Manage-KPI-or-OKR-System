@@ -533,7 +533,37 @@ textarea.evaluation-form-input {
 .rq-alert-icon { flex-shrink: 0; margin-top: 0.0625rem; font-size: 1.1rem; }
 .rq-alert .btn-close { margin-left: auto; }
 
-.rq-mobile-list { display: none; }
+.rq-mobile-list,
+.evaluation-review-mobile-list {
+  display: none;
+}
+
+.evaluation-review-score,
+.evaluation-review-rank {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.evaluation-review-score {
+  color: var(--eval-primary);
+}
+
+.evaluation-review-rank {
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--eval-card-border);
+  border-radius: 4px;
+  color: var(--eval-text-primary);
+  background: var(--eval-canvas);
+}
+
+.evaluation-review-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
 
 /* ===== Modal ===== */
 .modal-header {
@@ -596,6 +626,51 @@ textarea.evaluation-form-input {
     display: grid;
     gap: 1rem;
     padding: 1rem;
+  }
+
+  .evaluation-review-mobile-list {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .evaluation-review-card {
+    padding: 1rem;
+    border: 1px solid var(--eval-card-border);
+    border-radius: 8px;
+    background: var(--eval-surface);
+  }
+
+  .evaluation-review-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-bottom: 0.875rem;
+    border-bottom: 1px solid var(--eval-card-border);
+  }
+
+  .evaluation-review-card__grid {
+    display: grid;
+    gap: 0.875rem;
+    padding-top: 0.875rem;
+  }
+
+  .evaluation-review-card__label {
+    margin-bottom: 0.25rem;
+    color: var(--eval-text-secondary);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .evaluation-review-card .evaluation-review-form {
+    min-width: 0;
+  }
+
+  .evaluation-review-card .evaluation-review-approve,
+  .evaluation-review-card .evaluation-review-reject {
+    flex: 1 1 8rem;
   }
 
   .rq-mobile-card {

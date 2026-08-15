@@ -139,8 +139,11 @@ body::-webkit-scrollbar,
     z-index: 1040;
     width: var(--vz-sidebar-width);
     height: 100vh;
-    display: flex;
+    height: 100dvh;
+    min-height: 0;
+    display: flex !important;
     flex-direction: column;
+    padding-bottom: 0;
     overflow: visible;
     border: 0;
     border-right: 1px solid rgba(255, 255, 255, 0.05);
@@ -216,6 +219,11 @@ html.sidebar-expanded .vietmach-shell .navbar-menu.sidebar {
 }
 
 .vietmach-shell .sidebar-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 12px 0 8px;
     scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
@@ -298,7 +306,9 @@ html.sidebar-expanded .vietmach-shell .sidebar-link i {
 }
 
 .vietmach-shell .sidebar-footer {
-    padding: 8px 10px 12px;
+    flex: 0 0 auto;
+    margin-top: auto;
+    padding: 8px 10px max(12px, env(safe-area-inset-bottom));
     border-top: 1px solid rgba(255, 255, 255, 0.09) !important;
     background: var(--vz-sidebar-bg) !important;
 }
@@ -615,11 +625,58 @@ html.sidebar-expanded .vietmach-shell .main-content {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 11%, transparent) !important;
 }
 
+/* Operational filters share one 36px control row; page CTAs remain compact at 34px. */
+.vietmach-shell :is(.filter-actions, .evaluation-filter-form, .employees-filter-form, .toolbar-right)
+    :is(button, .btn, .btn-primary-custom) {
+    min-height: 36px !important;
+    height: 36px !important;
+}
+
+.vietmach-shell .toolbar :is(.form-control, .form-select, .filter-select, .toolbar-search input),
+.vietmach-shell .toolbar .select2-container--default .select2-selection--single {
+    min-height: 36px !important;
+    height: 36px !important;
+}
+
+.vietmach-shell .toolbar .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 34px !important;
+}
+
+.vietmach-shell .toolbar .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 34px !important;
+}
+
+.vietmach-shell .select2-container {
+    display: block;
+    width: 100% !important;
+    max-width: 100%;
+}
+
 .vietmach-shell .select2-container--default .select2-selection--single,
 .vietmach-shell .select2-container--default .select2-selection--multiple {
-    min-height: 36px;
-    border-color: #ced4da;
-    border-radius: 4px;
+    min-height: 36px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 4px !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+.vietmach-shell .select2-container--default .select2-selection--single {
+    height: 36px !important;
+    padding: 0 34px 0 10px !important;
+}
+
+.vietmach-shell .select2-container--default .select2-selection--single .select2-selection__rendered {
+    padding: 0 !important;
+    color: #212529 !important;
+    font-size: 0.8125rem !important;
+    line-height: 34px !important;
+}
+
+.vietmach-shell .select2-container--default .select2-selection--single .select2-selection__arrow {
+    right: 8px !important;
+    width: 20px !important;
+    height: 34px !important;
 }
 
 .vietmach-shell .select2-container--default .select2-selection--single .select2-selection__placeholder {
@@ -1720,4 +1777,56 @@ html.sidebar-expanded .vietmach-shell .main-content {
     font-weight: 700 !important;
     line-height: 1 !important;
     letter-spacing: 0 !important;
+}
+
+/* Shared compact create action used in page headers. */
+.vietmach-shell .page-create-action {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+    min-height: 34px !important;
+    height: 34px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.35rem !important;
+    padding: 0 0.75rem !important;
+    border-radius: 4px !important;
+    font-family: inherit;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    white-space: nowrap;
+    border: 1px solid var(--primary) !important;
+    background: var(--primary) !important;
+    color: #fff !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+}
+
+.vietmach-shell .page-create-action:hover {
+    border-color: var(--primary-dark) !important;
+    background: var(--primary-dark) !important;
+    color: #fff !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.vietmach-shell .page-create-action:active {
+    border-color: var(--primary-darker) !important;
+    background: var(--primary-darker) !important;
+    color: #fff !important;
+}
+
+.vietmach-shell .page-create-action:disabled,
+.vietmach-shell .page-create-action[aria-disabled="true"] {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.vietmach-shell .page-create-action > i {
+    flex: 0 0 auto;
+    margin: 0 !important;
+    font-size: 0.8rem;
+    line-height: 1;
 }

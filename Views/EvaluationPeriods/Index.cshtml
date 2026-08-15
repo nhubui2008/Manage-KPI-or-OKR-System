@@ -31,9 +31,9 @@
         </div>
         @if (Model.CanCreatePeriod)
         {
-            <a asp-action="Create" class="evaluation-primary-action">
+            <a asp-action="Create" class="evaluation-primary-action page-create-action">
                 <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                <span>Thêm kỳ đánh giá</span>
+                <span>Tạo kỳ đánh giá</span>
             </a>
         }
     </header>
@@ -179,7 +179,7 @@
                 }
                 else if (Model.CanCreatePeriod)
                 {
-                    <a asp-action="Create" class="evaluation-primary-action">Tạo kỳ đánh giá</a>
+                    <a asp-action="Create" class="evaluation-primary-action page-create-action"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Tạo kỳ đánh giá</span></a>
                 }
             </div>
         }
