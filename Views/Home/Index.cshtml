@@ -1,1887 +1,421 @@
 @model List<Manage_KPI_or_OKR_System.Models.SaaSPackage>
 @{
-    ViewData["Title"] = "VietMach - Nền tảng Quản trị Hiệu suất Toàn diện";
+    ViewData["Title"] = "Manage KPI & OKR | VietMach System";
+    ViewData["Description"] = "VietMach System giúp doanh nghiệp thiết lập, theo dõi, đánh giá và phê duyệt KPI, OKR trên một nền tảng thống nhất.";
     ViewData["IsLandingPage"] = true;
-    ViewData["Description"] = "Phần mềm SaaS chuyên nghiệp quản trị OKR, đo lường KPI, đánh giá nhân sự 360 độ và hỗ trợ quyết định bằng AI có nguồn.";
 }
 
-<style>
-    /* ===== DESIGN TOKENS ===== */
-    :root {
-        --primary: #7b68ee;
-        --primary-light: #b38cff;
-        --primary-dark: #6647f0;
-        --secondary: #292d34;
-        --secondary-light: #646464;
-        --accent: #0091ff;
+@section Styles {
+    <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
+}
 
-        --surface-0: #ffffff;
-        --surface-1: #f8f9fa;
-        --surface-2: #edf6fd;
-        --surface-3: #e8e8e8;
+<a class="landing-skip-link" href="#landing-main">Bỏ qua điều hướng</a>
 
-        --text-primary: #090c1d;
-        --text-secondary: #292d34;
-        --text-tertiary: #646464;
-        --text-quaternary: #7c828d;
+<header class="landing-header" data-landing-header>
+    <div class="landing-container landing-nav">
+        <a class="landing-brand" asp-controller="Home" asp-action="Index" aria-label="VietMach System - Trang chủ">
+            <span class="landing-brand-mark" aria-hidden="true">VM</span>
+            <span><strong>VietMach System</strong><small>Manage KPI &amp; OKR</small></span>
+        </a>
 
-        --border: #e8e8e8;
-        --border-hover: #d9d9d9;
-        --glass: rgba(255, 255, 255, 0.85);
-        --glass-heavy: rgba(255, 255, 255, 0.95);
+        <button class="landing-menu-button" type="button" aria-expanded="false"
+                aria-controls="landing-navigation" data-menu-button>
+            <span class="visually-hidden">Mở menu</span>
+            <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+        </button>
 
-        --radius-sm: 9px;
-        --radius-md: 8px;
-        --radius-lg: 8px;
-        --radius-xl: 8px;
-        --radius-2xl: 8px;
-
-        --shadow-sm: rgba(0,0,0,0.1) 0 1px 3px 0, rgba(0,0,0,0.1) 0 1px 2px -1px;
-        --shadow-md: rgba(18,43,165,0.04) 0 1px 1px -0.5px, rgba(18,43,165,0.04) 0 3px 3px -1.5px, rgba(18,43,165,0.04) 0 8px 12px -6px;
-        --shadow-lg: rgba(18,43,165,0.06) 0 6px 18px -8px;
-        --shadow-xl: rgba(18,43,165,0.08) 0 12px 28px -12px;
-    }
-
-    /* ===== RESET ===== */
-    *, *::before, *::after {
-        margin: 0; padding: 0; box-sizing: border-box;
-        user-select: none !important; -webkit-user-select: none !important;
-        -webkit-user-drag: none !important; cursor: default;
-    }
-    input, textarea { user-select: text !important; -webkit-user-select: text !important; cursor: text !important; }
-    a, button, .tab-btn, .nav-link, i, .clickable { cursor: pointer !important; }
-
-    body {
-        font-family: hkgrotesk, Poppins, system-ui, -apple-system, sans-serif;
-        color: var(--text-secondary); background: var(--surface-0);
-        overflow-x: clip; -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-    }
-    h1, h2, h3, h4, h5 { font-family: hkgrotesk, Poppins, sans-serif; color: var(--text-primary); }
-
-    /* ===== UTILITY ===== */
-    .gradient-text {
-        color: var(--primary);
-    }
-    .section-label {
-        display: inline-flex; align-items: center; gap: 8px;
-        font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0;
-        color: var(--primary); margin-bottom: 1rem;
-    }
-    .section-title {
-        font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; line-height: 1.15;
-        letter-spacing: 0; margin-bottom: 1rem;
-    }
-    .section-desc {
-        font-size: 1.1rem; color: var(--text-tertiary); line-height: 1.7;
-        max-width: 640px; margin: 0 auto 3rem;
-    }
-
-    /* ===== ANIMATED BG ===== */
-    .landing-bg {
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        z-index: -1; pointer-events: none; overflow: hidden;
-        background-color: #f8fafc;
-    }
-    .grid-pattern {
-        position: absolute; inset: 0;
-        background-size: 40px 40px;
-        background-image:
-            linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px);
-    }
-
-    /* ===== NAVBAR ===== */
-    .lp-nav {
-        position: fixed; top: 0; width: 100%; z-index: 1000;
-        padding: 1rem 5%;
-        backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-        background: var(--glass-heavy); border-bottom: 1px solid var(--border);
-        transition: box-shadow 0.3s, padding 0.3s;
-    }
-    .lp-nav.scrolled { padding: 0.7rem 5%; box-shadow: var(--shadow-md); }
-    .lp-nav-inner {
-        max-width: 1320px; margin: 0 auto;
-        display: flex; justify-content: space-between; align-items: center;
-    }
-    .lp-brand {
-        display: flex; align-items: center; gap: 10px; text-decoration: none;
-        font-family: hkgrotesk, Poppins, sans-serif; font-weight: 900; font-size: 1.5rem;
-        color: var(--text-primary); letter-spacing: 0;
-    }
-    .lp-brand i { font-size: 1.6rem; color: var(--primary); }
-    .lp-nav-left { display: flex; align-items: center; gap: 3rem; }
-    .lp-nav-links { display: flex; align-items: center; gap: 2rem; }
-    .lp-nav-link {
-        text-decoration: none; color: var(--text-tertiary); font-size: 0.95rem;
-        font-weight: 500; transition: color 0.2s; position: relative;
-    }
-    .lp-nav-link:hover { color: var(--primary); }
-    .lp-nav-link::after {
-        content: ''; position: absolute; bottom: -4px; left: 0;
-        width: 0; height: 2px; background: var(--primary);
-        transition: width 0.3s;
-    }
-    .lp-nav-link:hover::after { width: 100%; }
-    
-    /* Header Dropdown */
-    .lp-dropdown { position: relative; display: inline-block; padding: 0.5rem 0; }
-    .lp-dropdown-menu {
-        position: absolute; top: 100%; left: 0; min-width: 260px;
-        background: white; border-radius: var(--radius-md); padding: 0.5rem;
-        box-shadow: var(--shadow-lg); border: 1px solid var(--border);
-        opacity: 0; visibility: hidden; transform: translateY(10px);
-        transition: all 0.3s; z-index: 100;
-    }
-    .lp-dropdown:hover .lp-dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
-    .lp-dropdown-menu a {
-        display: flex; align-items: center; gap: 12px; padding: 0.8rem 1rem;
-        text-decoration: none; color: var(--text-secondary); font-size: 0.95rem; font-weight: 600;
-        border-radius: var(--radius-sm); transition: background 0.2s;
-    }
-    .lp-dropdown-menu a:hover { background: var(--surface-1); color: var(--primary); }
-    .lp-dropdown-menu i { color: var(--primary); font-size: 1.2rem; background: rgba(79,70,229,0.1); padding: 6px; border-radius: 8px; }
-
-    .lp-nav-actions { display: flex; align-items: center; gap: 1.5rem; }
-    .lp-cart-btn {
-        position: relative; color: var(--text-secondary); font-size: 1.4rem; transition: color 0.3s; text-decoration: none;
-    }
-    .lp-cart-btn:hover { color: var(--primary); }
-    .cart-badge {
-        position: absolute; top: -6px; right: -8px; background: #ef4444; color: white;
-        font-size: 0.65rem; font-weight: 800; width: 18px; height: 18px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-    }
-    .lp-nav-divider { width: 1px; height: 24px; background: var(--border); }
-    .lp-nav-link-btn { text-decoration: none; font-weight: 600; font-size: 0.95rem; color: var(--text-secondary); transition: color 0.3s; }
-    .lp-nav-link-btn:hover { color: var(--primary); }
-    
-    .lp-cta-btn {
-        display: inline-flex; align-items: center; gap: 8px;
-        background: #202023; color: white !important;
-        padding: 0.7rem 1.6rem; border-radius: var(--radius-sm);
-        font-weight: 600; font-size: 0.95rem; text-decoration: none;
-        transition: all 0.3s; border: none;
-        box-shadow: var(--shadow-sm);
-    }
-    .lp-cta-btn:hover {
-        background: #000000; transform: translateY(-1px);
-        box-shadow: var(--shadow-md); color: white !important;
-    }
-
-    /* ===== HERO ===== */
-    .lp-hero {
-        padding: 10rem 5% 6rem; position: relative; overflow: hidden;
-    }
-    .lp-hero-inner {
-        max-width: 1320px; margin: 0 auto;
-        display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
-    }
-    .lp-hero-content { position: relative; z-index: 2; }
-    .lp-hero-badge {
-        display: inline-flex; align-items: center; gap: 8px;
-        background: var(--surface-2);
-        color: var(--text-secondary); padding: 0.5rem 1.2rem; border-radius: 54px;
-        font-size: 0.85rem; font-weight: 600; margin-bottom: 1.5rem;
-        border: 1px solid var(--border);
-    }
-    .lp-hero-badge i { font-size: 1rem; color: var(--primary); }
-    .lp-hero h1 {
-        font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800;
-        line-height: 1.1; letter-spacing: 0; margin-bottom: 1.5rem;
-    }
-    .lp-hero p {
-        font-size: 1.15rem; color: var(--text-secondary);
-        line-height: 1.75; margin-bottom: 2.5rem; max-width: 520px;
-    }
-    .lp-hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
-    .btn-primary-lg {
-        display: inline-flex; align-items: center; gap: 10px;
-        background: #202023;
-        color: white !important; padding: 1rem 2rem; border-radius: var(--radius-sm);
-        font-weight: 600; font-size: 1.05rem; text-decoration: none;
-        transition: all 0.3s; border: none;
-        box-shadow: var(--shadow-md);
-    }
-    .btn-primary-lg:hover {
-        transform: translateY(-1px); background: #000000;
-        box-shadow: var(--shadow-lg); color: white !important;
-    }
-    .btn-outline-lg {
-        display: inline-flex; align-items: center; gap: 10px;
-        background: white; color: var(--text-primary) !important;
-        padding: 1rem 2rem; border-radius: var(--radius-sm);
-        font-weight: 600; font-size: 1.05rem; text-decoration: none;
-        transition: all 0.3s; border: 1px solid var(--border);
-        box-shadow: var(--shadow-sm);
-    }
-    .btn-outline-lg:hover {
-        border-color: var(--border-hover); background: var(--surface-1);
-    }
-
-    .lp-hero-visual { position: relative; z-index: 1; }
-    .lp-hero-img-wrap {
-        position: relative; border-radius: var(--radius-lg);
-        overflow: hidden; box-shadow: var(--shadow-xl);
-        border: 1px solid var(--border);
-        transform: translateY(0);
-        transition: transform 0.5s ease;
-    }
-    .lp-hero-img-wrap:hover {
-        transform: translateY(-8px);
-    }
-    .lp-hero-img-wrap img { width: 100%; height: auto; display: block; }
-
-    /* ===== TRUSTED / STATS ===== */
-    .lp-stats {
-        padding: 4rem 5%; background: var(--surface-1);
-        border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-    }
-    .lp-stats-inner {
-        max-width: 1100px; margin: 0 auto;
-        display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem;
-        text-align: center;
-    }
-    .stat-item { padding: 1.5rem; }
-    .stat-number {
-        font-family: hkgrotesk, Poppins, sans-serif; font-size: 2.8rem; font-weight: 900;
-        color: var(--primary); line-height: 1; margin-bottom: 0.5rem;
-    }
-    .stat-number .stat-suffix { font-size: 1.5rem; color: var(--secondary); }
-    .stat-label { font-size: 0.95rem; color: var(--text-tertiary); font-weight: 500; }
-
-    /* ===== SHOWCASE TABS ===== */
-    .lp-showcase { padding: 6rem 5%; }
-    .lp-showcase-header { text-align: center; margin-bottom: 3rem; }
-    .lp-showcase-inner {
-        max-width: 1320px; margin: 0 auto;
-    }
-    .lp-tabs-nav {
-        display: flex; gap: 0.5rem; margin-bottom: 2rem;
-        overflow-x: auto; padding-bottom: 0.5rem;
-        scrollbar-width: none; -ms-overflow-style: none;
-    }
-    .lp-tabs-nav::-webkit-scrollbar { display: none; }
-    .lp-tab-btn {
-        flex-shrink: 0; display: flex; align-items: center; gap: 8px;
-        padding: 0.8rem 1.4rem; border-radius: var(--radius-md);
-        background: white; border: 1px solid var(--border);
-        font-weight: 600; font-size: 0.9rem; color: var(--text-secondary);
-        transition: all 0.2s; white-space: nowrap;
-        box-shadow: var(--shadow-sm);
-    }
-    .lp-tab-btn:hover { color: var(--primary); border-color: var(--border-hover); }
-    .lp-tab-btn.active {
-        background: var(--surface-1); color: var(--primary);
-        border-color: var(--primary); box-shadow: none;
-    }
-    .lp-tab-btn i { font-size: 1.1rem; }
-
-    /* ===== STICKY SHOWCASE ===== */
-    .sticky-showcase { padding: 8rem 5%; background: var(--surface-0); position: relative; }
-    .sticky-showcase-header { text-align: center; margin-bottom: 4rem; }
-    .sticky-layout {
-        max-width: 1320px; margin: 0 auto;
-        display: grid; grid-template-columns: 1fr 1.2fr; gap: 4rem;
-        position: relative; align-items: flex-start;
-    }
-    .sticky-text-side { display: flex; flex-direction: column; gap: 60vh; padding-bottom: 40vh; margin-top: 10vh; }
-    .sticky-block {
-        background: white; border: 1px solid var(--border); border-radius: var(--radius-xl);
-        padding: 2.5rem; box-shadow: var(--shadow-md);
-        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); opacity: 0.4; transform: scale(0.95) translateY(10px);
-    }
-    .sticky-block.is-active { 
-        opacity: 1; transform: scale(1) translateY(0); 
-        border-color: var(--primary); box-shadow: 0 12px 40px rgba(79, 70, 229, 0.15); 
-    }
-    .sticky-block h3 { font-size: 1.8rem; font-weight: 800; margin-bottom: 1rem; color: var(--text-primary); letter-spacing: 0; }
-    .sticky-block p { font-size: 1.05rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem; }
-    .sticky-block ul { list-style: none; display: flex; flex-direction: column; gap: 0.8rem; }
-    .sticky-block li { display: flex; align-items: center; gap: 12px; font-weight: 500; font-size: 0.95rem; color: var(--text-secondary); }
-    .sticky-block li i { color: var(--primary); font-size: 1.1rem; }
-
-    .sticky-visual-side {
-        position: sticky; top: 120px; padding: 2rem;
-        background: var(--surface-1); border-radius: var(--radius-xl);
-        display: flex; align-items: center; justify-content: center; overflow: hidden;
-        border: 1px solid var(--border); box-shadow: inset 0 0 40px rgba(0,0,0,0.02);
-        align-self: start; height: fit-content; max-height: calc(100vh - 140px);
-    }
-    .browser-mockup {
-        width: 100%; aspect-ratio: 16/10; height: auto; background: white; border-radius: 12px;
-        box-shadow: 0 24px 60px rgba(0,0,0,0.1); overflow: hidden;
-        display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.05);
-    }
-    .browser-header {
-        height: 32px; background: #e2e8f0; display: flex; align-items: center; padding: 0 14px; gap: 8px; border-bottom: 1px solid #cbd5e1;
-    }
-    .browser-dot { width: 12px; height: 12px; border-radius: 50%; }
-    .dot-red { background: #ff5f56; } .dot-yellow { background: #ffbd2e; } .dot-green { background: #27c93f; }
-    .browser-content { flex: 1; position: relative; background: #fff; overflow: hidden; }
-    .sticky-img {
-        position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: left top;
-        opacity: 0; transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(20px) scale(1.02);
-    }
-    .sticky-img.is-active { opacity: 1; transform: translateY(0) scale(1); }
-
-    /* ===== BENTO GRID ===== */
-    .bento-features { padding: 8rem 5%; background: var(--surface-0); border-top: 1px solid var(--border); }
-    .bento-header { text-align: center; margin-bottom: 4rem; }
-    .bento-grid {
-        max-width: 1200px; margin: 0 auto;
-        display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: minmax(180px, auto); gap: 1.5rem;
-    }
-    .bento-card {
-        background: white; border-radius: var(--radius-xl); padding: 2rem;
-        border: 1px solid var(--border); box-shadow: var(--shadow-sm);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative; overflow: hidden; display: flex; flex-direction: column;
-    }
-    .bento-card:hover { transform: translateY(-4px) scale(1.01); box-shadow: var(--shadow-xl); border-color: var(--primary-light); }
-    
-    .bento-content { position: relative; z-index: 2; display: flex; flex-direction: column; }
-    .bento-icon { width: 44px; height: 44px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 1rem; }
-    .bento-icon.blue { background: rgba(79,70,229,0.08); color: var(--primary); }
-    .bento-icon.purple { background: rgba(124,58,237,0.08); color: var(--secondary); }
-    .bento-icon.cyan { background: rgba(6,182,212,0.08); color: var(--accent); }
-    .bento-icon.emerald { background: rgba(16,185,129,0.08); color: #10b981; }
-    .bento-icon.amber { background: rgba(245,158,11,0.08); color: #f59e0b; }
-    .bento-icon.rose { background: rgba(244,63,94,0.08); color: #f43f5e; }
-    .bento-title { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: 0; color: var(--text-primary); line-height: 1.3; }
-    .bento-desc { font-size: 0.95rem; color: var(--text-tertiary); line-height: 1.5; }
-    
-    .bento-visual { 
-        margin-top: 1.5rem; border-radius: var(--radius-lg); overflow: hidden; 
-        background: var(--surface-1); display: flex; align-items: center; justify-content: center; 
-        position: relative; z-index: 1; border: 1px solid var(--border); flex: 1; min-height: 120px;
-    }
-    
-    /* Grid specific sizing */
-    .bento-large { grid-column: span 2; grid-row: span 2; }
-    .bento-wide { grid-column: span 2; grid-row: span 1; }
-    .bento-tall { grid-column: span 1; grid-row: span 2; }
-    .bento-normal { grid-column: span 1; grid-row: span 1; }
-
-    /* Bento Visuals Custom CSS */
-    .bv-ai { background: linear-gradient(135deg, rgba(124,58,237,0.05), rgba(79,70,229,0.05)); align-items: flex-end; padding: 1rem; border-color: rgba(124,58,237,0.15); }
-    .bv-ai-chat { width: 100%; display: flex; flex-direction: column; gap: 8px; }
-    .bv-msg { padding: 8px 12px; border-radius: 12px; font-size: 0.8rem; max-width: 85%; font-weight: 500; }
-    .bv-msg.user { background: white; color: var(--text-primary); border: 1px solid var(--border); align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: var(--shadow-sm); }
-    .bv-msg.bot { background: var(--primary); color: white; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: var(--shadow-sm); }
-    .bv-typing { display: flex; gap: 4px; padding: 4px 2px; }
-    .bv-typing span { width: 4px; height: 4px; background: rgba(255,255,255,0.7); border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; }
-    .bv-typing span:nth-child(1) { animation-delay: -0.32s; }
-    .bv-typing span:nth-child(2) { animation-delay: -0.16s; }
-    @@keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-    
-    .bv-tree { background: var(--surface-1); flex-direction: column; padding: 1.5rem; gap: 1rem; border-color: rgba(79,70,229,0.15); }
-    .bv-node { background: white; border: 1px solid var(--primary-light); color: var(--primary-dark); font-size: 0.8rem; font-weight: 700; padding: 6px 16px; border-radius: 8px; box-shadow: var(--shadow-sm); z-index: 2; }
-    .bv-branches { display: flex; gap: 2rem; position: relative; }
-    .bv-branches::before { content: ''; position: absolute; top: -1rem; left: 50%; width: 2px; height: 1rem; background: var(--primary-light); transform: translateX(-50%); }
-    .bv-branches::after { content: ''; position: absolute; top: -1rem; left: 25%; right: 25%; height: 2px; background: var(--primary-light); }
-    .bv-leaf { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
-    .bv-leaf::before { content: ''; position: absolute; top: -1rem; left: 50%; width: 2px; height: 1rem; background: var(--primary-light); transform: translateX(-50%); }
-    .bv-node.sub { background: white; border-color: var(--border); color: var(--text-secondary); }
-
-    .bv-bonus { background: #fffaf0; flex-direction: column; padding: 1.5rem; justify-content: center; gap: 1rem; border-color: #fde68a; }
-    .bv-bar-wrap { width: 100%; height: 8px; background: #fef3c7; border-radius: 4px; overflow: hidden; }
-    .bv-bar-fill { width: 75%; height: 100%; background: linear-gradient(90deg, #f59e0b, #fbbf24); border-radius: 4px; position: relative; overflow: hidden; }
-    .bv-bar-fill::after { content:''; position: absolute; top:0; left:0; bottom:0; width: 200%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: shimmer 2s infinite; }
-    @@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(50%); } }
-    .bv-tags { display: flex; justify-content: space-between; width: 100%; font-size: 0.75rem; font-weight: 700; color: #b45309; }
-
-    .bv-chart { background: #f0fdf4; align-items: flex-end; padding: 1.5rem 1.5rem 0 1.5rem; gap: 12px; border-color: #bbf7d0; }
-    .bv-col { flex: 1; background: #10b981; border-top-left-radius: 4px; border-top-right-radius: 4px; opacity: 0.8; transition: height 0.5s; position: relative; overflow: hidden; }
-    .bv-col::after { content:''; position: absolute; top:0; left:0; right:0; height: 100%; background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%); }
-    .bv-col:hover { opacity: 1; }
-
-    .bv-log { background: #f8fafc; flex-direction: column; align-items: flex-start; padding: 1.5rem; gap: 12px; border-color: #e2e8f0; }
-    .bv-line { height: 8px; border-radius: 4px; background: #cbd5e1; width: 100%; }
-    .bv-line.w-70 { width: 70%; background: #94a3b8; }
-    .bv-line.w-40 { width: 40%; background: #cbd5e1; }
-    
-    .bv-lock { background: #f0fdfa; border-color: #ccfbf1; font-size: 3rem; color: #14b8a6; }
-
-    /* Media queries for bento */
-    @@media (max-width: 1024px) { .bento-grid { grid-template-columns: repeat(2, 1fr); } .sticky-layout { grid-template-columns: 1fr; } .sticky-visual-side { display: none; } .sticky-text-side { gap: 2rem; padding-bottom: 0; } .sticky-block { opacity: 1; transform: none; } }
-    @@media (max-width: 640px) { .bento-grid { grid-template-columns: 1fr; } .bento-large, .bento-wide, .bento-tall { grid-column: span 1; grid-row: auto; } }
-
-    /* ===== WORKFLOW TIMELINE ===== */
-    .lp-workflow { padding: 6rem 5%; }
-    .lp-workflow-header { text-align: center; margin-bottom: 3.5rem; }
-    .lp-workflow-track {
-        max-width: 1100px; margin: 0 auto;
-        display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
-        position: relative;
-    }
-    .lp-workflow-track::before {
-        content: ''; position: absolute;
-        top: 36px; left: 10%; right: 10%;
-        height: 3px; background: var(--surface-3);
-        z-index: 0;
-    }
-    .wf-step {
-        text-align: center; position: relative; z-index: 1;
-        padding: 0 0.5rem;
-    }
-    .wf-step-num {
-        width: 72px; height: 72px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-family: hkgrotesk, Poppins, sans-serif; font-size: 1.5rem; font-weight: 900;
-        margin: 0 auto 1.2rem; transition: all 0.4s;
-        border: 2px solid var(--border); background: white; color: var(--text-tertiary);
-    }
-    .wf-step:hover .wf-step-num {
-        background: var(--primary);
-        color: white; border-color: var(--primary);
-        box-shadow: var(--shadow-md); transform: scale(1.05);
-    }
-    .wf-step h4 { font-size: 1rem; font-weight: 800; margin-bottom: 0.4rem; }
-    .wf-step p { font-size: 0.85rem; color: var(--text-tertiary); line-height: 1.5; }
-
-    /* ===== PRICING ===== */
-    .lp-pricing { padding: 6rem 5%; background: var(--surface-0); border-top: 1px solid var(--border); }
-    .lp-pricing-header { text-align: center; margin-bottom: 4rem; }
-    .lp-pricing-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; align-items: center; }
-    .pricing-card { background: var(--surface-1); border-radius: var(--radius-xl); padding: 3rem 2.5rem; border: 1px solid var(--border); transition: all 0.3s; position: relative; }
-    .pricing-card:hover { transform: translateY(-10px); box-shadow: var(--shadow-lg); border-color: var(--primary-glow); }
-    .pricing-card.popular { background: white; border-color: var(--primary); box-shadow: var(--shadow-lg); transform: scale(1.05); z-index: 2; }
-    .pricing-card.popular:hover { transform: scale(1.05) translateY(-10px); box-shadow: var(--shadow-xl); }
-    .pricing-badge { position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%); background: var(--primary); color: white; padding: 0.4rem 1.2rem; border-radius: 54px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; white-space: nowrap; box-shadow: var(--shadow-sm); }
-    .pricing-card h3 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
-    .pricing-card p { color: var(--text-tertiary); font-size: 0.95rem; margin-bottom: 2rem; }
-    .pricing-price { font-family: hkgrotesk, Poppins, sans-serif; font-size: 3rem; font-weight: 900; color: var(--text-primary); margin-bottom: 2.5rem; line-height: 1; }
-    .pricing-price span { font-size: 1rem; color: var(--text-tertiary); font-weight: 500; }
-    .pricing-features { list-style: none; margin-bottom: 2.5rem; display: flex; flex-direction: column; gap: 1rem; }
-    .pricing-features li { display: flex; align-items: flex-start; gap: 12px; font-size: 0.95rem; color: var(--text-secondary); font-weight: 500; }
-    .pricing-features li i { color: var(--primary); font-size: 1.1rem; flex-shrink: 0; }
-    .pricing-btn { display: block; width: 100%; text-align: center; padding: 1rem; border-radius: var(--radius-sm); font-weight: 600; text-decoration: none; transition: all 0.3s; font-size: 1.05rem; }
-    .pricing-btn.outline { background: white; border: 1px solid var(--border); color: var(--text-primary); box-shadow: var(--shadow-sm); }
-    .pricing-btn.outline:hover { border-color: var(--primary); color: var(--primary); background: var(--surface-1); }
-    .pricing-btn.solid { background: #202023; color: white; border: none; box-shadow: var(--shadow-md); }
-    .pricing-btn.solid:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); color: white; background: #000000; }
-
-    /* ===== TECH TRUST ===== */
-    .lp-tech { padding: 4rem 5%; background: var(--surface-1); border-top: 1px solid var(--border); }
-    .lp-tech-inner {
-        max-width: 900px; margin: 0 auto; text-align: center;
-    }
-    .lp-tech-inner h3 {
-        font-size: 1rem; font-weight: 700; color: var(--text-quaternary);
-        text-transform: uppercase; letter-spacing: 0; margin-bottom: 2rem;
-    }
-    .lp-tech-logos {
-        display: flex; justify-content: center; align-items: center;
-        gap: 3rem; flex-wrap: wrap;
-    }
-    .tech-logo {
-        display: flex; align-items: center; gap: 8px;
-        font-size: 1rem; font-weight: 700; color: var(--text-tertiary);
-        opacity: 0.7; transition: opacity 0.3s;
-    }
-    .tech-logo:hover { opacity: 1; }
-    .tech-logo i { font-size: 1.4rem; }
-
-    /* ===== CTA ===== */
-    .lp-cta { padding: 6rem 5%; }
-    .lp-cta-box {
-        max-width: 1000px; margin: 0 auto; text-align: center;
-        padding: 5rem 3rem; border-radius: var(--radius-2xl);
-        background: var(--text-primary);
-        position: relative; overflow: hidden;
-        box-shadow: var(--shadow-xl);
-    }
-    .lp-cta-box::before {
-        content: ''; position: absolute; inset: 0;
-        background-size: 40px 40px;
-        background-image:
-            linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
-        pointer-events: none;
-    }
-    .lp-cta-box h2 {
-        font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 900;
-        color: white; margin-bottom: 1rem; letter-spacing: 0;
-        position: relative;
-    }
-    .lp-cta-box p {
-        font-size: 1.15rem; color: rgba(255,255,255,0.85); line-height: 1.7;
-        max-width: 560px; margin: 0 auto 2.5rem; position: relative;
-    }
-    .btn-white-lg {
-        display: inline-flex; align-items: center; gap: 10px;
-        background: white; color: var(--primary) !important;
-        padding: 1.1rem 2.5rem; border-radius: var(--radius-sm);
-        font-weight: 800; font-size: 1.1rem; text-decoration: none;
-        transition: all 0.3s; border: none; position: relative;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    }
-    .btn-white-lg:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 14px 36px rgba(0,0,0,0.25);
-    }
-
-    /* ===== FOOTER ===== */
-    .lp-footer { padding: 4rem 5% 2rem; border-top: 1px solid var(--border); background: var(--surface-0); }
-    .lp-footer-inner {
-        max-width: 1200px; margin: 0 auto;
-        display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 3rem;
-        margin-bottom: 3rem;
-    }
-    .lp-footer-brand p { color: var(--text-tertiary); font-size: 0.9rem; line-height: 1.6; margin-top: 1rem; max-width: 280px; }
-    .lp-footer-col h4 { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1.2rem; color: var(--text-primary); }
-    .lp-footer-col ul { list-style: none; }
-    .lp-footer-col li { margin-bottom: 0.6rem; }
-    .lp-footer-col a {
-        text-decoration: none; color: var(--text-tertiary); font-size: 0.9rem;
-        transition: color 0.2s; font-weight: 500;
-    }
-    .lp-footer-col a:hover { color: var(--primary); }
-    .lp-footer-col .contact-item { color: var(--text-tertiary); font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
-    .lp-footer-col .contact-item i { color: var(--primary); }
-    .lp-footer-bottom {
-        text-align: center; padding-top: 2rem;
-        border-top: 1px solid var(--border);
-        color: var(--text-quaternary); font-size: 0.85rem;
-    }
-
-    /* ===== SCROLL ANIMATIONS ===== */
-    .reveal {
-        opacity: 0; transform: translateY(30px);
-        transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-    .reveal-delay-1 { transition-delay: 0.1s; }
-    .reveal-delay-2 { transition-delay: 0.2s; }
-    .reveal-delay-3 { transition-delay: 0.3s; }
-    .reveal-delay-4 { transition-delay: 0.4s; }
-
-    /* ===== RESPONSIVE ===== */
-    @@media (max-width: 1024px) {
-        .lp-hero-inner { grid-template-columns: 1fr; text-align: center; }
-        .lp-hero p { margin-left: auto; margin-right: auto; }
-        .lp-hero-actions { justify-content: center; }
-        .lp-hero-visual { max-width: 600px; margin: 0 auto; }
-        .lp-tabs-body { grid-template-columns: 1fr; }
-        .lp-features-grid { grid-template-columns: repeat(2, 1fr); }
-        .lp-workflow-track { grid-template-columns: repeat(3, 1fr); gap: 2rem; }
-        .lp-workflow-track::before { display: none; }
-        .lp-pricing-inner { grid-template-columns: 1fr; max-width: 500px; }
-        .pricing-card.popular { transform: scale(1); }
-        .pricing-card.popular:hover { transform: translateY(-10px); }
-        .lp-footer-inner { grid-template-columns: 1fr 1fr; }
-        .lp-stats-inner { grid-template-columns: repeat(2, 1fr); }
-        .lp-nav-links { display: none; }
-        .lp-nav-divider { display: none; }
-    }
-    @@media (max-width: 640px) {
-        .lp-nav { padding: 0.75rem 1rem; }
-        .lp-nav-inner { gap: 0.5rem; }
-        .lp-brand { min-width: 0; font-size: 1.1rem; gap: 6px; white-space: nowrap; }
-        .lp-brand i { font-size: 1.25rem; }
-        .lp-hero h1 { font-size: 2.2rem; letter-spacing: 0; }
-        .lp-features-grid { grid-template-columns: 1fr; }
-        .lp-workflow-track { grid-template-columns: 1fr; }
-        .lp-stats-inner { grid-template-columns: 1fr; }
-        .lp-footer-inner { grid-template-columns: 1fr; }
-        .lp-tabs-body { padding: 1.5rem; }
-        .lp-cta-box { padding: 3rem 1.5rem; }
-        .lp-nav-actions { gap: 0.5rem; flex-shrink: 0; }
-        .lp-nav-link-btn { width: 64px; font-size: 0.75rem; padding: 0; line-height: 1.15; text-align: center; }
-        .lp-cta-btn { max-width: 88px; padding: 0.55rem 0.65rem; font-size: 0.75rem; line-height: 1.15; text-align: center; justify-content: center; }
-    }
-</style>
-
-<!-- ===== BG ===== -->
-<div class="landing-bg"><div class="grid-pattern"></div></div>
-
-<a class="app-skip-link" href="#mainContent">Chuyển đến nội dung chính</a>
-
-<!-- ===== NAVBAR ===== -->
-<nav class="lp-nav" id="lp-nav">
-    <div class="lp-nav-inner">
-        <div class="lp-nav-left">
-            <a href="/" class="lp-brand"><i class="bi bi-hexagon-fill"></i> VIETMACH</a>
-            <div class="lp-nav-links">
-                <a href="/" class="lp-nav-link">Trang chủ</a>
-                <div class="lp-dropdown">
-                    <a href="#showcase" class="lp-nav-link">Sản phẩm <i class="bi bi-chevron-down" style="font-size:0.75em; margin-left: 2px;"></i></a>
-                    <div class="lp-dropdown-menu">
-                        <a href="#showcase"><i class="bi bi-speedometer2"></i> Dashboard Quản trị</a>
-                        <a href="#showcase"><i class="bi bi-bullseye"></i> Giải pháp OKR & KPI</a>
-                        <a href="#showcase"><i class="bi bi-robot"></i> Trợ lý AI có nguồn</a>
-                        <a href="#showcase"><i class="bi bi-trophy"></i> Đánh giá & Khen thưởng</a>
-                    </div>
-                </div>
-                <a href="#features" class="lp-nav-link">Tính năng</a>
-                <a href="#workflow" class="lp-nav-link">Quy trình</a>
-                <a href="#pricing" class="lp-nav-link">Bảng giá</a>
-            </div>
-        </div>
-        <div class="lp-nav-actions">
-            @if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                var username = User.Identity.Name ?? "User";
-                var firstLetter = username.Substring(0, 1).ToUpper();
-                var isCustomer = User.Claims.Any(c => c.Type == System.Security.Claims.ClaimTypes.Role && c.Value == "Customer");
-
-                <div class="lp-dropdown" style="padding: 0;">
-                    <div class="lp-user-avatar" style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                        @firstLetter
-                    </div>
-                    <div class="lp-dropdown-menu" style="right: 0; left: auto; min-width: 220px; padding: 0.5rem;">
-                        <div style="padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); margin-bottom: 0.5rem;">
-                            <div style="font-size: 0.8rem; color: var(--text-tertiary);">Đăng nhập với</div>
-                            <div style="font-weight: bold; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@username">@username</div>
-                        </div>
-                        <a href="/Dashboard/Index"><i class="bi bi-grid-1x2-fill" style="color: var(--primary);"></i> Vào Hệ thống</a>
-                        @if (User.HasClaim(Manage_KPI_or_OKR_System.Helpers.AuthRoleHelper.PlatformAdminClaimType, bool.TrueString))
-                        {
-                            <a href="/SaaSAdmin"><i class="bi bi-speedometer2" style="color: #6366f1;"></i> Quản lý Bán hàng & Đơn hàng</a>
-                            <a href="/SaaSAdmin/Packages"><i class="bi bi-tags-fill" style="color: #f59e0b;"></i> Quản lý Gói & Chỉnh giá</a>
-                        }
-                        else
-                        {
-                            <a href="/Home/PurchaseHistory"><i class="bi bi-clock-history" style="color: var(--secondary);"></i> Lịch sử mua</a>
-                        }
-                        <a href="javascript:void(0)" onclick="openChangePasswordModal()"><i class="bi bi-shield-lock" style="color: #10b981;"></i> Đổi mật khẩu</a>
-                        <div style="border-top: 1px solid var(--border); margin: 0.5rem 0;"></div>
-                        <a href="/Auth/Logout" style="color: #dc3545;"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
-                    </div>
-                </div>
-
-            }
-            else
-            {
-                <a href="/Auth/Login" class="lp-nav-link-btn">Đăng nhập Hệ thống</a>
-                <a href="javascript:void(0)" onclick="openRegModal('')" class="lp-cta-btn">
-                    Đăng ký Mua Hàng  <i class="bi bi-arrow-right"></i>
-                </a>
-            }
-        </div>
-    </div>
-</nav>
-
-<main id="mainContent" tabindex="-1">
-<!-- ===== HERO ===== -->
-<section class="lp-hero">
-    <div class="lp-hero-inner">
-        <div class="lp-hero-content reveal">
-            <div class="lp-hero-badge">
-                <i class="bi bi-cpu"></i> Tích hợp AI-native có kiểm soát
-            </div>
-            <h1>Quản trị Hiệu suất <br><span class="gradient-text">OKR · KPI · Đánh giá</span></h1>
-            <p>Nền tảng SaaS toàn diện giúp doanh nghiệp thiết lập mục tiêu chiến lược, đo lường hiệu suất, duyệt check-in, đánh giá nhân sự và tự động tính thưởng — tất cả trong một hệ thống duy nhất.</p>
-            <div class="lp-hero-actions">
-                @if (User.Identity != null && User.Identity.IsAuthenticated)
+        <nav id="landing-navigation" class="landing-navigation" aria-label="Điều hướng chính" data-menu>
+            <a href="#san-pham">Sản phẩm</a>
+            <a href="#tinh-nang">Tính năng</a>
+            <a href="#quy-trinh">Quy trình</a>
+            <a href="#bang-gia">Bảng giá</a>
+            <div class="landing-nav-actions">
+                @if (User.Identity?.IsAuthenticated == true)
                 {
-                    var isCustomer = User.Claims.Any(c => c.Type == System.Security.Claims.ClaimTypes.Role && c.Value == "Customer");
-                    if (isCustomer)
-                    {
-                        <a href="javascript:void(0)" onclick="purchasePlan('')" class="btn-primary-lg">
-                            Bắt đầu Đăng ký Test 30p
-                        </a>
-                        <a href="/Auth/Logout" class="btn-outline-lg" style="color: #dc3545; border-color: #dc3545;">
-                            <i class="bi bi-box-arrow-right"></i> Đăng xuất
-                        </a>
-                    }
-                    else
-                    {
-                        <a href="/Auth/Login" class="btn-primary-lg">
-                            <i class="bi bi-grid-1x2-fill"></i> Truy cập Hệ thống
-                        </a>
-                    }
+                    <a class="landing-button landing-button-secondary" asp-controller="Dashboard" asp-action="Index">Vào hệ thống</a>
                 }
                 else
                 {
-                    <a href="javascript:void(0)" onclick="openRegModal('')" class="btn-primary-lg">
-                        Bắt đầu Đăng ký Test 30p
-                    </a>
-                    <a href="/Auth/Login" class="btn-outline-lg">
-                        <i class="bi bi-box-arrow-in-right"></i> Đăng nhập Hệ thống
-                    </a>
+                    <a class="landing-button landing-button-secondary" asp-controller="Auth" asp-action="Login">Đăng nhập</a>
+                    <a class="landing-button landing-button-primary" asp-controller="Auth" asp-action="Register">Bắt đầu sử dụng</a>
                 }
             </div>
-        </div>
-        <div class="lp-hero-visual reveal reveal-delay-2">
-            <div class="lp-hero-img-wrap">
-                <img src="/images/landing/screenshot_dashboard.png?v=5" alt="VietMach Dashboard - Tổng quan hiệu suất" />
-            </div>
-        </div>
+        </nav>
     </div>
-</section>
+</header>
 
-<!-- ===== STATS ===== -->
-<section class="lp-stats">
-    <div class="lp-stats-inner">
-        <div class="stat-item reveal">
-            <div class="stat-number"><span class="counter" data-target="10">0</span><span class="stat-suffix">+</span></div>
-            <div class="stat-label">Modules nghiệp vụ</div>
-        </div>
-        <div class="stat-item reveal reveal-delay-1">
-            <div class="stat-number"><span class="counter" data-target="6">0</span></div>
-            <div class="stat-label">Vai trò phân quyền RBAC</div>
-        </div>
-        <div class="stat-item reveal reveal-delay-2">
-            <div class="stat-number">AI <span class="stat-suffix">2.5</span></div>
-            <div class="stat-label">AI có nguồn tích hợp sẵn</div>
-        </div>
-        <div class="stat-item reveal reveal-delay-3">
-            <div class="stat-number"><span class="counter" data-target="100">0</span><span class="stat-suffix">%</span></div>
-            <div class="stat-label">Audit Log — Lưu vết mọi thao tác</div>
-        </div>
-    </div>
-</section>
-
-<!-- ===== STICKY SHOWCASE ===== -->
-<section class="sticky-showcase" id="showcase">
-    <div class="sticky-showcase-header reveal">
-        <div class="section-label"><i class="bi bi-laptop"></i> Trải nghiệm xuyên suốt</div>
-        <h2 class="section-title">Mọi thứ bạn cần trong <span class="gradient-text">một nền tảng</span></h2>
-        <p class="section-desc">Từ thiết lập chiến lược OKR đến tính thưởng tự động — VietMach cung cấp toàn bộ công cụ quản trị hiệu suất.</p>
-    </div>
-
-    <div class="sticky-layout">
-        <div class="sticky-text-side">
-            <div class="sticky-block is-active" data-index="0">
-                <h3>Dashboard Tổng quan</h3>
-                <p>Nắm bắt toàn bộ hiệu suất doanh nghiệp trong một màn hình duy nhất với biểu đồ trực quan và dữ liệu real-time.</p>
-                <ul>
-                    <li><i class="bi bi-check-circle-fill"></i> Thống kê KPI, OKR, Check-in theo kỳ</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Biểu đồ xu hướng hiệu suất 6 tháng</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Top 5 nhân viên & phòng ban hiệu suất cao</li>
-                </ul>
-            </div>
-            <div class="sticky-block" data-index="1">
-                <h3>OKR & Chiến lược</h3>
-                <p>Thiết lập tầm nhìn, sứ mệnh và phân rã mục tiêu chiến lược từ công ty đến từng phòng ban, nhân viên.</p>
-                <ul>
-                    <li><i class="bi bi-check-circle-fill"></i> Quản lý Mission / Vision theo năm</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Phân bổ OKR cho phòng ban & nhân viên</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Cây mục tiêu OKR trực quan</li>
-                </ul>
-            </div>
-            <div class="sticky-block" data-index="2">
-                <h3>KPI & Check-in</h3>
-                <p>Tạo KPI theo kỳ đánh giá, phân bổ trọng số, và theo dõi tiến độ check-in với quy trình duyệt chặt chẽ.</p>
-                <ul>
-                    <li><i class="bi bi-check-circle-fill"></i> Tạo, duyệt, phân bổ KPI theo trọng số</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Check-in tiến độ & hàng chờ duyệt</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Theo dõi KPI nhân viên real-time</li>
-                </ul>
-            </div>
-            <div class="sticky-block" data-index="3">
-                <h3>Đánh giá & Khen thưởng</h3>
-                <p>Tự động tính điểm đánh giá theo trọng số KPI, xếp loại GradingRank và quy đổi thưởng theo quy tắc.</p>
-                <ul>
-                    <li><i class="bi bi-check-circle-fill"></i> Tính điểm tự động theo trọng số KPI</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Xếp loại A+, A, B+, B, C tự động</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Tính thưởng dự kiến theo BonusRule</li>
-                </ul>
-            </div>
-            <div class="sticky-block" data-index="4">
-                <h3>AI-native có kiểm soát</h3>
-                <p>Chat, phân tích hiệu suất, gợi ý KPI, sinh nhận xét và cảnh báo rủi ro hoàn toàn tự động.</p>
-                <ul>
-                    <li><i class="bi bi-check-circle-fill"></i> AI Chat với ngữ cảnh KPI/OKR</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Gợi ý KPI thông minh theo vị trí</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Phân tích hiệu suất & nhận xét tự động</li>
-                </ul>
-            </div>
-        </div>
-        <div class="sticky-visual-side">
-            <div class="browser-mockup">
-                <div class="browser-header">
-                    <div class="browser-dot dot-red"></div>
-                    <div class="browser-dot dot-yellow"></div>
-                    <div class="browser-dot dot-green"></div>
-                </div>
-                <div class="browser-content">
-                    <img src="/images/landing/screenshot_dashboard.png?v=5" class="sticky-img is-active" data-index="0" alt="Dashboard" />
-                    <img src="/images/landing/screenshot_okr.png?v=5" class="sticky-img" data-index="1" alt="OKR" />
-                    <img src="/images/landing/screenshot_checkin.png?v=5" class="sticky-img" data-index="2" alt="Check-in" />
-                    <img src="/images/landing/screenshot_evaluation.png?v=5" class="sticky-img" data-index="3" alt="Evaluation" />
-                    <img src="/images/ai_hero_light.png?v=5" class="sticky-img" data-index="4" alt="AI" />
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ===== BENTO FEATURES GRID ===== -->
-<section class="bento-features" id="features">
-    <div class="bento-header reveal">
-        <div class="section-label"><i class="bi bi-lightning-charge-fill"></i> Module Chuyên Sâu</div>
-        <h2 class="section-title">Mảnh ghép tạo nên <span class="gradient-text">sức mạnh</span></h2>
-        <p class="section-desc">Mỗi tính năng được thiết kế tỉ mỉ, kết hợp hoàn hảo để tạo nên luồng quản trị khép kín.</p>
-    </div>
-
-    <div class="bento-grid">
-        <!-- Row 1 & 2: Col 1-2 | 1. AI Assistant (Large) -->
-        <div class="bento-card bento-large reveal">
-            <div class="bento-content">
-                <div class="bento-icon purple"><i class="bi bi-robot"></i></div>
-                <h4 class="bento-title">Trợ lý AI Thông minh</h4>
-                <p class="bento-desc">Các advisor tích hợp theo tenant và phạm vi quyền, đưa ra bản nháp có nguồn, phân tích tham khảo và cảnh báo rủi ro để con người quyết định.</p>
-            </div>
-            <div class="bento-visual bv-ai">
-                <div class="bv-ai-chat">
-                    <div class="bv-msg user">Phân tích hiệu suất team KD?</div>
-                    <div class="bv-msg bot">
-                        <div class="bv-typing"><span></span><span></span><span></span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Row 1: Col 3-4 | 2. OKR Tree (Wide) -->
-        <div class="bento-card bento-wide reveal reveal-delay-1">
-            <div class="bento-content">
-                <div class="bento-icon blue"><i class="bi bi-diagram-3"></i></div>
-                <h4 class="bento-title">Cây mục tiêu OKR</h4>
-                <p class="bento-desc">Trực quan hóa luồng mục tiêu từ Công ty đến Cá nhân.</p>
-            </div>
-            <div class="bento-visual bv-tree">
-                <div class="bv-node">Mục tiêu Năm</div>
-                <div class="bv-branches">
-                    <div class="bv-leaf"><div class="bv-node sub">Tech</div></div>
-                    <div class="bv-leaf"><div class="bv-node sub">Sales</div></div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Row 2: Col 3 | 3. Audit Log (Normal) -->
-        <div class="bento-card bento-normal reveal reveal-delay-2">
-            <div class="bento-content">
-                <div class="bento-icon amber"><i class="bi bi-journal-bookmark-fill"></i></div>
-                <h4 class="bento-title">Audit Log</h4>
-                <p class="bento-desc">Lưu vết 100% lịch sử thao tác.</p>
-            </div>
-            <div class="bento-visual bv-log">
-                <div class="bv-line w-70"></div>
-                <div class="bv-line"></div>
-                <div class="bv-line w-40"></div>
-            </div>
-        </div>
-
-        <!-- Row 2: Col 4 | 4. RBAC (Normal) -->
-        <div class="bento-card bento-normal reveal reveal-delay-1">
-            <div class="bento-content">
-                <div class="bento-icon emerald"><i class="bi bi-shield-lock-fill"></i></div>
-                <h4 class="bento-title">Bảo mật RBAC</h4>
-                <p class="bento-desc">Phân quyền 6 vai trò đa tầng.</p>
-            </div>
-            <div class="bento-visual bv-lock">
-                <i class="bi bi-shield-check"></i>
-            </div>
-        </div>
-
-        <!-- Row 3: Col 1-2 | 5. Tự động tính thưởng (Wide) -->
-        <div class="bento-card bento-wide reveal reveal-delay-2">
-            <div class="bento-content">
-                <div class="bento-icon rose"><i class="bi bi-cash-coin"></i></div>
-                <h4 class="bento-title">Tự động tính Thưởng</h4>
-                <p class="bento-desc">Quy đổi điểm KPI thành xếp loại và tính thưởng dự kiến ngay lập tức bằng BonusRule.</p>
-            </div>
-            <div class="bento-visual bv-bonus">
-                <div class="bv-tags"><span>KPI: 120%</span><span>Hạng A+</span></div>
-                <div class="bv-bar-wrap">
-                    <div class="bv-bar-fill"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Row 3: Col 3-4 | 6. Dashboard (Wide) -->
-        <div class="bento-card bento-wide reveal">
-            <div class="bento-content">
-                <div class="bento-icon cyan"><i class="bi bi-graph-up-arrow"></i></div>
-                <h4 class="bento-title">Báo cáo đa chiều</h4>
-                <p class="bento-desc">Biểu đồ phân tích hiệu suất real-time.</p>
-            </div>
-            <div class="bento-visual bv-chart">
-                <div class="bv-col" style="height: 40%"></div>
-                <div class="bv-col" style="height: 70%"></div>
-                <div class="bv-col" style="height: 50%"></div>
-                <div class="bv-col" style="height: 100%"></div>
-                <div class="bv-col" style="height: 85%"></div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ===== WORKFLOW ===== -->
-<section class="lp-workflow" id="workflow">
-    <div class="lp-workflow-header reveal">
-        <div class="section-label"><i class="bi bi-arrow-repeat"></i> Quy trình nghiệp vụ</div>
-        <h2 class="section-title">Luồng quản trị <span class="gradient-text">khép kín</span></h2>
-        <p class="section-desc">Từ chiến lược đến thưởng — tất cả được tự động hóa trong 5 bước.</p>
-    </div>
-    <div class="lp-workflow-track">
-        <div class="wf-step reveal">
-            <div class="wf-step-num">1</div>
-            <h4>Chiến lược</h4>
-            <p>Thiết lập Mission, Vision → tạo OKR & Key Result</p>
-        </div>
-        <div class="wf-step reveal reveal-delay-1">
-            <div class="wf-step-num">2</div>
-            <h4>Phân bổ KPI</h4>
-            <p>Giao KPI theo kỳ, phân bổ trọng số cho nhân viên</p>
-        </div>
-        <div class="wf-step reveal reveal-delay-2">
-            <div class="wf-step-num">3</div>
-            <h4>Check-in</h4>
-            <p>Nhân viên báo cáo tiến độ → quản lý xác nhận & duyệt</p>
-        </div>
-        <div class="wf-step reveal reveal-delay-3">
-            <div class="wf-step-num">4</div>
-            <h4>Đánh giá</h4>
-            <p>Xếp loại tự động → Hội đồng Director duyệt → Thưởng</p>
-        </div>
-        <div class="wf-step reveal reveal-delay-4">
-            <div class="wf-step-num">5</div>
-            <h4>AI Insights</h4>
-            <p>Phân tích hiệu suất, cảnh báo rủi ro, gợi ý cải thiện</p>
-        </div>
-    </div>
-</section>
-
-<!-- ===== PRICING ===== -->
-<section class="lp-pricing" id="pricing">
-    <div class="lp-pricing-header reveal">
-        <div class="section-label"><i class="bi bi-tags-fill"></i> Bảng giá dịch vụ</div>
-        <h2 class="section-title">Giải pháp đầu tư <span class="gradient-text">hiệu quả</span></h2>
-        <p class="section-desc">Lựa chọn gói sản phẩm phù hợp với quy mô và nhu cầu quản trị hiệu suất của doanh nghiệp bạn.</p>
-    </div>
-    <div class="lp-pricing-inner">
-        @if (Model != null && Model.Any())
-        {
-            var delay = 0;
-            foreach (var pkg in Model)
-            {
-                string priceDisplay = "Thỏa thuận";
-                if (pkg.PricePerMonth > 0)
-                {
-                    priceDisplay = pkg.PricePerMonth >= 1000000 ? (pkg.PricePerMonth / 1000000m).ToString("0.#") + "M" : (pkg.PricePerMonth / 1000m).ToString("0.#") + "k";
-                }
-                
-                <div class="pricing-card @(pkg.IsPopular ? "popular" : "") reveal reveal-delay-@delay">
-                    @if (pkg.IsPopular)
+<main id="landing-main">
+    <section class="landing-hero" aria-labelledby="hero-title">
+        <div class="landing-container landing-hero-grid">
+            <div class="landing-hero-copy" data-reveal>
+                <p class="landing-eyebrow">Nền tảng quản trị hiệu suất doanh nghiệp</p>
+                <h1 id="hero-title">Biến mục tiêu thành kết quả có thể đo lường</h1>
+                <p class="landing-hero-lead">
+                    VietMach System kết nối KPI, OKR, check-in và đánh giá trong một quy trình rõ ràng,
+                    giúp mỗi người hiểu ưu tiên và mỗi cấp quản lý nhìn thấy tiến độ.
+                </p>
+                <div class="landing-hero-actions">
+                    @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <div class="pricing-badge">Phổ biến nhất</div>
-                    }
-                    <h3>@pkg.PackageName</h3>
-                    <p>@pkg.Description</p>
-                    <div class="pricing-price">@priceDisplay<span>@(pkg.PricePerMonth > 0 ? " /tháng" : "")</span></div>
-                    
-                    <ul class="pricing-features">
-                        <li><i class="bi bi-check-circle-fill"></i> @(pkg.MaxUsers >= 9999 ? "Không giới hạn nhân sự" : $"Tối đa {pkg.MaxUsers} nhân sự")</li>
-                        <li><i class="bi bi-check-circle-fill"></i> @(pkg.HasAdvancedOKR ? "Tính năng Đánh giá & Tính thưởng tự động" : "Quản lý OKR & KPI cơ bản")</li>
-                        
-                        @if (pkg.HasAIInsight)
-                        {
-                            <li><i class="bi bi-check-circle-fill"></i> Tích hợp <strong>Trợ lý AI có nguồn</strong></li>
-                        }
-                        else
-                        {
-                            <li><i class="bi bi-dash-circle text-muted"></i> Trợ lý AI (Không hỗ trợ)</li>
-                        }
-                        
-                        <li><i class="bi bi-check-circle-fill"></i> @(pkg.PricePerMonth == 0 ? "Triển khai On-Premise (Server riêng)" : "Báo cáo Dashboard chuẩn")</li>
-                        <li><i class="bi bi-check-circle-fill"></i> @(pkg.PricePerMonth == 0 ? "Có quản lý tài khoản hỗ trợ riêng 24/7" : (pkg.IsPopular ? "Hỗ trợ ưu tiên qua Hotline & Zalo" : "Hỗ trợ qua Email"))</li>
-                    </ul>
-                    
-                    @if (pkg.PricePerMonth == 0)
-                    {
-                        <a href="mailto:sales@vietmach.com" class="pricing-btn outline">Liên hệ chuyên viên</a>
+                        <a class="landing-button landing-button-primary landing-button-large" asp-controller="Dashboard" asp-action="Index">
+                            Mở bảng điều khiển <span aria-hidden="true">→</span>
+                        </a>
                     }
                     else
                     {
-                        <a href="javascript:void(0)" onclick="purchasePlan('@pkg.PackageName')" class="pricing-btn @(pkg.IsPopular ? "solid" : "outline")">Mua ngay</a>
+                        <a class="landing-button landing-button-primary landing-button-large" asp-controller="Auth" asp-action="Register">
+                            Bắt đầu sử dụng <span aria-hidden="true">→</span>
+                        </a>
+                        <a class="landing-button landing-button-secondary landing-button-large" asp-controller="Auth" asp-action="Login">
+                            Đăng nhập
+                        </a>
                     }
                 </div>
-                delay++;
-            }
-        }
-    </div>
-</section>
+                <ul class="landing-assurance" aria-label="Lợi ích nổi bật">
+                    <li><span aria-hidden="true">✓</span> Một nguồn dữ liệu thống nhất</li>
+                    <li><span aria-hidden="true">✓</span> Phân quyền theo vai trò</li>
+                    <li><span aria-hidden="true">✓</span> Theo dõi xuyên suốt chu kỳ</li>
+                </ul>
+            </div>
 
-<!-- ===== TECH TRUST ===== -->
-<section class="lp-tech">
-    <div class="lp-tech-inner reveal">
-        <h3>Xây dựng trên nền tảng công nghệ vững chắc</h3>
-        <div class="lp-tech-logos">
-            <div class="tech-logo"><i class="bi bi-filetype-cs"></i> ASP.NET Core</div>
-            <div class="tech-logo"><i class="bi bi-database"></i> SQL Server</div>
-            <div class="tech-logo"><i class="bi bi-cpu"></i> AI model gateway</div>
-            <div class="tech-logo"><i class="bi bi-google"></i> Google OAuth</div>
-            <div class="tech-logo"><i class="bi bi-file-earmark-excel"></i> EPPlus Excel</div>
-            <div class="tech-logo"><i class="bi bi-bar-chart-fill"></i> Chart.js</div>
+            <div class="landing-product-frame" data-reveal aria-label="Bản xem trước sản phẩm với dữ liệu minh họa">
+                <div class="landing-product-bar">
+                    <div><span></span><span></span><span></span></div>
+                    <strong>Tổng quan hiệu suất</strong>
+                    <span class="landing-demo-badge">Dữ liệu minh họa</span>
+                </div>
+                <div class="landing-product-body">
+                    <aside class="landing-preview-sidebar" aria-hidden="true">
+                        <span class="is-active"></span><span></span><span></span><span></span><span></span>
+                    </aside>
+                    <div class="landing-preview-content">
+                        <div class="landing-preview-heading">
+                            <div><small>Chu kỳ hiện tại</small><strong>Tiến độ tổ chức</strong></div>
+                            <span>Cập nhật tuần này</span>
+                        </div>
+                        <div class="landing-metric-grid">
+                            <article><small>KPI hoàn thành</small><strong>78%</strong><span>39 / 50 chỉ tiêu</span></article>
+                            <article><small>OKR đúng tiến độ</small><strong>84%</strong><span>21 / 25 mục tiêu</span></article>
+                            <article><small>Check-in tuần</small><strong>92%</strong><span>46 / 50 nhân sự</span></article>
+                        </div>
+                        <div class="landing-chart-grid">
+                            <article class="landing-chart-card">
+                                <div><strong>Xu hướng tiến độ</strong><small>6 tuần gần nhất</small></div>
+                                <div class="landing-chart-wrap">
+                                    <canvas id="landingProgressChart" role="img"
+                                            aria-label="Biểu đồ minh họa xu hướng tiến độ tăng từ 51 đến 78 phần trăm trong sáu tuần"></canvas>
+                                </div>
+                            </article>
+                            <article class="landing-status-card">
+                                <div><strong>Trạng thái mục tiêu</strong><small>Tổng hợp minh họa</small></div>
+                                <ul>
+                                    <li><span><i class="status-dot is-blue"></i>Đúng tiến độ</span><strong>68%</strong></li>
+                                    <li><span><i class="status-dot is-cyan"></i>Cần chú ý</span><strong>22%</strong></li>
+                                    <li><span><i class="status-dot is-amber"></i>Chậm tiến độ</span><strong>10%</strong></li>
+                                </ul>
+                            </article>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- ===== CTA ===== -->
-<section class="lp-cta">
-    <div class="lp-cta-box reveal">
-        <h2>Sẵn sàng nâng tầm<br>quản trị hiệu suất?</h2>
-        <p>Chọn gói sản phẩm phù hợp với doanh nghiệp của bạn và bắt đầu chuyển đổi số hệ thống quản trị ngay hôm nay.</p>
-        <div style="display:flex; justify-content:center; gap: 1.2rem; flex-wrap: wrap;">
-            <a href="javascript:void(0)" onclick="openRegModal('')" class="btn-white-lg">
-                <i class="bi bi-cart3"></i> Đăng ký Test Hệ Thống
-            </a>
-            <a href="/Auth/Login" style="background:transparent; border:2px solid rgba(255,255,255,0.4); color:white !important; box-shadow:none;" class="btn-white-lg">
-                <i class="bi bi-box-arrow-in-right"></i> Đăng nhập Hệ thống
-            </a>
+    <section class="landing-proof" aria-label="Phạm vi quản trị">
+        <div class="landing-container landing-proof-grid">
+            <div><strong>Một nền tảng</strong><span>cho dữ liệu hiệu suất</span></div>
+            <div><strong>Năm bước</strong><span>trong một chu kỳ liền mạch</span></div>
+            <div><strong>Bốn vai trò</strong><span>cùng nhìn về một mục tiêu</span></div>
         </div>
-    </div>
-</section>
+    </section>
 
+    <section id="san-pham" class="landing-section landing-product-section">
+        <div class="landing-container landing-showcase-grid">
+            <div class="landing-showcase-copy" data-reveal>
+                <p class="landing-eyebrow">Từ chiến lược đến thực thi</p>
+                <h2>Một không gian làm việc, toàn bộ bức tranh <span class="landing-keep-together">hiệu suất</span></h2>
+                <p>
+                    Mục tiêu, chỉ tiêu và kết quả đánh giá được kết nối theo đúng vai trò.
+                    Người dùng theo dõi công việc cần làm; quản lý nắm rủi ro và đưa ra phản hồi kịp thời.
+                </p>
+                <ul class="landing-check-list">
+                    <li><span aria-hidden="true">01</span><div><strong>Quan sát nhanh</strong><small>Tổng hợp tiến độ và trạng thái theo chu kỳ.</small></div></li>
+                    <li><span aria-hidden="true">02</span><div><strong>Đi sâu đúng lúc</strong><small>Truy cập chi tiết KPI, OKR và lịch sử check-in.</small></div></li>
+                    <li><span aria-hidden="true">03</span><div><strong>Ra quyết định có căn cứ</strong><small>Dùng dữ liệu đã được đánh giá và phê duyệt.</small></div></li>
+                </ul>
+            </div>
+            <figure class="landing-dashboard-shot" data-reveal aria-labelledby="workspace-preview-title">
+                <div class="landing-dashboard-carousel" data-dashboard-carousel tabindex="0"
+                     aria-roledescription="băng chuyền" aria-label="Các màn hình thực tế của hệ thống">
+                    <div class="landing-dashboard-viewport">
+                <div class="landing-dashboard-slide is-active" data-dashboard-slide data-slide-title="Tổng quan hiệu suất" aria-hidden="false">
+                <div class="landing-workspace-preview">
+                    <div class="landing-workspace-topbar">
+                        <span class="landing-workspace-logo" aria-hidden="true">VM</span>
+                        <div>
+                            <strong id="workspace-preview-title">Tổng quan hệ thống</strong>
+                            <small>Dữ liệu minh họa</small>
+                        </div>
+                        <span class="landing-workspace-period">Chu kỳ Q3</span>
+                    </div>
+                    <div class="landing-workspace-body">
+                        <aside class="landing-workspace-nav" aria-label="Menu bản xem trước">
+                            <span class="is-active">Tổng quan</span>
+                            <span>Công việc</span>
+                            <span>KPI &amp; OKR</span>
+                            <span>Check-in</span>
+                            <span>Đánh giá</span>
+                        </aside>
+                        <div class="landing-workspace-main">
+                            <div class="landing-workspace-heading">
+                                <div><small>Xin chào</small><strong>Hiệu suất hôm nay</strong></div>
+                                <span>Đã cập nhật</span>
+                            </div>
+                            <div class="landing-workspace-metrics">
+                                <article><small>Tỷ lệ KPI</small><strong>79,7%</strong><span>Đúng tiến độ</span></article>
+                                <article><small>Mục tiêu OKR</small><strong>24</strong><span>Đang thực hiện</span></article>
+                                <article><small>Lượt check-in</small><strong>269</strong><span>Trong kỳ này</span></article>
+                            </div>
+                            <div class="landing-workspace-panels">
+                                <article class="landing-workspace-chart-card">
+                                    <div class="landing-workspace-card-heading">
+                                        <div><strong>Xu hướng KPI</strong><small>Chạm hoặc rê vào biểu đồ để xem chi tiết</small></div>
+                                        <span>6 tháng</span>
+                                    </div>
+                                    <div class="landing-workspace-chart-wrap">
+                                        <canvas id="landingWorkspaceChart" role="img" tabindex="0"
+                                                aria-label="Biểu đồ tương tác minh họa xu hướng KPI từ 61 đến 80 phần trăm trong sáu tháng"></canvas>
+                                    </div>
+                                </article>
+                                <article class="landing-workspace-activity">
+                                    <div><strong>Hoạt động gần đây</strong><small>3 cập nhật mới</small></div>
+                                    <ul>
+                                        <li><span aria-hidden="true">✓</span><div><strong>Đã check-in KPI</strong><small>Phòng Kinh doanh · 09:30</small></div></li>
+                                        <li><span aria-hidden="true">✓</span><div><strong>OKR được cập nhật</strong><small>Khối Sản phẩm · 08:45</small></div></li>
+                                        <li><span aria-hidden="true">✓</span><div><strong>Đã duyệt kết quả</strong><small>Quản lý trực tiếp · Hôm qua</small></div></li>
+                                    </ul>
+                                </article>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+
+                <div class="landing-dashboard-slide" data-dashboard-slide data-slide-title="Danh sách KPI quý III" aria-hidden="true">
+                    <div class="landing-workspace-preview">
+                        <div class="landing-workspace-topbar">
+                            <span class="landing-workspace-logo" aria-hidden="true">VM</span>
+                            <div><strong>Quản lý KPI</strong><small>Dữ liệu minh họa</small></div>
+                            <span class="landing-workspace-period">Chu kỳ Q3</span>
+                        </div>
+                        <div class="landing-workspace-body">
+                            <aside class="landing-workspace-nav" aria-label="Menu bản xem trước">
+                                <span>Tổng quan</span><span>Công việc</span><span class="is-active">KPI &amp; OKR</span><span>Check-in</span><span>Đánh giá</span>
+                            </aside>
+                            <div class="landing-workspace-main">
+                                <div class="landing-workspace-heading">
+                                    <div><small>Quản lý chỉ tiêu</small><strong>Danh sách KPI quý III</strong></div>
+                                    <span>32 chỉ tiêu</span>
+                                </div>
+                                <div class="landing-preview-toolbar">
+                                    <span class="is-active">Tất cả</span><span>Đúng tiến độ</span><span>Cần chú ý</span><button type="button" tabindex="-1">+ Tạo KPI</button>
+                                </div>
+                                <div class="landing-kpi-table" role="presentation">
+                                    <div class="landing-kpi-row landing-kpi-head"><span>Chỉ tiêu</span><span>Phụ trách</span><span>Tiến độ</span><span>Trạng thái</span></div>
+                                    <div class="landing-kpi-row"><strong>Tăng trưởng doanh thu</strong><span>Nguyễn Hoài Anh</span><span><i style="--progress:82%"></i><b>82%</b></span><em>Đúng tiến độ</em></div>
+                                    <div class="landing-kpi-row"><strong>Tỷ lệ khách hàng quay lại</strong><span>Trần Minh Khoa</span><span><i style="--progress:68%"></i><b>68%</b></span><em>Đúng tiến độ</em></div>
+                                    <div class="landing-kpi-row"><strong>Thời gian xử lý yêu cầu</strong><span>Lê Phương Thảo</span><span><i style="--progress:54%"></i><b>54%</b></span><em class="is-warning">Cần chú ý</em></div>
+                                    <div class="landing-kpi-row"><strong>Mức độ hài lòng nội bộ</strong><span>Phạm Tuấn Minh</span><span><i style="--progress:76%"></i><b>76%</b></span><em>Đúng tiến độ</em></div>
+                                </div>
+                                <div class="landing-table-footer"><span>Hiển thị 4 trong 32 chỉ tiêu</span><span>1 &nbsp; 2 &nbsp; 3 &nbsp; … &nbsp; 8</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="landing-dashboard-slide" data-dashboard-slide data-slide-title="Theo dõi mục tiêu OKR" aria-hidden="true">
+                    <div class="landing-workspace-preview">
+                        <div class="landing-workspace-topbar">
+                            <span class="landing-workspace-logo" aria-hidden="true">VM</span>
+                            <div><strong>Mục tiêu &amp; Kết quả then chốt</strong><small>Dữ liệu minh họa</small></div>
+                            <span class="landing-workspace-period">Quý III · 2026</span>
+                        </div>
+                        <div class="landing-workspace-body">
+                            <aside class="landing-workspace-nav" aria-label="Menu bản xem trước">
+                                <span>Tổng quan</span><span>Công việc</span><span class="is-active">KPI &amp; OKR</span><span>Check-in</span><span>Đánh giá</span>
+                            </aside>
+                            <div class="landing-workspace-main">
+                                <div class="landing-workspace-heading">
+                                    <div><small>OKR cấp công ty</small><strong>Tăng tốc tăng trưởng bền vững</strong></div>
+                                    <span>Đã check-in hôm nay</span>
+                                </div>
+                                <div class="landing-okr-layout">
+                                    <div class="landing-okr-list">
+                                        <article class="is-selected"><div><span>O1</span><strong>Mở rộng thị trường trọng điểm</strong></div><small>Phòng Kinh doanh · 3 kết quả then chốt</small><p><i style="--progress:74%"></i><b>74%</b></p></article>
+                                        <article><div><span>O2</span><strong>Nâng cao trải nghiệm khách hàng</strong></div><small>Khối Vận hành · 4 kết quả then chốt</small><p><i style="--progress:61%"></i><b>61%</b></p></article>
+                                        <article><div><span>O3</span><strong>Xây dựng đội ngũ hiệu suất cao</strong></div><small>Phòng Nhân sự · 3 kết quả then chốt</small><p><i style="--progress:83%"></i><b>83%</b></p></article>
+                                    </div>
+                                    <aside class="landing-okr-detail">
+                                        <small>CHI TIẾT MỤC TIÊU</small><strong>Mở rộng thị trường trọng điểm</strong>
+                                        <div><span>Tiến độ tổng thể</span><b>74%</b></div>
+                                        <ul><li><span>KR1 · 120 khách hàng mới</span><b>86%</b></li><li><span>KR2 · Doanh thu tăng 18%</span><b>72%</b></li><li><span>KR3 · Mở 2 khu vực mới</span><b>64%</b></li></ul>
+                                    </aside>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    </div>
+                    <div class="landing-carousel-controls">
+                        <button type="button" data-carousel-prev aria-label="Xem màn hình trước">←</button>
+                        <div role="tablist" aria-label="Chọn màn hình bản xem trước">
+                            <button type="button" role="tab" aria-selected="true" aria-label="Tổng quan hiệu suất" data-carousel-dot></button>
+                            <button type="button" role="tab" aria-selected="false" aria-label="Danh sách KPI quý III" data-carousel-dot></button>
+                            <button type="button" role="tab" aria-selected="false" aria-label="Theo dõi mục tiêu OKR" data-carousel-dot></button>
+                        </div>
+                        <button type="button" data-carousel-next aria-label="Xem màn hình tiếp theo">→</button>
+                    </div>
+                </div>
+                <figcaption><strong data-carousel-caption>Tổng quan hiệu suất</strong><span>Cuộn chuột, vuốt hoặc dùng phím mũi tên để đổi màn hình.</span></figcaption>
+            </figure>
+        </div>
+    </section>
+
+    <section id="tinh-nang" class="landing-section landing-section-soft" aria-labelledby="features-title">
+        <div class="landing-container">
+            <div class="landing-section-heading" data-reveal>
+                <p class="landing-eyebrow">Năng lực cốt lõi</p>
+                <h2 id="features-title">Đủ công cụ để quản trị một chu kỳ hiệu suất hoàn chỉnh</h2>
+                <p>Từng chức năng phục vụ một quyết định cụ thể, không làm người dùng bị ngợp bởi dữ liệu.</p>
+            </div>
+            <div class="landing-feature-grid">
+                <article data-reveal><span class="landing-feature-icon" aria-hidden="true">O</span><h3>Quản lý OKR</h3><p>Liên kết mục tiêu tổ chức, phòng ban và cá nhân với kết quả then chốt rõ ràng.</p></article>
+                <article data-reveal><span class="landing-feature-icon" aria-hidden="true">K</span><h3>Quản lý KPI</h3><p>Thiết lập chỉ tiêu, trọng số, kỳ đo và người chịu trách nhiệm theo quy trình.</p></article>
+                <article data-reveal><span class="landing-feature-icon" aria-hidden="true">C</span><h3>Check-in tiến độ</h3><p>Cập nhật kết quả định kỳ, ghi nhận trở ngại và lưu vết thay đổi minh bạch.</p></article>
+                <article data-reveal><span class="landing-feature-icon" aria-hidden="true">Đ</span><h3>Kỳ đánh giá</h3><p>Tổ chức đánh giá nhất quán theo thời gian và phạm vi được phân quyền.</p></article>
+                <article data-reveal><span class="landing-feature-icon" aria-hidden="true">P</span><h3>Duyệt kết quả</h3><p>Chuẩn hóa luồng gửi, rà soát và phê duyệt trước khi chốt kết quả.</p></article>
+                <article data-reveal><span class="landing-feature-icon" aria-hidden="true">B</span><h3>Báo cáo &amp; thưởng</h3><p>Tổng hợp hiệu suất và áp dụng quy tắc thưởng dựa trên dữ liệu đã xác nhận.</p></article>
+            </div>
+        </div>
+    </section>
+
+    <section id="quy-trinh" class="landing-section" aria-labelledby="process-title">
+        <div class="landing-container">
+            <div class="landing-section-heading" data-reveal>
+                <p class="landing-eyebrow">Quy trình sử dụng</p>
+                <h2 id="process-title">Năm bước rõ ràng từ mục tiêu đến báo cáo</h2>
+                <p>Mọi vai trò phối hợp trên cùng một dòng dữ liệu, giảm thao tác lặp và hạn chế bỏ sót.</p>
+            </div>
+            <ol class="landing-process">
+                <li data-reveal><span>01</span><div><h3>Thiết lập mục tiêu</h3><p>Xác định ưu tiên và kỳ thực hiện.</p></div></li>
+                <li data-reveal><span>02</span><div><h3>Giao KPI/OKR</h3><p>Phân bổ chỉ tiêu và trách nhiệm.</p></div></li>
+                <li data-reveal><span>03</span><div><h3>Check-in tiến độ</h3><p>Cập nhật kết quả và trở ngại.</p></div></li>
+                <li data-reveal><span>04</span><div><h3>Đánh giá</h3><p>Rà soát kết quả theo tiêu chí.</p></div></li>
+                <li data-reveal><span>05</span><div><h3>Phê duyệt &amp; báo cáo</h3><p>Chốt dữ liệu và tổng hợp quyết định.</p></div></li>
+            </ol>
+        </div>
+    </section>
+
+    <section class="landing-section landing-role-section" aria-labelledby="roles-title">
+        <div class="landing-container landing-role-grid">
+            <div class="landing-role-intro" data-reveal>
+                <p class="landing-eyebrow">Giá trị theo vai trò</p>
+                <h2 id="roles-title">Đúng thông tin cho đúng người</h2>
+                <p>Mỗi vai trò có một góc nhìn phù hợp nhưng vẫn dùng chung nguồn dữ liệu đã được kiểm soát.</p>
+            </div>
+            <div class="landing-role-tabs" data-role-tabs data-reveal>
+                <div class="landing-tab-list" role="tablist" aria-label="Chọn vai trò">
+                    <button type="button" role="tab" id="role-employee-tab" aria-selected="true" aria-controls="role-employee">Nhân viên</button>
+                    <button type="button" role="tab" id="role-manager-tab" aria-selected="false" aria-controls="role-manager" tabindex="-1">Quản lý</button>
+                    <button type="button" role="tab" id="role-hr-tab" aria-selected="false" aria-controls="role-hr" tabindex="-1">HR</button>
+                    <button type="button" role="tab" id="role-leader-tab" aria-selected="false" aria-controls="role-leader" tabindex="-1">Ban giám đốc</button>
+                </div>
+                <div class="landing-tab-panel" role="tabpanel" id="role-employee" aria-labelledby="role-employee-tab">
+                    <strong>Biết mình cần ưu tiên điều gì.</strong><p>Theo dõi mục tiêu, check-in tiến độ và nhận phản hồi trong cùng một luồng công việc.</p>
+                </div>
+                <div class="landing-tab-panel" role="tabpanel" id="role-manager" aria-labelledby="role-manager-tab" hidden>
+                    <strong>Phát hiện sớm điểm nghẽn của đội ngũ.</strong><p>Quan sát tiến độ, phản hồi và đánh giá dựa trên dữ liệu được cập nhật liên tục.</p>
+                </div>
+                <div class="landing-tab-panel" role="tabpanel" id="role-hr" aria-labelledby="role-hr-tab" hidden>
+                    <strong>Vận hành chu kỳ nhất quán.</strong><p>Thiết lập kỳ đánh giá, kiểm soát quy trình và tổng hợp kết quả trên toàn tổ chức.</p>
+                </div>
+                <div class="landing-tab-panel" role="tabpanel" id="role-leader" aria-labelledby="role-leader-tab" hidden>
+                    <strong>Nhìn thấy mức độ thực thi chiến lược.</strong><p>Nắm xu hướng hiệu suất và trạng thái mục tiêu để ưu tiên quyết định quan trọng.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @if (Model?.Any() == true)
+    {
+        <section id="bang-gia" class="landing-section landing-section-soft" aria-labelledby="pricing-title">
+            <div class="landing-container">
+                <div class="landing-section-heading" data-reveal>
+                    <p class="landing-eyebrow">Gói sử dụng</p>
+                    <h2 id="pricing-title">Chọn quy mô phù hợp với tổ chức</h2>
+                    <p>Thông tin gói được tải trực tiếp từ hệ thống. Đăng ký để bắt đầu quy trình tư vấn và kích hoạt.</p>
+                </div>
+                <div class="landing-pricing-grid">
+                    @foreach (var package in Model)
+                    {
+                        <article class="landing-price-card @(package.IsPopular ? "is-popular" : "")" data-reveal>
+                            @if (package.IsPopular) { <span class="landing-popular-label">Được lựa chọn nhiều</span> }
+                            <h3>@package.PackageName</h3>
+                            <p>@package.Description</p>
+                            <div class="landing-price"><strong>@package.PricePerMonth.ToString("N0")</strong><span>VNĐ / tháng</span></div>
+                            <ul>
+                                <li><span aria-hidden="true">✓</span> Tối đa @package.MaxUsers người dùng</li>
+                                <li><span aria-hidden="true">✓</span> Quản lý KPI và OKR</li>
+                                @if (package.HasAdvancedOKR) { <li><span aria-hidden="true">✓</span> OKR nâng cao</li> }
+                                @if (package.HasAIInsight) { <li><span aria-hidden="true">✓</span> Phân tích hỗ trợ bằng AI</li> }
+                            </ul>
+                            <a class="landing-button @(package.IsPopular ? "landing-button-primary" : "landing-button-secondary")"
+                               asp-controller="Auth" asp-action="Register" asp-route-plan="@package.PackageName">
+                                Chọn gói @package.PackageName
+                            </a>
+                        </article>
+                    }
+                </div>
+            </div>
+        </section>
+    }
+
+    <section class="landing-final-cta">
+        <div class="landing-container landing-final-cta-inner" data-reveal>
+            <div><p class="landing-eyebrow">Sẵn sàng bắt đầu?</p><h2>Đưa mục tiêu vào một quy trình có thể theo dõi</h2><p>Tạo tài khoản VietMach System hoặc đăng nhập để tiếp tục công việc của bạn.</p></div>
+            <div>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a class="landing-button landing-button-light landing-button-large" asp-controller="Dashboard" asp-action="Index">Vào hệ thống</a>
+                }
+                else
+                {
+                    <a class="landing-button landing-button-light landing-button-large" asp-controller="Auth" asp-action="Register">Tạo tài khoản</a>
+                    <a class="landing-text-link" asp-controller="Auth" asp-action="Login">Đã có tài khoản? Đăng nhập</a>
+                }
+            </div>
+        </div>
+    </section>
 </main>
 
-<!-- ===== FOOTER ===== -->
-<footer class="lp-footer">
-    <div class="lp-footer-inner">
-        <div class="lp-footer-brand">
-            <a href="/" class="lp-brand"><i class="bi bi-hexagon-fill"></i> VIETMACH</a>
-            <p>Nền tảng Quản trị Hiệu suất Toàn diện tích hợp AI-native có kiểm soát — OKR, KPI, Đánh giá & Thưởng.</p>
+<footer class="landing-footer">
+    <div class="landing-container landing-footer-inner">
+        <div class="landing-brand">
+            <span class="landing-brand-mark" aria-hidden="true">VM</span>
+            <span><strong>VietMach System</strong><small>Manage KPI &amp; OKR</small></span>
         </div>
-        <div class="lp-footer-col">
-            <h4>Sản phẩm</h4>
-            <ul>
-                <li><a href="#showcase">Dashboard tổng quan</a></li>
-                <li><a href="#showcase">Giải pháp OKR & KPI</a></li>
-                <li><a href="#showcase">Đánh giá & Khen thưởng</a></li>
-                <li><a href="#showcase">Trợ lý AI có nguồn</a></li>
-                <li><a href="#pricing">Bảng giá dịch vụ</a></li>
-            </ul>
-        </div>
-        <div class="lp-footer-col">
-            <h4>Hệ thống</h4>
-            <ul>
-                <li><a href="/Auth/Login">Đăng nhập nhân viên</a></li>
-                <li><a href="/Auth/Login">Đăng nhập quản trị</a></li>
-                <li><a href="/Auth/Login">Cổng tài liệu hướng dẫn</a></li>
-                <li><a href="/Auth/Login">Trung tâm bảo mật</a></li>
-                <li><a href="/Auth/Login">Kiểm tra trạng thái máy chủ</a></li>
-            </ul>
-        </div>
-        <div class="lp-footer-col">
-            <h4>Liên hệ tư vấn & Mua hàng</h4>
-            <ul>
-                <li class="contact-item"><i class="bi bi-envelope"></i> sales@vietmach.com</li>
-                <li class="contact-item"><i class="bi bi-telephone"></i> 1900 0000</li>
-                <li class="contact-item"><i class="bi bi-geo-alt"></i> TP. Hồ Chí Minh</li>
-            </ul>
-        </div>
-    </div>
-    <div class="lp-footer-bottom">
-        &copy; 2026 VietMach System. Mọi quyền được bảo lưu.
+        <nav aria-label="Liên kết cuối trang">
+            <a href="#san-pham">Sản phẩm</a><a href="#tinh-nang">Tính năng</a><a href="#quy-trinh">Quy trình</a>
+            @if (User.Identity?.IsAuthenticated != true)
+            {
+                <a asp-controller="Auth" asp-action="Login">Đăng nhập</a>
+                <a asp-controller="Auth" asp-action="Register">Đăng ký</a>
+            }
+        </nav>
+        <p>© @DateTime.Now.Year VietMach System. Manage KPI &amp; OKR.</p>
     </div>
 </footer>
 
-<!-- ===== PREMIUM REGISTRATION MODAL ===== -->
-<div id="regModal" class="reg-modal-overlay">
-    <div class="reg-modal-premium">
-        <div class="reg-modal-left">
-            <div class="reg-modal-brand">
-                <i class="bi bi-hexagon-fill"></i> VIETMACH
-            </div>
-            <h2>Đăng ký Tài khoản</h2>
-            <p>Trải nghiệm hệ thống Quản trị Hiệu suất Toàn diện (OKR/KPI) tốt nhất.</p>
-            <ul class="reg-modal-benefits">
-                <li><i class="bi bi-check2"></i> Kích hoạt ngay lập tức</li>
-                <li><i class="bi bi-check2"></i> Quyền trải nghiệm phù hợp trong 30 phút</li>
-                <li><i class="bi bi-check2"></i> Không yêu cầu thẻ tín dụng</li>
-            </ul>
-            <div class="reg-modal-bg-blob"></div>
-        </div>
-        <div class="reg-modal-right">
-            <button type="button" class="reg-modal-close" onclick="closeRegModal()"><i class="bi bi-x-lg"></i></button>
-            <div class="reg-form-container">
-                <h3>Xác nhận thông tin</h3>
-                <p id="regSubtitleText" class="reg-form-subtitle">Bạn đang chọn: <strong id="regPlanName" class="text-primary"></strong></p>
-                
-                <div class="reg-modal-tabs" style="display:flex; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
-                    <button type="button" id="tabRegister" class="reg-tab active" onclick="switchRegTab('register')" style="flex:1; padding:10px; border:none; background:none; font-weight:600; color:var(--primary); border-bottom: 2px solid var(--primary); cursor:pointer;">Khách hàng mới</button>
-                    <button type="button" id="tabLogin" class="reg-tab" onclick="switchRegTab('login')" style="flex:1; padding:10px; border:none; background:none; font-weight:600; color:#64748b; border-bottom: 2px solid transparent; cursor:pointer;">Đã có tài khoản</button>
-                </div>
-
-                <!-- REGISTER FORM -->
-                <form id="regForm" onsubmit="submitRegistration(event)">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" id="regPlanInput" name="plan" />
-                    
-                    <div class="form-group">
-                        <label for="regEmail">Email đăng nhập hệ thống</label>
-                        <div class="input-icon-wrapper">
-                            <i class="bi bi-envelope"></i>
-                            <input type="email" id="regEmail" name="email" required placeholder="name@company.com" />
-                        </div>
-                        <small class="form-text text-muted mt-2 d-block"><i class="bi bi-shield-lock"></i> Mật khẩu an toàn sẽ được tạo tự động và gửi qua email này.</small>
-                    </div>
-                    
-                    <button type="submit" id="regSubmitBtn" class="btn-primary-lg w-100 mt-4" style="justify-content: center; gap: 0.5rem; border: none; cursor: pointer;">
-                        <i class="bi bi-person-plus-fill"></i> Đăng ký & Mua gói
-                    </button>
-                </form>
-
-                <!-- LOGIN FORM -->
-                <form id="loginBuyForm" onsubmit="submitLoginBuy(event)" style="display:none;">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" id="loginPlanInput" name="plan" />
-                    
-                    <div class="form-group" style="margin-bottom: 1rem;">
-                        <label for="loginUsername">Email đăng nhập</label>
-                        <div class="input-icon-wrapper">
-                            <i class="bi bi-envelope"></i>
-                            <input type="text" id="loginUsername" name="username" required placeholder="name@company.com" />
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="loginPassword">Mật khẩu</label>
-                        <div class="input-icon-wrapper">
-                            <i class="bi bi-key"></i>
-                            <input type="password" id="loginPassword" name="password" required placeholder="Nhập mật khẩu" />
-                        </div>
-                        <div style="text-align: right; margin-top: 8px;">
-                            <a href="/Auth/ForgotPassword" style="color: var(--primary); font-size: 0.9rem; text-decoration: none; font-weight: 500;">Quên mật khẩu?</a>
-                        </div>
-                    </div>
-                    
-                    <button type="submit" id="loginBuySubmitBtn" class="btn-primary-lg w-100 mt-4" style="justify-content: center; gap: 0.5rem; border: none; cursor: pointer;">
-                        <i class="bi bi-box-arrow-in-right"></i> Đăng nhập & Mua gói
-                    </button>
-                </form>
-
-                
-                <div class="reg-terms text-center mt-4">
-                    <small class="text-muted" id="termsText">Bằng việc tiếp tục, bạn đồng ý với <a href="#" style="color:var(--primary);">Điều khoản dịch vụ</a> và <a href="#" style="color:var(--primary);">Chính sách bảo mật</a> của chúng tôi.</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== CHANGE PASSWORD MODAL ===== -->
-<div id="changePasswordModal" class="reg-modal-overlay">
-    <div class="reg-modal-premium">
-        <div class="reg-modal-left">
-            <div class="reg-modal-brand">
-                <i class="bi bi-hexagon-fill"></i> VIETMACH
-            </div>
-            <h2>Đổi Mật Khẩu</h2>
-            <p>Bảo mật tài khoản của bạn để tiếp tục trải nghiệm hệ thống Quản trị Hiệu suất Toàn diện (OKR/KPI).</p>
-            <ul class="reg-modal-benefits">
-                <li><i class="bi bi-shield-check"></i> An toàn dữ liệu tuyệt đối</li>
-                <li><i class="bi bi-key-fill"></i> Mật khẩu mạnh & bảo vệ</li>
-                <li><i class="bi bi-check-circle-fill"></i> Cập nhật nhanh chóng</li>
-            </ul>
-            <div class="reg-modal-bg-blob"></div>
-        </div>
-        <div class="reg-modal-right">
-            <button type="button" class="reg-modal-close" onclick="closeChangePasswordModal()"><i class="bi bi-x-lg"></i></button>
-            <div class="reg-form-container">
-                <h3>Bảo mật tài khoản</h3>
-                <p class="reg-form-subtitle">Vui lòng nhập mật khẩu mới để tiếp tục sử dụng hệ thống.</p>
-                
-                <div id="cpAlertError" class="alert-error" style="display:none; background: #fef2f2; border: 1px solid #ef4444; color: #991b1b; padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1.5rem; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 500;">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <span id="cpErrorMsg"></span>
-                </div>
-
-                <div id="cpAlertSuccess" class="alert-success" style="display:none; background: #f0fdf4; border: 1px solid #22c55e; color: #166534; padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1.5rem; align-items: center; gap: 0.5rem; font-size: 0.95rem; font-weight: 500;">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span id="cpSuccessMsg"></span>
-                </div>
-
-                <form id="changePasswordAjaxForm" onsubmit="submitChangePasswordAjax(event)">
-                    @Html.AntiForgeryToken()
-                    <div class="form-group">
-                        <label for="oldPasswordAjax">Mật khẩu hiện tại</label>
-                        <div class="input-icon-wrapper">
-                            <i class="bi bi-unlock"></i>
-                            <input type="password" id="oldPasswordAjax" name="oldPassword" required maxlength="128" autocomplete="current-password" placeholder="Nhập mật khẩu hiện tại" />
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="newPasswordAjax">Mật khẩu mới</label>
-                        <div class="input-icon-wrapper">
-                            <i class="bi bi-key"></i>
-                            <input type="password" id="newPasswordAjax" name="newPassword" required minlength="6" maxlength="128" autocomplete="new-password" placeholder="Nhập mật khẩu mới" />
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="confirmPasswordAjax">Xác nhận mật khẩu mới</label>
-                        <div class="input-icon-wrapper">
-                            <i class="bi bi-shield-lock"></i>
-                            <input type="password" id="confirmPasswordAjax" name="confirmPassword" required minlength="6" maxlength="128" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" />
-                        </div>
-                    </div>
-                    
-                    <button type="submit" id="cpSubmitBtn" class="btn-primary-lg w-100 mt-4" style="justify-content: center; border: none; cursor: pointer;">
-                        <i class="bi bi-check-circle-fill"></i> Cập nhật Mật khẩu
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-    .reg-modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px);
-        z-index: 2000; display: flex; align-items: center; justify-content: center;
-        opacity: 0; visibility: hidden; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        padding: 1rem;
-    }
-    .reg-modal-overlay.active { opacity: 1; visibility: visible; }
-    
-    .reg-modal-premium {
-        display: flex; width: 100%; max-width: 900px; min-height: 500px;
-        background: #ffffff; border-radius: 8px; overflow: hidden;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        transform: scale(0.95) translateY(20px); opacity: 0;
-        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .reg-modal-overlay.active .reg-modal-premium { transform: scale(1) translateY(0); opacity: 1; }
-    
-    .reg-modal-left {
-        flex: 1; background: var(--text-primary);
-        color: white; padding: 3rem; position: relative; overflow: hidden;
-        display: flex; flex-direction: column; justify-content: center;
-    }
-    .reg-modal-brand { font-size: 1.2rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 2rem; color: #f8fafc; display: flex; align-items: center; gap: 0.5rem; }
-    .reg-modal-left h2 { font-size: 2.2rem; font-weight: 800; margin-bottom: 1rem; color: white; line-height: 1.2; }
-    .reg-modal-left p { font-size: 1.05rem; color: #cbd5e1; margin-bottom: 2rem; line-height: 1.6; }
-    
-    .reg-modal-benefits { list-style: none; padding: 0; margin: 0; }
-    .reg-modal-benefits li { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; font-size: 1rem; color: #f8fafc; }
-    .reg-modal-benefits li i { color: var(--primary); font-size: 1.2rem; background: rgba(255,255,255,0.1); border-radius: 50%; padding: 2px; }
-    
-    .reg-modal-bg-blob {
-        position: absolute; width: 300px; height: 300px; background: rgba(255,255,255,0.03);
-        border-radius: 50%; bottom: -100px; left: -100px; pointer-events: none;
-    }
-    
-    .reg-modal-right { flex: 1.2; padding: 3rem; position: relative; background: #ffffff; display: flex; flex-direction: column; justify-content: center; }
-    .reg-modal-close {
-        position: absolute; top: 1.5rem; right: 1.5rem; background: #f1f5f9; border: none;
-        width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        color: #64748b; font-size: 1.1rem; cursor: pointer; transition: all 0.2s;
-    }
-    .reg-modal-close:hover { background: #e2e8f0; color: #0f172a; transform: rotate(90deg); }
-    
-    .reg-form-container h3 { font-size: 1.8rem; font-weight: 700; color: #0f172a; margin-bottom: 0.25rem; }
-    .reg-form-subtitle { color: #64748b; margin-bottom: 2rem; font-size: 1rem; }
-    
-    .reg-modal-right label { display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem; font-size: 0.9rem; }
-    .input-icon-wrapper { position: relative; display: flex; align-items: center; }
-    .input-icon-wrapper i { position: absolute; left: 1rem; color: #94a3b8; font-size: 1.1rem; }
-    .input-icon-wrapper input {
-        width: 100%; padding: 0.85rem 1rem 0.85rem 2.8rem; border: 1px solid #cbd5e1;
-        border-radius: 10px; font-size: 1rem; color: #0f172a; transition: all 0.2s;
-        background: #f8fafc; margin: 0; box-sizing: border-box;
-    }
-    .input-icon-wrapper input:focus { border-color: #7b68ee; background: #ffffff; box-shadow: 0 0 0 3px rgba(123, 104, 238, 0.14); outline: none; }
-    
-    @@media (max-width: 768px) {
-        .reg-modal-premium { flex-direction: column; min-height: auto; }
-        .reg-modal-left { padding: 2rem; }
-        .reg-modal-right { padding: 2rem; }
-    }
-</style>
-
-<!-- ===== SCRIPTS ===== -->
-<script>
-    // --- Navbar Scroll Effect ---
-    const nav = document.getElementById('lp-nav');
-    window.addEventListener('scroll', () => {
-        nav.classList.toggle('scrolled', window.scrollY > 40);
-    });
-
-    // --- Smooth Scroll for anchor links ---
-    document.querySelectorAll('a[href^="#"]').forEach(a => {
-        a.addEventListener('click', e => {
-            e.preventDefault();
-            const target = document.querySelector(a.getAttribute('href'));
-            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-    });
-
-    // --- Scroll Reveal ---
-    const revealElements = document.querySelectorAll('.reveal');
-    const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-                revealObserver.unobserve(entry.target);
-            }
-        });
-    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-    revealElements.forEach(el => revealObserver.observe(el));
-
-    // --- Counter Animation ---
-    const counters = document.querySelectorAll('.counter');
-    const counterObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const counter = entry.target;
-                const target = parseInt(counter.getAttribute('data-target'));
-                const duration = 2000;
-                const step = target / (duration / 16);
-                let current = 0;
-                const timer = setInterval(() => {
-                    current += step;
-                    if (current >= target) {
-                        counter.textContent = target;
-                        clearInterval(timer);
-                    } else {
-                        counter.textContent = Math.floor(current);
-                    }
-                }, 16);
-                counterObserver.unobserve(counter);
-            }
-        });
-    }, { threshold: 0.5 });
-    counters.forEach(c => counterObserver.observe(c));
-
-    // --- Sticky Scroll Showcase ---
-    const stickyBlocks = document.querySelectorAll('.sticky-block');
-    const stickyImages = document.querySelectorAll('.sticky-img');
-    
-    if (stickyBlocks.length > 0 && stickyImages.length > 0) {
-        const stickyObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const index = entry.target.getAttribute('data-index');
-                    
-                    // Highlight text block
-                    stickyBlocks.forEach(b => b.classList.remove('is-active'));
-                    entry.target.classList.add('is-active');
-                    
-                    // Show corresponding image
-                    stickyImages.forEach(img => img.classList.remove('is-active'));
-                    const targetImg = document.querySelector(`.sticky-img[data-index="${index}"]`);
-                    if (targetImg) targetImg.classList.add('is-active');
-                }
-            });
-        }, {
-            root: null,
-            threshold: 0.5,
-            rootMargin: '-20% 0px -40% 0px'
-        });
-
-        stickyBlocks.forEach(block => stickyObserver.observe(block));
-    }
-    
-    // --- Registration Modal Functionality ---
-    const regModal = document.getElementById('regModal');
-    const regPlanName = document.getElementById('regPlanName');
-    const regPlanInput = document.getElementById('regPlanInput');
-    const regForm = document.getElementById('regForm');
-    const regSubmitBtn = document.getElementById('regSubmitBtn');
-    let isRegistrationSubmitting = false;
-
-    function getRegisterButtonLabel() {
-        const hasPlan = (regPlanInput?.value || '').trim().length > 0;
-        return `<i class="bi bi-person-plus-fill"></i> ${hasPlan ? 'Đăng ký & Mua gói' : 'Đăng ký Trải nghiệm'}`;
-    }
-
-    async function purchasePlan(plan) {
-        @if (User.Identity != null && User.Identity.IsAuthenticated)
-        {
-            <text>
-            const isTest = !plan || plan.trim() === '';
-            const planNameStr = isTest ? 'Test 30 phút' : plan;
-            
-            const confirmed = await window.AppFeedback.confirm({
-                title: isTest ? 'Bắt đầu Test 30 phút' : 'Xác nhận đăng ký gói',
-                message: isTest
-                    ? 'Phiên trải nghiệm 30 phút sẽ bắt đầu với quyền truy cập phù hợp để bạn khám phá hệ thống.'
-                    : `Gửi yêu cầu đăng ký ${planNameStr}. Đội ngũ hỗ trợ sẽ liên hệ để kích hoạt gói.`,
-                tone: 'info',
-                confirmText: isTest ? 'Bắt đầu trải nghiệm' : 'Gửi đăng ký',
-                cancelText: 'Hủy'
-            });
-            if (!confirmed) return;
-
-            try {
-                const token = document.querySelector('#regForm input[name="__RequestVerificationToken"]')?.value;
-                if (!token) throw new Error('Không thể xác thực yêu cầu. Vui lòng tải lại trang.');
-                const response = await fetch('/Home/PurchasePlanLoggedIn', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'RequestVerificationToken': token
-                    },
-                    body: new URLSearchParams({ plan: plan })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    window.AppFeedback.toast({ tone: 'success', title: 'Đăng ký thành công', message: data.message });
-                } else {
-                    window.AppFeedback.toast({ tone: 'error', title: 'Không thể đăng ký', message: data.message });
-                }
-            } catch (err) {
-                window.AppFeedback.toast({ tone: 'error', title: 'Lỗi kết nối', message: 'Không thể kết nối đến máy chủ.' });
-            }
-            </text>
-        }
-        else
-        {
-            <text>
-            openRegModal(plan);
-            </text>
-        }
-    }
-
-    function openRegModal(plan) {
-        const modal = document.getElementById('regModal');
-        const planInput1 = document.getElementById('regPlanInput');
-        const planInput2 = document.getElementById('loginPlanInput');
-        const planName = document.getElementById('regPlanName');
-        const subtitleText = document.getElementById('regSubtitleText');
-        const regSubmitBtn = document.getElementById('regSubmitBtn');
-        const loginBuySubmitBtn = document.getElementById('loginBuySubmitBtn');
-        
-        if (plan) {
-            planName.textContent = plan;
-            planInput1.value = plan;
-            planInput2.value = plan;
-            if(subtitleText) subtitleText.style.display = 'block';
-            if(loginBuySubmitBtn) loginBuySubmitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Đăng nhập & Mua gói';
-        } else {
-            planName.textContent = '';
-            planInput1.value = '';
-            planInput2.value = '';
-            if(subtitleText) subtitleText.style.display = 'none';
-            if(loginBuySubmitBtn) loginBuySubmitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Đăng nhập Hệ thống';
-        }
-        isRegistrationSubmitting = false;
-        if(regSubmitBtn) {
-            regSubmitBtn.disabled = false;
-            regSubmitBtn.innerHTML = getRegisterButtonLabel();
-        }
-        
-        modal.classList.add('active');
-        setTimeout(() => document.getElementById('regEmail').focus(), 100);
-    }
-
-    function closeRegModal() {
-        regModal.classList.remove('active');
-        regForm.reset();
-    }
-
-    async function submitRegistration(e) {
-        e.preventDefault();
-        if (isRegistrationSubmitting) return;
-        
-        const emailInput = document.getElementById('regEmail');
-        const email = emailInput.value.trim();
-        const plan = regPlanInput.value;
-
-        if (!email) return;
-
-        isRegistrationSubmitting = true;
-        emailInput.value = email;
-        regSubmitBtn.disabled = true;
-        regSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
-        let registrationCompleted = false;
-
-        try {
-            const formData = new FormData();
-            formData.append('email', email);
-            formData.append('plan', plan);
-            const token = regForm.querySelector('input[name="__RequestVerificationToken"]')?.value;
-            if (!token) throw new Error('Không thể xác thực yêu cầu. Vui lòng tải lại trang.');
-            formData.append('__RequestVerificationToken', token);
-
-            const response = await fetch('/Home/RegisterPurchase', {
-                method: 'POST',
-                body: formData
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                registrationCompleted = true;
-                // Pre-fill the login email
-                document.getElementById('loginUsername').value = email;
-                
-                window.AppFeedback.toast({ tone: 'success', title: 'Đăng ký thành công', message: result.message });
-                
-                // Switch to the login tab inside the modal instead of redirecting
-                setTimeout(() => {
-                    switchRegTab('login');
-                }, 1500);
-
-                const heroBtn = document.querySelector('.lp-hero-actions .btn-primary-lg');
-                if (heroBtn) {
-                    heroBtn.innerHTML = '<i class="bi bi-grid-1x2-fill"></i> Truy cập Hệ thống';
-                    heroBtn.onclick = null;
-                    heroBtn.href = '/Dashboard/Index';
-                }
-            } else {
-                window.AppFeedback.toast({ tone: 'error', title: 'Không thể đăng ký', message: result.message });
-            }
-        } catch (error) {
-            console.error(error);
-            window.AppFeedback.toast({ tone: 'error', title: 'Lỗi hệ thống', message: 'Có lỗi xảy ra, vui lòng thử lại sau.' });
-        } finally {
-            if (!registrationCompleted) {
-                isRegistrationSubmitting = false;
-                regSubmitBtn.disabled = false;
-                regSubmitBtn.innerHTML = getRegisterButtonLabel();
-            }
-        }
-    }
-
-    // --- Scroll Reveal Animation ---
-    document.addEventListener('DOMContentLoaded', function() {
-        const revealElements = document.querySelectorAll('.reveal');
-        
-        const revealObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                    observer.unobserve(entry.target); // Stop observing once revealed
-                }
-            });
-        }, {
-            root: null,
-            threshold: 0.15,
-            rootMargin: '0px 0px -50px 0px'
-        });
-
-        revealElements.forEach(el => {
-            revealObserver.observe(el);
-        });
-        
-        // Handle navbar background on scroll
-        const navbar = document.getElementById('lp-nav');
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
-        });
-    });
-
-    function switchRegTab(tab) {
-        const tabReg = document.getElementById('tabRegister');
-        const tabLog = document.getElementById('tabLogin');
-        const formReg = document.getElementById('regForm');
-        const formLog = document.getElementById('loginBuyForm');
-
-        if (tab === 'register') {
-            tabReg.style.color = 'var(--primary)';
-            tabReg.style.borderBottomColor = 'var(--primary)';
-            tabLog.style.color = '#64748b';
-            tabLog.style.borderBottomColor = 'transparent';
-            formReg.style.display = 'block';
-            formLog.style.display = 'none';
-        } else {
-            tabLog.style.color = 'var(--primary)';
-            tabLog.style.borderBottomColor = 'var(--primary)';
-            tabReg.style.color = '#64748b';
-            tabReg.style.borderBottomColor = 'transparent';
-            formReg.style.display = 'none';
-            formLog.style.display = 'block';
-        }
-    }
-
-    async function submitLoginBuy(e) {
-        e.preventDefault();
-        
-        const form = e.target;
-        const formData = new FormData(form);
-        const btn = document.getElementById('loginBuySubmitBtn');
-        
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span> Đang xử lý...';
-        
-        try {
-            const response = await fetch('/Home/LoginAndPurchase', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                window.AppFeedback.toast({ tone: 'success', title: 'Đăng nhập thành công', message: result.message });
-                // Reload to stay on the landing page or redirect if provided
-                setTimeout(() => {
-                    if (result.redirectUrl) {
-                        window.location.href = result.redirectUrl;
-                    } else {
-                        window.location.reload();
-                    }
-                }, 1500);
-            } else {
-                window.AppFeedback.toast({ tone: 'error', title: 'Không thể đăng nhập', message: result.message });
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Đăng nhập & Mua gói';
-            }
-        } catch (error) {
-            console.error(error);
-            window.AppFeedback.toast({ tone: 'error', title: 'Lỗi hệ thống', message: 'Có lỗi xảy ra, vui lòng thử lại sau.' });
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Đăng nhập & Mua gói';
-        }
-    }
-
-    // --- Change Password Modal Logic ---
-    function openChangePasswordModal() {
-        document.getElementById('changePasswordModal').classList.add('active');
-        document.body.style.overflow = 'hidden';
-        document.getElementById('changePasswordAjaxForm').reset();
-        document.getElementById('cpAlertError').style.display = 'none';
-        document.getElementById('cpAlertSuccess').style.display = 'none';
-    }
-
-    @if (User.Identity != null && User.Identity.IsAuthenticated && User.HasClaim(c => c.Type == "RequiresPasswordChange" && c.Value == "true"))
-    {
-        <text>
-        document.addEventListener('DOMContentLoaded', function() {
-            openChangePasswordModal();
-        });
-        </text>
-    }
-
-    function closeChangePasswordModal() {
-        document.getElementById('changePasswordModal').classList.remove('active');
-        document.body.style.overflow = '';
-    }
-
-    async function submitChangePasswordAjax(event) {
-        event.preventDefault();
-        const btn = document.getElementById('cpSubmitBtn');
-        const errAlert = document.getElementById('cpAlertError');
-        const errMsg = document.getElementById('cpErrorMsg');
-        const successAlert = document.getElementById('cpAlertSuccess');
-        const successMsg = document.getElementById('cpSuccessMsg');
-
-        errAlert.style.display = 'none';
-        successAlert.style.display = 'none';
-
-        const oldPw = document.getElementById('oldPasswordAjax').value;
-        const newPw = document.getElementById('newPasswordAjax').value;
-        const confirmPw = document.getElementById('confirmPasswordAjax').value;
-
-        if (newPw !== confirmPw) {
-            errMsg.innerText = "Mật khẩu mới không khớp.";
-            errAlert.style.display = 'flex';
-            return;
-        }
-
-        btn.innerHTML = '<i class="spinner-border spinner-border-sm"></i> Đang xử lý...';
-        btn.disabled = true;
-
-        try {
-            const token = document.querySelector('#changePasswordAjaxForm input[name="__RequestVerificationToken"]')?.value;
-            if (!token) throw new Error('Không thể xác thực yêu cầu. Vui lòng tải lại trang.');
-            const response = await fetch('/Auth/ChangePasswordAjax', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': token
-                },
-                body: JSON.stringify({
-                    oldPassword: oldPw,
-                    newPassword: newPw,
-                    confirmPassword: confirmPw
-                })
-            });
-
-            const result = await response.json();
-            if (result.success) {
-                successMsg.innerText = result.message || "Đổi mật khẩu thành công!";
-                successAlert.style.display = 'flex';
-                document.getElementById('changePasswordAjaxForm').style.display = 'none';
-                setTimeout(() => {
-                    closeChangePasswordModal();
-                }, 2000);
-            } else {
-                errMsg.innerText = result.message || "Có lỗi xảy ra.";
-                errAlert.style.display = 'flex';
-            }
-        } catch (err) {
-            errMsg.innerText = "Lỗi kết nối. Vui lòng thử lại.";
-            errAlert.style.display = 'flex';
-        } finally {
-            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Cập nhật Mật khẩu';
-            btn.disabled = false;
-        }
-    }
-
-    /* Retired OTP reset flow. Password resets now use the standard one-time-link page. */
-    /*
-    let fpCurrentEmail = '';
-    let fpCurrentCode = '';
-
-    function openForgotPasswordModal() {
-        // Nếu modal đăng nhập đang mở thì ẩn tạm đi hoặc không cần (do z-index)
-        closeRegModal(); 
-        
-        document.getElementById('forgotPasswordModal').classList.add('active');
-        document.body.style.overflow = 'hidden';
-        
-        document.getElementById('fpStep1Form').reset();
-        document.getElementById('fpStep2Form').reset();
-        document.getElementById('fpStep3Form').reset();
-        
-        document.getElementById('fpStep1Form').style.display = 'block';
-        document.getElementById('fpStep2Form').style.display = 'none';
-        document.getElementById('fpStep3Form').style.display = 'none';
-        
-        document.getElementById('fpAlertError').style.display = 'none';
-        document.getElementById('fpAlertSuccess').style.display = 'none';
-    }
-
-    function closeForgotPasswordModal() {
-        document.getElementById('forgotPasswordModal').classList.remove('active');
-        document.body.style.overflow = '';
-    }
-
-    async function submitFpStep1(e) {
-        e.preventDefault();
-        const email = document.getElementById('fpEmail').value;
-        const btn = document.getElementById('btnFpStep1');
-        const errAlert = document.getElementById('fpAlertError');
-        const errMsg = document.getElementById('fpErrorMsg');
-        const successAlert = document.getElementById('fpAlertSuccess');
-        const successMsg = document.getElementById('fpSuccessMsg');
-
-        errAlert.style.display = 'none';
-        successAlert.style.display = 'none';
-        btn.innerHTML = '<i class="spinner-border spinner-border-sm"></i> Đang xử lý...';
-        btn.disabled = true;
-
-        try {
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-            const res = await fetch('/Auth/ForgotPassword', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
-                body: JSON.stringify({ email: email })
-            });
-            const data = await res.json();
-            if (data.success) {
-                fpCurrentEmail = email;
-                successMsg.innerText = data.message;
-                successAlert.style.display = 'flex';
-                document.getElementById('fpStep1Form').style.display = 'none';
-                document.getElementById('fpStep2Form').style.display = 'block';
-            } else {
-                errMsg.innerText = data.message;
-                errAlert.style.display = 'flex';
-            }
-        } catch (err) {
-            errMsg.innerText = "Lỗi kết nối mạng.";
-            errAlert.style.display = 'flex';
-        } finally {
-            btn.innerHTML = '<i class="bi bi-send-fill"></i> Nhận mã xác nhận';
-            btn.disabled = false;
-        }
-    }
-
-    async function submitFpStep2(e) {
-        e.preventDefault();
-        const code = document.getElementById('fpOtp').value;
-        const btn = document.getElementById('btnFpStep2');
-        const errAlert = document.getElementById('fpAlertError');
-        const errMsg = document.getElementById('fpErrorMsg');
-        const successAlert = document.getElementById('fpAlertSuccess');
-        const successMsg = document.getElementById('fpSuccessMsg');
-
-        errAlert.style.display = 'none';
-        successAlert.style.display = 'none';
-        btn.innerHTML = '<i class="spinner-border spinner-border-sm"></i> Đang xử lý...';
-        btn.disabled = true;
-
-        try {
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-            const res = await fetch('/Auth/ForgotPassword', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
-                body: JSON.stringify({ email: fpCurrentEmail, code: code })
-            });
-            const data = await res.json();
-            if (data.success) {
-                fpCurrentCode = code;
-                successMsg.innerText = data.message;
-                successAlert.style.display = 'flex';
-                document.getElementById('fpStep2Form').style.display = 'none';
-                document.getElementById('fpStep3Form').style.display = 'block';
-            } else {
-                errMsg.innerText = data.message;
-                errAlert.style.display = 'flex';
-            }
-        } catch (err) {
-            errMsg.innerText = "Lỗi kết nối mạng.";
-            errAlert.style.display = 'flex';
-        } finally {
-            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Xác nhận mã';
-            btn.disabled = false;
-        }
-    }
-
-    async function submitFpStep3(e) {
-        e.preventDefault();
-        const newPw = document.getElementById('fpNewPassword').value;
-        const confirmPw = document.getElementById('fpConfirmPassword').value;
-        const btn = document.getElementById('btnFpStep3');
-        const errAlert = document.getElementById('fpAlertError');
-        const errMsg = document.getElementById('fpErrorMsg');
-        const successAlert = document.getElementById('fpAlertSuccess');
-        const successMsg = document.getElementById('fpSuccessMsg');
-
-        errAlert.style.display = 'none';
-        successAlert.style.display = 'none';
-        
-        if (newPw !== confirmPw) {
-            errMsg.innerText = "Mật khẩu không khớp.";
-            errAlert.style.display = 'flex';
-            return;
-        }
-
-        btn.innerHTML = '<i class="spinner-border spinner-border-sm"></i> Đang xử lý...';
-        btn.disabled = true;
-
-        try {
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
-            const res = await fetch('/Auth/ForgotPassword', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
-                body: JSON.stringify({ email: fpCurrentEmail, code: fpCurrentCode, newPassword: newPw, confirmPassword: confirmPw })
-            });
-            const data = await res.json();
-            if (data.success) {
-                successMsg.innerText = data.message;
-                successAlert.style.display = 'flex';
-                document.getElementById('fpStep3Form').style.display = 'none';
-                setTimeout(() => {
-                    closeForgotPasswordModal();
-                    openRegModal('Gói Starter'); // Open login modal again
-                    switchRegTab('login');
-                }, 2000);
-            } else {
-                errMsg.innerText = data.message;
-                errAlert.style.display = 'flex';
-            }
-        } catch (err) {
-            errMsg.innerText = "Lỗi kết nối mạng.";
-            errAlert.style.display = 'flex';
-        } finally {
-            btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Tạo mật khẩu mới';
-            btn.disabled = false;
-        }
-    }
-    */
-</script>
+@section Scripts {
+    <script src="~/js/landing.js" asp-append-version="true"></script>
+}

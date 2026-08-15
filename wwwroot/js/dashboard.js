@@ -7,6 +7,7 @@
     }
 
     const chartRegistry = new Map();
+    const chartFontFamily = '"Times New Roman", Times, serif';
 
     function escapeHtml(value) {
         return String(value ?? '')
@@ -30,7 +31,7 @@
     }
 
     function getThemeColor(name, fallback) {
-        const shellStyle = getComputedStyle(document.querySelector('.velzon-shell') || document.body);
+        const shellStyle = getComputedStyle(document.querySelector('.vietmach-shell') || document.body);
         const rootStyle = getComputedStyle(document.documentElement);
         const bodyStyle = getComputedStyle(document.body);
         return shellStyle.getPropertyValue(name).trim() || rootStyle.getPropertyValue(name).trim() || bodyStyle.getPropertyValue(name).trim() || fallback;
@@ -126,7 +127,7 @@
                         boxWidth: 7,
                         boxHeight: 7,
                         padding: 14,
-                        font: { family: 'hkgrotesk, Poppins, sans-serif', size: 11 }
+                        font: { family: chartFontFamily, size: 11 }
                     }
                 },
                 tooltip: {
@@ -137,8 +138,8 @@
                     bodyColor: '#ffffff',
                     padding: 10,
                     displayColors: true,
-                    titleFont: { family: 'hkgrotesk, Poppins, sans-serif', size: 11, weight: '600' },
-                    bodyFont: { family: 'hkgrotesk, Poppins, sans-serif', size: 11 }
+                    titleFont: { family: chartFontFamily, size: 11, weight: '700' },
+                    bodyFont: { family: chartFontFamily, size: 11 }
                 }
             }
         };
@@ -156,10 +157,10 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = options.color || '#212529';
-            ctx.font = '600 21px hkgrotesk, Poppins, sans-serif';
+            ctx.font = `700 21px ${chartFontFamily}`;
             ctx.fillText(String(options.value), centerX, centerY - 7);
             ctx.fillStyle = options.mutedColor || '#6d7080';
-            ctx.font = '500 10px hkgrotesk, Poppins, sans-serif';
+            ctx.font = `400 10px ${chartFontFamily}`;
             ctx.fillText(options.label || '', centerX, centerY + 13);
             ctx.restore();
         }
@@ -184,7 +185,7 @@
             x: {
                 grid: { display: false },
                 border: { display: false },
-                ticks: { color: theme.muted, font: { family: 'hkgrotesk, Poppins, sans-serif', size: 10 }, maxRotation: 0 }
+                ticks: { color: theme.muted, font: { family: chartFontFamily, size: 10 }, maxRotation: 0 }
             },
             y: {
                 beginAtZero: true,
@@ -197,7 +198,7 @@
                     padding: 8,
                     stepSize: 20,
                     callback: value => `${value}%`,
-                    font: { family: 'hkgrotesk, Poppins, sans-serif', size: 10 }
+                    font: { family: chartFontFamily, size: 10 }
                 }
             }
         };
@@ -300,7 +301,7 @@
                         const label = this.getLabelForValue(value);
                         return label.length > 24 ? `${label.slice(0, 22)}…` : label;
                     },
-                    font: { family: 'hkgrotesk, Poppins, sans-serif', size: 10 }
+                    font: { family: chartFontFamily, size: 10 }
                 }
             },
             x: {
@@ -314,7 +315,7 @@
                     padding: 8,
                     stepSize: 20,
                     callback: value => `${value}%`,
-                    font: { family: 'hkgrotesk, Poppins, sans-serif', size: 10 }
+                    font: { family: chartFontFamily, size: 10 }
                 }
             }
         };

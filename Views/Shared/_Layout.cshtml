@@ -16,7 +16,7 @@
           currentAction.Equals("Privacy", StringComparison.OrdinalIgnoreCase) ||
           currentAction.Equals("PurchaseHistory", StringComparison.OrdinalIgnoreCase)));
     var isInternalPage = !isLoginPage && !isLandingPage;
-    var bodyVariant = isLoginPage ? "velzon-auth" : isLandingPage ? "velzon-public" : "velzon-shell";
+    var bodyVariant = isLoginPage ? "vietmach-auth" : isLandingPage ? "vietmach-public" : "vietmach-shell";
     var canonicalUrl = SeoHelper.GetCanonicalUrl(ViewContext, appBranding.PublicBaseUrl);
     var seoImageUrl = appBranding.SeoImageUrl;
     if (!string.IsNullOrWhiteSpace(seoImageUrl) && !seoImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
@@ -128,11 +128,11 @@
 </head>
 <body class="@bodyVariant">
     <!--
-    THESIS: KPI/OKR work reads as a compact Velzon operations console, refusing decorative dashboard chrome.
-    OWN-WORLD: Indigo navigation, a light command bar, pale canvas, compact white surfaces, Poppins body copy, and HK Grotesk headings.
+    THESIS: KPI/OKR work reads as a compact enterprise operations console, refusing decorative dashboard chrome.
+    OWN-WORLD: Indigo navigation, a light command bar, pale canvas, compact white surfaces, and Segoe UI typography with full Vietnamese support.
     STORY: Users orient by responsibility, scan risk and progress, then move directly into the authorized workflow.
     FIRST VIEWPORT: Internal routes use a fixed navigation rail and command bar; public and authentication routes inherit the same restrained tokens.
-    FORM: Velzon Default operations system, position 1, key VELZON-OPERATIONS-SHELL-2026.
+    FORM: VietMach operations system, position 1, key VIETMACH-OPERATIONS-SHELL-2026.
     FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
     -->
     @if (isLoginPage || isLandingPage)
@@ -145,7 +145,7 @@
         <form id="globalAntiForgeryForm" class="d-none">
             @Html.AntiForgeryToken()
         </form>
-        <div id="layout-wrapper" class="app-wrapper velzon-layout-wrapper">
+        <div id="layout-wrapper" class="app-wrapper vietmach-layout-wrapper">
             <nav id="sidebar" class="sidebar app-menu navbar-menu" aria-label="Điều hướng chính">
                 <div class="sidebar-brand navbar-brand-box">
                     <div class="brand-icon">

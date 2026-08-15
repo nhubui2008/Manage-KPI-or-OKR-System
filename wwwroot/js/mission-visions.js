@@ -1,5 +1,5 @@
 /**
- * Velzon Mission & Visions Module Script
+ * Enterprise Mission & Visions Module Script
  * Handles interactive behaviors for MissionVision form (Create/Edit).
  */
 document.addEventListener('DOMContentLoaded', function () {

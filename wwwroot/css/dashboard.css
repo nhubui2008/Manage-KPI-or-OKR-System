@@ -1,9 +1,9 @@
-.velzon-shell .dashboard-page {
+.vietmach-shell .dashboard-page {
     min-width: 0;
     color: var(--vz-ink, #212529);
 }
 
-.velzon-shell .dashboard-page-header {
+.vietmach-shell .dashboard-page-header {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
@@ -13,20 +13,20 @@
     border-bottom: 1px solid var(--vz-border, #e9ebec);
 }
 
-.velzon-shell .dashboard-page-heading h1 {
+.vietmach-shell .dashboard-page-heading h1 {
     margin: 0 0 5px;
     color: var(--vz-ink, #212529);
-    font-family: hkgrotesk, Poppins, sans-serif;
+    font-family: var(--vm-font-sans);
     font-size: 1.25rem;
     font-weight: 600;
     letter-spacing: -0.015em;
 }
 
-.velzon-shell .dashboard-page-heading .breadcrumb {
+.vietmach-shell .dashboard-page-heading .breadcrumb {
     font-size: 0.75rem;
 }
 
-.velzon-shell .dashboard-period-filter {
+.vietmach-shell .dashboard-period-filter {
     display: flex;
     align-items: center;
     flex: 0 0 auto;
@@ -38,7 +38,7 @@
     background: #fff;
 }
 
-.velzon-shell .dashboard-period-filter label {
+.vietmach-shell .dashboard-period-filter label {
     display: inline-flex;
     align-items: center;
     gap: 7px;
@@ -53,11 +53,11 @@
     white-space: nowrap;
 }
 
-.velzon-shell .dashboard-period-filter label i {
+.vietmach-shell .dashboard-period-filter label i {
     color: var(--primary);
 }
 
-.velzon-shell .dashboard-period-filter .form-select {
+.vietmach-shell .dashboard-period-filter .form-select {
     width: clamp(260px, 22vw, 320px);
     min-height: 36px;
     padding: 5px 36px 5px 14px;
@@ -69,19 +69,19 @@
     box-shadow: none;
 }
 
-.velzon-shell .dashboard-period-filter .form-select:focus {
+.vietmach-shell .dashboard-period-filter .form-select:focus {
     box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 42%, transparent);
 }
 
-.velzon-shell .dashboard-section {
+.vietmach-shell .dashboard-section {
     margin-bottom: 16px;
 }
 
-.velzon-shell .dashboard-section:last-of-type {
+.vietmach-shell .dashboard-section:last-of-type {
     margin-bottom: 0;
 }
 
-.velzon-shell .dashboard-card {
+.vietmach-shell .dashboard-card {
     min-width: 0;
     margin: 0;
     overflow: hidden;
@@ -92,18 +92,18 @@
     transform: none;
 }
 
-.velzon-shell .dashboard-card:hover {
+.vietmach-shell .dashboard-card:hover {
     border-color: var(--vz-border, #e9ebec);
     box-shadow: 0 2px 6px rgba(30, 41, 59, 0.065);
     transform: none;
 }
 
-.velzon-shell .dashboard-card .card-body {
+.vietmach-shell .dashboard-card .card-body {
     min-width: 0;
     padding: 16px;
 }
 
-.velzon-shell .dashboard-card-header {
+.vietmach-shell .dashboard-card-header {
     display: flex;
     min-height: 58px;
     align-items: center;
@@ -114,33 +114,33 @@
     background: #fff;
 }
 
-.velzon-shell .dashboard-card-header > div {
+.vietmach-shell .dashboard-card-header > div {
     min-width: 0;
 }
 
-.velzon-shell .dashboard-card-header .card-title {
+.vietmach-shell .dashboard-card-header .card-title {
     margin: 0;
     color: var(--vz-ink, #212529);
-    font-family: hkgrotesk, Poppins, sans-serif;
+    font-family: var(--vm-font-sans);
     font-size: 0.875rem;
     font-weight: 600;
     letter-spacing: -0.005em;
 }
 
-.velzon-shell .dashboard-card-header p {
+.vietmach-shell .dashboard-card-header p {
     margin: 3px 0 0;
     color: var(--vz-muted, #6d7080);
     font-size: 0.72rem;
     line-height: 1.35;
 }
 
-.velzon-shell .dashboard-stat-card .card-body {
+.vietmach-shell .dashboard-stat-card .card-body {
     height: 100%;
     min-height: 136px;
     padding: 18px 16px;
 }
 
-.velzon-shell .dashboard-stat-content {
+.vietmach-shell .dashboard-stat-content {
     display: grid;
     height: 100%;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -148,10 +148,10 @@
     gap: 16px;
 }
 
-.velzon-shell .dashboard-stat-label {
+.vietmach-shell .dashboard-stat-label {
     margin: 0 0 8px;
     color: var(--vz-muted, #6d7080);
-    font-family: hkgrotesk, Poppins, sans-serif;
+    font-family: var(--vm-font-sans);
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.035em;
@@ -159,7 +159,7 @@
     text-transform: uppercase;
 }
 
-.velzon-shell .dashboard-stat-value {
+.vietmach-shell .dashboard-stat-value {
     margin: 0 0 9px;
     color: var(--vz-ink, #212529);
     font-size: 1.55rem;
@@ -169,7 +169,7 @@
     line-height: 1;
 }
 
-.velzon-shell .dashboard-stat-meta {
+.vietmach-shell .dashboard-stat-meta {
     display: flex;
     min-width: 0;
     align-items: center;
@@ -179,13 +179,13 @@
     font-size: 0.72rem;
 }
 
-.velzon-shell .dashboard-stat-meta .badge {
+.vietmach-shell .dashboard-stat-meta .badge {
     border-radius: 3px;
     font-size: 0.665rem;
     font-weight: 500;
 }
 
-.velzon-shell .dashboard-stat-icon {
+.vietmach-shell .dashboard-stat-icon {
     display: inline-flex;
     width: 44px;
     height: 44px;
@@ -195,34 +195,34 @@
     font-size: 1.15rem;
 }
 
-.velzon-shell .dashboard-chart {
+.vietmach-shell .dashboard-chart {
     position: relative;
     width: 100%;
     min-width: 0;
 }
 
-.velzon-shell .dashboard-chart--trend {
+.vietmach-shell .dashboard-chart--trend {
     height: 310px;
 }
 
-.velzon-shell .dashboard-chart--donut,
-.velzon-shell .dashboard-chart--departments {
+.vietmach-shell .dashboard-chart--donut,
+.vietmach-shell .dashboard-chart--departments {
     height: 300px;
 }
 
-.velzon-shell .dashboard-chart canvas {
+.vietmach-shell .dashboard-chart canvas {
     display: block;
     max-width: 100%;
 }
 
-.velzon-shell .dashboard-chart-note {
+.vietmach-shell .dashboard-chart-note {
     margin: 8px 0 0;
     color: var(--vz-muted, #6d7080);
     font-size: 0.72rem;
     text-align: center;
 }
 
-.velzon-shell .dashboard-empty-state {
+.vietmach-shell .dashboard-empty-state {
     display: flex;
     width: 100%;
     min-height: 180px;
@@ -234,42 +234,42 @@
     text-align: center;
 }
 
-.velzon-shell .dashboard-empty-state[hidden] {
+.vietmach-shell .dashboard-empty-state[hidden] {
     display: none;
 }
 
-.velzon-shell .dashboard-empty-state i {
+.vietmach-shell .dashboard-empty-state i {
     margin-bottom: 3px;
     color: #9aa1ac;
     font-size: 1.5rem;
 }
 
-.velzon-shell .dashboard-empty-state strong {
+.vietmach-shell .dashboard-empty-state strong {
     color: #495057;
     font-size: 0.8125rem;
     font-weight: 600;
 }
 
-.velzon-shell .dashboard-empty-state span {
+.vietmach-shell .dashboard-empty-state span {
     max-width: 48ch;
     font-size: 0.72rem;
 }
 
-.velzon-shell .dashboard-empty-state--compact {
+.vietmach-shell .dashboard-empty-state--compact {
     min-height: 132px;
 }
 
-.velzon-shell .dashboard-activity-list {
+.vietmach-shell .dashboard-activity-list {
     display: flex;
     min-height: 342px;
     align-items: stretch;
 }
 
-.velzon-shell .dashboard-activity-list .list-group {
+.vietmach-shell .dashboard-activity-list .list-group {
     width: 100%;
 }
 
-.velzon-shell .dashboard-activity-list .list-group-item {
+.vietmach-shell .dashboard-activity-list .list-group-item {
     display: grid;
     grid-template-columns: 28px minmax(0, 1fr) auto;
     align-items: center;
@@ -279,7 +279,7 @@
     background: transparent;
 }
 
-.velzon-shell .dashboard-activity-icon {
+.vietmach-shell .dashboard-activity-icon {
     display: inline-flex;
     width: 28px;
     height: 28px;
@@ -290,43 +290,43 @@
     color: var(--primary);
 }
 
-.velzon-shell .dashboard-activity-content {
+.vietmach-shell .dashboard-activity-content {
     display: flex;
     min-width: 0;
     flex-direction: column;
     gap: 2px;
 }
 
-.velzon-shell .dashboard-activity-content strong,
-.velzon-shell .dashboard-activity-content span {
+.vietmach-shell .dashboard-activity-content strong,
+.vietmach-shell .dashboard-activity-content span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.velzon-shell .dashboard-activity-content strong {
+.vietmach-shell .dashboard-activity-content strong {
     color: var(--vz-ink, #212529);
     font-size: 0.75rem;
     font-weight: 600;
 }
 
-.velzon-shell .dashboard-activity-content span,
-.velzon-shell .dashboard-activity-list time {
+.vietmach-shell .dashboard-activity-content span,
+.vietmach-shell .dashboard-activity-list time {
     color: var(--vz-muted, #6d7080);
     font-size: 0.6875rem;
 }
 
-.velzon-shell .dashboard-activity-list time {
+.vietmach-shell .dashboard-activity-list time {
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
 
-.velzon-shell .dashboard-ranking-table-wrap,
-.velzon-shell .dashboard-system-table-wrap {
+.vietmach-shell .dashboard-ranking-table-wrap,
+.vietmach-shell .dashboard-system-table-wrap {
     min-width: 0;
 }
 
-.velzon-shell .dashboard-ranking-table thead th {
+.vietmach-shell .dashboard-ranking-table thead th {
     padding: 9px 16px;
     border-bottom-color: var(--vz-border, #e9ebec);
     background: #f3f6f9;
@@ -337,18 +337,18 @@
     text-transform: uppercase;
 }
 
-.velzon-shell .dashboard-ranking-table tbody td {
+.vietmach-shell .dashboard-ranking-table tbody td {
     padding: 11px 16px;
     border-color: var(--vz-border, #e9ebec);
 }
 
-.velzon-shell .dashboard-employee-cell {
+.vietmach-shell .dashboard-employee-cell {
     display: flex;
     align-items: center;
     gap: 9px;
 }
 
-.velzon-shell .dashboard-employee-avatar {
+.vietmach-shell .dashboard-employee-avatar {
     display: inline-flex;
     width: 28px;
     height: 28px;
@@ -362,21 +362,21 @@
     font-weight: 600;
 }
 
-.velzon-shell .dashboard-rank-progress {
+.vietmach-shell .dashboard-rank-progress {
     display: flex;
     min-width: 190px;
     align-items: center;
     gap: 10px;
 }
 
-.velzon-shell .dashboard-rank-progress .progress {
+.vietmach-shell .dashboard-rank-progress .progress {
     width: min(280px, 100%);
     height: 6px;
     border-radius: 3px;
     background: #edf0f2;
 }
 
-.velzon-shell .dashboard-rank-progress span {
+.vietmach-shell .dashboard-rank-progress span {
     min-width: 50px;
     font-size: 0.72rem;
     font-weight: 600;
@@ -384,17 +384,17 @@
     text-align: right;
 }
 
-.velzon-shell .dashboard-ai-header .card-title {
+.vietmach-shell .dashboard-ai-header .card-title {
     display: flex;
     align-items: center;
     gap: 7px;
 }
 
-.velzon-shell .dashboard-ai-header .card-title i {
+.vietmach-shell .dashboard-ai-header .card-title i {
     color: var(--primary);
 }
 
-.velzon-shell .dashboard-ai-action {
+.vietmach-shell .dashboard-ai-action {
     display: inline-flex;
     min-width: 112px;
     min-height: 34px;
@@ -405,28 +405,28 @@
     border-radius: 4px;
 }
 
-.velzon-shell .dashboard-ai-action i {
+.vietmach-shell .dashboard-ai-action i {
     width: 16px;
     text-align: center;
 }
 
-.velzon-shell .dashboard-ai-action:disabled {
+.vietmach-shell .dashboard-ai-action:disabled {
     cursor: wait;
     opacity: 0.72;
 }
 
-.velzon-shell .dashboard-ai-result {
+.vietmach-shell .dashboard-ai-result {
     max-width: 100%;
     overflow-wrap: anywhere;
     line-height: 1.6;
 }
 
-.velzon-shell .dashboard-ai-result .alert {
+.vietmach-shell .dashboard-ai-result .alert {
     border-radius: 4px;
     font-size: 0.75rem;
 }
 
-.velzon-shell .dashboard-insight {
+.vietmach-shell .dashboard-insight {
     margin-bottom: 10px;
     padding: 10px 12px;
     border: 1px solid var(--vz-border, #e9ebec);
@@ -434,47 +434,47 @@
     background: #f8f9fb;
 }
 
-.velzon-shell .dashboard-insight:last-child {
+.vietmach-shell .dashboard-insight:last-child {
     margin-bottom: 0;
 }
 
-.velzon-shell .dashboard-insight--primary {
+.vietmach-shell .dashboard-insight--primary {
     border-color: color-mix(in srgb, var(--primary) 24%, #e9ebec);
     background: color-mix(in srgb, var(--primary) 5%, #fff);
 }
 
-.velzon-shell .dashboard-insight--success {
+.vietmach-shell .dashboard-insight--success {
     border-color: #bfe4d3;
     background: #f2faf6;
 }
 
-.velzon-shell .dashboard-insight--warning {
+.vietmach-shell .dashboard-insight--warning {
     border-color: #f2d9a8;
     background: #fffaf0;
 }
 
-.velzon-shell .dashboard-insight--info {
+.vietmach-shell .dashboard-insight--info {
     border-color: #bfdde9;
     background: #f2f9fc;
 }
 
-.velzon-shell .dashboard-insight-title {
+.vietmach-shell .dashboard-insight-title {
     color: var(--vz-ink, #212529);
     font-size: 0.78rem;
     font-weight: 600;
 }
 
-.velzon-shell .dashboard-insight-detail,
-.velzon-shell .dashboard-insight-source {
+.vietmach-shell .dashboard-insight-detail,
+.vietmach-shell .dashboard-insight-source {
     margin-top: 3px;
     font-size: 0.72rem;
 }
 
-.velzon-shell .dashboard-insight-source {
+.vietmach-shell .dashboard-insight-source {
     color: var(--vz-muted, #6d7080);
 }
 
-.velzon-shell .dashboard-ai-section-title {
+.vietmach-shell .dashboard-ai-section-title {
     margin: 14px 0 8px;
     color: #4b5360;
     font-size: 0.6875rem;
@@ -483,13 +483,13 @@
     text-transform: uppercase;
 }
 
-.velzon-shell .dashboard-ai-footnote {
+.vietmach-shell .dashboard-ai-footnote {
     margin: 10px 0 0;
     color: var(--vz-muted, #6d7080);
     font-size: 0.6875rem;
 }
 
-.velzon-shell .dashboard-ai-segment {
+.vietmach-shell .dashboard-ai-segment {
     margin-bottom: 10px;
     padding: 12px;
     border: 1px solid var(--vz-border, #e9ebec);
@@ -497,17 +497,17 @@
     background: #fff;
 }
 
-.velzon-shell .dashboard-ai-segment:last-of-type {
+.vietmach-shell .dashboard-ai-segment:last-of-type {
     margin-bottom: 0;
 }
 
-.velzon-shell .dashboard-quick-actions {
+.vietmach-shell .dashboard-quick-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
 }
 
-.velzon-shell .dashboard-page .dashboard-quick-action {
+.vietmach-shell .dashboard-page .dashboard-quick-action {
     display: grid;
     min-width: 0;
     min-height: 44px;
@@ -521,44 +521,44 @@
     text-align: left;
 }
 
-.velzon-shell .dashboard-page .dashboard-quick-action > i:first-child {
+.vietmach-shell .dashboard-page .dashboard-quick-action > i:first-child {
     width: 20px;
     color: var(--primary);
     text-align: center;
 }
 
-.velzon-shell .dashboard-page .dashboard-quick-action span {
+.vietmach-shell .dashboard-page .dashboard-quick-action span {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.velzon-shell .dashboard-page .dashboard-quick-action-arrow {
+.vietmach-shell .dashboard-page .dashboard-quick-action-arrow {
     color: #9aa1ac;
     font-size: 1rem;
     text-align: right;
 }
 
-.velzon-shell .dashboard-page .dashboard-quick-action:hover {
+.vietmach-shell .dashboard-page .dashboard-quick-action:hover {
     border-color: color-mix(in srgb, var(--primary) 24%, #e9ebec);
     background: color-mix(in srgb, var(--primary) 5%, #fff);
     color: var(--primary);
 }
 
-.velzon-shell .dashboard-system-table th,
-.velzon-shell .dashboard-system-table td {
+.vietmach-shell .dashboard-system-table th,
+.vietmach-shell .dashboard-system-table td {
     padding: 9px 16px;
     border-color: var(--vz-border, #e9ebec);
     font-size: 0.75rem;
 }
 
-.velzon-shell .dashboard-system-table th {
+.vietmach-shell .dashboard-system-table th {
     color: #495057;
     font-weight: 500;
 }
 
-.velzon-shell .dashboard-system-table th i {
+.vietmach-shell .dashboard-system-table th i {
     display: inline-block;
     width: 20px;
     margin-right: 7px;
@@ -566,7 +566,7 @@
     text-align: center;
 }
 
-.velzon-shell .dashboard-system-table td {
+.vietmach-shell .dashboard-system-table td {
     color: var(--vz-ink, #212529);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
@@ -574,103 +574,103 @@
 }
 
 @media (max-width: 991.98px) {
-    .velzon-shell .dashboard-page-header {
+    .vietmach-shell .dashboard-page-header {
         align-items: stretch;
         flex-direction: column;
         gap: 12px;
     }
 
-    .velzon-shell .dashboard-period-filter {
+    .vietmach-shell .dashboard-period-filter {
         justify-content: space-between;
     }
 
-    .velzon-shell .dashboard-period-filter .form-select {
+    .vietmach-shell .dashboard-period-filter .form-select {
         width: min(320px, 65vw);
     }
 
-    .velzon-shell .dashboard-quick-actions {
+    .vietmach-shell .dashboard-quick-actions {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 575.98px) {
-    .velzon-shell .dashboard-page {
+    .vietmach-shell .dashboard-page {
         padding-bottom: 76px;
     }
 
-    .velzon-shell .dashboard-page-header {
+    .vietmach-shell .dashboard-page-header {
         margin-bottom: 12px;
         padding-bottom: 12px;
     }
 
-    .velzon-shell .dashboard-period-filter {
+    .vietmach-shell .dashboard-period-filter {
         align-items: stretch;
         display: grid;
         grid-template-columns: minmax(104px, auto) minmax(0, 1fr);
     }
 
-    .velzon-shell .dashboard-period-filter .form-select {
+    .vietmach-shell .dashboard-period-filter .form-select {
         width: 100%;
     }
 
-    .velzon-shell .dashboard-section {
+    .vietmach-shell .dashboard-section {
         margin-bottom: 12px;
     }
 
-    .velzon-shell .dashboard-card .card-body {
+    .vietmach-shell .dashboard-card .card-body {
         padding: 14px;
     }
 
-    .velzon-shell .dashboard-card-header {
+    .vietmach-shell .dashboard-card-header {
         min-height: 56px;
         padding: 10px 14px;
     }
 
-    .velzon-shell .dashboard-stat-card .card-body {
+    .vietmach-shell .dashboard-stat-card .card-body {
         min-height: 128px;
     }
 
-    .velzon-shell .dashboard-chart--trend {
+    .vietmach-shell .dashboard-chart--trend {
         height: 260px;
     }
 
-    .velzon-shell .dashboard-chart--donut,
-    .velzon-shell .dashboard-chart--departments {
+    .vietmach-shell .dashboard-chart--donut,
+    .vietmach-shell .dashboard-chart--departments {
         height: 270px;
     }
 
-    .velzon-shell .dashboard-activity-list {
+    .vietmach-shell .dashboard-activity-list {
         min-height: 210px;
     }
 
-    .velzon-shell .dashboard-ranking-table thead th,
-    .velzon-shell .dashboard-ranking-table tbody td,
-    .velzon-shell .dashboard-system-table th,
-    .velzon-shell .dashboard-system-table td {
+    .vietmach-shell .dashboard-ranking-table thead th,
+    .vietmach-shell .dashboard-ranking-table tbody td,
+    .vietmach-shell .dashboard-system-table th,
+    .vietmach-shell .dashboard-system-table td {
         padding-right: 14px;
         padding-left: 14px;
     }
 }
 
 @media (max-width: 389.98px) {
-    .velzon-shell .dashboard-ai-header {
+    .vietmach-shell .dashboard-ai-header {
         align-items: stretch;
         flex-direction: column;
     }
 
-    .velzon-shell .dashboard-ai-action {
+    .vietmach-shell .dashboard-ai-action {
         width: 100%;
     }
 
-    .velzon-shell .dashboard-quick-actions {
+    .vietmach-shell .dashboard-quick-actions {
         grid-template-columns: 1fr;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .velzon-shell .dashboard-page *,
-    .velzon-shell .dashboard-page *::before,
-    .velzon-shell .dashboard-page *::after {
+    .vietmach-shell .dashboard-page *,
+    .vietmach-shell .dashboard-page *::before,
+    .vietmach-shell .dashboard-page *::after {
         scroll-behavior: auto;
         transition-duration: 0.01ms;
         animation-duration: 0.01ms;

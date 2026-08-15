@@ -2,27 +2,20 @@
     ViewData["Title"] = "Đang chờ kích hoạt";
     ViewData["IsLoginPage"] = true;
 }
+<link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
 
-<main class="auth-status-page container d-flex min-vh-100 align-items-center justify-content-center py-4">
-        <section class="auth-status-card card w-100" aria-labelledby="pending-title">
-            <div class="card-body p-4 p-md-5">
-                <div class="auth-status-icon text-warning mb-3"><i class="bi bi-hourglass-split" aria-hidden="true"></i></div>
-                <span class="badge bg-warning-subtle text-warning-emphasis mb-3">Chờ xác minh</span>
-                <h1 id="pending-title" class="h3">Không gian làm việc đang chờ kích hoạt</h1>
-                <p class="text-secondary mb-3">
-                    Tài khoản <strong>@(ViewBag.Email ?? "của bạn")</strong> đã xác thực thành công.
-                    Quản trị viên vẫn cần phê duyệt yêu cầu và cấp tenant trước khi bạn truy cập dữ liệu KPI/OKR.
-                </p>
-                @if (!string.IsNullOrWhiteSpace(ViewBag.PendingPlan as string))
-                {
-                    <p class="mb-4">Gói đang chờ: <strong>@ViewBag.PendingPlan</strong>.</p>
-                }
-                <div class="d-flex flex-wrap gap-2">
-                    <a asp-action="PendingActivation" class="btn btn-primary">Kiểm tra lại trạng thái</a>
-                    <form asp-action="Logout" method="post">
-                        <button type="submit" class="btn btn-outline-secondary">Đăng xuất</button>
-                    </form>
-                </div>
-            </div>
-        </section>
+<main class="auth-page">
+    <partial name="_AuthBrandPanel" />
+    <section class="auth-form-panel" aria-labelledby="pending-title">
+        <div class="auth-card">
+            <div class="auth-mobile-brand" aria-label="VietMach System, Manage KPI &amp; OKR"><span class="auth-brand-mark" aria-hidden="true"><i class="bi bi-bullseye"></i></span><span><strong>VietMach System</strong><small>Manage KPI &amp; OKR</small></span></div>
+            <div class="auth-status-icon auth-status-icon-warning" aria-hidden="true"><i class="bi bi-hourglass-split"></i></div>
+            <header class="auth-header"><p class="auth-eyebrow">Chờ xác minh</p><h1 id="pending-title">Không gian làm việc đang chờ kích hoạt</h1><p>Tài khoản <strong>@(ViewBag.Email ?? "của bạn")</strong> đã xác thực. Quản trị viên cần phê duyệt và cấp không gian làm việc trước khi bạn truy cập dữ liệu KPI/OKR.</p></header>
+            @if (!string.IsNullOrWhiteSpace(ViewBag.PendingPlan as string))
+            {
+                <div class="auth-alert auth-alert-warning" role="status"><i class="bi bi-clock" aria-hidden="true"></i><span>Gói đang chờ: <strong>@ViewBag.PendingPlan</strong></span></div>
+            }
+            <div class="auth-status-actions"><a asp-action="PendingActivation" class="auth-submit">Kiểm tra lại trạng thái</a><a asp-action="Logout" class="auth-secondary">Đăng xuất</a></div>
+        </div>
+    </section>
 </main>

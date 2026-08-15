@@ -1,183 +1,81 @@
-@inject Manage_KPI_or_OKR_System.Services.ISystemSettingsService SystemSettingsService
 @{
     ViewData["Title"] = "Đăng nhập";
     ViewData["IsLoginPage"] = true;
-    var branding = await SystemSettingsService.GetBrandingAsync();
 }
 <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
 
-<nav style="width:100%;display:flex;align-items:center;justify-content:flex-start;padding:18px 0 0 32px;position:relative;z-index:2;">
-    <a href="/" class="comfort-link" style="display:flex;align-items:center;font-weight:600;font-size:1.05rem;gap:8px;">
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style="vertical-align:middle;">
-            <path d="M12.5 17L7.5 12L12.5 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Về trang chủ
-    </a>
-</nav>
+<main class="auth-page">
+    <partial name="_AuthBrandPanel" />
+    <section class="auth-form-panel" aria-labelledby="login-title">
+        <a href="/" class="auth-back-link"><i class="bi bi-arrow-left" aria-hidden="true"></i> Về trang chủ</a>
+        <div class="auth-card">
+            <div class="auth-mobile-brand" aria-label="VietMach System, Manage KPI &amp; OKR">
+                <span class="auth-brand-mark" aria-hidden="true"><i class="bi bi-bullseye"></i></span>
+                <span><strong>VietMach System</strong><small>Manage KPI &amp; OKR</small></span>
+            </div>
+            <header class="auth-header">
+                <h1 id="login-title">Chào mừng trở lại</h1>
+                <p>Đăng nhập để tiếp tục quản lý mục tiêu và hiệu suất.</p>
+            </header>
 
-<div class="soft-background">
-    <div class="floating-shapes">
-        <div class="soft-blob blob-1"></div>
-        <div class="soft-blob blob-2"></div>
-        <div class="soft-blob blob-3"></div>
-        <div class="soft-blob blob-4"></div>
-    </div>
-</div>
-<script src="~/js/login.js" asp-append-version="true"></script>
+            @if (ViewBag.Error != null)
+            {
+                <div class="auth-alert auth-alert-danger" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i><span>@ViewBag.Error</span></div>
+            }
 
-<div class="login-container">
-    <div class="soft-card">
-        <div class="comfort-header">
-            <div class="gentle-logo">
-                <div class="logo-circle">
-                    <div class="comfort-icon">
-                        @if (!string.IsNullOrWhiteSpace(branding.LogoUrl))
-                        {
-                            <img class="login-brand-logo" src="@branding.LogoUrl" alt="@branding.CompanyName logo" />
-                        }
-                        else
-                        {
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                                <path d="M16 2C8.3 2 2 8.3 2 16s6.3 14 14 14 14-6.3 14-14S23.7 2 16 2z" fill="none" stroke="currentColor" stroke-width="1.5"/>
-                                <path d="M12 16a4 4 0 108 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                                <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
-                                <circle cx="20" cy="12" r="1.5" fill="currentColor"/>
-                            </svg>
-                        }
-                    </div>
-                    <div class="gentle-glow"></div>
-                </div>
-            </div>
-            <h1 class="comfort-title">@branding.LoginTitle</h1>
-            <p class="gentle-subtitle">@branding.LoginSubtitle</p>
-        </div>
-        @if (ViewBag.Error != null)
-        {
-            <span class="gentle-error">@ViewBag.Error</span>
-        }
-        @if (ViewBag.ShowDemoCredentials is true)
-        {
-        <div class="demo-accounts" aria-label="Tài khoản demo">
-            <div class="demo-accounts-header">
-                <span>Tài khoản demo</span>
-                <small>Mật khẩu chung: <strong>123</strong></small>
-            </div>
-            <div class="demo-account-list">
-                <button type="button" class="demo-account" data-username="admin" data-password="123">
-                    <span>admin</span>
-                    <small>Quản trị viên cao nhất</small>
-                </button>
-                <button type="button" class="demo-account" data-username="director" data-password="123">
-                    <span>director</span>
-                    <small>Giám đốc</small>
-                </button>
-                <button type="button" class="demo-account" data-username="manager" data-password="123">
-                    <span>manager</span>
-                    <small>Trưởng phòng</small>
-                </button>
-                <button type="button" class="demo-account" data-username="hr" data-password="123">
-                    <span>hr</span>
-                    <small>Nhân sự</small>
-                </button>
-                <button type="button" class="demo-account" data-username="employee" data-password="123">
-                    <span>employee</span>
-                    <small>Nhân viên</small>
-                </button>
-            </div>
-        </div>
-        }
-        <form asp-controller="Auth" asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post" class="comfort-form" id="loginForm" novalidate>
-            <div class="soft-field">
-                <div class="field-container">
+            <form asp-controller="Auth" asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post" class="auth-form" id="loginForm" novalidate>
+                <div class="auth-field">
+                    <label for="username">Tên đăng nhập</label>
                     @if (ViewBag.IsRelogin != null && ViewBag.IsRelogin)
                     {
-                        <input type="text" id="username" name="username" required autocomplete="username" placeholder=" " value="@ViewBag.Username" readonly="readonly" style="background-color: #f8f9fa; cursor: not-allowed; color: #6c757d;" />
+                        <input class="auth-control" type="text" id="username" name="username" required autocomplete="username" value="@ViewBag.Username" readonly="readonly" aria-describedby="usernameError" />
                     }
                     else
                     {
-                        <input type="text" id="username" name="username" required autocomplete="username" placeholder=" " value="@ViewBag.Username" />
+                        <input class="auth-control" type="text" id="username" name="username" required autocomplete="username" value="@ViewBag.Username" placeholder="Nhập tên đăng nhập" aria-describedby="usernameError" />
                     }
-                    <label for="username">Tên đăng nhập</label>
-                    <div class="field-accent"></div>
+                    <span class="auth-field-error" id="usernameError" aria-live="polite"></span>
                 </div>
-                <span class="gentle-error" id="usernameError"></span>
-            </div>
 
-            <div class="soft-field">
-                <div class="field-container">
-                    <input type="password" id="password" name="password" required autocomplete="current-password" placeholder=" " />
-                    <label for="password">Mật khẩu</label>
-                    <button type="button" class="gentle-toggle" id="passwordToggle" aria-label="Toggle password visibility">
-                        <div class="toggle-icon">
-                            <svg class="eye-open" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                <path d="M10 3c-4.5 0-8.3 3.8-9 7 .7 3.2 4.5 7 9 7s8.3-3.8 9-7c-.7-3.2-4.5-7-9-7z" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                                <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                            </svg>
-                            <svg class="eye-closed" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                <path d="M3 3l14 14M8.5 8.5a3 3 0 004 4m2.5-2.5C15 10 12.5 7 10 7c-.5 0-1 .1-1.5.3M10 13c-2.5 0-4.5-2-5-3 .3-.6.7-1.2 1.2-1.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                    </button>
-                    <div class="field-accent"></div>
+                <div class="auth-field">
+                    <div class="auth-label-row"><label for="password">Mật khẩu</label><a asp-controller="Auth" asp-action="ForgotPassword">Quên mật khẩu?</a></div>
+                    <div class="auth-password-wrap">
+                        <input class="auth-control" type="password" id="password" name="password" required autocomplete="current-password" placeholder="Nhập mật khẩu" aria-describedby="passwordError" />
+                        <button type="button" class="auth-password-toggle" id="passwordToggle" aria-label="Hiện mật khẩu" aria-controls="password" aria-pressed="false">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <span class="auth-field-error" id="passwordError" aria-live="polite"></span>
                 </div>
-                <span class="gentle-error" id="passwordError"></span>
-            </div>
 
-            <div class="comfort-options">
                 @if (ViewBag.IsRelogin != null && ViewBag.IsRelogin)
                 {
-                    <span style="font-size: 0.95rem; color: #666; font-weight: 500;">
-                        Không phải bạn? <a asp-controller="Auth" asp-action="Logout" class="comfort-link" style="color: #dc3545; font-weight: bold; margin-left: 4px;">Đổi tài khoản</a>
-                    </span>
+                    <p class="auth-relogin">Không phải bạn? <a asp-controller="Auth" asp-action="Logout">Đổi tài khoản</a></p>
                 }
                 else
                 {
-                    <label class="gentle-checkbox" for="remember" style="cursor:pointer;">
-                        <input type="checkbox" id="remember" name="remember" style="display:none;">
-                        <span class="checkbox-soft" tabindex="0">
-                            <div class="check-circle"></div>
-                            <svg class="check-mark" width="12" height="10" viewBox="0 0 12 10" fill="none">
-                                <path d="M1 5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </span>
-                        <span class="checkbox-text">Ghi nhớ đăng nhập</span>
+                    <label class="auth-checkbox" for="remember">
+                        <input type="checkbox" id="remember" name="remember" />
+                        <span>Ghi nhớ đăng nhập</span>
                     </label>
                 }
-                <a asp-controller="Auth" asp-action="ForgotPassword" class="comfort-link">Quên mật khẩu?</a>
-            </div>
 
-            <button type="submit" class="comfort-button">
-                <div class="button-background"></div>
-                <span class="button-text">Đăng nhập</span>
+                <button type="submit" class="auth-submit">
+                    <span class="button-text">Đăng nhập</span>
+                    <span class="button-loader" aria-hidden="true"><span class="auth-spinner"></span></span>
+                </button>
+            </form>
 
-                <div class="button-glow"></div>
-            </button>
-        </form>
-
-        <div class="gentle-divider">
-            <div class="divider-line"></div>
-            <span class="divider-text">Hoặc tiếp tục với</span>
-            <div class="divider-line"></div>
-        </div>
-
-        <div class="comfort-social">
-            <a asp-controller="Auth" asp-action="GoogleLogin" class="social-soft" style="text-decoration:none; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
-                <div class="social-background"></div>
-                <svg width="25" height="25" viewBox="0 0 18 18" fill="none">
-                    <path d="M9 7.4v3.2h4.6c-.2 1-.8 1.8-1.6 2.4v2h2.6c1.5-1.4 2.4-3.4 2.4-5.8 0-.6 0-1.1-.1-1.6H9z" fill="#4285F4"/>
-                    <path d="M9 17c2.2 0 4-0.7 5.4-1.9l-2.6-2c-.7.5-1.6.8-2.8.8-2.1 0-3.9-1.4-4.6-3.4H1.7v2.1C3.1 15.2 5.8 17 9 17z" fill="#34A853"/>
-                    <path d="M4.4 10.5c-.2-.5-.2-1.1 0-1.6V6.8H1.7c-.6 1.2-.6 2.6 0 3.8l2.7-2.1z" fill="#FBBC04"/>
-                    <path d="M9 4.2c1.2 0 2.3.4 3.1 1.2l2.3-2.3C12.9 1.8 11.1 1 9 1 5.8 1 3.1 2.8 1.7 5.4l2.7 2.1C5.1 5.6 6.9 4.2 9 4.2z" fill="#EA4335"/>
-                </svg>
-                <span>Google</span>
-                <div class="social-glow"></div>
+            <div class="auth-divider"><span>Hoặc tiếp tục với</span></div>
+            <a asp-controller="Auth" asp-action="GoogleLogin" class="auth-google">
+                <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 7.4v3.2h4.6c-.2 1-.8 1.8-1.6 2.4v2h2.6c1.5-1.4 2.4-3.4 2.4-5.8 0-.6 0-1.1-.1-1.6H9z" fill="#4285F4"/><path d="M9 17c2.2 0 4-.7 5.4-1.9l-2.6-2c-.7.5-1.6.8-2.8.8-2.1 0-3.9-1.4-4.6-3.4H1.7v2.1C3.1 15.2 5.8 17 9 17z" fill="#34A853"/><path d="M4.4 10.5c-.2-.5-.2-1.1 0-1.6V6.8H1.7c-.6 1.2-.6 2.6 0 3.8l2.7-2.1z" fill="#FBBC04"/><path d="M9 4.2c1.2 0 2.3.4 3.1 1.2l2.3-2.3C12.9 1.8 11.1 1 9 1 5.8 1 3.1 2.8 1.7 5.4l2.7 2.1C5.1 5.6 6.9 4.2 9 4.2z" fill="#EA4335"/></svg>
+                Đăng nhập bằng Google
             </a>
-
+            <p class="auth-switch">Bạn chưa có tài khoản? <a asp-controller="Auth" asp-action="Register">Đăng ký ngay</a></p>
         </div>
+    </section>
+</main>
 
-        <div class="comfort-signup">
-            <span class="signup-text">Bạn chưa có tài khoản?</span>
-            <a href="/Auth/Register" class="comfort-link signup-link">Đăng ký ngay</a>
-        </div>
-    </div>
-</div>
+@section Scripts {
+    <script src="~/js/login.js" asp-append-version="true"></script>
+}
