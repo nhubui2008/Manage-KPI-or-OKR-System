@@ -161,11 +161,22 @@
 
         component.addEventListener("keydown", (event) => {
             if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-            if (event.target.closest("canvas, button") && event.target !== component) return;
+            const target = event.target instanceof Element ? event.target : null;
+            if (target?.closest("canvas")) return;
+
+            const button = target?.closest("button");
+            const carouselDot = button?.matches("[data-carousel-dot]") === true;
+            if (button && !carouselDot) return;
+
             event.preventDefault();
-            if (event.key === "Home") activate(0);
-            else if (event.key === "End") activate(slides.length - 1);
-            else activate(activeIndex + (event.key === "ArrowRight" ? 1 : -1));
+            let nextIndex = activeIndex;
+            if (event.key === "Home") nextIndex = 0;
+            else if (event.key === "End") nextIndex = slides.length - 1;
+            else nextIndex += event.key === "ArrowRight" ? 1 : -1;
+
+            nextIndex = Math.max(0, Math.min(nextIndex, slides.length - 1));
+            activate(nextIndex);
+            if (carouselDot) dots[nextIndex]?.focus();
         });
 
         component.addEventListener("wheel", (event) => {

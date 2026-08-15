@@ -25,12 +25,35 @@
         output.textContent = count + " đã chọn";
     }
 
+    function checkAndUpdateSummary(form, errorSummary) {
+        if (!errorSummary) return;
+
+        var projectNameInput = form.querySelector('[name="ProjectName"]');
+        var isProjectNameValid = !projectNameInput || projectNameInput.value.trim().length > 0;
+
+        var activeFieldErrors = form.querySelectorAll('.field-validation-error');
+        var hasActiveFieldErrors = false;
+        activeFieldErrors.forEach(function (span) {
+            if (span.textContent.trim().length > 0) {
+                hasActiveFieldErrors = true;
+            }
+        });
+
+        if (isProjectNameValid && !hasActiveFieldErrors && form.checkValidity()) {
+            errorSummary.style.display = "none";
+            errorSummary.classList.add("validation-summary-valid");
+            errorSummary.classList.remove("validation-summary-errors");
+        }
+    }
+
     function initializeRoot(root) {
         if (!root || root.dataset.createFormReady === "true") return;
         root.dataset.createFormReady = "true";
 
         var form = root.querySelector("[data-create-form-element]");
         if (!form) return;
+
+        var errorSummary = root.querySelector("[data-error-summary]");
 
         root.querySelectorAll("[data-character-counter]").forEach(function (output) {
             var inputId = output.getAttribute("for");
@@ -53,7 +76,15 @@
             updateSelectionCount(root, name, output);
         });
 
-        var errorSummary = root.querySelector("[data-error-summary]");
+        form.querySelectorAll("input, select, textarea").forEach(function (input) {
+            input.addEventListener("input", function () {
+                checkAndUpdateSummary(form, errorSummary);
+            });
+            input.addEventListener("change", function () {
+                checkAndUpdateSummary(form, errorSummary);
+            });
+        });
+
         if (errorSummary && !errorSummary.classList.contains("validation-summary-valid") && errorSummary.textContent.trim()) {
             window.requestAnimationFrame(function () {
                 errorSummary.focus({ preventScroll: true });
@@ -99,7 +130,15 @@
         });
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
+    function initAll() {
         document.querySelectorAll("[data-create-form]").forEach(initializeRoot);
-    });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initAll);
+    } else {
+        initAll();
+    }
+
+    document.addEventListener("instant:navigation-ready", initAll);
 })();

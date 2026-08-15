@@ -20,7 +20,7 @@
 }
 
 .kpi-checkins-wrapper .card-animate:hover {
-    transform: translateY(-3px);
+    border-color: rgba(85, 110, 230, 0.35);
 }
 
 /* Quick Filter Pills */
@@ -84,7 +84,7 @@
 /* AI Assistant Glow Effect */
 .ai-glow-card {
     border: 1px solid rgba(85, 110, 230, 0.3) !important;
-    background: linear-gradient(135deg, rgba(85, 110, 230, 0.03) 0%, rgba(41, 156, 219, 0.05) 100%);
+    background: rgba(85, 110, 230, 0.04);
     box-shadow: 0 4px 15px rgba(85, 110, 230, 0.1) !important;
 }
 

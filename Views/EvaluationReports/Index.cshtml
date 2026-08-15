@@ -14,348 +14,7 @@
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
-    <style>
-        .evaluation-report-page {
-            --report-line: #dfe5ee;
-            --report-muted: #64748b;
-            --report-soft: #f7f9fc;
-        }
-
-        .evaluation-report-page .evaluation-page-header {
-            align-items: flex-start;
-        }
-
-        .evaluation-report-page .evaluation-report-actions {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 0.6rem;
-            flex-wrap: wrap;
-        }
-
-        .evaluation-report-page .evaluation-report-actions button {
-            font: inherit;
-            cursor: pointer;
-        }
-
-        .evaluation-report-page .evaluation-report-summary {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
-
-        .evaluation-report-page .evaluation-report-summary article:nth-child(1) strong {
-            color: #1d4ed8;
-        }
-
-        .evaluation-report-page .evaluation-report-summary article:nth-child(2) strong {
-            color: #15803d;
-        }
-
-        .evaluation-report-page .evaluation-report-summary article:nth-child(3) strong {
-            color: #a15c07;
-        }
-
-        .evaluation-report-page .evaluation-report-summary article:nth-child(4) strong {
-            color: #b42318;
-        }
-
-        .evaluation-report-page .evaluation-report-filter-form {
-            grid-template-columns: minmax(220px, 1.25fr) minmax(180px, 1fr) auto;
-        }
-
-        .evaluation-report-page .evaluation-report-filter-form select {
-            min-width: 0;
-        }
-
-        .evaluation-report-page .evaluation-report-table-card {
-            overflow: hidden;
-        }
-
-        .evaluation-report-page .evaluation-report-table-shell {
-            max-height: calc(100vh - 360px);
-            overflow: auto;
-        }
-
-        .evaluation-report-page .evaluation-report-table {
-            min-width: 1120px;
-        }
-
-        .evaluation-report-page .evaluation-report-table th {
-            position: sticky;
-            top: 0;
-            z-index: 2;
-            background: var(--report-soft);
-            color: #475467;
-            border-bottom: 1px solid #cbd5e1;
-        }
-
-        .evaluation-report-page .evaluation-report-table td {
-            color: #243244;
-        }
-
-        .evaluation-report-page .evaluation-report-table tbody tr:nth-child(even) td {
-            background: #fbfdff;
-        }
-
-        .evaluation-report-page .evaluation-report-table tbody tr:hover td {
-            background: #eef5ff;
-        }
-
-        .evaluation-report-page .report-progress {
-            min-width: 124px;
-        }
-
-        .evaluation-report-page .report-progress .progress {
-            width: 72px;
-            height: 6px;
-            background: #e7edf5;
-        }
-
-        .evaluation-report-page .report-progress-value {
-            min-width: 44px;
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .evaluation-report-page .report-status-badge {
-            min-width: 104px;
-            justify-content: center;
-            border: 1px solid transparent;
-            border-radius: 999px;
-            font-weight: 800;
-            line-height: 1.2;
-            white-space: nowrap;
-        }
-
-        .evaluation-report-page .report-status-badge.bg-soft-success {
-            border-color: rgba(15, 157, 88, 0.28);
-        }
-
-        .evaluation-report-page .report-status-badge.bg-soft-primary {
-            border-color: rgba(26, 115, 232, 0.28);
-        }
-
-        .evaluation-report-page .evaluation-report-mobile-list {
-            display: none;
-        }
-
-        .evaluation-report-page .evaluation-report-mobile-card {
-            padding: 1rem;
-            border: 1px solid var(--report-line);
-            border-radius: 9px;
-            background: #fff;
-            display: grid;
-            gap: 0.85rem;
-        }
-
-        .evaluation-report-page .evaluation-report-mobile-card__title {
-            margin: 0;
-            font-size: 1rem;
-            font-weight: 800;
-            color: #172033;
-        }
-
-        .evaluation-report-page .evaluation-report-mobile-card__label {
-            font-size: 0.76rem;
-            font-weight: 800;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            color: #64748b;
-        }
-
-        .evaluation-report-page .evaluation-report-mobile-card__grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 0.75rem;
-        }
-
-        .evaluation-report-page .evaluation-report-bottom-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 1rem;
-        }
-
-        .evaluation-report-page .evaluation-report-panel {
-            min-width: 0;
-            margin-top: 1rem;
-        }
-
-        .evaluation-report-page .evaluation-report-panel .evaluation-results-heading {
-            margin-bottom: 0.9rem;
-        }
-
-        .evaluation-report-page .evaluation-report-panel h2 {
-            margin: 0;
-            font-size: 0.95rem;
-            font-weight: 800;
-        }
-
-        .evaluation-report-page .director-summary-input {
-            min-height: 132px;
-            resize: vertical;
-        }
-
-        .evaluation-report-page .evaluation-report-incidents {
-            display: grid;
-            gap: 0.7rem;
-        }
-
-        .evaluation-report-page .evaluation-report-incidents li {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.55rem;
-            margin: 0 !important;
-            padding-bottom: 0.7rem;
-            border-bottom: 1px solid #edf0f3;
-            line-height: 1.45;
-        }
-
-        .evaluation-report-page .evaluation-report-incidents li:last-child {
-            padding-bottom: 0;
-            border-bottom: 0;
-        }
-
-        .evaluation-report-page .evaluation-report-incidents__add {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            margin-top: 0.2rem;
-            color: var(--evaluation-brand);
-            font-size: 0.82rem;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .evaluation-report-page .evaluation-report-incidents__add:hover {
-            color: var(--evaluation-brand-dark);
-        }
-
-        .evaluation-report-page .evaluation-report-mobile-card .report-progress {
-            min-width: 0;
-        }
-
-        .evaluation-report-page .evaluation-report-mobile-card .report-progress .progress {
-            width: auto;
-        }
-
-        .evaluation-report-page .evaluation-report-empty {
-            padding: 3rem 1rem;
-        }
-
-        .evaluation-modal textarea {
-            width: 100%;
-            min-height: 110px;
-            border: 1px solid #d7dbe2;
-            border-radius: 8px;
-            padding: 0.65rem 0.75rem;
-            resize: vertical;
-        }
-
-        .evaluation-modal textarea:focus {
-            border-color: var(--evaluation-brand);
-            box-shadow: 0 0 0 3px rgba(91, 66, 214, 0.18);
-            outline: none;
-        }
-
-        @@media (max-width: 900px) {
-            .evaluation-report-page .evaluation-report-table-shell {
-                display: none;
-            }
-
-            .evaluation-report-page .evaluation-report-mobile-list {
-                display: grid;
-                gap: 0.9rem;
-                margin-top: 0.75rem;
-            }
-
-            .evaluation-report-page .evaluation-report-bottom-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @@media (max-width: 700px) {
-            .evaluation-report-page .evaluation-page-header,
-            .evaluation-report-page .evaluation-report-actions {
-                align-items: stretch;
-                flex-direction: column;
-            }
-
-            .evaluation-report-page .evaluation-report-actions > * {
-                width: 100%;
-            }
-
-            .evaluation-report-page .evaluation-report-filter-form {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @@media (max-width: 575.98px) {
-            .evaluation-report-page .evaluation-report-summary {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .evaluation-report-page .evaluation-report-summary article:nth-child(2) {
-                border-right: 0;
-            }
-
-            .evaluation-report-page .evaluation-report-summary article:nth-child(-n + 2) {
-                border-bottom: 1px solid var(--evaluation-line);
-            }
-
-            .evaluation-report-page .evaluation-report-mobile-card__grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @@media print {
-            .evaluation-report-page {
-                max-width: none;
-                padding: 0;
-            }
-
-            .evaluation-report-page .evaluation-page-header {
-                padding-bottom: 0.75rem;
-            }
-
-            .evaluation-report-page .evaluation-filter-panel,
-            .evaluation-report-page .no-print {
-                display: none !important;
-            }
-
-            .evaluation-report-page .evaluation-results {
-                margin-top: 0.75rem;
-                border: 0;
-                padding: 0;
-            }
-
-            .evaluation-report-page .evaluation-report-table-shell {
-                max-height: none;
-                overflow: visible;
-            }
-
-            .evaluation-report-page .evaluation-report-table {
-                min-width: 0;
-                font-size: 10px;
-            }
-
-            .evaluation-report-page .evaluation-report-table th {
-                position: static;
-                padding: 0.45rem;
-            }
-
-            .evaluation-report-page .evaluation-report-table td {
-                padding: 0.45rem;
-            }
-
-            .evaluation-report-page .evaluation-report-mobile-list {
-                display: none !important;
-            }
-
-            .evaluation-report-page .evaluation-report-bottom-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="~/css/evaluation-reports.css" asp-append-version="true" />
 }
 
 <div class="evaluation-page evaluation-report-page">
@@ -383,7 +42,7 @@
         </div>
     </header>
 
-    <section class="evaluation-summary evaluation-report-summary" aria-label="Tổng quan báo cáo đánh giá">
+    <section class="evaluation-report-summary" aria-label="Tổng quan báo cáo đánh giá">
         <article>
             <span>Mục tiêu</span>
             <strong>@okrs.Count</strong>
@@ -409,12 +68,10 @@
     <!-- Filter Bar -->
     <section class="evaluation-filter-panel no-print" aria-labelledby="evaluationReportFilterHeading">
         <div class="evaluation-filter-heading">
-            <div>
-                <p class="evaluation-eyebrow" id="evaluationReportFilterHeading">Bộ lọc báo cáo</p>
-                <span>Chọn phòng ban và chu kỳ để xem phân bổ, tiến độ và rủi ro liên quan.</span>
-            </div>
+            <p class="evaluation-eyebrow" id="evaluationReportFilterHeading">Bộ lọc báo cáo</p>
+            <span>Chọn phòng ban và chu kỳ để xem phân bổ, tiến độ và rủi ro liên quan.</span>
         </div>
-        <form asp-action="Index" asp-controller="EvaluationReports" method="get" class="evaluation-filter-form evaluation-report-filter-form">
+        <form asp-action="Index" asp-controller="EvaluationReports" method="get" class="evaluation-report-filter-form">
             <label>
                 <span>Phòng ban</span>
                 <select name="departmentId" class="no-select2">
@@ -444,7 +101,7 @@
     </section>
 
     <!-- Report Table -->
-    <section class="evaluation-results evaluation-report-table-card" aria-labelledby="evaluationReportTableHeading">
+    <section class="evaluation-report-table-card" aria-labelledby="evaluationReportTableHeading">
         <div class="evaluation-results-heading">
             <div>
                 <p class="evaluation-eyebrow" id="evaluationReportTableHeading">Chi tiết phân bổ &amp; đánh giá</p>
@@ -453,8 +110,8 @@
             <span>@ViewBag.CurrentDeptName · @ViewBag.CurrentCycle</span>
         </div>
 
-        <div class="evaluation-table-shell evaluation-report-table-shell">
-            <table class="evaluation-table evaluation-report-table" aria-label="Chi tiết phân bổ và đánh giá">
+        <div class="evaluation-report-table-shell">
+            <table class="evaluation-report-table" aria-label="Chi tiết phân bổ và đánh giá">
                 <thead>
                     <tr>
                         <th>Bộ phận / Mục tiêu</th>
@@ -472,7 +129,7 @@
                     {
                         <tr>
                             <td colspan="8" class="p-0">
-                                <div class="evaluation-empty evaluation-report-empty" role="status">
+                                <div class="evaluation-empty" role="status">
                                     <span class="evaluation-empty-icon"><i class="bi bi-bar-chart-line" aria-hidden="true"></i></span>
                                     <h2>Chưa có dữ liệu báo cáo</h2>
                                     <p>Hãy chọn phòng ban hoặc chu kỳ khác để xem các mục tiêu và kết quả then chốt.</p>
@@ -487,7 +144,7 @@
                             var okrKrs = krs.Where(k => k.OKRId == okr.Id).ToList();
                             foreach (var kr in okrKrs)
                             {
-                                var krAllocations = allocations.Where(a => a.OKRId == okr.Id).ToList(); // Simplifying allocation link
+                                var krAllocations = allocations.Where(a => a.OKRId == okr.Id).ToList();
                                 bool first = true;
                                 foreach (var alloc in krAllocations)
                                 {
@@ -523,133 +180,65 @@
                 </tbody>
             </table>
         </div>
-
-        <div class="evaluation-mobile-list evaluation-report-mobile-list">
-            @if (okrs.Count == 0 || krs.Count == 0 || allocations.Count == 0)
-            {
-                <div class="evaluation-empty evaluation-report-empty" role="status">
-                    <span class="evaluation-empty-icon"><i class="bi bi-bar-chart-line" aria-hidden="true"></i></span>
-                    <h2>Chưa có dữ liệu báo cáo</h2>
-                    <p>Hãy chọn phòng ban hoặc chu kỳ khác để xem các mục tiêu và kết quả then chốt.</p>
-                </div>
-            }
-            else
-            {
-                foreach (var okr in okrs)
-                {
-                    var okrKrs = krs.Where(k => k.OKRId == okr.Id).ToList();
-                    foreach (var kr in okrKrs)
-                    {
-                        var krAllocations = allocations.Where(a => a.OKRId == okr.Id).ToList();
-                        foreach (var alloc in krAllocations)
-                        {
-                            var emp = employees.ContainsKey(alloc.EmployeeId) ? employees[alloc.EmployeeId] : null;
-                            decimal progress = kr.Progress;
-                            decimal progressWidth = Math.Min(100, progress);
-                            string status = ProgressHelper.GetResultStatus(progress);
-                            string statusColor = ProgressHelper.GetProgressTextColorClass(progress);
-                            string statusBgColor = ProgressHelper.GetProgressColorClass(progress);
-                            var reasonText = kr.FailReasonId.HasValue && failReasons.ContainsKey(kr.FailReasonId.Value)
-                                ? failReasons[kr.FailReasonId.Value]
-                                : (progress < 100 ? "Chưa rõ lý do / Đang cập nhật" : "-");
-
-                            <article class="evaluation-report-mobile-card">
-                                <div>
-                                    <h3 class="evaluation-report-mobile-card__title">@okr.ObjectiveName</h3>
-                                    <div class="small text-muted mt-1">@kr.KeyResultName</div>
-                                </div>
-
-                                <div class="d-flex flex-wrap gap-2 align-items-center">
-                                    <span class="badge report-status-badge @statusBgColor @statusColor px-3">@status</span>
-                                    <span class="soft-chip tone-info"><i class="bi bi-person" aria-hidden="true"></i>@(emp?.FullName ?? "N/A")</span>
-                                </div>
-
-                                <div class="evaluation-report-mobile-card__grid">
-                                    <div>
-                                        <div class="evaluation-report-mobile-card__label">Chỉ tiêu riêng</div>
-                                        <div class="fw-semibold mt-1">@String.Format("{0:N0}", alloc.AllocatedValue) @kr.Unit</div>
-                                    </div>
-                                    <div>
-                                        <div class="evaluation-report-mobile-card__label">Thực tế đạt</div>
-                                        <div class="fw-semibold mt-1">@String.Format("{0:N1}", kr.CurrentValue) @kr.Unit</div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="evaluation-report-mobile-card__label">Hoàn thành</div>
-                                    <div class="report-progress d-flex align-items-center gap-2 mt-1">
-                                        <span class="report-progress-value fw-bold @statusColor">@((int)progress)%</span>
-                                        <div class="progress flex-grow-1" role="progressbar" aria-label="Tiến độ @kr.KeyResultName" aria-valuenow="@((int)Math.Clamp(progress, 0m, 100m))" aria-valuemin="0" aria-valuemax="100">
-                                            <div class="progress-bar @statusBgColor" style="width: @((int)progressWidth)%"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="evaluation-report-mobile-card__label">Lý do / ghi chú</div>
-                                    <div class="small text-muted mt-1">@reasonText</div>
-                                </div>
-                            </article>
-                        }
-                    }
-                }
-            }
-        </div>
     </section>
 
     <!-- Director's Summative Analysis Section -->
     <section class="evaluation-report-bottom-grid">
-        <section class="evaluation-results evaluation-report-panel" aria-labelledby="directorSummaryHeading">
+        <section class="evaluation-report-panel" aria-labelledby="directorSummaryHeading">
             <div class="evaluation-results-heading">
                 <div>
                     <p class="evaluation-eyebrow" id="directorSummaryHeading">Tổng hợp của Giám đốc</p>
                     <strong>Nhận định chung cho @ViewBag.CurrentDeptName</strong>
                 </div>
             </div>
-            <textarea id="directorSummaryText" class="form-control director-summary-input" rows="4" placeholder="Nhập nhận định chung về tình hình thực hiện OKR/KPI...">@ViewBag.DirectorSummary</textarea>
-            <div class="print-director-summary">@(!string.IsNullOrWhiteSpace(ViewBag.DirectorSummary as string) ? ViewBag.DirectorSummary : "Chưa có nhận xét.")</div>
-            <div class="d-flex justify-content-end mt-3 no-print">
-                <button id="btnSaveSummary" type="button" class="evaluation-primary-action">
-                    <i class="bi bi-save" aria-hidden="true"></i>
-                    <span>Lưu nhận xét</span>
-                </button>
+            <div class="mt-3">
+                <textarea id="directorSummaryText" class="form-control director-summary-input" rows="4" placeholder="Nhập nhận định chung về tình hình thực hiện OKR/KPI...">@ViewBag.DirectorSummary</textarea>
+                <div class="print-director-summary">@(!string.IsNullOrWhiteSpace(ViewBag.DirectorSummary as string) ? ViewBag.DirectorSummary : "Chưa có nhận xét.")</div>
+                <div class="d-flex justify-content-end mt-3 no-print">
+                    <button id="btnSaveSummary" type="button" class="evaluation-primary-action" data-department-id="@ViewBag.CurrentDeptId" data-cycle="@ViewBag.CurrentCycle">
+                        <i class="bi bi-save" aria-hidden="true"></i>
+                        <span>Lưu nhận xét</span>
+                    </button>
+                </div>
             </div>
         </section>
 
-        <section class="evaluation-results evaluation-report-panel" aria-labelledby="incidentHeading">
+        <section class="evaluation-report-panel" aria-labelledby="incidentHeading">
             <div class="evaluation-results-heading">
                 <div>
                     <p class="evaluation-eyebrow" id="incidentHeading">Rủi ro vận hành</p>
                     <strong>Các sự cố cần theo dõi (P.S.)</strong>
                 </div>
             </div>
-            <ul class="list-unstyled mb-0 evaluation-report-incidents" id="incidentList">
-                @if (incidents.Any())
-                {
-                    foreach (var incident in incidents)
+            <div class="mt-3">
+                <ul class="evaluation-report-incidents" id="incidentList">
+                    @if (incidents.Any())
                     {
-                        var badgeClass = incident.Severity == "Critical" ? "bg-danger" : "bg-warning text-dark";
-                        var severityText = incident.Severity == "Critical" ? "Nghiêm trọng" : "Cảnh báo";
-                        <li>
-                            <span class="badge @badgeClass rounded-pill">@severityText</span>
-                            <div>
-                                <span class="fw-semibold">@incident.Content</span>
-                                <span class="text-muted small d-block">@incident.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
-                            </div>
-                        </li>
+                        foreach (var incident in incidents)
+                        {
+                            var badgeClass = incident.Severity == "Critical" ? "bg-danger" : "bg-warning text-dark";
+                            var severityText = incident.Severity == "Critical" ? "Nghiêm trọng" : "Cảnh báo";
+                            <li>
+                                <span class="badge @badgeClass rounded-pill">@severityText</span>
+                                <div>
+                                    <span class="fw-semibold">@incident.Content</span>
+                                    <span class="text-muted small d-block">@incident.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                            </li>
+                        }
                     }
-                }
-                else
-                {
-                    <li class="text-muted" id="emptyIncidentText">Chưa có sự cố vận hành nào được ghi nhận.</li>
-                }
-                <li>
-                    <button type="button" class="evaluation-report-incidents__add no-print border-0 bg-transparent p-0" data-bs-toggle="modal" data-bs-target="#incidentModal">
-                        <i class="bi bi-plus-circle" aria-hidden="true"></i>
-                        <span>Thêm sự cố vận hành năm nay</span>
-                    </button>
-                </li>
-            </ul>
+                    else
+                    {
+                        <li class="text-muted" id="emptyIncidentText">Chưa có sự cố vận hành nào được ghi nhận.</li>
+                    }
+                    <li>
+                        <button type="button" class="evaluation-report-incidents__add no-print" data-bs-toggle="modal" data-bs-target="#incidentModal">
+                            <i class="bi bi-plus-circle" aria-hidden="true"></i>
+                            <span>Thêm sự cố vận hành năm nay</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
         </section>
     </section>
 </div>
@@ -657,7 +246,7 @@
 <div class="modal fade" id="incidentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content evaluation-modal">
-            <div class="modal-header border-0">
+            <div class="modal-header">
                 <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2 text-warning" aria-hidden="true"></i>Thêm sự cố vận hành</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng cửa sổ chi tiết"></button>
             </div>
@@ -674,9 +263,9 @@
                     <textarea id="incidentContent" class="form-control evaluation-modal-control" rows="4" maxlength="1000" placeholder="Nhập chi tiết sự cố và mức độ ảnh hưởng..."></textarea>
                 </div>
             </div>
-            <div class="modal-footer border-0">
+            <div class="modal-footer">
                 <button type="button" class="evaluation-secondary-action" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="evaluation-primary-action" id="btnSaveIncident">
+                <button type="button" class="evaluation-primary-action" id="btnSaveIncident" data-department-id="@ViewBag.CurrentDeptId" data-cycle="@ViewBag.CurrentCycle">
                     <i class="bi bi-save" aria-hidden="true"></i>
                     <span>Lưu sự cố</span>
                 </button>
@@ -686,133 +275,5 @@
 </div>
 
 @section Scripts {
-    <script>
-        const directorSummaryInput = document.getElementById('directorSummaryText');
-        const directorPrintSummary = document.querySelector('.print-director-summary');
-
-        function syncDirectorSummaryForPrint() {
-            if (!directorSummaryInput || !directorPrintSummary) return;
-            const content = directorSummaryInput.value.trim();
-            directorPrintSummary.textContent = content || 'Chưa có nhận xét.';
-        }
-
-        directorSummaryInput?.addEventListener('input', syncDirectorSummaryForPrint);
-        window.addEventListener('beforeprint', syncDirectorSummaryForPrint);
-        syncDirectorSummaryForPrint();
-
-        document.getElementById('btnSaveSummary')?.addEventListener('click', async function() {
-            const btn = this;
-            const textarea = document.getElementById('directorSummaryText');
-            const content = textarea.value;
-            const departmentId = '@ViewBag.CurrentDeptId';
-            const cycle = '@ViewBag.CurrentCycle';
-
-            if (!content.trim()) {
-                window.AppFeedback.toast({ tone: 'warning', eyebrow: 'Lưu nhận xét', title: 'Thiếu nội dung', message: 'Vui lòng nhập nội dung nhận xét trước khi lưu.' });
-                return;
-            }
-
-            // Show loading state
-            btn.disabled = true;
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang lưu...';
-
-            try {
-                const formData = new URLSearchParams();
-                formData.append('departmentId', departmentId);
-                formData.append('cycle', cycle);
-                formData.append('content', content);
-                const antiForgeryToken = window.getAntiForgeryToken?.();
-                if (antiForgeryToken) {
-                    formData.append('__RequestVerificationToken', antiForgeryToken);
-                }
-
-                const response = await fetch('/EvaluationReports/SaveDirectorSummary', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    window.AppFeedback.toast({ tone: 'success', eyebrow: 'Báo cáo Giám đốc', title: 'Lưu nhận xét thành công', message: result.message || 'Nhận xét của Giám đốc đã được lưu thành công!' });
-                } else {
-                    throw new Error(result.message || 'Có lỗi xảy ra từ máy chủ.');
-                }
-            } catch (error) {
-                console.error('Error saving summary:', error);
-                window.AppFeedback.toast({ tone: 'error', eyebrow: 'Báo cáo Giám đốc', title: 'Lỗi khi lưu', message: error?.message || 'Không thể kết nối đến máy chủ. Vui lòng thử lại.' });
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalContent;
-            }
-        });
-
-        document.getElementById('btnSaveIncident')?.addEventListener('click', async function () {
-            const btn = this;
-            const severity = document.getElementById('incidentSeverity')?.value || 'Warning';
-            const contentInput = document.getElementById('incidentContent');
-            const content = contentInput?.value.trim() || '';
-
-            if (!content) {
-                window.AppFeedback.toast({ tone: 'warning', eyebrow: 'Sự cố vận hành', title: 'Thiếu nội dung', message: 'Vui lòng nhập nội dung sự cố.' });
-                return;
-            }
-
-            btn.disabled = true;
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang lưu...';
-
-            try {
-                const formData = new URLSearchParams();
-                formData.append('departmentId', '@ViewBag.CurrentDeptId');
-                formData.append('cycle', '@ViewBag.CurrentCycle');
-                formData.append('severity', severity);
-                formData.append('content', content);
-                const antiForgeryToken = window.getAntiForgeryToken?.();
-                if (antiForgeryToken) {
-                    formData.append('__RequestVerificationToken', antiForgeryToken);
-                }
-
-                const response = await fetch('/EvaluationReports/AddIncident', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: formData
-                });
-                const result = await response.json();
-                if (!response.ok || !result.success) {
-                    throw new Error(result.message || 'Không thể lưu sự cố.');
-                }
-
-                appendIncident(result.incident);
-                contentInput.value = '';
-                bootstrap.Modal.getInstance(document.getElementById('incidentModal'))?.hide();
-                    window.AppFeedback.toast({ tone: 'success', eyebrow: 'Sự cố vận hành', title: 'Đã lưu sự cố', message: result.message });
-            } catch (error) {
-                window.AppFeedback.toast({ tone: 'error', eyebrow: 'Sự cố vận hành', title: 'Lỗi khi lưu', message: error?.message || 'Không thể kết nối máy chủ.' });
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalHtml;
-            }
-        });
-
-        function appendIncident(incident) {
-            const list = document.getElementById('incidentList');
-            if (!list || !incident) return;
-            document.getElementById('emptyIncidentText')?.remove();
-
-            const addButton = list.querySelector('[data-bs-target="#incidentModal"]');
-            const li = document.createElement('li');
-            li.className = 'mb-2';
-            const isCritical = incident.severity === 'Critical';
-            const severityText = isCritical ? 'Nghiêm trọng' : 'Cảnh báo';
-            const badgeClass = isCritical ? 'bg-danger' : 'bg-warning text-dark';
-            const safeContent = window.escapeHtml ? window.escapeHtml(incident.content) : incident.content;
-            li.innerHTML = `<span class="badge ${badgeClass} rounded-pill me-2">!</span><span class="fw-semibold">${severityText}:</span> ${safeContent} <span class="text-muted small">(${incident.createdAt})</span>`;
-            list.insertBefore(li, addButton);
-        }
-    </script>
+    <script src="~/js/evaluation-reports.js" asp-append-version="true"></script>
 }

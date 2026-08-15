@@ -451,39 +451,6 @@
     </div>
 </div>
 
-<style>
-    .bg-soft-success {
-        background-color: #ecfdf5;
-        border: 1px solid #10b98120;
-    }
-    .bg-soft-danger {
-        background-color: #fef2f2;
-        border: 1px solid #ef444420;
-    }
-    .bg-soft-warning {
-        background-color: #fffbeb;
-        border: 1px solid #f59e0b20;
-    }
-    .bg-soft-primary {
-        background-color: #eff6ff;
-        border: 1px solid #3b82f620;
-    }
-
-    .text-success { color: #059669 !important; }
-    .text-danger { color: #dc2626 !important; }
-    .text-warning { color: #d97706 !important; }
-    .text-primary { color: #1d4ed8 !important; }
-
-    .transition-hover:hover {
-        background-color: #f8fafc !important;
-        transform: translateX(4px);
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
-    }
-
-    .smaller { font-size: 0.75rem; }
-</style>
-
 @await Html.PartialAsync("_AITaskDecomposeModal")
 
 <!-- Modal Chỉnh sửa KPI -->
@@ -676,60 +643,10 @@
     </div>
 </div>
 
-<script>
-    function setupOkrLinkScope(scope) {
-        const okrSelect = scope.querySelector('.js-okr-select');
-        const keyResultSelect = scope.querySelector('.js-kr-select');
-        if (!okrSelect || !keyResultSelect) return;
-
-        const allKeyResults = Array.from(keyResultSelect.querySelectorAll('option[data-okr-id]')).map(option => ({
-            value: option.value,
-            text: option.textContent,
-            okrId: option.dataset.okrId
-        }));
-
-        function filterKeyResults() {
-            const selectedOkrId = okrSelect.value;
-            const selectedKeyResultId = keyResultSelect.value;
-            const matchingKeyResults = allKeyResults.filter(option => option.okrId === selectedOkrId);
-
-            keyResultSelect.innerHTML = '';
-            keyResultSelect.disabled = !selectedOkrId;
-
-            const placeholder = document.createElement('option');
-            placeholder.value = '';
-            placeholder.textContent = !selectedOkrId
-                ? '-- Chọn OKR trước --'
-                : matchingKeyResults.length
-                    ? '-- Không liên kết Key Result --'
-                    : '-- OKR này chưa có Key Result --';
-            keyResultSelect.appendChild(placeholder);
-
-            matchingKeyResults.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.value;
-                option.textContent = item.text;
-                option.dataset.okrId = item.okrId;
-                keyResultSelect.appendChild(option);
-            });
-
-            if (matchingKeyResults.some(item => item.value === selectedKeyResultId)) {
-                keyResultSelect.value = selectedKeyResultId;
-            }
-        }
-
-        okrSelect.addEventListener('change', filterKeyResults);
-        keyResultSelect.addEventListener('change', function () {
-            filterKeyResults();
-        });
-
-        filterKeyResults();
-    }
-
-    document.querySelectorAll('[data-okr-link-scope]').forEach(setupOkrLinkScope);
-</script>
-
 @section Styles {
     <link rel="stylesheet" href="~/css/kpi-create.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/velzon-kpi.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="~/js/kpi-details.js" asp-append-version="true"></script>
 }

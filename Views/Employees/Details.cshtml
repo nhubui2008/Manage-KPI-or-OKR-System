@@ -1,18 +1,18 @@
 @model Manage_KPI_or_OKR_System.Models.Employee
 
 @{
-    ViewData["Title"] = "Chi tiết nhân viên";
+    ViewData["Title"] = "Chi tiết nhân sự";
     Layout = "~/Views/Shared/_Layout.cshtml";
-    
+
     var assignment = ViewBag.Assignment as Manage_KPI_or_OKR_System.Models.EmployeeAssignment;
     var departments = ViewBag.Departments as Dictionary<int, string> ?? new Dictionary<int, string>();
     var positions = ViewBag.Positions as Dictionary<int, string> ?? new Dictionary<int, string>();
-    
+
     var deptName = assignment?.DepartmentId.HasValue == true && departments.ContainsKey(assignment.DepartmentId.Value)
                    ? departments[assignment.DepartmentId.Value] : "Chưa phân bổ";
     var posName = assignment?.PositionId.HasValue == true && positions.ContainsKey(assignment.PositionId.Value)
                   ? positions[assignment.PositionId.Value] : "Chưa phân bổ";
-                  
+
     var strategicGoal = ViewBag.StrategicGoal as Manage_KPI_or_OKR_System.Models.MissionVision;
     var systemUser = ViewBag.SystemUser as Manage_KPI_or_OKR_System.Models.SystemUser;
     var assignedKPIs = ViewBag.AssignedKPIs as List<Manage_KPI_or_OKR_System.Models.KPI> ?? new List<Manage_KPI_or_OKR_System.Models.KPI>();
@@ -36,529 +36,320 @@
     // Avatar Initial
     string empName = Model.FullName ?? "Unknown";
     string empInitial = empName.Length > 0 ? empName[0].ToString().ToUpper() : "?";
-    
-    // Status color
-    string statusText = Model.IsActive == true ? "Đang làm việc" : "Đã nghỉ việc";
-    string statusClass = Model.IsActive == true ? "active" : "inactive";
-    string statusDot = Model.IsActive == true ? "bg-success" : "bg-danger";
+
+    // Status
+    bool isActive = Model.IsActive == true;
+    string statusText = isActive ? "Đang làm việc" : "Đã nghỉ việc";
+    string statusClass = isActive ? "employees-status--active" : "employees-status--inactive";
 }
 
-<div class="container-fluid px-4 py-4">
-    <!-- Breadcrumbs -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+@section Styles {
+    <link rel="stylesheet" href="~/css/employees.css" asp-append-version="true" />
+}
+
+<div class="employees-page" data-employees-page>
+    <!-- Page Header -->
+    <header class="employees-page-header">
         <div>
-            <h4 class="mb-1 fw-bold text-dark">Hồ sơ nhân viên</h4>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb m-0" style="font-size: 0.85rem;">
-                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-decoration-none">Trang chủ</a></li>
-                    <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Nhân sự</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">@Model.FullName</li>
-                </ol>
+            <h1>Hồ sơ nhân sự</h1>
+            <nav class="employees-breadcrumb" aria-label="Breadcrumb">
+                <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <a asp-action="Index">Nhân sự</a>
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <span aria-current="page">@Model.FullName</span>
             </nav>
         </div>
-        <div class="d-flex gap-2">
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary d-flex align-items-center">
-                <i class="bi bi-pencil-square me-2"></i> Chỉnh sửa
-            </a>
-            <a asp-action="Index" class="btn btn-outline-secondary d-flex align-items-center">
-                <i class="bi bi-arrow-left me-2"></i> Quay lại
+        <div class="employees-page-actions">
+            @if (User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("HR") || User.HasClaim("Permission", "EMPLOYEES_EDIT"))
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="employees-btn employees-btn--primary">
+                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                    <span>Chỉnh sửa</span>
+                </a>
+            }
+            <a asp-action="Index" class="employees-btn employees-btn--secondary">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                <span>Quay lại</span>
             </a>
         </div>
-    </div>
+    </header>
 
-    <!-- Banner Info -->
-    <div class="dept-banner mb-4">
-        <div class="dept-banner-content">
-            <div class="dept-banner-avatar" style="background: rgba(255,255,255,0.2); font-size: 2.5rem; font-weight: 700;">
+    <!-- Profile Header Card -->
+    <section class="employees-profile-header mt-3" aria-label="Thông tin tổng quan nhân sự">
+        <div class="employees-profile-identity">
+            <div class="employees-profile-avatar" aria-hidden="true">
                 @empInitial
             </div>
-            <div class="dept-banner-info">
-                <div class="d-flex align-items-center gap-3 mb-1">
-                    <h2 class="dept-name m-0">@Model.FullName</h2>
-                    <span class="status-badge @statusClass">
-                        <span class="status-dot @statusDot"></span> @statusText
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                    <h2 class="h4 mb-0 fw-bold">@Model.FullName</h2>
+                    <span class="employees-status @statusClass">
+                        <span aria-hidden="true"></span>
+                        @statusText
                     </span>
                 </div>
-                <div class="dept-meta">
-                    <span class="me-3"><i class="bi bi-person-badge me-1"></i> Mã NV: @Model.EmployeeCode</span>
-                    <span><i class="bi bi-briefcase me-1"></i> @posName</span>
+                <div class="employees-profile-meta">
+                    <span><i class="bi bi-person-badge me-1" aria-hidden="true"></i> Mã NV: @Model.EmployeeCode</span>
+                    <span><i class="bi bi-building me-1" aria-hidden="true"></i> @deptName</span>
+                    <span><i class="bi bi-briefcase me-1" aria-hidden="true"></i> @posName</span>
                 </div>
             </div>
         </div>
-        <div class="dept-banner-overlay"></div>
-    </div>
+    </section>
 
-    <!-- Stats Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3 col-sm-6">
-            <div class="content-card stats-card-detail">
-                <div class="stats-icon" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff;">
-                    <i class="bi bi-speedometer2"></i>
-                </div>
-                <div class="stats-info">
-                    <div class="stats-label">KPIs được giao</div>
-                    <div class="stats-value">@assignedKPIs.Count</div>
+    <!-- Stats Grid -->
+    <section class="employees-stat-grid" aria-label="Thống kê nhân sự">
+        <article class="employees-stat-card">
+            <div class="employees-stat-icon" aria-hidden="true">
+                <i class="bi bi-speedometer2"></i>
+            </div>
+            <div>
+                <div class="employees-stat-label">KPIs được giao</div>
+                <div class="employees-stat-value">@assignedKPIs.Count</div>
+            </div>
+        </article>
+        <article class="employees-stat-card">
+            <div class="employees-stat-icon" aria-hidden="true">
+                <i class="bi bi-bullseye"></i>
+            </div>
+            <div>
+                <div class="employees-stat-label">OKRs được giao</div>
+                <div class="employees-stat-value">@assignedOKRs.Count</div>
+            </div>
+        </article>
+        <article class="employees-stat-card">
+            <div class="employees-stat-icon" aria-hidden="true">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div>
+                <div class="employees-stat-label">Thâm niên</div>
+                <div class="employees-stat-value">@seniority</div>
+            </div>
+        </article>
+        <article class="employees-stat-card">
+            <div class="employees-stat-icon" aria-hidden="true">
+                <i class="bi bi-flag"></i>
+            </div>
+            <div>
+                <div class="employees-stat-label">Mục tiêu chiến lược</div>
+                <div class="employees-stat-value" style="font-size: 0.95rem;">
+                    @(strategicGoal == null ? "—" : (strategicGoal.TargetYear.HasValue ? $"{strategicGoal.TypeDisplayName} {strategicGoal.TargetYear}" : strategicGoal.TypeDisplayName))
                 </div>
             </div>
-        </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="content-card stats-card-detail">
-                <div class="stats-icon" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff;">
-                    <i class="bi bi-bullseye"></i>
-                </div>
-                <div class="stats-info">
-                    <div class="stats-label">OKRs được giao</div>
-                    <div class="stats-value">@assignedOKRs.Count</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="content-card stats-card-detail">
-                <div class="stats-icon" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff;">
-                    <i class="bi bi-clock-history"></i>
-                </div>
-                <div class="stats-info">
-                    <div class="stats-label">Thâm niên</div>
-                    <div class="stats-value" style="font-size: 1.1rem;">@seniority</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="content-card stats-card-detail">
-                <div class="stats-icon" style="background: linear-gradient(135deg, #1a73e8, #4285f4); color: #ffffff;">
-                    <i class="bi bi-flag"></i>
-                </div>
-                <div class="stats-info">
-                    <div class="stats-label">Mục tiêu</div>
-                    <div class="stats-value">@(strategicGoal == null ? "—" : (strategicGoal.TargetYear.HasValue ? strategicGoal.TargetYear.ToString() : strategicGoal.TypeDisplayName))</div>
-                </div>
-            </div>
-        </div>
-    </div>
+        </article>
+    </section>
 
-    <div class="row g-4">
-        <!-- Left Column -->
-        <div class="col-lg-5">
-            <!-- Thông tin cá nhân -->
-            <div class="content-card mb-4">
-                <div class="card-header-custom border-bottom">
-                    <h5 class="mb-0 fw-bold d-flex align-items-center">
-                        <div class="header-icon-box">
-                            <i class="bi bi-person-circle"></i>
-                        </div>
-                        Thông tin cá nhân
-                    </h5>
+    <!-- Details Main Content Grid -->
+    <div class="employees-detail-grid">
+        <!-- Left Column: Personal & Job Information -->
+        <div class="d-grid gap-3">
+            <!-- Personal Info Card -->
+            <article class="employees-card">
+                <div class="employees-card-header">
+                    <i class="bi bi-person me-2 text-primary" aria-hidden="true"></i>
+                    Thông tin cá nhân
                 </div>
-                <div class="card-body-custom p-0">
-                    <div class="detail-info-list">
-                        <div class="detail-info-row">
-                            <div class="detail-info-icon"><i class="bi bi-envelope"></i></div>
-                            <div class="detail-info-body">
-                                <div class="detail-info-label">Email</div>
-                                <div class="detail-info-value">@(Model.Email ?? "—")</div>
+                <div class="employees-info-list">
+                    <div class="employees-info-row">
+                        <div class="employees-info-icon" aria-hidden="true"><i class="bi bi-envelope"></i></div>
+                        <div>
+                            <div class="employees-info-label">Email</div>
+                            <div class="employees-info-value">
+                                @if (!string.IsNullOrEmpty(Model.Email))
+                                {
+                                    <a href="mailto:@Model.Email">@Model.Email</a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Chưa cập nhật</span>
+                                }
                             </div>
                         </div>
-                        <div class="detail-info-row">
-                            <div class="detail-info-icon"><i class="bi bi-telephone"></i></div>
-                            <div class="detail-info-body">
-                                <div class="detail-info-label">Số điện thoại</div>
-                                <div class="detail-info-value">@(Model.Phone ?? "—")</div>
+                    </div>
+                    <div class="employees-info-row">
+                        <div class="employees-info-icon" aria-hidden="true"><i class="bi bi-telephone"></i></div>
+                        <div>
+                            <div class="employees-info-label">Số điện thoại</div>
+                            <div class="employees-info-value">
+                                @if (!string.IsNullOrEmpty(Model.Phone))
+                                {
+                                    <a href="tel:@Model.Phone">@Model.Phone</a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Chưa cập nhật</span>
+                                }
                             </div>
                         </div>
-                        <div class="detail-info-row">
-                            <div class="detail-info-icon"><i class="bi bi-calendar-heart"></i></div>
-                            <div class="detail-info-body">
-                                <div class="detail-info-label">Ngày sinh</div>
-                                <div class="detail-info-value">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "—")</div>
-                            </div>
+                    </div>
+                    <div class="employees-info-row">
+                        <div class="employees-info-icon" aria-hidden="true"><i class="bi bi-calendar-event"></i></div>
+                        <div>
+                            <div class="employees-info-label">Ngày sinh</div>
+                            <div class="employees-info-value">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
                         </div>
-                        <div class="detail-info-row">
-                            <div class="detail-info-icon"><i class="bi bi-shield-lock"></i></div>
-                            <div class="detail-info-body">
-                                <div class="detail-info-label">Mã số thuế</div>
-                                <div class="detail-info-value">@(Model.TaxCode ?? "—")</div>
-                            </div>
+                    </div>
+                    <div class="employees-info-row">
+                        <div class="employees-info-icon" aria-hidden="true"><i class="bi bi-shield-lock"></i></div>
+                        <div>
+                            <div class="employees-info-label">Mã số thuế</div>
+                            <div class="employees-info-value">@(Model.TaxCode ?? "Chưa cập nhật")</div>
                         </div>
-                        <div class="detail-info-row">
-                            <div class="detail-info-icon"><i class="bi bi-person-workspace"></i></div>
-                            <div class="detail-info-body">
-                                <div class="detail-info-label">Tài khoản liên kết</div>
-                                <div class="detail-info-value">
-                                    @if(systemUser != null)
-                                    {
-                                        <span class="badge bg-light text-primary border"><i class="bi bi-person me-1"></i>@systemUser.Username</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted fst-italic">Chưa liên kết</span>
-                                    }
-                                </div>
+                    </div>
+                    <div class="employees-info-row">
+                        <div class="employees-info-icon" aria-hidden="true"><i class="bi bi-person-workspace"></i></div>
+                        <div>
+                            <div class="employees-info-label">Tài khoản hệ thống</div>
+                            <div class="employees-info-value">
+                                @if (systemUser != null)
+                                {
+                                    <span class="badge bg-light text-dark border"><i class="bi bi-person me-1" aria-hidden="true"></i>@systemUser.Username</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Chưa liên kết tài khoản</span>
+                                }
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </article>
 
-            <!-- Thông tin công việc -->
-            <div class="content-card">
-                <div class="card-header-custom border-bottom">
-                    <h5 class="mb-0 fw-bold d-flex align-items-center">
-                        <div class="header-icon-box">
-                            <i class="bi bi-briefcase"></i>
-                        </div>
-                        Thông tin công việc
-                    </h5>
+            <!-- Job Info Card -->
+            <article class="employees-card">
+                <div class="employees-card-header">
+                    <i class="bi bi-briefcase me-2 text-primary" aria-hidden="true"></i>
+                    Thông tin công việc
                 </div>
-                <div class="card-body-custom p-0">
-                    <div class="detail-info-list">
-                        <div class="detail-info-row">
-                            <div class="detail-info-icon"><i class="bi bi-building"></i></div>
-                            <div class="detail-info-body">
-                                <div class="detail-info-label">Phòng ban</div>
-                                <div class="detail-info-value text-primary fw-bold">@deptName</div>
-                            </div>
+                <div class="employees-info-list">
+                    <div class="employees-info-row">
+                        <div class="employees-info-icon" aria-hidden="true"><i class="bi bi-building"></i></div>
+                        <div>
+                            <div class="employees-info-label">Phòng ban</div>
+                            <div class="employees-info-value fw-bold text-primary">@deptName</div>
                         </div>
-                        <div class="detail-info-row">
-                            <div class="detail-info-icon"><i class="bi bi-diagram-3"></i></div>
-                            <div class="detail-info-body">
-                                <div class="detail-info-label">Chức vụ</div>
-                                <div class="detail-info-value">@posName</div>
-                            </div>
+                    </div>
+                    <div class="employees-info-row">
+                        <div class="employees-info-icon" aria-hidden="true"><i class="bi bi-diagram-3"></i></div>
+                        <div>
+                            <div class="employees-info-label">Chức vụ</div>
+                            <div class="employees-info-value">@posName</div>
                         </div>
-                        <div class="detail-info-row">
-                            <div class="detail-info-icon"><i class="bi bi-calendar-check"></i></div>
-                            <div class="detail-info-body">
-                                <div class="detail-info-label">Ngày vào làm</div>
-                                <div class="detail-info-value">@(Model.JoinDate?.ToString("dd/MM/yyyy") ?? "—")</div>
-                            </div>
+                    </div>
+                    <div class="employees-info-row">
+                        <div class="employees-info-icon" aria-hidden="true"><i class="bi bi-calendar-check"></i></div>
+                        <div>
+                            <div class="employees-info-label">Ngày vào làm</div>
+                            <div class="employees-info-value">@(Model.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</div>
                         </div>
-                        <div class="detail-info-row">
-                            <div class="detail-info-icon"><i class="bi bi-geo"></i></div>
-                            <div class="detail-info-body">
-                                <div class="detail-info-label">Mục tiêu chiến lược</div>
-                                <div class="detail-info-value">
-                                    @if(strategicGoal != null)
-                                    {
-                                        <div class="small text-muted mb-1">@(strategicGoal.TargetYear.HasValue ? $"{strategicGoal.TypeDisplayName} {strategicGoal.TargetYear}" : strategicGoal.TypeDisplayName)</div>
-                                        <div class="text-dark">@strategicGoal.Content</div>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted fst-italic">Chưa xác định</span>
-                                    }
-                                </div>
+                    </div>
+                    <div class="employees-info-row">
+                        <div class="employees-info-icon" aria-hidden="true"><i class="bi bi-geo"></i></div>
+                        <div>
+                            <div class="employees-info-label">Chi tiết mục tiêu chiến lược</div>
+                            <div class="employees-info-value">
+                                @if (strategicGoal != null)
+                                {
+                                    <div class="small text-muted mb-1">@(strategicGoal.TargetYear.HasValue ? $"{strategicGoal.TypeDisplayName} {strategicGoal.TargetYear}" : strategicGoal.TypeDisplayName)</div>
+                                    <div>@strategicGoal.Content</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Chưa xác định</span>
+                                }
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </article>
         </div>
 
-        <!-- Right Column -->
-        <div class="col-lg-7">
-            <!-- KPI Section -->
-            <div class="content-card mb-4">
-                <div class="card-header-custom border-bottom">
-                    <h5 class="mb-0 fw-bold d-flex align-items-center">
-                        <div class="header-icon-box">
-                            <i class="bi bi-speedometer2"></i>
-                        </div>
+        <!-- Right Column: Assigned KPIs & OKRs -->
+        <div class="d-grid gap-3">
+            <!-- KPI List Card -->
+            <article class="employees-card">
+                <div class="employees-card-header d-flex align-items-center justify-content-between">
+                    <div>
+                        <i class="bi bi-speedometer2 me-2 text-primary" aria-hidden="true"></i>
                         KPI được giao (@assignedKPIs.Count)
-                    </h5>
+                    </div>
                 </div>
-                <div class="card-body-custom p-3">
+                <div class="employees-card-body">
                     @if (assignedKPIs.Any())
                     {
-                        @foreach (var kpi in assignedKPIs)
-                        {
-                            <div class="kpi-item d-flex align-items-center mb-2 p-2 border-bottom last-border-0">
-                                <div class="kpi-item-icon me-3">
-                                    <i class="bi bi-lightning-fill"></i>
+                        <div class="d-grid gap-1">
+                            @foreach (var kpi in assignedKPIs)
+                            {
+                                <div class="employees-related-item">
+                                    <div class="employees-info-icon" aria-hidden="true"><i class="bi bi-lightning-charge"></i></div>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="fw-bold text-truncate">@kpi.KPIName</div>
+                                    </div>
+                                    <a asp-controller="KPIs" asp-action="Details" asp-route-id="@kpi.Id" class="employees-icon-btn" title="Xem chi tiết KPI" aria-label="Xem chi tiết KPI @kpi.KPIName">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </a>
                                 </div>
-                                <div class="flex-grow-1">
-                                    <div class="fw-bold">@kpi.KPIName</div>
-                                </div>
-                                <a asp-controller="KPIs" asp-action="Details" asp-route-id="@kpi.Id" class="btn btn-sm btn-light border">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                            </div>
-                        }
+                            }
+                        </div>
                     }
                     else
                     {
-                        <div class="text-center py-4">
-                            <div class="text-muted small">Chưa được giao chỉ tiêu KPI nào</div>
+                        <div class="employees-related-empty">
+                            <i class="bi bi-inbox d-block mb-1 fs-4 text-muted" aria-hidden="true"></i>
+                            Chưa được giao chỉ tiêu KPI nào
                         </div>
                     }
                 </div>
-            </div>
+            </article>
 
-            <!-- OKR Section -->
-            <div class="content-card">
-                <div class="card-header-custom border-bottom">
-                    <h5 class="mb-0 fw-bold d-flex align-items-center">
-                        <div class="header-icon-box">
-                            <i class="bi bi-bullseye"></i>
-                        </div>
+            <!-- OKR List Card -->
+            <article class="employees-card">
+                <div class="employees-card-header d-flex align-items-center justify-content-between">
+                    <div>
+                        <i class="bi bi-bullseye me-2 text-primary" aria-hidden="true"></i>
                         OKR được giao (@assignedOKRs.Count)
-                    </h5>
+                    </div>
                 </div>
-                <div class="card-body-custom p-3">
+                <div class="employees-card-body">
                     @if (assignedOKRs.Any())
                     {
-                        @foreach (var okr in assignedOKRs)
-                        {
-                            <div class="kpi-item d-flex align-items-center mb-2 p-2 border-bottom last-border-0">
-                                <div class="kpi-item-icon me-3" style="background: linear-gradient(135deg, #1a73e8, #4285f4);">
-                                    <i class="bi bi-trophy-fill"></i>
+                        <div class="d-grid gap-1">
+                            @foreach (var okr in assignedOKRs)
+                            {
+                                <div class="employees-related-item">
+                                    <div class="employees-info-icon" aria-hidden="true"><i class="bi bi-trophy"></i></div>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="fw-bold text-truncate">@okr.ObjectiveName</div>
+                                        <div class="small text-muted">Chu kỳ: @okr.Cycle</div>
+                                    </div>
+                                    <a asp-controller="OKRs" asp-action="Details" asp-route-id="@okr.Id" class="employees-icon-btn" title="Xem chi tiết OKR" aria-label="Xem chi tiết OKR @okr.ObjectiveName">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </a>
                                 </div>
-                                <div class="flex-grow-1">
-                                    <div class="fw-bold">@okr.ObjectiveName</div>
-                                    <div class="small text-muted">Chu kỳ: @okr.Cycle</div>
-                                </div>
-                                <a asp-controller="OKRs" asp-action="Details" asp-route-id="@okr.Id" class="btn btn-sm btn-light border">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                            </div>
-                        }
+                            }
+                        </div>
                     }
                     else
                     {
-                        <div class="text-center py-4">
-                            <div class="text-muted small">Chưa được giao mục tiêu OKR nào</div>
+                        <div class="employees-related-empty">
+                            <i class="bi bi-inbox d-block mb-1 fs-4 text-muted" aria-hidden="true"></i>
+                            Chưa được giao mục tiêu OKR nào
                         </div>
                     }
                 </div>
-            </div>
+            </article>
 
-            <!-- Delete Action -->
-            @if (Model.IsActive == true)
+            <!-- Deactivate link if active & permitted -->
+            @if (Model.IsActive == true && (User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("HR") || User.HasClaim("Permission", "EMPLOYEES_DELETE")))
             {
-                <div class="mt-4 text-end">
-                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-link text-danger text-decoration-none small">
-                        <i class="bi bi-trash me-1"></i> Vô hiệu hóa nhân viên
+                <div class="text-end pt-2">
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="employees-clear-link">
+                        <i class="bi bi-trash" aria-hidden="true"></i>
+                        Ngừng hoạt động nhân sự này
                     </a>
                 </div>
             }
         </div>
     </div>
 </div>
-
-<style>
-    /* Reuse global styles or define local ones */
-    .content-card {
-        background: #fff;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        overflow: hidden;
-    }
-
-    .card-header-custom {
-        padding: 1.25rem 1.5rem;
-        background: #fff;
-    }
-
-    /* Header Icons */
-    .header-icon-box {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        background: linear-gradient(135deg, #1a73e8, #4285f4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-size: 0.85rem;
-        margin-right: 12px;
-        flex-shrink: 0;
-    }
-
-    /* Banner */
-    .dept-banner {
-        position: relative;
-        background: linear-gradient(135deg, #1a73e8, #4285f4);
-        border-radius: 16px;
-        padding: 40px;
-        color: #fff;
-        overflow: hidden;
-    }
-
-    .dept-banner-overlay {
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        background: url('https://www.transparenttextures.com/patterns/cubes.png');
-        opacity: 0.1;
-        pointer-events: none;
-    }
-
-    .dept-banner-content {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        align-items: center;
-        gap: 25px;
-    }
-
-    .dept-banner-avatar {
-        width: 100px;
-        height: 100px;
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-        flex-shrink: 0;
-    }
-
-    .dept-name {
-        font-weight: 700;
-        letter-spacing: -0.5px;
-    }
-
-    .dept-meta {
-        font-size: 0.95rem;
-        opacity: 0.9;
-        margin-top: 5px;
-    }
-
-    /* Stats Cards */
-    .stats-card-detail {
-        padding: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-        transition: transform 0.2s;
-    }
-
-    .stats-card-detail:hover {
-        transform: translateY(-3px);
-    }
-
-    .stats-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-        flex-shrink: 0;
-    }
-
-    .stats-label {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #5f6368;
-        font-weight: 600;
-        margin-bottom: 2px;
-    }
-
-    .stats-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #202124;
-        line-height: 1;
-    }
-
-    /* Info Lists */
-    .detail-info-list {
-        padding: 0.5rem 0;
-    }
-
-    .detail-info-row {
-        display: flex;
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #f1f3f4;
-        transition: background 0.2s;
-    }
-
-    .detail-info-row:last-child {
-        border-bottom: none;
-    }
-
-    .detail-info-row:hover {
-        background: #f8f9fa;
-    }
-
-    .detail-info-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #1a73e8, #4285f4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-size: 0.9rem;
-        flex-shrink: 0;
-        margin-top: 2px;
-    }
-
-    .detail-info-body {
-        margin-left: 1.25rem;
-    }
-
-    .detail-info-label {
-        font-size: 0.75rem;
-        color: #5f6368;
-        text-transform: uppercase;
-        font-weight: 600;
-        margin-bottom: 3px;
-        letter-spacing: 0.3px;
-    }
-
-    .detail-info-value {
-        font-size: 1rem;
-        color: #202124;
-        font-weight: 500;
-    }
-
-    /* Badges */
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-
-    .status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 8px;
-    }
-
-    /* KPI Items */
-    .kpi-item-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #1a73e8, #4285f4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-size: 0.9rem;
-        flex-shrink: 0;
-    }
-
-    .last-border-0:last-child {
-        border-bottom: none !important;
-    }
-
-    .text-primary-hover:hover {
-        color: #174ea6 !important;
-        text-decoration: underline !important;
-    }
-</style>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}

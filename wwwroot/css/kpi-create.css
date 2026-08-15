@@ -516,3 +516,68 @@
 @media (max-width: 420px) {
     .kpi-detail-actions { grid-template-columns: 1fr; }
 }
+
+.kpi-detail-page .bg-soft-success {
+    background-color: #ecfdf5;
+    border: 1px solid rgb(16 185 129 / 13%);
+}
+
+.kpi-detail-page .bg-soft-danger {
+    background-color: #fef2f2;
+    border: 1px solid rgb(239 68 68 / 13%);
+}
+
+.kpi-detail-page .bg-soft-warning {
+    background-color: #fffbeb;
+    border: 1px solid rgb(245 158 11 / 13%);
+}
+
+.kpi-detail-page .bg-soft-primary {
+    background-color: #eff6ff;
+    border: 1px solid rgb(59 130 246 / 13%);
+}
+
+.kpi-detail-page .text-success { color: #059669 !important; }
+.kpi-detail-page .text-danger { color: #dc2626 !important; }
+.kpi-detail-page .text-warning { color: #b45309 !important; }
+.kpi-detail-page .text-primary { color: #1d4ed8 !important; }
+.kpi-detail-page .transition-hover {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.kpi-detail-page .transition-hover:hover { background-color: #f8fafc !important; }
+.kpi-detail-page .smaller { font-size: 0.75rem; }
+
+.kpi-allocation-page .employee-select-item,
+.kpi-allocation-page .department-select-item {
+    display: block;
+    cursor: pointer;
+    border-width: 2px !important;
+}
+
+.kpi-allocation-page .employee-select-item:focus-within,
+.kpi-allocation-page .department-select-item:focus-within {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.kpi-allocation-page .transition-hover {
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.kpi-allocation-page .smaller { font-size: 0.75rem; }
+.kpi-allocation-page .allocation-card { border-left: 4px solid var(--primary) !important; }
+.kpi-allocation-page .employee-selector-list::-webkit-scrollbar,
+.kpi-allocation-page .department-selector-list::-webkit-scrollbar { width: 4px; }
+.kpi-allocation-page .employee-selector-list::-webkit-scrollbar-thumb,
+.kpi-allocation-page .department-selector-list::-webkit-scrollbar-thumb {
+    background: #e0e0e0;
+    border-radius: 4px;
+}
+.kpi-allocation-page #summaryCard.valid {
+    border-color: var(--success) !important;
+    background: var(--success-bg) !important;
+}
+.kpi-allocation-page #summaryCard.invalid {
+    border-color: var(--danger) !important;
+    background: var(--danger-bg) !important;
+}
