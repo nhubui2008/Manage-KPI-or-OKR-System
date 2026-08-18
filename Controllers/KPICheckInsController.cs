@@ -198,22 +198,27 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     : checkInQuery.Where(c => false);
             }
 
-            var totalCount = await checkInQuery.CountAsync();
-            var onTrackCount = onTrackStatusIds.Count == 0
-                ? 0
-                : await checkInQuery.CountAsync(checkIn =>
-                    checkIn.StatusId.HasValue && onTrackStatusIds.Contains(checkIn.StatusId.Value));
-            var riskCount = riskStatusIds.Count == 0
-                ? 0
-                : await checkInQuery.CountAsync(checkIn =>
-                    checkIn.StatusId.HasValue && riskStatusIds.Contains(checkIn.StatusId.Value));
-            var lateCount = lateStatusIds.Count == 0
-                ? 0
-                : await checkInQuery.CountAsync(checkIn =>
-                    checkIn.StatusId.HasValue && lateStatusIds.Contains(checkIn.StatusId.Value));
-            var pendingCount = await checkInQuery.CountAsync(checkIn =>
-                checkIn.ReviewStatus != null &&
-                checkIn.ReviewStatus.Trim().ToUpper() == ReviewStatusPending.ToUpper());
+            var summary = await checkInQuery
+                .GroupBy(_ => 1)
+                .Select(group => new
+                {
+                    TotalCount = group.Count(),
+                    OnTrackCount = group.Count(checkIn =>
+                        checkIn.StatusId.HasValue && onTrackStatusIds.Contains(checkIn.StatusId.Value)),
+                    RiskCount = group.Count(checkIn =>
+                        checkIn.StatusId.HasValue && riskStatusIds.Contains(checkIn.StatusId.Value)),
+                    LateCount = group.Count(checkIn =>
+                        checkIn.StatusId.HasValue && lateStatusIds.Contains(checkIn.StatusId.Value)),
+                    PendingCount = group.Count(checkIn =>
+                        checkIn.ReviewStatus != null &&
+                        checkIn.ReviewStatus.Trim().ToUpper() == ReviewStatusPending.ToUpper())
+                })
+                .SingleOrDefaultAsync();
+            var totalCount = summary?.TotalCount ?? 0;
+            var onTrackCount = summary?.OnTrackCount ?? 0;
+            var riskCount = summary?.RiskCount ?? 0;
+            var lateCount = summary?.LateCount ?? 0;
+            var pendingCount = summary?.PendingCount ?? 0;
 
             const int pageSize = 10;
             var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
@@ -475,7 +480,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         Late = group.Count(checkIn => checkIn.IsLate == true ||
                             (checkIn.StatusId.HasValue && lateStatusIds.Contains(checkIn.StatusId.Value)))
                     })
-                    .FirstOrDefaultAsync();
+                    .SingleOrDefaultAsync();
                 riskCount = officialSummary?.Risk ?? 0;
                 lateCount = officialSummary?.Late ?? 0;
             }

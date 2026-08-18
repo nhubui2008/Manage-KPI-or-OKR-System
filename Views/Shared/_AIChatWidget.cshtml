@@ -14,9 +14,11 @@
                     <div class="ai-chat-title">@aiBranding.AiAssistantName</div>
                     <div class="ai-chat-subtitle">@aiBranding.AiAssistantSubtitle · Chỉ tư vấn, không thay đổi dữ liệu</div>
                 </div>
-                <button type="button" class="ai-chat-close" id="aiChatClose" aria-label="Dong AI chat">
-                    <i class="bi bi-x-lg"></i>
-                </button>
+                <div class="d-flex align-items-center gap-1">
+                    <a class="ai-chat-close" href="/AIHistory" aria-label="Mở lịch sử AI" title="Lịch sử AI"><i class="bi bi-clock-history"></i></a>
+                    <button type="button" class="ai-chat-close" id="aiChatNew" aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới"><i class="bi bi-plus-lg"></i></button>
+                    <button type="button" class="ai-chat-close" id="aiChatClose" aria-label="Đóng AI chat"><i class="bi bi-x-lg"></i></button>
+                </div>
             </div>
             <div class="ai-chat-messages" id="aiChatMessages">
                 <div class="ai-message ai-message-bot">
@@ -29,7 +31,7 @@
                 <button type="button" data-ai-prompt="Gợi ý đúng 3 hành động cải thiện hiệu suất tuần này, đánh số 1, 2, 3 và mỗi hành động có cách làm cụ thể">Gợi ý cải thiện</button>
             </div>
             <form class="ai-chat-form" id="aiChatForm">
-                <textarea id="aiChatInput" aria-label="Nhập câu hỏi cho trợ lý AI" rows="1" placeholder="Hỏi AI về KPI/OKR..." maxlength="1000"></textarea>
+                <textarea id="aiChatInput" aria-label="Nhập câu hỏi cho trợ lý AI" rows="1" placeholder="Hỏi AI về KPI/OKR..."></textarea>
                 <button type="submit" aria-label="Gui cau hoi"><i class="bi bi-send-fill"></i></button>
             </form>
         </section>
@@ -41,11 +43,13 @@
             const toggle = document.getElementById('aiChatToggle');
             const panel = document.getElementById('aiChatPanel');
             const close = document.getElementById('aiChatClose');
+            const newChat = document.getElementById('aiChatNew');
             const form = document.getElementById('aiChatForm');
             const input = document.getElementById('aiChatInput');
             const messages = document.getElementById('aiChatMessages');
             const submitButton = form?.querySelector('button[type="submit"]');
             const history = [];
+            let currentSessionId = null;
             let isSending = false;
 
             if (!widget || !toggle || !panel || !form || !input || !messages) return;
@@ -53,6 +57,41 @@
             function setOpen(open) {
                 widget.classList.toggle('is-open', open);
                 if (open) setTimeout(() => input.focus(), 100);
+            }
+
+            function resetConversation() {
+                history.splice(0, history.length);
+                currentSessionId = null;
+                messages.innerHTML = '<div class="ai-message ai-message-bot"><div class="ai-message-bubble">Xin chào, tôi có thể hỗ trợ bạn xem tiến độ KPI/OKR, phân tích rủi ro hoặc gợi ý bước cải thiện tiếp theo.</div></div>';
+                input.value = '';
+                setOpen(true);
+            }
+
+            async function loadConversation(sessionId) {
+                if (!sessionId) return;
+                try {
+                    const response = await fetch(`/AIHistory/Conversation/${encodeURIComponent(sessionId)}`, { credentials: 'same-origin' });
+                    if (!response.ok) throw new Error('history_load_failed');
+                    const details = await response.json();
+                    if (!details?.contentAvailable || details?.session?.featureKey !== 'chat') throw new Error('history_unavailable');
+                    history.splice(0, history.length);
+                    messages.innerHTML = '';
+                    for (const entry of details.entries || []) {
+                        if (!entry.contentAvailable || !['Input', 'Output'].includes(entry.entryKind)) continue;
+                        let payload;
+                        try { payload = JSON.parse(entry.payloadJson || '{}'); } catch { payload = {}; }
+                        const text = entry.entryKind === 'Input' ? payload.message : (payload.text || payload.answer);
+                        if (!text) continue;
+                        const role = entry.entryKind === 'Input' ? 'user' : 'assistant';
+                        history.push({ role, text });
+                        renderMessage(role === 'assistant' ? 'bot' : 'user', text, false, []);
+                    }
+                    currentSessionId = sessionId;
+                    setOpen(true);
+                } catch {
+                    resetConversation();
+                    renderMessage('bot', 'Không thể mở lại nội dung hội thoại này. Quyền truy cập có thể đã thay đổi hoặc nội dung đã bị xóa.', false, []);
+                }
             }
 
             function renderMessage(role, text, pending, citations) {
@@ -154,25 +193,10 @@
                 return `<div class="ai-message-content">${chunks.join('')}</div>`;
             }
 
-            function getBoundedHistory() {
-                const selected = [];
-                let remaining = 4000;
-                for (let index = history.length - 1; index >= 0 && selected.length < 8; index--) {
-                    const source = history[index];
-                    const text = String(source?.text || '').trim().slice(0, Math.min(1000, remaining));
-                    if (!text) break;
-                    selected.push({ role: source.role, text });
-                    remaining -= text.length;
-                    if (remaining <= 0) break;
-                }
-                return selected.reverse();
-            }
-
             async function sendPrompt(prompt) {
                 const cleanPrompt = (prompt || '').trim();
                 if (!cleanPrompt || isSending) return;
 
-                const priorHistory = getBoundedHistory();
                 renderMessage('user', cleanPrompt);
                 history.push({ role: 'user', text: cleanPrompt });
                 input.value = '';
@@ -187,7 +211,11 @@
                             'Content-Type': 'application/json',
                             ...window.antiForgeryHeaders()
                         },
-                        body: JSON.stringify({ message: cleanPrompt, history: priorHistory })
+                        body: JSON.stringify({
+                            message: cleanPrompt,
+                            historySessionId: currentSessionId,
+                            historyOperationId: window.crypto?.randomUUID ? window.crypto.randomUUID() : null
+                        })
                     });
                     const data = await response.json();
                     if (!response.ok || data.success === false) {
@@ -195,6 +223,7 @@
                         return;
                     }
                     const answer = data.text || data.warnings?.[0] || 'Chưa đủ dữ liệu để trả lời có căn cứ.';
+                    currentSessionId = data.historySessionId || currentSessionId;
                     pendingBubble.innerHTML = formatAiText(answer);
                     appendCitations(pendingBubble, data.citations);
                     if (data.text) history.push({ role: 'assistant', text: data.text });
@@ -209,6 +238,8 @@
 
             toggle.addEventListener('click', () => setOpen(!widget.classList.contains('is-open')));
             close?.addEventListener('click', () => setOpen(false));
+            newChat?.addEventListener('click', resetConversation);
+            document.querySelectorAll('[data-ai-new-chat]').forEach(button => button.addEventListener('click', resetConversation));
             form.addEventListener('submit', function (event) {
                 event.preventDefault();
                 sendPrompt(input.value);
@@ -216,6 +247,8 @@
             widget.querySelectorAll('[data-ai-prompt]').forEach(button => {
                 button.addEventListener('click', () => sendPrompt(button.dataset.aiPrompt));
             });
+            const requestedSession = new URLSearchParams(window.location.search).get('aiChatSession');
+            if (requestedSession) loadConversation(requestedSession);
         })();
     </script>
 }

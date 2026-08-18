@@ -28,6 +28,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private readonly ICheckInAiRolloutGate _checkInAiRolloutGate;
         private readonly Manage_KPI_or_OKR_System.Data.MiniERPDbContext _context;
         private readonly ILogger<AIController> _logger;
+        private readonly IAiHistoryService? _history;
         public AIController(
             IAIDataService dataService,
             IAIAlertService alertService,
@@ -42,7 +43,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             Manage_KPI_or_OKR_System.Data.MiniERPDbContext context,
             ILogger<AIController> logger,
             ICheckInAiRolloutGate checkInAiRolloutGate,
-            IOkrKeyResultAiAdvisor? okrKeyResultAiAdvisor = null)
+            IOkrKeyResultAiAdvisor? okrKeyResultAiAdvisor = null,
+            IAiHistoryService? history = null)
         {
             _dataService = dataService;
             _alertService = alertService;
@@ -58,6 +60,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             _context = context;
             _logger = logger;
             _okrKeyResultAiAdvisor = okrKeyResultAiAdvisor;
+            _history = history;
         }
 
         [HttpPost]
@@ -680,6 +683,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 ? AgentRunState.Completed.ToString()
                 : AgentRunState.Cancelled.ToString();
             run.UpdatedAtUtc = DateTimeOffset.UtcNow;
+            if (_history != null)
+            {
+                await _history.AppendDecisionAsync(
+                    runId,
+                    new { decision, proposalId = proposal.Id },
+                    decision == "Accepted" ? AiHistoryStatuses.Applied : AiHistoryStatuses.Rejected,
+                    User,
+                    request.HistoryOperationId ?? idempotencyKey,
+                    saveChanges: false,
+                    cancellationToken: cancellationToken);
+            }
             try
             {
                 await _context.SaveChangesAsync(cancellationToken);
@@ -970,7 +984,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             try
             {
                 return Ok(await _evaluationReviewDraftAdvisor.CreateAsync(
-                    new EvaluationReviewDraftRequest(request.EvaluationResultId),
+                    new EvaluationReviewDraftRequest(
+                        request.EvaluationResultId,
+                        request.HistorySessionId,
+                        request.HistoryOperationId),
                     User,
                     cancellationToken));
             }
@@ -1168,7 +1185,29 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             try
             {
+                var historyHandle = _history == null
+                    ? null
+                    : await _history.BeginAsync(
+                        new AiHistoryBeginRequest(
+                            AiHistoryFeatures.SmartAlertRefresh,
+                            "Làm mới cảnh báo thông minh",
+                            new { periodId = request?.PeriodId },
+                            OperationId: request?.HistoryOperationId),
+                        User,
+                        cancellationToken);
                 var response = await _alertService.RefreshSmartAlertsAsync(User, request?.PeriodId, cancellationToken);
+                if (historyHandle != null)
+                {
+                    await _history!.CompleteAsync(
+                        historyHandle,
+                        new
+                        {
+                            alertCount = response.Alerts.Count,
+                            warnings = response.Warnings
+                        },
+                        agentRunId: null,
+                        cancellationToken: cancellationToken);
+                }
                 return Ok(response);
             }
             catch (UnauthorizedAccessException)

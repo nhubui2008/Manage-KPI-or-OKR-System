@@ -801,7 +801,10 @@
                                 'Content-Type': 'application/json',
                                 'RequestVerificationToken': token || ''
                             },
-                            body: JSON.stringify({ checkInId })
+                            body: JSON.stringify({
+                                checkInId,
+                                historyOperationId: window.crypto?.randomUUID ? window.crypto.randomUUID() : null
+                            })
                         });
                         const payload = await response.json();
                         if (!response.ok) {

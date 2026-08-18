@@ -1,6 +1,9 @@
 namespace Manage_KPI_or_OKR_System.Models.AI;
 
-public sealed record EvaluationReviewDraftRequest(int EvaluationResultId);
+public sealed record EvaluationReviewDraftRequest(
+    int EvaluationResultId,
+    Guid? HistorySessionId = null,
+    Guid? HistoryOperationId = null);
 
 public sealed record EvaluationReviewDraftResponse(
     int EvaluationResultId,
@@ -9,7 +12,9 @@ public sealed record EvaluationReviewDraftResponse(
     string Text,
     IReadOnlyList<EvidenceRef> Citations,
     string LifecycleStatus,
-    string RowVersion)
+    string RowVersion,
+    Guid? HistorySessionId = null,
+    Guid? HistoryOperationId = null)
 {
     public bool Success => true;
     public bool RequiresHumanReview => true;
@@ -18,7 +23,8 @@ public sealed record EvaluationReviewDraftResponse(
 public sealed record EvaluationReviewDraftDecisionRequest(
     int DraftActionId,
     string Decision,
-    string RowVersion);
+    string RowVersion,
+    Guid? HistoryOperationId = null);
 
 public sealed record EvaluationReviewDraftDecisionResponse(
     int DraftActionId,

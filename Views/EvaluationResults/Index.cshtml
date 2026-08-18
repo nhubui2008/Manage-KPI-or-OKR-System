@@ -660,7 +660,10 @@
                     'Content-Type': 'application/json',
                     ...window.antiForgeryHeaders()
                 },
-                body: JSON.stringify({ evaluationResultId: resultId })
+                body: JSON.stringify({
+                    evaluationResultId: resultId,
+                    historyOperationId: window.crypto?.randomUUID ? window.crypto.randomUUID() : null
+                })
             });
             const data = await response.json();
             if (!response.ok || data.success === false) {

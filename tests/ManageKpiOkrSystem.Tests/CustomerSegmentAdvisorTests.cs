@@ -47,6 +47,20 @@ public sealed class CustomerSegmentAdvisorTests
         Assert.Single(await context.Employees.ToListAsync());
     }
 
+    [Fact]
+    public async Task SuggestAsync_AcceptsMoreThanTwoValidSegments()
+    {
+        var setup = await CreateScenarioAsync();
+        await using var context = setup.Context;
+        var model = new DynamicSegmentModelClient((primarySourceId, _) =>
+            $$"""{"segments":[{{string.Join(',', Enumerable.Range(1, 3).Select(index => Segment(primarySourceId, $"Phân khúc {index}")))}}]}""");
+        var advisor = CreateAdvisor(context, setup.TenantContext, model);
+
+        var response = await advisor.SuggestAsync(new SuggestCustomerSegmentsRequest(), setup.Admin);
+
+        Assert.Equal(3, response.Segments.Count);
+    }
+
     [Theory]
     [InlineData("extra-score")]
     [InlineData("wrong-text-type")]
@@ -158,7 +172,10 @@ public sealed class CustomerSegmentAdvisorTests
         new(context, new AIDataService(context), model, tenantContext);
 
     private static string ValidResponse(string primarySourceId) =>
-        $$"""{"segments":[{"segmentName":"Khách hàng sản xuất","employeeFit":"Phù hợp KPI doanh thu","productOrService":"Dịch vụ B2B","region":"Miền Nam","customerLifecycle":"Mới","evidenceBasis":"KPI doanh thu nội bộ","revenueBasis":"Còn khoảng trống so với mục tiêu","recommendedAction":"Xác minh nhu cầu trước khi tiếp cận","dataGaps":"Thiếu dữ liệu CRM và lịch sử chuyển đổi","sourceIds":["{{primarySourceId}}"]}]}""";
+        $$"""{"segments":[{{Segment(primarySourceId, "Khách hàng sản xuất")}}]}""";
+
+    private static string Segment(string primarySourceId, string name) =>
+        $$"""{"segmentName":"{{name}}","employeeFit":"Phù hợp KPI doanh thu","productOrService":"Dịch vụ B2B","region":"Miền Nam","customerLifecycle":"Mới","evidenceBasis":"KPI doanh thu nội bộ","revenueBasis":"Còn khoảng trống so với mục tiêu","recommendedAction":"Xác minh nhu cầu trước khi tiếp cận","dataGaps":"Thiếu dữ liệu CRM và lịch sử chuyển đổi","sourceIds":["{{primarySourceId}}"]}""";
 
     private static async Task<Scenario> CreateScenarioAsync(bool actorIsEmployee = false)
     {

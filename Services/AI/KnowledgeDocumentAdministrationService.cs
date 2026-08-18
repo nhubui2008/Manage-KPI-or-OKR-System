@@ -128,6 +128,7 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
 
         var documents = await _context.KnowledgeDocuments
             .AsNoTracking()
+            .AsSplitQuery()
             .Include(document => document.Versions)
             .ThenInclude(version => version.IngestionJobs)
             .OrderBy(document => document.IsDeleted)

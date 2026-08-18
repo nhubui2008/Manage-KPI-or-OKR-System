@@ -6,7 +6,9 @@ namespace Manage_KPI_or_OKR_System.Models.AI;
 /// </summary>
 public sealed record OkrKeyResultAiEvaluationRequest(
     int KeyResultId,
-    decimal ProposedCurrentValue);
+    decimal ProposedCurrentValue,
+    Guid? HistorySessionId = null,
+    Guid? HistoryOperationId = null);
 
 public sealed record OkrKeyResultAiEvaluationResponse(
     int KeyResultId,
@@ -17,7 +19,9 @@ public sealed record OkrKeyResultAiEvaluationResponse(
     OkrKeyResultAiProposal Proposal,
     Guid? AgentRunId = null,
     int? ProposalId = null,
-    string? ProposalLifecycleStatus = null);
+    string? ProposalLifecycleStatus = null,
+    Guid? HistorySessionId = null,
+    Guid? HistoryOperationId = null);
 
 public sealed record OkrKeyResultAiProposal(
     string ProposedStatus,
@@ -29,7 +33,8 @@ public sealed record OkrKeyResultAiProposal(
 
 public sealed record OkrKeyResultAiProposalDecisionRequest(
     int ProposalId,
-    string Decision);
+    string Decision,
+    Guid? HistoryOperationId = null);
 
 public sealed record OkrKeyResultAiProposalDecisionResponse(
     int ProposalId,

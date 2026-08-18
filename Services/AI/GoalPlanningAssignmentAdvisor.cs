@@ -194,7 +194,6 @@ public sealed class GoalPlanningAssignmentAdvisor : IGoalPlanningAssignmentAdvis
             .ThenBy(item => item.OverdueTaskCount)
             .ThenBy(item => item.ActiveTaskCount)
             .ThenBy(item => item.EmployeeId)
-            .Take(25)
             .ToList();
     }
 

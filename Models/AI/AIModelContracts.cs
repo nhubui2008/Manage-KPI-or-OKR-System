@@ -45,7 +45,8 @@ public sealed record AIModelToolDefinition(string Name, string Description, stri
 public sealed record AIModelRequest(
     IReadOnlyList<AIModelMessage> Messages,
     IReadOnlyList<AIModelToolDefinition>? Tools = null,
-    double Temperature = 0)
+    double Temperature = 0,
+    bool? EnableThinking = null)
 {
     public void Validate()
     {

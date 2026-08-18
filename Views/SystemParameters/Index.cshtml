@@ -777,6 +777,8 @@
                         @foreach (var item in Model.OtherParameters)
                         {
                             var isRetentionDays = string.Equals(item.ParameterCode, SystemSettingCodes.AiHistoryRetentionDays, StringComparison.OrdinalIgnoreCase);
+                            var isCleanupApproval = string.Equals(item.ParameterCode, SystemSettingCodes.AiHistoryCleanupApproved, StringComparison.OrdinalIgnoreCase);
+                            var cleanupApproved = string.Equals(item.Value, "true", StringComparison.OrdinalIgnoreCase);
                             var formId = $"system-param-form-{item.Id}";
                             <tr>
                                 <td><code class="system-param-code">@item.ParameterCode</code></td>
@@ -784,7 +786,15 @@
                                 <td>
                                     <form asp-action="Update" method="post" id="@formId">
                                         <input type="hidden" name="id" value="@item.Id" />
-                                        @if (isRetentionDays)
+                                        @if (isCleanupApproval)
+                                        {
+                                            <label class="visually-hidden" for="system-param-value-@item.Id">Phê duyệt dọn lịch sử AI</label>
+                                            <select id="system-param-value-@item.Id" name="value" class="form-select system-param-input">
+                                                <option value="false" selected="@(!cleanupApproved)">Chưa phê duyệt</option>
+                                                <option value="true" selected="@cleanupApproved">Đã phê duyệt sau backup</option>
+                                            </select>
+                                        }
+                                        else if (isRetentionDays)
                                         {
                                             <label class="visually-hidden" for="system-param-value-@item.Id">Số ngày lưu lịch sử AI</label>
                                             <input id="system-param-value-@item.Id" type="number" name="value" class="form-control system-param-input" value="@item.Value" min="1" max="3650" step="1" required />
@@ -812,13 +822,22 @@
                 @foreach (var item in Model.OtherParameters)
                 {
                     var isRetentionDays = string.Equals(item.ParameterCode, SystemSettingCodes.AiHistoryRetentionDays, StringComparison.OrdinalIgnoreCase);
+                    var isCleanupApproval = string.Equals(item.ParameterCode, SystemSettingCodes.AiHistoryCleanupApproved, StringComparison.OrdinalIgnoreCase);
+                    var cleanupApproved = string.Equals(item.Value, "true", StringComparison.OrdinalIgnoreCase);
                     <article class="system-param-card">
                         <h2><code class="system-param-code">@item.ParameterCode</code></h2>
                         <p>@item.Description</p>
                         <form asp-action="Update" method="post">
                             <input type="hidden" name="id" value="@item.Id" />
                             <label for="mobile-system-param-value-@item.Id">Giá trị</label>
-                            @if (isRetentionDays)
+                            @if (isCleanupApproval)
+                            {
+                                <select id="mobile-system-param-value-@item.Id" name="value" class="form-select system-param-input">
+                                    <option value="false" selected="@(!cleanupApproved)">Chưa phê duyệt</option>
+                                    <option value="true" selected="@cleanupApproved">Đã phê duyệt sau backup</option>
+                                </select>
+                            }
+                            else if (isRetentionDays)
                             {
                                 <input id="mobile-system-param-value-@item.Id" type="number" name="value" class="form-control system-param-input" value="@item.Value" min="1" max="3650" step="1" required />
                             }

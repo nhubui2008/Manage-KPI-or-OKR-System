@@ -280,7 +280,7 @@ public sealed class TenantResolutionMiddleware
             targetIdentity.AddClaim(ProjectRoleProfileHelper.CreateScopeOnlyRoleClaim(baseRoleName));
         }
 
-        var configuredPermissions = await dbContext.Role_Permissions
+        var permissionItems = dbContext.Role_Permissions
             .Where(rolePermission => rolePermission.RoleId == membership.RoleId.Value)
             .Join(
                 dbContext.Permissions,
@@ -288,9 +288,42 @@ public sealed class TenantResolutionMiddleware
                 permission => permission.Id,
                 (_, permission) => permission.PermissionCode)
             .Where(code => code != null)
-            .Select(code => code!)
-            .Distinct()
+            .Select(code => new
+            {
+                PermissionCode = code,
+                DepartmentId = (int?)null
+            });
+
+        var departmentItems =
+            from employee in dbContext.Employees.IgnoreQueryFilters()
+            join assignment in dbContext.EmployeeAssignments.IgnoreQueryFilters()
+                on (int?)employee.Id equals assignment.EmployeeId
+            join department in dbContext.Departments.IgnoreQueryFilters()
+                on assignment.DepartmentId equals (int?)department.Id
+            where EF.Property<int>(employee, "TenantId") == membership.TenantId &&
+                  EF.Property<int>(assignment, "TenantId") == membership.TenantId &&
+                  EF.Property<int>(department, "TenantId") == membership.TenantId &&
+                  employee.SystemUserId == membership.SystemUserId &&
+                  employee.IsActive == true &&
+                  assignment.IsActive == true &&
+                  department.IsActive == true
+            select new
+            {
+                PermissionCode = (string?)null,
+                DepartmentId = (int?)department.Id
+            };
+
+        // Keep authorization fresh on every request while reducing WAN round trips:
+        // permissions and department principals are independent result kinds in one
+        // tenant-scoped SQL command rather than two sequential commands.
+        var authorizationItems = await permissionItems
+            .Concat(departmentItems)
             .ToListAsync(cancellationToken);
+        var configuredPermissions = authorizationItems
+            .Where(item => item.PermissionCode != null)
+            .Select(item => item.PermissionCode!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
         var effectivePermissions = PermissionAuthorizationHelper
             .ExpandGrantedPermissions(configuredPermissions)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -307,22 +340,11 @@ public sealed class TenantResolutionMiddleware
                 permission));
         }
 
-        var departmentIds = await (
-                from employee in dbContext.Employees.IgnoreQueryFilters()
-                join assignment in dbContext.EmployeeAssignments.IgnoreQueryFilters()
-                    on (int?)employee.Id equals assignment.EmployeeId
-                join department in dbContext.Departments.IgnoreQueryFilters()
-                    on assignment.DepartmentId equals (int?)department.Id
-                where EF.Property<int>(employee, "TenantId") == membership.TenantId &&
-                      EF.Property<int>(assignment, "TenantId") == membership.TenantId &&
-                      EF.Property<int>(department, "TenantId") == membership.TenantId &&
-                      employee.SystemUserId == membership.SystemUserId &&
-                      employee.IsActive == true &&
-                      assignment.IsActive == true &&
-                      department.IsActive == true
-                select department.Id)
+        var departmentIds = authorizationItems
+            .Where(item => item.DepartmentId.HasValue)
+            .Select(item => item.DepartmentId!.Value)
             .Distinct()
-            .ToListAsync(cancellationToken);
+            .ToList();
         foreach (var departmentId in departmentIds)
         {
             targetIdentity.AddClaim(new Claim(

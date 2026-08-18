@@ -150,35 +150,64 @@ namespace Manage_KPI_or_OKR_System.Services
             return query;
         }
 
-        private async Task<decimal> GetLatestProgressForKpiAsync(int kpiId, AIDataScope scope, EvaluationPeriod? period)
+        private async Task<Dictionary<int, decimal>> GetLatestProgressByKpiAsync(
+            IReadOnlyCollection<int> kpiIds,
+            AIDataScope scope,
+            EvaluationPeriod? period)
         {
-            var checkIns = ScopeCheckIns(_context.KPICheckIns.Where(c => c.KPIId == kpiId), scope);
-            checkIns = OfficialCheckIns(checkIns);
-            checkIns = ApplyPeriodToCheckIns(checkIns, period);
-            var latestCheckIns = await checkIns
-                .AsNoTracking()
-                .OrderByDescending(c => c.CheckInDate)
-                .ThenByDescending(c => c.Id)
-                .ToListAsync();
-            var latestCheckInIds = latestCheckIns
-                .GroupBy(c => c.EmployeeId)
-                .Select(g => g.First().Id)
-                .ToList();
-
-            if (!latestCheckInIds.Any())
+            if (kpiIds.Count == 0)
             {
-                return 0;
+                return new Dictionary<int, decimal>();
             }
 
+            var checkIns = ScopeCheckIns(
+                _context.KPICheckIns.Where(c =>
+                    c.KPIId.HasValue && kpiIds.Contains(c.KPIId.Value)),
+                scope);
+            checkIns = OfficialCheckIns(checkIns);
+            checkIns = ApplyPeriodToCheckIns(checkIns, period);
+            var progressCandidates = await checkIns
+                .AsNoTracking()
+                .Select(c => new
+                {
+                    c.Id,
+                    KpiId = c.KPIId!.Value,
+                    c.EmployeeId,
+                    c.CheckInDate
+                })
+                .ToListAsync();
+            var latestCheckIns = progressCandidates
+                .GroupBy(c => new { c.KpiId, c.EmployeeId })
+                .Select(group => group
+                    .OrderByDescending(c => c.CheckInDate)
+                    .ThenByDescending(c => c.Id)
+                    .First())
+                .ToList();
+
+            if (latestCheckIns.Count == 0)
+            {
+                return new Dictionary<int, decimal>();
+            }
+
+            var kpiByCheckInId = latestCheckIns.ToDictionary(c => c.Id, c => c.KpiId);
+            var latestCheckInIds = kpiByCheckInId.Keys.ToList();
             var values = await _context.CheckInDetails
                 .AsNoTracking()
                 .Where(d => d.CheckInId.HasValue &&
                             latestCheckInIds.Contains(d.CheckInId.Value) &&
                             d.ProgressPercentage.HasValue)
-                .Select(d => d.ProgressPercentage!.Value)
+                .Select(d => new
+                {
+                    CheckInId = d.CheckInId!.Value,
+                    Progress = d.ProgressPercentage!.Value
+                })
                 .ToListAsync();
 
-            return values.Any() ? Math.Round(values.Average(), 1) : 0;
+            return values
+                .GroupBy(value => kpiByCheckInId[value.CheckInId])
+                .ToDictionary(
+                    group => group.Key,
+                    group => Math.Round(group.Average(value => value.Progress), 1));
         }
 
         private async Task<EmployeeAssignment?> GetActiveAssignmentAsync(int employeeId)

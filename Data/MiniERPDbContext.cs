@@ -98,6 +98,8 @@ namespace Manage_KPI_or_OKR_System.Data
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<TenantMembership> TenantMemberships { get; set; }
         public DbSet<AgentRunRecord> AgentRuns { get; set; }
+        public DbSet<AiHistorySession> AiHistorySessions { get; set; }
+        public DbSet<AiHistoryEntry> AiHistoryEntries { get; set; }
         public DbSet<AgentApproval> AgentApprovals { get; set; }
         public DbSet<AgentDraftAction> AgentDraftActions { get; set; }
         public DbSet<AiEvaluationProposal> AiEvaluationProposals { get; set; }
@@ -162,6 +164,8 @@ namespace Manage_KPI_or_OKR_System.Data
             ConfigureTenantScope<AuditLog>(modelBuilder);
             ConfigureTenantScope<AIGenerationHistory>(modelBuilder);
             ConfigureTenantScope<AgentRunRecord>(modelBuilder);
+            ConfigureTenantScope<AiHistorySession>(modelBuilder);
+            ConfigureTenantScope<AiHistoryEntry>(modelBuilder);
             ConfigureTenantScope<AgentApproval>(modelBuilder);
             ConfigureTenantScope<AgentDraftAction>(modelBuilder);
             ConfigureTenantScope<AiEvaluationProposal>(modelBuilder);
@@ -186,6 +190,51 @@ namespace Manage_KPI_or_OKR_System.Data
 
             modelBuilder.Entity<AgentRunRecord>().HasIndex(r => new { r.TenantId, r.CorrelationId });
             modelBuilder.Entity<AgentRunRecord>().HasAlternateKey(r => new { r.TenantId, r.Id });
+            modelBuilder.Entity<AiHistorySession>().HasAlternateKey(session => new { session.TenantId, session.Id });
+            modelBuilder.Entity<AiHistorySession>()
+                .HasIndex(session => new
+                    { session.TenantId, session.OwnerSystemUserId, session.ContentDeletedAtUtc, session.UpdatedAtUtc });
+            modelBuilder.Entity<AiHistorySession>().ToTable(table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_AiHistorySessions_Status",
+                    "[Status] IN ('Pending','Completed','Abstained','AwaitingReview','Applied','Rejected','Conflict','Failed','ContentDeleted')");
+                table.HasCheckConstraint(
+                    "CK_AiHistorySessions_Title",
+                    "[Title] IS NULL OR LEN(LTRIM(RTRIM([Title]))) BETWEEN 1 AND 200");
+            });
+            modelBuilder.Entity<AiHistoryEntry>()
+                .HasIndex(entry => new { entry.TenantId, entry.SessionId, entry.Sequence })
+                .IsUnique();
+            modelBuilder.Entity<AiHistoryEntry>()
+                .HasIndex(entry => new { entry.TenantId, entry.SessionId, entry.OperationId, entry.EntryKind })
+                .IsUnique();
+            modelBuilder.Entity<AiHistoryEntry>()
+                .HasIndex(entry => new { entry.TenantId, entry.AgentRunId });
+            modelBuilder.Entity<AiHistoryEntry>().ToTable(table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_AiHistoryEntries_EntryKind",
+                    "[EntryKind] IN ('Input','Output','Warning','Decision','LegacyMetadata')");
+                table.HasCheckConstraint(
+                    "CK_AiHistoryEntries_Status",
+                    "[Status] IN ('Pending','Completed','Abstained','AwaitingReview','Applied','Rejected','Conflict','Failed','ContentDeleted')");
+                table.HasCheckConstraint(
+                    "CK_AiHistoryEntries_Sequence",
+                    "[Sequence] > 0 AND [PayloadSchemaVersion] > 0");
+            });
+            modelBuilder.Entity<AiHistoryEntry>()
+                .HasOne(entry => entry.Session)
+                .WithMany(session => session.Entries)
+                .HasForeignKey(entry => new { entry.TenantId, entry.SessionId })
+                .HasPrincipalKey(session => new { session.TenantId, session.Id })
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<AiHistoryEntry>()
+                .HasOne<AgentRunRecord>()
+                .WithMany()
+                .HasForeignKey(entry => new { entry.TenantId, entry.AgentRunId })
+                .HasPrincipalKey(run => new { run.TenantId, run.Id })
+                .OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<KPI>().HasAlternateKey("TenantId", nameof(KPI.Id));
             modelBuilder.Entity<EvaluationPeriod>().HasAlternateKey("TenantId", nameof(EvaluationPeriod.Id));
             modelBuilder.Entity<EvaluationResult>().HasAlternateKey("TenantId", nameof(EvaluationResult.Id));

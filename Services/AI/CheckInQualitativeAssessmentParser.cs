@@ -11,7 +11,6 @@ public sealed record CheckInQualitativeCriterionDraft(
 
 public static class CheckInQualitativeAssessmentParser
 {
-    private const int MaximumResponseCharacters = 12_000;
     private const int MaximumRationaleCharacters = 280;
 
     public static IReadOnlyDictionary<int, CheckInQualitativeCriterionDraft> Parse(
@@ -19,7 +18,7 @@ public static class CheckInQualitativeAssessmentParser
         IReadOnlyList<EvaluationCriterion> criteria,
         IReadOnlyList<EvidenceRef> allowedCitations)
     {
-        if (string.IsNullOrWhiteSpace(content) || content.Length > MaximumResponseCharacters)
+        if (string.IsNullOrWhiteSpace(content))
         {
             throw new AIModelResponseValidationException("Qualitative assessment response is empty or oversized.");
         }
@@ -61,7 +60,7 @@ public static class CheckInQualitativeAssessmentParser
                     rationaleElement.GetString()!.Trim().Length > MaximumRationaleCharacters ||
                     !element.TryGetProperty("citationKeys", out var citationKeysElement) ||
                     citationKeysElement.ValueKind != JsonValueKind.Array ||
-                    citationKeysElement.GetArrayLength() is < 1 or > 5)
+                    citationKeysElement.GetArrayLength() < 1)
                 {
                     throw new AIModelResponseValidationException("Qualitative criterion result has an invalid shape or value.");
                 }

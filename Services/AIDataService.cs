@@ -178,6 +178,10 @@ namespace Manage_KPI_or_OKR_System.Services
                 .Where(d => d.CheckInId.HasValue && checkInIds.Contains(d.CheckInId.Value))
                 .OrderByDescending(d => d.Id)
                 .ToListAsync();
+            var latestProgressByKpi = await GetLatestProgressByKpiAsync(
+                kpiIds,
+                scope,
+                selectedPeriod);
 
             var okrs = await _context.OKRs
                 .AsNoTracking()
@@ -200,7 +204,7 @@ namespace Manage_KPI_or_OKR_System.Services
             foreach (var kpi in kpis)
             {
                 details.TryGetValue(kpi.Id, out var detail);
-                var latestProgress = await GetLatestProgressForKpiAsync(kpi.Id, scope, selectedPeriod);
+                var latestProgress = latestProgressByKpi.GetValueOrDefault(kpi.Id);
                 builder.AppendLine($"- KPI #{kpi.Id}: {BoundChatText(kpi.KPIName, 255)}; target {FormatDecimal(detail?.TargetValue)} {BoundChatText(detail?.MeasurementUnit, 50)}; tien do moi nhat {FormatDecimal(latestProgress)}%.");
             }
 

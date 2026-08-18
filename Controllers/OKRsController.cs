@@ -243,7 +243,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     CompletedCount = group.Sum(i => i.KeyResultCount > 0 && i.TotalProgress >= 100m ? 1 : 0),
                     AverageProgress = Math.Round(group.Average(i => i.TotalProgress), 1)
                 })
-                .FirstOrDefaultAsync() ?? new OkrIndexSummaryViewModel();
+                .SingleOrDefaultAsync() ?? new OkrIndexSummaryViewModel();
             var totalCount = summary.TotalCount;
 
             const int pageSize = 10;
@@ -691,10 +691,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("OKRS_CREATE")]
         public Task<IActionResult> SuggestKeyResultsAPI(
             int id,
-            CancellationToken cancellationToken)
+            Guid? historyOperationId = null,
+            CancellationToken cancellationToken = default)
         {
             return ExecuteKeyResultSuggestionAsync(
-                new OkrKeyResultSuggestionRequest { OkrId = id },
+                new OkrKeyResultSuggestionRequest { OkrId = id, HistoryOperationId = historyOperationId },
                 cancellationToken,
                 "Không thể tạo gợi ý KR lúc này.");
         }
@@ -720,6 +721,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 new OkrKeyResultSuggestionRequest
                 {
                     OkrId = id,
+                    HistorySessionId = request.HistorySessionId,
+                    HistoryOperationId = request.HistoryOperationId,
                     Instruction = request.Instruction,
                     CurrentItems = request.Items
                 },

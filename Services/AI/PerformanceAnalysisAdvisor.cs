@@ -20,13 +20,12 @@ public interface IPerformanceAnalysisAdvisor
 
 /// <summary>
 /// Produces a read-only, cited performance analysis from approved check-ins.
-/// Prompt/context/provider output are transient; only run and citation metadata
-/// are persisted.
+/// Internal prompt/context/raw provider output remain transient. The parsed,
+/// user-visible request/result is stored in account history.
 /// </summary>
 public sealed class PerformanceAnalysisAdvisor : IPerformanceAnalysisAdvisor
 {
     private const string RunType = "performance-analysis-advisory";
-    private const int MaximumContextLength = 24_000;
     private static readonly string[] RootProperties =
     {
         "overview", "strengths", "risks", "actions"
@@ -40,17 +39,20 @@ public sealed class PerformanceAnalysisAdvisor : IPerformanceAnalysisAdvisor
     private readonly IAIDataService _dataService;
     private readonly IAIModelClient _modelClient;
     private readonly ITenantContext _tenantContext;
+    private readonly IAiHistoryService? _history;
 
     public PerformanceAnalysisAdvisor(
         MiniERPDbContext context,
         IAIDataService dataService,
         IAIModelClient modelClient,
-        ITenantContext tenantContext)
+        ITenantContext tenantContext,
+        IAiHistoryService? history = null)
     {
         _context = context;
         _dataService = dataService;
         _modelClient = modelClient;
         _tenantContext = tenantContext;
+        _history = history;
     }
 
     public async Task<PerformanceAnalysisResponse> AnalyzeAsync(
@@ -77,6 +79,16 @@ public sealed class PerformanceAnalysisAdvisor : IPerformanceAnalysisAdvisor
         var snapshot = await _dataService.BuildPerformanceAnalysisContextAsync(user, request);
         var contextHash = ComputeHash(snapshot.Text);
         var evidence = BuildEvidence(request, contextHash, snapshot.HasApprovedEvidence);
+        var historyHandle = _history == null
+            ? null
+            : await _history.BeginAsync(
+                new AiHistoryBeginRequest(
+                    AiHistoryFeatures.PerformanceAnalysis,
+                    "Phân tích hiệu suất",
+                    new { request.PeriodId, request.EmployeeId, request.DepartmentId },
+                    OperationId: request.HistoryOperationId),
+                user,
+                cancellationToken);
         var generated = snapshot.HasApprovedEvidence
             ? await GenerateAsync(snapshot.Text, evidence, cancellationToken)
             : GeneratedAnalysis.Empty;
@@ -134,15 +146,11 @@ public sealed class PerformanceAnalysisAdvisor : IPerformanceAnalysisAdvisor
                 IsCurrent = citation.IsCurrent
             });
         }
-        await _context.SaveChangesAsync(cancellationToken);
-        if (transaction != null)
-        {
-            await transaction.CommitAsync(cancellationToken);
-        }
-
         var response = new PerformanceAnalysisResponse
         {
             AgentRunId = runId,
+            HistorySessionId = historyHandle?.SessionId,
+            HistoryOperationId = historyHandle?.OperationId,
             Overview = generated.Overview,
             Strengths = generated.Strengths,
             Risks = generated.Risks,
@@ -153,6 +161,21 @@ public sealed class PerformanceAnalysisAdvisor : IPerformanceAnalysisAdvisor
         {
             response.Warnings.Add(
                 "Chưa đủ check-in đã duyệt để tạo phân tích hiệu suất có căn cứ.");
+        }
+        if (historyHandle != null && _history != null)
+        {
+            await _history.CompleteAsync(
+                historyHandle,
+                new { response.Overview, response.Strengths, response.Risks, response.RecommendedActions, response.Warnings },
+                runId,
+                generated.Overview == null ? AiHistoryStatuses.Abstained : AiHistoryStatuses.Completed,
+                saveChanges: false,
+                cancellationToken);
+        }
+        await _context.SaveChangesAsync(cancellationToken);
+        if (transaction != null)
+        {
+            await transaction.CommitAsync(cancellationToken);
         }
         return response;
     }
@@ -190,7 +213,7 @@ public sealed class PerformanceAnalysisAdvisor : IPerformanceAnalysisAdvisor
         var allowedSourceIds = evidence.Select(EvidenceKey).ToArray();
         var payload = JsonSerializer.Serialize(new
         {
-            authorizedContext = contextText[..Math.Min(contextText.Length, MaximumContextLength)],
+            authorizedContext = contextText,
             availableSourceIds = allowedSourceIds
         });
         var system = new AIModelMessage(
@@ -231,7 +254,7 @@ public sealed class PerformanceAnalysisAdvisor : IPerformanceAnalysisAdvisor
         IReadOnlyCollection<string> allowedSourceIds,
         string primarySourceId)
     {
-        if (string.IsNullOrWhiteSpace(content) || content.Length > 30_000)
+        if (string.IsNullOrWhiteSpace(content))
         {
             return null;
         }
@@ -290,10 +313,6 @@ public sealed class PerformanceAnalysisAdvisor : IPerformanceAnalysisAdvisor
             return null;
         }
         var elements = element.EnumerateArray().ToArray();
-        if (elements.Length > 5)
-        {
-            return null;
-        }
         var result = new List<PerformanceAnalysisInsight>(elements.Length);
         foreach (var item in elements)
         {
@@ -324,7 +343,7 @@ public sealed class PerformanceAnalysisAdvisor : IPerformanceAnalysisAdvisor
         }
         var title = element.GetProperty("title").GetString()?.Trim() ?? string.Empty;
         var detail = element.GetProperty("detail").GetString()?.Trim() ?? string.Empty;
-        if (title.Length is 0 or > 160 || detail.Length is 0 or > 800)
+        if (title.Length == 0 || detail.Length == 0)
         {
             return null;
         }
@@ -335,7 +354,7 @@ public sealed class PerformanceAnalysisAdvisor : IPerformanceAnalysisAdvisor
             return null;
         }
         var sourceElements = sourceIdsElement.EnumerateArray().ToArray();
-        if (sourceElements.Length is 0 or > 10 ||
+        if (sourceElements.Length == 0 ||
             sourceElements.Any(item => item.ValueKind != JsonValueKind.String))
         {
             return null;

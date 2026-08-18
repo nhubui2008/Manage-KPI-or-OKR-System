@@ -74,8 +74,7 @@ Mọi hành động ghi dữ liệu của AI phải đi qua bản nháp, kiểm 
 ### Stack AI đã chốt
 
 - DeepSeek V4 qua typed `HttpClient` và adapter tương thích OpenAI:
-  - V4 Pro cho Planner, Critic và Evaluator.
-  - V4 Flash cho truy vấn lại, phân loại và tác vụ nhẹ.
+  - V4 Flash là model mặc định cho Planner, Critic, Evaluator, truy vấn lại, phân loại và các tác vụ nhẹ.
   - Model name nằm trong cấu hình, API key chỉ ở secret store.
   - Tool calls và JSON output bám theo [tài liệu DeepSeek](https://api-docs.deepseek.com/guides/tool_calls); JSON phải được schema-validate, retry tối đa một lần và chuyển sang `Abstained/Failed` nếu vẫn sai vì JSON mode có thể trả output rỗng theo [hướng dẫn chính thức](https://api-docs.deepseek.com/guides/json_mode/).
 - MinerU chạy trong GPU service riêng, private network; worker gọi đồng bộ `/file_parse` dưới lease heartbeat và chấp nhận at-least-once compute với khóa lưu trữ hội tụ. Tệp PDF/image/DOCX/PPTX/XLSX được quét loại/kích thước/malware, parse thành Markdown rồi chia chunk có section metadata; pin phiên bản source/model/image và hoàn tất rà soát license từ [MinerU chính thức](https://github.com/opendatalab/MinerU).

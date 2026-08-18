@@ -5,6 +5,8 @@ namespace Manage_KPI_or_OKR_System.Models.AI
     public class AIChatRequest
     {
         public string? Message { get; set; }
+        public Guid? HistorySessionId { get; set; }
+        public Guid? HistoryOperationId { get; set; }
         public List<AIChatMessage>? History { get; set; }
         public int? PeriodId { get; set; }
     }
@@ -20,6 +22,8 @@ namespace Manage_KPI_or_OKR_System.Models.AI
         public bool Success { get; set; } = true;
         public string? Text { get; set; }
         public Guid? AgentRunId { get; set; }
+        public Guid? HistorySessionId { get; set; }
+        public Guid? HistoryOperationId { get; set; }
         public bool AdvisoryOnly { get; set; } = true;
         public List<EvidenceRef> Citations { get; set; } = new();
         public List<string> Warnings { get; set; } = new();
@@ -35,6 +39,7 @@ namespace Manage_KPI_or_OKR_System.Models.AI
 
     public class SuggestKpiRequest
     {
+        public Guid? HistoryOperationId { get; set; }
         public int? EmployeeId { get; set; }
         public int? DepartmentId { get; set; }
         public int? OkrId { get; set; }
@@ -92,6 +97,8 @@ namespace Manage_KPI_or_OKR_System.Models.AI
     {
         public bool Success { get; set; } = true;
         public Guid? AgentRunId { get; set; }
+        public Guid? HistorySessionId { get; set; }
+        public Guid? HistoryOperationId { get; set; }
         public bool AdvisoryOnly { get; set; } = true;
         public List<SuggestedKpi> Suggestions { get; set; } = new();
         public List<EvidenceRef> Citations { get; set; } = new();
@@ -100,6 +107,7 @@ namespace Manage_KPI_or_OKR_System.Models.AI
 
     public class AnalyzePerformanceRequest
     {
+        public Guid? HistoryOperationId { get; set; }
         public int? PeriodId { get; set; }
         public int? EmployeeId { get; set; }
         public int? DepartmentId { get; set; }
@@ -107,11 +115,14 @@ namespace Manage_KPI_or_OKR_System.Models.AI
 
     public class GenerateReviewRequest
     {
+        public Guid? HistorySessionId { get; set; }
+        public Guid? HistoryOperationId { get; set; }
         public int EvaluationResultId { get; set; }
     }
 
     public class SuggestCustomerSegmentsRequest
     {
+        public Guid? HistoryOperationId { get; set; }
         public int? PeriodId { get; set; }
         public int? EmployeeId { get; set; }
         public int? DepartmentId { get; set; }
@@ -135,6 +146,8 @@ namespace Manage_KPI_or_OKR_System.Models.AI
     {
         public bool Success { get; set; } = true;
         public Guid? AgentRunId { get; set; }
+        public Guid? HistorySessionId { get; set; }
+        public Guid? HistoryOperationId { get; set; }
         public bool AdvisoryOnly { get; set; } = true;
         public List<SuggestedCustomerSegment> Segments { get; set; } = new();
         public List<EvidenceRef> Citations { get; set; } = new();

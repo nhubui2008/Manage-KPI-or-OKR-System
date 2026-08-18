@@ -194,25 +194,25 @@ AIController (API endpoints)
   │   ├── .Alerts           → Phát hiện rủi ro
   │   └── .Helpers          → Utility functions
   ├── AIAlertService        → Smart alerts deterministic, reconcile theo source/kỳ
-  └── AIHistoryCleanupService → Background cleanup (30 ngày mặc định)
+  └── AIHistoryCleanupService → Legacy cleanup hai lớp phê duyệt (mặc định tắt)
 ```
 
 ### Tính Năng AI
 
 | Tính năng | Mô tả |
 |---|---|
-| **AI Chat Widget** | Tư vấn KPI/OKR có citation/abstain từ snapshot được cấp quyền và RAG tenant/ACL; không lưu hội thoại/raw response |
-| **Gợi ý KPI** | Bản nháp 3-5 KPI strict JSON có citation; server kiểm tra kỳ/quyền/đơn vị/ngưỡng, chỉ điền form và không tự tạo KPI |
+| **AI Chat Widget** | Tư vấn KPI/OKR có citation/abstain từ snapshot được cấp quyền và RAG tenant/ACL; lưu hội thoại người dùng nhìn thấy trong lịch sử tài khoản, không lưu prompt nội bộ/raw provider response |
+| **Gợi ý KPI** | Bản nháp KPI strict JSON có citation, không có trần số lượng do ứng dụng đặt; server kiểm tra kỳ/quyền/đơn vị/ngưỡng, chỉ điền form và không tự tạo KPI |
 | **Phân tích hiệu suất** | Đánh giá performance theo kỳ, phòng ban, cá nhân |
 | **Phân khúc khách hàng** | Gợi ý customer segments cho Sales |
 | **AI Review** | Hỗ trợ viết nhận xét đánh giá |
 | **Smart Alerts** | Rule engine từ KPI/KR và check-in đã duyệt; gộp trùng và tự hết hạn ngay khi rủi ro được xử lý |
-| **Goal Planning Agent** | Lập đúng ba task plan có assignee/deadline/phụ thuộc/rủi ro/citation; Fit 35/25/20/10/10 do server tính, draft bền vững chỉ được tạo task sau khi người dùng xác nhận |
+| **Goal Planning Agent** | Lập danh sách task có assignee/deadline/phụ thuộc/rủi ro/citation, không có trần số task do agent đặt; Fit 35/25/20/10/10 do server tính, draft bền vững chỉ được tạo task sau khi người dùng xác nhận |
 | **KPI Check-in Evaluator** | Projected score/classification định lượng do server tính; rubric định tính được version hóa, confidence 40/25/20/15 và dưới 0,60 chỉ abstain phần định tính; proposal cũ chuyển `Stale`, con người chỉnh bản nháp và quyết định cuối |
 | **OKR KR Advisor** | Đánh giá candidate KR có nguồn trước khi con người cập nhật giá trị chính thức |
 | **AI operations & RAG admin** | Check-in outbox DeadLetter retry có kiểm tra source/row-version, bucket MinIO riêng tư, upload/version idempotent, ACL user/role/department, signature/ClamAV, MinerU, BGE-M3, Qdrant dense-vector retrieval với typed tenant/ACL filter, ingestion retry, metrics 30 ngày và SQL-authoritative recheck/de-index; còn cần retention policy và staging provider QA |
 | **Gợi ý/refine KR** | Trả bản nháp KR strict JSON có citation; server kiểm tra quyền, scope, source fingerprint, đơn vị và độ chính xác; con người chọn rồi gửi qua luồng tạo KR chuẩn |
-| **Lịch sử AI legacy** | Không còn reader/writer runtime; bảng cũ chỉ được giữ để tương thích migration và tác vụ retention, còn các advisor mới chỉ lưu AgentRun/citation metadata |
+| **Lịch sử AI** | `/AIHistory` lưu input/output người dùng thực sự thấy theo session/entry, hỗ trợ tiếp tục Chat, đổi tên và xóa nội dung; Admin/Audit xem cùng tenant theo quyền hiện hành. `AIGenerationHistories` vẫn là legacy-only cho retention, không được đọc hay ghi mới. |
 
 Tài liệu triển khai: [kiến trúc AI-native](docs/AI_NATIVE_ARCHITECTURE.md), [kế hoạch gốc đã phục hồi](docs/AI_NATIVE_IMPLEMENTATION_PLAN_RECOVERED.md) và [ma trận trạng thái thực hiện](docs/AI_NATIVE_PLAN_STATUS.md).
 
@@ -282,7 +282,7 @@ ConnectionStrings__DefaultConnection=Server=localhost;Database=KPIorOKRSystem;Us
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 DeepSeek__BaseUrl=https://api.deepseek.com/v1/
-DeepSeek__Model=deepseek-v4-pro
+DeepSeek__Model=deepseek-v4-flash
 DeepSeek__ApiKey=your-deepseek-api-key
 
 # Fail-closed mặc định; mở Shadow trước, rồi Pilot theo tenant/phòng ban.
@@ -290,6 +290,9 @@ AiAdvisoryRollout__KillSwitch=true
 AiAdvisoryRollout__CheckInEvaluationMode=Disabled
 # AiAdvisoryRollout__PilotTenantIds__0=1
 # AiAdvisoryRollout__PilotDepartmentIds__0=10
+
+# Chỉ bật sau backup và sau khi tenant đặt AI_HISTORY_CLEANUP_APPROVED=true.
+AiHistoryCleanup__Enabled=false
 
 SmtpSettings__Server=smtp.gmail.com
 SmtpSettings__Port=587
@@ -325,13 +328,14 @@ dotnet run
 
 ```json
 {
-  "DeepSeek": { "BaseUrl": "https://api.deepseek.com", "Model": "deepseek-v4-pro" },
+  "DeepSeek": { "BaseUrl": "https://api.deepseek.com", "Model": "deepseek-v4-flash" },
   "AiAdvisoryRollout": {
     "KillSwitch": true,
     "CheckInEvaluationMode": "Disabled",
     "PilotTenantIds": [],
     "PilotDepartmentIds": []
   },
+  "AiHistoryCleanup": { "Enabled": false },
   "DataProtection": { "KeysPath": "App_Data/DataProtection-Keys" },
   "ForwardedHeaders": {
     "Enabled": true,
@@ -433,7 +437,7 @@ Manage-KPI-or-OKR-System/
 - **AI input controls**: Giới hạn kích thước, timeout/retry hữu hạn, strict JSON và quota theo luồng
 
 ### Background Services
-- **AIHistoryCleanupService**: Chỉ dọn dữ liệu lịch sử AI legacy theo thời hạn lưu; luồng mới không ghi prompt/raw response
+- **AIHistoryCleanupService**: Mặc định không xóa. Chỉ dọn lịch sử AI legacy khi deployment bật cờ, tenant phê duyệt sau backup và retention hợp lệ; lịch sử tài khoản mới không tự xóa và vẫn không ghi prompt/context nội bộ/raw provider response.
 
 ### Workflow Engine
 - **KPI Status**: Bản nháp → Chờ duyệt → Đang thực hiện → Gần đạt → Hoàn thành/Không đạt/Từ chối/Hủy bỏ

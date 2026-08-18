@@ -25,15 +25,13 @@ public sealed class DeepSeekModelClient : IAIModelClient
         request.Validate();
         _options.Validate();
 
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(_options.TimeoutSeconds));
         using var message = new HttpRequestMessage(HttpMethod.Post, new Uri(new Uri(EnsureTrailingSlash(_options.BaseUrl)), "chat/completions"));
         message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
         message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         message.Content = new StringContent(JsonSerializer.Serialize(CreatePayload(request), JsonOptions), Encoding.UTF8, "application/json");
 
-        using var response = await _httpClient.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-        var payload = await response.Content.ReadAsStringAsync(timeout.Token);
+        using var response = await _httpClient.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        var payload = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             throw new HttpRequestException($"DeepSeek returned HTTP {(int)response.StatusCode}.", null, response.StatusCode);
@@ -119,13 +117,37 @@ public sealed class DeepSeekModelClient : IAIModelClient
         return result;
     }
 
-    private object CreatePayload(AIModelRequest request) => new
+    private object CreatePayload(AIModelRequest request)
     {
-        model = _options.Model,
-        messages = request.Messages.Select(message => new { role = message.Role, content = message.Content }),
-        temperature = request.Temperature,
-        tools = request.Tools?.Select(tool => new { type = "function", function = new { name = tool.Name, description = tool.Description, parameters = JsonSerializer.Deserialize<JsonElement>(tool.JsonSchema) } })
-    };
+        var messages = request.Messages
+            .Select(message => new { role = message.Role, content = message.Content });
+        var tools = request.Tools?.Select(tool => new
+        {
+            type = "function",
+            function = new
+            {
+                name = tool.Name,
+                description = tool.Description,
+                parameters = JsonSerializer.Deserialize<JsonElement>(tool.JsonSchema)
+            }
+        });
+
+        var payload = new Dictionary<string, object?>
+        {
+            ["model"] = _options.Model,
+            ["messages"] = messages,
+            ["temperature"] = request.Temperature,
+            ["tools"] = tools
+        };
+        if (request.EnableThinking.HasValue)
+        {
+            payload["thinking"] = new
+            {
+                type = request.EnableThinking.Value ? "enabled" : "disabled"
+            };
+        }
+        return payload;
+    }
 
     private static string EnsureTrailingSlash(string value) => value.EndsWith('/') ? value : value + "/";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);

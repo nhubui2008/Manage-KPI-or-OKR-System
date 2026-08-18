@@ -31,6 +31,7 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
     private readonly IAIEvidenceSecurityFilterBuilder? _securityFilterBuilder;
     private readonly ICheckInAiRolloutGate _rolloutGate;
     private readonly ILogger<CheckInAiEvaluator> _logger;
+    private readonly IAiHistoryService? _history;
 
     public CheckInAiEvaluator(
         MiniERPDbContext context,
@@ -39,7 +40,8 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
         ICheckInAiRolloutGate rolloutGate,
         IAIEvidenceRetriever? evidenceRetriever = null,
         IAiProposalPersistence? proposalPersistence = null,
-        IAIEvidenceSecurityFilterBuilder? securityFilterBuilder = null)
+        IAIEvidenceSecurityFilterBuilder? securityFilterBuilder = null,
+        IAiHistoryService? history = null)
     {
         _context = context;
         _modelClient = modelClient;
@@ -48,6 +50,7 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
         _evidenceRetriever = evidenceRetriever;
         _proposalPersistence = proposalPersistence;
         _securityFilterBuilder = securityFilterBuilder;
+        _history = history;
     }
 
     public async Task<CheckInAiEvaluationResponse> EvaluateAsync(
@@ -209,6 +212,18 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
                     rollout.Mode.ToString());
             }
         }
+
+        var historyHandle = _history == null
+            ? null
+            : await _history.BeginAsync(
+                new AiHistoryBeginRequest(
+                    AiHistoryFeatures.CheckInEvaluation,
+                    $"Đánh giá check-in · #{checkIn.Id}",
+                    new { checkInId = checkIn.Id, kpiId = kpi.Id },
+                    SessionId: request.HistorySessionId,
+                    OperationId: request.HistoryOperationId),
+                user,
+                cancellationToken);
 
         var candidateIsCurrent = IsEvidenceCurrent(
             checkIn.CheckInDate,
@@ -396,6 +411,35 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
                 // exposing database details to the caller.
                 _logger.LogError(exception, "Failed to persist check-in AI proposal metadata.");
             }
+        }
+
+        if (historyHandle != null && _history != null)
+        {
+            await _history.CompleteAsync(
+                historyHandle,
+                new
+                {
+                    checkInId = response.CheckInId,
+                    response.CandidateProjectedPercent,
+                    proposal = new
+                    {
+                        response.Proposal.ProposedStatus,
+                        response.Proposal.ProposedProgressPercent,
+                        response.Proposal.Rationale,
+                        confidence = response.Proposal.Confidence.ToString(),
+                        response.Proposal.RequiresHumanReview
+                    }
+                },
+                response.AgentRunId,
+                response.ProposalLifecycleStatus == "AwaitingHumanReview"
+                    ? AiHistoryStatuses.AwaitingReview
+                    : AiHistoryStatuses.Completed,
+                cancellationToken: cancellationToken);
+            response = response with
+            {
+                HistorySessionId = historyHandle.SessionId,
+                HistoryOperationId = historyHandle.OperationId
+            };
         }
 
         return response;

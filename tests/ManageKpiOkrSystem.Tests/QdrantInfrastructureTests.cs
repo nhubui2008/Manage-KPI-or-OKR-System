@@ -36,6 +36,17 @@ public sealed class QdrantInfrastructureTests
         Assert.Throws<InvalidOperationException>(() => OptionsFor(endpoint).Validate());
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(31)]
+    public void Options_RejectsUnsafeRetrievalTimeout(int timeoutSeconds)
+    {
+        var options = OptionsFor();
+        options.TimeoutSeconds = timeoutSeconds;
+
+        Assert.Throws<InvalidOperationException>(() => options.Validate());
+    }
+
     [Fact]
     public void EvidenceFilter_ProvidesCanonicalTypedPrincipals()
     {
@@ -288,6 +299,29 @@ public sealed class QdrantInfrastructureTests
         Assert.Empty(handler.Requests);
     }
 
+    [Fact]
+    public async Task Retriever_CancelsSlowEmbeddingAtRetrievalBudget()
+    {
+        var tenantContext = new TenantContext();
+        tenantContext.SetRequest(1, 99);
+        await using var context = Context(tenantContext);
+        var options = OptionsFor();
+        options.TimeoutSeconds = 1;
+        var retriever = new QdrantEvidenceRetriever(
+            new HttpClient(new RecordingHandler(_ => throw new InvalidOperationException("network called"))),
+            Microsoft.Extensions.Options.Options.Create(options),
+            new BlockingEmbeddingClient(),
+            tenantContext,
+            context,
+            NullLogger<QdrantEvidenceRetriever>.Instance);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            retriever.RetrieveAsync(new AIRetrievalQuery(
+                "KPI policy",
+                TenantId: 1,
+                AllowedPrincipalIds: new[] { "user:99" })));
+    }
+
     private static QdrantOptions OptionsFor(string endpoint = "http://127.0.0.1:6333") => new()
     {
         Endpoint = endpoint,
@@ -331,6 +365,17 @@ public sealed class QdrantInfrastructureTests
             string text,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<float>>(new float[1024]);
+    }
+
+    private sealed class BlockingEmbeddingClient : IBgeM3EmbeddingClient
+    {
+        public async Task<IReadOnlyList<float>> EmbedAsync(
+            string text,
+            CancellationToken cancellationToken = default)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return Array.Empty<float>();
+        }
     }
 
     private sealed class RecordingHandler(

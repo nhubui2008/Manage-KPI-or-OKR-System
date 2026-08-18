@@ -45,9 +45,25 @@ public sealed class OkrKeyResultSuggestionAdvisorTests
         Assert.Empty(await context.AIGenerationHistories.ToListAsync());
     }
 
+    [Fact]
+    public async Task SuggestAsync_AcceptsMoreThanFiveValidDrafts()
+    {
+        var setup = await CreateScenarioAsync();
+        await using var context = setup.Context;
+        var sourceId = $"okr:{setup.Okr.Id}";
+        var model = new RecordingModelClient(_ =>
+            $$"""{"suggestions":[{{string.Join(',', Enumerable.Range(1, 6).Select(index => Suggestion(sourceId, $"KR {index}")))}}]}""");
+        var advisor = new OkrKeyResultSuggestionAdvisor(context, model, setup.TenantContext);
+
+        var response = await advisor.SuggestAsync(
+            new OkrKeyResultSuggestionRequest { OkrId = setup.Okr.Id },
+            setup.Principal);
+
+        Assert.Equal(6, response.Items.Count);
+    }
+
     [Theory]
     [InlineData("extra-root")]
-    [InlineData("wrong-count")]
     [InlineData("fake-source")]
     [InlineData("unsupported-unit")]
     [InlineData("excess-precision")]
@@ -60,7 +76,6 @@ public sealed class OkrKeyResultSuggestionAdvisorTests
         var invalid = variant switch
         {
             "extra-root" => $$"""{"suggestions":[{{Suggestion(sourceId, "KR A")}},{{Suggestion(sourceId, "KR B")}},{{Suggestion(sourceId, "KR C")}}],"note":"x"}""",
-            "wrong-count" => $$"""{"suggestions":[{{Suggestion(sourceId, "KR A")}}]}""",
             "fake-source" => $$"""{"suggestions":[{{Suggestion("okr:999", "KR A")}},{{Suggestion("okr:999", "KR B")}},{{Suggestion("okr:999", "KR C")}}]}""",
             "unsupported-unit" => $$"""{"suggestions":[{{Suggestion(sourceId, "KR A", "USD")}},{{Suggestion(sourceId, "KR B")}},{{Suggestion(sourceId, "KR C")}}]}""",
             "excess-precision" => $$"""{"suggestions":[{{Suggestion(sourceId, "KR A", target: "1.234")}},{{Suggestion(sourceId, "KR B")}},{{Suggestion(sourceId, "KR C")}}]}""",

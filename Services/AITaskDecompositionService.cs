@@ -44,17 +44,20 @@ namespace Manage_KPI_or_OKR_System.Services
         private readonly IWorkItemCommandValidator _commandValidator;
         private readonly ICheckInAiEvaluationQueue? _aiEvaluationQueue;
         private readonly ITenantContext? _tenantContext;
+        private readonly IAiHistoryService? _history;
 
         public AITaskDecompositionService(
             MiniERPDbContext context,
             IWorkItemCommandValidator? commandValidator = null,
             ICheckInAiEvaluationQueue? aiEvaluationQueue = null,
-            ITenantContext? tenantContext = null)
+            ITenantContext? tenantContext = null,
+            IAiHistoryService? history = null)
         {
             _context = context;
             _commandValidator = commandValidator ?? new WorkItemCommandValidator(context);
             _aiEvaluationQueue = aiEvaluationQueue;
             _tenantContext = tenantContext;
+            _history = history;
         }
 
         public async Task<ConfirmDecomposeResponse> ConfirmDecomposeAsync(
@@ -64,13 +67,12 @@ namespace Manage_KPI_or_OKR_System.Services
         {
             var warnings = new List<string>();
             if (request.Tasks == null ||
-                request.Tasks.Count > GoalPlanningDraftResponse.RequiredTaskCount ||
                 request.Tasks.Any(task =>
                     task.Title?.Length > 220 ||
                     task.Description?.Length > 2_000))
             {
                 throw new AITaskConfirmationValidationException(
-                    "Mỗi bản nháp chỉ được xác nhận tối đa 3 task; tên và mô tả phải nằm trong giới hạn cho phép.");
+                    "Tên và mô tả task phải nằm trong giới hạn lưu trữ cho phép.");
             }
             var validTasks = request.Tasks
                 .Where(t => t.IsSelected)
@@ -321,6 +323,22 @@ namespace Manage_KPI_or_OKR_System.Services
                     "WorkItems",
                     planningProof?.Action.DraftText,
                     BuildAppliedTaskAudit(project.Id, validTasks));
+                if (planningProof != null && _history != null)
+                {
+                    await _history.AppendDecisionAsync(
+                        planningProof.Run.Id,
+                        new
+                        {
+                            decision = "AppliedByHuman",
+                            workProjectId = project.Id,
+                            tasksCreated = validTasks.Count
+                        },
+                        AiHistoryStatuses.Applied,
+                        user,
+                        request.IdempotencyKey,
+                        saveChanges: false,
+                        cancellationToken: cancellationToken);
+                }
                 await _context.SaveChangesAsync(cancellationToken);
                 await RecalculateProjectProgressAsync(project.Id, cancellationToken);
                 await SyncCreatedTaskCheckInsAsync(createdTasks, user, cancellationToken);
@@ -454,6 +472,17 @@ namespace Manage_KPI_or_OKR_System.Services
                     "AgentDraftActions",
                     proof.Action.DraftText,
                     JsonSerializer.Serialize(new { proof.Action.Id, Status = "RejectedByHuman" }));
+                if (_history != null)
+                {
+                    await _history.AppendDecisionAsync(
+                        proof.Run.Id,
+                        new { decision = "RejectedByHuman" },
+                        AiHistoryStatuses.Rejected,
+                        user,
+                        request.IdempotencyKey,
+                        saveChanges: false,
+                        cancellationToken: cancellationToken);
+                }
                 await _context.SaveChangesAsync(cancellationToken);
                 if (transaction != null)
                 {

@@ -399,7 +399,9 @@ public sealed class CheckInAiEvaluationWorker : BackgroundService
             try
             {
                 response = await evaluator.EvaluateAsync(
-                    new CheckInAiEvaluationRequest(workItem.CheckInId),
+                    new CheckInAiEvaluationRequest(
+                        workItem.CheckInId,
+                        HistoryOperationId: workItem.Id),
                     principal,
                     cancellationToken);
             }

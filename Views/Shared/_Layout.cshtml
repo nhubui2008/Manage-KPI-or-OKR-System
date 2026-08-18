@@ -466,6 +466,13 @@
                                 <small>Thông tin, vai trò và hồ sơ làm việc</small>
                             </span>
                         </a>
+                        <a href="/AIHistory" class="settings-panel__item">
+                            <span class="settings-panel__icon"><i class="bi bi-clock-history"></i></span>
+                            <span>
+                                <strong>Lịch sử AI</strong>
+                                <small>Hội thoại và các lần hỗ trợ AI của tài khoản</small>
+                            </span>
+                        </a>
                         <a href="/Auth/ChangePassword" class="settings-panel__item">
                             <span class="settings-panel__icon"><i class="bi bi-shield-lock"></i></span>
                             <span>
@@ -725,6 +732,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (isInternalPage)
+    {
+        <script src="~/js/management-ui.js" asp-append-version="true"></script>
+    }
 
     @if (TempData["ToastErrorMessage"] != null || TempData["ToastSuccessMessage"] != null || TempData["ToastWarningMessage"] != null || TempData["ToastInfoMessage"] != null || TempData["SuccessMessage"] != null || TempData["ErrorMessage"] != null)
     {

@@ -209,7 +209,7 @@ public sealed class AIPlanningAndCheckInEvaluatorTests
         var service = new GoalPlanningDraftService(context);
         var draft = await service.CreateDraftAsync(new GoalPlanningDraftRequest(KpiId: kpi.Id), AdminPrincipal());
 
-        Assert.Equal(GoalPlanningDraftResponse.RequiredTaskCount, draft.Tasks.Count);
+        Assert.Equal(3, draft.Tasks.Count);
         Assert.All(draft.Tasks, candidate =>
         {
             Assert.NotEmpty(candidate.Evidence);
@@ -365,6 +365,56 @@ public sealed class AIPlanningAndCheckInEvaluatorTests
                 Assert.Equal(("KPI", kpi.Id.ToString()), (evidence.SourceType, evidence.SourceId));
             });
         Assert.False(await context.WorkItems.AnyAsync());
+    }
+
+    [Fact]
+    public async Task GoalPlanningAgent_RagUnavailable_ContinuesWithAuthorizedSourceEvidence()
+    {
+        await using var context = CreateContext();
+        var kpi = new KPI { KPIName = "Retention", IsActive = true };
+        context.KPIs.Add(kpi);
+        await context.SaveChangesAsync();
+        context.KPIDetails.Add(new KPIDetail { KPIId = kpi.Id, TargetValue = 95m });
+        await context.SaveChangesAsync();
+
+        using var arguments = JsonDocument.Parse("""{"query":"retention evidence","maxResults":2}""");
+        var sourceId = $"KPI:{kpi.Id}";
+        var finalContent = JsonSerializer.Serialize(new
+        {
+            tasks = new[]
+            {
+                new { title = "Validate cohort", description = "Validate the measurable retention cohort.", sourceIds = new[] { sourceId } },
+                new { title = "Run intervention", description = "Run one measurable retention intervention.", sourceIds = new[] { sourceId } },
+                new { title = "Review outcome", description = "Review the next official check-in.", sourceIds = new[] { sourceId } },
+                new { title = "Share learning", description = "Share the grounded outcome with the authorized team.", sourceIds = new[] { sourceId } }
+            }
+        });
+        var model = new SequencedModelClient(
+            new AIModelResponse(null, new[]
+            {
+                new AIModelToolCall("call-1", "search_evidence", arguments.RootElement.Clone())
+            }),
+            new AIModelResponse(finalContent, Array.Empty<AIModelToolCall>()));
+        var service = new GoalPlanningDraftService(
+            context,
+            model,
+            new ThrowingEvidenceRetriever(),
+            new EvidenceSecurityFilterBuilder(),
+            NullLogger<GoalPlanningDraftService>.Instance);
+
+        var draft = await service.CreateDraftAsync(
+            new GoalPlanningDraftRequest(KpiId: kpi.Id),
+            AdminPrincipal());
+
+        Assert.Equal(2, model.CallCount);
+        Assert.All(model.Requests, request => Assert.False(request.EnableThinking));
+        Assert.Equal("AgentWithoutRag", draft.GenerationMode);
+        Assert.Equal(4, draft.Tasks.Count);
+        Assert.All(draft.Tasks, task =>
+        {
+            var item = Assert.Single(task.Evidence);
+            Assert.Equal(sourceId, $"{item.SourceType}:{item.SourceId}");
+        });
     }
 
     [Fact]
@@ -992,6 +1042,14 @@ public sealed class AIPlanningAndCheckInEvaluatorTests
             };
             return Task.FromResult(result);
         }
+    }
+
+    private sealed class ThrowingEvidenceRetriever : IAIEvidenceRetriever
+    {
+        public Task<IReadOnlyList<AIRetrievalResult>> RetrieveAsync(
+            AIRetrievalQuery query,
+            CancellationToken cancellationToken = default) =>
+            throw new HttpRequestException("Embedding provider unavailable.");
     }
 
     private sealed class NeverCalledEmbeddingClient : IBgeM3EmbeddingClient

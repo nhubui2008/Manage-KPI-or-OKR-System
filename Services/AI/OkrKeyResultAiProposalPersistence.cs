@@ -243,7 +243,7 @@ public sealed class OkrKeyResultAiProposalPersistence : IOkrKeyResultAiProposalP
                 CreatedAtUtc = DateTimeOffset.UtcNow
             };
 
-            var citations = response.Proposal.Citations.Take(20).ToList();
+            var citations = response.Proposal.Citations.ToList();
             foreach (var citation in citations)
             {
                 citation.Validate();
@@ -334,7 +334,6 @@ public sealed class OkrKeyResultAiProposalPersistence : IOkrKeyResultAiProposalP
             .AsNoTracking()
             .Where(item => item.AiEvaluationProposalId == proposalId)
             .OrderBy(item => item.Id)
-            .Take(20)
             .Select(item => new EvidenceRef(
                 item.SourceType,
                 item.SourceId,

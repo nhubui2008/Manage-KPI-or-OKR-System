@@ -1,5 +1,6 @@
 using System.Data;
 using System.Reflection;
+using System.Security.Claims;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Models.AI;
@@ -19,7 +20,8 @@ namespace ManageKpiOkrSystem.Tests;
 public sealed class TenantRowLevelSecuritySqlServerTests
 {
     private const string CanonicalMigration = "20260810095927_CanonicalizeOkrProjectRelationship";
-    private const string LatestMigration = "20260810214630_AddVersionedCheckInEvaluationRubrics";
+    private const string PreviousMigration = "20260810214630_AddVersionedCheckInEvaluationRubrics";
+    private const string LatestMigration = "20260815044445_AddAccountAiHistory";
 
     [Fact]
     public async Task Rls_FiltersRawAndEfAccess_BlocksCrossTenantWrites_AndResetsPooledSession()
@@ -191,6 +193,203 @@ public sealed class TenantRowLevelSecuritySqlServerTests
                 expectedProtectedTables.Length,
                 await ScalarAsync<int>(migrationDb,
                     "SELECT COUNT(*) FROM sys.security_policies WHERE schema_id = SCHEMA_ID(N'TenantSecurity') AND is_enabled = 1;"));
+        }
+        finally
+        {
+            await migrationDb.Database.CloseConnectionAsync();
+            await migrationDb.Database.EnsureDeletedAsync();
+            SqlConnection.ClearAllPools();
+        }
+    }
+
+    [Fact]
+    public async Task AiHistoryMigration_BackfillsAgentRuns_AndRestoresAgentRunRls()
+    {
+        var baseConnection = Environment.GetEnvironmentVariable("KPI_SQLSERVER_TEST_CONNECTION");
+        if (string.IsNullOrWhiteSpace(baseConnection))
+        {
+            return;
+        }
+
+        var builder = new SqlConnectionStringBuilder(baseConnection)
+        {
+            InitialCatalog = $"KpiAiHistoryMigration_{Guid.NewGuid():N}",
+            MaxPoolSize = 2,
+            MinPoolSize = 0
+        };
+        var connectionString = builder.ConnectionString;
+        await using var migrationDb = CreateContext(connectionString, new TenantContext());
+        try
+        {
+            var migrator = migrationDb.Database.GetService<IMigrator>();
+            await migrator.MigrateAsync(PreviousMigration);
+            var tenantOneId = await migrationDb.Tenants
+                .OrderBy(tenant => tenant.Id)
+                .Select(tenant => tenant.Id)
+                .FirstAsync();
+            var tenantTwo = new Tenant
+            {
+                Name = "AI history migration tenant two",
+                Code = $"ai-history-two-{Guid.NewGuid():N}",
+                IsActive = true
+            };
+            var systemUser = new SystemUser
+            {
+                Username = $"ai-history-migration-{Guid.NewGuid():N}",
+                Email = $"ai-history-migration-{Guid.NewGuid():N}@example.test",
+                IsActive = true
+            };
+            var membershipRole = new Role
+            {
+                RoleName = $"AIHist-{Guid.NewGuid():N}",
+                IsActive = true
+            };
+            migrationDb.AddRange(tenantTwo, systemUser, membershipRole);
+            await migrationDb.SaveChangesAsync();
+            migrationDb.TenantMemberships.AddRange(
+                new TenantMembership
+                {
+                    TenantId = tenantOneId,
+                    SystemUserId = systemUser.Id,
+                    RoleId = membershipRole.Id,
+                    IsActive = true
+                },
+                new TenantMembership
+                {
+                    TenantId = tenantTwo.Id,
+                    SystemUserId = systemUser.Id,
+                    RoleId = membershipRole.Id,
+                    IsActive = true
+                });
+            await migrationDb.SaveChangesAsync();
+
+            var tenantOneRunIds = new[] { Guid.NewGuid(), Guid.NewGuid() };
+            var tenantTwoRunIds = new[] { Guid.NewGuid() };
+            await SeedAiHistoryMigrationSourceAsync(
+                connectionString,
+                tenantOneId,
+                systemUser.Id,
+                tenantOneRunIds,
+                legacyMarker: "tenant-one");
+            await SeedAiHistoryMigrationSourceAsync(
+                connectionString,
+                tenantTwo.Id,
+                systemUser.Id,
+                tenantTwoRunIds,
+                legacyMarker: "tenant-two");
+
+            await migrator.MigrateAsync(LatestMigration);
+
+            Assert.Equal(
+                3,
+                await ScalarAsync<int>(migrationDb,
+                    """
+                    SELECT COUNT(*)
+                    FROM (
+                        SELECT policyInfo.[name]
+                        FROM sys.security_policies AS policyInfo
+                        INNER JOIN sys.security_predicates AS predicateInfo
+                            ON predicateInfo.[object_id] = policyInfo.[object_id]
+                        WHERE policyInfo.[schema_id] = SCHEMA_ID(N'TenantSecurity')
+                          AND policyInfo.[is_enabled] = 1
+                          AND (
+                              (policyInfo.[name] = N'TenantPolicy_AgentRuns'
+                               AND predicateInfo.[target_object_id] = OBJECT_ID(N'dbo.AgentRuns'))
+                              OR (policyInfo.[name] = N'TenantPolicy_AiHistorySessions'
+                                  AND predicateInfo.[target_object_id] = OBJECT_ID(N'dbo.AiHistorySessions'))
+                              OR (policyInfo.[name] = N'TenantPolicy_AiHistoryEntries'
+                                  AND predicateInfo.[target_object_id] = OBJECT_ID(N'dbo.AiHistoryEntries')))
+                        GROUP BY policyInfo.[name]
+                        HAVING COUNT(*) = 3
+                           AND SUM(CASE WHEN predicateInfo.[predicate_type_desc] = N'FILTER' THEN 1 ELSE 0 END) = 1
+                           AND SUM(CASE WHEN predicateInfo.[predicate_type_desc] = N'BLOCK'
+                                         AND predicateInfo.[operation_desc] = N'AFTER INSERT' THEN 1 ELSE 0 END) = 1
+                           AND SUM(CASE WHEN predicateInfo.[predicate_type_desc] = N'BLOCK'
+                                         AND predicateInfo.[operation_desc] = N'AFTER UPDATE' THEN 1 ELSE 0 END) = 1
+                    ) AS validPolicies;
+                    """));
+
+            await AssertAiHistoryMigrationTenantAsync(
+                connectionString,
+                tenantOneId,
+                tenantOneRunIds,
+                legacyMarker: "tenant-one");
+            await AssertAiHistoryMigrationTenantAsync(
+                connectionString,
+                tenantTwo.Id,
+                tenantTwoRunIds,
+                legacyMarker: "tenant-two");
+
+            var pageTenantContext = new TenantContext();
+            pageTenantContext.SetBackgroundTenant(tenantOneId, systemUser.Id);
+            await using (var pageDb = CreateContext(connectionString, pageTenantContext))
+            {
+                var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, systemUser.Id.ToString()),
+                    new Claim("SystemUserId", systemUser.Id.ToString()),
+                    new Claim(ClaimTypes.Role, "Admin")
+                }, "Test"));
+                var page = await new AiHistoryService(pageDb, pageTenantContext).GetPageAsync(
+                    principal,
+                    search: null,
+                    feature: null,
+                    status: null,
+                    fromDate: null,
+                    toDate: null,
+                    ownerSystemUserId: null,
+                    pageNumber: 1);
+                Assert.Equal(tenantOneRunIds.Length, page.Items.Count);
+                var ownerOption = Assert.Single(page.OwnerOptions);
+                Assert.Equal(systemUser.Id, ownerOption.Id);
+                Assert.Equal(systemUser.Username, ownerOption.Name);
+            }
+
+            var tenantOneContext = new TenantContext();
+            tenantOneContext.SetBackgroundTenant(tenantOneId, systemUser.Id);
+            await using (var tenantOneDb = CreateContext(connectionString, tenantOneContext))
+            {
+                Assert.Equal(
+                    tenantOneRunIds.Length,
+                    await tenantOneDb.AiHistorySessions.IgnoreQueryFilters().CountAsync());
+
+                var now = DateTimeOffset.UtcNow;
+                var blockedInsert = await Assert.ThrowsAsync<SqlException>(() =>
+                    tenantOneDb.Database.ExecuteSqlInterpolatedAsync(
+                        $"""
+                        INSERT INTO dbo.AiHistorySessions
+                            (Id, TenantId, OwnerSystemUserId, FeatureKey, Title, Status, CreatedAtUtc, UpdatedAtUtc)
+                        VALUES
+                            ({Guid.NewGuid()}, {tenantTwo.Id}, {systemUser.Id}, {AiHistoryFeatures.Chat},
+                             {"Blocked cross-tenant history"}, {AiHistoryStatuses.Pending}, {now}, {now});
+                        """));
+                Assert.Equal(33504, blockedInsert.Number);
+            }
+
+            await migrator.MigrateAsync(PreviousMigration);
+            Assert.Equal(
+                0,
+                await ScalarAsync<int>(migrationDb,
+                    """
+                    SELECT COUNT(*)
+                    FROM sys.security_policies
+                    WHERE [schema_id] = SCHEMA_ID(N'TenantSecurity')
+                      AND [name] IN (
+                          N'TenantPolicy_AiHistorySessions',
+                          N'TenantPolicy_AiHistoryEntries');
+                    """));
+
+            await migrator.MigrateAsync(LatestMigration);
+            await AssertAiHistoryMigrationTenantAsync(
+                connectionString,
+                tenantOneId,
+                tenantOneRunIds,
+                legacyMarker: "tenant-one");
+            await AssertAiHistoryMigrationTenantAsync(
+                connectionString,
+                tenantTwo.Id,
+                tenantTwoRunIds,
+                legacyMarker: "tenant-two");
         }
         finally
         {
@@ -615,6 +814,84 @@ public sealed class TenantRowLevelSecuritySqlServerTests
             await migrationDb.Database.EnsureDeletedAsync();
             SqlConnection.ClearAllPools();
         }
+    }
+
+    private static async Task SeedAiHistoryMigrationSourceAsync(
+        string connectionString,
+        int tenantId,
+        int systemUserId,
+        IReadOnlyList<Guid> runIds,
+        string legacyMarker)
+    {
+        var tenantContext = new TenantContext();
+        tenantContext.SetBackgroundTenant(tenantId, systemUserId);
+        await using var context = CreateContext(connectionString, tenantContext);
+        var now = DateTimeOffset.UtcNow.AddMinutes(-runIds.Count);
+
+        for (var index = 0; index < runIds.Count; index++)
+        {
+            var runId = runIds[index];
+            context.AgentRuns.Add(new AgentRunRecord
+            {
+                Id = runId,
+                TenantId = tenantId,
+                RunType = index % 2 == 0 ? "chat-advisory" : "performance-analysis-advisory",
+                CorrelationId = $"migration-backfill-{runId:N}",
+                State = index % 2 == 0
+                    ? nameof(AgentRunState.Completed)
+                    : nameof(AgentRunState.Failed),
+                RequestedBySystemUserId = index == 0 ? systemUserId : null,
+                CreatedAtUtc = now.AddMinutes(index),
+                UpdatedAtUtc = now.AddMinutes(index)
+            });
+        }
+
+        context.AIGenerationHistories.Add(new AIGenerationHistory
+        {
+            FeatureName = $"legacy-{legacyMarker}",
+            Prompt = $"legacy-prompt-{legacyMarker}",
+            Response = $"legacy-response-{legacyMarker}",
+            SystemUserId = systemUserId,
+            CreatedAt = now.UtcDateTime
+        });
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task AssertAiHistoryMigrationTenantAsync(
+        string connectionString,
+        int tenantId,
+        IReadOnlyList<Guid> expectedRunIds,
+        string legacyMarker)
+    {
+        var tenantContext = new TenantContext();
+        tenantContext.SetBackgroundTenant(tenantId);
+        await using var context = CreateContext(connectionString, tenantContext);
+
+        var sessions = await context.AiHistorySessions
+            .OrderBy(session => session.CreatedAtUtc)
+            .ToArrayAsync();
+        var entries = await context.AiHistoryEntries
+            .OrderBy(entry => entry.CreatedAtUtc)
+            .ToArrayAsync();
+        Assert.Equal(expectedRunIds.Count, sessions.Length);
+        Assert.Equal(expectedRunIds.Count, entries.Length);
+        Assert.Equal(
+            expectedRunIds.OrderBy(id => id),
+            entries.Select(entry => entry.AgentRunId!.Value).OrderBy(id => id));
+        Assert.Equal(entries.Length, entries.Select(entry => entry.SessionId).Distinct().Count());
+        Assert.All(entries, entry =>
+        {
+            Assert.Equal(tenantId, entry.TenantId);
+            Assert.Equal(entry.AgentRunId, entry.OperationId);
+            Assert.Equal(AiHistoryEntryKinds.LegacyMetadata, entry.EntryKind);
+            Assert.Equal(1, entry.Sequence);
+            Assert.Null(entry.PayloadJson);
+        });
+
+        var legacy = await context.AIGenerationHistories.SingleAsync();
+        Assert.Equal($"legacy-{legacyMarker}", legacy.FeatureName);
+        Assert.Equal($"legacy-prompt-{legacyMarker}", legacy.Prompt);
+        Assert.Equal($"legacy-response-{legacyMarker}", legacy.Response);
     }
 
     private static MiniERPDbContext CreateContext(string connectionString, ITenantContext tenantContext) =>

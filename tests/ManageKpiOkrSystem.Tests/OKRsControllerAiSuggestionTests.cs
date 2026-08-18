@@ -21,7 +21,7 @@ public sealed class OKRsControllerAiSuggestionTests
         var advisor = new CapturingAdvisor();
         var controller = CreateController(context, advisor);
 
-        var result = await controller.SuggestKeyResultsAPI(42, CancellationToken.None);
+        var result = await controller.SuggestKeyResultsAPI(42, cancellationToken: CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var response = Assert.IsType<OkrKeyResultSuggestionResponse>(ok.Value);
@@ -68,7 +68,7 @@ public sealed class OKRsControllerAiSuggestionTests
         await using var context = CreateContext();
         var controller = CreateController(context, new ThrowingAdvisor(exception));
 
-        var result = await controller.SuggestKeyResultsAPI(1, CancellationToken.None);
+        var result = await controller.SuggestKeyResultsAPI(1, cancellationToken: CancellationToken.None);
 
         var status = Assert.IsAssignableFrom<ObjectResult>(result);
         Assert.Equal(expectedStatus, status.StatusCode);

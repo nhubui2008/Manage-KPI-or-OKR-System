@@ -43,7 +43,7 @@ Hệ thống hiện có chín luồng AI-native hoạt động theo nguyên tắ
    - Gọi model qua `IAIModelClient`, bắt buộc strict JSON, nguồn do server cấp và cho phép trả danh sách rỗng khi thiếu bằng chứng.
    - Chỉ đưa ra phân khúc, khoảng trống dữ liệu và hành động tham khảo. Contract và UI không còn `PotentialScore`, xếp hạng hoặc xác suất do LLM tự khai.
    - Sau model call, server dựng lại snapshot trong transaction `Serializable`; dữ liệu hoặc phạm vi đổi thì trả conflict và không dùng đề xuất cũ.
-   - Chỉ lưu `AgentRun` và citation metadata/hash; không lưu prompt, authorized context, nội dung đề xuất hay raw provider response. Luồng này không có thao tác ghi vào bảng nghiệp vụ.
+   - Lưu bản request/result mà người dùng thực sự thấy trong `AiHistorySession`/`AiHistoryEntry`; không lưu prompt, authorized context/RAG excerpt hay raw provider response. Luồng này không có thao tác ghi vào bảng nghiệp vụ.
 
 6. **Performance Analysis Advisor**
    - Chỉ tổng hợp `CheckInDetail` thuộc check-in `Approved` trong đúng tenant và phạm vi nhân viên/phòng ban; nếu không có tiến độ đo lường thì server abstain trước khi gọi model.
@@ -53,14 +53,14 @@ Hệ thống hiện có chín luồng AI-native hoạt động theo nguyên tắ
 
 7. **KPI Suggestion Advisor**
    - Chỉ cho role được phép tạo KPI chọn kỳ đang mở, nhân viên/phòng ban và OKR/Key Result trong phạm vi được cấp quyền; context gửi model không chứa tên, mã, email hoặc số điện thoại nhân viên.
-   - Gọi qua `IAIModelClient` và bắt buộc strict JSON gồm 3–5 bản nháp hoặc danh sách rỗng để abstain. Tên, đơn vị, KPI thuận/nghịch và quan hệ target/pass/fail được server kiểm tra theo cùng quy tắc của form tạo KPI.
+   - Gọi qua `IAIModelClient` và bắt buộc strict JSON gồm danh sách bản nháp hoặc danh sách rỗng để abstain. Không có trần token, thời gian chờ, số lượng hay độ dài transient do ứng dụng đặt; tên, đơn vị, KPI thuận/nghịch và quan hệ target/pass/fail vẫn được server kiểm tra theo cùng quy tắc của form tạo KPI.
    - Mỗi bản nháp phải dùng source ID do server cấp và luôn viện dẫn snapshot lập KPI được cấp quyền. Sau model call, server dựng lại snapshot trong transaction `Serializable`; source đổi thì trả conflict và không lưu metadata cũ.
    - Chỉ lưu `AgentRun` và citation metadata/hash; không lưu prompt, context, bản nháp hoặc raw provider response. Nút áp dụng chỉ điền form cùng phạm vi/kỳ/OKR đã chọn; KPI chính thức vẫn phải qua POST `KPIs/Create` và toàn bộ validator/quyền nghiệp vụ.
    - Endpoint/UI `RefineKpiSuggestions` đã bị loại bỏ vì chỉ chỉnh dữ liệu do browser gửi lại mà không có source-version đáng tin cậy.
 
 8. **Chat Advisor**
    - `AIController.Chat` không còn gọi Gemini trực tiếp. Server xác thực membership/role tenant hiện hành, dựng lại principal chuẩn từ role và assignment đang hoạt động, từ chối kỳ đánh giá giả hoặc ngoài tenant rồi mới tạo snapshot KPI/OKR.
-   - Câu hỏi giới hạn 1.000 ký tự; lịch sử chỉ nhận tối đa tám message `user`/`assistant`, mỗi message tối đa 1.000 ký tự và tổng tối đa 4.000 ký tự. Lịch sử, câu hỏi, context, RAG excerpt và raw provider response đều là dữ liệu tạm thời, không được lưu.
+   - Câu hỏi, lịch sử và context không có trần thời gian, token, số message hay độ dài transient do ứng dụng đặt. Lịch sử, câu hỏi, context, RAG excerpt và raw provider response đều là dữ liệu tạm thời, không được lưu.
    - Snapshot chỉ dùng check-in `Approved`; RAG tối đa ba tài liệu dùng filter tenant/ACL do server sinh. Mỗi kết quả được đối chiếu lại với document/version/chunk active trong SQL và ACL hiện hành trước khi gửi model. Nếu role/phòng ban đổi trong lúc retrieval thì dừng trước model.
    - Model phải trả strict JSON đúng `answer` và `sourceIds`, chỉ dùng source ID do server cấp; khi thiếu bằng chứng phải trả answer rỗng. Sau model call, server dựng lại snapshot và kiểm tra lại membership, ACL, version/fingerprint trong transaction `Serializable`; nguồn stale hoặc bị thu hồi trả conflict.
    - Chỉ lưu `AgentRun` và citation metadata; không lưu nội dung hội thoại/câu trả lời. Widget escape Markdown giới hạn, hiển thị nguồn bằng DOM text, không gửi lặp câu hỏi hiện tại và luôn ghi rõ kết quả chỉ mang tính tư vấn.
@@ -143,8 +143,9 @@ Dùng secret store hoặc biến môi trường; `.env` chỉ dành cho local. M
 4. Cấu hình DeepSeek, BGE-M3, Qdrant, MinerU, MinIO, exact `KnowledgeStorage:AllowedReadOrigins` và pin `DocumentIngestion:PipelineVersion` qua secret store/biến môi trường.
 5. Triển khai ClamAV và cấu hình `MalwareScanner`; lỗi cấu hình phải làm job retry/dead-letter, không được bypass quét.
 6. Kiểm thử tenant A không thể truy xuất citation của tenant B và kiểm thử de-index trên staging trước khi bật ingestion.
+7. Giữ `AiHistoryCleanup:Enabled=false`. Chỉ bật tác vụ xóa lịch sử AI legacy sau khi có backup đã kiểm tra, tenant đặt `AI_HISTORY_CLEANUP_APPROVED=true` và `AI_HISTORY_RETENTION_DAYS` hợp lệ; thiếu một cổng thì runtime không xóa.
 
-Queue đánh giá check-in dùng SQL outbox tenant-scoped và commit cùng transaction tạo/cập nhật check-in. Gate chặn enqueue khi feature dừng/ngoài pilot; worker lọc tenant/phòng ban trước claim và kiểm tra lại trước model call. Nếu cấu hình hoặc assignment đổi trong khoảng claim, lease được trả về `Pending` mà không tiêu hao attempt để có thể tiếp tục an toàn khi scope được mở lại. Worker claim bằng lease có điều kiện, phục hồi lease hết hạn sau restart, retry có exponential backoff và chuyển `DeadLetter` sau giới hạn. Job được idempotent theo `(TenantId, CheckInId, SourceVersion)`; membership/role luôn được nạp lại trước khi chạy. Outbox chỉ lưu metadata vận chuyển và mã lỗi giới hạn, không lưu prompt, ghi chú hay exception text. `AgentRun` vẫn bắt đầu khi proposal được tạo thành công và tiếp tục là lifecycle review của con người, không bị dùng làm transport queue.
+Queue đánh giá check-in dùng SQL outbox tenant-scoped và commit cùng transaction tạo/cập nhật check-in. Gate chặn enqueue khi feature dừng/ngoài pilot; worker lọc tenant/phòng ban trước claim và kiểm tra lại trước model call. Nếu cấu hình hoặc assignment đổi trong khoảng claim, lease được trả về `Pending` mà không tiêu hao attempt để có thể tiếp tục an toàn khi scope được mở lại. Worker claim bằng lease có điều kiện, phục hồi lease hết hạn sau restart, retry có exponential backoff và chuyển `DeadLetter` sau giới hạn. Job được idempotent theo `(TenantId, CheckInId, SourceVersion)`; membership/role luôn được nạp lại trước khi chạy. Outbox chỉ lưu metadata vận chuyển và mã lỗi giới hạn, không lưu prompt, ghi chú hay exception text. Lịch sử tài khoản chỉ lưu request/result đã hiển thị và liên kết proposal/run khi có; không dùng outbox như kho nội dung. `AgentRun` vẫn bắt đầu khi proposal được tạo thành công và tiếp tục là lifecycle review của con người, không bị dùng làm transport queue.
 
 SQL Server RLS là lớp phòng vệ sau global query filter: 57 bảng nghiệp vụ tenant-scoped có filter predicate cùng block predicate cho `AFTER INSERT` và `AFTER UPDATE`. Mỗi logical SQL connection được gắn `TenantId` và `SystemUserId` read-only qua `SESSION_CONTEXT`; unresolved context dùng sentinel fail-closed. Không có runtime bypass. Hai worker nền đọc danh sách tenant hoạt động từ bảng platform `Tenants`, sau đó claim từng hàng trong tenant context riêng và luân phiên tenant để tránh bỏ đói hàng đợi.
 

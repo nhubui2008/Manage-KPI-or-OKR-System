@@ -8,7 +8,9 @@ public sealed record GoalPlanningDraftRequest(
     int? OkrId = null,
     int? OkrKeyResultId = null,
     int? WorkProjectId = null,
-    string? AdditionalContext = null)
+    string? AdditionalContext = null,
+    Guid? HistorySessionId = null,
+    Guid? HistoryOperationId = null)
 {
     public int SelectedSourceCount => new[] { KpiId, OkrId, OkrKeyResultId, WorkProjectId }.Count(id => id.HasValue);
 
@@ -17,10 +19,6 @@ public sealed record GoalPlanningDraftRequest(
         if (SelectedSourceCount != 1 || new[] { KpiId, OkrId, OkrKeyResultId, WorkProjectId }.Any(id => id is <= 0))
         {
             throw new ArgumentException("Select exactly one valid KPI, OKR, key result, or project.");
-        }
-        if (AdditionalContext?.Length > 1_000)
-        {
-            throw new ArgumentException("Additional planning context is too large.");
         }
     }
 }
@@ -115,7 +113,7 @@ public sealed record GoalPlanningDraftResponse(
     int? DraftActionId = null,
     string? AgentRunRowVersion = null,
     string? DraftRowVersion = null,
-    string? ApprovalToken = null)
-{
-    public const int RequiredTaskCount = 3;
-}
+    string? ApprovalToken = null,
+    Guid? HistorySessionId = null,
+    Guid? HistoryOperationId = null)
+;

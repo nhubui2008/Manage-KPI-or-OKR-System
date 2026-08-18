@@ -34,7 +34,6 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
     internal const string SourceEntityType = EvaluationReviewDraftLifecycle.SourceEntityType;
     internal const string ActionType = EvaluationReviewDraftLifecycle.ActionType;
     internal const string AwaitingHumanReview = EvaluationReviewDraftLifecycle.AwaitingHumanReview;
-    private const int MaximumContextLength = 24_000;
     private const int MaximumDraftLength = 2_000;
     private readonly MiniERPDbContext _context;
     private readonly IAIDataService _dataService;
@@ -43,6 +42,7 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
     private readonly IAIEvidenceRetriever? _evidenceRetriever;
     private readonly IAIEvidenceSecurityFilterBuilder? _securityFilterBuilder;
     private readonly ILogger<EvaluationReviewDraftAdvisor> _logger;
+    private readonly IAiHistoryService? _history;
 
     public EvaluationReviewDraftAdvisor(
         MiniERPDbContext context,
@@ -51,7 +51,8 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
         ITenantContext tenantContext,
         ILogger<EvaluationReviewDraftAdvisor> logger,
         IAIEvidenceRetriever? evidenceRetriever = null,
-        IAIEvidenceSecurityFilterBuilder? securityFilterBuilder = null)
+        IAIEvidenceSecurityFilterBuilder? securityFilterBuilder = null,
+        IAiHistoryService? history = null)
     {
         _context = context;
         _dataService = dataService;
@@ -60,6 +61,7 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
         _logger = logger;
         _evidenceRetriever = evidenceRetriever;
         _securityFilterBuilder = securityFilterBuilder;
+        _history = history;
     }
 
     public async Task<EvaluationReviewDraftResponse> CreateAsync(
@@ -102,13 +104,54 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
             return existing;
         }
 
-        var evidence = new List<EvidenceRef>
+        AiHistoryOperationHandle? historyHandle = null;
+        try
         {
-            CreatePrimaryCitation(source)
-        };
-        var excerpts = await RetrieveEvidenceAsync(source, user, evidence, cancellationToken);
-        var generated = await GenerateDraftAsync(source, evidence, excerpts, cancellationToken);
-        return await PersistAsync(source, generated, evidence, user, cancellationToken);
+            historyHandle = _history == null
+                ? null
+                : await _history.BeginAsync(
+                    new AiHistoryBeginRequest(
+                        AiHistoryFeatures.EvaluationReview,
+                        $"Nhận xét đánh giá · #{source.Result.Id}",
+                        new { evaluationResultId = source.Result.Id },
+                        SessionId: request.HistorySessionId,
+                        OperationId: request.HistoryOperationId),
+                    user,
+                    cancellationToken);
+            var evidence = new List<EvidenceRef>
+            {
+                CreatePrimaryCitation(source)
+            };
+            var excerpts = await RetrieveEvidenceAsync(source, user, evidence, cancellationToken);
+            var generated = await GenerateDraftAsync(source, evidence, excerpts, cancellationToken);
+            var response = await PersistAsync(source, generated, evidence, user, historyHandle, cancellationToken);
+            return historyHandle == null
+                ? response
+                : response with
+                {
+                    HistorySessionId = historyHandle.SessionId,
+                    HistoryOperationId = historyHandle.OperationId
+                };
+        }
+        catch
+        {
+            if (historyHandle != null && _history != null)
+            {
+                try
+                {
+                    await _history.FailAsync(
+                        historyHandle,
+                        "review_generation_failed",
+                        "Không thể tạo bản nháp nhận xét lúc này.",
+                        cancellationToken: CancellationToken.None);
+                }
+                catch (Exception historyException)
+                {
+                    _logger.LogWarning(historyException, "Could not record evaluation review history failure.");
+                }
+            }
+            throw;
+        }
     }
 
     public async Task<EvaluationReviewDraftDecisionResponse> DecideAsync(
@@ -237,6 +280,17 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
             ? nameof(AgentRunState.Completed)
             : nameof(AgentRunState.Cancelled);
         run.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        if (_history != null)
+        {
+            await _history.AppendDecisionAsync(
+                run.Id,
+                new { decision = accepted ? "Accepted" : "Rejected", draftActionId = action.Id },
+                accepted ? AiHistoryStatuses.Applied : AiHistoryStatuses.Rejected,
+                user,
+                request.HistoryOperationId,
+                saveChanges: false,
+                cancellationToken: cancellationToken);
+        }
 
         try
         {
@@ -301,9 +355,7 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
         var sourceVersion = EvaluationReviewDraftSourceVersion.Resolve(
             result.Id,
             reviewContext.ContextText);
-        var boundedContext = reviewContext.ContextText.Length <= MaximumContextLength
-            ? reviewContext.ContextText
-            : reviewContext.ContextText[..MaximumContextLength];
+        var boundedContext = reviewContext.ContextText;
         return new AuthorizedReviewSource(
             result,
             boundedContext,
@@ -368,6 +420,7 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
         GeneratedDraft generated,
         IReadOnlyList<EvidenceRef> evidence,
         ClaimsPrincipal user,
+        AiHistoryOperationHandle? historyHandle,
         CancellationToken cancellationToken)
     {
         await using var transaction = _context.Database.IsRelational()
@@ -463,8 +516,7 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
         _context.AgentRuns.Add(runRecord);
         _context.AgentDraftActions.Add(action);
         foreach (var citation in evidence
-                     .Where(item => generated.SourceIds.Contains(EvidenceKey(item)))
-                     .Take(20))
+                     .Where(item => generated.SourceIds.Contains(EvidenceKey(item))))
         {
             citation.Validate();
             _context.EvidenceReferenceMetadata.Add(new EvidenceReferenceMetadata
@@ -482,6 +534,22 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
                 IsDirectlyRelevant = citation.IsDirectlyRelevant,
                 IsCurrent = citation.IsCurrent
             });
+        }
+
+        if (historyHandle != null && _history != null)
+        {
+            await _history.CompleteAsync(
+                historyHandle,
+                new
+                {
+                    text = generated.Text,
+                    citationCount = generated.SourceIds.Count,
+                    lifecycleStatus = AwaitingHumanReview
+                },
+                runId,
+                AiHistoryStatuses.AwaitingReview,
+                saveChanges: false,
+                cancellationToken: cancellationToken);
         }
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -599,7 +667,7 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
         IReadOnlyCollection<string> allowedSourceIds,
         string requiredSourceId)
     {
-        if (string.IsNullOrWhiteSpace(content) || content.Length > 10_000)
+        if (string.IsNullOrWhiteSpace(content))
         {
             return null;
         }
@@ -628,7 +696,7 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
 
             var allowed = allowedSourceIds.ToHashSet(StringComparer.Ordinal);
             var sourceElements = sourcesElement.EnumerateArray().ToArray();
-            if (sourceElements.Length is 0 or > 20 ||
+            if (sourceElements.Length == 0 ||
                 sourceElements.Any(item => item.ValueKind != JsonValueKind.String))
             {
                 return null;
@@ -663,7 +731,6 @@ public sealed class EvaluationReviewDraftAdvisor : IEvaluationReviewDraftAdvisor
             .AsNoTracking()
             .Where(item => item.AgentRunId == action.AgentRunId)
             .OrderBy(item => item.Id)
-            .Take(20)
             .Select(item => new EvidenceRef(
                 item.SourceType,
                 item.SourceId,

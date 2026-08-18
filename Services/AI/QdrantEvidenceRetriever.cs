@@ -73,7 +73,11 @@ public sealed class QdrantEvidenceRetriever : IAIEvidenceRetriever
         }
 
         _options.Validate();
-        var embedding = await _embeddingClient.EmbedAsync(query.QueryText, cancellationToken);
+        using var retrievalTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        retrievalTimeout.CancelAfter(TimeSpan.FromSeconds(_options.TimeoutSeconds));
+        var retrievalToken = retrievalTimeout.Token;
+
+        var embedding = await _embeddingClient.EmbedAsync(query.QueryText, retrievalToken);
         if (embedding.Count != _options.Dimensions ||
             embedding.Any(value => float.IsNaN(value) || float.IsInfinity(value)))
         {
@@ -112,8 +116,8 @@ public sealed class QdrantEvidenceRetriever : IAIEvidenceRetriever
         using var response = await _httpClient.SendAsync(
             request,
             HttpCompletionOption.ResponseHeadersRead,
-            cancellationToken);
-        var body = await ReadBoundedBodyAsync(response, cancellationToken);
+            retrievalToken);
+        var body = await ReadBoundedBodyAsync(response, retrievalToken);
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogWarning("Qdrant returned HTTP {StatusCode}.", (int)response.StatusCode);
@@ -147,7 +151,7 @@ public sealed class QdrantEvidenceRetriever : IAIEvidenceRetriever
                 VersionId = chunk.DocumentVersionId,
                 chunk.DocumentVersion.Document.AccessPrincipalsJson
             })
-            .ToListAsync(cancellationToken);
+            .ToListAsync(retrievalToken);
         var principalSet = principalIds.ToHashSet(StringComparer.Ordinal);
         var authorizedRows = activeRows
             .Where(row => IsAllowedByAuthoritativePolicy(

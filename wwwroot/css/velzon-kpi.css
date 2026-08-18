@@ -1830,3 +1830,202 @@ html.sidebar-expanded .vietmach-shell .main-content {
     font-size: 0.8rem;
     line-height: 1;
 }
+
+/* --------------------------------------------------------------------------
+   Authenticated management UX
+   Compact, low-motion feedback inspired by content/list reveal patterns.
+   This remains a progressive enhancement: content is visible without JS.
+   -------------------------------------------------------------------------- */
+
+.vietmach-shell {
+    --management-motion-duration: 160ms;
+    --management-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.vietmach-shell .main-content,
+.vietmach-shell .page-content,
+.vietmach-shell .page-content > *,
+.vietmach-shell :is(.card, .content-card, .evaluation-results, .catalog-table-shell) {
+    min-width: 0;
+}
+
+.vietmach-shell :is(.page-header, .evaluation-page-header, .cf-header, .dashboard-header) {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.vietmach-shell :is(.page-header, .evaluation-page-header, .cf-header, .dashboard-header) > :first-child {
+    min-width: 0;
+}
+
+.vietmach-shell :is(.page-actions, .header-actions, .toolbar, .filter-bar, .action-bar) {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.vietmach-shell :is(.card, .content-card, .evaluation-results, .catalog-table-shell,
+    .stat-card, .evaluation-summary article, .okr-summary__item, .mv-summary__item,
+    .ops-summary__item) {
+    transition:
+        border-color var(--management-motion-duration) ease-out,
+        box-shadow var(--management-motion-duration) ease-out,
+        background-color var(--management-motion-duration) ease-out;
+}
+
+.vietmach-shell :is(.btn, button, a, input, select, textarea):focus-visible,
+.vietmach-shell .table-responsive:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--primary) 72%, #fff) !important;
+    outline-offset: 2px !important;
+}
+
+.vietmach-shell .table-responsive {
+    max-width: 100%;
+    overscroll-behavior-inline: contain;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
+}
+
+.vietmach-shell .table-responsive.management-scrollable-table {
+    border-radius: 4px;
+    box-shadow: inset -12px 0 12px -16px rgba(33, 37, 41, 0.45);
+}
+
+.vietmach-shell :is(.table, .data-table, .evaluation-table, .catalog-table) tbody tr {
+    transition: background-color var(--management-motion-duration) ease-out;
+}
+
+.vietmach-shell :is(.table, .data-table, .evaluation-table, .catalog-table) tbody tr:focus-within > * {
+    background: color-mix(in srgb, var(--primary) 5%, #fff) !important;
+}
+
+.vietmach-shell :is(.pagination, .pager) {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.vietmach-shell .pagination .page-link {
+    min-width: 34px;
+    min-height: 34px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 4px !important;
+    color: #495057;
+    font-size: 0.75rem;
+}
+
+.vietmach-shell .pagination .page-item.active .page-link {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #fff;
+}
+
+.vietmach-shell :is(.alert, .validation-summary-errors, .field-validation-error) {
+    overflow-wrap: anywhere;
+}
+
+.vietmach-shell :is(.evaluation-empty, .cf-empty-state, .okr-empty, .et-empty,
+    .catalog-empty-cell, .empty-state) :is(h2, h3, h4, h5, strong) {
+    color: #343a40 !important;
+}
+
+.vietmach-shell form[aria-busy="true"] {
+    cursor: progress;
+}
+
+.vietmach-shell .management-submit-pending {
+    position: relative;
+    pointer-events: none;
+    cursor: progress !important;
+    opacity: 0.82;
+}
+
+.vietmach-shell .management-submit-pending::before {
+    width: 0.85rem;
+    height: 0.85rem;
+    display: inline-block;
+    flex: 0 0 0.85rem;
+    margin-right: 0.4rem;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    content: "";
+    vertical-align: -0.12rem;
+    animation: management-submit-spin 650ms linear infinite;
+}
+
+.vietmach-shell .management-reveal {
+    opacity: 0;
+    transform: translateY(4px);
+    transition:
+        opacity var(--management-motion-duration) ease-out var(--management-reveal-delay, 0ms),
+        transform 180ms var(--management-motion-ease) var(--management-reveal-delay, 0ms);
+}
+
+.vietmach-shell .management-reveal.management-reveal-complete {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.vietmach-shell .page-content[aria-busy="true"] {
+    cursor: progress;
+}
+
+@keyframes management-submit-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 767.98px) {
+    .vietmach-shell :is(.page-header, .evaluation-page-header, .cf-header, .dashboard-header) {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .vietmach-shell :is(.page-actions, .header-actions, .toolbar, .filter-bar, .action-bar) {
+        width: 100%;
+    }
+
+    .vietmach-shell :is(.page-actions, .header-actions, .action-bar) > :is(.btn, button, a) {
+        min-height: 38px;
+    }
+
+    .vietmach-shell .table-responsive {
+        margin-inline: -1px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .vietmach-shell :is(.page-actions, .header-actions, .action-bar) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .vietmach-shell :is(.page-actions, .header-actions, .action-bar) > :is(.btn, button, a, form),
+    .vietmach-shell :is(.page-actions, .header-actions, .action-bar) > form > :is(.btn, button) {
+        width: 100%;
+    }
+
+    .vietmach-shell :is(.toolbar, .filter-bar) > :is(.form-control, .form-select, .filter-field, .toolbar-search) {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vietmach-shell .management-reveal,
+    .vietmach-shell .management-reveal.management-reveal-complete {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+
+    .vietmach-shell .management-submit-pending::before {
+        animation: none !important;
+        border-right-color: currentColor;
+    }
+}

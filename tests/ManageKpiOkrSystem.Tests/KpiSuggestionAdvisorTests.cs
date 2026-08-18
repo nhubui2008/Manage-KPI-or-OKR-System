@@ -57,11 +57,26 @@ public sealed class KpiSuggestionAdvisorTests
         Assert.Empty(await context.AIGenerationHistories.ToListAsync());
     }
 
+    [Fact]
+    public async Task SuggestAsync_AcceptsMoreThanFiveValidDrafts()
+    {
+        var setup = await CreateScenarioAsync();
+        await using var context = setup.Context;
+        var model = new DynamicKpiModelClient((primarySourceId, _) =>
+            $$"""{"suggestions":[{{string.Join(',', Enumerable.Range(1, 6).Select(index => Suggestion(primarySourceId, $"KPI {index}", "%", 100, 90, 70, false)))}}]}""");
+        var advisor = CreateAdvisor(context, setup.TenantContext, model);
+
+        var response = await advisor.SuggestAsync(
+            new SuggestKpiRequest { PeriodId = setup.Period.Id },
+            setup.Principal);
+
+        Assert.Equal(6, response.Suggestions.Count);
+    }
+
     [Theory]
     [InlineData("extra-field")]
     [InlineData("fake-source")]
     [InlineData("invalid-thresholds")]
-    [InlineData("wrong-count")]
     [InlineData("unsupported-unit")]
     public async Task SuggestAsync_RejectsNonStrictOrInvalidDraftsAndPersistsNothing(string variant)
     {
@@ -72,7 +87,6 @@ public sealed class KpiSuggestionAdvisorTests
             "extra-field" => ThreeSuggestions(primarySourceId, "\"score\":90,"),
             "fake-source" => ValidResponse("forged:source"),
             "invalid-thresholds" => ThreeSuggestions(primarySourceId, target: 100, pass: 120, fail: 80),
-            "wrong-count" => $$"""{"suggestions":[{{Suggestion(primarySourceId, "KPI duy nhất", "%", 100, 90, 70, false)}}]}""",
             _ => ThreeSuggestions(primarySourceId, unit: "USD")
         });
         var advisor = CreateAdvisor(context, setup.TenantContext, model);

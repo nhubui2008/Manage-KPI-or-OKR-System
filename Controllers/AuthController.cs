@@ -266,6 +266,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     membership.Tenant != null &&
                     membership.Tenant.IsActive)
                 .Select(membership => membership.TenantId)
+                .OrderBy(tenantId => tenantId)
                 .Take(2)
                 .ToListAsync();
             var globalRole = user.RoleId.HasValue

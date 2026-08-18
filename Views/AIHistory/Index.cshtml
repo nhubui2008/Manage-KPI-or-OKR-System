@@ -1,0 +1,237 @@
+@using System.Text.Json
+@using Manage_KPI_or_OKR_System.Models.AI
+@model AiHistoryIndexViewModel
+@{
+    ViewData["Title"] = "Lịch sử AI";
+    var featureLabels = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        [AiHistoryFeatures.Chat] = "Trò chuyện AI",
+        [AiHistoryFeatures.KpiSuggestion] = "Gợi ý KPI",
+        [AiHistoryFeatures.OkrKeyResultSuggestion] = "Gợi ý Key Result",
+        [AiHistoryFeatures.GoalPlanning] = "Lập kế hoạch mục tiêu",
+        [AiHistoryFeatures.PerformanceAnalysis] = "Phân tích hiệu suất",
+        [AiHistoryFeatures.CustomerSegment] = "Phân khúc khách hàng",
+        [AiHistoryFeatures.CheckInEvaluation] = "Đánh giá check-in",
+        [AiHistoryFeatures.OkrKeyResultEvaluation] = "Đánh giá Key Result",
+        [AiHistoryFeatures.EvaluationReview] = "Nhận xét đánh giá",
+        [AiHistoryFeatures.SmartAlertRefresh] = "Làm mới cảnh báo"
+    };
+    string FeatureLabel(string key) => featureLabels.TryGetValue(key, out var label) ? label : key;
+    string PrettyJson(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return string.Empty;
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            return JsonSerializer.Serialize(document.RootElement, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch (JsonException) { return json; }
+    }
+}
+
+<div class="container-fluid py-3 ai-history-page">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div>
+            <h1 class="h4 mb-1"><i class="bi bi-clock-history text-primary me-2"></i>Lịch sử AI</h1>
+            <p class="text-muted mb-0">Xem lại nội dung AI theo tài khoản. Dữ liệu chính thức vẫn được quản lý trong nghiệp vụ gốc.</p>
+        </div>
+        <button type="button" class="btn btn-primary" data-ai-new-chat>
+            <i class="bi bi-plus-lg me-1"></i>Cuộc trò chuyện mới
+        </button>
+    </div>
+
+    @if (TempData["SuccessMessage"] is string success)
+    {
+        <div class="alert alert-success" role="status">@success</div>
+    }
+    @if (TempData["ErrorMessage"] is string error)
+    {
+        <div class="alert alert-danger" role="alert">@error</div>
+    }
+
+    <form method="get" class="card card-body border-0 shadow-sm mb-3" aria-label="Bộ lọc lịch sử AI">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-lg-3">
+                <label class="form-label" for="historySearch">Tiêu đề</label>
+                <input class="form-control" id="historySearch" name="search" value="@Model.Page.Search" maxlength="200" />
+            </div>
+            <div class="col-6 col-lg-2">
+                <label class="form-label" for="historyFeature">Chức năng</label>
+                <select class="form-select" id="historyFeature" name="feature">
+                    <option value="">Tất cả</option>
+                    @foreach (var option in featureLabels)
+                    {
+                        <option value="@option.Key" selected="@(Model.Page.Feature == option.Key)">@option.Value</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-lg-2">
+                <label class="form-label" for="historyStatus">Trạng thái</label>
+                <select class="form-select" id="historyStatus" name="status">
+                    <option value="">Tất cả</option>
+                    @foreach (var value in new[] { AiHistoryStatuses.Completed, AiHistoryStatuses.Abstained, AiHistoryStatuses.AwaitingReview, AiHistoryStatuses.Applied, AiHistoryStatuses.Rejected, AiHistoryStatuses.Conflict, AiHistoryStatuses.Failed, AiHistoryStatuses.ContentDeleted })
+                    {
+                        <option value="@value" selected="@(Model.Page.Status == value)">@value</option>
+                    }
+                </select>
+            </div>
+            @if (Model.Page.CanViewAll)
+            {
+                <div class="col-12 col-lg-2">
+                    <label class="form-label" for="historyOwner">Tài khoản</label>
+                    <select class="form-select" id="historyOwner" name="ownerSystemUserId">
+                        <option value="">Tất cả</option>
+                        @foreach (var owner in Model.Page.OwnerOptions)
+                        {
+                            <option value="@owner.Id" selected="@(Model.Page.OwnerSystemUserId == owner.Id)">@owner.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="col-6 col-lg-1">
+                <label class="form-label" for="historyFrom">Từ ngày</label>
+                <input class="form-control" type="date" id="historyFrom" name="fromDate" value="@Model.Page.FromDate?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-6 col-lg-1">
+                <label class="form-label" for="historyTo">Đến ngày</label>
+                <input class="form-control" type="date" id="historyTo" name="toDate" value="@Model.Page.ToDate?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-12 col-lg-1 d-grid">
+                <button class="btn btn-outline-primary" type="submit">Lọc</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="row g-3">
+        <div class="col-12 col-xl-4">
+            <section class="card border-0 shadow-sm h-100" aria-labelledby="historyListHeading">
+                <div class="card-header bg-white py-3"><strong id="historyListHeading">Các phiên gần đây</strong></div>
+                <div class="list-group list-group-flush ai-history-list">
+                    @if (Model.Page.Items.Count == 0)
+                    {
+                        <div class="p-4 text-center text-muted">Chưa có lịch sử AI phù hợp.</div>
+                    }
+                    @foreach (var item in Model.Page.Items)
+                    {
+                        <a asp-action="Index" asp-route-id="@item.Id" class="list-group-item list-group-item-action @(Model.Selected?.Session.Id == item.Id ? "active" : "")">
+                            <div class="d-flex justify-content-between gap-2">
+                                <strong class="text-truncate">@(item.ContentDeleted ? "Nội dung đã xóa" : item.Title ?? "Lịch sử AI")</strong>
+                                <small class="text-nowrap">@item.UpdatedAtUtc.ToLocalTime().ToString("dd/MM HH:mm")</small>
+                            </div>
+                            <div class="small mt-1">@FeatureLabel(item.FeatureKey) · @item.Status</div>
+                            @if (Model.Page.CanViewAll)
+                            {
+                                <div class="small opacity-75">@(item.OwnerName ?? "Hệ thống/không xác định")</div>
+                            }
+                            @if (item.IsLegacy)
+                            {
+                                <span class="badge text-bg-secondary mt-1">Lịch sử cũ</span>
+                            }
+                        </a>
+                    }
+                </div>
+                @if (Model.Page.TotalPages > 1)
+                {
+                    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                        <a class="btn btn-sm btn-outline-secondary @(Model.Page.PageNumber <= 1 ? "disabled" : "")" asp-action="Index" asp-route-page="@(Model.Page.PageNumber - 1)">Trước</a>
+                        <span class="small">Trang @Model.Page.PageNumber/@Model.Page.TotalPages</span>
+                        <a class="btn btn-sm btn-outline-secondary @(Model.Page.PageNumber >= Model.Page.TotalPages ? "disabled" : "")" asp-action="Index" asp-route-page="@(Model.Page.PageNumber + 1)">Sau</a>
+                    </div>
+                }
+            </section>
+        </div>
+        <div class="col-12 col-xl-8">
+            <section class="card border-0 shadow-sm h-100" aria-labelledby="historyDetailsHeading">
+                @if (Model.Selected == null)
+                {
+                    <div class="card-body d-flex align-items-center justify-content-center text-center text-muted ai-history-empty">
+                        <div><i class="bi bi-chat-square-text fs-1 d-block mb-2"></i>Chọn một mục để xem timeline.</div>
+                    </div>
+                }
+                else
+                {
+                    var selected = Model.Selected;
+                    <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-start gap-2">
+                        <div>
+                            <h2 class="h5 mb-1" id="historyDetailsHeading">@(selected.Session.ContentDeleted ? "Nội dung đã xóa" : selected.Session.Title ?? "Lịch sử AI")</h2>
+                            <div class="small text-muted">@FeatureLabel(selected.Session.FeatureKey) · @selected.Session.Status · @selected.Session.UpdatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                        @if (selected.CanManage)
+                        {
+                            <div class="d-flex gap-2">
+                                @if (selected.Session.FeatureKey == AiHistoryFeatures.Chat)
+                                {
+                                    <a class="btn btn-sm btn-primary" href="?id=@selected.Session.Id&aiChatSession=@selected.Session.Id"><i class="bi bi-chat-dots me-1"></i>Tiếp tục Chat</a>
+                                }
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#renameHistory">Đổi tên</button>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-body">
+                        @if (!selected.ContentAvailable)
+                        {
+                            <div class="alert alert-warning">@selected.ContentUnavailableReason</div>
+                        }
+                        @if (selected.Session.IsLegacy && selected.Entries.All(entry => !entry.ContentAvailable))
+                        {
+                            <div class="alert alert-secondary">Lịch sử cũ chỉ có metadata; input/output trước đây chưa từng được lưu.</div>
+                        }
+                        @if (selected.CanManage)
+                        {
+                            <div class="collapse mb-3" id="renameHistory">
+                                <form asp-action="Rename" method="post" class="input-group">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="SessionId" value="@selected.Session.Id" />
+                                    <input type="hidden" name="RowVersion" value="@selected.Session.RowVersion" />
+                                    <input class="form-control" name="Title" value="@selected.Session.Title" minlength="1" maxlength="200" required aria-label="Tên lịch sử AI" />
+                                    <button class="btn btn-outline-primary" type="submit">Lưu tên</button>
+                                </form>
+                            </div>
+                        }
+                        <div class="ai-history-timeline">
+                            @foreach (var entry in selected.Entries)
+                            {
+                                <article class="ai-history-entry">
+                                    <div class="ai-history-dot"></div>
+                                    <div class="border rounded-3 p-3 bg-body-tertiary">
+                                        <div class="d-flex justify-content-between gap-2 mb-2">
+                                            <strong>@entry.EntryKind</strong>
+                                            <small class="text-muted">@entry.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</small>
+                                        </div>
+                                        <div class="small text-muted mb-2">@entry.Status @if (!string.IsNullOrWhiteSpace(entry.FailureCode)) { <span>· @entry.FailureCode</span> }</div>
+                                        @if (entry.ContentAvailable)
+                                        {
+                                            <pre class="ai-history-payload mb-0">@PrettyJson(entry.PayloadJson)</pre>
+                                        }
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                        @if (selected.CanManage)
+                        {
+                            <hr />
+                            <form asp-action="Delete" method="post" onsubmit="return confirm('Xóa vĩnh viễn nội dung lịch sử này? Draft, proposal, task và audit nghiệp vụ vẫn được giữ.');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="SessionId" value="@selected.Session.Id" />
+                                <input type="hidden" name="RowVersion" value="@selected.Session.RowVersion" />
+                                <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash me-1"></i>Xóa nội dung lịch sử</button>
+                                <div class="form-text">Thao tác này không hủy hoặc hoàn tác dữ liệu nghiệp vụ đã tạo.</div>
+                            </form>
+                        }
+                    </div>
+                }
+            </section>
+        </div>
+    </div>
+</div>
+
+<style>
+    .ai-history-list { max-height: 68vh; overflow-y: auto; }
+    .ai-history-empty { min-height: 28rem; }
+    .ai-history-timeline { position: relative; padding-left: 1.25rem; }
+    .ai-history-timeline::before { content: ""; position: absolute; left: .35rem; top: .5rem; bottom: .5rem; width: 2px; background: var(--bs-border-color); }
+    .ai-history-entry { position: relative; margin-bottom: 1rem; }
+    .ai-history-dot { position: absolute; left: -1.18rem; top: .65rem; width: .7rem; height: .7rem; border-radius: 50%; background: var(--bs-primary); }
+    .ai-history-payload { white-space: pre-wrap; word-break: break-word; font: inherit; font-size: .9rem; }
+    @@media (max-width: 1199.98px) { .ai-history-list { max-height: 24rem; } .ai-history-empty { min-height: 16rem; } }
+</style>

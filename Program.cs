@@ -92,6 +92,8 @@ builder.Services.Configure<Manage_KPI_or_OKR_System.Options.DocumentIngestionOpt
     builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.DocumentIngestionOptions.SectionName));
 builder.Services.Configure<Manage_KPI_or_OKR_System.Options.DeepSeekOptions>(
     builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.DeepSeekOptions.SectionName));
+builder.Services.Configure<Manage_KPI_or_OKR_System.Options.AiHistoryCleanupOptions>(
+    builder.Configuration.GetSection(Manage_KPI_or_OKR_System.Options.AiHistoryCleanupOptions.SectionName));
 builder.Services
     .AddOptions<Manage_KPI_or_OKR_System.Options.AiAdvisoryRolloutOptions>()
     .Bind(builder.Configuration.GetSection(
@@ -110,6 +112,7 @@ builder.Services.AddHttpClient<
         UseCookies = false
     });
 builder.Services.AddHttpClient<IBgeM3EmbeddingClient, BgeM3EmbeddingClient>()
+    .RemoveAllLoggers()
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {
         AllowAutoRedirect = false,
@@ -173,9 +176,11 @@ builder.Services.AddScoped<IPerformanceAnalysisAdvisor, PerformanceAnalysisAdvis
 builder.Services.AddScoped<IAIChatAdvisor, AIChatAdvisor>();
 builder.Services.AddScoped<IKpiSuggestionAdvisor, KpiSuggestionAdvisor>();
 builder.Services.AddScoped<IOkrKeyResultSuggestionAdvisor, OkrKeyResultSuggestionAdvisor>();
+builder.Services.AddScoped<IAiHistoryService, AiHistoryService>();
 builder.Services.AddScoped<EvaluationCalculator>();
 builder.Services.AddScoped<IWorkItemCommandValidator, WorkItemCommandValidator>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ISystemSettingsService, SystemSettingsService>();
 builder.Services.AddHostedService<Manage_KPI_or_OKR_System.Services.AIHistoryCleanupService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
@@ -310,31 +315,45 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
                 }
 
                 var dbContext = context.HttpContext.RequestServices.GetRequiredService<MiniERPDbContext>();
-                var systemUser = await dbContext.SystemUsers
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(user => user.Id == userId);
-                if (systemUser == null ||
-                    systemUser.IsActive != true ||
-                    (systemUser.TrialEndTime.HasValue && systemUser.TrialEndTime.Value <= DateTime.Now))
+                var principalState = await (
+                    from user in dbContext.SystemUsers.AsNoTracking()
+                    join role in dbContext.Roles.AsNoTracking()
+                        on user.RoleId equals (int?)role.Id into userRoles
+                    from role in userRoles.DefaultIfEmpty()
+                    where user.Id == userId
+                    select new
+                    {
+                        user.IsActive,
+                        user.TrialEndTime,
+                        user.RoleId,
+                        user.LastPasswordChange,
+                        RoleName = role == null ? null : role.RoleName,
+                        RoleIsActive = role == null ? null : role.IsActive
+                    })
+                    .FirstOrDefaultAsync();
+                if (principalState == null ||
+                    principalState.IsActive != true ||
+                    (principalState.TrialEndTime.HasValue && principalState.TrialEndTime.Value <= DateTime.Now))
                 {
                     context.RejectPrincipal();
                     await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     return;
                 }
 
-                var role = systemUser.RoleId.HasValue
-                    ? await dbContext.Roles.AsNoTracking().FirstOrDefaultAsync(item => item.Id == systemUser.RoleId.Value)
-                    : null;
-                if ((systemUser.RoleId.HasValue && role == null) || (role != null && role.IsActive != true))
+                if ((principalState.RoleId.HasValue && principalState.RoleName == null) ||
+                    (principalState.RoleName != null && principalState.RoleIsActive != true))
                 {
                     context.RejectPrincipal();
                     await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     return;
                 }
 
-                var expectedRoleName = AuthRoleHelper.GetRoleNameOrDefault(role);
+                var expectedRoleName = AuthRoleHelper.GetRoleNameOrDefault(
+                    principalState.RoleName == null
+                        ? null
+                        : new Manage_KPI_or_OKR_System.Models.Role { RoleName = principalState.RoleName });
                 var currentRoleName = context.Principal.FindFirstValue(ClaimTypes.Role);
-                var expectedPasswordStamp = (systemUser.LastPasswordChange?.Ticks ?? 0L)
+                var expectedPasswordStamp = (principalState.LastPasswordChange?.Ticks ?? 0L)
                     .ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var currentPasswordStamp = context.Principal.FindFirstValue(AuthRoleHelper.PasswordChangedClaimType);
                 if (!string.Equals(currentRoleName, expectedRoleName, StringComparison.OrdinalIgnoreCase) ||
@@ -397,8 +416,6 @@ if (string.IsNullOrWhiteSpace(defaultConnectionString))
 
 builder.Services.AddDbContext<MiniERPDbContext>(options =>
     options.UseSqlServer(defaultConnectionString));
-builder.Services.AddScoped<IClaimsTransformation, PermissionClaimsTransformation>();
-
 var app = builder.Build();
 
 var runMigrationsOnStartup = builder.Configuration.GetValue<bool?>("Database:RunMigrationsOnStartup")

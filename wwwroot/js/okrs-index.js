@@ -290,7 +290,11 @@
                     'Content-Type': 'application/json',
                     ...(window.antiForgeryHeaders ? window.antiForgeryHeaders() : {})
                 },
-                body: JSON.stringify({ keyResultId, proposedCurrentValue })
+                body: JSON.stringify({
+                    keyResultId,
+                    proposedCurrentValue,
+                    historyOperationId: window.crypto?.randomUUID ? window.crypto.randomUUID() : null
+                })
             });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) {
@@ -348,6 +352,7 @@
     }
 
     function renderAiKrResults(data) {
+        currentAiHistorySessionId = data?.historySessionId || data?.HistorySessionId || currentAiHistorySessionId;
         const items = Array.isArray(data) ? data : (data?.items || data?.Items || []);
         if (!Array.isArray(items) || items.length === 0) {
             const warnings = data?.warnings || data?.Warnings || [];
@@ -429,6 +434,7 @@
 
     let aiSuggestAbort = null;
     let currentAiOkr = { id: null, name: '' };
+    let currentAiHistorySessionId = null;
 
     function openAiSuggestKrModal(okrId, okrName) {
         closeAllOkrDropdowns();
@@ -453,7 +459,8 @@
         resetAiSuggestLoading();
         byId('aiSuggestionContent').style.display = 'none';
 
-        fetch(`/OKRs/SuggestKeyResultsAPI/${okrId}`, {
+        const historyOperationId = window.crypto?.randomUUID ? window.crypto.randomUUID() : '';
+        fetch(`/OKRs/SuggestKeyResultsAPI/${okrId}?historyOperationId=${encodeURIComponent(historyOperationId)}`, {
             method: 'POST',
             headers: window.antiForgeryHeaders ? window.antiForgeryHeaders() : {},
             signal: aiSuggestAbort.signal
@@ -644,6 +651,7 @@
             if (saveBtn) setSubmitLoading(saveBtn, false);
             setValue('aiKrRefineInput', '');
             setText('aiKrRefineStatus', '');
+            currentAiHistorySessionId = null;
             byId('aiKrCitationList')?.replaceChildren();
         });
 
@@ -666,7 +674,12 @@
                 const response = await fetch(`/OKRs/RefineKeyResultSuggestions/${byId('aiOkrId').value}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', ...(window.antiForgeryHeaders ? window.antiForgeryHeaders() : {}) },
-                    body: JSON.stringify({ instruction, items: collectAiKrSuggestions() })
+                    body: JSON.stringify({
+                        instruction,
+                        items: collectAiKrSuggestions(),
+                        historySessionId: currentAiHistorySessionId,
+                        historyOperationId: window.crypto?.randomUUID ? window.crypto.randomUUID() : null
+                    })
                 });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok || data.success === false) throw new Error(data.message || 'Không thể chỉnh sửa gợi ý KR.');

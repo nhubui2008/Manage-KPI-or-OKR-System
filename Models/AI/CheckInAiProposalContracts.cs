@@ -11,7 +11,10 @@ public sealed record CheckInAiProposalRequest(
 /// deliberately not accepted from the client: the service reloads them from the
 /// authorized server-side check-in record.
 /// </summary>
-public sealed record CheckInAiEvaluationRequest(int CheckInId);
+public sealed record CheckInAiEvaluationRequest(
+    int CheckInId,
+    Guid? HistorySessionId = null,
+    Guid? HistoryOperationId = null);
 
 public sealed record CheckInAiEvaluationResponse(
     int CheckInId,
@@ -23,7 +26,9 @@ public sealed record CheckInAiEvaluationResponse(
     int? ProposalId = null,
     string? ProposalLifecycleStatus = null,
     string? ProposalRowVersion = null,
-    string RolloutMode = "GeneralAvailability");
+    string RolloutMode = "GeneralAvailability",
+    Guid? HistorySessionId = null,
+    Guid? HistoryOperationId = null);
 
 public sealed record CheckInAiProposal(
     string ProposedStatus,
@@ -90,7 +95,8 @@ public sealed record CheckInAiProposalDecisionRequest(
     int ProposalId,
     string Decision,
     string? RowVersion = null,
-    Guid? IdempotencyKey = null);
+    Guid? IdempotencyKey = null,
+    Guid? HistoryOperationId = null);
 
 public sealed record CheckInAiProposalDecisionResponse(
     int ProposalId,

@@ -133,7 +133,6 @@ public sealed class AiProposalPersistence : IAiProposalPersistence
             .AsNoTracking()
             .Where(item => item.AiEvaluationProposalId == proposal.Id)
             .OrderBy(item => item.Id)
-            .Take(20)
             .Select(item => new EvidenceRef(
                 item.SourceType,
                 item.SourceId,
@@ -376,7 +375,7 @@ public sealed class AiProposalPersistence : IAiProposalPersistence
         existing.DataGapCodes = JoinCodes(response.Proposal.DataGaps?.Select(gap => gap.Code));
         existing.RequiresHumanReview = isPending;
 
-        var citations = response.Proposal.Citations.Take(20).ToList();
+        var citations = response.Proposal.Citations.ToList();
         foreach (var citation in citations)
         {
             citation.Validate();

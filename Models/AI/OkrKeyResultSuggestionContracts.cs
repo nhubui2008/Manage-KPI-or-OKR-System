@@ -6,6 +6,8 @@ namespace Manage_KPI_or_OKR_System.Models.AI;
 /// </summary>
 public sealed class OkrKeyResultSuggestionRequest
 {
+    public Guid? HistorySessionId { get; set; }
+    public Guid? HistoryOperationId { get; set; }
     public int OkrId { get; set; }
     public string? Instruction { get; set; }
     public List<OkrKeyResultDraftInput>? CurrentItems { get; set; }
@@ -33,6 +35,8 @@ public sealed class OkrKeyResultSuggestionResponse
 {
     public bool Success { get; set; } = true;
     public Guid? AgentRunId { get; set; }
+    public Guid? HistorySessionId { get; set; }
+    public Guid? HistoryOperationId { get; set; }
     public bool AdvisoryOnly { get; set; } = true;
     public List<OkrKeyResultSuggestionItem> Items { get; set; } = new();
     public int Count => Items.Count;
@@ -42,6 +46,8 @@ public sealed class OkrKeyResultSuggestionResponse
 
 public sealed class RefineOkrKeyResultSuggestionsRequest
 {
+    public Guid? HistorySessionId { get; set; }
+    public Guid? HistoryOperationId { get; set; }
     public string? Instruction { get; set; }
     public List<OkrKeyResultDraftInput>? Items { get; set; }
 }

@@ -191,27 +191,28 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // 3. TÍNH TỈ LỆ KPI ĐẠT THỰC TẾ TỪ DB
             // ========================================
             // Lấy tất cả check-in details có progress >= 100 => coi là "Đạt"
-            var kpiIds = await kpiQuery.Select(k => k.Id).ToListAsync();
-            var checkInIds = await checkInQuery.Select(c => c.Id).ToListAsync();
-            
-            var allCheckInDetails = await _context.CheckInDetails
-                .Where(d => checkInIds.Contains(d.CheckInId ?? 0))
-                .ToListAsync();
+            var achievementSummary = await (
+                from detail in _context.CheckInDetails
+                join checkIn in checkInQuery on detail.CheckInId equals (int?)checkIn.Id
+                group detail by 1 into details
+                select new
+                {
+                    Total = details.Count(),
+                    Achieved = details.Count(detail => detail.ProgressPercentage >= 100)
+                })
+                .SingleOrDefaultAsync();
 
-            double kpiAchievementRate = 0;
-            if (allCheckInDetails.Any())
-            {
-                var achievedCount = allCheckInDetails.Count(d => d.ProgressPercentage >= 100);
-                kpiAchievementRate = Math.Round((double)achievedCount / allCheckInDetails.Count * 100, 1);
-            }
+            var kpiAchievementRate = achievementSummary?.Total > 0
+                ? Math.Round((double)achievementSummary.Achieved / achievementSummary.Total * 100, 1)
+                : 0;
             ViewBag.KPIAchievementRate = kpiAchievementRate;
 
             // ========================================
             // 4. TÍNH TIẾN ĐỘ OKR THỰC TẾ TỪ DB
             // ========================================
-            var okrIds = await okrQuery.Select(o => o.Id).ToListAsync();
             var keyResults = await _context.OKRKeyResults
-                .Where(kr => okrIds.Contains(kr.OKRId ?? 0))
+                .Where(keyResult => keyResult.OKRId.HasValue &&
+                    okrQuery.Select(okr => okr.Id).Contains(keyResult.OKRId.Value))
                 .ToListAsync();
 
             double okrProgressRate = 0;
@@ -230,22 +231,35 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // ========================================
             // 5. RECENT CHECK-INS
             // ========================================
-            var recentCheckIns = await checkInQuery
+            var recentRows = await checkInQuery
                 .OrderByDescending(c => c.CheckInDate)
                 .Take(5)
+                .Select(checkIn => new
+                {
+                    CheckIn = checkIn,
+                    EmployeeName = checkIn.EmployeeId.HasValue
+                        ? _context.Employees
+                            .Where(employeeRow => employeeRow.Id == checkIn.EmployeeId.Value)
+                            .Select(employeeRow => employeeRow.FullName)
+                            .FirstOrDefault()
+                        : null,
+                    KpiName = checkIn.KPIId.HasValue
+                        ? _context.KPIs
+                            .Where(kpiRow => kpiRow.Id == checkIn.KPIId.Value)
+                            .Select(kpiRow => kpiRow.KPIName)
+                            .FirstOrDefault()
+                        : null
+                })
                 .ToListAsync();
-            
-            // Extract IDs for recent check-ins
-            var recentCheckInEmployeeIds = recentCheckIns.Where(c => c.EmployeeId.HasValue).Select(c => c.EmployeeId!.Value).Distinct().ToList();
-            var recentCheckInKpiIds = recentCheckIns.Where(c => c.KPIId.HasValue).Select(c => c.KPIId!.Value).Distinct().ToList();
-
-            var empDict = await _context.Employees
-                .Where(e => recentCheckInEmployeeIds.Contains(e.Id))
-                .ToDictionaryAsync(e => e.Id, e => e.FullName);
-            
-            var kpiDict = await _context.KPIs
-                .Where(k => recentCheckInKpiIds.Contains(k.Id))
-                .ToDictionaryAsync(k => k.Id, k => k.KPIName);
+            var recentCheckIns = recentRows.Select(row => row.CheckIn).ToList();
+            var empDict = recentRows
+                .Where(row => row.CheckIn.EmployeeId.HasValue && row.EmployeeName != null)
+                .GroupBy(row => row.CheckIn.EmployeeId!.Value)
+                .ToDictionary(group => group.Key, group => group.First().EmployeeName);
+            var kpiDict = recentRows
+                .Where(row => row.CheckIn.KPIId.HasValue && row.KpiName != null)
+                .GroupBy(row => row.CheckIn.KPIId!.Value)
+                .ToDictionary(group => group.Key, group => group.First().KpiName);
 
             ViewBag.RecentCheckIns = recentCheckIns;
             ViewBag.EmployeeNames = empDict;
@@ -254,17 +268,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // ========================================
             // 6. DEPARTMENTS DATA
             // ========================================
-            var departments = await _context.Departments
+            var departmentCount = await _context.Departments
                 .Where(d => d.IsActive == true &&
                             (!isManagerScoped || scopedDepartmentIds.Contains(d.Id)))
-                .ToListAsync();
+                .CountAsync();
             ViewBag.TotalDepartments = isEmployeeRole && employee != null
                 ? await _context.EmployeeAssignments
                     .Where(ea => ea.EmployeeId == employee.Id && ea.IsActive == true && ea.DepartmentId.HasValue)
                     .Select(ea => ea.DepartmentId)
                     .Distinct()
                     .CountAsync()
-                : departments.Count;
+                : departmentCount;
 
             // Tổng chức vụ
             ViewBag.TotalPositions = isEmployeeRole && employee != null
@@ -287,14 +301,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // ========================================
             // 7. BIỂU ĐỒ OKR STATUS DISTRIBUTION
             // ========================================
-            var okrStats = await okrQuery
-                .GroupBy(o => o.StatusId)
-                .Select(g => new { StatusId = g.Key, Count = g.Count() })
+            var okrStatusRows = await _context.Statuses
+                .Where(statusRow => statusRow.StatusType == "OKR")
+                .Select(statusRow => new
+                {
+                    statusRow.StatusName,
+                    Count = okrQuery.Count(okr => okr.StatusId == statusRow.Id)
+                })
                 .ToListAsync();
-            
-            var allStatuses = await _context.Statuses.Where(s => s.StatusType == "OKR").ToListAsync();
-            var okrLabels = allStatuses.Select(s => s.StatusName).ToList();
-            var okrData = allStatuses.Select(s => okrStats.FirstOrDefault(st => st.StatusId == s.Id)?.Count ?? 0).ToList();
+            var okrLabels = okrStatusRows.Select(row => row.StatusName).ToList();
+            var okrData = okrStatusRows.Select(row => row.Count).ToList();
             
             ViewBag.OKRStatusLabels = JsonSerializer.Serialize(okrLabels);
             ViewBag.OKRStatusData = JsonSerializer.Serialize(okrData);
@@ -334,49 +350,56 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var now = DateTime.Now;
             var monthLabels = new List<string>();
             var monthData = new List<double>();
+            var trendEndExclusive = new DateTime(now.Year, now.Month, 1).AddMonths(1);
+            var trendStart = trendEndExclusive.AddMonths(-6);
+            var monthlyCheckInQuery = _context.KPICheckIns
+                .Where(checkIn =>
+                    checkIn.CheckInDate.HasValue &&
+                    checkIn.CheckInDate >= trendStart &&
+                    checkIn.CheckInDate < trendEndExclusive &&
+                    checkIn.ReviewStatus == "Approved");
+            if (isEmployeeRole)
+            {
+                monthlyCheckInQuery = employee != null
+                    ? monthlyCheckInQuery.Where(checkIn => checkIn.EmployeeId == employee.Id)
+                    : monthlyCheckInQuery.Where(_ => false);
+            }
+            else if (isManagerScoped)
+            {
+                monthlyCheckInQuery = scopedEmployeeIds.Any()
+                    ? monthlyCheckInQuery.Where(checkIn =>
+                        checkIn.EmployeeId.HasValue && scopedEmployeeIds.Contains(checkIn.EmployeeId.Value))
+                    : monthlyCheckInQuery.Where(_ => false);
+            }
+
+            var monthlyAverages = await (
+                from checkIn in monthlyCheckInQuery
+                join detail in _context.CheckInDetails on (int?)checkIn.Id equals detail.CheckInId
+                where detail.ProgressPercentage != null
+                group detail by new
+                {
+                    Year = checkIn.CheckInDate!.Value.Year,
+                    Month = checkIn.CheckInDate.Value.Month
+                }
+                into monthGroup
+                select new
+                {
+                    monthGroup.Key.Year,
+                    monthGroup.Key.Month,
+                    AverageProgress = (double?)(monthGroup.Average(detail => detail.ProgressPercentage) ?? 0)
+                })
+                .ToListAsync();
+            var monthlyAverageByKey = monthlyAverages.ToDictionary(
+                item => (item.Year, item.Month),
+                item => item.AverageProgress ?? 0);
 
             for (int i = 5; i >= 0; i--)
             {
                 var monthDate = now.AddMonths(-i);
-                var monthStart = new DateTime(monthDate.Year, monthDate.Month, 1);
-                var monthEnd = monthStart.AddMonths(1).AddTicks(-1);
-
                 monthLabels.Add($"T{monthDate.Month:00}/{monthDate.Year % 100}");
-
-                // Lấy trung bình progress của tất cả check-in trong tháng đó
-                var monthCheckInQuery = _context.KPICheckIns
-                    .Where(c => c.CheckInDate >= monthStart &&
-                                c.CheckInDate <= monthEnd &&
-                                c.ReviewStatus == "Approved");
-                if (isEmployeeRole)
-                {
-                    monthCheckInQuery = employee != null
-                        ? monthCheckInQuery.Where(c => c.EmployeeId == employee.Id)
-                        : monthCheckInQuery.Where(c => false);
-                }
-                else if (isManagerScoped)
-                {
-                    monthCheckInQuery = scopedEmployeeIds.Any()
-                        ? monthCheckInQuery.Where(c => c.EmployeeId.HasValue && scopedEmployeeIds.Contains(c.EmployeeId.Value))
-                        : monthCheckInQuery.Where(c => false);
-                }
-
-                var monthCheckInIds = await monthCheckInQuery
-                    .Select(c => c.Id)
-                    .ToListAsync();
-
-                if (monthCheckInIds.Any())
-                {
-                    var avgProgress = await _context.CheckInDetails
-                        .Where(d => monthCheckInIds.Contains(d.CheckInId ?? 0) && d.ProgressPercentage != null)
-                        .AverageAsync(d => (double?)d.ProgressPercentage);
-
-                    monthData.Add(Math.Round(avgProgress ?? 0, 1));
-                }
-                else
-                {
-                    monthData.Add(0);
-                }
+                monthData.Add(monthlyAverageByKey.TryGetValue((monthDate.Year, monthDate.Month), out var average)
+                    ? Math.Round(average, 1)
+                    : 0);
             }
 
             ViewBag.MainChartLabels = JsonSerializer.Serialize(monthLabels);
@@ -385,14 +408,16 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // ========================================
             // 10. KPI STATUS DISTRIBUTION (MỚI)
             // ========================================
-            var kpiStats = await kpiQuery
-                .GroupBy(k => k.StatusId)
-                .Select(g => new { StatusId = g.Key, Count = g.Count() })
+            var kpiStatusRows = await _context.Statuses
+                .Where(statusRow => statusRow.StatusType == "KPI")
+                .Select(statusRow => new
+                {
+                    statusRow.StatusName,
+                    Count = kpiQuery.Count(kpi => kpi.StatusId == statusRow.Id)
+                })
                 .ToListAsync();
-            
-            var kpiStatuses = await _context.Statuses.Where(s => s.StatusType == "KPI").ToListAsync();
-            var kpiStatusLabels = kpiStatuses.Select(s => s.StatusName).ToList();
-            var kpiStatusData = kpiStatuses.Select(s => kpiStats.FirstOrDefault(st => st.StatusId == s.Id)?.Count ?? 0).ToList();
+            var kpiStatusLabels = kpiStatusRows.Select(row => row.StatusName).ToList();
+            var kpiStatusData = kpiStatusRows.Select(row => row.Count).ToList();
             
             ViewBag.KPIStatusLabels = JsonSerializer.Serialize(kpiStatusLabels);
             ViewBag.KPIStatusData = JsonSerializer.Serialize(kpiStatusData);
@@ -433,15 +458,21 @@ namespace Manage_KPI_or_OKR_System.Controllers
             )
             .OrderByDescending(x => x.AvgProgress)
             .Take(5)
+            .Select(item => new
+            {
+                Name = item.EmployeeId.HasValue
+                    ? _context.Employees
+                        .Where(employeeRow => employeeRow.Id == item.EmployeeId.Value)
+                        .Select(employeeRow => employeeRow.FullName)
+                        .FirstOrDefault() ?? "N/A"
+                    : "N/A",
+                item.AvgProgress,
+                item.CheckInCount
+            })
             .ToListAsync();
 
-            var topEmployeeIds = topEmployees.Where(t => t.EmployeeId.HasValue).Select(t => t.EmployeeId!.Value).Distinct().ToList();
-            var topEmpDict = await _context.Employees
-                .Where(e => topEmployeeIds.Contains(e.Id))
-                .ToDictionaryAsync(e => e.Id, e => e.FullName);
-
             ViewBag.TopEmployees = topEmployees.Select(t => new {
-                Name = t.EmployeeId.HasValue && topEmpDict.ContainsKey(t.EmployeeId.Value) ? topEmpDict[t.EmployeeId.Value] : "N/A",
+                t.Name,
                 AvgProgress = Math.Round(t.AvgProgress, 1),
                 t.CheckInCount
             }).ToList();

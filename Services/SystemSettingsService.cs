@@ -1,7 +1,10 @@
 using System.Text.RegularExpressions;
+using System.Collections.Concurrent;
 using Manage_KPI_or_OKR_System.Data;
 using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Models.ViewModels;
+using Manage_KPI_or_OKR_System.Services.Tenancy;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 
 namespace Manage_KPI_or_OKR_System.Services
@@ -33,6 +36,7 @@ namespace Manage_KPI_or_OKR_System.Services
         public const string PublicBaseUrl = "BRAND_PUBLIC_BASE_URL";
         public const string CustomCss = "BRAND_CUSTOM_CSS";
         public const string AiHistoryRetentionDays = "AI_HISTORY_RETENTION_DAYS";
+        public const string AiHistoryCleanupApproved = "AI_HISTORY_CLEANUP_APPROVED";
     }
 
     public sealed record SystemSettingDefinition(
@@ -113,7 +117,8 @@ namespace Manage_KPI_or_OKR_System.Services
             new(SystemSettingCodes.Author, "VietMach", "Author/meta mặc định.", "Branding"),
             new(SystemSettingCodes.PublicBaseUrl, "https://vietmach-kpi.com", "Base URL public dùng cho canonical/OG URL.", "Branding"),
             new(SystemSettingCodes.CustomCss, "", "CSS tuỳ chỉnh nâng cao, áp dụng toàn hệ thống.", "Branding", "textarea"),
-            new(SystemSettingCodes.AiHistoryRetentionDays, "30", "Thời gian (số ngày) tự động lưu trữ Lịch sử sinh bằng AI trước khi bị xóa.", "System", "number")
+            new(SystemSettingCodes.AiHistoryRetentionDays, "30", "Số ngày lưu lịch sử AI legacy khi tác vụ hủy dữ liệu đã được phê duyệt.", "System", "number"),
+            new(SystemSettingCodes.AiHistoryCleanupApproved, "false", "Chỉ đặt true sau khi tenant đã chốt chính sách retention, có backup đã kiểm tra và phê duyệt thao tác hủy dữ liệu.", "System", "boolean")
         };
 
         private static readonly HashSet<string> BrandingCodes = Definitions
@@ -129,44 +134,73 @@ namespace Manage_KPI_or_OKR_System.Services
         private static readonly Regex UnsafeCustomCssRegex = new(
             @"(?:<|@import\b|expression\s*\(|javascript\s*:|behavior\s*:|-moz-binding\s*:)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        private readonly SemaphoreSlim _brandingCacheGate = new(1, 1);
-        private AppBrandingSettings? _cachedBranding;
-        private DateTime _brandingCacheExpiresAtUtc;
+        private static readonly ConcurrentDictionary<int, SemaphoreSlim> BrandingCacheGates = new();
         private static readonly TimeSpan BrandingCacheTtl = TimeSpan.FromMinutes(5);
 
         private readonly MiniERPDbContext _context;
+        private readonly IMemoryCache? _memoryCache;
+        private readonly ITenantContext? _tenantContext;
 
         public SystemSettingsService(MiniERPDbContext context)
         {
             _context = context;
         }
 
+        public SystemSettingsService(
+            MiniERPDbContext context,
+            IMemoryCache memoryCache,
+            ITenantContext tenantContext)
+        {
+            _context = context;
+            _memoryCache = memoryCache;
+            _tenantContext = tenantContext;
+        }
+
         public async Task<AppBrandingSettings> GetBrandingAsync(CancellationToken cancellationToken = default)
         {
-            var cachedBranding = Volatile.Read(ref _cachedBranding);
-            if (cachedBranding != null && DateTime.UtcNow < _brandingCacheExpiresAtUtc)
+            if (_memoryCache == null)
+            {
+                return await LoadBrandingAsync(cancellationToken);
+            }
+
+            var tenantKey = _tenantContext?.TenantId ?? 0;
+            var cacheKey = GetBrandingCacheKey(tenantKey);
+            if (_memoryCache.TryGetValue(cacheKey, out AppBrandingSettings? cachedBranding) &&
+                cachedBranding != null)
             {
                 return cachedBranding;
             }
 
-            await _brandingCacheGate.WaitAsync(cancellationToken);
+            var gate = BrandingCacheGates.GetOrAdd(tenantKey, _ => new SemaphoreSlim(1, 1));
+            await gate.WaitAsync(cancellationToken);
             try
             {
-                cachedBranding = Volatile.Read(ref _cachedBranding);
-                if (cachedBranding != null && DateTime.UtcNow < _brandingCacheExpiresAtUtc)
+                if (_memoryCache.TryGetValue(cacheKey, out cachedBranding) && cachedBranding != null)
                 {
                     return cachedBranding;
                 }
 
-                var brandingCodes = BrandingCodes.ToList();
-                var parameterRows = await _context.SystemParameters
-                    .AsNoTracking()
-                    .Where(p => p.ParameterCode != null && brandingCodes.Contains(p.ParameterCode))
-                    .ToListAsync(cancellationToken);
+                var branding = await LoadBrandingAsync(cancellationToken);
+                _memoryCache.Set(cacheKey, branding, BrandingCacheTtl);
+                return branding;
+            }
+            finally
+            {
+                gate.Release();
+            }
+        }
 
-                var values = parameterRows
-                    .Where(p => p.ParameterCode != null)
-                    .ToDictionary(p => p.ParameterCode!, p => p.Value ?? "", StringComparer.OrdinalIgnoreCase);
+        private async Task<AppBrandingSettings> LoadBrandingAsync(CancellationToken cancellationToken)
+        {
+            var brandingCodes = BrandingCodes.ToList();
+            var parameterRows = await _context.SystemParameters
+                .AsNoTracking()
+                .Where(p => p.ParameterCode != null && brandingCodes.Contains(p.ParameterCode))
+                .ToListAsync(cancellationToken);
+
+            var values = parameterRows
+                .Where(p => p.ParameterCode != null)
+                .ToDictionary(p => p.ParameterCode!, p => p.Value ?? "", StringComparer.OrdinalIgnoreCase);
 
             string Get(string code)
             {
@@ -181,8 +215,8 @@ namespace Manage_KPI_or_OKR_System.Services
                 return HexColorRegex.IsMatch(value) ? value : GetDefaultValue(code);
             }
 
-                var branding = new AppBrandingSettings
-                {
+            return new AppBrandingSettings
+            {
                 ProductName = Get(SystemSettingCodes.ProductName),
                 ShortName = Get(SystemSettingCodes.ShortName),
                 CompanyName = Get(SystemSettingCodes.CompanyName),
@@ -207,16 +241,7 @@ namespace Manage_KPI_or_OKR_System.Services
                 Author = Get(SystemSettingCodes.Author),
                 PublicBaseUrl = Get(SystemSettingCodes.PublicBaseUrl).TrimEnd('/'),
                 CustomCss = Get(SystemSettingCodes.CustomCss)
-                };
-
-                Volatile.Write(ref _cachedBranding, branding);
-                _brandingCacheExpiresAtUtc = DateTime.UtcNow.Add(BrandingCacheTtl);
-                return branding;
-            }
-            finally
-            {
-                _brandingCacheGate.Release();
-            }
+            };
         }
 
         public async Task<IReadOnlyList<SystemParameter>> EnsureDefaultParametersAsync(CancellationToken cancellationToken = default)
@@ -243,8 +268,7 @@ namespace Manage_KPI_or_OKR_System.Services
             }
 
             await _context.SaveChangesAsync(cancellationToken);
-            Volatile.Write(ref _cachedBranding, null);
-            _brandingCacheExpiresAtUtc = DateTime.MinValue;
+            InvalidateBrandingCache();
 
             return await _context.SystemParameters
                 .AsNoTracking()
@@ -281,8 +305,7 @@ namespace Manage_KPI_or_OKR_System.Services
             }
 
             await _context.SaveChangesAsync(cancellationToken);
-            Volatile.Write(ref _cachedBranding, null);
-            _brandingCacheExpiresAtUtc = DateTime.MinValue;
+            InvalidateBrandingCache();
         }
 
         public async Task SetOperationalValueAsync(
@@ -318,6 +341,15 @@ namespace Manage_KPI_or_OKR_System.Services
 
                 parameter.Value = retentionDays.ToString();
             }
+            else if (code.Equals(SystemSettingCodes.AiHistoryCleanupApproved, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!bool.TryParse(value, out var cleanupApproved))
+                {
+                    throw new InvalidOperationException("Phê duyệt dọn lịch sử AI chỉ nhận giá trị true hoặc false.");
+                }
+
+                parameter.Value = cleanupApproved ? "true" : "false";
+            }
             else
             {
                 parameter.Value = NormalizeValue(code, value);
@@ -331,6 +363,13 @@ namespace Manage_KPI_or_OKR_System.Services
         {
             return Definitions.FirstOrDefault(d => d.Code.Equals(code, StringComparison.OrdinalIgnoreCase))?.DefaultValue ?? "";
         }
+
+        private void InvalidateBrandingCache()
+        {
+            _memoryCache?.Remove(GetBrandingCacheKey(_tenantContext?.TenantId ?? 0));
+        }
+
+        private static string GetBrandingCacheKey(int tenantId) => $"branding:{tenantId}";
 
         public bool IsBrandingCode(string code)
         {

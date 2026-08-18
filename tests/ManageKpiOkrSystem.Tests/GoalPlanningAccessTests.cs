@@ -37,7 +37,7 @@ public sealed class GoalPlanningAccessTests
             new GoalPlanningDraftRequest(OkrId: okr.Id),
             principal);
 
-        Assert.Equal(GoalPlanningDraftResponse.RequiredTaskCount, result.Tasks.Count);
+        Assert.Equal(3, result.Tasks.Count);
         Assert.Equal("DeterministicFallback", result.GenerationMode);
     }
 }

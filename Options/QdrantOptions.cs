@@ -10,6 +10,7 @@ public sealed class QdrantOptions
     public string CollectionName { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;
     public int Dimensions { get; set; } = 1024;
+    public int TimeoutSeconds { get; set; } = 5;
 
     public void Validate()
     {
@@ -50,6 +51,11 @@ public sealed class QdrantOptions
         if (Dimensions != 1024)
         {
             throw new InvalidOperationException("Qdrant:Dimensions must remain 1024.");
+        }
+
+        if (TimeoutSeconds is < 1 or > 30)
+        {
+            throw new InvalidOperationException("Qdrant:TimeoutSeconds must be between 1 and 30.");
         }
     }
 

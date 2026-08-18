@@ -40,6 +40,7 @@ public sealed class OkrKeyResultAiAdvisor : IOkrKeyResultAiAdvisor
     private readonly IOkrKeyResultAiProposalPersistence? _proposalPersistence;
     private readonly IAIEvidenceRetriever? _evidenceRetriever;
     private readonly IAIEvidenceSecurityFilterBuilder? _securityFilterBuilder;
+    private readonly IAiHistoryService? _history;
 
     public OkrKeyResultAiAdvisor(
         MiniERPDbContext context,
@@ -47,7 +48,8 @@ public sealed class OkrKeyResultAiAdvisor : IOkrKeyResultAiAdvisor
         ILogger<OkrKeyResultAiAdvisor> logger,
         IOkrKeyResultAiProposalPersistence? proposalPersistence = null,
         IAIEvidenceRetriever? evidenceRetriever = null,
-        IAIEvidenceSecurityFilterBuilder? securityFilterBuilder = null)
+        IAIEvidenceSecurityFilterBuilder? securityFilterBuilder = null,
+        IAiHistoryService? history = null)
     {
         _context = context;
         _modelClient = modelClient;
@@ -55,6 +57,7 @@ public sealed class OkrKeyResultAiAdvisor : IOkrKeyResultAiAdvisor
         _proposalPersistence = proposalPersistence;
         _evidenceRetriever = evidenceRetriever;
         _securityFilterBuilder = securityFilterBuilder;
+        _history = history;
     }
 
     public async Task<OkrKeyResultAiEvaluationResponse> EvaluateAsync(
@@ -142,6 +145,18 @@ public sealed class OkrKeyResultAiAdvisor : IOkrKeyResultAiAdvisor
                     persisted.LifecycleStatus);
             }
         }
+
+        var historyHandle = _history == null
+            ? null
+            : await _history.BeginAsync(
+                new AiHistoryBeginRequest(
+                    AiHistoryFeatures.OkrKeyResultEvaluation,
+                    $"Đánh giá KR · {keyResult.KeyResultName}",
+                    new { keyResultId = keyResult.Id, proposedCurrentValue },
+                    SessionId: request.HistorySessionId,
+                    OperationId: request.HistoryOperationId),
+                user,
+                cancellationToken);
 
         var targetIsUsable = keyResult.TargetValue is > 0m;
         var rawProgress = ProgressHelper.CalculateProgress(
@@ -277,6 +292,35 @@ public sealed class OkrKeyResultAiAdvisor : IOkrKeyResultAiAdvisor
                     exception,
                     "Failed to persist OKR Key Result AI proposal metadata.");
             }
+        }
+
+        if (historyHandle != null && _history != null)
+        {
+            await _history.CompleteAsync(
+                historyHandle,
+                new
+                {
+                    keyResultId = response.KeyResultId,
+                    proposedCurrentValue = response.ProposedCurrentValue,
+                    proposal = new
+                    {
+                        response.Proposal.ProposedStatus,
+                        response.Proposal.ProposedProgressPercent,
+                        response.Proposal.Rationale,
+                        confidence = response.Proposal.Confidence.ToString(),
+                        response.Proposal.RequiresHumanReview
+                    }
+                },
+                response.AgentRunId,
+                response.ProposalLifecycleStatus == "AwaitingHumanReview"
+                    ? AiHistoryStatuses.AwaitingReview
+                    : AiHistoryStatuses.Completed,
+                cancellationToken: cancellationToken);
+            response = response with
+            {
+                HistorySessionId = historyHandle.SessionId,
+                HistoryOperationId = historyHandle.OperationId
+            };
         }
 
         return response;
@@ -436,6 +480,17 @@ public sealed class OkrKeyResultAiAdvisor : IOkrKeyResultAiAdvisor
             ? nameof(AgentRunState.Completed)
             : nameof(AgentRunState.Cancelled);
         run.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        if (_history != null)
+        {
+            await _history.AppendDecisionAsync(
+                runId,
+                new { decision, proposalId = proposal.Id },
+                accepted ? AiHistoryStatuses.Applied : AiHistoryStatuses.Rejected,
+                user,
+                request.HistoryOperationId,
+                saveChanges: false,
+                cancellationToken: cancellationToken);
+        }
         try
         {
             await _context.SaveChangesAsync(cancellationToken);

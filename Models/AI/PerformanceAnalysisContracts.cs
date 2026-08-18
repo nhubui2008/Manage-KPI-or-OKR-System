@@ -20,6 +20,8 @@ public sealed class PerformanceAnalysisResponse
 {
     public bool Success { get; set; } = true;
     public Guid? AgentRunId { get; set; }
+    public Guid? HistorySessionId { get; set; }
+    public Guid? HistoryOperationId { get; set; }
     public bool AdvisoryOnly { get; set; } = true;
     public PerformanceAnalysisInsight? Overview { get; set; }
     public List<PerformanceAnalysisInsight> Strengths { get; set; } = new();

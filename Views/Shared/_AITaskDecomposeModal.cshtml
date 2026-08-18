@@ -21,7 +21,7 @@
                     <div class="row g-3 align-items-end">
                         <div class="col-lg-8">
                             <label class="form-label small fw-semibold text-secondary">Gợi ý thêm cho AI</label>
-                            <textarea id="aiTaskAdditionalContext" class="form-control" rows="2" maxlength="1000" placeholder="VD: ưu tiên trong 2 tuần tới, chia theo phòng ban sales, tránh task quá lớn..."></textarea>
+                            <textarea id="aiTaskAdditionalContext" class="form-control" rows="2" placeholder="VD: ưu tiên trong 2 tuần tới, chia theo phòng ban sales, tránh task quá lớn..."></textarea>
                         </div>
                         <div class="col-lg-4">
                             <button type="button" class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-2" id="aiTaskRunBtn">
@@ -1117,6 +1117,7 @@
                     : ['KR', 'OKRKEYRESULT'].includes(String(state.sourceType).toUpperCase())
                         ? { okrKeyResultId: state.sourceId, additionalContext: byId('aiTaskAdditionalContext').value }
                     : { okrId: state.sourceId, additionalContext: byId('aiTaskAdditionalContext').value };
+            body.historyOperationId = idempotencyKey();
             const endpoint = '/AI/CreateGoalPlanningDraft';
 
             try {
