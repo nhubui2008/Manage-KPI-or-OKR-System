@@ -1257,9 +1257,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function normalizeSidebarPath(path) {
         if (!path) return '/';
 
-        const normalized = path.toLowerCase();
+        let normalized = path.toLowerCase();
         if (normalized.length > 1 && normalized.endsWith('/')) {
-            return normalized.slice(0, -1);
+            normalized = normalized.slice(0, -1);
+        }
+
+        if (normalized.endsWith('/index')) {
+            normalized = normalized.slice(0, -6) || '/';
         }
 
         return normalized;
@@ -1817,9 +1821,9 @@ document.addEventListener('DOMContentLoaded', function () {
         // this single high-frequency destination makes the sidebar click immediate.
         const primaryKpiLink = instantNavigationLinks.find(function (link) {
             const url = getSidebarUrl(link);
-            return url && normalizeSidebarPath(url.pathname) === '/KPIs';
+            return url && normalizeSidebarPath(url.pathname) === '/kpis';
         });
-        if (primaryKpiLink && currentPath !== '/KPIs') {
+        if (primaryKpiLink && currentPath !== '/kpis') {
             const warmPrimaryKpi = () => prefetchInstantNavigationLink(primaryKpiLink);
             window.setTimeout(function () {
                 if (typeof window.requestIdleCallback === 'function') {

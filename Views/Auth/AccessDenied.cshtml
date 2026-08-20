@@ -4,15 +4,60 @@
 }
 <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
 
-<main class="auth-page">
-    <partial name="_AuthBrandPanel" />
-    <section class="auth-form-panel" aria-labelledby="access-denied-title">
-        <a href="/" class="auth-back-link"><i class="bi bi-arrow-left" aria-hidden="true"></i> Về trang chủ</a>
-        <div class="auth-card">
-            <div class="auth-mobile-brand" aria-label="VietMach System, Manage KPI &amp; OKR"><span class="auth-brand-mark" aria-hidden="true"><i class="bi bi-bullseye"></i></span><span><strong>VietMach System</strong><small>Manage KPI &amp; OKR</small></span></div>
-            <div class="auth-status-icon auth-status-icon-danger" aria-hidden="true"><i class="bi bi-shield-lock"></i></div>
-            <header class="auth-header"><p class="auth-eyebrow">Quyền truy cập</p><h1 id="access-denied-title">Bạn không có quyền truy cập</h1><p>Tài khoản hiện tại chưa được cấp quyền xem hoặc thực hiện chức năng này.</p></header>
-            <div class="auth-status-actions"><a href="/Dashboard/Index" class="auth-submit"><i class="bi bi-grid" aria-hidden="true"></i><span>Về trang tổng quan</span></a><a asp-action="Logout" class="auth-secondary">Đăng xuất</a></div>
+<div class="crystal-scene-container" id="crystalScene">
+    <!-- Ambient Glow -->
+    <div class="crystal-ambient-glow" aria-hidden="true">
+        <div class="ambient-orb ambient-orb-1"></div>
+        <div class="ambient-orb ambient-orb-2"></div>
+    </div>
+
+    <!-- Floating Crystals -->
+    <div class="crystal-objects-layer" aria-hidden="true">
+        <div class="crystal-item crystal-1" data-depth="0.045">
+            <svg viewBox="0 0 140 210" fill="none"><polygon points="70,10 125,75 105,185 35,160 15,65" fill="#fecaca" opacity="0.85" stroke="#fff" stroke-width="1.2" /></svg>
         </div>
-    </section>
-</main>
+        <div class="crystal-item crystal-2" data-depth="0.06">
+            <svg viewBox="0 0 155 250" fill="none"><polygon points="75,10 135,60 145,190 85,240 20,180 15,70" fill="#fed7aa" opacity="0.85" stroke="#fff" stroke-width="1.2" /></svg>
+        </div>
+    </div>
+
+    <!-- Top Nav -->
+    <nav class="auth-top-nav" aria-label="Điều hướng phụ">
+        <a href="/" class="auth-back-capsule" aria-label="Về trang chủ">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Về trang chủ</span>
+        </a>
+    </nav>
+
+    <!-- Main Card -->
+    <main class="auth-main-wrapper" id="authMainCard">
+        <div class="auth-brand-badge-wrap">
+            <a href="/" class="auth-crystal-badge" aria-label="VietMach System - Trang chủ" title="VietMach System">
+                <i class="bi bi-shield-x" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        <section class="auth-crystal-card" aria-labelledby="access-denied-title">
+            <div class="auth-status-icon auth-status-icon-danger" aria-hidden="true">
+                <i class="bi bi-shield-lock"></i>
+            </div>
+            <header class="auth-card-header">
+                <p class="auth-eyebrow">Quyền truy cập</p>
+                <h1 id="access-denied-title">Bạn không có quyền truy cập</h1>
+                <p>Tài khoản hiện tại chưa được cấp quyền xem hoặc thực hiện chức năng này.</p>
+            </header>
+
+            <div class="auth-status-actions">
+                <a href="/Dashboard/Index" class="auth-submit-btn">
+                    <i class="bi bi-grid" aria-hidden="true"></i>
+                    <span>Về trang tổng quan</span>
+                </a>
+                <a asp-action="Logout" class="auth-secondary-btn">Đăng xuất</a>
+            </div>
+        </section>
+    </main>
+</div>
+
+@section Scripts {
+    <script src="~/js/login.js" asp-append-version="true"></script>
+}

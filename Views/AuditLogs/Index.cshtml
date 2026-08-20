@@ -13,6 +13,11 @@
     var hasFilters = !string.IsNullOrWhiteSpace(currentFilter) || currentRoleId.HasValue || !string.IsNullOrWhiteSpace(startDate) || !string.IsNullOrWhiteSpace(endDate);
     var currentPage = Model?.PageIndex ?? 1;
     var totalPages = Model?.TotalPages ?? 0;
+    var totalCount = Model?.TotalCount ?? logs.Count;
+
+    var createCount = logs.Count(l => l.ActionType != null && (l.ActionType.Contains("CREATE") || l.ActionType.Contains("APPROVE")));
+    var updateCount = logs.Count(l => l.ActionType != null && (l.ActionType.Contains("UPDATE") || l.ActionType.Contains("EDIT") || l.ActionType.Contains("PROPOSAL") || l.ActionType.Contains("COMMENT")));
+    var deleteCount = logs.Count(l => l.ActionType != null && (l.ActionType.Contains("DELETE") || l.ActionType.Contains("REJECT")));
 
     string GetActionClass(string? action)
     {
@@ -24,6 +29,20 @@
             "COMMENT" => "audit-action--info",
             "SUBMIT_REVIEW" => "audit-action--primary",
             _ => "audit-action--neutral"
+        };
+    }
+
+    string GetActionIcon(string? action)
+    {
+        return action switch
+        {
+            "CREATE" or "CREATE_APPROVED" => "plus-circle-fill",
+            "APPROVE" or "DIRECTOR_APPROVE" => "check-circle-fill",
+            "UPDATE" => "pencil-square",
+            "DELETE" or "REJECT" or "DIRECTOR_REJECT" => "x-circle-fill",
+            "COMMENT" => "chat-left-text-fill",
+            "SUBMIT_REVIEW" => "send-fill",
+            _ => "activity"
         };
     }
 
@@ -41,6 +60,7 @@
             "SUBMIT_REVIEW" => "Gửi duyệt",
             "DIRECTOR_APPROVE" => "GĐ duyệt",
             "DIRECTOR_REJECT" => "GĐ từ chối",
+            "AUTO_SYNC_PROPOSAL" => "Đề xuất đồng bộ",
             _ => string.IsNullOrWhiteSpace(action) ? "Không xác định" : action
         };
     }
@@ -56,10 +76,189 @@
             font-size: 0.88rem;
         }
 
-        .auditlog-page .auditlog-filter-form {
-            grid-template-columns: minmax(240px, 1.4fr) minmax(170px, 0.8fr) minmax(150px, 0.7fr) minmax(150px, 0.7fr) auto auto;
+        /* 4 TOP STAT CARDS */
+        .auditlog-page .auditlog-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.25rem;
         }
 
+        .auditlog-page .auditlog-stat-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .auditlog-page .auditlog-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+        }
+
+        .auditlog-page .auditlog-stat-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        .auditlog-page .auditlog-stat-icon.icon-primary { background: rgba(79, 70, 229, 0.08); color: #4f46e5; }
+        .auditlog-page .auditlog-stat-icon.icon-success { background: rgba(16, 185, 129, 0.08); color: #10b981; }
+        .auditlog-page .auditlog-stat-icon.icon-warning { background: rgba(245, 158, 11, 0.08); color: #f59e0b; }
+        .auditlog-page .auditlog-stat-icon.icon-danger  { background: rgba(239, 68, 68, 0.08); color: #ef4444; }
+
+        .auditlog-page .auditlog-stat-value {
+            font-size: 1.35rem;
+            font-weight: 850;
+            color: #0f172a;
+            line-height: 1.1;
+        }
+
+        .auditlog-page .auditlog-stat-label {
+            color: #64748b;
+            font-size: 0.76rem;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        /* FILTER FORM */
+        .auditlog-page .auditlog-filter-form {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            align-items: center !important;
+            gap: 0.65rem !important;
+            width: 100% !important;
+            margin-top: 0.75rem !important;
+        }
+
+        .auditlog-page .auditlog-filter-form label {
+            margin: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            flex-direction: row !important;
+            justify-content: flex-start !important;
+        }
+
+        .auditlog-page .auditlog-filter-form label > span {
+            display: none !important;
+        }
+
+        .auditlog-page .auditlog-filter-form .evaluation-search-field {
+            flex: 2 1 240px !important;
+            min-width: 200px !important;
+            margin: 0 !important;
+        }
+
+        .auditlog-page .auditlog-filter-form label:not(.evaluation-search-field) {
+            flex: 1 1 150px !important;
+            min-width: 135px !important;
+            margin: 0 !important;
+        }
+
+        .auditlog-page .auditlog-filter-form .evaluation-search-input-wrap {
+            position: relative !important;
+            display: flex !important;
+            align-items: center !important;
+            width: 100% !important;
+            height: 38px !important;
+            margin: 0 !important;
+        }
+
+        .auditlog-page .auditlog-filter-form .evaluation-search-input-wrap i {
+            position: absolute !important;
+            left: 11px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            color: #878a99 !important;
+            font-size: 0.88rem !important;
+            pointer-events: none !important;
+            z-index: 2 !important;
+            margin: 0 !important;
+            line-height: 1 !important;
+        }
+
+        .auditlog-page .auditlog-filter-form .evaluation-search-input-wrap input,
+        .auditlog-page .auditlog-filter-form select,
+        .auditlog-page .auditlog-filter-form input[type="date"],
+        .auditlog-page .auditlog-filter-form .evaluation-secondary-action,
+        .auditlog-page .auditlog-filter-form .evaluation-filter-button {
+            height: 38px !important;
+            min-height: 38px !important;
+            max-height: 38px !important;
+            border-radius: 8px !important;
+            box-sizing: border-box !important;
+            font-size: 0.83rem !important;
+            margin: 0 !important;
+            vertical-align: middle !important;
+            align-self: center !important;
+        }
+
+        .auditlog-page .auditlog-filter-form .evaluation-search-input-wrap input {
+            padding: 0 12px 0 34px !important;
+            width: 100% !important;
+            border: 1px solid #d1d5db !important;
+            background: #ffffff !important;
+            color: #212529 !important;
+            line-height: 36px !important;
+        }
+
+        .auditlog-page .auditlog-filter-form select,
+        .auditlog-page .auditlog-filter-form input[type="date"] {
+            width: 100% !important;
+            border: 1px solid #d1d5db !important;
+            padding: 0 28px 0 12px !important;
+            line-height: 36px !important;
+            background-color: #ffffff !important;
+        }
+
+        .auditlog-page .auditlog-filter-form .evaluation-secondary-action,
+        .auditlog-page .auditlog-filter-form .evaluation-filter-button {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.45rem !important;
+            padding: 0 1.1rem !important;
+            white-space: nowrap !important;
+            line-height: 36px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            flex-shrink: 0 !important;
+        }
+
+        .auditlog-page .auditlog-filter-form .evaluation-secondary-action {
+            border: 1px solid #d1d5db !important;
+            background: #ffffff !important;
+            color: #374151 !important;
+        }
+
+        .auditlog-page .auditlog-filter-form .evaluation-secondary-action:hover {
+            background: #f3f4f6 !important;
+            border-color: #9ca3af !important;
+            color: #111827 !important;
+        }
+
+        .auditlog-page .auditlog-filter-form .evaluation-filter-button {
+            background: #4f46e5 !important;
+            border: 1px solid #4f46e5 !important;
+            color: #ffffff !important;
+        }
+
+        .auditlog-page .auditlog-filter-form .evaluation-filter-button:hover {
+            background: #4338ca !important;
+            border-color: #4338ca !important;
+        }
+
+        /* TABLE STYLING */
         .auditlog-page .auditlog-table {
             min-width: 1100px;
         }
@@ -78,8 +277,8 @@
             flex: 0 0 34px;
             place-items: center;
             border-radius: 8px;
-            background: var(--evaluation-brand-soft);
-            color: var(--evaluation-brand);
+            background: rgba(79, 70, 229, 0.08);
+            color: #4f46e5;
             font-size: 0.75rem;
             font-weight: 800;
         }
@@ -93,86 +292,84 @@
 
         .auditlog-page .auditlog-user strong,
         .auditlog-page .auditlog-time strong {
-            color: var(--evaluation-ink);
+            color: #1e293b;
             font-size: 0.8rem;
         }
 
         .auditlog-page .auditlog-user small,
         .auditlog-page .auditlog-time small {
             margin-top: 0.12rem;
-            color: var(--evaluation-muted);
+            color: #64748b;
             font-size: 0.72rem;
         }
 
         .auditlog-page .auditlog-role {
             display: inline-flex;
             align-items: center;
-            min-height: 28px;
-            border: 1px solid var(--evaluation-line);
-            border-radius: 7px;
-            padding: 0.3rem 0.55rem;
-            background: var(--evaluation-soft);
+            min-height: 26px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 0.25rem 0.55rem;
+            background: #f8fafc;
             color: #475467;
             font-size: 0.72rem;
-            font-weight: 700;
+            font-weight: 650;
             white-space: nowrap;
         }
 
         .auditlog-page .audit-action {
             display: inline-flex;
             align-items: center;
-            min-height: 28px;
+            gap: 4px;
+            min-height: 26px;
             border: 1px solid transparent;
-            border-radius: 7px;
-            padding: 0.3rem 0.55rem;
+            border-radius: 6px;
+            padding: 0.25rem 0.6rem;
             font-size: 0.72rem;
             font-weight: 750;
             white-space: nowrap;
         }
 
-        .auditlog-page .audit-action--success { border-color: #b8dfcc; background: #edf8f2; color: #126b38; }
-        .auditlog-page .audit-action--warning { border-color: #f5dfaa; background: #fff6df; color: #98620e; }
-        .auditlog-page .audit-action--danger { border-color: #f4c8c3; background: #fff0ee; color: #b42318; }
-        .auditlog-page .audit-action--info { border-color: #c9e0f4; background: #eef6fd; color: #245f92; }
-        .auditlog-page .audit-action--primary { border-color: var(--evaluation-brand-border); background: var(--evaluation-brand-soft); color: var(--evaluation-brand); }
-        .auditlog-page .audit-action--neutral { border-color: var(--evaluation-line); background: var(--evaluation-soft); color: #596273; }
+        .auditlog-page .audit-action--success { border-color: rgba(16, 185, 129, 0.2); background: rgba(16, 185, 129, 0.08); color: #059669; }
+        .auditlog-page .audit-action--warning { border-color: rgba(245, 158, 11, 0.2); background: rgba(245, 158, 11, 0.08); color: #d97706; }
+        .auditlog-page .audit-action--danger  { border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.08); color: #dc2626; }
+        .auditlog-page .audit-action--info    { border-color: rgba(6, 182, 212, 0.2); background: rgba(6, 182, 212, 0.08); color: #0891b2; }
+        .auditlog-page .audit-action--primary { border-color: rgba(79, 70, 229, 0.2); background: rgba(79, 70, 229, 0.08); color: #4f46e5; }
+        .auditlog-page .audit-action--neutral { border-color: #e2e8f0; background: #f8fafc; color: #64748b; }
 
         .auditlog-page .auditlog-table-name {
-            color: var(--evaluation-brand);
-            font-size: 0.76rem;
-            font-weight: 750;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 0.75rem;
+            font-weight: 700;
+            font-family: Consolas, "Courier New", monospace;
         }
 
         .auditlog-page .auditlog-summary {
             max-width: 330px;
             overflow: hidden;
-            color: var(--evaluation-muted);
+            color: #64748b;
             font-size: 0.75rem;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
         .auditlog-page .auditlog-detail-button {
-            min-height: 36px;
-            padding: 0.5rem 0.7rem;
+            height: 32px;
+            padding: 0 0.75rem;
             font-size: 0.75rem;
-        }
-
-        .auditlog-page .auditlog-card > p {
-            font-variant-numeric: tabular-nums;
-        }
-
-        .auditlog-page .auditlog-card-summary {
-            margin: 0 0 0.85rem;
-            color: var(--evaluation-muted);
-            font-size: 0.76rem;
-            line-height: 1.55;
-            overflow-wrap: anywhere;
+            border-radius: 6px;
+            font-weight: 600;
         }
 
         .auditlog-page .auditlog-pagination-meta {
             margin: 0;
-            color: var(--evaluation-muted);
+            color: #64748b;
             font-size: 0.78rem;
         }
 
@@ -181,7 +378,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 1rem;
-            border-top: 1px solid var(--evaluation-line);
+            border-top: 1px solid #e2e8f0;
             margin-top: 0.9rem;
             padding-top: 0.9rem;
         }
@@ -190,102 +387,206 @@
             padding-top: 0;
         }
 
+        /* ============================================================ */
+        /* MODAL REDESIGN: ULTRA-MODERN DIFF COMPARISON DIALOG          */
+        /* ============================================================ */
+        .auditlog-modal {
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+            overflow: hidden;
+        }
+
+        .auditlog-modal .modal-header {
+            padding: 16px 22px;
+            background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .auditlog-modal .modal-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .auditlog-modal .modal-title-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            color: #ffffff;
+            font-size: 1.15rem;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+            flex-shrink: 0;
+        }
+
+        .auditlog-modal .modal-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 2px;
+        }
+
+        .auditlog-modal .modal-subtitle {
+            color: #64748b;
+            font-size: 0.78rem;
+            margin-bottom: 0;
+        }
+
+        .auditlog-modal .modal-body {
+            padding: 20px 22px;
+            background: #ffffff;
+        }
+
+        /* 4 FACT CHIPS */
         .auditlog-modal .auditlog-modal-facts {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 0.75rem;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 18px;
         }
 
         .auditlog-modal .auditlog-modal-fact {
             min-width: 0;
-            border: 1px solid var(--evaluation-line);
-            border-radius: 8px;
-            padding: 0.8rem;
-            background: var(--evaluation-soft);
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 12px;
+            background: #f8fafc;
+            transition: all 0.15s ease;
         }
 
-        .auditlog-modal .auditlog-modal-fact > span:first-child,
-        .auditlog-modal .auditlog-data-heading span {
-            display: block;
-            margin-bottom: 0.35rem;
-            color: var(--evaluation-muted);
-            font-size: 0.7rem;
+        .auditlog-modal .auditlog-modal-fact:hover {
+            border-color: #cbd5e1;
+            background: #f1f5f9;
+        }
+
+        .auditlog-modal .auditlog-modal-fact-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 4px;
+            color: #64748b;
+            font-size: 0.68rem;
             font-weight: 750;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
+        .auditlog-modal .auditlog-modal-fact-value {
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: #1e293b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.3;
+        }
+
+        /* DATA DIFF SECTION */
         .auditlog-modal .auditlog-data-heading {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 0.75rem;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .auditlog-modal .auditlog-data-title {
+            font-size: 0.86rem;
+            font-weight: 800;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .auditlog-modal .auditlog-data-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 0.75rem;
+            gap: 12px;
         }
 
         .auditlog-modal .auditlog-data-grid.is-single {
             grid-template-columns: 1fr;
         }
 
-        .auditlog-modal .auditlog-data-panel > span {
-            display: block;
-            margin-bottom: 0.35rem;
-            color: var(--evaluation-muted);
-            font-size: 0.68rem;
+        .auditlog-modal .auditlog-data-panel {
+            display: flex;
+            flex-direction: column;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            background: #0f172a;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+        }
+
+        .auditlog-modal .auditlog-data-panel.panel-old {
+            border-top: 3px solid #ef4444;
+        }
+
+        .auditlog-modal .auditlog-data-panel.panel-new {
+            border-top: 3px solid #10b981;
+        }
+
+        .auditlog-modal .auditlog-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+            font-size: 0.72rem;
             font-weight: 750;
         }
 
+        .auditlog-modal .panel-old .auditlog-panel-header { color: #fca5a5; }
+        .auditlog-modal .panel-new .auditlog-panel-header { color: #6ee7b7; }
+
         .auditlog-modal pre {
-            max-height: 320px;
+            max-height: 280px;
             margin: 0;
             overflow: auto;
-            border-radius: 8px;
-            padding: 0.85rem;
-            background: #172033;
-            color: #f8fafc;
-            font-size: 0.74rem;
+            padding: 12px 14px;
+            background: transparent;
+            color: #f1f5f9;
+            font-family: Consolas, "JetBrains Mono", Monaco, "Courier New", monospace;
+            font-size: 0.76rem;
             line-height: 1.55;
             white-space: pre-wrap;
             word-break: break-word;
         }
 
-        @@media (max-width: 1100px) {
-            .auditlog-page .auditlog-filter-form {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
+        .auditlog-modal pre.empty-state {
+            color: #64748b;
+            font-style: italic;
+        }
 
-            .auditlog-page .auditlog-filter-form .evaluation-search-field {
-                grid-column: 1 / -1;
+        .auditlog-modal .modal-footer {
+            padding: 12px 22px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        @@media (max-width: 1200px) {
+            .auditlog-page .auditlog-stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
 
-        @@media (max-width: 700px) {
-            .auditlog-page .auditlog-filter-form {
+        @@media (max-width: 768px) {
+            .auditlog-page .auditlog-stats-grid {
                 grid-template-columns: 1fr;
+                gap: 0.75rem;
             }
 
-            .auditlog-page .auditlog-filter-form .evaluation-search-field {
-                grid-column: auto;
+            .auditlog-modal .auditlog-modal-facts {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
-            .auditlog-page .auditlog-filter-form .evaluation-secondary-action,
-            .auditlog-page .auditlog-filter-form .evaluation-filter-button {
-                width: 100%;
-            }
-
-            .auditlog-page .auditlog-pagination-row {
-                align-items: stretch;
-                flex-direction: column;
-            }
-
-            .auditlog-page .auditlog-pagination-row .evaluation-pagination {
-                justify-content: center;
-            }
-
-            .auditlog-modal .auditlog-modal-facts,
             .auditlog-modal .auditlog-data-grid {
                 grid-template-columns: 1fr;
             }
@@ -294,21 +595,63 @@
 }
 
 <div class="evaluation-page auditlog-page">
-    <header class="evaluation-page-header">
+    <!-- PAGE HEADER -->
+    <header class="evaluation-page-header mb-3.5">
         <div>
-            <h1>Nhật ký Hệ thống</h1>
+            <h1 class="h4 font-weight-bold mb-1">Nhật ký Hệ thống</h1>
             <p class="auditlog-header-copy">Theo dõi người thực hiện, hành động và dữ liệu thay đổi trong các luồng nghiệp vụ quan trọng.</p>
-            <nav class="evaluation-breadcrumb" aria-label="Điều hướng trang">
+            <nav class="evaluation-breadcrumb mt-1" aria-label="Điều hướng trang">
                 <a href="/">Trang chủ</a>
-                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <i class="bi bi-chevron-right separator" aria-hidden="true"></i>
                 <span>Hệ thống</span>
-                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                <i class="bi bi-chevron-right separator" aria-hidden="true"></i>
                 <span>Nhật ký</span>
             </nav>
         </div>
     </header>
 
-    <section class="evaluation-filter-panel" aria-labelledby="auditLogFilterHeading">
+    <!-- 4 STAT CARDS -->
+    <section class="auditlog-stats-grid" aria-label="Thống kê nhật ký">
+        <div class="auditlog-stat-card">
+            <div class="auditlog-stat-icon icon-primary">
+                <i class="bi bi-journal-text"></i>
+            </div>
+            <div>
+                <div class="auditlog-stat-value">@totalCount</div>
+                <div class="auditlog-stat-label">Tổng bản ghi nhật ký</div>
+            </div>
+        </div>
+        <div class="auditlog-stat-card">
+            <div class="auditlog-stat-icon icon-success">
+                <i class="bi bi-plus-circle"></i>
+            </div>
+            <div>
+                <div class="auditlog-stat-value text-success">@createCount</div>
+                <div class="auditlog-stat-label">Tạo mới & Duyệt (trang này)</div>
+            </div>
+        </div>
+        <div class="auditlog-stat-card">
+            <div class="auditlog-stat-icon icon-warning">
+                <i class="bi bi-pencil-square"></i>
+            </div>
+            <div>
+                <div class="auditlog-stat-value text-warning">@updateCount</div>
+                <div class="auditlog-stat-label">Cập nhật & Đề xuất</div>
+            </div>
+        </div>
+        <div class="auditlog-stat-card">
+            <div class="auditlog-stat-icon icon-danger">
+                <i class="bi bi-trash3"></i>
+            </div>
+            <div>
+                <div class="auditlog-stat-value text-danger">@deleteCount</div>
+                <div class="auditlog-stat-label">Xóa & Từ chối</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FILTER PANEL -->
+    <section class="evaluation-filter-panel mb-3.5" aria-labelledby="auditLogFilterHeading">
         <div class="evaluation-filter-heading">
             <div>
                 <strong id="auditLogFilterHeading">Tra cứu nhật ký</strong>
@@ -323,12 +666,14 @@
         </div>
         <form asp-action="Index" method="get" class="evaluation-filter-form auditlog-filter-form">
             <label class="evaluation-search-field">
-                <span>Từ khóa</span>
-                <i class="bi bi-search" aria-hidden="true"></i>
-                <input type="search" name="searchString" value="@currentFilter" placeholder="Tài khoản, bảng hoặc hành động" />
+                <span class="visually-hidden">Tìm kiếm</span>
+                <div class="evaluation-search-input-wrap">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input type="search" name="searchString" value="@currentFilter" placeholder="Tài khoản, bảng hoặc hành động..." autocomplete="off" />
+                </div>
             </label>
             <label>
-                <span>Vai trò thao tác</span>
+                <span class="visually-hidden">Vai trò thao tác</span>
                 <select name="roleId" class="no-select2">
                     <option value="">Tất cả vai trò</option>
                     @foreach (var role in roles)
@@ -338,22 +683,25 @@
                 </select>
             </label>
             <label>
-                <span>Từ ngày</span>
+                <span class="visually-hidden">Từ ngày</span>
                 <input type="date" name="startDate" value="@startDate" />
             </label>
             <label>
-                <span>Đến ngày</span>
+                <span class="visually-hidden">Đến ngày</span>
                 <input type="date" name="endDate" value="@endDate" />
             </label>
             <a asp-action="Index" class="evaluation-secondary-action" aria-label="Đặt lại bộ lọc">
-                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Đặt lại
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                <span>Đặt lại</span>
             </a>
             <button type="submit" class="evaluation-filter-button">
-                <i class="bi bi-funnel" aria-hidden="true"></i>Lọc
+                <i class="bi bi-funnel" aria-hidden="true"></i>
+                <span>Lọc</span>
             </button>
         </form>
     </section>
 
+    <!-- RESULTS SECTION -->
     <section class="evaluation-results" aria-labelledby="auditLogResultsHeading">
         <div class="evaluation-results-heading">
             <strong id="auditLogResultsHeading">Lịch sử thay đổi</strong>
@@ -398,6 +746,8 @@
                             }
                             var initial = userName.Length > 0 ? userName[0].ToString().ToUpperInvariant() : "?";
                             var changeSummary = string.IsNullOrEmpty(log.NewData) ? (string.IsNullOrEmpty(log.OldData) ? "Không có dữ liệu chi tiết" : log.OldData) : log.NewData;
+                            var formattedTime = log.LogTime?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Chưa xác định";
+
                             <tr>
                                 <td>
                                     <div class="auditlog-time">
@@ -412,18 +762,31 @@
                                     </div>
                                 </td>
                                 <td><span class="auditlog-role">@roleName</span></td>
-                                <td><span class="audit-action @GetActionClass(log.ActionType)">@GetActionText(log.ActionType)</span></td>
-                                <td><code class="auditlog-table-name">@(log.ImpactedTable ?? "Không xác định")</code></td>
+                                <td>
+                                    <span class="audit-action @GetActionClass(log.ActionType)">
+                                        <i class="bi bi-@GetActionIcon(log.ActionType)"></i>
+                                        @GetActionText(log.ActionType)
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="auditlog-table-name">
+                                        <i class="bi bi-database"></i>
+                                        @(log.ImpactedTable ?? "Không xác định")
+                                    </span>
+                                </td>
                                 <td><div class="auditlog-summary" title="@changeSummary">@changeSummary</div></td>
                                 <td class="text-end">
-                                    <button type="button" class="evaluation-secondary-action auditlog-detail-button auditlog-detail-btn"
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 auditlog-detail-btn"
                                             data-id="@log.Id"
                                             data-action="@log.ActionType"
                                             data-table="@log.ImpactedTable"
+                                            data-user="@userName"
+                                            data-role="@roleName"
+                                            data-time="@formattedTime"
                                             data-old="@log.OldData"
                                             data-new="@log.NewData"
                                             aria-label="Xem chi tiết nhật ký #@log.Id">
-                                        <i class="bi bi-eye" aria-hidden="true"></i>Chi tiết
+                                        <i class="bi bi-eye me-1" aria-hidden="true"></i>Chi tiết
                                     </button>
                                 </td>
                             </tr>
@@ -442,13 +805,15 @@
                         roleName = mappedRoleName;
                     }
                     var changeSummary = string.IsNullOrEmpty(log.NewData) ? (string.IsNullOrEmpty(log.OldData) ? "Không có dữ liệu chi tiết" : log.OldData) : log.NewData;
+                    var formattedTime = log.LogTime?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Chưa xác định";
+
                     <article class="evaluation-period-card auditlog-card">
                         <div class="evaluation-card-topline">
                             <span class="audit-action @GetActionClass(log.ActionType)">@GetActionText(log.ActionType)</span>
                             <span class="auditlog-role">@roleName</span>
                         </div>
                         <h2>@userName</h2>
-                        <p>@(log.LogTime?.ToString("dd/MM/yyyy HH:mm:ss") ?? "Chưa xác định")</p>
+                        <p>@formattedTime</p>
                         <dl>
                             <div><dt>Bảng tác động</dt><dd>@(log.ImpactedTable ?? "Không xác định")</dd></div>
                             <div><dt>Mã nhật ký</dt><dd>#@log.Id</dd></div>
@@ -456,14 +821,17 @@
                         <p class="auditlog-card-summary">@changeSummary</p>
                         <div class="evaluation-card-footer">
                             <span class="evaluation-no-action">Dữ liệu chỉ đọc</span>
-                            <button type="button" class="evaluation-secondary-action auditlog-detail-button auditlog-detail-btn"
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 auditlog-detail-btn"
                                     data-id="@log.Id"
                                     data-action="@log.ActionType"
                                     data-table="@log.ImpactedTable"
+                                    data-user="@userName"
+                                    data-role="@roleName"
+                                    data-time="@formattedTime"
                                     data-old="@log.OldData"
                                     data-new="@log.NewData"
-                                    aria-label="Xem chi tiết nhật ký #@log.Id trên thẻ di động">
-                                <i class="bi bi-eye" aria-hidden="true"></i>Chi tiết
+                                    aria-label="Xem chi tiết nhật ký #@log.Id">
+                                <i class="bi bi-eye me-1" aria-hidden="true"></i>Chi tiết
                             </button>
                         </div>
                     </article>
@@ -511,48 +879,89 @@
     </section>
 </div>
 
+<!-- ========================================================================= -->
+<!-- ULTRA-MODERN DIFF COMPARISON MODAL DIALOG                                -->
+<!-- ========================================================================= -->
 <div class="modal fade" id="logDetailsModal" tabindex="-1" aria-labelledby="logDetailsModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content evaluation-modal auditlog-modal">
+        <div class="modal-content auditlog-modal">
             <div class="modal-header">
-                <div>
-                    <h2 class="modal-title" id="logDetailsModalTitle">Chi tiết Nhật ký Hệ thống</h2>
-                    <p class="evaluation-form-hint">Đối chiếu dữ liệu trước và sau thao tác được ghi nhận.</p>
+                <div class="modal-title-wrap">
+                    <div class="modal-title-icon">
+                        <i class="bi bi-journal-text"></i>
+                    </div>
+                    <div>
+                        <h2 class="modal-title" id="logDetailsModalTitle">Chi tiết Nhật ký Hệ thống</h2>
+                        <p class="modal-subtitle">Đối chiếu dữ liệu trước và sau thao tác được ghi nhận.</p>
+                    </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng cửa sổ chi tiết"></button>
             </div>
             <div class="modal-body">
+                <!-- 4 FACT CHIPS -->
                 <div class="auditlog-modal-facts">
                     <div class="auditlog-modal-fact">
-                        <span>Hành động</span>
-                        <span id="modalAction" class="audit-action audit-action--neutral"></span>
+                        <span class="auditlog-modal-fact-label">
+                            <i class="bi bi-person-fill"></i> Người thực hiện
+                        </span>
+                        <div class="auditlog-modal-fact-value" id="modalUser">admin</div>
                     </div>
                     <div class="auditlog-modal-fact">
-                        <span>Bảng dữ liệu</span>
-                        <strong id="modalTable">Không xác định</strong>
+                        <span class="auditlog-modal-fact-label">
+                            <i class="bi bi-activity"></i> Hành động
+                        </span>
+                        <div class="auditlog-modal-fact-value">
+                            <span id="modalAction" class="audit-action audit-action--neutral"></span>
+                        </div>
+                    </div>
+                    <div class="auditlog-modal-fact">
+                        <span class="auditlog-modal-fact-label">
+                            <i class="bi bi-database"></i> Bảng dữ liệu
+                        </span>
+                        <div class="auditlog-modal-fact-value">
+                            <code id="modalTable" class="auditlog-table-name">Không xác định</code>
+                        </div>
+                    </div>
+                    <div class="auditlog-modal-fact">
+                        <span class="auditlog-modal-fact-label">
+                            <i class="bi bi-clock-history"></i> Thời gian
+                        </span>
+                        <div class="auditlog-modal-fact-value" id="modalTime">--</div>
                     </div>
                 </div>
+
+                <!-- DATA DIFF SECTION -->
                 <div>
                     <div class="auditlog-data-heading">
-                        <span>Dữ liệu thay đổi</span>
-                        <button type="button" class="evaluation-secondary-action auditlog-detail-button" id="copyLogDataButton">
-                            <i class="bi bi-clipboard" aria-hidden="true"></i>Sao chép
+                        <span class="auditlog-data-title">
+                            <i class="bi bi-file-earmark-diff text-primary"></i> Dữ liệu thay đổi
+                        </span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="copyLogDataButton">
+                            <i class="bi bi-clipboard me-1" aria-hidden="true"></i>Sao chép
                         </button>
                     </div>
                     <div class="auditlog-data-grid" id="auditlogDataGrid">
-                        <div class="auditlog-data-panel" id="oldDataContainer">
-                            <span>Dữ liệu cũ</span>
+                        <div class="auditlog-data-panel panel-old" id="oldDataContainer">
+                            <div class="auditlog-panel-header">
+                                <span><i class="bi bi-dash-circle me-1"></i> Dữ liệu trước thay đổi</span>
+                                <span class="badge bg-danger bg-opacity-25 text-danger px-2 py-0.5 rounded">Ban đầu</span>
+                            </div>
                             <pre id="modalOldData"></pre>
                         </div>
-                        <div class="auditlog-data-panel" id="newDataContainer">
-                            <span>Dữ liệu mới</span>
+                        <div class="auditlog-data-panel panel-new" id="newDataContainer">
+                            <div class="auditlog-panel-header">
+                                <span><i class="bi bi-check2-circle me-1"></i> Dữ liệu sau thay đổi</span>
+                                <span class="badge bg-success bg-opacity-25 text-success px-2 py-0.5 rounded">Cập nhật</span>
+                            </div>
                             <pre id="modalNewData"></pre>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="evaluation-secondary-action" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                    Đóng
+                </button>
             </div>
         </div>
     </div>
@@ -564,6 +973,8 @@
             const modalElement = document.getElementById('logDetailsModal');
             const actionElement = document.getElementById('modalAction');
             const tableElement = document.getElementById('modalTable');
+            const userElement = document.getElementById('modalUser');
+            const timeElement = document.getElementById('modalTime');
             const oldDataElement = document.getElementById('modalOldData');
             const newDataElement = document.getElementById('modalNewData');
             const oldDataContainer = document.getElementById('oldDataContainer');
@@ -576,21 +987,37 @@
 
             document.querySelectorAll('.auditlog-detail-btn').forEach(function (button) {
                 button.addEventListener('click', function () {
-                    showLogDetails(button.dataset.action || '', button.dataset.table || '', button.dataset.old || '', button.dataset.new || '');
+                    showLogDetails(
+                        button.dataset.id || '',
+                        button.dataset.action || '',
+                        button.dataset.table || '',
+                        button.dataset.user || '',
+                        button.dataset.role || '',
+                        button.dataset.time || '',
+                        button.dataset.old || '',
+                        button.dataset.new || ''
+                    );
                 });
             });
 
             document.getElementById('copyLogDataButton')?.addEventListener('click', copyLogData);
 
-            function showLogDetails(action, table, oldData, newData) {
+            function showLogDetails(id, action, table, user, role, time, oldData, newData) {
                 actionElement.textContent = translateAction(action);
                 actionElement.className = 'audit-action ' + getActionBadgeClass(action);
                 tableElement.textContent = table || 'Không xác định';
+                userElement.textContent = user ? `${user} (${role || 'User'})` : 'Hệ thống';
+                timeElement.textContent = time || 'Chưa xác định';
 
-                oldDataElement.textContent = formatLogData(oldData);
-                newDataElement.textContent = formatLogData(newData);
+                const formattedOld = formatLogData(oldData);
+                const formattedNew = formatLogData(newData);
 
-                // Reset the modal every time before applying the action-specific layout.
+                oldDataElement.textContent = formattedOld;
+                oldDataElement.classList.toggle('empty-state', !oldData);
+
+                newDataElement.textContent = formattedNew;
+                newDataElement.classList.toggle('empty-state', !newData);
+
                 oldDataContainer.hidden = false;
                 newDataContainer.hidden = false;
                 dataGrid.classList.remove('is-single');
@@ -607,7 +1034,7 @@
             }
 
             function formatLogData(value) {
-                if (!value) return 'Không có dữ liệu';
+                if (!value) return '[ Không có dữ liệu ]';
                 try {
                     return JSON.stringify(JSON.parse(value), null, 2);
                 } catch (_) {
@@ -627,6 +1054,7 @@
                     case 'SUBMIT_REVIEW': return 'Gửi duyệt';
                     case 'DIRECTOR_APPROVE': return 'GĐ duyệt';
                     case 'DIRECTOR_REJECT': return 'GĐ từ chối';
+                    case 'AUTO_SYNC_PROPOSAL': return 'Đề xuất đồng bộ';
                     default: return action || 'Không xác định';
                 }
             }
@@ -651,10 +1079,16 @@
                 const text = `Dữ liệu cũ:\n${oldDataElement.textContent}\n\nDữ liệu mới:\n${newDataElement.textContent}`;
                 navigator.clipboard.writeText(text)
                     .then(function () {
-                        window.AppFeedback?.toast({ tone: 'success', title: 'Đã sao chép', message: 'Nội dung đã được lưu vào bộ nhớ tạm.' });
+                        if (window.AppFeedback?.toast) {
+                            window.AppFeedback.toast({ tone: 'success', title: 'Đã sao chép', message: 'Nội dung đã được lưu vào bộ nhớ tạm.' });
+                        } else {
+                            alert('Đã sao chép nội dung vào bộ nhớ tạm.');
+                        }
                     })
                     .catch(function () {
-                        window.AppFeedback?.toast({ tone: 'error', title: 'Không thể sao chép', message: 'Trình duyệt chưa cấp quyền truy cập bộ nhớ tạm.' });
+                        if (window.AppFeedback?.toast) {
+                            window.AppFeedback.toast({ tone: 'error', title: 'Không thể sao chép', message: 'Trình duyệt chưa cấp quyền truy cập bộ nhớ tạm.' });
+                        }
                     });
             }
         })();

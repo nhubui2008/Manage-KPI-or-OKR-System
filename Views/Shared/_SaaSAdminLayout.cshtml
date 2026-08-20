@@ -19,6 +19,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -27,6 +28,7 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <style id="brand-theme">
         :root {
+            --vm-font-sans: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --color-brand-violet: #7b68ee;
             --color-signal-blue: #0091ff;
             --color-ultra-violet: #6647f0;
@@ -102,7 +104,7 @@
             <div class="sidebar-nav">
                 <div class="sidebar-group">
                     <div class="sidebar-group-label">Overview</div>
-                    <a href="/Dashboard/Index" class="sidebar-link">
+                    <a href="/Dashboard" class="sidebar-link">
                         <i class="bi bi-layout-sidebar-inset"></i> <span>Hệ thống vận hành</span>
                     </a>
                     <a href="/SaaSAdmin" class="sidebar-link @(currentAction == "Index" ? "active" : "")">
@@ -212,7 +214,7 @@
                         <small>Gói dịch vụ, thanh toán và tăng trưởng</small>
                     </span>
                 </a>
-                <a href="/Dashboard/Index" class="settings-panel__item">
+                <a href="/Dashboard" class="settings-panel__item">
                     <span class="settings-panel__icon"><i class="bi bi-layout-sidebar-inset"></i></span>
                     <span>
                         <strong>Hệ thống vận hành</strong>

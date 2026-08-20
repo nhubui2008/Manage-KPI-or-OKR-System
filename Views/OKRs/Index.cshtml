@@ -10,7 +10,7 @@
     var currentOkrTypeId = Model?.OkrTypeId;
     var currentScope = Model?.Scope ?? "";
     var currentQuickFilter = Model?.QuickFilter ?? "";
-    var currentSortBy = Model?.SortBy ?? "attention";
+    var currentSortBy = Model?.SortBy ?? "";
     var hasActiveFilters = Model?.HasActiveFilters == true;
     var isFilteredEmpty = Model?.IsFilteredEmpty == true;
     var summary = Model?.Summary;
@@ -55,87 +55,92 @@
     <!-- SUMMARY CARDS (5 WIDGETS) -->
     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-3 mb-3" aria-label="Tổng quan OKR">
         <div class="col">
-            <div class="card card-animate mb-0 h-100 border">
-                <div class="card-body p-3">
+            <div class="card card-animate summary-stat-card mb-0 h-100 border-0 shadow-sm overflow-hidden">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
                     <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Tổng OKR</p>
+                            <h4 class="fs-22 fw-bold mb-0 text-primary">@(summary?.TotalCount ?? 0)</h4>
+                        </div>
                         <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-primary-subtle text-primary rounded-2 fs-3 p-2">
+                            <span class="avatar-title bg-primary-subtle text-primary rounded-3 fs-3">
                                 <i class="bi bi-bullseye"></i>
                             </span>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Tổng OKR</p>
-                            <h4 class="fs-4 fw-bold mb-0">@(summary?.TotalCount ?? 0)</h4>
-                        </div>
                     </div>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-1"><span class="badge bg-primary-subtle text-primary"><i class="bi bi-funnel"></i> Tất cả</span> Tổng mục tiêu</p>
                 </div>
             </div>
         </div>
         <div class="col">
-            <div class="card card-animate mb-0 h-100 border">
-                <div class="card-body p-3">
+            <div class="card card-animate summary-stat-card mb-0 h-100 border-0 shadow-sm overflow-hidden">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
                     <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Cần chú ý</p>
+                            <h4 class="fs-22 fw-bold mb-0 text-warning">@(summary?.NeedsAttentionCount ?? 0)</h4>
+                        </div>
                         <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-warning-subtle text-warning rounded-2 fs-3 p-2">
+                            <span class="avatar-title bg-warning-subtle text-warning rounded-3 fs-3">
                                 <i class="bi bi-exclamation-triangle"></i>
                             </span>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Cần chú ý</p>
-                            <h4 class="fs-4 fw-bold mb-0">@(summary?.NeedsAttentionCount ?? 0)</h4>
-                        </div>
                     </div>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-1"><span class="badge bg-warning-subtle text-warning"><i class="bi bi-clock-history me-1"></i> Chú ý</span> Chậm / Rủi ro</p>
                 </div>
             </div>
         </div>
         <div class="col">
-            <div class="card card-animate mb-0 h-100 border">
-                <div class="card-body p-3">
+            <div class="card card-animate summary-stat-card mb-0 h-100 border-0 shadow-sm overflow-hidden">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
                     <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Chưa có KR</p>
+                            <h4 class="fs-22 fw-bold mb-0 text-secondary">@(summary?.WithoutKeyResultsCount ?? 0)</h4>
+                        </div>
                         <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-secondary-subtle text-secondary rounded-2 fs-3 p-2">
+                            <span class="avatar-title bg-secondary-subtle text-secondary rounded-3 fs-3">
                                 <i class="bi bi-key"></i>
                             </span>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Chưa có KR</p>
-                            <h4 class="fs-4 fw-bold mb-0">@(summary?.WithoutKeyResultsCount ?? 0)</h4>
-                        </div>
                     </div>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-1"><span class="badge bg-secondary-subtle text-secondary"><i class="bi bi-pencil me-1"></i> Bổ sung</span> Cần thêm KR</p>
                 </div>
             </div>
         </div>
         <div class="col">
-            <div class="card card-animate mb-0 h-100 border">
-                <div class="card-body p-3">
+            <div class="card card-animate summary-stat-card mb-0 h-100 border-0 shadow-sm overflow-hidden">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
                     <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Hoàn thành</p>
+                            <h4 class="fs-22 fw-bold mb-0 text-success">@(summary?.CompletedCount ?? 0)</h4>
+                        </div>
                         <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-success-subtle text-success rounded-2 fs-3 p-2">
+                            <span class="avatar-title bg-success-subtle text-success rounded-3 fs-3">
                                 <i class="bi bi-check-circle"></i>
                             </span>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Hoàn thành</p>
-                            <h4 class="fs-4 fw-bold mb-0">@(summary?.CompletedCount ?? 0)</h4>
-                        </div>
                     </div>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-1"><span class="badge bg-success-subtle text-success"><i class="bi bi-check2-circle me-1"></i> Tốt</span> Đạt 100%</p>
                 </div>
             </div>
         </div>
         <div class="col">
-            <div class="card card-animate mb-0 h-100 border">
-                <div class="card-body p-3">
+            <div class="card card-animate summary-stat-card mb-0 h-100 border-0 shadow-sm overflow-hidden">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
                     <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Tiến độ TB</p>
+                            <h4 class="fs-22 fw-bold mb-0 text-info">@((summary?.AverageProgress ?? 0).ToString("0.#"))%</h4>
+                        </div>
                         <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-info-subtle text-info rounded-2 fs-3 p-2">
+                            <span class="avatar-title bg-info-subtle text-info rounded-3 fs-3">
                                 <i class="bi bi-graph-up-arrow"></i>
                             </span>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Tiến độ TB</p>
-                            <h4 class="fs-4 fw-bold mb-0">@((summary?.AverageProgress ?? 0).ToString("0.#"))%</h4>
-                        </div>
                     </div>
+                    <p class="text-muted text-truncate fs-12 mb-0 mt-1"><span class="badge bg-info-subtle text-info"><i class="bi bi-speedometer2 me-1"></i> Hiệu suất</span> Toàn chu kỳ</p>
                 </div>
             </div>
         </div>
@@ -153,12 +158,12 @@
                     <label class="form-label" for="okr-search">Tìm kiếm</label>
                     <div class="position-relative okr-search-wrapper">
                         <i class="bi bi-search okr-search-icon"></i>
-                        <input id="okr-search" type="text" name="searchString" value="@currentFilter" class="form-control okr-search-input" placeholder="Objective, chu kỳ, sứ mệnh, người/phòng ban..." />
+                        <input id="okr-search" type="text" name="searchString" value="@currentFilter" class="form-control okr-search-input" placeholder="Tìm mục tiêu, chu kỳ, phòng ban..." />
                     </div>
                 </div>
                 <div class="okr-filter-field">
                     <label class="form-label" for="okr-cycle">Chu kỳ</label>
-                    <select id="okr-cycle" name="cycle" class="form-select">
+                    <select id="okr-cycle" name="cycle" class="form-select no-select2">
                         <option value="">Tất cả</option>
                         @foreach (var c in Model?.AvailableCycles ?? Array.Empty<string>())
                         {
@@ -168,7 +173,7 @@
                 </div>
                 <div class="okr-filter-field">
                     <label class="form-label" for="okr-status">Trạng thái</label>
-                    <select id="okr-status" name="statusId" class="form-select">
+                    <select id="okr-status" name="statusId" class="form-select no-select2">
                         <option value="">Tất cả</option>
                         @foreach (var s in Model?.AvailableStatuses ?? Array.Empty<Manage_KPI_or_OKR_System.Models.ViewModels.OkrStatusOptionViewModel>())
                         {
@@ -178,7 +183,7 @@
                 </div>
                 <div class="okr-filter-field">
                     <label class="form-label" for="okr-type">Loại OKR</label>
-                    <select id="okr-type" name="okrTypeId" class="form-select">
+                    <select id="okr-type" name="okrTypeId" class="form-select no-select2">
                         <option value="">Tất cả</option>
                         @foreach (var t in Model?.AvailableOkrTypes ?? Array.Empty<Manage_KPI_or_OKR_System.Models.ViewModels.OkrTypeOptionViewModel>())
                         {
@@ -188,16 +193,17 @@
                 </div>
                 <div class="okr-filter-field">
                     <label class="form-label" for="okr-scope">Phạm vi</label>
-                    <select id="okr-scope" name="scope" class="form-select">
+                    <select id="okr-scope" name="scope" class="form-select no-select2">
                         <option value="" selected="@(string.IsNullOrEmpty(currentScope) ? "selected" : null)">Tất cả</option>
                         <option value="mine" selected="@(currentScope == "mine" ? "selected" : null)">Của tôi</option>
                         <option value="department" selected="@(currentScope == "department" ? "selected" : null)">Phòng ban</option>
                         <option value="company" selected="@(currentScope == "company" ? "selected" : null)">Công ty</option>
                     </select>
                 </div>
-                <div class="okr-filter-field">
+                <div class="okr-filter-field okr-filter-field--sort">
                     <label class="form-label" for="okr-sort">Sắp xếp</label>
-                    <select id="okr-sort" name="sortBy" class="form-select">
+                    <select id="okr-sort" name="sortBy" class="form-select no-select2">
+                        <option value="" selected="@(string.IsNullOrEmpty(currentSortBy) ? "selected" : null)">Tất cả</option>
                         <option value="attention" selected="@(currentSortBy == "attention" ? "selected" : null)">Cần chú ý trước</option>
                         <option value="recent" selected="@(currentSortBy == "recent" ? "selected" : null)">Mới cập nhật</option>
                         <option value="progress-low" selected="@(currentSortBy == "progress-low" ? "selected" : null)">Tiến độ thấp</option>
@@ -206,10 +212,12 @@
                     </select>
                 </div>
                 <div class="okr-filter-actions">
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1"></i> Lọc</button>
+                    <button type="submit" class="btn btn-primary okr-filter-submit-btn" title="Lọc" aria-label="Lọc">
+                        <i class="bi bi-funnel" aria-hidden="true"></i>
+                    </button>
                     @if (hasActiveFilters)
                     {
-                        <a asp-action="Index" class="btn btn-light">Xóa lọc</a>
+                        <a asp-action="Index" class="btn btn-light" title="Xóa tất cả bộ lọc">Xóa lọc</a>
                     }
                     <button type="button" class="btn btn-outline-secondary" id="toggleAllBtn" aria-label="Mở rộng hoặc thu gọn tất cả Key Results" title="Mở rộng / thu gọn tất cả"><i class="bi bi-list-task" aria-hidden="true"></i></button>
                 </div>

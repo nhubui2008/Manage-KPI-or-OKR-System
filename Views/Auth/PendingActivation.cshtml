@@ -4,18 +4,54 @@
 }
 <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
 
-<main class="auth-page">
-    <partial name="_AuthBrandPanel" />
-    <section class="auth-form-panel" aria-labelledby="pending-title">
-        <div class="auth-card">
-            <div class="auth-mobile-brand" aria-label="VietMach System, Manage KPI &amp; OKR"><span class="auth-brand-mark" aria-hidden="true"><i class="bi bi-bullseye"></i></span><span><strong>VietMach System</strong><small>Manage KPI &amp; OKR</small></span></div>
-            <div class="auth-status-icon auth-status-icon-warning" aria-hidden="true"><i class="bi bi-hourglass-split"></i></div>
-            <header class="auth-header"><p class="auth-eyebrow">Chờ xác minh</p><h1 id="pending-title">Không gian làm việc đang chờ kích hoạt</h1><p>Tài khoản <strong>@(ViewBag.Email ?? "của bạn")</strong> đã xác thực. Quản trị viên cần phê duyệt và cấp không gian làm việc trước khi bạn truy cập dữ liệu KPI/OKR.</p></header>
+<div class="crystal-scene-container" id="crystalScene">
+    <!-- Ambient Glow -->
+    <div class="crystal-ambient-glow" aria-hidden="true">
+        <div class="ambient-orb ambient-orb-1"></div>
+        <div class="ambient-orb ambient-orb-2"></div>
+    </div>
+
+    <!-- Floating Crystals -->
+    <div class="crystal-objects-layer" aria-hidden="true">
+        <div class="crystal-item crystal-1" data-depth="0.045">
+            <svg viewBox="0 0 140 210" fill="none"><polygon points="70,10 125,75 105,185 35,160 15,65" fill="#c7d2fe" opacity="0.85" stroke="#fff" stroke-width="1.2" /></svg>
+        </div>
+        <div class="crystal-item crystal-2" data-depth="0.06">
+            <svg viewBox="0 0 155 250" fill="none"><polygon points="75,10 135,60 145,190 85,240 20,180 15,70" fill="#e0e7ff" opacity="0.85" stroke="#fff" stroke-width="1.2" /></svg>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <main class="auth-main-wrapper" id="authMainCard">
+        <div class="auth-brand-badge-wrap">
+            <a href="/" class="auth-crystal-badge" aria-label="VietMach System - Trang chủ" title="VietMach System">
+                <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        <section class="auth-crystal-card" aria-labelledby="pending-title">
+            <header class="auth-card-header">
+                <p class="auth-eyebrow">Chờ xác minh</p>
+                <h1 id="pending-title">Đang chờ kích hoạt</h1>
+                <p>Tài khoản <strong>@(ViewBag.Email ?? "của bạn")</strong> đã xác thực. Quản trị viên đang phê duyệt không gian làm việc của bạn.</p>
+            </header>
+
             @if (!string.IsNullOrWhiteSpace(ViewBag.PendingPlan as string))
             {
-                <div class="auth-alert auth-alert-warning" role="status"><i class="bi bi-clock" aria-hidden="true"></i><span>Gói đang chờ: <strong>@ViewBag.PendingPlan</strong></span></div>
+                <div class="auth-alert auth-alert-warning" role="status">
+                    <i class="bi bi-clock" aria-hidden="true"></i>
+                    <span>Gói dịch vụ đang chờ duyệt: <strong>@ViewBag.PendingPlan</strong></span>
+                </div>
             }
-            <div class="auth-status-actions"><a asp-action="PendingActivation" class="auth-submit">Kiểm tra lại trạng thái</a><a asp-action="Logout" class="auth-secondary">Đăng xuất</a></div>
-        </div>
-    </section>
-</main>
+
+            <div class="auth-status-actions">
+                <a asp-action="PendingActivation" class="auth-submit-btn">Kiểm tra lại trạng thái</a>
+                <a asp-action="Logout" class="auth-secondary-btn">Đăng xuất</a>
+            </div>
+        </section>
+    </main>
+</div>
+
+@section Scripts {
+    <script src="~/js/login.js" asp-append-version="true"></script>
+}

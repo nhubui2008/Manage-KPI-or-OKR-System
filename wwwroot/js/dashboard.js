@@ -7,7 +7,7 @@
     }
 
     const chartRegistry = new Map();
-    const chartFontFamily = '"Times New Roman", Times, serif';
+    const chartFontFamily = "'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
     function escapeHtml(value) {
         return String(value ?? '')
@@ -55,19 +55,19 @@
     }
 
     function getChartTheme() {
-        const primary = getThemeColor('--primary', '#405189');
+        const primary = getThemeColor('--primary', '#6366f1');
         return {
             primary,
-            primarySoft: colorWithAlpha(primary, 0.1, '64, 81, 137'),
-            success: getThemeColor('--bs-success', '#0f9d58'),
-            warning: getThemeColor('--bs-warning', '#f29900'),
-            danger: getThemeColor('--bs-danger', '#d9534f'),
-            info: getThemeColor('--bs-info', '#299cdb'),
-            secondary: getThemeColor('--bs-secondary', '#74788d'),
-            text: getThemeColor('--vz-ink', '#212529'),
-            muted: getThemeColor('--vz-muted', '#6d7080'),
-            grid: getThemeColor('--vz-border', '#e9ebec'),
-            neutral: '#e6e8eb',
+            primarySoft: colorWithAlpha(primary, 0.15, '99, 102, 241'),
+            success: getThemeColor('--bs-success', '#10b981'),
+            warning: getThemeColor('--bs-warning', '#f59e0b'),
+            danger: getThemeColor('--bs-danger', '#f43f5e'),
+            info: getThemeColor('--bs-info', '#06b6d4'),
+            secondary: getThemeColor('--bs-secondary', '#8b5cf6'),
+            text: getThemeColor('--vz-ink', '#0f172a'),
+            muted: getThemeColor('--vz-muted', '#64748b'),
+            grid: getThemeColor('--vz-border', '#f1f5f9'),
+            neutral: '#e2e8f0',
             surface: '#ffffff'
         };
     }

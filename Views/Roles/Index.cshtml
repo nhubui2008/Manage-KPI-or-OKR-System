@@ -242,24 +242,40 @@
 
     <section class="evaluation-summary roles-summary" aria-label="Tổng quan phân quyền">
         <article>
-            <span>Tổng vai trò</span>
-            <strong>@roles.Count</strong>
-            <small>Nhóm quyền trong hệ thống</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--primary">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Tổng vai trò</span>
+                <strong>@roles.Count</strong>
+            </div>
         </article>
         <article>
-            <span>Đang hoạt động</span>
-            <strong>@activeRoles</strong>
-            <small>Có thể gán cho tài khoản</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--success">
+                <i class="bi bi-person-check"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Đang hoạt động</span>
+                <strong>@activeRoles</strong>
+            </div>
         </article>
         <article>
-            <span>Vai trò hệ thống</span>
-            <strong>@protectedRoles</strong>
-            <small>Được bảo vệ khỏi chỉnh sửa</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--info">
+                <i class="bi bi-shield-lock"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Vai trò hệ thống</span>
+                <strong>@protectedRoles</strong>
+            </div>
         </article>
         <article>
-            <span>Đã có mô tả</span>
-            <strong>@describedRoles</strong>
-            <small>@describedRoles / @roles.Count vai trò đầy đủ thông tin</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--warning">
+                <i class="bi bi-card-text"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Đã có mô tả</span>
+                <strong>@describedRoles</strong>
+            </div>
         </article>
     </section>
 

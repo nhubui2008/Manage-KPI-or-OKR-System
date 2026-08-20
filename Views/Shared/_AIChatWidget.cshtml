@@ -84,7 +84,8 @@
                         if (!text) continue;
                         const role = entry.entryKind === 'Input' ? 'user' : 'assistant';
                         history.push({ role, text });
-                        renderMessage(role === 'assistant' ? 'bot' : 'user', text, false, []);
+                        const citations = role === 'assistant' && Array.isArray(payload.citations) ? payload.citations : [];
+                        renderMessage(role === 'assistant' ? 'bot' : 'user', text, false, citations);
                     }
                     currentSessionId = sessionId;
                     setOpen(true);
@@ -118,18 +119,21 @@
 
                 const container = document.createElement('div');
                 container.className = 'ai-message-citations';
-                const label = document.createElement('strong');
-                label.textContent = 'Nguồn sử dụng';
+                const label = document.createElement('div');
+                label.className = 'd-flex align-items-center gap-1 fw-bold mb-1 small text-dark';
+                label.innerHTML = '<i class="bi bi-quote text-primary"></i> <span>Nguồn trích dẫn RAG:</span>';
                 const list = document.createElement('ul');
+                list.className = 'list-unstyled mb-0 d-flex flex-column gap-1';
                 items.forEach(citation => {
                     const item = document.createElement('li');
+                    item.className = 'd-flex align-items-start gap-1 px-2 py-1 bg-light rounded border border-light-subtle small';
                     const sourceType = citation?.sourceType === 'azure-search'
                         ? 'Tài liệu nội bộ'
                         : 'Dữ liệu KPI/OKR';
                     const location = citation?.section
                         ? ` · ${citation.section}`
                         : (citation?.page ? ` · trang ${citation.page}` : '');
-                    item.textContent = `${citation?.title || sourceType}${location}`;
+                    item.innerHTML = `<i class="bi bi-file-earmark-text-fill text-primary me-1 mt-0"></i> <span><strong>${citation?.title || sourceType}</strong><span class="text-muted">${location}</span></span>`;
                     list.appendChild(item);
                 });
                 container.append(label, list);
@@ -205,11 +209,12 @@
 
                 const pendingBubble = renderMessage('bot', '', true);
                 try {
+                    const headers = typeof window.antiForgeryHeaders === 'function' ? window.antiForgeryHeaders() : {};
                     const response = await fetch('/AI/Chat', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            ...window.antiForgeryHeaders()
+                            ...headers
                         },
                         body: JSON.stringify({
                             message: cleanPrompt,
@@ -235,6 +240,14 @@
                     messages.scrollTop = messages.scrollHeight;
                 }
             }
+
+            // Expose globally for other views (e.g. AI History)
+            window.aiChatWidget = {
+                setOpen: setOpen,
+                resetConversation: resetConversation,
+                loadConversation: loadConversation,
+                sendPrompt: sendPrompt
+            };
 
             toggle.addEventListener('click', () => setOpen(!widget.classList.contains('is-open')));
             close?.addEventListener('click', () => setOpen(false));

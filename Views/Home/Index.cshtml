@@ -1,377 +1,574 @@
 @model List<Manage_KPI_or_OKR_System.Models.SaaSPackage>
 @{
-    ViewData["Title"] = "Manage KPI & OKR | VietMach System";
-    ViewData["Description"] = "VietMach System giúp doanh nghiệp thiết lập, theo dõi, đánh giá và phê duyệt KPI, OKR trên một nền tảng thống nhất.";
+    ViewData["Title"] = "VietMach - Hệ Thống Quản Trị Mục Tiêu OKR & Hiệu Suất KPI Tích Hợp AI";
+    ViewData["Description"] = "Nền tảng quản trị hiệu suất toàn diện cho doanh nghiệp: Thiết lập OKR chiến lược, quản lý chỉ số KPI định lượng, check-in thời gian thực và trợ lý AI tối ưu hóa vận hành.";
     ViewData["IsLandingPage"] = true;
 }
 
 @section Styles {
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
 }
 
-<a class="landing-skip-link" href="#landing-main">Bỏ qua điều hướng</a>
+<a class="nova-skip" href="#main-content">Bỏ qua điều hướng</a>
 
-<header class="landing-header" data-landing-header>
-    <div class="landing-container landing-nav">
-        <a class="landing-brand" asp-controller="Home" asp-action="Index" aria-label="VietMach System - Trang chủ">
-            <span class="landing-brand-mark" aria-hidden="true">VM</span>
-            <span><strong>VietMach System</strong><small>Manage KPI &amp; OKR</small></span>
+<!-- ===== HEADER NAVIGATION ===== -->
+<header class="nova-header">
+    <div class="nova-container nova-nav">
+        <a class="nova-brand" asp-controller="Home" asp-action="Index" aria-label="VietMach System - Trang chủ">
+            <span class="nova-brand-mark">VM</span>
+            <span><strong>VietMach</strong><small>Performance system</small></span>
         </a>
-
-        <button class="landing-menu-button" type="button" aria-expanded="false"
-                aria-controls="landing-navigation" data-menu-button>
-            <span class="visually-hidden">Mở menu</span>
-            <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
-        </button>
-
-        <nav id="landing-navigation" class="landing-navigation" aria-label="Điều hướng chính" data-menu>
-            <a href="#san-pham">Sản phẩm</a>
-            <a href="#tinh-nang">Tính năng</a>
+        <nav class="nova-links" aria-label="Điều hướng chính">
+            <a href="#showcase">Xem trước hệ thống</a>
+            <a href="#tinh-nang">Tính năng lõi</a>
+            <a href="#vai-tro">Phân quyền vai trò</a>
             <a href="#quy-trinh">Quy trình</a>
             <a href="#bang-gia">Bảng giá</a>
-            <div class="landing-nav-actions">
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                    <a class="landing-button landing-button-secondary" asp-controller="Dashboard" asp-action="Index">Vào hệ thống</a>
-                }
-                else
-                {
-                    <a class="landing-button landing-button-secondary" asp-controller="Auth" asp-action="Login">Đăng nhập</a>
-                    <a class="landing-button landing-button-primary" asp-controller="Auth" asp-action="Register">Bắt đầu sử dụng</a>
-                }
-            </div>
+            <a href="#faq">Hỏi đáp</a>
         </nav>
+        <div class="nova-actions">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a class="nova-button nova-button-ghost" asp-controller="Dashboard" asp-action="Index">
+                    <i class="bi bi-grid-1x2"></i> Vào hệ thống
+                </a>
+            }
+            else
+            {
+                <a class="nova-login" asp-controller="Auth" asp-action="Login">Đăng nhập</a>
+                <a class="nova-button" asp-controller="Auth" asp-action="Register">
+                    <i class="bi bi-stars"></i> Dùng thử miễn phí
+                </a>
+            }
+        </div>
     </div>
 </header>
 
-<main id="landing-main">
-    <section class="landing-hero" aria-labelledby="hero-title">
-        <div class="landing-container landing-hero-grid">
-            <div class="landing-hero-copy" data-reveal>
-                <p class="landing-eyebrow">Nền tảng quản trị hiệu suất doanh nghiệp</p>
-                <h1 id="hero-title">Biến mục tiêu thành kết quả có thể đo lường</h1>
-                <p class="landing-hero-lead">
-                    VietMach System kết nối KPI, OKR, check-in và đánh giá trong một quy trình rõ ràng,
-                    giúp mỗi người hiểu ưu tiên và mỗi cấp quản lý nhìn thấy tiến độ.
-                </p>
-                <div class="landing-hero-actions">
+<main id="main-content">
+    <!-- ===== HERO SECTION (Light 3D Crystal) ===== -->
+    <section class="nova-hero">
+        <div class="nova-container nova-hero-grid">
+            <div class="nova-hero-copy">
+                <p class="nova-kicker"><i class="bi bi-stars"></i> Nền tảng Quản trị Hiệu suất AI-Native</p>
+                <h1>Mục tiêu rõ ràng.<br /><em>Kết quả thấy được.</em></h1>
+                <p>VietMach số hóa toàn diện quy trình thiết lập OKR chiến lược, quản trị chỉ số KPI định lượng, check-in thời gian thực và trợ lý AI thông minh giúp doanh nghiệp bứt phá hiệu suất.</p>
+                <div class="nova-hero-actions">
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <a class="landing-button landing-button-primary landing-button-large" asp-controller="Dashboard" asp-action="Index">
-                            Mở bảng điều khiển <span aria-hidden="true">→</span>
+                        <a class="nova-button nova-button-large" asp-controller="Dashboard" asp-action="Index">
+                            Mở bảng điều khiển <i class="bi bi-arrow-up-right"></i>
                         </a>
                     }
                     else
                     {
-                        <a class="landing-button landing-button-primary landing-button-large" asp-controller="Auth" asp-action="Register">
-                            Bắt đầu sử dụng <span aria-hidden="true">→</span>
+                        <a class="nova-button nova-button-large" asp-controller="Auth" asp-action="Register">
+                            Trải nghiệm miễn phí <i class="bi bi-arrow-up-right"></i>
                         </a>
-                        <a class="landing-button landing-button-secondary landing-button-large" asp-controller="Auth" asp-action="Login">
-                            Đăng nhập
-                        </a>
+                        <a class="nova-text-link" href="#showcase">Xem trước giao diện</a>
                     }
                 </div>
-                <ul class="landing-assurance" aria-label="Lợi ích nổi bật">
-                    <li><span aria-hidden="true">✓</span> Một nguồn dữ liệu thống nhất</li>
-                    <li><span aria-hidden="true">✓</span> Phân quyền theo vai trò</li>
-                    <li><span aria-hidden="true">✓</span> Theo dõi xuyên suốt chu kỳ</li>
-                </ul>
-            </div>
-
-            <div class="landing-product-frame" data-reveal aria-label="Bản xem trước sản phẩm với dữ liệu minh họa">
-                <div class="landing-product-bar">
-                    <div><span></span><span></span><span></span></div>
-                    <strong>Tổng quan hiệu suất</strong>
-                    <span class="landing-demo-badge">Dữ liệu minh họa</span>
-                </div>
-                <div class="landing-product-body">
-                    <aside class="landing-preview-sidebar" aria-hidden="true">
-                        <span class="is-active"></span><span></span><span></span><span></span><span></span>
-                    </aside>
-                    <div class="landing-preview-content">
-                        <div class="landing-preview-heading">
-                            <div><small>Chu kỳ hiện tại</small><strong>Tiến độ tổ chức</strong></div>
-                            <span>Cập nhật tuần này</span>
-                        </div>
-                        <div class="landing-metric-grid">
-                            <article><small>KPI hoàn thành</small><strong>78%</strong><span>39 / 50 chỉ tiêu</span></article>
-                            <article><small>OKR đúng tiến độ</small><strong>84%</strong><span>21 / 25 mục tiêu</span></article>
-                            <article><small>Check-in tuần</small><strong>92%</strong><span>46 / 50 nhân sự</span></article>
-                        </div>
-                        <div class="landing-chart-grid">
-                            <article class="landing-chart-card">
-                                <div><strong>Xu hướng tiến độ</strong><small>6 tuần gần nhất</small></div>
-                                <div class="landing-chart-wrap">
-                                    <canvas id="landingProgressChart" role="img"
-                                            aria-label="Biểu đồ minh họa xu hướng tiến độ tăng từ 51 đến 78 phần trăm trong sáu tuần"></canvas>
-                                </div>
-                            </article>
-                            <article class="landing-status-card">
-                                <div><strong>Trạng thái mục tiêu</strong><small>Tổng hợp minh họa</small></div>
-                                <ul>
-                                    <li><span><i class="status-dot is-blue"></i>Đúng tiến độ</span><strong>68%</strong></li>
-                                    <li><span><i class="status-dot is-cyan"></i>Cần chú ý</span><strong>22%</strong></li>
-                                    <li><span><i class="status-dot is-amber"></i>Chậm tiến độ</span><strong>10%</strong></li>
-                                </ul>
-                            </article>
-                        </div>
-                    </div>
+                <div class="nova-trust">
+                    <span><i class="bi bi-shield-check"></i> Phân quyền 5 vai trò (RBAC)</span>
+                    <span><i class="bi bi-robot"></i> Trợ lý AI Gemini</span>
+                    <span><i class="bi bi-diagram-3"></i> Phân rã OKR đa tầng</span>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <section class="landing-proof" aria-label="Phạm vi quản trị">
-        <div class="landing-container landing-proof-grid">
-            <div><strong>Một nền tảng</strong><span>cho dữ liệu hiệu suất</span></div>
-            <div><strong>Năm bước</strong><span>trong một chu kỳ liền mạch</span></div>
-            <div><strong>Bốn vai trò</strong><span>cùng nhìn về một mục tiêu</span></div>
-        </div>
-    </section>
-
-    <section id="san-pham" class="landing-section landing-product-section">
-        <div class="landing-container landing-showcase-grid">
-            <div class="landing-showcase-copy" data-reveal>
-                <p class="landing-eyebrow">Từ chiến lược đến thực thi</p>
-                <h2>Một không gian làm việc, toàn bộ bức tranh <span class="landing-keep-together">hiệu suất</span></h2>
-                <p>
-                    Mục tiêu, chỉ tiêu và kết quả đánh giá được kết nối theo đúng vai trò.
-                    Người dùng theo dõi công việc cần làm; quản lý nắm rủi ro và đưa ra phản hồi kịp thời.
-                </p>
-                <ul class="landing-check-list">
-                    <li><span aria-hidden="true">01</span><div><strong>Quan sát nhanh</strong><small>Tổng hợp tiến độ và trạng thái theo chu kỳ.</small></div></li>
-                    <li><span aria-hidden="true">02</span><div><strong>Đi sâu đúng lúc</strong><small>Truy cập chi tiết KPI, OKR và lịch sử check-in.</small></div></li>
-                    <li><span aria-hidden="true">03</span><div><strong>Ra quyết định có căn cứ</strong><small>Dùng dữ liệu đã được đánh giá và phê duyệt.</small></div></li>
-                </ul>
-            </div>
-            <figure class="landing-dashboard-shot" data-reveal aria-labelledby="workspace-preview-title">
-                <div class="landing-dashboard-carousel" data-dashboard-carousel tabindex="0"
-                     aria-roledescription="băng chuyền" aria-label="Các màn hình thực tế của hệ thống">
-                    <div class="landing-dashboard-viewport">
-                <div class="landing-dashboard-slide is-active" data-dashboard-slide data-slide-title="Tổng quan hiệu suất" aria-hidden="false">
-                <div class="landing-workspace-preview">
-                    <div class="landing-workspace-topbar">
-                        <span class="landing-workspace-logo" aria-hidden="true">VM</span>
+            <!-- Hero Live Dashboard Preview Card -->
+            <div class="nova-dashboard" aria-label="Bản xem trước tổng quan hiệu suất VietMach">
+                <div class="nova-dashboard-top">
+                    <span class="nova-dot-row"><i></i><i></i><i></i></span>
+                    <strong>Tổng quan hiệu suất tổ chức</strong>
+                    <span>Q3 · 2026</span>
+                </div>
+                <div class="nova-dashboard-body">
+                    <div class="nova-dashboard-title">
                         <div>
-                            <strong id="workspace-preview-title">Tổng quan hệ thống</strong>
-                            <small>Dữ liệu minh họa</small>
+                            <small>Bản điều hành ban giám đốc</small>
+                            <strong>Tiến độ tuần này</strong>
                         </div>
-                        <span class="landing-workspace-period">Chu kỳ Q3</span>
+                        <span class="nova-live"><i></i> Dữ liệu thời gian thực</span>
                     </div>
-                    <div class="landing-workspace-body">
-                        <aside class="landing-workspace-nav" aria-label="Menu bản xem trước">
-                            <span class="is-active">Tổng quan</span>
-                            <span>Công việc</span>
-                            <span>KPI &amp; OKR</span>
-                            <span>Check-in</span>
-                            <span>Đánh giá</span>
-                        </aside>
-                        <div class="landing-workspace-main">
-                            <div class="landing-workspace-heading">
-                                <div><small>Xin chào</small><strong>Hiệu suất hôm nay</strong></div>
-                                <span>Đã cập nhật</span>
+                    <div class="nova-metrics">
+                        <article>
+                            <span class="nova-metric-icon is-peach"><i class="bi bi-graph-up-arrow"></i></span>
+                            <small>KPI hoàn thành</small>
+                            <strong>78.4%</strong>
+                            <em>+8.4% so với tháng trước</em>
+                        </article>
+                        <article>
+                            <span class="nova-metric-icon is-mint"><i class="bi bi-bullseye"></i></span>
+                            <small>OKR đúng tiến độ</small>
+                            <strong>84.0%</strong>
+                            <em>21 / 25 mục tiêu</em>
+                        </article>
+                        <article>
+                            <span class="nova-metric-icon is-lilac"><i class="bi bi-check2-circle"></i></span>
+                            <small>Check-in tuần</small>
+                            <strong>92.0%</strong>
+                            <em>46 / 50 nhân sự</em>
+                        </article>
+                    </div>
+                    <div class="nova-dashboard-lower">
+                        <article class="nova-progress-card">
+                            <div class="nova-card-title">
+                                <span><small>Nhịp độ tổ chức</small><strong>Xu hướng tăng trưởng</strong></span>
+                                <b>78%</b>
                             </div>
-                            <div class="landing-workspace-metrics">
-                                <article><small>Tỷ lệ KPI</small><strong>79,7%</strong><span>Đúng tiến độ</span></article>
-                                <article><small>Mục tiêu OKR</small><strong>24</strong><span>Đang thực hiện</span></article>
-                                <article><small>Lượt check-in</small><strong>269</strong><span>Trong kỳ này</span></article>
+                            <div class="nova-bars" aria-label="Tiến độ 6 tuần tăng từ 51 đến 78 phần trăm">
+                                <i style="--bar:51%"></i>
+                                <i style="--bar:58%"></i>
+                                <i style="--bar:63%"></i>
+                                <i style="--bar:68%"></i>
+                                <i style="--bar:73%"></i>
+                                <i style="--bar:78%"></i>
                             </div>
-                            <div class="landing-workspace-panels">
-                                <article class="landing-workspace-chart-card">
-                                    <div class="landing-workspace-card-heading">
-                                        <div><strong>Xu hướng KPI</strong><small>Chạm hoặc rê vào biểu đồ để xem chi tiết</small></div>
-                                        <span>6 tháng</span>
-                                    </div>
-                                    <div class="landing-workspace-chart-wrap">
-                                        <canvas id="landingWorkspaceChart" role="img" tabindex="0"
-                                                aria-label="Biểu đồ tương tác minh họa xu hướng KPI từ 61 đến 80 phần trăm trong sáu tháng"></canvas>
-                                    </div>
-                                </article>
-                                <article class="landing-workspace-activity">
-                                    <div><strong>Hoạt động gần đây</strong><small>3 cập nhật mới</small></div>
-                                    <ul>
-                                        <li><span aria-hidden="true">✓</span><div><strong>Đã check-in KPI</strong><small>Phòng Kinh doanh · 09:30</small></div></li>
-                                        <li><span aria-hidden="true">✓</span><div><strong>OKR được cập nhật</strong><small>Khối Sản phẩm · 08:45</small></div></li>
-                                        <li><span aria-hidden="true">✓</span><div><strong>Đã duyệt kết quả</strong><small>Quản lý trực tiếp · Hôm qua</small></div></li>
-                                    </ul>
-                                </article>
+                            <div class="nova-week-labels">
+                                <span>Tuần 1</span><span>Tuần 2</span><span>Tuần 3</span><span>Tuần 4</span><span>Tuần 5</span><span>Tuần 6</span>
                             </div>
-                        </div>
+                        </article>
+                        <article class="nova-goal-card">
+                            <small>Trạng thái mục tiêu</small>
+                            <strong>Đúng tiến độ</strong>
+                            <div class="nova-ring"><b>68%</b></div>
+                            <span>17 mục tiêu chiến lược đang ổn định</span>
+                        </article>
                     </div>
                 </div>
-                </div>
-
-                <div class="landing-dashboard-slide" data-dashboard-slide data-slide-title="Danh sách KPI quý III" aria-hidden="true">
-                    <div class="landing-workspace-preview">
-                        <div class="landing-workspace-topbar">
-                            <span class="landing-workspace-logo" aria-hidden="true">VM</span>
-                            <div><strong>Quản lý KPI</strong><small>Dữ liệu minh họa</small></div>
-                            <span class="landing-workspace-period">Chu kỳ Q3</span>
-                        </div>
-                        <div class="landing-workspace-body">
-                            <aside class="landing-workspace-nav" aria-label="Menu bản xem trước">
-                                <span>Tổng quan</span><span>Công việc</span><span class="is-active">KPI &amp; OKR</span><span>Check-in</span><span>Đánh giá</span>
-                            </aside>
-                            <div class="landing-workspace-main">
-                                <div class="landing-workspace-heading">
-                                    <div><small>Quản lý chỉ tiêu</small><strong>Danh sách KPI quý III</strong></div>
-                                    <span>32 chỉ tiêu</span>
-                                </div>
-                                <div class="landing-preview-toolbar">
-                                    <span class="is-active">Tất cả</span><span>Đúng tiến độ</span><span>Cần chú ý</span><button type="button" tabindex="-1">+ Tạo KPI</button>
-                                </div>
-                                <div class="landing-kpi-table" role="presentation">
-                                    <div class="landing-kpi-row landing-kpi-head"><span>Chỉ tiêu</span><span>Phụ trách</span><span>Tiến độ</span><span>Trạng thái</span></div>
-                                    <div class="landing-kpi-row"><strong>Tăng trưởng doanh thu</strong><span>Nguyễn Hoài Anh</span><span><i style="--progress:82%"></i><b>82%</b></span><em>Đúng tiến độ</em></div>
-                                    <div class="landing-kpi-row"><strong>Tỷ lệ khách hàng quay lại</strong><span>Trần Minh Khoa</span><span><i style="--progress:68%"></i><b>68%</b></span><em>Đúng tiến độ</em></div>
-                                    <div class="landing-kpi-row"><strong>Thời gian xử lý yêu cầu</strong><span>Lê Phương Thảo</span><span><i style="--progress:54%"></i><b>54%</b></span><em class="is-warning">Cần chú ý</em></div>
-                                    <div class="landing-kpi-row"><strong>Mức độ hài lòng nội bộ</strong><span>Phạm Tuấn Minh</span><span><i style="--progress:76%"></i><b>76%</b></span><em>Đúng tiến độ</em></div>
-                                </div>
-                                <div class="landing-table-footer"><span>Hiển thị 4 trong 32 chỉ tiêu</span><span>1 &nbsp; 2 &nbsp; 3 &nbsp; … &nbsp; 8</span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="landing-dashboard-slide" data-dashboard-slide data-slide-title="Theo dõi mục tiêu OKR" aria-hidden="true">
-                    <div class="landing-workspace-preview">
-                        <div class="landing-workspace-topbar">
-                            <span class="landing-workspace-logo" aria-hidden="true">VM</span>
-                            <div><strong>Mục tiêu &amp; Kết quả then chốt</strong><small>Dữ liệu minh họa</small></div>
-                            <span class="landing-workspace-period">Quý III · 2026</span>
-                        </div>
-                        <div class="landing-workspace-body">
-                            <aside class="landing-workspace-nav" aria-label="Menu bản xem trước">
-                                <span>Tổng quan</span><span>Công việc</span><span class="is-active">KPI &amp; OKR</span><span>Check-in</span><span>Đánh giá</span>
-                            </aside>
-                            <div class="landing-workspace-main">
-                                <div class="landing-workspace-heading">
-                                    <div><small>OKR cấp công ty</small><strong>Tăng tốc tăng trưởng bền vững</strong></div>
-                                    <span>Đã check-in hôm nay</span>
-                                </div>
-                                <div class="landing-okr-layout">
-                                    <div class="landing-okr-list">
-                                        <article class="is-selected"><div><span>O1</span><strong>Mở rộng thị trường trọng điểm</strong></div><small>Phòng Kinh doanh · 3 kết quả then chốt</small><p><i style="--progress:74%"></i><b>74%</b></p></article>
-                                        <article><div><span>O2</span><strong>Nâng cao trải nghiệm khách hàng</strong></div><small>Khối Vận hành · 4 kết quả then chốt</small><p><i style="--progress:61%"></i><b>61%</b></p></article>
-                                        <article><div><span>O3</span><strong>Xây dựng đội ngũ hiệu suất cao</strong></div><small>Phòng Nhân sự · 3 kết quả then chốt</small><p><i style="--progress:83%"></i><b>83%</b></p></article>
-                                    </div>
-                                    <aside class="landing-okr-detail">
-                                        <small>CHI TIẾT MỤC TIÊU</small><strong>Mở rộng thị trường trọng điểm</strong>
-                                        <div><span>Tiến độ tổng thể</span><b>74%</b></div>
-                                        <ul><li><span>KR1 · 120 khách hàng mới</span><b>86%</b></li><li><span>KR2 · Doanh thu tăng 18%</span><b>72%</b></li><li><span>KR3 · Mở 2 khu vực mới</span><b>64%</b></li></ul>
-                                    </aside>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                    </div>
-                    <div class="landing-carousel-controls">
-                        <button type="button" data-carousel-prev aria-label="Xem màn hình trước">←</button>
-                        <div role="tablist" aria-label="Chọn màn hình bản xem trước">
-                            <button type="button" role="tab" aria-selected="true" aria-label="Tổng quan hiệu suất" data-carousel-dot></button>
-                            <button type="button" role="tab" aria-selected="false" aria-label="Danh sách KPI quý III" data-carousel-dot></button>
-                            <button type="button" role="tab" aria-selected="false" aria-label="Theo dõi mục tiêu OKR" data-carousel-dot></button>
-                        </div>
-                        <button type="button" data-carousel-next aria-label="Xem màn hình tiếp theo">→</button>
-                    </div>
-                </div>
-                <figcaption><strong data-carousel-caption>Tổng quan hiệu suất</strong><span>Cuộn chuột, vuốt hoặc dùng phím mũi tên để đổi màn hình.</span></figcaption>
-            </figure>
-        </div>
-    </section>
-
-    <section id="tinh-nang" class="landing-section landing-section-soft" aria-labelledby="features-title">
-        <div class="landing-container">
-            <div class="landing-section-heading" data-reveal>
-                <p class="landing-eyebrow">Năng lực cốt lõi</p>
-                <h2 id="features-title">Đủ công cụ để quản trị một chu kỳ hiệu suất hoàn chỉnh</h2>
-                <p>Từng chức năng phục vụ một quyết định cụ thể, không làm người dùng bị ngợp bởi dữ liệu.</p>
-            </div>
-            <div class="landing-feature-grid">
-                <article data-reveal><span class="landing-feature-icon" aria-hidden="true">O</span><h3>Quản lý OKR</h3><p>Liên kết mục tiêu tổ chức, phòng ban và cá nhân với kết quả then chốt rõ ràng.</p></article>
-                <article data-reveal><span class="landing-feature-icon" aria-hidden="true">K</span><h3>Quản lý KPI</h3><p>Thiết lập chỉ tiêu, trọng số, kỳ đo và người chịu trách nhiệm theo quy trình.</p></article>
-                <article data-reveal><span class="landing-feature-icon" aria-hidden="true">C</span><h3>Check-in tiến độ</h3><p>Cập nhật kết quả định kỳ, ghi nhận trở ngại và lưu vết thay đổi minh bạch.</p></article>
-                <article data-reveal><span class="landing-feature-icon" aria-hidden="true">Đ</span><h3>Kỳ đánh giá</h3><p>Tổ chức đánh giá nhất quán theo thời gian và phạm vi được phân quyền.</p></article>
-                <article data-reveal><span class="landing-feature-icon" aria-hidden="true">P</span><h3>Duyệt kết quả</h3><p>Chuẩn hóa luồng gửi, rà soát và phê duyệt trước khi chốt kết quả.</p></article>
-                <article data-reveal><span class="landing-feature-icon" aria-hidden="true">B</span><h3>Báo cáo &amp; thưởng</h3><p>Tổng hợp hiệu suất và áp dụng quy tắc thưởng dựa trên dữ liệu đã xác nhận.</p></article>
             </div>
         </div>
     </section>
 
-    <section id="quy-trinh" class="landing-section" aria-labelledby="process-title">
-        <div class="landing-container">
-            <div class="landing-section-heading" data-reveal>
-                <p class="landing-eyebrow">Quy trình sử dụng</p>
-                <h2 id="process-title">Năm bước rõ ràng từ mục tiêu đến báo cáo</h2>
-                <p>Mọi vai trò phối hợp trên cùng một dòng dữ liệu, giảm thao tác lặp và hạn chế bỏ sót.</p>
+    <!-- ===== KEY SYSTEM METRICS BANNER ===== -->
+    <section class="nova-stats-banner" aria-label="Các chỉ số hiệu quả ấn tượng">
+        <div class="nova-container">
+            <div class="nova-stats-grid">
+                <div class="nova-stat-item">
+                    <div class="nova-stat-number">4+</div>
+                    <div class="nova-stat-label">Cấp độ phân rã Mục tiêu (Công ty &rarr; Phòng ban &rarr; Cá nhân)</div>
+                </div>
+                <div class="nova-stat-item">
+                    <div class="nova-stat-number">98%</div>
+                    <div class="nova-stat-label">Tỷ lệ theo dõi tiến độ đúng hạn qua Check-in định kỳ</div>
+                </div>
+                <div class="nova-stat-item">
+                    <div class="nova-stat-number">50%</div>
+                    <div class="nova-stat-label">Tiết kiệm thời gian họp giao ban và đánh giá cuối kỳ</div>
+                </div>
+                <div class="nova-stat-item">
+                    <div class="nova-stat-number">100%</div>
+                    <div class="nova-stat-label">Bảo mật dữ liệu với phân quyền vai trò chuyên sâu (RBAC)</div>
+                </div>
             </div>
-            <ol class="landing-process">
-                <li data-reveal><span>01</span><div><h3>Thiết lập mục tiêu</h3><p>Xác định ưu tiên và kỳ thực hiện.</p></div></li>
-                <li data-reveal><span>02</span><div><h3>Giao KPI/OKR</h3><p>Phân bổ chỉ tiêu và trách nhiệm.</p></div></li>
-                <li data-reveal><span>03</span><div><h3>Check-in tiến độ</h3><p>Cập nhật kết quả và trở ngại.</p></div></li>
-                <li data-reveal><span>04</span><div><h3>Đánh giá</h3><p>Rà soát kết quả theo tiêu chí.</p></div></li>
-                <li data-reveal><span>05</span><div><h3>Phê duyệt &amp; báo cáo</h3><p>Chốt dữ liệu và tổng hợp quyết định.</p></div></li>
+        </div>
+    </section>
+
+    <!-- ===== 🌟 INTERACTIVE STICKY SCROLL SHOWCASE (GIAO DIỆN PHẢI ĐỨNG YÊN, TRÁI CUỘN MÔ TẢ) ===== -->
+    <section id="showcase" class="nova-showcase-section">
+        <div class="nova-container">
+            <div class="nova-section-heading nova-center">
+                <p class="nova-kicker"><i class="bi bi-laptop"></i> Trải nghiệm giao diện thực tế</p>
+                <h2>Khám phá không gian <em>quản trị chuyên nghiệp.</em></h2>
+                <p>Cuộn chuột để khám phá chi tiết từng màn hình chức năng chính của hệ thống VietMach.</p>
+            </div>
+
+            <!-- Sticky Scrollytelling Container -->
+            <div class="nova-sticky-showcase">
+                <!-- Left Column: Scrolling Story Steps -->
+                <div class="nova-scrolly-left">
+                    <!-- Step 1: Dashboard -->
+                    <div class="nova-scrolly-step active" data-screen="screen-dashboard" id="step-dashboard">
+                        <div class="scrolly-step-indicator">
+                            <span class="scrolly-step-num">01</span>
+                            <span class="scrolly-step-line"></span>
+                        </div>
+                        <div class="scrolly-step-card">
+                            <span class="nova-showcase-badge badge-indigo"><i class="bi bi-speedometer2"></i> Trung tâm điều hành</span>
+                            <h3>Dashboard Ban Lãnh Đạo (BOD)</h3>
+                            <p>Cung cấp bức tranh toàn cảnh 360 độ về sức khỏe doanh nghiệp, tỷ lệ hoàn thành OKR công ty và cảnh báo KPI chậm tiến độ theo thời gian thực.</p>
+                            <ul class="nova-showcase-bullets">
+                                <li><i class="bi bi-check2-circle"></i> Biểu đồ xu hướng hiệu suất 6 tuần gần nhất</li>
+                                <li><i class="bi bi-check2-circle"></i> Bảng phân bổ hoàn thành KPI theo từng phòng ban</li>
+                                <li><i class="bi bi-check2-circle"></i> Tự động gắn nhãn cảnh báo nguy cơ trễ hạn (At Risk / Behind)</li>
+                            </ul>
+                            <div class="scrolly-step-action">
+                                <a asp-controller="Auth" asp-action="Login" class="nova-button">Trải nghiệm Dashboard</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: OKR -->
+                    <div class="nova-scrolly-step" data-screen="screen-okr" id="step-okr">
+                        <div class="scrolly-step-indicator">
+                            <span class="scrolly-step-num">02</span>
+                            <span class="scrolly-step-line"></span>
+                        </div>
+                        <div class="scrolly-step-card">
+                            <span class="nova-showcase-badge badge-violet"><i class="bi bi-bullseye"></i> Quản trị mục tiêu</span>
+                            <h3>Cây Phân Rã Mục Tiêu OKR</h3>
+                            <p>Liên kết chặt chẽ Mục tiêu Chiến lược (Objective) từ cấp Công ty xuống Khối, Phòng ban và Kết quả then chốt (Key Results) của từng nhân sự.</p>
+                            <ul class="nova-showcase-bullets">
+                                <li><i class="bi bi-check2-circle"></i> Phân rã OKR đa cấp độ theo chu kỳ Quý/Năm</li>
+                                <li><i class="bi bi-check2-circle"></i> Tự động tính toán % tiến độ hoàn thành dựa trên Key Results</li>
+                                <li><i class="bi bi-check2-circle"></i> Giao diện thẻ trực quan với chỉ báo màu sắc trạng thái</li>
+                            </ul>
+                            <div class="scrolly-step-action">
+                                <a asp-controller="Auth" asp-action="Login" class="nova-button">Thử tính năng OKR</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Check-in -->
+                    <div class="nova-scrolly-step" data-screen="screen-checkin" id="step-checkin">
+                        <div class="scrolly-step-indicator">
+                            <span class="scrolly-step-num">03</span>
+                            <span class="scrolly-step-line"></span>
+                        </div>
+                        <div class="scrolly-step-card">
+                            <span class="nova-showcase-badge badge-emerald"><i class="bi bi-calendar-check"></i> Vận hành liên tục</span>
+                            <h3>Check-in Tiến Độ &amp; Cảnh Báo Trở Ngại</h3>
+                            <p>Quy trình Check-in định kỳ 1:1 giữa Quản lý và Nhân viên giúp phát hiện kịp thời các trở ngại (Blockers) trước khi quá muộn.</p>
+                            <ul class="nova-showcase-bullets">
+                                <li><i class="bi bi-check2-circle"></i> Cập nhật điểm tự tin (Confidence Score 1-10)</li>
+                                <li><i class="bi bi-check2-circle"></i> Ghi nhận khó khăn và đề xuất hỗ trợ từ cấp trên</li>
+                                <li><i class="bi bi-check2-circle"></i> Lịch sử check-in minh bạch, lưu vết không độ trễ</li>
+                            </ul>
+                            <div class="scrolly-step-action">
+                                <a asp-controller="Auth" asp-action="Login" class="nova-button">Thử Check-in nhanh</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: AI Copilot -->
+                    <div class="nova-scrolly-step" data-screen="screen-ai" id="step-ai">
+                        <div class="scrolly-step-indicator">
+                            <span class="scrolly-step-num">04</span>
+                            <span class="scrolly-step-line"></span>
+                        </div>
+                        <div class="scrolly-step-card">
+                            <span class="nova-showcase-badge badge-blue"><i class="bi bi-robot"></i> Trí tuệ nhân tạo</span>
+                            <h3>Trợ Lý AI Phân Tích &amp; Gợi Ý Hành Động</h3>
+                            <p>Tích hợp mô hình AI Gemini chuyên sâu: Tự động rà soát dữ liệu hiệu suất, giải thích nguyên nhân KPI chưa đạt và gợi ý Kế hoạch hành động cụ thể.</p>
+                            <ul class="nova-showcase-bullets">
+                                <li><i class="bi bi-check2-circle"></i> Tự động chuẩn hóa mục tiêu theo tiêu chuẩn SMART</li>
+                                <li><i class="bi bi-check2-circle"></i> Phân tích nguyên nhân gốc rễ (Root Cause Analysis)</li>
+                                <li><i class="bi bi-check2-circle"></i> Gợi ý giải pháp khắc phục thực tế cho quản lý</li>
+                            </ul>
+                            <div class="scrolly-step-action">
+                                <a asp-controller="Auth" asp-action="Login" class="nova-button">Hỏi thử Trợ lý AI</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 5: Evaluation -->
+                    <div class="nova-scrolly-step" data-screen="screen-evaluation" id="step-evaluation">
+                        <div class="scrolly-step-indicator">
+                            <span class="scrolly-step-num">05</span>
+                            <span class="scrolly-step-line"></span>
+                        </div>
+                        <div class="scrolly-step-card">
+                            <span class="nova-showcase-badge badge-amber"><i class="bi bi-trophy"></i> Đánh giá minh bạch</span>
+                            <h3>Đánh Giá 360 &amp; Xếp Loại Hiệu Suất</h3>
+                            <p>Quy trình đánh giá khép kín: Tự đánh giá &rarr; Quản lý trực tiếp đánh giá &rarr; Hội đồng duyệt (Calibration) &rarr; Xếp hạng A/B/C/D.</p>
+                            <ul class="nova-showcase-bullets">
+                                <li><i class="bi bi-check2-circle"></i> Tính điểm trọng số KPI và mức độ hoàn thành OKR</li>
+                                <li><i class="bi bi-check2-circle"></i> Khung năng lực hành vi kết hợp kết quả định lượng</li>
+                                <li><i class="bi bi-check2-circle"></i> Cơ sở dữ liệu vững chắc cho khen thưởng và tăng lương</li>
+                            </ul>
+                            <div class="scrolly-step-action">
+                                <a asp-controller="Auth" asp-action="Login" class="nova-button">Xem mẫu đánh giá</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 6: Reports -->
+                    <div class="nova-scrolly-step" data-screen="screen-reports" id="step-reports">
+                        <div class="scrolly-step-indicator">
+                            <span class="scrolly-step-num">06</span>
+                            <span class="scrolly-step-line"></span>
+                        </div>
+                        <div class="scrolly-step-card">
+                            <span class="nova-showcase-badge badge-rose"><i class="bi bi-bar-chart-steps"></i> Phân tích dữ liệu</span>
+                            <h3>Báo Cáo &amp; Phân Tích Đa Chiều</h3>
+                            <p>Tổng hợp dữ liệu toàn diện với biểu đồ phân phối, ma trận nhân tài 9-Box và hỗ trợ xuất báo cáo PDF/Excel phục vụ cuộc họp chiến lược.</p>
+                            <ul class="nova-showcase-bullets">
+                                <li><i class="bi bi-check2-circle"></i> Ma trận hiệu suất &amp; tiềm năng nhân sự (9-Box Grid)</li>
+                                <li><i class="bi bi-check2-circle"></i> Báo cáo so sánh tiến độ theo chu kỳ và phòng ban</li>
+                                <li><i class="bi bi-check2-circle"></i> Xuất file báo cáo chuẩn hóa chỉ với 1 click</li>
+                            </ul>
+                            <div class="scrolly-step-action">
+                                <a asp-controller="Auth" asp-action="Login" class="nova-button">Xem Báo Cáo Mẫu</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Sticky Mockup Frame -->
+                <div class="nova-scrolly-right">
+                    <div class="nova-sticky-frame">
+                        <div class="nova-browser-frame">
+                            <div class="nova-browser-header">
+                                <span class="nova-dot-row"><i></i><i></i><i></i></span>
+                                <div class="nova-browser-address" id="scrollyAddress">
+                                    <i class="bi bi-lock-fill"></i> https://vietmach.app/dashboard
+                                </div>
+                                <span class="scrolly-page-badge" id="scrollyPageBadge">1 / 6</span>
+                            </div>
+
+                            <div class="nova-sticky-screens">
+                                <div class="nova-sticky-screen active" id="screen-dashboard" data-url="https://vietmach.app/dashboard" data-index="1 / 6">
+                                    <img src="~/images/landing/screenshot_dashboard.png" asp-append-version="true" alt="Dashboard Ban Lãnh Đạo" />
+                                </div>
+                                <div class="nova-sticky-screen" id="screen-okr" data-url="https://vietmach.app/okrs/tree" data-index="2 / 6">
+                                    <img src="~/images/landing/screenshot_okr.png" asp-append-version="true" alt="Cây Mục Tiêu OKR" />
+                                </div>
+                                <div class="nova-sticky-screen" id="screen-checkin" data-url="https://vietmach.app/checkins/weekly" data-index="3 / 6">
+                                    <img src="~/images/landing/screenshot_checkin.png" asp-append-version="true" alt="Check-in Tiến Độ" />
+                                </div>
+                                <div class="nova-sticky-screen" id="screen-ai" data-url="https://vietmach.app/ai/assistant" data-index="4 / 6">
+                                    <img src="~/images/landing/ai_hero_light.png" asp-append-version="true" alt="Trợ Lý AI Gemini" />
+                                </div>
+                                <div class="nova-sticky-screen" id="screen-evaluation" data-url="https://vietmach.app/evaluations/period" data-index="5 / 6">
+                                    <img src="~/images/landing/screenshot_evaluation.png" asp-append-version="true" alt="Đánh Giá &amp; Xếp Loại" />
+                                </div>
+                                <div class="nova-sticky-screen" id="screen-reports" data-url="https://vietmach.app/reports/analytics" data-index="6 / 6">
+                                    <img src="~/images/landing/screenshot_reports.png" asp-append-version="true" alt="Báo Cáo Đa Chiều" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== 6 CORE CAPABILITIES (Crystal Glass Cards) ===== -->
+    <section id="tinh-nang" class="nova-features-section">
+        <div class="nova-container">
+            <div class="nova-section-heading nova-center">
+                <p class="nova-kicker">Tính năng đột phá</p>
+                <h2>Mọi công cụ cần thiết trên <em>một nền tảng duy nhất.</em></h2>
+                <p>Không còn cảnh dữ liệu phân mảnh trên file Excel hay công cụ rời rạc. VietMach đồng bộ hóa toàn bộ chuỗi giá trị quản trị hiệu suất.</p>
+            </div>
+
+            <div class="nova-features-grid-6">
+                <article class="nova-card-6">
+                    <div class="nova-card-icon is-lilac"><i class="bi bi-bullseye"></i></div>
+                    <h3>Quản Trị OKR Đa Cấp Độ</h3>
+                    <p>Thiết lập mục tiêu truyền cảm hứng, phân rã Key Results cho từng phòng ban và cá nhân, liên kết thời gian thực với tiến độ công việc.</p>
+                </article>
+
+                <article class="nova-card-6">
+                    <div class="nova-card-icon is-mint"><i class="bi bi-bar-chart-line"></i></div>
+                    <h3>Chỉ Số KPI &amp; Trọng Số</h3>
+                    <p>Thư viện chỉ số đo lường phong phú, cấu hình Target, Đơn vị đo, Chu kỳ và Trọng số (%) linh hoạt theo từng vị trí chức danh.</p>
+                </article>
+
+                <article class="nova-card-6">
+                    <div class="nova-card-icon is-peach"><i class="bi bi-calendar2-check"></i></div>
+                    <h3>Nhật Ký Check-in &amp; Cảnh Báo</h3>
+                    <p>Duy trì nhịp độ check-in định kỳ, phát hiện điểm nghẽn, ghi nhận phản hồi 2 chiều giữa quản lý và nhân viên một cách minh bạch.</p>
+                </article>
+
+                <article class="nova-card-6">
+                    <div class="nova-card-icon is-blue"><i class="bi bi-robot"></i></div>
+                    <h3>Trợ Lý AI Doanh Nghiệp</h3>
+                    <p>Phân tích hiệu suất tự động bằng AI Gemini, phát hiện nguyên nhân sụt giảm, tự động sinh OKR/KPI chuẩn SMART trong vài giây.</p>
+                </article>
+
+                <article class="nova-card-6">
+                    <div class="nova-card-icon is-yellow"><i class="bi bi-shield-lock"></i></div>
+                    <h3>Phân Quyền RBAC 5 Cấp Độ</h3>
+                    <p>Bảo vệ dữ liệu nghiêm ngặt với 5 vai trò chuẩn: Admin, Giám đốc, Quản lý, Nhân viên, HR với Data Scope theo cấu trúc tổ chức.</p>
+                </article>
+
+                <article class="nova-card-6">
+                    <div class="nova-card-icon is-emerald"><i class="bi bi-palette2"></i></div>
+                    <h3>Tùy Biến Thương Hiệu (White-Label)</h3>
+                    <p>Dễ dàng thay đổi Logo, Màu sắc nhận diện, Tên sản phẩm và Slogan riêng của doanh nghiệp trên toàn bộ giao diện hệ thống.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== ROLE SIMULATOR (Trải nghiệm theo từng vai trò) ===== -->
+    <section id="vai-tro" class="nova-roles-section">
+        <div class="nova-container">
+            <div class="nova-section-heading nova-center">
+                <p class="nova-kicker">Trải nghiệm theo vai trò</p>
+                <h2>Hệ thống thiết kế tối ưu cho <em>mọi cấp bậc nhân sự.</em></h2>
+                <p>Mỗi vai trò đều có không gian làm việc chuyên biệt, giúp tập trung tối đa vào mục tiêu và trách nhiệm của mình.</p>
+            </div>
+
+            <div class="nova-roles-layout">
+                <div class="nova-roles-list">
+                    <button type="button" class="nova-role-btn active" data-role="director">
+                        <i class="bi bi-person-badge"></i>
+                        <div>
+                            <strong>Ban Giám Đốc (Director)</strong>
+                            <span>Giám sát chiến lược &amp; ra quyết định</span>
+                        </div>
+                    </button>
+                    <button type="button" class="nova-role-btn" data-role="manager">
+                        <i class="bi bi-person-fill-gear"></i>
+                        <div>
+                            <strong>Quản Lý / Trưởng Phòng (Manager)</strong>
+                            <span>Giao chỉ tiêu, kèm cặp &amp; duyệt đánh giá</span>
+                        </div>
+                    </button>
+                    <button type="button" class="nova-role-btn" data-role="employee">
+                        <i class="bi bi-person"></i>
+                        <div>
+                            <strong>Nhân Viên (Employee)</strong>
+                            <span>Chủ động mục tiêu, check-in &amp; tự đánh giá</span>
+                        </div>
+                    </button>
+                    <button type="button" class="nova-role-btn" data-role="hr">
+                        <i class="bi bi-people"></i>
+                        <div>
+                            <strong>Phòng Nhân Sự (HR)</strong>
+                            <span>Thiết lập chu kỳ, quản lý chính sách &amp; xếp loại</span>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Role Cards Content -->
+                <div class="nova-role-display">
+                    <div class="nova-role-card" data-role-card="director">
+                        <h4>Góc nhìn Chiến Lược dành cho Ban Giám Đốc</h4>
+                        <p>Giám đốc nắm bắt tức thì tỷ lệ hoàn thành OKR công ty, phát hiện phòng ban cần hỗ trợ và điều chỉnh nguồn lực nhanh chóng.</p>
+                        <ul class="nova-role-checklist">
+                            <li><i class="bi bi-check-circle-fill"></i> Xem bản đồ mục tiêu công ty và liên kết các phòng ban</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Nhận báo cáo phân tích hiệu suất tự động từ AI</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Phê duyệt kỳ đánh giá và bảng xếp loại khen thưởng cuối kỳ</li>
+                        </ul>
+                    </div>
+
+                    <div class="nova-role-card" data-role-card="manager" style="display: none;">
+                        <h4>Không gian Quản Lý Đội Ngũ dành cho Trưởng Phòng</h4>
+                        <p>Giúp quản lý dễ dàng phân bổ chỉ tiêu công bằng, theo dõi tiến độ từng thành viên và đồng hành thông qua buổi check-in hàng tuần.</p>
+                        <ul class="nova-role-checklist">
+                            <li><i class="bi bi-check-circle-fill"></i> Phân bổ mục tiêu phòng ban thành Key Results cho cấp dưới</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Duyệt nhật ký check-in, phản hồi và tháo gỡ khó khăn cho nhân viên</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Chấm điểm đánh giá hiệu suất định kỳ theo thang điểm chuẩn</li>
+                        </ul>
+                    </div>
+
+                    <div class="nova-role-card" data-role-card="employee" style="display: none;">
+                        <h4>Không gian Làm Việc Chủ Động dành cho Nhân Viên</h4>
+                        <p>Nhân viên luôn biết rõ mình cần đạt được kết quả gì, tiến độ hiện tại ra sao và đóng góp như thế nào vào thành công chung của công ty.</p>
+                        <ul class="nova-role-checklist">
+                            <li><i class="bi bi-check-circle-fill"></i> Xem danh sách OKR &amp; KPI cá nhân được giao trong kỳ</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Cập nhật tiến độ check-in và gắn kèm bằng chứng hoàn thành</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Thực hiện tự đánh giá (Self-review) minh bạch, công bằng</li>
+                        </ul>
+                    </div>
+
+                    <div class="nova-role-card" data-role-card="hr" style="display: none;">
+                        <h4>Trung Tâm Quản Trị Chu Kỳ dành cho Nhân Sự (HR)</h4>
+                        <p>HR dễ dàng khởi tạo các chu kỳ đánh giá (Tháng/Quý/Năm), chuẩn hóa biểu mẫu KPI và tổng hợp kết quả xếp hạng tự động.</p>
+                        <ul class="nova-role-checklist">
+                            <li><i class="bi bi-check-circle-fill"></i> Mở và đóng các kỳ đánh giá hiệu suất của toàn công ty</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Giám sát tỷ lệ nộp bài đánh giá của các phòng ban theo thời gian thực</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Xuất danh sách xếp loại phục vụ chính sách thưởng và bổ nhiệm</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== STANDARD WORKFLOW 4 STEPS ===== -->
+    <section id="quy-trinh" class="nova-process-section">
+        <div class="nova-container nova-process-layout">
+            <div class="nova-section-heading">
+                <p class="nova-kicker">Quy trình vận hành chuẩn</p>
+                <h2>Từ mục tiêu đến<br /><em>khen thưởng cuối kỳ.</em></h2>
+                <p>Một luồng công việc 4 bước khép kín và tự động hóa giúp doanh nghiệp vận hành trơn tru, loại bỏ 100% thủ tục giấy tờ thủ công.</p>
+            </div>
+            <ol class="nova-process">
+                <li>
+                    <b>01</b>
+                    <div>
+                        <strong>Thiết Lập Mục Tiêu &amp; Chỉ Số</strong>
+                        <span>Ban lãnh đạo công bố OKR công ty; các phòng ban xây dựng bộ KPI định lượng tương ứng.</span>
+                    </div>
+                </li>
+                <li>
+                    <b>02</b>
+                    <div>
+                        <strong>Phân Bổ &amp; Giao Việc</strong>
+                        <span>Trưởng phòng phân rã mục tiêu xuống từng nhân viên, xác định trọng số (%) và cam kết kết quả.</span>
+                    </div>
+                </li>
+                <li>
+                    <b>03</b>
+                    <div>
+                        <strong>Check-in &amp; Cảnh Báo Sớm</strong>
+                        <span>Cập nhật tiến độ hàng tuần, ghi nhận khó khăn và có Trợ lý AI hỗ trợ đề xuất giải pháp.</span>
+                    </div>
+                </li>
+                <li>
+                    <b>04</b>
+                    <div>
+                        <strong>Đánh Giá &amp; Xếp Loại Minh Bạch</strong>
+                        <span>Hội đồng phê duyệt kết quả, tự động tổng hợp xếp hạng A/B/C/D và ghi nhận thành tích xứng đáng.</span>
+                    </div>
+                </li>
             </ol>
         </div>
     </section>
 
-    <section class="landing-section landing-role-section" aria-labelledby="roles-title">
-        <div class="landing-container landing-role-grid">
-            <div class="landing-role-intro" data-reveal>
-                <p class="landing-eyebrow">Giá trị theo vai trò</p>
-                <h2 id="roles-title">Đúng thông tin cho đúng người</h2>
-                <p>Mỗi vai trò có một góc nhìn phù hợp nhưng vẫn dùng chung nguồn dữ liệu đã được kiểm soát.</p>
-            </div>
-            <div class="landing-role-tabs" data-role-tabs data-reveal>
-                <div class="landing-tab-list" role="tablist" aria-label="Chọn vai trò">
-                    <button type="button" role="tab" id="role-employee-tab" aria-selected="true" aria-controls="role-employee">Nhân viên</button>
-                    <button type="button" role="tab" id="role-manager-tab" aria-selected="false" aria-controls="role-manager" tabindex="-1">Quản lý</button>
-                    <button type="button" role="tab" id="role-hr-tab" aria-selected="false" aria-controls="role-hr" tabindex="-1">HR</button>
-                    <button type="button" role="tab" id="role-leader-tab" aria-selected="false" aria-controls="role-leader" tabindex="-1">Ban giám đốc</button>
-                </div>
-                <div class="landing-tab-panel" role="tabpanel" id="role-employee" aria-labelledby="role-employee-tab">
-                    <strong>Biết mình cần ưu tiên điều gì.</strong><p>Theo dõi mục tiêu, check-in tiến độ và nhận phản hồi trong cùng một luồng công việc.</p>
-                </div>
-                <div class="landing-tab-panel" role="tabpanel" id="role-manager" aria-labelledby="role-manager-tab" hidden>
-                    <strong>Phát hiện sớm điểm nghẽn của đội ngũ.</strong><p>Quan sát tiến độ, phản hồi và đánh giá dựa trên dữ liệu được cập nhật liên tục.</p>
-                </div>
-                <div class="landing-tab-panel" role="tabpanel" id="role-hr" aria-labelledby="role-hr-tab" hidden>
-                    <strong>Vận hành chu kỳ nhất quán.</strong><p>Thiết lập kỳ đánh giá, kiểm soát quy trình và tổng hợp kết quả trên toàn tổ chức.</p>
-                </div>
-                <div class="landing-tab-panel" role="tabpanel" id="role-leader" aria-labelledby="role-leader-tab" hidden>
-                    <strong>Nhìn thấy mức độ thực thi chiến lược.</strong><p>Nắm xu hướng hiệu suất và trạng thái mục tiêu để ưu tiên quyết định quan trọng.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
+    <!-- ===== SAAS PRICING PACKAGES ===== -->
     @if (Model?.Any() == true)
     {
-        <section id="bang-gia" class="landing-section landing-section-soft" aria-labelledby="pricing-title">
-            <div class="landing-container">
-                <div class="landing-section-heading" data-reveal>
-                    <p class="landing-eyebrow">Gói sử dụng</p>
-                    <h2 id="pricing-title">Chọn quy mô phù hợp với tổ chức</h2>
-                    <p>Thông tin gói được tải trực tiếp từ hệ thống. Đăng ký để bắt đầu quy trình tư vấn và kích hoạt.</p>
+        <section id="bang-gia" class="nova-pricing-section">
+            <div class="nova-container">
+                <div class="nova-section-heading nova-center">
+                    <p class="nova-kicker">Bảng giá dịch vụ</p>
+                    <h2>Lựa chọn gói phù hợp với <em>quy mô của bạn.</em></h2>
+                    <p>Linh hoạt nâng cấp hoặc thay đổi gói dịch vụ bất kỳ lúc nào theo tốc độ tăng trưởng của doanh nghiệp.</p>
                 </div>
-                <div class="landing-pricing-grid">
+                <div class="nova-pricing-grid">
                     @foreach (var package in Model)
                     {
-                        <article class="landing-price-card @(package.IsPopular ? "is-popular" : "")" data-reveal>
-                            @if (package.IsPopular) { <span class="landing-popular-label">Được lựa chọn nhiều</span> }
+                        <article class="nova-price @(package.IsPopular ? "is-popular" : "")">
+                            @if (package.IsPopular)
+                            {
+                                <span class="nova-popular">Được chọn nhiều nhất</span>
+                            }
                             <h3>@package.PackageName</h3>
                             <p>@package.Description</p>
-                            <div class="landing-price"><strong>@package.PricePerMonth.ToString("N0")</strong><span>VNĐ / tháng</span></div>
+                            <div class="nova-price-value">
+                                @if (package.PricePerMonth > 0)
+                                {
+                                    <strong>@package.PricePerMonth.ToString("N0")</strong>
+                                    <span>VNĐ / tháng</span>
+                                }
+                                else
+                                {
+                                    <strong>Liên hệ</strong>
+                                    <span>Tùy chỉnh theo doanh nghiệp</span>
+                                }
+                            </div>
                             <ul>
-                                <li><span aria-hidden="true">✓</span> Tối đa @package.MaxUsers người dùng</li>
-                                <li><span aria-hidden="true">✓</span> Quản lý KPI và OKR</li>
-                                @if (package.HasAdvancedOKR) { <li><span aria-hidden="true">✓</span> OKR nâng cao</li> }
-                                @if (package.HasAIInsight) { <li><span aria-hidden="true">✓</span> Phân tích hỗ trợ bằng AI</li> }
+                                <li>Tối đa <strong>@package.MaxUsers người dùng</strong></li>
+                                <li>Quản lý OKR &amp; KPI định lượng</li>
+                                <li>Nhật ký Check-in và Cảnh báo tiến độ</li>
+                                @if (package.HasAdvancedOKR)
+                                {
+                                    <li>Cây phân rã OKR đa cấp độ nâng cao</li>
+                                }
+                                @if (package.HasAIInsight)
+                                {
+                                    <li>Trợ lý AI Gemini phân tích chuyên sâu</li>
+                                }
                             </ul>
-                            <a class="landing-button @(package.IsPopular ? "landing-button-primary" : "landing-button-secondary")"
-                               asp-controller="Auth" asp-action="Register" asp-route-plan="@package.PackageName">
-                                Chọn gói @package.PackageName
+                            <a class="nova-button @(package.IsPopular ? "" : "nova-button-ghost")" asp-controller="Auth" asp-action="Register" asp-route-plan="@package.PackageName">
+                                Chọn @package.PackageName
                             </a>
                         </article>
                     }
@@ -380,39 +577,126 @@
         </section>
     }
 
-    <section class="landing-final-cta">
-        <div class="landing-container landing-final-cta-inner" data-reveal>
-            <div><p class="landing-eyebrow">Sẵn sàng bắt đầu?</p><h2>Đưa mục tiêu vào một quy trình có thể theo dõi</h2><p>Tạo tài khoản VietMach System hoặc đăng nhập để tiếp tục công việc của bạn.</p></div>
-            <div>
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                    <a class="landing-button landing-button-light landing-button-large" asp-controller="Dashboard" asp-action="Index">Vào hệ thống</a>
-                }
-                else
-                {
-                    <a class="landing-button landing-button-light landing-button-large" asp-controller="Auth" asp-action="Register">Tạo tài khoản</a>
-                    <a class="landing-text-link" asp-controller="Auth" asp-action="Login">Đã có tài khoản? Đăng nhập</a>
-                }
+    <!-- ===== FAQ ACCORDION ===== -->
+    <section id="faq" class="nova-faq-section">
+        <div class="nova-container">
+            <div class="nova-section-heading nova-center">
+                <p class="nova-kicker">Giải đáp thắc mắc</p>
+                <h2>Câu hỏi <em>thường gặp.</em></h2>
+                <p>Những thông tin quan trọng giúp bạn an tâm khi áp dụng VietMach vào doanh nghiệp.</p>
             </div>
+
+            <div class="nova-faq-grid">
+                <div class="nova-faq-item active">
+                    <button type="button" class="nova-faq-question">
+                        <span>VietMach có hỗ trợ nhập dữ liệu nhân sự và KPI từ file Excel không?</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="nova-faq-answer">
+                        <p>Có. Hệ thống hỗ trợ tính năng Import/Export danh sách nhân viên, phòng ban và thư viện KPI nhanh chóng qua file Excel chuẩn hóa, giúp doanh nghiệp tiết kiệm 90% thời gian khởi tạo ban đầu.</p>
+                    </div>
+                </div>
+
+                <div class="nova-faq-item">
+                    <button type="button" class="nova-faq-question">
+                        <span>Trợ lý AI Gemini phân tích hiệu suất như thế nào? Dữ liệu có an toàn không?</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="nova-faq-answer">
+                        <p>AI phân tích dựa trên lịch sử check-in, tỷ lệ hoàn thành KPI và các trở ngại được ghi nhận để đưa ra gợi ý hành động. Toàn bộ dữ liệu được xử lý ẩn danh và bảo mật theo tiêu chuẩn doanh nghiệp, không chia sẻ cho bên thứ ba.</p>
+                    </div>
+                </div>
+
+                <div class="nova-faq-item">
+                    <button type="button" class="nova-faq-question">
+                        <span>Hệ thống phân quyền (RBAC) hỗ trợ những vai trò nào?</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="nova-faq-answer">
+                        <p>VietMach cung cấp 5 vai trò chuẩn: Admin (Quản trị hệ thống), Director (Ban Giám Đốc), Manager (Quản lý/Trưởng phòng), Employee (Nhân viên) và HR (Phòng Nhân sự). Mỗi vai trò có phạm vi dữ liệu (Data Scope) chặt chẽ theo sơ đồ tổ chức.</p>
+                    </div>
+                </div>
+
+                <div class="nova-faq-item">
+                    <button type="button" class="nova-faq-question">
+                        <span>Tôi có thể dùng thử hệ thống trước khi quyết định mua không?</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="nova-faq-answer">
+                        <p>Hoàn toàn có thể. Bạn có thể đăng ký tài khoản dùng thử miễn phí ngay hôm nay hoặc sử dụng các tài khoản gợi ý sẵn trên trang Đăng nhập để trải nghiệm trọn vẹn mọi tính năng.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CALL TO ACTION BANNER ===== -->
+    <section class="nova-cta">
+        <div class="nova-container">
+            <div>
+                <p class="nova-kicker"><i class="bi bi-stars"></i> Sẵn sàng bứt phá hiệu suất?</p>
+                <h2>Biến mục tiêu chiến lược thành kết quả vượt trội ngay hôm nay.</h2>
+            </div>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a class="nova-button nova-button-large" asp-controller="Dashboard" asp-action="Index">
+                    Vào hệ thống làm việc <i class="bi bi-arrow-up-right"></i>
+                </a>
+            }
+            else
+            {
+                <a class="nova-button nova-button-large" asp-controller="Auth" asp-action="Register">
+                    Khởi tạo tài khoản miễn phí <i class="bi bi-arrow-up-right"></i>
+                </a>
+            }
         </div>
     </section>
 </main>
 
-<footer class="landing-footer">
-    <div class="landing-container landing-footer-inner">
-        <div class="landing-brand">
-            <span class="landing-brand-mark" aria-hidden="true">VM</span>
-            <span><strong>VietMach System</strong><small>Manage KPI &amp; OKR</small></span>
+<!-- ===== FOOTER ===== -->
+<footer class="nova-footer">
+    <div class="nova-container">
+        <div class="nova-footer-grid">
+            <div class="nova-footer-brand">
+                <a class="nova-brand" asp-controller="Home" asp-action="Index">
+                    <span class="nova-brand-mark">VM</span>
+                    <span><strong>VietMach</strong><small>Performance system</small></span>
+                </a>
+                <p>Nền tảng Quản trị Mục tiêu OKR &amp; Hiệu suất KPI Toàn diện tích hợp AI cho doanh nghiệp Việt Nam.</p>
+            </div>
+            <div class="nova-footer-col">
+                <h5>Sản phẩm</h5>
+                <ul>
+                    <li><a href="#showcase">Dashboard Ban Lãnh Đạo</a></li>
+                    <li><a href="#showcase">Cây Mục Tiêu OKR</a></li>
+                    <li><a href="#showcase">Quản Lý Chỉ Số KPI</a></li>
+                    <li><a href="#showcase">Trợ Lý AI Gemini</a></li>
+                </ul>
+            </div>
+            <div class="nova-footer-col">
+                <h5>Giải pháp</h5>
+                <ul>
+                    <li><a href="#vai-tro">Dành cho Giám Đốc</a></li>
+                    <li><a href="#vai-tro">Dành cho Trưởng Phòng</a></li>
+                    <li><a href="#vai-tro">Dành cho Nhân Viên</a></li>
+                    <li><a href="#vai-tro">Dành cho Nhân Sự</a></li>
+                </ul>
+            </div>
+            <div class="nova-footer-col">
+                <h5>Hệ thống</h5>
+                <ul>
+                    <li><a asp-controller="Auth" asp-action="Login">Đăng nhập tài khoản</a></li>
+                    <li><a asp-controller="Auth" asp-action="Register">Đăng ký dùng thử</a></li>
+                    <li><a href="#bang-gia">Bảng giá dịch vụ</a></li>
+                    <li><a href="#faq">Trung tâm hỏi đáp</a></li>
+                </ul>
+            </div>
         </div>
-        <nav aria-label="Liên kết cuối trang">
-            <a href="#san-pham">Sản phẩm</a><a href="#tinh-nang">Tính năng</a><a href="#quy-trinh">Quy trình</a>
-            @if (User.Identity?.IsAuthenticated != true)
-            {
-                <a asp-controller="Auth" asp-action="Login">Đăng nhập</a>
-                <a asp-controller="Auth" asp-action="Register">Đăng ký</a>
-            }
-        </nav>
-        <p>© @DateTime.Now.Year VietMach System. Manage KPI &amp; OKR.</p>
+
+        <div class="nova-footer-bottom">
+            <p>&copy; @DateTime.Now.Year VietMach System. Mọi quyền được bảo lưu.</p>
+            <p>Hệ thống Quản lý Hiệu suất KPI &amp; OKR Chuẩn Doanh Nghiệp.</p>
+        </div>
     </div>
 </footer>
 

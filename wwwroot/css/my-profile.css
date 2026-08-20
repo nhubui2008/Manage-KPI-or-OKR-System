@@ -1,0 +1,626 @@
+/* ==========================================================================
+   MY PROFILE PAGE - MODERN BALANCED SAAS STYLING (SWEET SPOT)
+   ========================================================================== */
+
+:root {
+    --mp-primary: #6366f1;
+    --mp-primary-hover: #4f46e5;
+    --mp-primary-light: #eef2ff;
+    --mp-primary-border: #c7d2fe;
+    
+    --mp-text-main: #1e293b;
+    --mp-text-muted: #64748b;
+    --mp-text-light: #94a3b8;
+    
+    --mp-bg-surface: #ffffff;
+    --mp-bg-subtle: #f8fafc;
+    --mp-bg-card-header: linear-gradient(180deg, #fafbff 0%, #ffffff 100%);
+    
+    --mp-border: #e2e8f0;
+    --mp-border-hover: #cbd5e1;
+    --mp-border-focus: #6366f1;
+    
+    --mp-success: #10b981;
+    --mp-success-light: #ecfdf5;
+    --mp-success-border: #a7f3d0;
+    
+    --mp-radius-sm: 6px;
+    --mp-radius-md: 9px;
+    --mp-radius-lg: 13px;
+    --mp-radius-full: 9999px;
+    
+    --mp-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --mp-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --mp-shadow-lg: 0 5px 18px -3px rgba(15, 23, 42, 0.05), 0 3px 6px -3px rgba(15, 23, 42, 0.02);
+    --mp-shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.14);
+}
+
+.my-profile-page-wrapper {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0.15rem 0.5rem 1.35rem;
+}
+
+/* --------------------------------------------------------------------------
+   Page Header
+   -------------------------------------------------------------------------- */
+.mp-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.1rem;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--mp-border);
+}
+
+.mp-header-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.mp-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.18rem;
+}
+
+.mp-title-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--mp-radius-md);
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: #ffffff;
+    font-size: 0.98rem;
+    box-shadow: 0 2px 7px rgba(99, 102, 241, 0.25);
+    flex-shrink: 0;
+}
+
+.mp-header-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--mp-text-main);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.mp-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.32rem;
+    font-size: 0.75rem;
+    color: var(--mp-text-muted);
+    margin-bottom: 0.22rem;
+}
+
+.mp-breadcrumb a {
+    color: var(--mp-text-muted);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.mp-breadcrumb a:hover {
+    color: var(--mp-primary);
+}
+
+.mp-breadcrumb i {
+    font-size: 0.6rem;
+    color: var(--mp-text-light);
+}
+
+.mp-header-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--mp-text-muted);
+    line-height: 1.4;
+}
+
+.mp-change-pwd-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: var(--mp-radius-md);
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 2px 7px rgba(99, 102, 241, 0.25);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.mp-change-pwd-btn:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.32);
+    transform: translateY(-1px);
+    color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Layout (2-Column Balanced)
+   -------------------------------------------------------------------------- */
+.mp-layout {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 1.1rem;
+    align-items: stretch;
+}
+
+@media (max-width: 960px) {
+    .mp-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Card Base (Sweet Spot)
+   -------------------------------------------------------------------------- */
+.mp-card {
+    background: var(--mp-bg-surface);
+    border: 1px solid var(--mp-border);
+    border-radius: var(--mp-radius-lg);
+    box-shadow: var(--mp-shadow-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.mp-card-header {
+    padding: 0.7rem 1.05rem;
+    background: var(--mp-bg-card-header);
+    border-bottom: 1px solid var(--mp-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.mp-card-header-main {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.mp-card-header-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--mp-radius-sm);
+    background: var(--mp-primary-light);
+    color: var(--mp-primary);
+    font-size: 0.92rem;
+    flex-shrink: 0;
+}
+
+.mp-card-header-text h2 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--mp-text-main);
+    letter-spacing: -0.01em;
+}
+
+.mp-card-header-text p {
+    margin: 0.05rem 0 0;
+    font-size: 0.73rem;
+    color: var(--mp-text-muted);
+}
+
+.mp-verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    padding: 0.16rem 0.5rem;
+    border-radius: var(--mp-radius-full);
+    background: var(--mp-success-light);
+    border: 1px solid var(--mp-success-border);
+    color: #065f46;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.mp-card-body {
+    padding: 0.9rem 1.05rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --------------------------------------------------------------------------
+   Left Column: Account Profile & AI Settings (Sweet Spot)
+   -------------------------------------------------------------------------- */
+.mp-summary-top {
+    text-align: center;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--mp-border);
+}
+
+.mp-avatar-wrapper {
+    position: relative;
+    display: inline-block;
+    margin: 0.15rem auto 0.55rem;
+}
+
+.mp-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 62px;
+    height: 62px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #ffffff;
+    font-size: 1.6rem;
+    font-weight: 800;
+    box-shadow: 0 5px 14px rgba(99, 102, 241, 0.26);
+    border: 2.5px solid #ffffff;
+}
+
+.mp-avatar-badge {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 16px;
+    height: 16px;
+    border-radius: var(--mp-radius-full);
+    background: var(--mp-success);
+    border: 2px solid #ffffff;
+}
+
+.mp-summary-name {
+    margin: 0 0 0.15rem;
+    font-size: 1.02rem;
+    font-weight: 800;
+    color: var(--mp-text-main);
+    line-height: 1.3;
+}
+
+.mp-summary-email {
+    margin: 0 0 0.5rem;
+    font-size: 0.76rem;
+    color: var(--mp-text-muted);
+    overflow-wrap: anywhere;
+}
+
+.mp-role-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.32rem;
+    padding: 0.18rem 0.6rem;
+    border-radius: var(--mp-radius-full);
+    background: var(--mp-primary-light);
+    color: var(--mp-primary);
+    border: 1px solid var(--mp-primary-border);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+/* Account Meta List */
+.mp-meta-list {
+    margin: 0.75rem 0 0;
+    display: grid;
+    gap: 0.5rem;
+    text-align: left;
+}
+
+.mp-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.mp-meta-label {
+    font-size: 0.76rem;
+    color: var(--mp-text-muted);
+    font-weight: 600;
+}
+
+.mp-meta-value {
+    font-size: 0.76rem;
+    color: var(--mp-text-main);
+    font-weight: 700;
+    text-align: right;
+}
+
+.mp-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.32rem;
+    padding: 0.12rem 0.45rem;
+    border-radius: var(--mp-radius-full);
+    font-size: 0.71rem;
+    font-weight: 700;
+}
+
+.mp-status-active {
+    background: var(--mp-success-light);
+    color: #065f46;
+    border: 1px solid var(--mp-success-border);
+}
+
+.mp-status-active .status-dot {
+    width: 5.5px;
+    height: 5.5px;
+    border-radius: var(--mp-radius-full);
+    background: var(--mp-success);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.mp-status-locked {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* AI Preferences Section inside Left Card */
+.mp-ai-section {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--mp-border);
+}
+
+.mp-ai-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.38rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--mp-text-main);
+    margin-bottom: 0.4rem;
+}
+
+.mp-ai-section-title i {
+    color: #ec4899;
+}
+
+.mp-lang-control-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.mp-select-group {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid var(--mp-border);
+    border-radius: var(--mp-radius-md);
+    background-color: #ffffff;
+    box-shadow: var(--mp-shadow-sm);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.mp-select-group:hover {
+    border-color: var(--mp-border-hover);
+}
+
+.mp-select-group:focus-within {
+    border-color: var(--mp-primary);
+    box-shadow: var(--mp-shadow-focus);
+}
+
+.mp-select-addon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 35px;
+    background: #f8fafc;
+    border-right: 1px solid var(--mp-border);
+    color: var(--mp-primary);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.mp-select {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    height: 35px;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent;
+    padding: 0.3rem 0.4rem !important;
+    font-size: 0.8rem;
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--mp-text-main);
+    cursor: pointer;
+}
+
+.mp-btn-save {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--mp-radius-md);
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: #ffffff;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.24);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+}
+
+.mp-btn-save:hover:not(:disabled) {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+    transform: translateY(-1px);
+    color: #ffffff;
+}
+
+.mp-btn-save:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+}
+
+.mp-lang-feedback {
+    margin: 0.32rem 0 0;
+    font-size: 0.73rem;
+    font-weight: 600;
+    line-height: 1.3;
+    transition: all 0.2s ease;
+}
+
+.mp-lang-feedback:empty {
+    display: none;
+}
+
+.mp-lang-feedback.is-success {
+    color: var(--mp-success);
+}
+
+.mp-lang-feedback.is-error {
+    color: var(--mp-danger);
+}
+
+/* --------------------------------------------------------------------------
+   Right Column: Employee Profile Details (6 Info Tiles Grid - Sweet Spot)
+   -------------------------------------------------------------------------- */
+.mp-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    flex: 1;
+}
+
+@media (max-width: 640px) {
+    .mp-info-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.mp-info-tile {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: var(--mp-radius-md);
+    background: var(--mp-bg-subtle);
+    border: 1px solid var(--mp-border);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mp-info-tile:hover {
+    background: #ffffff;
+    border-color: var(--mp-border-hover);
+    box-shadow: var(--mp-shadow-sm);
+    transform: translateY(-1px);
+}
+
+.mp-tile-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--mp-radius-sm);
+    background: #ffffff;
+    border: 1px solid var(--mp-border);
+    font-size: 1rem;
+    flex-shrink: 0;
+    box-shadow: var(--mp-shadow-sm);
+}
+
+.mp-tile-icon.icon-code { color: #6366f1; background: #eef2ff; border-color: #c7d2fe; }
+.mp-tile-icon.icon-name { color: #8b5cf6; background: #f5f3ff; border-color: #ddd6fe; }
+.mp-tile-icon.icon-phone { color: #10b981; background: #ecfdf5; border-color: #a7f3d0; }
+.mp-tile-icon.icon-email { color: #0284c7; background: #f0f9ff; border-color: #bae6fd; }
+.mp-tile-icon.icon-dob { color: #f59e0b; background: #fffbeb; border-color: #fde68a; }
+.mp-tile-icon.icon-join { color: #06b6d4; background: #ecfeff; border-color: #a5f3fc; }
+
+.mp-tile-text {
+    min-width: 0;
+    flex: 1;
+}
+
+.mp-tile-label {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--mp-text-muted);
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 0.14rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.mp-tile-value {
+    display: block;
+    font-size: 0.86rem;
+    color: var(--mp-text-main);
+    font-weight: 750;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* System sync notice at bottom of employee card */
+.mp-sync-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.8rem;
+    background: #f8fafc;
+    border: 1px solid var(--mp-border);
+    border-radius: var(--mp-radius-md);
+    font-size: 0.74rem;
+    color: var(--mp-text-muted);
+    line-height: 1.4;
+}
+
+.mp-sync-notice i {
+    font-size: 0.92rem;
+    color: var(--mp-primary);
+    flex-shrink: 0;
+}
+
+.mp-empty-employee {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.35rem;
+    background: var(--mp-bg-subtle);
+    border-radius: var(--mp-radius-md);
+    border: 1px dashed var(--mp-border);
+}
+
+.mp-empty-employee i {
+    font-size: 1.6rem;
+    color: var(--mp-text-light);
+}
+
+.mp-empty-employee h3 {
+    margin: 0 0 0.2rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--mp-text-main);
+}
+
+.mp-empty-employee p {
+    margin: 0;
+    font-size: 0.76rem;
+    color: var(--mp-text-muted);
+}

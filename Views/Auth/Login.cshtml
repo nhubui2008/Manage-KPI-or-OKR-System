@@ -2,45 +2,248 @@
     ViewData["Title"] = "Đăng nhập";
     ViewData["IsLoginPage"] = true;
 }
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
 
-<main class="auth-page">
-    <partial name="_AuthBrandPanel" />
-    <section class="auth-form-panel" aria-labelledby="login-title">
-        <a href="/" class="auth-back-link"><i class="bi bi-arrow-left" aria-hidden="true"></i> Về trang chủ</a>
-        <div class="auth-card">
-            <div class="auth-mobile-brand" aria-label="VietMach System, Manage KPI &amp; OKR">
-                <span class="auth-brand-mark" aria-hidden="true"><i class="bi bi-bullseye"></i></span>
-                <span><strong>VietMach System</strong><small>Manage KPI &amp; OKR</small></span>
-            </div>
-            <header class="auth-header">
+<div class="crystal-scene-container" id="crystalScene">
+    <!-- Ambient Luminous Glow Orbs -->
+    <div class="crystal-ambient-glow" aria-hidden="true">
+        <div class="ambient-orb ambient-orb-1"></div>
+        <div class="ambient-orb ambient-orb-2"></div>
+        <div class="ambient-orb ambient-orb-3"></div>
+    </div>
+
+    <!-- Floating 3D Crystal Objects Layer -->
+    <div class="crystal-objects-layer" aria-hidden="true">
+        <!-- Crystal 1: Top-Left Prismatic Shard -->
+        <div class="crystal-item crystal-1" data-depth="0.045">
+            <svg viewBox="0 0 140 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="c1-grad1" x1="10" y1="20" x2="130" y2="190" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#c7d2fe" stop-opacity="0.9" />
+                        <stop offset="50%" stop-color="#bae6fd" stop-opacity="0.75" />
+                        <stop offset="100%" stop-color="#fbcfe8" stop-opacity="0.85" />
+                    </linearGradient>
+                    <linearGradient id="c1-grad2" x1="70" y1="0" x2="20" y2="150" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+                        <stop offset="60%" stop-color="#e0e7ff" stop-opacity="0.6" />
+                        <stop offset="100%" stop-color="#818cf8" stop-opacity="0.8" />
+                    </linearGradient>
+                    <linearGradient id="c1-grad3" x1="120" y1="40" x2="60" y2="200" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.7" />
+                        <stop offset="100%" stop-color="#a855f7" stop-opacity="0.8" />
+                    </linearGradient>
+                </defs>
+                <!-- Back Facets -->
+                <polygon points="70,10 125,75 105,185 35,160 15,65" fill="url(#c1-grad1)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2" />
+                <!-- Front Facets -->
+                <polygon points="70,10 85,95 35,160 15,65" fill="url(#c1-grad2)" stroke="rgba(255,255,255,0.95)" stroke-width="1" />
+                <polygon points="70,10 125,75 85,95" fill="url(#c1-grad3)" stroke="rgba(255,255,255,0.7)" stroke-width="0.8" />
+                <polygon points="85,95 125,75 105,185 65,140" fill="url(#c1-grad1)" opacity="0.85" />
+                <polygon points="85,95 65,140 35,160" fill="#ffffff" opacity="0.65" />
+                <!-- Specular Ridge Line -->
+                <line x1="70" y1="10" x2="85" y2="95" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+                <line x1="85" y1="95" x2="35" y2="160" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+        </div>
+
+        <!-- Crystal 2: Top-Right Multi-Faceted Prism Tower -->
+        <div class="crystal-item crystal-2" data-depth="0.06">
+            <svg viewBox="0 0 155 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="c2-grad1" x1="20" y1="10" x2="140" y2="240" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+                        <stop offset="40%" stop-color="#bae6fd" stop-opacity="0.8" />
+                        <stop offset="100%" stop-color="#818cf8" stop-opacity="0.85" />
+                    </linearGradient>
+                    <linearGradient id="c2-grad2" x1="130" y1="20" x2="40" y2="220" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#fef08a" stop-opacity="0.75" />
+                        <stop offset="50%" stop-color="#f472b6" stop-opacity="0.65" />
+                        <stop offset="100%" stop-color="#6366f1" stop-opacity="0.9" />
+                    </linearGradient>
+                    <linearGradient id="c2-grad3" x1="75" y1="10" x2="75" y2="240" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+                        <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.7" />
+                    </linearGradient>
+                </defs>
+                <polygon points="75,10 135,60 145,190 85,240 20,180 15,70" fill="url(#c2-grad1)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2" />
+                <polygon points="75,10 95,90 85,240 20,180 15,70" fill="url(#c2-grad2)" stroke="rgba(255,255,255,0.9)" stroke-width="1" />
+                <polygon points="75,10 135,60 95,90" fill="url(#c2-grad3)" stroke="rgba(255,255,255,0.75)" stroke-width="0.8" />
+                <polygon points="95,90 135,60 145,190 85,240" fill="url(#c2-grad1)" opacity="0.9" />
+                <line x1="75" y1="10" x2="95" y2="90" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" />
+                <line x1="95" y1="90" x2="85" y2="240" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+        </div>
+
+        <!-- Crystal 3: Bottom-Left Heavy Gemstone Boulder -->
+        <div class="crystal-item crystal-3" data-depth="0.05">
+            <svg viewBox="0 0 190 230" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="c3-grad1" x1="15" y1="20" x2="175" y2="210" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+                        <stop offset="35%" stop-color="#ddd6fe" stop-opacity="0.8" />
+                        <stop offset="70%" stop-color="#fed7aa" stop-opacity="0.75" />
+                        <stop offset="100%" stop-color="#4f46e5" stop-opacity="0.85" />
+                    </linearGradient>
+                    <linearGradient id="c3-grad2" x1="100" y1="30" x2="30" y2="180" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#bae6fd" stop-opacity="0.85" />
+                        <stop offset="100%" stop-color="#c084fc" stop-opacity="0.9" />
+                    </linearGradient>
+                </defs>
+                <polygon points="95,15 165,55 180,155 125,215 45,195 15,115 35,45" fill="url(#c3-grad1)" stroke="rgba(255,255,255,0.9)" stroke-width="1.4" />
+                <polygon points="95,15 115,85 75,145 35,45" fill="url(#c3-grad2)" stroke="rgba(255,255,255,0.85)" stroke-width="1" />
+                <polygon points="95,15 165,55 115,85" fill="#ffffff" opacity="0.7" />
+                <polygon points="115,85 165,55 180,155 135,130" fill="url(#c3-grad1)" opacity="0.85" />
+                <polygon points="115,85 135,130 125,215 75,145" fill="url(#c3-grad2)" opacity="0.9" />
+                <polygon points="75,145 125,215 45,195" fill="url(#c3-grad1)" opacity="0.75" />
+                <line x1="95" y1="15" x2="115" y2="85" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+                <line x1="115" y1="85" x2="75" y2="145" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+            </svg>
+        </div>
+
+        <!-- Crystal 4: Mid-Right Angular Crystal Needle -->
+        <div class="crystal-item crystal-4" data-depth="0.035">
+            <svg viewBox="0 0 110 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="c4-grad1" x1="10" y1="10" x2="100" y2="170" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+                        <stop offset="50%" stop-color="#a5f3fc" stop-opacity="0.8" />
+                        <stop offset="100%" stop-color="#818cf8" stop-opacity="0.85" />
+                    </linearGradient>
+                </defs>
+                <polygon points="55,8 98,60 78,165 20,135 12,45" fill="url(#c4-grad1)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2" />
+                <polygon points="55,8 65,75 20,135 12,45" fill="#ffffff" opacity="0.75" stroke="rgba(255,255,255,0.9)" stroke-width="0.8" />
+                <polygon points="55,8 98,60 65,75" fill="#c7d2fe" opacity="0.8" />
+                <polygon points="65,75 98,60 78,165 20,135" fill="url(#c4-grad1)" opacity="0.9" />
+                <line x1="55" y1="8" x2="65" y2="75" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+            </svg>
+        </div>
+
+        <!-- Crystal 5: Mid-Left Floating Diamond Shard -->
+        <div class="crystal-item crystal-5" data-depth="0.03">
+            <svg viewBox="0 0 100 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="c5-grad1" x1="10" y1="10" x2="90" y2="130" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#fbcfe8" stop-opacity="0.85" />
+                        <stop offset="50%" stop-color="#e0e7ff" stop-opacity="0.8" />
+                        <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.8" />
+                    </linearGradient>
+                </defs>
+                <polygon points="50,10 90,55 65,125 15,85" fill="url(#c5-grad1)" stroke="rgba(255,255,255,0.9)" stroke-width="1.2" />
+                <polygon points="50,10 58,60 15,85" fill="#ffffff" opacity="0.8" />
+                <polygon points="50,10 90,55 58,60" fill="#bae6fd" opacity="0.7" />
+                <polygon points="58,60 90,55 65,125" fill="url(#c5-grad1)" opacity="0.9" />
+                <line x1="50" y1="10" x2="58" y2="60" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+        </div>
+
+        <!-- Crystal 6: Bottom-Right Slanted Gem Crystal -->
+        <div class="crystal-item crystal-6" data-depth="0.055">
+            <svg viewBox="0 0 130 190" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="c6-grad1" x1="10" y1="10" x2="120" y2="180" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+                        <stop offset="45%" stop-color="#c7d2fe" stop-opacity="0.8" />
+                        <stop offset="100%" stop-color="#f472b6" stop-opacity="0.85" />
+                    </linearGradient>
+                </defs>
+                <polygon points="65,12 115,65 95,175 30,145 15,55" fill="url(#c6-grad1)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2" />
+                <polygon points="65,12 75,80 30,145 15,55" fill="#ffffff" opacity="0.75" />
+                <polygon points="65,12 115,65 75,80" fill="#fed7aa" opacity="0.75" />
+                <polygon points="75,80 115,65 95,175 30,145" fill="url(#c6-grad1)" opacity="0.85" />
+                <line x1="65" y1="12" x2="75" y2="80" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+            </svg>
+        </div>
+
+        <!-- Sparkles -->
+        <div class="crystal-sparkle sparkle-1"></div>
+        <div class="crystal-sparkle sparkle-2"></div>
+        <div class="crystal-sparkle sparkle-3"></div>
+        <div class="crystal-sparkle sparkle-4"></div>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <nav class="auth-top-nav" aria-label="Điều hướng phụ">
+        <a href="/" class="auth-back-capsule" aria-label="Quay về trang chủ">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Về trang chủ</span>
+        </a>
+    </nav>
+
+    <!-- Central Floating Glass Card -->
+    <main class="auth-main-wrapper" id="authMainCard">
+        <!-- Floating Brand Badge -->
+        <div class="auth-brand-badge-wrap">
+            <a href="/" class="auth-crystal-badge" aria-label="VietMach System - Trang chủ" title="VietMach System">
+                <i class="bi bi-bullseye" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        <section class="auth-crystal-card" aria-labelledby="login-title">
+            <header class="auth-card-header">
                 <h1 id="login-title">Chào mừng trở lại</h1>
                 <p>Đăng nhập để tiếp tục quản lý mục tiêu và hiệu suất.</p>
             </header>
 
+            <!-- Social Login: Google -->
+            <div class="auth-social-wrap">
+                <a asp-controller="Auth" asp-action="GoogleLogin" class="auth-google-btn" aria-label="Đăng nhập bằng tài khoản Google">
+                    <svg width="19" height="19" viewBox="0 0 18 18" aria-hidden="true">
+                        <path d="M9 7.4v3.2h4.6c-.2 1-.8 1.8-1.6 2.4v2h2.6c1.5-1.4 2.4-3.4 2.4-5.8 0-.6 0-1.1-.1-1.6H9z" fill="#4285F4"/>
+                        <path d="M9 17c2.2 0 4-.7 5.4-1.9l-2.6-2c-.7.5-1.6.8-2.8.8-2.1 0-3.9-1.4-4.6-3.4H1.7v2.1C3.1 15.2 5.8 17 9 17z" fill="#34A853"/>
+                        <path d="M4.4 10.5c-.2-.5-.2-1.1 0-1.6V6.8H1.7c-.6 1.2-.6 2.6 0 3.8l2.7-2.1z" fill="#FBBC04"/>
+                        <path d="M9 4.2c1.2 0 2.3.4 3.1 1.2l2.3-2.3C12.9 1.8 11.1 1 9 1 5.8 1 3.1 2.8 1.7 5.4l2.7 2.1C5.1 5.6 6.9 4.2 9 4.2z" fill="#EA4335"/>
+                    </svg>
+                    <span>Đăng nhập với Google</span>
+                </a>
+            </div>
+
+            <!-- Divider -->
+            <div class="auth-crystal-divider" role="separator" aria-label="Hoặc đăng nhập bằng tài khoản">
+                <span>Hoặc</span>
+            </div>
+
+            <!-- Alerts -->
             @if (ViewBag.Error != null)
             {
-                <div class="auth-alert auth-alert-danger" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i><span>@ViewBag.Error</span></div>
+                <div class="auth-alert auth-alert-danger" role="alert">
+                    <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                    <span>@ViewBag.Error</span>
+                </div>
             }
 
+            <!-- Credentials Form -->
             <form asp-controller="Auth" asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post" class="auth-form" id="loginForm" novalidate>
+                @Html.AntiForgeryToken()
+
+                <!-- Username Field -->
                 <div class="auth-field">
-                    <label for="username">Tên đăng nhập</label>
-                    @if (ViewBag.IsRelogin != null && ViewBag.IsRelogin)
-                    {
-                        <input class="auth-control" type="text" id="username" name="username" required autocomplete="username" value="@ViewBag.Username" readonly="readonly" aria-describedby="usernameError" />
-                    }
-                    else
-                    {
-                        <input class="auth-control" type="text" id="username" name="username" required autocomplete="username" value="@ViewBag.Username" placeholder="Nhập tên đăng nhập" aria-describedby="usernameError" />
-                    }
+                    <label for="username">Tên đăng nhập hoặc Email</label>
+                    <div class="auth-input-wrapper">
+                        <i class="bi bi-person auth-input-icon" aria-hidden="true"></i>
+                        @if (ViewBag.IsRelogin != null && ViewBag.IsRelogin)
+                        {
+                            <input class="auth-control" type="text" id="username" name="username" required autocomplete="username" value="@ViewBag.Username" readonly="readonly" aria-describedby="usernameError" />
+                        }
+                        else
+                        {
+                            <input class="auth-control" type="text" id="username" name="username" required autocomplete="username" value="@ViewBag.Username" placeholder="name@company.com" aria-describedby="usernameError" />
+                        }
+                    </div>
                     <span class="auth-field-error" id="usernameError" aria-live="polite"></span>
                 </div>
 
+                <!-- Password Field -->
                 <div class="auth-field">
-                    <div class="auth-label-row"><label for="password">Mật khẩu</label><a asp-controller="Auth" asp-action="ForgotPassword">Quên mật khẩu?</a></div>
-                    <div class="auth-password-wrap">
-                        <input class="auth-control" type="password" id="password" name="password" required autocomplete="current-password" placeholder="Nhập mật khẩu" aria-describedby="passwordError" />
+                    <div class="auth-label-row">
+                        <label for="password">Mật khẩu</label>
+                        <a asp-controller="Auth" asp-action="ForgotPassword" class="auth-forgot-link">Quên mật khẩu?</a>
+                    </div>
+                    <div class="auth-input-wrapper auth-password-wrap">
+                        <i class="bi bi-shield-lock auth-input-icon" aria-hidden="true"></i>
+                        <input class="auth-control" type="password" id="password" name="password" required autocomplete="current-password" placeholder="Nhập mật khẩu của bạn" aria-describedby="passwordError" />
                         <button type="button" class="auth-password-toggle" id="passwordToggle" aria-label="Hiện mật khẩu" aria-controls="password" aria-pressed="false">
                             <i class="bi bi-eye" aria-hidden="true"></i>
                         </button>
@@ -48,33 +251,63 @@
                     <span class="auth-field-error" id="passwordError" aria-live="polite"></span>
                 </div>
 
-                @if (ViewBag.IsRelogin != null && ViewBag.IsRelogin)
-                {
-                    <p class="auth-relogin">Không phải bạn? <a asp-controller="Auth" asp-action="Logout">Đổi tài khoản</a></p>
-                }
-                else
-                {
-                    <label class="auth-checkbox" for="remember">
-                        <input type="checkbox" id="remember" name="remember" />
-                        <span>Ghi nhớ đăng nhập</span>
-                    </label>
-                }
+                <!-- Utilities Row -->
+                <div class="auth-utilities-row">
+                    @if (ViewBag.IsRelogin != null && ViewBag.IsRelogin)
+                    {
+                        <p class="auth-relogin">Không phải bạn? <a asp-controller="Auth" asp-action="Logout">Đổi tài khoản</a></p>
+                    }
+                    else
+                    {
+                        <label class="auth-checkbox" for="remember">
+                            <input type="checkbox" id="remember" name="remember" />
+                            <span>Ghi nhớ đăng nhập</span>
+                        </label>
+                    }
+                </div>
 
-                <button type="submit" class="auth-submit">
+                <!-- Submit CTA -->
+                <button type="submit" class="auth-submit-btn" id="loginSubmitBtn">
                     <span class="button-text">Đăng nhập</span>
                     <span class="button-loader" aria-hidden="true"><span class="auth-spinner"></span></span>
                 </button>
             </form>
 
-            <div class="auth-divider"><span>Hoặc tiếp tục với</span></div>
-            <a asp-controller="Auth" asp-action="GoogleLogin" class="auth-google">
-                <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 7.4v3.2h4.6c-.2 1-.8 1.8-1.6 2.4v2h2.6c1.5-1.4 2.4-3.4 2.4-5.8 0-.6 0-1.1-.1-1.6H9z" fill="#4285F4"/><path d="M9 17c2.2 0 4-.7 5.4-1.9l-2.6-2c-.7.5-1.6.8-2.8.8-2.1 0-3.9-1.4-4.6-3.4H1.7v2.1C3.1 15.2 5.8 17 9 17z" fill="#34A853"/><path d="M4.4 10.5c-.2-.5-.2-1.1 0-1.6V6.8H1.7c-.6 1.2-.6 2.6 0 3.8l2.7-2.1z" fill="#FBBC04"/><path d="M9 4.2c1.2 0 2.3.4 3.1 1.2l2.3-2.3C12.9 1.8 11.1 1 9 1 5.8 1 3.1 2.8 1.7 5.4l2.7 2.1C5.1 5.6 6.9 4.2 9 4.2z" fill="#EA4335"/></svg>
-                Đăng nhập bằng Google
-            </a>
-            <p class="auth-switch">Bạn chưa có tài khoản? <a asp-controller="Auth" asp-action="Register">Đăng ký ngay</a></p>
-        </div>
-    </section>
-</main>
+            <!-- Quick Demo Accounts Selection -->
+            <div class="auth-demo-accounts" aria-label="Gợi ý tài khoản trải nghiệm">
+                <div class="auth-demo-header">
+                    <i class="bi bi-stars" aria-hidden="true"></i>
+                    <span>Tài khoản trải nghiệm nhanh</span>
+                </div>
+                <div class="auth-demo-grid">
+                    <button type="button" class="auth-demo-chip" data-username="admin" data-password="123" title="Tự động nhập Admin">
+                        <i class="bi bi-shield-check text-primary" aria-hidden="true"></i>
+                        <span class="auth-demo-text"><strong>admin</strong> <small>( Nguyễn Minh Quân )</small></span>
+                    </button>
+                    <button type="button" class="auth-demo-chip" data-username="director" data-password="123" title="Tự động nhập Giám đốc">
+                        <i class="bi bi-person-badge text-warning" aria-hidden="true"></i>
+                        <span class="auth-demo-text"><strong>giám đốc</strong> <small>( Trần Thu Hà )</small></span>
+                    </button>
+                    <button type="button" class="auth-demo-chip" data-username="manager" data-password="123" title="Tự động nhập Quản lý">
+                        <i class="bi bi-person-fill-gear text-success" aria-hidden="true"></i>
+                        <span class="auth-demo-text"><strong>quản lý</strong> <small>( Lê Hoàng Nam )</small></span>
+                    </button>
+                    <button type="button" class="auth-demo-chip" data-username="employee" data-password="123" title="Tự động nhập Nhân viên">
+                        <i class="bi bi-person text-info" aria-hidden="true"></i>
+                        <span class="auth-demo-text"><strong>nhân viên</strong> <small>( Hoàng Gia Bảo )</small></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bottom Switch -->
+            <footer class="auth-card-footer">
+                <p class="auth-switch-text">
+                    Bạn chưa có tài khoản? <a asp-controller="Auth" asp-action="Register">Đăng ký ngay</a>
+                </p>
+            </footer>
+        </section>
+    </main>
+</div>
 
 @section Scripts {
     <script src="~/js/login.js" asp-append-version="true"></script>

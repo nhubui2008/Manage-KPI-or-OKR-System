@@ -10,10 +10,12 @@ namespace Manage_KPI_or_OKR_System.Controllers;
 public sealed class AIHistoryController : Controller
 {
     private readonly IAiHistoryService _history;
+    private readonly ILogger<AIHistoryController> _logger;
 
-    public AIHistoryController(IAiHistoryService history)
+    public AIHistoryController(IAiHistoryService history, ILogger<AIHistoryController> logger)
     {
         _history = history;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -28,24 +30,50 @@ public sealed class AIHistoryController : Controller
         int page = 1,
         CancellationToken cancellationToken = default)
     {
-        var historyPage = await _history.GetPageAsync(
-            User, search, feature, status, fromDate, toDate,
-            ownerSystemUserId, page, cancellationToken);
-        var selected = id.HasValue
-            ? await _history.GetDetailsAsync(id.Value, User, cancellationToken)
-            : null;
-        if (id.HasValue && selected == null)
+        try
         {
-            return NotFound();
+            var historyPage = await _history.GetPageAsync(
+                User, search, feature, status, fromDate, toDate,
+                ownerSystemUserId, page, cancellationToken);
+            var selected = id.HasValue
+                ? await _history.GetDetailsAsync(id.Value, User, cancellationToken)
+                : null;
+            if (id.HasValue && selected == null)
+            {
+                TempData["ErrorMessage"] = "Phiên lịch sử AI không tồn tại hoặc bạn không có quyền truy cập.";
+                return RedirectToAction(nameof(Index), new { search, feature, status, fromDate, toDate, ownerSystemUserId, page });
+            }
+            return View(new AiHistoryIndexViewModel(historyPage, selected));
         }
-        return View(new AiHistoryIndexViewModel(historyPage, selected));
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to AI History.");
+            TempData["ErrorMessage"] = "Tài khoản hiện tại chưa được cấp quyền xem lịch sử AI hoặc chưa liên kết chi nhánh.";
+            var emptyPage = new AiHistoryPage(new List<AiHistorySessionSummary>(), 1, 1, search, feature, status, fromDate, toDate, ownerSystemUserId, false, new List<AiHistoryOwnerOption>());
+            return View(new AiHistoryIndexViewModel(emptyPage, null));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading AI History index.");
+            TempData["ErrorMessage"] = "Không thể tải dữ liệu lịch sử AI: " + ex.Message;
+            var emptyPage = new AiHistoryPage(new List<AiHistorySessionSummary>(), 1, 1, search, feature, status, fromDate, toDate, ownerSystemUserId, false, new List<AiHistoryOwnerOption>());
+            return View(new AiHistoryIndexViewModel(emptyPage, null));
+        }
     }
 
     [HttpGet]
     public async Task<IActionResult> Conversation(Guid id, CancellationToken cancellationToken)
     {
-        var details = await _history.GetDetailsAsync(id, User, cancellationToken);
-        return details == null ? NotFound() : Ok(details);
+        try
+        {
+            var details = await _history.GetDetailsAsync(id, User, cancellationToken);
+            return details == null ? NotFound() : Ok(details);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching conversation details for {SessionId}", id);
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
 
     [HttpPost]

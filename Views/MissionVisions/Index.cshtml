@@ -36,41 +36,41 @@
 
     <section class="mv-summary-grid" aria-label="Tổng quan định hướng chiến lược">
         <div class="mv-summary-card">
+            <div class="mv-summary-card__icon mv-summary-card__icon--primary" aria-hidden="true">
+                <i class="bi bi-compass"></i>
+            </div>
             <div class="mv-summary-card__info">
                 <span class="mv-summary-card__label">Nền tảng dài hạn</span>
                 <span class="mv-summary-card__value">@foundationCount/2</span>
             </div>
-            <div class="mv-summary-card__icon" aria-hidden="true">
-                <i class="bi bi-compass"></i>
-            </div>
         </div>
         <div class="mv-summary-card">
+            <div class="mv-summary-card__icon mv-summary-card__icon--info" aria-hidden="true">
+                <i class="bi bi-flag"></i>
+            </div>
             <div class="mv-summary-card__info">
                 <span class="mv-summary-card__label">Mục tiêu đang xem</span>
                 <span class="mv-summary-card__value">@Model.YearlyGoals.Count</span>
             </div>
-            <div class="mv-summary-card__icon" aria-hidden="true">
-                <i class="bi bi-flag"></i>
-            </div>
         </div>
         <div class="mv-summary-card">
+            <div class="mv-summary-card__icon mv-summary-card__icon--success" aria-hidden="true">
+                <i class="bi bi-cash-coin"></i>
+            </div>
             <div class="mv-summary-card__info">
                 <span class="mv-summary-card__label">Mục tiêu tài chính</span>
-                <span class="mv-summary-card__value">
+                <span class="mv-summary-card__value" title="@(hasFinancialTargets ? String.Format("{0:N0} đ", financialTargetTotal) : "Chưa đặt")">
                     @(hasFinancialTargets ? String.Format("{0:N0} đ", financialTargetTotal) : "Chưa đặt")
                 </span>
             </div>
-            <div class="mv-summary-card__icon" aria-hidden="true">
-                <i class="bi bi-cash-coin"></i>
-            </div>
         </div>
         <div class="mv-summary-card">
+            <div class="mv-summary-card__icon mv-summary-card__icon--warning" aria-hidden="true">
+                <i class="bi bi-calendar3"></i>
+            </div>
             <div class="mv-summary-card__info">
                 <span class="mv-summary-card__label">Năm đang xem</span>
                 <span class="mv-summary-card__value">@viewedYearLabel</span>
-            </div>
-            <div class="mv-summary-card__icon" aria-hidden="true">
-                <i class="bi bi-calendar3"></i>
             </div>
         </div>
     </section>

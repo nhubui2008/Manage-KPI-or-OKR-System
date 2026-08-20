@@ -58,7 +58,7 @@
     gap: 6px;
     height: 34px;
     padding: 0 14px;
-    border-radius: 4px;
+    border-radius: 8px;
     background-color: var(--okr-primary);
     border: 1px solid var(--okr-primary);
     color: #ffffff;
@@ -87,39 +87,46 @@
 .okr-summary__item {
     background: var(--okr-surface);
     border: 1px solid var(--okr-border);
-    border-radius: 4px;
+    border-radius: 12px;
     padding: 16px;
-    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.15);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
     display: flex;
     flex-direction: column;
     justify-content: center;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.okr-summary__item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.06);
 }
 
 .okr-summary__label {
     display: block;
     margin-bottom: 4px;
-    color: var(--okr-text-muted);
+    color: #878a99;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
 }
 
 .okr-summary__value {
     display: block;
-    color: #495057;
-    font-size: 1.35rem;
+    color: #212529;
+    font-size: 1.375rem;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
     line-height: 1.2;
 }
 
 /* Main Panel & Filter Toolbar */
 .okr-panel {
     border: 1px solid var(--okr-border);
-    border-radius: 4px;
+    border-radius: 12px;
     background: var(--okr-surface);
     padding: 16px;
-    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.15);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
 }
 
 .okr-filter {
@@ -127,56 +134,103 @@
 }
 
 .okr-filter-grid {
-    display: grid;
-    grid-template-columns: minmax(200px, 1.5fr) repeat(5, minmax(110px, 1fr)) auto;
+    display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     align-items: end;
+    width: 100%;
+}
+
+.okr-filter-field {
+    flex: 1 1 125px;
+    min-width: 115px;
+}
+
+.okr-filter-field--sort {
+    flex: 1.8 1 185px !important;
+    min-width: 175px !important;
+}
+
+.okr-filter-field--search {
+    flex: 3.2 1 300px;
+    min-width: 260px;
+}
+
+.okr-filter-actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+}
+
+.okr-filter-actions .okr-filter-submit-btn {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1rem !important;
+    border-radius: 8px !important;
 }
 
 .okr-filter-field .form-label {
-    margin-bottom: 6px;
-    color: #495057;
-    font-size: 0.8125rem;
+    margin-bottom: 4px;
+    color: #5f6673;
+    font-size: 0.75rem;
     font-weight: 600;
 }
 
 .okr-filter-field .form-control,
 .okr-filter-field .form-select {
-    border-radius: 4px;
+    border-radius: 8px;
     border-color: var(--okr-border);
     height: 36px;
+    min-height: 36px;
     padding-top: 4px;
     padding-bottom: 4px;
-    font-size: 0.875rem;
+    padding-left: 0.75rem;
+    padding-right: 2.25rem !important;
+    background-position: right 0.75rem center !important;
+    background-size: 10px 10px !important;
+    font-size: 0.8125rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .okr-search-wrapper {
     position: relative;
+    width: 100%;
 }
 
 .okr-search-icon {
     position: absolute;
-    left: 12px;
+    left: 9px;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--okr-text-muted);
+    color: var(--okr-text-muted, #878a99);
+    font-size: 0.82rem;
     pointer-events: none;
+    z-index: 5;
 }
 
 .okr-search-input {
-    padding-left: 2.25rem !important;
+    padding-left: 1.8rem !important;
+    padding-right: 0.5rem !important;
+    font-size: 0.8125rem;
 }
 
-.okr-filter-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: center;
+.okr-search-input::placeholder {
+    font-size: 0.76rem;
+    color: #878a99;
+    letter-spacing: -0.015em;
 }
 
 .okr-filter-actions .btn {
     height: 36px;
-    border-radius: 4px;
+    border-radius: 8px;
     font-size: 0.875rem;
     font-weight: 600;
     display: inline-flex;
@@ -200,7 +254,7 @@
     gap: 6px;
     height: 30px;
     padding: 0 12px;
-    border-radius: 4px;
+    border-radius: 8px;
     border: 1px solid var(--okr-border);
     color: #495057;
     text-decoration: none;
@@ -231,11 +285,17 @@
 .okr-objective-card {
     position: relative;
     border: 1px solid var(--okr-border) !important;
-    border-radius: 4px !important;
+    border-radius: 12px !important;
     background: #ffffff;
-    overflow: visible;
-    box-shadow: none !important;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03) !important;
     margin: 0 !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.okr-objective-card:hover {
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 6px 18px -2px rgba(15, 23, 42, 0.08) !important;
 }
 
 .okr-objective-header {
@@ -276,7 +336,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    border-radius: 4px;
+    border-radius: 6px;
     border: 1px solid var(--okr-border);
     padding: 2px 8px;
     font-size: 0.75rem;
@@ -377,7 +437,7 @@
 .okr-objective-progress .progress,
 .okr-kr-row__progress .progress {
     height: 6px;
-    border-radius: 4px;
+    border-radius: 999px;
     background: #eff2f7;
     overflow: hidden;
 }
@@ -391,7 +451,7 @@
 .okr-menu-btn {
     width: 34px;
     height: 34px;
-    border-radius: 4px;
+    border-radius: 8px;
     border: 1px solid var(--okr-border);
     background: #ffffff;
     color: #495057;
@@ -411,7 +471,7 @@
     border-top: 1px solid var(--okr-border);
     background: #f8f9fa;
     padding: 14px !important;
-    border-radius: 0 0 4px 4px;
+    border-radius: 0 0 12px 12px;
 }
 
 .okr-kr-panel__title {
@@ -465,7 +525,7 @@
 .okr-icon-btn {
     width: 34px;
     height: 34px;
-    border-radius: 4px;
+    border-radius: 8px;
     border: 1px solid var(--okr-border);
     background: #ffffff;
     color: var(--okr-primary);
@@ -506,7 +566,7 @@
     text-align: center;
     padding: 40px 20px;
     border: 1px dashed var(--okr-border);
-    border-radius: 4px;
+    border-radius: 12px;
     background: #f8f9fa;
 }
 
@@ -514,7 +574,7 @@
     width: 48px;
     height: 48px;
     margin: 0 auto 12px;
-    border-radius: 4px;
+    border-radius: 10px;
     display: grid;
     place-items: center;
     background: #ffffff;
@@ -553,8 +613,8 @@
 /* Modals Styling */
 :is(#aiSuggestKrModal, #addKrModal, #allocateOkrModal, #updateKrProgressModal, #editKrModal) .modal-content {
     border: 0;
-    border-radius: 4px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border-radius: 14px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.15);
     overflow: hidden;
 }
 
@@ -586,13 +646,6 @@
 
 /* Responsive Media Queries */
 @media (max-width: 1200px) {
-    .okr-filter-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .okr-filter-field--search,
-    .okr-filter-actions {
-        grid-column: 1 / -1;
-    }
     .okr-summary {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -610,12 +663,11 @@
     .okr-summary {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    .okr-filter-grid {
-        grid-template-columns: 1fr;
-    }
+    .okr-filter-field,
     .okr-filter-field--search,
     .okr-filter-actions {
-        grid-column: auto;
+        flex: 1 1 100%;
+        width: 100%;
     }
     .okr-objective-header {
         grid-template-columns: minmax(0, 1fr) 40px;

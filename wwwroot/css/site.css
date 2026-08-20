@@ -44,7 +44,7 @@
     --sidebar-text-active: #090c1d;
     --sidebar-hover: #f8f9fa;
     --sidebar-width: 80px;
-    --sidebar-width-expanded: 280px;
+    --sidebar-width-expanded: 290px;
 
     /* Layout */
     --header-height: 68px;
@@ -79,8 +79,8 @@
     /* Border Radius */
     --radius-sm: 6px;
     --radius-md: 8px;
-    --radius-lg: 9px;
-    --radius-xl: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
     --color-brand-violet: #7b68ee;
     --color-signal-blue: #0091ff;
     --color-ultra-violet: #6647f0;
@@ -3801,6 +3801,8 @@ a:active {
     box-sizing: border-box;
     text-overflow: ellipsis;
     white-space: nowrap;
+    padding-right: 2.25rem;
+    background-position: right 0.75rem center;
 }
 
 /* 2. Select trong toolbar (w-auto) - đặt min/max width rõ ràng */
@@ -3973,6 +3975,7 @@ select.form-select.w-auto {
     font-size: var(--font-size-sm) !important;
     color: var(--text-secondary) !important;
     transition: all 0.1s ease !important;
+    white-space: nowrap !important;
 }
 
 .select2-container--default .select2-results__option--highlighted[aria-selected],
@@ -4084,9 +4087,19 @@ select.form-select.w-auto {
 }
 
 .dashboard-page .dashboard-period-filter {
-    border-color: #d9e4f2 !important;
-    border-radius: 8px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
     box-shadow: none !important;
+    padding: 0 !important;
+    width: 380px !important;
+    min-width: 320px !important;
+    max-width: 100% !important;
+}
+
+.dashboard-page .dashboard-period-filter :is(.select2-container, .form-select) {
+    width: 100% !important;
+    min-width: 100% !important;
 }
 
 .dashboard-page .dashboard-period-filter .form-select {
@@ -5814,26 +5827,34 @@ select.form-select.w-auto {
 
     .sidebar-link {
         margin: 2px 10px !important;
-        padding: 9px 14px !important;
+        padding: 9px 12px !important;
         border-radius: 8px !important;
         font-weight: 650;
         background: transparent !important;
         border: 1px solid transparent !important;
-        transform: none !important;
+        white-space: nowrap;
+        position: relative;
+        transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
 
     .sidebar-link i {
         color: var(--color-slate) !important;
+        transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease !important;
     }
 
     .sidebar-link:hover {
         background: var(--color-paper) !important;
-        border-color: var(--color-cloud) !important;
-        box-shadow: none !important;
-        transform: none !important;
+        border-color: rgba(123, 104, 238, 0.2) !important;
+        box-shadow: 0 4px 12px rgba(123, 104, 238, 0.14), 0 2px 4px rgba(15, 23, 42, 0.04) !important;
+        transform: translateY(-2px) !important;
+        z-index: 2;
     }
 
-    .sidebar-link:hover i,
+    .sidebar-link:hover i {
+        color: var(--color-brand-violet) !important;
+        transform: scale(1.12) !important;
+    }
+
     .sidebar-link:hover span {
         color: var(--color-midnight-ink) !important;
     }
@@ -5845,6 +5866,12 @@ select.form-select.w-auto {
         border: 1px solid rgba(123, 104, 238, 0.18) !important;
         box-shadow: inset 3px 0 0 var(--color-brand-violet) !important;
         font-weight: 800;
+    }
+
+    .sidebar-link.active:hover,
+    .sidebar-link.is-pending:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: inset 3px 0 0 var(--color-brand-violet), 0 6px 16px rgba(123, 104, 238, 0.25) !important;
     }
 
     .sidebar-link.active i,
@@ -5864,11 +5891,14 @@ select.form-select.w-auto {
         border: 1px solid var(--color-cloud) !important;
         border-radius: 8px !important;
         color: var(--color-charcoal) !important;
+        transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
 
     .sidebar-user:hover {
         background: var(--surface-canvas) !important;
-        box-shadow: var(--shadow-clickup-subtle) !important;
+        border-color: rgba(123, 104, 238, 0.2) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(123, 104, 238, 0.14) !important;
     }
 
     .sidebar-user .user-avatar,
@@ -6084,14 +6114,12 @@ select.form-select.w-auto {
 
     .badge,
     .soft-chip,
-    .filter-pill,
-    .dashboard-period-filter {
+    .filter-pill {
         border-radius: 54px !important;
     }
 
     .soft-chip,
     .filter-pill,
-    .dashboard-period-filter,
     .toolbar {
         background: var(--color-paper) !important;
         border: 1px solid var(--color-cloud) !important;

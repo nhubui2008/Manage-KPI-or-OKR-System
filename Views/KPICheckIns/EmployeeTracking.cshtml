@@ -104,53 +104,53 @@
     }
 
     <!-- SUMMARY STATS WIDGETS -->
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-3">
         <div class="col-xl-2 col-md-4">
-            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
-                <div class="card-body">
-                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">Chờ xác nhận</p>
-                    <h4 class="fs-22 fw-bold mb-0 text-warning">@Model.Summary.PendingReviewCount</h4>
-                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-warning-subtle text-warning">Xử lý ngay</span></p>
+            <div class="card card-animate summary-stat-card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
+                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-11 mb-0">Chờ xác nhận</p>
+                    <h4 class="fs-18 fw-bold mb-0 text-warning">@Model.Summary.PendingReviewCount</h4>
+                    <p class="text-muted text-truncate fs-11 mb-0 mt-1"><span class="badge bg-warning-subtle text-warning">Xử lý ngay</span></p>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-2 col-md-4">
-            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
-                <div class="card-body">
-                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">Trễ hạn</p>
-                    <h4 class="fs-22 fw-bold mb-0 text-danger">@Model.Summary.LateCount</h4>
-                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-danger-subtle text-danger">Chính thức</span></p>
+            <div class="card card-animate summary-stat-card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
+                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-11 mb-0">Trễ hạn</p>
+                    <h4 class="fs-18 fw-bold mb-0 text-danger">@Model.Summary.LateCount</h4>
+                    <p class="text-muted text-truncate fs-11 mb-0 mt-1"><span class="badge bg-danger-subtle text-danger">Chính thức</span></p>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-2 col-md-4">
-            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
-                <div class="card-body">
-                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">Có rủi ro</p>
-                    <h4 class="fs-22 fw-bold mb-0 text-info">@Model.Summary.RiskCount</h4>
-                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-info-subtle text-info">Cần chú ý</span></p>
+            <div class="card card-animate summary-stat-card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
+                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-11 mb-0">Có rủi ro</p>
+                    <h4 class="fs-18 fw-bold mb-0 text-info">@Model.Summary.RiskCount</h4>
+                    <p class="text-muted text-truncate fs-11 mb-0 mt-1"><span class="badge bg-info-subtle text-info">Cần chú ý</span></p>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
-                <div class="card-body">
-                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">KPI trong phạm vi</p>
-                    <h4 class="fs-22 fw-bold mb-0 text-primary">@Model.Summary.TotalKpiCount</h4>
-                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-primary-subtle text-primary">Theo dõi</span></p>
+            <div class="card card-animate summary-stat-card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
+                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-11 mb-0">KPI trong phạm vi</p>
+                    <h4 class="fs-18 fw-bold mb-0 text-primary">@Model.Summary.TotalKpiCount</h4>
+                    <p class="text-muted text-truncate fs-11 mb-0 mt-1"><span class="badge bg-primary-subtle text-primary">Theo dõi</span></p>
                 </div>
             </div>
         </div>
 
         <div class="col-xl-3 col-md-6">
-            <div class="card card-animate border-0 shadow-sm overflow-hidden h-100">
-                <div class="card-body">
-                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-12 mb-1">Nhân sự</p>
-                    <h4 class="fs-22 fw-bold mb-0 text-success">@Model.Summary.EmployeeCount</h4>
-                    <p class="text-muted text-truncate fs-12 mb-0 mt-2"><span class="badge bg-success-subtle text-success">Truy cập</span></p>
+            <div class="card card-animate summary-stat-card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
+                    <p class="text-uppercase fw-semibold text-muted text-truncate fs-11 mb-0">Nhân sự</p>
+                    <h4 class="fs-18 fw-bold mb-0 text-success">@Model.Summary.EmployeeCount</h4>
+                    <p class="text-muted text-truncate fs-11 mb-0 mt-1"><span class="badge bg-success-subtle text-success">Truy cập</span></p>
                 </div>
             </div>
         </div>

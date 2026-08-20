@@ -48,24 +48,40 @@
 
     <section class="evaluation-summary catalog-summary" aria-label="Tổng quan danh mục">
         <article>
-            <span>Nhóm danh mục</span>
-            <strong>@availableTabs.Length</strong>
-            <small>Nhóm dữ liệu nền đang quản lý</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--primary">
+                <i class="bi bi-collection"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Nhóm danh mục</span>
+                <strong>@availableTabs.Length</strong>
+            </div>
         </article>
         <article>
-            <span>Tổng dữ liệu</span>
-            <strong>@totalCatalogEntries</strong>
-            <small>Bản ghi cấu hình toàn hệ thống</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--success">
+                <i class="bi bi-database"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Tổng dữ liệu</span>
+                <strong>@totalCatalogEntries</strong>
+            </div>
         </article>
         <article>
-            <span>Trạng thái chung</span>
-            <strong>@statuses.Count</strong>
-            <small>Dùng cho các quy trình nghiệp vụ</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--info">
+                <i class="bi bi-tag"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Trạng thái chung</span>
+                <strong>@statuses.Count</strong>
+            </div>
         </article>
         <article>
-            <span>Bậc xếp hạng</span>
-            <strong>@gradingRanks.Count</strong>
-            <small>Mức đánh giá nhân viên</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--warning">
+                <i class="bi bi-star"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Bậc xếp hạng</span>
+                <strong>@gradingRanks.Count</strong>
+            </div>
         </article>
     </section>
 

@@ -1,0 +1,1210 @@
+/* ==========================================================================
+   VIETMACH - SYSTEM PARAMETERS & BRANDING SETTINGS STYLESHEET
+   Modern, Ultra-responsive, Enterprise SaaS Design (Velzon / Standard)
+   ========================================================================== */
+
+.system-settings-page {
+    --sys-primary: var(--evaluation-brand, #556ee6);
+    --sys-primary-dark: var(--evaluation-brand-dark, #394da9);
+    --sys-primary-soft: color-mix(in srgb, var(--sys-primary) 10%, #ffffff);
+    --sys-primary-glow: color-mix(in srgb, var(--sys-primary) 22%, transparent);
+    --sys-surface: #ffffff;
+    --sys-surface-soft: #f8fafc;
+    --sys-surface-hover: #f1f5f9;
+    --sys-border: #e2e8f0;
+    --sys-border-focus: var(--sys-primary);
+    --sys-text-main: #1e293b;
+    --sys-text-muted: #64748b;
+    --sys-text-subtle: #94a3b8;
+    --sys-radius-sm: 8px;
+    --sys-radius-md: 12px;
+    --sys-radius-lg: 16px;
+    --sys-shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+    --sys-shadow-elevated: 0 10px 25px -4px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+/* --------------------------------------------------------------------------
+   Page Header & Actions
+   -------------------------------------------------------------------------- */
+.system-settings-page .evaluation-page-header {
+    border-bottom: 1px solid var(--sys-border);
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.system-settings-page .header-badge-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.25rem;
+}
+
+.system-settings-page .header-brand-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.65rem;
+    background: var(--sys-primary-soft);
+    color: var(--sys-primary);
+    border: 1px solid color-mix(in srgb, var(--sys-primary) 20%, transparent);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.system-settings-page .system-settings-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   Top Summary KPI Banner
+   -------------------------------------------------------------------------- */
+.system-settings-page .sys-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.system-settings-page .sys-summary-card {
+    background: var(--sys-surface);
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius-md);
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: var(--sys-shadow-subtle);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), 
+                box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), 
+                border-color 0.22s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.system-settings-page .sys-summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: transparent;
+    transition: background-color 0.2s ease;
+}
+
+.system-settings-page .sys-summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--sys-shadow-elevated);
+    border-color: #cbd5e1;
+}
+
+.system-settings-page .sys-summary-card--branding::before { background: #6366f1; }
+.system-settings-page .sys-summary-card--operational::before { background: #0ab39c; }
+.system-settings-page .sys-summary-card--ai::before { background: #3b82f6; }
+.system-settings-page .sys-summary-card--palette::before { background: #f59e0b; }
+
+.system-settings-page .sys-summary-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.system-settings-page .sys-summary-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sys-text-muted);
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.system-settings-page .sys-summary-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--sys-text-main);
+    line-height: 1.2;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.system-settings-page .sys-summary-meta {
+    font-size: 0.72rem;
+    color: var(--sys-text-subtle);
+    margin-top: 0.2rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.system-settings-page .sys-summary-icon-box {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    border-radius: var(--sys-radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+
+.system-settings-page .sys-summary-icon--branding { background: rgba(99, 102, 241, 0.12); color: #6366f1; }
+.system-settings-page .sys-summary-icon--operational { background: rgba(10, 179, 156, 0.12); color: #0ab39c; }
+.system-settings-page .sys-summary-icon--ai { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+.system-settings-page .sys-summary-icon--palette { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+
+.system-settings-page .sys-palette-preview-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.4rem;
+    background: #f1f5f9;
+    border-radius: 99px;
+}
+
+.system-settings-page .sys-palette-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+/* --------------------------------------------------------------------------
+   Tabs Navigation Bar
+   -------------------------------------------------------------------------- */
+.system-settings-page .sys-tabs-nav-wrapper {
+    background: var(--sys-surface);
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius-md) var(--sys-radius-md) 0 0;
+    padding: 0.6rem 0.8rem 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+}
+
+.system-settings-page .sys-tabs-nav {
+    display: flex;
+    gap: 0.4rem;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    min-width: max-content;
+}
+
+.system-settings-page .sys-tab-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    border-radius: 8px 8px 0 0;
+    background: transparent;
+    color: var(--sys-text-muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.system-settings-page .sys-tab-link:hover {
+    color: var(--sys-text-main);
+    background: var(--sys-surface-hover);
+}
+
+.system-settings-page .sys-tab-link.active {
+    color: var(--sys-primary);
+    border-bottom-color: var(--sys-primary);
+    background: var(--sys-surface-soft);
+}
+
+.system-settings-page .sys-tab-icon {
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+}
+
+.system-settings-page .sys-tab-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 99px;
+    background: #e2e8f0;
+    color: #475467;
+    font-weight: 700;
+}
+
+.system-settings-page .sys-tab-link.active .sys-tab-badge {
+    background: var(--sys-primary-soft);
+    color: var(--sys-primary);
+}
+
+/* --------------------------------------------------------------------------
+   Workspace Layout (Form Column + Live Sandbox Preview Column)
+   -------------------------------------------------------------------------- */
+.system-settings-page .sys-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+    background: var(--sys-surface);
+    border: 1px solid var(--sys-border);
+    border-top: 0;
+    border-radius: 0 0 var(--sys-radius-md) var(--sys-radius-md);
+    box-shadow: var(--sys-shadow-subtle);
+    align-items: start;
+    margin-bottom: 2rem;
+}
+
+.system-settings-page .sys-form-column {
+    min-width: 0;
+    padding: 1.5rem;
+}
+
+.system-settings-page .sys-tab-pane {
+    display: none;
+    animation: sysFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.system-settings-page .sys-tab-pane.active {
+    display: block;
+}
+
+@keyframes sysFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --------------------------------------------------------------------------
+   Section Card / Groups
+   -------------------------------------------------------------------------- */
+.system-settings-page .sys-group-card {
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius-md);
+    padding: 1.25rem;
+    background: #ffffff;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+}
+
+.system-settings-page .sys-group-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--sys-border);
+}
+
+.system-settings-page .sys-group-icon {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: var(--sys-radius-sm);
+    background: var(--sys-primary-soft);
+    color: var(--sys-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+}
+
+.system-settings-page .sys-group-title {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--sys-text-main);
+    line-height: 1.3;
+}
+
+.system-settings-page .sys-group-desc {
+    display: block;
+    font-size: 0.76rem;
+    color: var(--sys-text-muted);
+    margin-top: 0.2rem;
+    line-height: 1.45;
+}
+
+/* --------------------------------------------------------------------------
+   Form Fields
+   -------------------------------------------------------------------------- */
+.system-settings-page .sys-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.system-settings-page .sys-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.system-settings-page .sys-grid-full {
+    grid-column: 1 / -1;
+}
+
+.system-settings-page .sys-field {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.system-settings-page .sys-field-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+.system-settings-page .sys-field-label .sys-required {
+    color: #ef4444;
+    margin-left: 0.2rem;
+}
+
+.system-settings-page .sys-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.system-settings-page .sys-input-icon {
+    position: absolute;
+    left: 0.85rem;
+    color: var(--sys-text-subtle);
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.system-settings-page .sys-input-has-icon {
+    padding-left: 2.35rem !important;
+}
+
+.system-settings-page .form-control,
+.system-settings-page .form-select {
+    min-height: 42px;
+    border: 1px solid #d1d5db;
+    border-radius: var(--sys-radius-sm);
+    padding: 0.5rem 0.85rem;
+    font-size: 0.83rem;
+    color: var(--sys-text-main);
+    background-color: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.system-settings-page textarea.form-control {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.system-settings-page .form-control:focus,
+.system-settings-page .form-select:focus {
+    border-color: var(--sys-primary);
+    box-shadow: 0 0 0 3px var(--sys-primary-glow);
+    outline: 0;
+}
+
+.system-settings-page .sys-field-hint {
+    margin: 0.35rem 0 0;
+    font-size: 0.72rem;
+    color: var(--sys-text-muted);
+    line-height: 1.4;
+}
+
+.system-settings-page .sys-field-hint code {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    border: 1px solid #e2e8f0;
+}
+
+/* --------------------------------------------------------------------------
+   Color Picker Cards & Preset Palettes
+   -------------------------------------------------------------------------- */
+.system-settings-page .sys-color-card {
+    border: 1px solid #e2e8f0;
+    border-radius: var(--sys-radius-sm);
+    padding: 0.85rem;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.system-settings-page .sys-color-card:focus-within,
+.system-settings-page .sys-color-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.system-settings-page .sys-color-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.system-settings-page .sys-color-card-title {
+    font-size: 0.76rem;
+    font-weight: 750;
+    color: #334155;
+}
+
+.system-settings-page .sys-color-picker-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.system-settings-page .sys-color-swatch-btn {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 8px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 1px #cbd5e1, 0 2px 4px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    overflow: hidden;
+    padding: 0;
+}
+
+.system-settings-page .sys-color-swatch-btn input[type="color"] {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    width: 60px;
+    height: 60px;
+    border: 0;
+    padding: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.system-settings-page .sys-color-hex-input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+/* Preset Palettes Bar */
+.system-settings-page .sys-presets-panel {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--sys-radius-md);
+    padding: 1rem 1.15rem;
+    margin-bottom: 1.25rem;
+}
+
+.system-settings-page .sys-presets-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #334155;
+    margin-bottom: 0.75rem;
+}
+
+.system-settings-page .sys-presets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.65rem;
+}
+
+.system-settings-page .sys-preset-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    text-align: left;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.system-settings-page .sys-preset-btn:hover {
+    border-color: var(--sys-primary);
+    background: var(--sys-primary-soft);
+    color: var(--sys-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.system-settings-page .sys-preset-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    flex-shrink: 0;
+}
+
+.system-settings-page .sys-preset-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+/* --------------------------------------------------------------------------
+   Logo & Favicon Dropzone Cards
+   -------------------------------------------------------------------------- */
+.system-settings-page .sys-dropzone-card {
+    border: 2px dashed #cbd5e1;
+    border-radius: var(--sys-radius-md);
+    padding: 1.25rem;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    position: relative;
+}
+
+.system-settings-page .sys-dropzone-card:hover {
+    border-color: var(--sys-primary);
+    background-color: var(--sys-primary-soft);
+}
+
+.system-settings-page .sys-dropzone-preview {
+    width: 70px;
+    height: 70px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.system-settings-page .sys-dropzone-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    padding: 0.4rem;
+}
+
+.system-settings-page .sys-dropzone-preview i {
+    font-size: 1.8rem;
+    color: var(--sys-primary);
+}
+
+.system-settings-page .sys-dropzone-copy strong {
+    display: block;
+    font-size: 0.83rem;
+    color: var(--sys-text-main);
+}
+
+.system-settings-page .sys-dropzone-copy span {
+    font-size: 0.72rem;
+    color: var(--sys-text-muted);
+}
+
+.system-settings-page .sys-file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   Custom CSS IDE Editor Card
+   -------------------------------------------------------------------------- */
+.system-settings-page .sys-code-editor-shell {
+    border: 1px solid #334155;
+    border-radius: var(--sys-radius-md);
+    background: #0f172a;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.system-settings-page .sys-code-editor-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.85rem;
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+}
+
+.system-settings-page .sys-code-dots {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.system-settings-page .sys-code-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.system-settings-page .sys-code-dot--red { background: #ef4444; }
+.system-settings-page .sys-code-dot--yellow { background: #f59e0b; }
+.system-settings-page .sys-code-dot--green { background: #10b981; }
+
+.system-settings-page .sys-code-lang {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.system-settings-page .sys-code-textarea {
+    width: 100%;
+    background: #0f172a !important;
+    color: #38bdf8 !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+    font-size: 0.82rem !important;
+    line-height: 1.6 !important;
+    border: 0 !important;
+    padding: 0.85rem 1rem !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.system-settings-page .sys-code-textarea::placeholder {
+    color: #475569;
+}
+
+/* --------------------------------------------------------------------------
+   Live Sandbox Preview Column (Right Side)
+   -------------------------------------------------------------------------- */
+.system-settings-page .sys-preview-column {
+    min-width: 0;
+    border-left: 1px solid var(--sys-border);
+    background: #f8fafc;
+    padding: 1.5rem;
+}
+
+.system-settings-page .sys-preview-sticky {
+    position: sticky;
+    top: 80px;
+}
+
+.system-settings-page .sys-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+}
+
+.system-settings-page .sys-preview-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--sys-text-main);
+}
+
+.system-settings-page .sys-preview-title i {
+    color: var(--sys-primary);
+}
+
+.system-settings-page .sys-preview-mode-switch {
+    display: inline-flex;
+    background: #e2e8f0;
+    padding: 0.2rem;
+    border-radius: 8px;
+    gap: 0.15rem;
+}
+
+.system-settings-page .sys-preview-mode-btn {
+    border: 0;
+    background: transparent;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.system-settings-page .sys-preview-mode-btn.active {
+    background: #ffffff;
+    color: var(--sys-text-main);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Sandbox Container */
+.system-settings-page .sys-sandbox-device {
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius-md);
+    background: var(--preview-bg, #f8fafc);
+    overflow: hidden;
+    box-shadow: var(--sys-shadow-subtle);
+    transition: all 0.2s ease;
+}
+
+/* 1. App / Sidebar Sandbox */
+.system-settings-page .sys-sandbox-app {
+    display: flex;
+    flex-direction: column;
+    min-height: 280px;
+}
+
+.system-settings-page .sys-sandbox-sidebar {
+    padding: 0.9rem;
+    background: linear-gradient(135deg, var(--preview-sidebar, #ffffff), var(--preview-sidebar-end, #f8f9fa));
+    color: var(--preview-sidebar-text, #292d34);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.system-settings-page .sys-sandbox-logo {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.system-settings-page .sys-sandbox-logo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    padding: 0.2rem;
+}
+
+.system-settings-page .sys-sandbox-logo i {
+    font-size: 1.2rem;
+    color: var(--preview-primary, #556ee6);
+}
+
+.system-settings-page .sys-sandbox-brand-name {
+    font-size: 0.85rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.system-settings-page .sys-sandbox-brand-tag {
+    font-size: 0.68rem;
+    opacity: 0.75;
+    margin-top: 0.1rem;
+}
+
+.system-settings-page .sys-sandbox-nav {
+    padding: 0.5rem 0.9rem;
+    background: linear-gradient(135deg, var(--preview-sidebar, #ffffff), var(--preview-sidebar-end, #f8f9fa));
+    display: flex;
+    gap: 0.4rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.system-settings-page .sys-sandbox-nav-item {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    color: var(--preview-sidebar-text, #292d34);
+    opacity: 0.7;
+}
+
+.system-settings-page .sys-sandbox-nav-item.active {
+    background: var(--preview-primary, #556ee6);
+    color: #ffffff;
+    opacity: 1;
+}
+
+.system-settings-page .sys-sandbox-body {
+    padding: 1rem;
+    background: var(--preview-card, #ffffff);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.system-settings-page .sys-sandbox-pill {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.68rem;
+    font-weight: 750;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--preview-primary, #556ee6) 12%, white);
+    color: var(--preview-primary, #556ee6);
+    width: fit-content;
+}
+
+.system-settings-page .sys-sandbox-title {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+}
+
+.system-settings-page .sys-sandbox-desc {
+    font-size: 0.72rem;
+    color: #64748b;
+    line-height: 1.45;
+    margin: 0;
+}
+
+.system-settings-page .sys-sandbox-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 7px;
+    background: var(--preview-primary, #556ee6);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 750;
+    border: 0;
+    width: fit-content;
+    box-shadow: 0 2px 5px color-mix(in srgb, var(--preview-primary, #556ee6) 30%, transparent);
+}
+
+/* 2. Login Sandbox */
+.system-settings-page .sys-sandbox-login {
+    display: none;
+    padding: 1.5rem 1rem;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    text-align: center;
+    color: #ffffff;
+}
+
+.system-settings-page .sys-sandbox-login-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.25rem;
+    color: #1e293b;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    text-align: left;
+}
+
+.system-settings-page .sys-sandbox-login-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    margin: 0.4rem 0 0.2rem;
+    text-align: center;
+}
+
+.system-settings-page .sys-sandbox-login-sub {
+    font-size: 0.72rem;
+    color: #64748b;
+    text-align: center;
+    margin-bottom: 0.85rem;
+}
+
+.system-settings-page .sys-sandbox-login-input {
+    height: 32px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #f8fafc;
+    margin-bottom: 0.5rem;
+}
+
+/* 3. AI Sandbox */
+.system-settings-page .sys-sandbox-ai {
+    display: none;
+    padding: 1rem;
+    background: #ffffff;
+}
+
+.system-settings-page .sys-sandbox-ai-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.9rem;
+    background: linear-gradient(to bottom, #f8fafc, #ffffff);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.system-settings-page .sys-sandbox-ai-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.system-settings-page .sys-sandbox-ai-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--preview-primary, #556ee6);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.system-settings-page .sys-sandbox-ai-name {
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.system-settings-page .sys-sandbox-ai-sub {
+    font-size: 0.68rem;
+    color: #64748b;
+}
+
+.system-settings-page .sys-sandbox-ai-bubble {
+    background: var(--sys-primary-soft);
+    border: 1px solid color-mix(in srgb, var(--preview-primary, #556ee6) 20%, transparent);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.72rem;
+    color: #334155;
+    line-height: 1.45;
+}
+
+/* Managed Keys Tags */
+.system-settings-page .sys-managed-keys-card {
+    margin-top: 1.25rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--sys-radius-sm);
+    padding: 0.9rem;
+}
+
+.system-settings-page .sys-managed-keys-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 750;
+    color: #475569;
+    margin-bottom: 0.6rem;
+}
+
+.system-settings-page .sys-keys-tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    max-height: 140px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.system-settings-page .sys-key-tag {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.62rem;
+    padding: 0.2rem 0.45rem;
+    background: #f1f5f9;
+    color: #475569;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+/* --------------------------------------------------------------------------
+   Sticky Save Action Bar
+   -------------------------------------------------------------------------- */
+.system-settings-page .sys-sticky-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 1.25rem;
+    margin-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.system-settings-page .sys-save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    height: 42px;
+    padding: 0 1.35rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: var(--sys-radius-sm);
+    background-color: var(--sys-primary);
+    border: 1px solid var(--sys-primary);
+    color: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--sys-primary) 35%, transparent);
+    transition: all 0.15s ease;
+}
+
+.system-settings-page .sys-save-btn:hover {
+    background-color: var(--sys-primary-dark);
+    border-color: var(--sys-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--sys-primary) 40%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+   Operational Parameters Tab / Table
+   -------------------------------------------------------------------------- */
+.system-settings-page .sys-operational-shell {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--sys-radius-md);
+    overflow: hidden;
+}
+
+.system-settings-page .sys-operational-table-wrap {
+    overflow-x: auto;
+}
+
+.system-settings-page .sys-operational-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+}
+
+.system-settings-page .sys-operational-table th {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    font-size: 0.74rem;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #64748b;
+    text-align: left;
+}
+
+.system-settings-page .sys-operational-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    font-size: 0.82rem;
+}
+
+.system-settings-page .sys-operational-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.system-settings-page .sys-op-code {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.6rem;
+    background: #f1f5f9;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    font-weight: 750;
+}
+
+.system-settings-page .sys-op-desc {
+    max-width: 380px;
+    color: #475467;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.system-settings-page .sys-op-form {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 240px;
+}
+
+.system-settings-page .sys-op-save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    height: 38px;
+    padding: 0 0.85rem;
+    border-radius: 6px;
+    background: var(--sys-primary);
+    border: 1px solid var(--sys-primary);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.system-settings-page .sys-op-save-btn:hover {
+    background: var(--sys-primary-dark);
+    border-color: var(--sys-primary-dark);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Adjustments
+   -------------------------------------------------------------------------- */
+@media (max-width: 1120px) {
+    .system-settings-page .sys-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    
+    .system-settings-page .sys-workspace {
+        grid-template-columns: 1fr;
+    }
+    
+    .system-settings-page .sys-preview-column {
+        border-top: 1px solid var(--sys-border);
+        border-left: 0;
+    }
+    
+    .system-settings-page .sys-preview-sticky {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .system-settings-page .sys-summary-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .system-settings-page .sys-grid-2,
+    .system-settings-page .sys-grid-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    .system-settings-page .sys-form-column,
+    .system-settings-page .sys-preview-column {
+        padding: 1rem;
+    }
+    
+    .system-settings-page .sys-sticky-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .system-settings-page .sys-save-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

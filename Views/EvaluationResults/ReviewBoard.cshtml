@@ -50,21 +50,45 @@
     </header>
 
     <!-- Stat Cards Row -->
-    <section class="evaluation-summary" aria-label="Tổng quan duyệt đánh giá">
+    <section class="evaluation-summary evaluation-review-summary" aria-label="Tổng quan duyệt đánh giá">
         <article>
-            <span>Đang chờ xử lý</span>
-            <strong>@totalPending</strong>
-            <small>Cần giám đốc review</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--warning">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Đang chờ xử lý</span>
+                <strong>@totalPending</strong>
+                <p class="evaluation-summary__meta">
+                    <span class="badge bg-warning-subtle text-warning"><i class="bi bi-clock me-1"></i> Đang chờ</span>
+                    <span>Cần giám đốc review</span>
+                </p>
+            </div>
         </article>
         <article>
-            <span>Đã duyệt</span>
-            <strong>@approved</strong>
-            <small>Kết quả đã xác nhận</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--success">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Đã duyệt</span>
+                <strong>@approved</strong>
+                <p class="evaluation-summary__meta">
+                    <span class="badge bg-success-subtle text-success"><i class="bi bi-check2-circle me-1"></i> Tốt</span>
+                    <span>Kết quả đã xác nhận</span>
+                </p>
+            </div>
         </article>
         <article>
-            <span>Từ chối</span>
-            <strong>@rejected</strong>
-            <small>Cần rà soát lại</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--danger">
+                <i class="bi bi-exclamation-octagon"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Từ chối</span>
+                <strong>@rejected</strong>
+                <p class="evaluation-summary__meta">
+                    <span class="badge bg-danger-subtle text-danger"><i class="bi bi-shield-exclamation me-1"></i> Cần chú ý</span>
+                    <span>Yêu cầu đánh giá lại</span>
+                </p>
+            </div>
         </article>
     </section>
 

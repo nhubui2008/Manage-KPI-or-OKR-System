@@ -15,8 +15,9 @@
   --mv-vz-text-dark: #212529;
   --mv-vz-text-muted: #878a99;
   --mv-vz-text-secondary: #495057;
-  --mv-vz-radius: 4px;
-  --mv-vz-shadow: 0 1px 2px rgba(56, 65, 74, 0.15);
+  --mv-vz-radius: 12px;
+  --mv-vz-radius-sm: 8px;
+  --mv-vz-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
 
   color: var(--mv-vz-text-dark);
   font-family: var(--vz-body-font-family, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
@@ -80,7 +81,7 @@
   height: 36px;
   padding: 6px 16px;
   border-color: var(--mv-vz-primary);
-  border-radius: var(--mv-vz-radius);
+  border-radius: var(--mv-vz-radius-sm);
   background-color: var(--mv-vz-primary);
   color: #ffffff;
   font-size: 0.8125rem;
@@ -105,7 +106,7 @@
   height: 34px;
   padding: 5px 14px;
   border: 1px solid var(--mv-vz-primary);
-  border-radius: var(--mv-vz-radius);
+  border-radius: var(--mv-vz-radius-sm);
   background-color: transparent;
   color: var(--mv-vz-primary);
   font-size: 0.8125rem;
@@ -129,7 +130,7 @@
   height: 36px;
   padding: 6px 14px;
   border: 1px solid var(--mv-vz-card-border);
-  border-radius: var(--mv-vz-radius);
+  border-radius: var(--mv-vz-radius-sm);
   background-color: var(--mv-vz-card-bg);
   color: var(--mv-vz-text-secondary);
   font-size: 0.8125rem;
@@ -153,7 +154,7 @@
   height: 32px;
   padding: 0;
   border: 0;
-  border-radius: var(--mv-vz-radius);
+  border-radius: var(--mv-vz-radius-sm);
   background: transparent;
   color: var(--mv-vz-text-muted);
   display: inline-flex;
@@ -174,8 +175,8 @@
   min-width: 160px;
   padding: 6px 0;
   border: 1px solid var(--mv-vz-card-border);
-  border-radius: var(--mv-vz-radius);
-  box-shadow: 0 5px 10px rgba(30, 32, 37, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(30, 32, 37, 0.12);
   font-size: 0.8125rem;
 }
 
@@ -218,46 +219,93 @@
   height: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
+  gap: 14px;
+  padding: 14px 18px;
   border: 1px solid var(--mv-vz-card-border);
   border-radius: var(--mv-vz-radius);
   background-color: var(--mv-vz-card-bg);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+}
+
+.mission-vision-page .mv-summary-card:hover {
+  transform: translateY(-3px);
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.04);
 }
 
 .mission-vision-page .mv-summary-card__info {
+  order: 1;
+  flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .mission-vision-page .mv-summary-card__label {
   display: block;
-  margin-bottom: 4px;
-  color: var(--mv-vz-text-muted);
-  font-size: 0.78125rem;
-  font-weight: 500;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.03em;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mission-vision-page .mv-summary-card__value {
   display: block;
-  color: var(--mv-vz-text-dark);
-  font-size: 1.375rem;
+  color: #212529;
+  font-size: 1.125rem !important;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   line-height: 1.2;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+.mission-vision-page .mv-summary-card:nth-child(1) .mv-summary-card__value { color: #4f46e5; }
+.mission-vision-page .mv-summary-card:nth-child(2) .mv-summary-card__value { color: #3577f1; }
+.mission-vision-page .mv-summary-card:nth-child(3) .mv-summary-card__value { color: #0ab39c; }
+.mission-vision-page .mv-summary-card:nth-child(4) .mv-summary-card__value { color: #d97706; }
+
 .mission-vision-page .mv-summary-card__icon {
+  order: 2;
+  margin-left: auto;
   flex: 0 0 auto;
   width: 44px;
   height: 44px;
-  border-radius: var(--mv-vz-radius);
-  background-color: var(--mv-vz-primary-bg);
-  color: var(--mv-vz-primary);
-  font-size: 1.25rem;
+  border-radius: 10px;
+  font-size: 1.35rem;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.mission-vision-page .mv-summary-card__icon--primary {
+  background-color: rgba(124, 58, 237, 0.12) !important;
+  color: #7c3aed !important;
+}
+
+.mission-vision-page .mv-summary-card__icon--info {
+  background-color: rgba(53, 119, 241, 0.12) !important;
+  color: #3577f1 !important;
+}
+
+.mission-vision-page .mv-summary-card__icon--success {
+  background-color: rgba(10, 179, 156, 0.12) !important;
+  color: #0ab39c !important;
+}
+
+.mission-vision-page .mv-summary-card__icon--warning {
+  background-color: rgba(247, 184, 75, 0.18) !important;
+  color: #d97706 !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -313,7 +361,14 @@
   border: 1px solid var(--mv-vz-card-border);
   border-radius: var(--mv-vz-radius);
   background-color: var(--mv-vz-card-bg);
+  box-shadow: var(--mv-vz-shadow);
   overflow: visible;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mission-vision-page .mv-foundation-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 6px 18px -2px rgba(15, 23, 42, 0.08);
 }
 
 .mission-vision-page .mv-foundation-card__header {
@@ -333,7 +388,7 @@
 .mission-vision-page .mv-foundation-card__icon {
   width: 38px;
   height: 38px;
-  border-radius: var(--mv-vz-radius);
+  border-radius: 10px;
   background-color: var(--mv-vz-primary-bg);
   color: var(--mv-vz-primary);
   font-size: 1.1rem;
@@ -415,14 +470,14 @@
   align-items: center;
   padding: 3px;
   border: 1px solid var(--mv-vz-card-border);
-  border-radius: var(--mv-vz-radius);
+  border-radius: 8px;
   background-color: var(--mv-vz-card-bg);
   gap: 2px;
 }
 
 .mission-vision-page .mv-year-filter a {
   padding: 4px 12px;
-  border-radius: calc(var(--mv-vz-radius) - 1px);
+  border-radius: 6px;
   color: var(--mv-vz-text-secondary);
   font-size: 0.8125rem;
   font-weight: 500;
@@ -462,8 +517,14 @@
   border: 1px solid var(--mv-vz-card-border);
   border-radius: var(--mv-vz-radius);
   background-color: var(--mv-vz-card-bg);
-  transition: border-color 0.15s ease;
+  box-shadow: var(--mv-vz-shadow);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   overflow: visible;
+}
+
+.mission-vision-page .mv-goal-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 6px 18px -2px rgba(15, 23, 42, 0.08);
 }
 
 .mission-vision-page .mv-goal-card:hover {
@@ -747,7 +808,7 @@
   flex: 0 0 auto;
   width: 32px;
   height: 32px;
-  border-radius: var(--mv-vz-radius);
+  border-radius: 8px;
   background-color: var(--mv-vz-primary-bg);
   color: var(--mv-vz-primary);
   font-size: 1rem;
@@ -789,7 +850,7 @@
 .mission-vision-page .form-control {
   height: 36px;
   border: 1px solid var(--mv-vz-card-border);
-  border-radius: var(--mv-vz-radius);
+  border-radius: 8px;
   color: var(--mv-vz-text-dark);
   font-size: 0.8125rem;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
@@ -863,6 +924,8 @@
   position: sticky;
   top: 90px;
   padding: 18px;
+  border-radius: 12px;
+  box-shadow: var(--mv-vz-shadow);
   background-color: var(--mv-vz-card-bg);
 }
 
@@ -876,7 +939,7 @@
 .mission-vision-page .mv-form-guide__icon {
   width: 36px;
   height: 36px;
-  border-radius: var(--mv-vz-radius);
+  border-radius: 10px;
   background-color: var(--mv-vz-primary-bg);
   color: var(--mv-vz-primary);
   font-size: 1.1rem;

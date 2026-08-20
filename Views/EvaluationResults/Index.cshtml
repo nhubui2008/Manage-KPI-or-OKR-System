@@ -82,24 +82,56 @@
 
     <section class="evaluation-summary evaluation-results-summary" aria-label="Tổng quan kết quả đánh giá">
         <article>
-            <span>Kết quả hiện có</span>
-            <strong>@resultCount.ToString("N0")</strong>
-            <small>Trong phạm vi được phép xem</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--primary">
+                <i class="bi bi-file-earmark-bar-graph"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Kết quả hiện có</span>
+                <strong>@resultCount.ToString("N0")</strong>
+                <p class="evaluation-summary__meta">
+                    <span class="badge bg-primary-subtle text-primary"><i class="bi bi-funnel"></i> Tất cả</span>
+                    <span>Trong phạm vi hiện tại</span>
+                </p>
+            </div>
         </article>
         <article>
-            <span>Chờ giám đốc duyệt</span>
-            <strong>@pendingReviewCount.ToString("N0")</strong>
-            <small>Cần xem xét và ra quyết định</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--warning">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Chờ giám đốc duyệt</span>
+                <strong>@pendingReviewCount.ToString("N0")</strong>
+                <p class="evaluation-summary__meta">
+                    <span class="badge bg-warning-subtle text-warning"><i class="bi bi-clock-history"></i> Cần xử lý</span>
+                    <span>Cần xác nhận kết quả</span>
+                </p>
+            </div>
         </article>
         <article>
-            <span>Đã duyệt</span>
-            <strong>@approvedCount.ToString("N0")</strong>
-            <small>Kết quả đã được xác nhận</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--success">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Đã duyệt</span>
+                <strong>@approvedCount.ToString("N0")</strong>
+                <p class="evaluation-summary__meta">
+                    <span class="badge bg-success-subtle text-success"><i class="bi bi-check2-circle"></i> Hoàn tất</span>
+                    <span>Đã công bố chính thức</span>
+                </p>
+            </div>
         </article>
         <article>
-            <span>Cần rà soát</span>
-            <strong>@rejectedCount.ToString("N0")</strong>
-            <small>Kết quả bị từ chối cần cập nhật</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--info">
+                <i class="bi bi-exclamation-octagon"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Cần rà soát</span>
+                <strong>@rejectedCount.ToString("N0")</strong>
+                <p class="evaluation-summary__meta">
+                    <span class="badge bg-info-subtle text-info"><i class="bi bi-shield-exclamation"></i> Chú ý</span>
+                    <span>Từ chối / cần chỉnh sửa</span>
+                </p>
+            </div>
         </article>
     </section>
 

@@ -66,24 +66,40 @@
 
     <section class="evaluation-summary departments-summary" aria-label="Tổng quan phòng ban">
         <article>
-            <span>Phòng ban phù hợp</span>
-            <strong>@departmentItems.Count</strong>
-            <small>Theo bộ lọc hiện tại</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--primary">
+                <i class="bi bi-building"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Phòng ban phù hợp</span>
+                <strong>@departmentItems.Count</strong>
+            </div>
         </article>
         <article>
-            <span>Đang hoạt động</span>
-            <strong>@activeDepartmentCount</strong>
-            <small>Sẵn sàng nhận phân bổ</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--success">
+                <i class="bi bi-check2-circle"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Đang hoạt động</span>
+                <strong>@activeDepartmentCount</strong>
+            </div>
         </article>
         <article>
-            <span>Phòng ban cấp cao</span>
-            <strong>@rootDepartmentCount</strong>
-            <small>Không trực thuộc đơn vị khác</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--info">
+                <i class="bi bi-diagram-3"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Phòng ban cấp cao</span>
+                <strong>@rootDepartmentCount</strong>
+            </div>
         </article>
         <article>
-            <span>Nhân sự phân bổ</span>
-            <strong>@visibleEmployeeCount</strong>
-            <small>Trong các phòng ban đang hiển thị</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--warning">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Nhân sự phân bổ</span>
+                <strong>@visibleEmployeeCount</strong>
+            </div>
         </article>
     </section>
 
@@ -149,9 +165,11 @@
                     </div>
                     <form asp-action="Index" method="get" class="evaluation-filter-form departments-filter-form">
                         <label class="evaluation-search-field">
-                            <span class="visually-hidden">Tìm phòng ban</span>
-                            <i class="bi bi-search" aria-hidden="true"></i>
-                            <input type="search" name="searchString" value="@currentSearch" placeholder="Mã hoặc tên phòng ban..." autocomplete="off" />
+                            <span>Tìm kiếm</span>
+                            <div class="evaluation-search-input-wrap">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                                <input type="search" name="searchString" value="@currentSearch" placeholder="Mã hoặc tên phòng ban..." autocomplete="off" />
+                            </div>
                         </label>
                         <label>
                             <span>Trạng thái</span>
@@ -315,22 +333,81 @@
 @section Styles {
 <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
 <style>
-    .org-tree-item {
-        border: 1px solid transparent;
-        border-radius: 8px !important;
+    /* Hierarchy Tree & Org Items */
+    .org-tree-item,
+    .departments-page .department-tree-item {
+        display: grid !important;
+        grid-template-columns: auto minmax(0, 1fr) auto !important;
+        align-items: center !important;
+        gap: 0.65rem !important;
+        width: 100% !important;
+        margin: 0 !important;
+        border: 1px solid #e9ebec !important;
+        border-radius: 10px !important;
+        padding: 0.6rem 0.75rem !important;
+        background: #ffffff !important;
+        color: #212529 !important;
+        text-align: left !important;
+        cursor: pointer !important;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03) !important;
+        transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease, background 0.22s ease, color 0.22s ease !important;
     }
-    .org-tree-item:hover {
-        background-color: rgba(26, 115, 232, 0.06) !important;
-        border-color: rgba(26, 115, 232, 0.15);
+
+    .org-tree-item:hover:not(:disabled),
+    .departments-page .department-tree-item:hover:not(:disabled) {
+        transform: translateY(-3px) translateX(3px) !important;
+        border-color: #405189 !important;
+        background: #ffffff !important;
+        color: #405189 !important;
+        box-shadow: 0 8px 20px -2px rgba(64, 81, 137, 0.18), 0 3px 8px rgba(15, 23, 42, 0.05) !important;
     }
-    .org-tree-item.active {
-        background-color: rgba(26, 115, 232, 0.1) !important;
-        border-color: rgba(26, 115, 232, 0.3) !important;
-        box-shadow: 0 0 0 1px rgba(26, 115, 232, 0.15);
+
+    .org-tree-item:hover:not(:disabled) .department-tree-item__icon,
+    .departments-page .department-tree-item:hover:not(:disabled) .department-tree-item__icon {
+        transform: scale(1.15) !important;
+        background: rgba(64, 81, 137, 0.12) !important;
+        color: #405189 !important;
     }
-    .org-tree-company.active {
-        background: linear-gradient(135deg, rgba(26, 115, 232, 0.08), rgba(66, 133, 244, 0.12)) !important;
-        border-color: rgba(26, 115, 232, 0.35) !important;
+
+    .org-tree-item:hover:not(:disabled) .department-tree-item__count,
+    .departments-page .department-tree-item:hover:not(:disabled) .department-tree-item__count {
+        background: #405189 !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(64, 81, 137, 0.25) !important;
+    }
+
+    .org-tree-item.active,
+    .departments-page .department-tree-item.active {
+        background: linear-gradient(135deg, rgba(64, 81, 137, 0.08), rgba(85, 110, 230, 0.12)) !important;
+        border-color: #405189 !important;
+        color: #405189 !important;
+        box-shadow: 0 4px 14px rgba(64, 81, 137, 0.16) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    .org-tree-item.active .department-tree-item__icon,
+    .departments-page .department-tree-item.active .department-tree-item__icon {
+        background: #405189 !important;
+        color: #ffffff !important;
+    }
+
+    .org-tree-item.active .department-tree-item__count,
+    .departments-page .department-tree-item.active .department-tree-item__count {
+        background: #405189 !important;
+        color: #ffffff !important;
+    }
+
+    .departments-page .org-tree-company {
+        border: 1px solid #d1d5db !important;
+        background: #f8fafc !important;
+        margin-bottom: 8px !important;
+    }
+
+    .departments-page .org-tree-company:hover {
+        transform: translateY(-4px) !important;
+        border-color: #405189 !important;
+        background: #ffffff !important;
+        box-shadow: 0 12px 26px -3px rgba(64, 81, 137, 0.22), 0 4px 10px rgba(15, 23, 42, 0.06) !important;
     }
 
     /* Detail Panel Styles */
@@ -380,16 +457,18 @@
         padding: 20px 24px;
     }
     .stat-card {
-        background: var(--bg-secondary, #f8f9fa);
+        background: #ffffff !important;
         border-radius: 12px;
         padding: 16px;
         text-align: center;
-        border: 1px solid var(--border-color, #e8eaed);
-        transition: transform 0.2s, box-shadow 0.2s;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease !important;
     }
     .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transform: translateY(-4px) !important;
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 12px 24px -3px rgba(15, 23, 42, 0.12), 0 4px 8px rgba(15, 23, 42, 0.04) !important;
     }
     .stat-value {
         font-size: 1.6rem;
@@ -451,13 +530,15 @@
         padding: 10px 14px;
         border-radius: 10px;
         border: 1px solid var(--border-color, #e8eaed);
-        background: var(--bg-secondary, #f8f9fa);
+        background: #ffffff;
         margin-bottom: 8px;
-        transition: all 0.2s;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     }
     .emp-list-item:hover {
-        background: rgba(26, 115, 232, 0.04);
-        border-color: rgba(26, 115, 232, 0.2);
+        transform: translateY(-2px) translateX(2px);
+        background: #ffffff;
+        border-color: #cbd5e1;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
     }
     .emp-avatar {
         width: 36px;
@@ -495,18 +576,20 @@
         gap: 6px;
         padding: 6px 14px;
         border-radius: 20px;
-        background: var(--bg-secondary, #f8f9fa);
-        border: 1px solid var(--border-color, #e8eaed);
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
         font-size: 0.8rem;
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         margin: 0 6px 8px 0;
     }
     .child-dept-chip:hover {
-        background: rgba(26, 115, 232, 0.08);
-        border-color: rgba(26, 115, 232, 0.3);
-        color: var(--primary, #1a73e8);
+        transform: translateY(-2px) scale(1.02);
+        background: #ffffff;
+        border-color: #405189;
+        color: #405189;
+        box-shadow: 0 4px 12px rgba(64, 81, 137, 0.16);
     }
 
     .dept-overview-row {
@@ -515,16 +598,17 @@
         gap: 12px;
         padding: 10px 14px;
         border-radius: 10px;
-        border: 1px solid var(--border-color, #e8eaed);
-        background: var(--bg-secondary, #f8f9fa);
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
         margin-bottom: 8px;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     }
     .dept-overview-row:hover {
-        background: rgba(26, 115, 232, 0.04);
-        border-color: rgba(26, 115, 232, 0.2);
-        transform: translateX(4px);
+        transform: translateY(-2px) translateX(4px);
+        background: #ffffff;
+        border-color: #405189;
+        box-shadow: 0 6px 16px rgba(64, 81, 137, 0.12);
     }
     .detail-action-btns {
         display: flex;
@@ -586,28 +670,39 @@
     }
 
     .departments-page .departments-summary {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 1.25rem !important;
+        margin: 1.25rem 0 1.5rem !important;
+        background: transparent !important;
+        border: none !important;
     }
 
     .departments-page .departments-summary article {
-        border-right: 1px solid var(--evaluation-line);
-        border-bottom: 0;
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 14px !important;
+        padding: 16px 20px !important;
+        box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04) !important;
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease !important;
     }
 
-    .departments-page .departments-summary article:last-child {
-        border-right: 0;
+    .departments-page .departments-summary article:hover {
+        transform: translateY(-5px) !important;
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 16px 32px -4px rgba(15, 23, 42, 0.12), 0 6px 12px -2px rgba(15, 23, 42, 0.06) !important;
     }
 
-    .departments-page .departments-summary article:nth-child(1) strong { color: #1d4ed8; }
-    .departments-page .departments-summary article:nth-child(2) strong { color: #15803d; }
-    .departments-page .departments-summary article:nth-child(3) strong { color: #a15c07; }
-    .departments-page .departments-summary article:nth-child(4) strong { color: #7c3aed; }
+    .departments-page .departments-summary article:nth-child(1) strong { color: #1d4ed8 !important; }
+    .departments-page .departments-summary article:nth-child(2) strong { color: #15803d !important; }
+    .departments-page .departments-summary article:nth-child(3) strong { color: #a15c07 !important; }
+    .departments-page .departments-summary article:nth-child(4) strong { color: #7c3aed !important; }
 
     .departments-page .departments-workspace {
         display: grid;
-        grid-template-columns: minmax(250px, 290px) minmax(0, 1fr);
+        grid-template-columns: minmax(260px, 310px) minmax(0, 1fr);
         align-items: start;
-        gap: 1rem;
+        gap: 1.25rem;
     }
 
     .departments-page .department-tree-panel {
@@ -616,64 +711,48 @@
         min-width: 0;
         max-height: calc(100vh - 112px);
         overflow: hidden;
-        border: 1px solid var(--evaluation-line);
-        border-radius: var(--evaluation-radius);
-        background: #fff;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 14px !important;
+        background: #fff !important;
+        box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04) !important;
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease !important;
+    }
+
+    .departments-page .department-tree-panel:hover {
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.12), 0 4px 10px rgba(15, 23, 42, 0.04) !important;
     }
 
     .departments-page .department-tree-panel__header {
-        padding: 0.9rem 1rem;
-        border-bottom: 1px solid var(--evaluation-line);
+        padding: 1rem 1.15rem;
+        border-bottom: 1px solid #edf2f7;
+        background: #ffffff;
     }
 
     .departments-page .department-tree-panel__header h2 {
-        margin: 0.1rem 0 0;
-        font-size: 0.95rem;
+        margin: 0.15rem 0 0;
+        font-size: 1.05rem;
         font-weight: 800;
+        color: #212529;
     }
 
     .departments-page .department-tree-panel__body {
         max-height: calc(100vh - 190px);
         overflow-y: auto;
-        padding: 0.75rem;
+        padding: 0.85rem;
         scrollbar-width: thin;
     }
 
     .departments-page .department-tree-children {
         display: grid;
-        gap: 0.4rem;
-        margin-top: 0.4rem;
+        gap: 0.45rem;
+        margin-top: 0.45rem;
     }
 
     .departments-page .department-tree-children--nested {
-        margin-left: 0.85rem;
-        padding-left: 0.65rem;
-        border-left: 1px solid var(--evaluation-line);
-    }
-
-    .departments-page .department-tree-item {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 0.55rem;
-        width: 100%;
-        margin: 0;
-        border: 1px solid var(--evaluation-line) !important;
-        border-radius: 8px !important;
-        padding: 0.55rem;
-        background: #fff !important;
-        color: #172033;
-        text-align: left;
-        cursor: pointer;
-        box-shadow: none !important;
-        transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
-    }
-
-    .departments-page .department-tree-item:hover,
-    .departments-page .department-tree-item.active {
-        border-color: var(--evaluation-brand-border) !important;
-        background: var(--evaluation-brand-soft) !important;
-        color: var(--evaluation-brand-dark);
+        margin-left: 0.95rem !important;
+        padding-left: 0.75rem !important;
+        border-left: 2px dashed #cbd5e1 !important;
     }
 
     .departments-page .department-tree-item:focus-visible {
@@ -688,17 +767,18 @@
 
     .departments-page .department-tree-item__icon {
         display: inline-grid;
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         place-items: center;
-        border-radius: 7px;
+        border-radius: 8px;
         background: #fff6df;
         color: #98620e;
+        transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
     }
 
     .departments-page .department-tree-item__icon--company {
-        background: var(--evaluation-brand-soft);
-        color: var(--evaluation-brand);
+        background: rgba(64, 81, 137, 0.1);
+        color: #405189;
     }
 
     .departments-page .department-tree-item__content {
@@ -713,23 +793,24 @@
         white-space: nowrap;
     }
 
-    .departments-page .department-tree-item__content strong { font-size: 0.78rem; }
-    .departments-page .department-tree-item__content small { margin-top: 0.1rem; color: var(--evaluation-muted); font-size: 0.66rem; }
+    .departments-page .department-tree-item__content strong { font-size: 0.8125rem; font-weight: 700; }
+    .departments-page .department-tree-item__content small { margin-top: 0.1rem; color: #878a99; font-size: 0.7rem; }
 
     .departments-page .department-tree-item__count {
         border-radius: 999px;
-        padding: 0.2rem 0.42rem;
-        background: var(--evaluation-soft);
-        color: var(--evaluation-muted);
-        font-size: 0.65rem;
+        padding: 0.2rem 0.5rem;
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 0.68rem;
         font-weight: 750;
         white-space: nowrap;
+        transition: all 0.2s ease;
     }
 
     .departments-page .department-tree-empty {
-        padding: 1rem 0.4rem;
-        color: var(--evaluation-muted);
-        font-size: 0.76rem;
+        padding: 1.25rem 0.5rem;
+        color: #878a99;
+        font-size: 0.8rem;
         text-align: center;
     }
 
@@ -737,6 +818,11 @@
         min-width: 0;
         min-height: 420px;
         margin-top: 0;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 14px !important;
+        background: #ffffff !important;
+        box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04) !important;
+        overflow: hidden !important;
     }
 
     .departments-page .department-detail-loading {

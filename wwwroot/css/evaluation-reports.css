@@ -8,7 +8,7 @@
     --eval-report-ink: #495057;
     --eval-report-heading: #343a40;
     --eval-report-muted: #878a99;
-    --eval-report-radius: 4px;
+    --eval-report-radius: 12px;
 }
 
 .evaluation-report-page {
@@ -107,51 +107,74 @@
 .evaluation-report-page .evaluation-report-summary {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1rem;
-    margin: 1rem 0;
+    gap: 1.25rem;
+    margin: 1.25rem 0;
 }
 
 .evaluation-report-page .evaluation-report-summary article {
     background: var(--eval-report-card-bg);
     border: 1px solid var(--eval-report-border);
-    border-radius: var(--eval-report-radius);
-    padding: 1rem 1.25rem;
+    border-radius: 14px;
+    padding: 16px 20px;
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+}
+
+.evaluation-report-page .evaluation-report-summary article:hover {
+    transform: translateY(-4px);
+    border-color: #cbd5e1;
+    box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.04);
 }
 
 .evaluation-report-page .evaluation-report-summary span {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.8125rem;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: var(--eval-report-muted);
+    color: #64748b;
+    margin-bottom: 2px;
 }
 
 .evaluation-report-page .evaluation-report-summary strong {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--eval-report-heading);
-    margin: 0.35rem 0 0.15rem;
+    font-size: 1.65rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 0.25rem 0 0.25rem;
 }
 
 .evaluation-report-page .evaluation-report-summary small {
-    font-size: 0.75rem;
-    color: var(--eval-report-muted);
+    font-size: 0.78rem;
+    color: #878a99;
 }
 
-.evaluation-report-page .evaluation-report-summary article:nth-child(1) strong { color: #3577f1; }
+.evaluation-report-page .evaluation-report-summary article:nth-child(1) strong { color: #4f46e5; }
 .evaluation-report-page .evaluation-report-summary article:nth-child(2) strong { color: #0ab39c; }
-.evaluation-report-page .evaluation-report-summary article:nth-child(3) strong { color: #f7b84b; }
-.evaluation-report-page .evaluation-report-summary article:nth-child(4) strong { color: #f06548; }
+.evaluation-report-page .evaluation-report-summary article:nth-child(3) strong { color: #d97706; }
+.evaluation-report-page .evaluation-report-summary article:nth-child(4) strong { color: #e11d48; }
+
+@media (max-width: 991.98px) {
+    .evaluation-report-page .evaluation-report-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    .evaluation-report-page .evaluation-report-summary {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
 
 /* Filter Panel */
 .evaluation-report-page .evaluation-filter-panel {
     background: var(--eval-report-card-bg);
     border: 1px solid var(--eval-report-border);
-    border-radius: var(--eval-report-radius);
-    padding: 1rem 1.25rem;
-    margin-bottom: 1rem;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 .evaluation-report-page .evaluation-filter-heading {
@@ -489,6 +512,6 @@
         padding: 0.5rem;
         background: #f8f9fa;
         border: 1px solid #ced4da;
-        border-radius: 4px;
+        border-radius: 8px;
     }
 }

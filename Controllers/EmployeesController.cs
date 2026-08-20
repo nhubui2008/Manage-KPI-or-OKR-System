@@ -31,7 +31,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 [HasPermission("EMPLOYEES_VIEW")]
 public async Task<IActionResult> Index(string searchString, string isActive, int? departmentId, int? pageNumber)
 {
-    const int pageSize = 10;
+    const int pageSize = 12;
     var pageIndex = pageNumber is > 0 ? pageNumber.Value : 1;
     // Bắt đầu bằng việc lấy toàn bộ danh sách (chưa thực hiện truy vấn xuống DB vội)
     var employeesQuery = _context.Employees.AsQueryable();

@@ -1,11 +1,11 @@
 /* Enterprise Default application layer for operational, authentication and public surfaces. */
 
 :root {
-    --vm-font-sans: "Times New Roman", Times, serif;
+    --vm-font-sans: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --vz-body-font-family: var(--vm-font-sans);
     --font-family: var(--vm-font-sans);
-    --font-plus-jakarta-sans: var(--vm-font-sans);
-    --font-inter: var(--vm-font-sans);
+    --font-plus-jakarta-sans: 'Plus Jakarta Sans', var(--vm-font-sans);
+    --font-inter: 'Inter', var(--vm-font-sans);
 }
 
 body.vietmach-shell,
@@ -16,12 +16,17 @@ body.vietmach-public :is(button, input, select, textarea),
 body.vietmach-auth :is(button, input, select, textarea) {
     font-family: var(--vm-font-sans) !important;
     font-synthesis: none;
+    letter-spacing: -0.011em;
 }
 
 body.vietmach-shell :is(h1, h2, h3, h4, h5, h6, p, a, label, legend, table, th, td, small, strong, b, em, blockquote, figcaption, option),
 body.vietmach-public :is(h1, h2, h3, h4, h5, h6, p, a, label, legend, table, th, td, small, strong, b, em, blockquote, figcaption, option),
 body.vietmach-auth :is(h1, h2, h3, h4, h5, h6, p, a, label, legend, table, th, td, small, strong, b, em, blockquote, figcaption, option) {
     font-family: var(--vm-font-sans) !important;
+}
+
+body.vietmach-shell :is(table, th, td, .badge, .kpi-metric, .stat-value, .progress-bar, [data-format="number"]) {
+    font-variant-numeric: tabular-nums;
 }
 
 body.vietmach-shell :is(h1, h2, h3, h4, h5, h6, strong, b),
@@ -36,10 +41,10 @@ body.vietmach-auth :is(h1, h2, h3, h4, h5, h6, strong, b) {
     --primary-darker: #394da9;
     --primary-light: #e9edff;
     --primary-bg: rgba(85, 110, 230, 0.1);
-    --vz-sidebar-bg: #4b63d3;
-    --vz-sidebar-bg-deep: #4056bd;
-    --vz-sidebar-ink: #f7f8ff;
-    --vz-sidebar-muted: #d9deff;
+    --vz-sidebar-bg: #ffffff;
+    --vz-sidebar-bg-deep: #f5f3ff;
+    --vz-sidebar-ink: #0f172a;
+    --vz-sidebar-muted: #7c3aed;
     --vz-sidebar-active: #ffffff;
     --vz-canvas: #f3f3f9;
     --vz-surface: #ffffff;
@@ -48,7 +53,7 @@ body.vietmach-auth :is(h1, h2, h3, h4, h5, h6, strong, b) {
     --vz-muted: #6d7080;
     --vz-header-height: 70px;
     --vz-sidebar-width: 70px;
-    --vz-sidebar-width-expanded: 250px;
+    --vz-sidebar-width-expanded: 290px;
     --sidebar-width: var(--vz-sidebar-width);
     --sidebar-width-expanded: var(--vz-sidebar-width-expanded);
     --header-height: var(--vz-header-height);
@@ -59,10 +64,10 @@ body.vietmach-auth :is(h1, h2, h3, h4, h5, h6, strong, b) {
     --text-primary: var(--vz-ink);
     --text-secondary: #495057;
     --text-muted: var(--vz-muted);
-    --radius-sm: 3px;
-    --radius-md: 4px;
-    --radius-lg: 5px;
-    --radius-xl: 6px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
     margin: 0;
     background: var(--vz-canvas) !important;
     color: var(--vz-ink);
@@ -146,9 +151,9 @@ body::-webkit-scrollbar,
     padding-bottom: 0;
     overflow: visible;
     border: 0;
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
-    background: var(--vz-sidebar-bg) !important;
-    box-shadow: none;
+    border-right: 1.5px solid #e2e8f0 !important;
+    background: #ffffff !important;
+    box-shadow: 2px 0 16px rgba(15, 23, 42, 0.04);
     transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -162,13 +167,14 @@ html.sidebar-expanded .vietmach-shell .navbar-menu.sidebar {
     padding: 0 16px;
     display: flex;
     align-items: center;
-    background: rgba(31, 42, 62, 0.12);
+    background: #ffffff !important;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .vietmach-shell .sidebar-brand::after {
     left: 16px;
     right: 16px;
-    background: rgba(255, 255, 255, 0.08);
+    background: #e2e8f0;
 }
 
 .vietmach-shell .sidebar-brand .brand-icon {
@@ -176,11 +182,11 @@ html.sidebar-expanded .vietmach-shell .navbar-menu.sidebar {
     height: 36px;
     margin: 0;
     flex: 0 0 36px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid #ddd6fe;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
     color: #fff !important;
-    box-shadow: none !important;
+    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.25) !important;
 }
 
 .vietmach-shell .sidebar-brand .brand-logo-img {
@@ -200,20 +206,21 @@ html.sidebar-expanded .vietmach-shell .navbar-menu.sidebar {
 
 .vietmach-shell .sidebar-brand .brand-text {
     overflow: hidden;
-    color: #fff !important;
+    color: #0f172a !important;
     font-family: var(--vm-font-sans);
     font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: 0;
+    font-weight: 800 !important;
+    letter-spacing: -0.01em;
     text-overflow: ellipsis;
 }
 
 .vietmach-shell .sidebar-brand .brand-sub {
     overflow: hidden;
-    max-width: 165px;
+    max-width: 220px;
     margin-top: 1px;
-    color: #e2e6ff !important;
-    font-size: 0.6875rem;
+    color: #7c3aed !important;
+    font-size: 0.7rem;
+    font-weight: 700 !important;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -225,7 +232,7 @@ html.sidebar-expanded .vietmach-shell .navbar-menu.sidebar {
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 12px 0 8px;
-    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+    scrollbar-color: rgba(124, 58, 237, 0.2) transparent;
 }
 
 .vietmach-shell .sidebar-group {
@@ -233,43 +240,49 @@ html.sidebar-expanded .vietmach-shell .navbar-menu.sidebar {
 }
 
 .vietmach-shell .sidebar-group-label {
-    padding: 13px 22px 5px;
-    color: var(--vz-sidebar-muted) !important;
+    padding: 14px 20px 6px;
+    color: #7c3aed !important;
     font-family: var(--vm-font-sans);
-    font-size: 0.625rem;
-    font-weight: 600;
+    font-size: 0.6875rem;
+    font-weight: 800 !important;
     letter-spacing: 0.08em;
+    text-transform: uppercase;
     line-height: 1.2;
 }
 
 .vietmach-shell .sidebar-link {
-    min-height: 38px;
-    margin: 1px 10px;
-    padding: 8px 13px;
+    min-height: 40px;
+    margin: 2px 10px;
+    padding: 9px 12px;
     justify-content: center;
-    border: 0 !important;
-    border-radius: 4px !important;
+    border: 1px solid transparent !important;
+    border-radius: 8px !important;
     background: transparent;
-    color: var(--vz-sidebar-ink) !important;
+    color: #0f172a !important;
     font-family: var(--vm-font-sans);
-    font-size: 0.8125rem;
-    font-weight: 500;
+    font-size: 0.84rem;
+    font-weight: 700 !important;
     line-height: 1.25;
-    transform: none;
+    white-space: nowrap;
+    position: relative;
     box-shadow: none;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.vietmach-shell .sidebar .sidebar-link span,
-.vietmach-shell .sidebar .sidebar-link i {
-    color: inherit !important;
+.vietmach-shell .sidebar .sidebar-link span {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    white-space: nowrap;
+    transition: color 0.2s ease;
 }
 
 .vietmach-shell .sidebar-link i {
-    width: 20px;
+    width: 22px;
     margin: 0;
-    font-size: 1.05rem;
-    opacity: 0.9;
-    transform: none;
+    font-size: 1.15rem;
+    color: #7c3aed !important;
+    opacity: 1;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
 }
 
 html.sidebar-expanded .vietmach-shell .sidebar-link {
@@ -283,78 +296,112 @@ html.sidebar-expanded .vietmach-shell .sidebar-link i {
 }
 
 .vietmach-shell .sidebar-link:hover {
-    background: var(--vz-sidebar-bg-deep) !important;
-    color: #fff !important;
-    transform: none;
+    background: #f5f3ff !important;
+    color: #6d28d9 !important;
+    border-color: rgba(124, 58, 237, 0.2) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.14), 0 2px 4px rgba(15, 23, 42, 0.04) !important;
+    z-index: 2;
+}
+
+.vietmach-shell .sidebar-link:hover span {
+    color: #6d28d9 !important;
+}
+
+.vietmach-shell .sidebar-link:hover i {
+    color: #7c3aed !important;
+    transform: scale(1.12);
 }
 
 .vietmach-shell .sidebar-link.active,
 .vietmach-shell .sidebar-link.is-pending {
-    background: var(--primary-darker) !important;
-    color: var(--vz-sidebar-active) !important;
-    font-weight: 600;
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3) !important;
+}
+
+.vietmach-shell .sidebar-link.active:hover,
+.vietmach-shell .sidebar-link.is-pending:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(124, 58, 237, 0.42), 0 2px 6px rgba(79, 70, 229, 0.25) !important;
+}
+
+.vietmach-shell .sidebar-link.active span,
+.vietmach-shell .sidebar-link.is-pending span,
+.vietmach-shell .sidebar-link.active i,
+.vietmach-shell .sidebar-link.is-pending i {
+    color: #ffffff !important;
+}
+
+.vietmach-shell .sidebar-link.active:hover i,
+.vietmach-shell .sidebar-link.is-pending:hover i {
+    color: #ffffff !important;
+    transform: scale(1.12);
 }
 
 .vietmach-shell .sidebar-link.active::before {
-    content: "";
-    position: absolute;
-    left: -10px;
-    width: 3px;
-    height: 20px;
-    border-radius: 0 3px 3px 0;
-    background: #ffffff;
+    display: none;
 }
 
 .vietmach-shell .sidebar-footer {
     flex: 0 0 auto;
     margin-top: auto;
-    padding: 8px 10px max(12px, env(safe-area-inset-bottom));
-    border-top: 1px solid rgba(255, 255, 255, 0.09) !important;
-    background: var(--vz-sidebar-bg) !important;
+    padding: 10px 12px max(14px, env(safe-area-inset-bottom));
+    border-top: 1px solid #f1f5f9 !important;
+    background: #ffffff !important;
 }
 
 .vietmach-shell .sidebar-settings-trigger,
 .vietmach-shell .sidebar-user {
-    min-height: 40px;
+    min-height: 42px;
     margin: 0;
     padding: 8px 10px;
-    border: 0 !important;
-    border-radius: 4px !important;
+    border: 1px solid transparent !important;
+    border-radius: 8px !important;
     background: transparent !important;
-    color: var(--vz-sidebar-ink) !important;
+    color: #0f172a !important;
     box-shadow: none !important;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .vietmach-shell .sidebar-settings-trigger:hover,
 .vietmach-shell .sidebar-user:hover {
-    background: var(--vz-sidebar-bg-deep) !important;
-    color: #fff !important;
+    background: #f5f3ff !important;
+    color: #6d28d9 !important;
+    border-color: rgba(124, 58, 237, 0.18) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.12), 0 1px 3px rgba(15, 23, 42, 0.04) !important;
 }
 
 .vietmach-shell .sidebar-settings-trigger i {
     width: 28px;
-    font-size: 1rem;
+    font-size: 1.1rem;
+    color: #7c3aed !important;
 }
 
 .vietmach-shell .sidebar-user .user-avatar {
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
-    border: 1px solid rgba(255, 255, 255, 0.26);
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border: 1.5px solid #ddd6fe;
     border-radius: 50%;
-    background: var(--primary-darker) !important;
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%) !important;
     color: #fff !important;
-    font-size: 0.6875rem;
-    box-shadow: none;
+    font-size: 0.72rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
 }
 
-.vietmach-shell .sidebar-user .user-name,
-.vietmach-shell .sidebar-user .user-role {
-    color: #fff;
+.vietmach-shell .sidebar-user .user-name {
+    color: #0f172a !important;
+    font-weight: 700 !important;
 }
 
 .vietmach-shell .sidebar-user .user-role {
-    color: #e2e6ff !important;
+    color: #7c3aed !important;
+    font-weight: 700 !important;
 }
 
 .vietmach-shell .sidebar-user-menu {
@@ -437,7 +484,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     height: 38px;
     padding: 0 40px 0 38px;
     border: 1px solid transparent !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     background: #f3f3f9 !important;
     color: #343a40 !important;
     font-size: 0.8125rem;
@@ -472,7 +519,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 .vietmach-shell .header-right .btn {
     min-height: 36px;
     padding: 7px 13px !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     font-size: 0.75rem !important;
     box-shadow: none !important;
 }
@@ -524,13 +571,17 @@ html.sidebar-expanded .vietmach-shell .main-content {
 }
 
 /* Operational surfaces -------------------------------------------------- */
-.vietmach-shell :is(.card, .content-card, .stat-card, .glass-card) {
+.vietmach-shell :is(.card, .content-card, .stat-card, .glass-card, .table-card, .kpi-card, .okr-card,
+    .mission-vision-card, .workproject-card, .evaluation-card, .dashboard-card, .project-card,
+    .ops-summary__item, .mv-summary-card, .mv-foundation-card, .mv-goal-card, .okr-summary__item,
+    .okr-objective-card, .okr-panel, .workprojects-filter, .cf-panel, .cf-guide, .cf-section) {
     border: 1px solid var(--vz-border) !important;
-    border-radius: 4px !important;
+    border-radius: 12px !important;
     background: var(--vz-surface) !important;
-    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.04) !important;
-    transform: none !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03) !important;
     backdrop-filter: none !important;
+    overflow: hidden;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.22s ease !important;
 }
 
 .vietmach-shell .content-card h5 > .bi {
@@ -540,18 +591,28 @@ html.sidebar-expanded .vietmach-shell .main-content {
     -webkit-text-fill-color: currentColor !important;
 }
 
-.vietmach-shell :is(.card, .content-card, .stat-card, .glass-card):hover {
-    border-color: #dfe2e6 !important;
-    box-shadow: 0 3px 10px rgba(56, 65, 74, 0.07) !important;
-    transform: none !important;
+.vietmach-shell :is(.card, .content-card, .stat-card, .glass-card, .table-card, .kpi-card, .okr-card,
+    .mission-vision-card, .workproject-card, .evaluation-card, .dashboard-card, .project-card,
+    .ops-summary__item, .mv-summary-card, .mv-foundation-card, .mv-goal-card, .okr-summary__item,
+    .okr-objective-card, .okr-panel, .workprojects-filter, .cf-panel, .cf-guide, .cf-section):hover {
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.04) !important;
+    transform: translateY(-3px) !important;
 }
 
 .vietmach-shell :is(.card-header, .card-header-custom) {
     min-height: 48px;
     padding: 12px 16px;
     border-bottom: 1px solid var(--vz-border) !important;
-    border-radius: 4px 4px 0 0 !important;
+    border-radius: 12px 12px 0 0 !important;
     background: #fff !important;
+}
+
+.vietmach-shell :is(.card-footer, .card-footer-custom) {
+    padding: 12px 16px;
+    border-top: 1px solid var(--vz-border) !important;
+    border-radius: 0 0 12px 12px !important;
+    background: #f8fafc !important;
 }
 
 .vietmach-shell :is(.card-body, .card-body-custom) {
@@ -559,21 +620,77 @@ html.sidebar-expanded .vietmach-shell .main-content {
 }
 
 .vietmach-shell .stat-card {
-    padding: 16px;
+    padding: 14px 18px;
+    border: 1px solid var(--vz-border, #e9ebec);
+    border-radius: 12px !important;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+}
+
+.vietmach-shell .stat-card:hover {
+    transform: translateY(-3px);
+    border-color: #cbd5e1;
+    box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.04);
+}
+
+.vietmach-shell .summary-stat-card {
+    border-radius: 10px !important;
+}
+
+.vietmach-shell .summary-stat-card .card-body {
+    padding: 10px 14px !important;
+    min-height: 76px !important;
+}
+
+.vietmach-shell .summary-stat-card .avatar-sm {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+}
+
+.vietmach-shell .summary-stat-card .avatar-title {
+    font-size: 1.15rem !important;
+    border-radius: 8px !important;
+}
+
+.vietmach-shell .summary-stat-card h4,
+.vietmach-shell .summary-stat-card .fs-18 {
+    font-size: 1.25rem !important;
+    line-height: 1.2 !important;
+    margin-bottom: 0 !important;
 }
 
 .vietmach-shell .stat-card .stat-icon {
-    width: 38px;
-    height: 38px;
-    margin-bottom: 12px;
-    border-radius: 4px;
-    font-size: 1rem;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 0;
+    border-radius: 10px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
 }
 
 .vietmach-shell .stat-card .stat-value {
-    margin-bottom: 5px;
-    font-size: 1.45rem;
-    font-weight: 600;
+    margin-bottom: 0;
+    font-size: 1.375rem !important;
+    font-weight: 700 !important;
+    font-variant-numeric: tabular-nums;
+    color: #212529 !important;
+    line-height: 1.2;
+}
+
+.vietmach-shell .stat-card .stat-label {
+    display: block;
+    color: #878a99 !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.03em !important;
+    text-transform: uppercase !important;
+    margin-bottom: 3px;
+    line-height: 1.2;
 }
 
 .vietmach-shell :is(.toolbar, .filter-bar, .page-actions, .action-bar) {
@@ -584,7 +701,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 .vietmach-shell :is(.btn, .btn-primary-custom, .btn-outline-custom) {
     min-height: 34px;
     padding: 6px 12px;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     font-size: 0.75rem !important;
     font-weight: 500 !important;
     line-height: 1.35;
@@ -609,7 +726,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 .vietmach-shell :is(.form-control, .form-select, .filter-select, .toolbar-search input) {
     min-height: 36px;
     border: 1px solid #ced4da !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     background-color: #fff !important;
     color: #212529 !important;
     font-size: 0.8125rem !important;
@@ -656,7 +773,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 .vietmach-shell .select2-container--default .select2-selection--multiple {
     min-height: 36px !important;
     border: 1px solid #ced4da !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     background: #fff !important;
     box-shadow: none !important;
 }
@@ -716,7 +833,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 }
 
 .vietmach-shell :is(.badge, .status-badge) {
-    border-radius: 3px;
+    border-radius: 6px;
     font-size: 0.6875rem;
     font-weight: 500;
 }
@@ -724,20 +841,20 @@ html.sidebar-expanded .vietmach-shell .main-content {
 .vietmach-shell .progress,
 .vietmach-shell .progress-custom {
     height: 5px !important;
-    border-radius: 2px !important;
+    border-radius: 999px !important;
     background: #e9ecef !important;
 }
 
 .vietmach-shell .dropdown-menu {
     padding: 6px;
     border: 1px solid var(--vz-border) !important;
-    border-radius: 4px !important;
+    border-radius: 10px !important;
     background: #fff;
-    box-shadow: 0 5px 16px rgba(30, 41, 59, 0.12) !important;
+    box-shadow: 0 8px 24px rgba(30, 41, 59, 0.12) !important;
 }
 
 .vietmach-shell .dropdown-item {
-    border-radius: 3px;
+    border-radius: 6px;
     font-size: 0.78rem;
 }
 
@@ -748,25 +865,34 @@ html.sidebar-expanded .vietmach-shell .main-content {
 
 .vietmach-shell .modal-content {
     border: 1px solid var(--vz-border);
-    border-radius: 5px;
-    box-shadow: 0 12px 30px rgba(30, 41, 59, 0.15);
+    border-radius: 14px !important;
+    box-shadow: 0 16px 36px rgba(30, 41, 59, 0.16);
+    overflow: hidden;
 }
 
 .vietmach-shell .modal-header,
 .vietmach-shell .modal-footer {
-    padding: 12px 16px;
+    padding: 14px 18px;
     border-color: var(--vz-border);
 }
 
+.vietmach-shell .modal-header {
+    border-radius: 14px 14px 0 0 !important;
+}
+
+.vietmach-shell .modal-footer {
+    border-radius: 0 0 14px 14px !important;
+}
+
 .vietmach-shell .modal-body {
-    padding: 16px;
+    padding: 18px;
 }
 
 /* Existing interactive surfaces keep their IDs and data contracts. */
 .vietmach-shell .search-results-dropdown,
 .vietmach-shell .notification-menu {
     border: 1px solid var(--vz-border);
-    border-radius: 5px;
+    border-radius: 12px;
     background: #fff;
     backdrop-filter: none;
     box-shadow: 0 8px 24px rgba(30, 41, 59, 0.14);
@@ -787,39 +913,93 @@ html.sidebar-expanded .vietmach-shell .main-content {
 
 .vietmach-shell .settings-panel {
     z-index: 1080 !important;
-    border-left: 1px solid var(--vz-border);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
     background: #fff;
-    box-shadow: -8px 0 24px rgba(30, 41, 59, 0.14);
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
 }
 
 .vietmach-shell .settings-panel__header {
     position: sticky;
     top: 0;
     z-index: 1;
-    min-height: var(--vz-header-height);
-    align-items: center;
-    border-bottom: 1px solid var(--vz-border);
-    background: var(--vz-sidebar-bg);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #ffffff !important;
 }
 
-.vietmach-shell .settings-panel__header,
-.vietmach-shell .settings-panel__header h2,
 .vietmach-shell .settings-panel__eyebrow {
-    color: #fff;
+    color: #7c3aed !important;
+    font-family: var(--vm-font-sans);
+    font-size: 0.6875rem;
+    font-weight: 800 !important;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    margin-bottom: 3px;
+}
+
+.vietmach-shell .settings-panel__header h2 {
+    margin: 0;
+    color: #0f172a !important;
+    font-family: var(--vm-font-sans);
+    font-size: 1.25rem;
+    font-weight: 800 !important;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+
+.vietmach-shell .settings-panel__close {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    background: #f8fafc !important;
+    color: #64748b !important;
+    font-size: 0.875rem;
+    box-shadow: none !important;
+    transition: all 0.2s ease;
+}
+
+.vietmach-shell .settings-panel__close:hover {
+    background: #fee2e2 !important;
+    border-color: #fca5a5 !important;
+    color: #ef4444 !important;
+}
+
+.vietmach-shell .settings-panel__label {
+    padding: 0 0 8px;
+    color: #7c3aed !important;
+    font-family: var(--vm-font-sans);
+    font-size: 0.6875rem;
+    font-weight: 800 !important;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .vietmach-shell .settings-panel__item {
-    border-radius: 4px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
 }
 
 .vietmach-shell .settings-panel__item:hover {
-    background: var(--primary-light);
-    color: var(--primary-darker);
+    background: #f5f3ff !important;
+    color: #6d28d9 !important;
+    transform: translateX(3px);
 }
 
 .vietmach-shell .settings-panel__item:hover .settings-panel__icon,
 .vietmach-shell .settings-panel__item.active .settings-panel__icon {
-    color: var(--primary) !important;
+    color: #7c3aed !important;
+    background: #ede9fe !important;
 }
 
 .vietmach-shell .settings-panel-backdrop {
@@ -977,11 +1157,15 @@ html.sidebar-expanded .vietmach-shell .main-content {
     --evaluation-brand: var(--primary);
     --evaluation-brand-dark: var(--primary-dark);
     --evaluation-brand-soft: color-mix(in srgb, var(--primary) 9%, #fff);
-    --evaluation-radius: 4px;
+    --evaluation-radius: 12px;
 }
 
-.vietmach-shell :is(.rounded-3, .rounded-4) {
-    border-radius: 4px !important;
+.vietmach-shell .rounded-3 {
+    border-radius: 8px !important;
+}
+
+.vietmach-shell .rounded-4 {
+    border-radius: 12px !important;
 }
 
 .vietmach-shell :is(.shadow, .shadow-sm) {
@@ -1034,14 +1218,30 @@ html.sidebar-expanded .vietmach-shell .main-content {
     gap: 16px !important;
 }
 
-.vietmach-shell :is(.cf-panel, .cf-guide, .evaluation-filter-panel, .evaluation-results,
+.vietmach-shell :is(.cf-panel, .cf-guide, .cf-section, .evaluation-filter-panel, .evaluation-results,
     .evaluation-period-card, .detail-section, .settings-group, .info-box, .task-edit-section,
     .catalog-table-shell, .catalog-pane, .rq-stat-card, .permission-stat-card,
-    .mv-foundation-card, .kpi-item, .ops-summary, .okr-summary) {
+    .mv-summary-card, .mv-foundation-card, .mv-goal-card, .mv-form-panel, .mv-form-guide,
+    .kpi-item, .okr-item, .evaluation-summary article,
+    .okr-summary__item, .okr-objective-card, .okr-panel, .mv-summary__item, .ops-summary__item,
+    .project-card, .dashboard-card) {
     border: 1px solid var(--vz-border) !important;
-    border-radius: 4px !important;
+    border-radius: 12px !important;
     background: #fff !important;
-    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.04) !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03) !important;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease !important;
+}
+
+.vietmach-shell :is(.cf-panel, .cf-guide, .cf-section, .evaluation-filter-panel, .evaluation-results,
+    .evaluation-period-card, .detail-section, .settings-group, .info-box, .task-edit-section,
+    .catalog-table-shell, .catalog-pane, .rq-stat-card, .permission-stat-card,
+    .mv-summary-card, .mv-foundation-card, .mv-goal-card, .mv-form-panel, .mv-form-guide,
+    .kpi-item, .okr-item, .evaluation-summary article,
+    .okr-summary__item, .okr-objective-card, .okr-panel, .mv-summary__item, .ops-summary__item,
+    .project-card, .dashboard-card):hover {
+    transform: translateY(-3px) !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.04) !important;
 }
 
 .vietmach-shell :is(.cf-panel__header, .catalog-pane-header, .detail-section-title,
@@ -1060,7 +1260,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     .detail-info-icon, .settings-section-icon, .permission-stat-icon, .rq-stat-icon,
     .evaluation-empty-icon, .mv-foundation-card__icon, .kpi-item-icon, .icon-circle) {
     border: 1px solid color-mix(in srgb, var(--primary) 14%, var(--vz-border)) !important;
-    border-radius: 4px !important;
+    border-radius: 10px !important;
     background: color-mix(in srgb, var(--primary) 8%, #fff) !important;
     color: var(--primary) !important;
     box-shadow: none !important;
@@ -1071,7 +1271,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     .catalog-add-action, .mv-setup-action, .ci-review-button, .role-manage-action) {
     min-height: 34px !important;
     padding: 6px 12px !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     font-size: 0.75rem !important;
     font-weight: 500 !important;
     line-height: 1.35 !important;
@@ -1106,7 +1306,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     min-height: 36px !important;
     padding: 7px 10px !important;
     border: 1px solid #ced4da !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     background: #fff !important;
     color: #212529 !important;
     font-size: 0.8125rem !important;
@@ -1122,8 +1322,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 }
 
 .vietmach-shell :is(.cf-field label, .cf-label-row, .settings-field label, .filter-field label,
-    .evaluation-filter-form label > span:not(.visually-hidden), .info-label, .detail-info-label,
-    .summary-label, .stats-label, .stat-label) {
+    .evaluation-filter-form label > span:not(.visually-hidden), .info-label, .detail-info-label) {
     color: #5f6673 !important;
     font-size: 0.72rem !important;
     font-weight: 500 !important;
@@ -1147,26 +1346,168 @@ html.sidebar-expanded .vietmach-shell .main-content {
     letter-spacing: 0 !important;
 }
 
-.vietmach-shell :is(.evaluation-summary, .okr-summary, .mv-summary, .ops-summary) {
-    overflow: hidden;
-    border: 1px solid var(--vz-border) !important;
-    border-radius: 4px !important;
-    background: #fff !important;
+.vietmach-shell :is(.evaluation-summary, .okr-summary, .mv-summary, .ops-summary, .mv-summary-grid, .system-users-summary, .stat-summary-grid, .catalog-summary) {
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
 }
 
-.vietmach-shell :is(.evaluation-summary article, .okr-summary__item, .mv-summary__item,
-    .ops-summary__item) {
-    padding: 13px 16px !important;
-    border-color: var(--vz-border) !important;
-    background: #fff !important;
+.vietmach-shell :is(.evaluation-summary article, .okr-summary__item, .mv-summary-card, .mv-summary__item,
+    .ops-summary__item, .system-users-summary article) {
+    padding: 14px 18px !important;
+    border: 1px solid var(--vz-border, #e9ebec) !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 14px !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03) !important;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease !important;
 }
 
-.vietmach-shell :is(.evaluation-summary strong, .okr-summary__value, .mv-summary__value,
-    .ops-summary__value, .permission-stat-value, .rq-stat-value, .stats-value, .summary-value) {
-    color: #212529 !important;
+.vietmach-shell :is(.evaluation-summary article, .okr-summary__item, .mv-summary-card, .mv-summary__item,
+    .ops-summary__item, .system-users-summary article):hover {
+    transform: translateY(-3px) !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.04) !important;
+}
+
+.vietmach-shell :is(.evaluation-summary article, .okr-summary__item, .mv-summary-card, .mv-summary__item,
+    .ops-summary__item, .system-users-summary article)::before {
+    display: none !important;
+}
+
+.vietmach-shell :is(.evaluation-summary__icon, .mv-summary-card__icon, .okr-summary__icon, .ops-summary__icon) {
+    order: 2 !important;
+    margin-left: auto !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     font-size: 1.35rem !important;
+    flex-shrink: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.vietmach-shell :is(.evaluation-summary__icon--primary, .mv-summary-card__icon--primary, .stat-icon--primary, .stat-icon.blue, .stat-icon.purple) {
+    background-color: rgba(79, 70, 229, 0.1) !important;
+    color: #4f46e5 !important;
+}
+
+.vietmach-shell :is(.evaluation-summary__icon--success, .mv-summary-card__icon--success, .stat-icon--success, .stat-icon.green, .stat-icon.teal) {
+    background-color: rgba(10, 179, 156, 0.12) !important;
+    color: #0ab39c !important;
+}
+
+.vietmach-shell :is(.evaluation-summary__icon--info, .mv-summary-card__icon--info, .stat-icon--info) {
+    background-color: rgba(53, 119, 241, 0.12) !important;
+    color: #3577f1 !important;
+}
+
+.vietmach-shell :is(.evaluation-summary__icon--warning, .mv-summary-card__icon--warning, .stat-icon--warning, .stat-icon.orange) {
+    background-color: rgba(247, 184, 75, 0.18) !important;
+    color: #d97706 !important;
+}
+
+.vietmach-shell :is(.evaluation-summary__icon--danger, .mv-summary-card__icon--danger, .stat-icon--danger, .stat-icon.red) {
+    background-color: rgba(240, 101, 72, 0.12) !important;
+    color: #f06548 !important;
+}
+
+.vietmach-shell :is(.evaluation-summary__icon--completed, .mv-summary-card__icon--completed, .stat-icon--completed, .stat-icon--secondary) {
+    background-color: rgba(100, 116, 139, 0.12) !important;
+    color: #475569 !important;
+}
+
+.vietmach-shell :is(.evaluation-summary__content, .mv-summary-card__info, .ops-summary__content) {
+    order: 1 !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+}
+
+.vietmach-shell :is(.evaluation-summary strong, .okr-summary__value, .mv-summary__value, .mv-summary-card__value,
+    .ops-summary__value, .permission-stat-value, .rq-stat-value,
+    .ops-summary__item strong, .evaluation-summary article strong) {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    font-variant-numeric: tabular-nums !important;
+    color: #212529 !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+    display: block !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Specific theme colors for stat values */
+.vietmach-shell :is(.evaluation-summary article:nth-child(1) strong, .mv-summary-card:nth-child(1) .mv-summary-card__value, .ops-summary__item--primary strong, .system-users-summary article:nth-child(1) strong) {
+    color: #4f46e5 !important;
+}
+
+.vietmach-shell :is(.evaluation-summary--running strong, .evaluation-summary article:nth-child(2) strong, .mv-summary-card:nth-child(3) .mv-summary-card__value, .ops-summary__item--success strong, .system-users-summary article:nth-child(2) strong) {
+    color: #0ab39c !important;
+}
+
+.vietmach-shell :is(.evaluation-summary--ending strong, .evaluation-summary article:nth-child(4) strong, .mv-summary-card:nth-child(4) .mv-summary-card__value, .ops-summary__item--warning strong, .system-users-summary article:nth-child(3) strong) {
+    color: #d97706 !important;
+}
+
+.vietmach-shell :is(.evaluation-summary--upcoming strong, .evaluation-summary article:nth-child(3) strong, .mv-summary-card:nth-child(2) .mv-summary-card__value, .ops-summary__item--info strong, .system-users-summary article:nth-child(4) strong) {
+    color: #3577f1 !important;
+}
+
+.vietmach-shell :is(.ops-summary__item--danger strong) {
+    color: #f06548 !important;
+}
+
+.vietmach-shell :is(.evaluation-summary article > span:first-child, .evaluation-summary__content > span:first-child, .okr-summary__item .okr-summary__label, .okr-summary__label,
+    .mv-summary-card__label, .mv-summary__label, .ops-summary__label, .ops-summary__item span:first-child, .stat-label, .stats-label, .summary-label, .summary-head span) {
+    display: block !important;
+    color: #64748b !important;
+    font-size: 0.75rem !important;
     font-weight: 600 !important;
-    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em !important;
+    text-transform: uppercase !important;
+    margin-bottom: 4px !important;
+    line-height: 1.25 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.vietmach-shell :is(.evaluation-summary__meta, .evaluation-summary article p, .evaluation-summary article .meta-text, .evaluation-summary__subtext) {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin: 4px 0 0 0 !important;
+    font-size: 0.75rem !important;
+    color: #878a99 !important;
+    font-weight: 400 !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    line-height: 1.25 !important;
+}
+
+.vietmach-shell :is(.evaluation-summary__meta span:not(.badge), .evaluation-summary article p span:not(.badge), .evaluation-summary article small, .evaluation-summary small) {
+    display: inline !important;
+    color: #878a99 !important;
+    font-size: 0.75rem !important;
+    font-weight: 400 !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    margin: 0 !important;
+    line-height: normal !important;
+    white-space: normal !important;
 }
 
 .vietmach-shell :is(.evaluation-table, .catalog-table, .data-table) {
@@ -1187,6 +1528,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     font-weight: 600 !important;
     letter-spacing: 0.035em !important;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .vietmach-shell :is(.evaluation-table, .catalog-table, .data-table) td {
@@ -1202,7 +1544,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     min-width: 34px !important;
     padding: 0 !important;
     border: 1px solid #dfe3e8 !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     background: #fff !important;
     color: #495057 !important;
     transform: none !important;
@@ -1219,7 +1561,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     .okr-risk-badge, .meta-chip, .okr-chip, .quick-chip, .ai-task-meta-chip) {
     min-height: 24px !important;
     padding: 3px 7px !important;
-    border-radius: 3px !important;
+    border-radius: 6px !important;
     font-size: 0.6875rem !important;
     font-weight: 500 !important;
     letter-spacing: 0 !important;
@@ -1230,7 +1572,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     min-height: 32px !important;
     padding: 5px 9px !important;
     border: 1px solid var(--vz-border) !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     background: #fff !important;
     color: #495057 !important;
     font-size: 0.72rem !important;
@@ -1266,18 +1608,18 @@ html.sidebar-expanded .vietmach-shell .main-content {
 .vietmach-shell :is(.evaluation-modal, .catalog-modal, .modal-content,
     .modal-header-soft, .modal-body-soft) {
     border-color: var(--vz-border) !important;
-    border-radius: 5px !important;
+    border-radius: 14px !important;
     background: #fff !important;
-    box-shadow: none;
+    box-shadow: 0 16px 36px rgba(30, 41, 59, 0.16) !important;
 }
 
 .vietmach-shell :is(.dept-banner, .registration-card, .review-board-banner,
     .kpi-hero, .project-hero, .okr-hero) {
     border: 1px solid var(--vz-border) !important;
-    border-radius: 4px !important;
+    border-radius: 12px !important;
     background: #fff !important;
     color: #212529 !important;
-    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.04) !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03) !important;
 }
 
 .vietmach-shell :is(.dept-banner, .registration-card, .review-board-banner,
@@ -1358,9 +1700,10 @@ html.sidebar-expanded .vietmach-shell .main-content {
     width: min(100%, 560px);
     margin-inline: auto;
     border: 1px solid var(--vz-border) !important;
-    border-radius: 6px !important;
+    border-radius: 14px !important;
     background: #fff !important;
-    box-shadow: 0 5px 18px rgba(30, 41, 59, 0.08) !important;
+    box-shadow: 0 8px 28px rgba(30, 41, 59, 0.08) !important;
+    overflow: hidden;
 }
 
 .vietmach-auth .auth-status-card {
@@ -1373,7 +1716,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     display: inline-grid;
     place-items: center;
     border: 1px solid currentColor;
-    border-radius: 5px;
+    border-radius: 10px;
     background: color-mix(in srgb, currentColor 8%, #fff);
     font-size: 1.35rem;
 }
@@ -1388,7 +1731,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 .vietmach-auth :is(.form-control, .form-select) {
     min-height: 40px;
     border: 1px solid #ced4da;
-    border-radius: 4px;
+    border-radius: 8px;
     background: #fff;
     font-size: 0.8125rem;
 }
@@ -1401,7 +1744,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 .vietmach-auth .btn {
     min-height: 38px;
     padding: 7px 13px;
-    border-radius: 4px;
+    border-radius: 8px;
     font-size: 0.75rem;
     font-weight: 500;
 }
@@ -1452,7 +1795,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     .pricing-btn, .lp-cart-btn) {
     min-height: 38px !important;
     padding: 8px 14px !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     font-size: 0.78rem !important;
     font-weight: 500 !important;
     transform: none !important;
@@ -1544,9 +1887,9 @@ html.sidebar-expanded .vietmach-shell .main-content {
 .vietmach-public :is(.bento-card, .pricing-card, .lp-tabs-body, .stat-item,
     .purchase-card, .history-card, .registration-card) {
     border: 1px solid var(--vz-public-border) !important;
-    border-radius: 4px !important;
+    border-radius: 12px !important;
     background: #fff !important;
-    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.04) !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03) !important;
     transform: none !important;
 }
 
@@ -1557,7 +1900,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 
 .vietmach-public :is(.bento-icon, .wf-step-num, .catalog-pane-icon) {
     border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--vz-public-border)) !important;
-    border-radius: 4px !important;
+    border-radius: 10px !important;
     background: color-mix(in srgb, var(--primary) 8%, #fff) !important;
     color: var(--primary) !important;
     box-shadow: none !important;
@@ -1566,7 +1909,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 .vietmach-public :is(.bento-visual, .bv-ai, .bv-tree, .bv-bonus, .bv-chart,
     .bv-log, .bv-lock) {
     border-color: var(--vz-public-border) !important;
-    border-radius: 4px !important;
+    border-radius: 10px !important;
     background: #f3f6f9 !important;
     background-image: none !important;
 }
@@ -1577,12 +1920,12 @@ html.sidebar-expanded .vietmach-shell .main-content {
 }
 
 .vietmach-public :is(.bv-msg.user, .bv-msg.bot) {
-    border-radius: 4px !important;
+    border-radius: 8px !important;
 }
 
 .vietmach-public :is(.lp-tab-btn, .catalog-tab) {
     border: 1px solid var(--vz-public-border) !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     background: #fff !important;
     color: #495057 !important;
     transform: none !important;
@@ -1647,43 +1990,78 @@ html.sidebar-expanded .vietmach-shell .main-content {
     }
 }
 
-/* Specific Filter Form fixes for Search Icon, Select Arrows, and Button Alignment */
 .vietmach-shell .evaluation-filter-form {
     display: flex !important;
     flex-wrap: wrap !important;
     align-items: flex-end !important;
     gap: 12px !important;
+    width: 100% !important;
     margin-top: 0.9rem !important;
 }
 
 .vietmach-shell .evaluation-search-field {
-    position: relative !important;
-    flex: 1 1 240px !important;
-    min-width: 220px !important;
+    flex: 2 1 240px !important;
+    min-width: 180px !important;
     margin-bottom: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    gap: 4px !important;
 }
 
-.vietmach-shell .evaluation-search-field i {
+.vietmach-shell .evaluation-filter-form label:not(.evaluation-search-field) {
+    flex: 1 1 150px !important;
+    min-width: 120px !important;
+}
+
+.vietmach-shell .evaluation-filter-form label:is(:has(select[name*="department" i]), :has(select[id*="department" i]), :has(select[name*="dept" i]), .filter-field--department) {
+    flex: 2 1 280px !important;
+    min-width: 220px !important;
+}
+
+.vietmach-shell :is(.evaluation-search-input-wrap, .kpi-search-input-wrap, .ci-search-input-wrap, .bonus-search-input-wrap) {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+.vietmach-shell :is(.evaluation-search-input-wrap, .kpi-search-input-wrap, .ci-search-input-wrap, .bonus-search-input-wrap) i,
+.vietmach-shell .evaluation-search-field > i {
     position: absolute !important;
     left: 10px !important;
     top: 50% !important;
     transform: translateY(-50%) !important;
     bottom: auto !important;
-    color: var(--vz-muted) !important;
+    color: var(--vz-muted, #878a99) !important;
     font-size: 0.9rem !important;
     pointer-events: none !important;
     z-index: 5 !important;
 }
 
+.vietmach-shell :is(.evaluation-search-input-wrap, .kpi-search-input-wrap, .ci-search-input-wrap, .bonus-search-input-wrap) input,
 .vietmach-shell .evaluation-search-field input {
     padding-left: 32px !important;
     height: 36px !important;
     min-height: 36px !important;
+    width: 100% !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #212529 !important;
+    font-size: 0.84rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+}
+
+.vietmach-shell :is(.evaluation-search-input-wrap, .kpi-search-input-wrap, .ci-search-input-wrap, .bonus-search-input-wrap) input:focus,
+.vietmach-shell .evaluation-search-field input:focus {
+    border-color: var(--eval-period-primary, #556ee6) !important;
+    box-shadow: 0 0 0 3.5px rgba(85, 110, 230, 0.18) !important;
 }
 
 .vietmach-shell .evaluation-filter-form label {
-    flex: 1 1 140px !important;
-    min-width: 130px !important;
     margin-bottom: 0 !important;
     display: flex !important;
     flex-direction: column !important;
@@ -1699,13 +2077,52 @@ html.sidebar-expanded .vietmach-shell .main-content {
 }
 
 .vietmach-shell .evaluation-filter-form select,
-.vietmach-shell select.no-select2 {
+.vietmach-shell select.no-select2,
+.vietmach-shell select,
+.vietmach-shell .form-select {
     height: 36px !important;
     min-height: 36px !important;
-    padding-right: 28px !important;
-    padding-left: 10px !important;
-    background-position: right 8px center !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 8px !important;
+    padding-right: 2.25rem !important;
+    padding-left: 0.75rem !important;
+    font-size: 0.8125rem !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-color: #fff !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23405189' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.75rem center !important;
+    background-size: 10px 10px !important;
+    color: #878a99 !important;
+    font-weight: 400 !important;
+    cursor: pointer !important;
     box-sizing: border-box !important;
+    transition: color 0.18s ease, font-weight 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+.vietmach-shell .evaluation-filter-form select:has(option:checked:not([value=""]):not([value="all"])),
+.vietmach-shell select.no-select2:has(option:checked:not([value=""]):not([value="all"])),
+.vietmach-shell select:has(option:checked:not([value=""]):not([value="all"])),
+.vietmach-shell select.is-selected {
+    color: #172033 !important;
+    font-weight: 600 !important;
+}
+
+.vietmach-shell select option {
+    color: #212529 !important;
+    font-weight: 500 !important;
+}
+
+.vietmach-shell select option[value=""],
+.vietmach-shell select option[value="all"] {
+    color: #878a99 !important;
+    font-weight: 400 !important;
+}
+
+.vietmach-shell select:hover {
+    border-color: #cbd5e1 !important;
 }
 
 .vietmach-shell .evaluation-filter-button {
@@ -1791,7 +2208,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     justify-content: center !important;
     gap: 0.35rem !important;
     padding: 0 0.75rem !important;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     font-family: inherit;
     font-size: 0.75rem !important;
     font-weight: 600 !important;
@@ -1890,7 +2307,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 }
 
 .vietmach-shell .table-responsive.management-scrollable-table {
-    border-radius: 4px;
+    border-radius: 12px;
     box-shadow: inset -12px 0 12px -16px rgba(33, 37, 41, 0.45);
 }
 
@@ -1914,7 +2331,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     min-height: 34px;
     display: inline-grid;
     place-items: center;
-    border-radius: 4px !important;
+    border-radius: 8px !important;
     color: #495057;
     font-size: 0.75rem;
 }
@@ -2028,4 +2445,12 @@ html.sidebar-expanded .vietmach-shell .main-content {
         animation: none !important;
         border-right-color: currentColor;
     }
+}
+
+/* Ensure icons never carry an unwanted white rectangular background */
+.vietmach-shell :is(.avatar-title, .avatar-sm, .avatar-xs, .avatar-md, .avatar-lg, .summary-stat-card, .evaluation-page, .ci-state, .badge, .btn, .stat-icon, .dashboard-stat-icon) :is(i, .bi, [class*="bi-"]) {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
 }

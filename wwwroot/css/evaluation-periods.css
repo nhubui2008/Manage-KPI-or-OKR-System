@@ -8,7 +8,8 @@
     --eval-period-ink: #495057;
     --eval-period-heading: #343a40;
     --eval-period-muted: #878a99;
-    --eval-period-radius: 4px;
+    --eval-period-radius: 12px;
+    --eval-period-radius-sm: 8px;
 }
 
 .evaluation-page {
@@ -59,15 +60,18 @@
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    height: 34px;
-    padding: 0 0.85rem;
-    font-size: 0.8125rem;
+    height: 36px;
+    min-height: 36px;
+    padding: 0 0.95rem;
+    font-size: 0.84rem;
     font-weight: 600;
     border-radius: var(--eval-period-radius);
     border: 1px solid transparent;
     text-decoration: none;
     cursor: pointer;
     white-space: nowrap;
+    box-sizing: border-box;
+    align-self: flex-end;
     transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -115,41 +119,107 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 1rem;
     margin: 1rem 0;
+    background: transparent;
+    border: 0;
 }
 
 .evaluation-summary article {
     background: var(--eval-period-card-bg);
     border: 1px solid var(--eval-period-border);
     border-radius: var(--eval-period-radius);
-    padding: 1rem 1.25rem;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+}
+
+.evaluation-summary article:hover {
+    transform: translateY(-3px);
+    border-color: #cbd5e1;
+    box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.04);
+}
+
+.evaluation-summary__icon {
+    order: 2;
+    margin-left: auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+.evaluation-summary__icon--primary {
+    background-color: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+}
+
+.evaluation-summary__icon--success {
+    background-color: rgba(10, 179, 156, 0.1);
+    color: #0ab39c;
+}
+
+.evaluation-summary__icon--info {
+    background-color: rgba(53, 119, 241, 0.1);
+    color: #3577f1;
+}
+
+.evaluation-summary__icon--warning {
+    background-color: rgba(247, 184, 75, 0.15);
+    color: #d97706;
+}
+
+.evaluation-summary__icon--completed {
+    background-color: rgba(100, 116, 139, 0.1);
+    color: #475569;
+}
+
+.evaluation-summary__content {
+    order: 1;
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
+    justify-content: center;
 }
 
 .evaluation-summary span {
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: var(--eval-period-muted);
+    color: #64748b;
+    margin-bottom: 3px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .evaluation-summary strong {
-    font-size: 1.5rem;
+    font-size: 1.375rem;
     font-weight: 700;
-    color: var(--eval-period-heading);
-    margin: 0.35rem 0 0.15rem;
+    font-variant-numeric: tabular-nums;
+    color: #212529;
+    line-height: 1.2;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.evaluation-summary small {
-    font-size: 0.75rem;
-    color: var(--eval-period-muted);
-}
-
+.evaluation-summary article:nth-child(1) strong { color: #4f46e5; }
 .evaluation-summary--running strong { color: #0ab39c; }
 .evaluation-summary--upcoming strong { color: #3577f1; }
-.evaluation-summary--ending strong { color: #f7b84b; }
-.evaluation-summary--completed strong { color: #878a99; }
+.evaluation-summary--ending strong { color: #d97706; }
+.evaluation-summary--completed strong { color: #475569; }
 
 /* Filter Panel */
 .evaluation-filter-panel {
@@ -158,6 +228,13 @@
     border-radius: var(--eval-period-radius);
     padding: 1rem 1.25rem;
     margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+}
+
+.evaluation-filter-panel:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 8px 24px -2px rgba(15, 23, 42, 0.08);
 }
 
 .evaluation-filter-heading {
@@ -208,6 +285,18 @@
     color: var(--eval-period-heading);
 }
 
+.evaluation-filter-form label:not(.evaluation-search-field) {
+    flex: 0 1 155px;
+    min-width: 125px;
+    max-width: 175px;
+}
+
+.evaluation-search-field {
+    position: relative;
+    flex: 1 1 280px;
+    min-width: 220px;
+}
+
 .evaluation-search-field input[type="search"] {
     height: 36px;
     border: 1px solid var(--eval-period-border);
@@ -216,11 +305,7 @@
     font-size: 0.8125rem;
     color: var(--eval-period-ink);
     background-color: #ffffff;
-    width: 220px;
-}
-
-.evaluation-search-field {
-    position: relative;
+    width: 100%;
 }
 
 .evaluation-search-field i {
@@ -233,21 +318,36 @@
 }
 
 .evaluation-filter-form select {
-    height: 36px;
-    border: 1px solid var(--eval-period-border);
-    border-radius: var(--eval-period-radius);
-    padding: 0 0.75rem;
-    font-size: 0.8125rem;
-    color: var(--eval-period-ink);
-    background-color: #ffffff;
-    min-width: 140px;
+    height: 36px !important;
+    min-height: 36px !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 8px !important;
+    padding: 0 2.15rem 0 0.75rem !important;
+    font-size: 0.84rem !important;
+    color: #878a99 !important;
+    background-color: #ffffff !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23405189' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.75rem center !important;
+    background-size: 10px 10px !important;
+    cursor: pointer !important;
+    transition: color 0.18s ease, font-weight 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+.evaluation-filter-form select:has(option:checked:not([value=""]):not([value="all"])),
+.evaluation-filter-form select.is-selected {
+    color: #172033 !important;
+    font-weight: 600 !important;
 }
 
 .evaluation-filter-form select:focus,
 .evaluation-search-field input:focus {
     border-color: var(--eval-period-primary);
     outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(85, 110, 230, 0.15);
+    box-shadow: 0 0 0 3px rgba(85, 110, 230, 0.18);
 }
 
 /* Quick Filters Chips */
@@ -379,6 +479,64 @@
     display: block;
     font-size: 0.75rem;
     color: var(--eval-period-muted);
+}
+
+/* Operational Status Badges */
+.evaluation-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.evaluation-status span:first-child,
+.evaluation-status [aria-hidden="true"] {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.evaluation-status--running {
+    background: #ecfdf5;
+    color: #059669;
+    border-color: #a7f3d0;
+}
+
+.evaluation-status--upcoming {
+    background: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+}
+
+.evaluation-status--ending {
+    background: #fffbeb;
+    color: #d97706;
+    border-color: #fde68a;
+}
+
+.evaluation-status--completed {
+    background: #f1f5f9;
+    color: #64748b;
+    border-color: #cbd5e1;
+}
+
+.evaluation-config-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
 }
 
 .evaluation-date-range {

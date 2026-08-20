@@ -41,31 +41,58 @@
     </div>
 
     <!-- Stats -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-success border-4">
-                <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">TỔNG DOANH THU</div>
-                <div class="stat-value h3 mb-0 fw-bold text-dark mt-2">@totalRevenue.ToString("N0") ₫</div>
-                <div class="mt-2 text-success fw-bold" style="font-size: 0.8rem;">
-                    Dữ liệu thực tế từ Database
+    <div class="row g-3 mb-3">
+        <div class="col-xl-4 col-md-6">
+            <div class="card card-animate summary-stat-card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1 min-w-0">
+                            <p class="text-uppercase fw-semibold text-muted text-truncate fs-11 mb-0">Tổng doanh thu</p>
+                            <h4 class="fs-18 fw-bold mb-0 text-success">@totalRevenue.ToString("N0") ₫</h4>
+                        </div>
+                        <div class="avatar-sm flex-shrink-0 ms-2">
+                            <span class="avatar-title bg-success-subtle text-success rounded-2">
+                                <i class="bi bi-cash-stack"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-muted text-truncate fs-11 mb-0 mt-1"><span class="badge bg-success-subtle text-success"><i class="bi bi-database-check me-1"></i> Thực tế</span> Dữ liệu từ Database</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-primary border-4">
-                <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">DOANH THU MRR (THÁNG NÀY)</div>
-                <div class="stat-value h3 mb-0 fw-bold text-dark mt-2">@mrr.ToString("N0") ₫</div>
-                <div class="mt-2 text-primary fw-bold" style="font-size: 0.8rem;">
-                    Doanh thu định kỳ
+        <div class="col-xl-4 col-md-6">
+            <div class="card card-animate summary-stat-card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1 min-w-0">
+                            <p class="text-uppercase fw-semibold text-muted text-truncate fs-11 mb-0">Doanh thu MRR (Tháng này)</p>
+                            <h4 class="fs-18 fw-bold mb-0 text-primary">@mrr.ToString("N0") ₫</h4>
+                        </div>
+                        <div class="avatar-sm flex-shrink-0 ms-2">
+                            <span class="avatar-title bg-primary-subtle text-primary rounded-2">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-muted text-truncate fs-11 mb-0 mt-1"><span class="badge bg-primary-subtle text-primary"><i class="bi bi-arrow-repeat me-1"></i> Định kỳ</span> Doanh thu định kỳ hàng tháng</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="stat-card p-3 border rounded shadow-sm h-100 bg-white border-start border-warning border-4">
-                <div class="stat-label text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">ARPU (DOANH THU/KHÁCH)</div>
-                <div class="stat-value h3 mb-0 fw-bold text-dark mt-2">@arpu.ToString("N0") ₫</div>
-                <div class="mt-2 text-muted" style="font-size: 0.8rem;">
-                    Trung bình trên 1 khách hàng active
+        <div class="col-xl-4 col-md-6">
+            <div class="card card-animate summary-stat-card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body py-2 px-3 d-flex flex-column justify-content-center">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1 min-w-0">
+                            <p class="text-uppercase fw-semibold text-muted text-truncate fs-11 mb-0">ARPU (Doanh thu / Khách)</p>
+                            <h4 class="fs-18 fw-bold mb-0 text-warning">@arpu.ToString("N0") ₫</h4>
+                        </div>
+                        <div class="avatar-sm flex-shrink-0 ms-2">
+                            <span class="avatar-title bg-warning-subtle text-warning rounded-2">
+                                <i class="bi bi-person-check"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-muted text-truncate fs-11 mb-0 mt-1"><span class="badge bg-warning-subtle text-warning"><i class="bi bi-calculator me-1"></i> Trung bình</span> Trên 1 khách hàng active</p>
                 </div>
             </div>
         </div>

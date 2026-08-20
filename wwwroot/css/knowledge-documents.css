@@ -1,0 +1,1009 @@
+/* ==========================================================================
+   AI & RAG OPERATIONS HUB (Vận hành AI và Kho tri thức RAG)
+   Enterprise Modern Theme · Glassmorphic Deck · Interactive ACL Matrix
+   ========================================================================== */
+
+:root {
+    --rag-primary: #4f46e5;
+    --rag-primary-hover: #4338ca;
+    --rag-primary-light: #eef2ff;
+    --rag-secondary: #06b6d4;
+    --rag-accent: #7c3aed;
+    --rag-success: #10b981;
+    --rag-success-light: #ecfdf5;
+    --rag-warning: #f59e0b;
+    --rag-warning-light: #fffbeb;
+    --rag-danger: #ef4444;
+    --rag-danger-light: #fef2f2;
+    --rag-info: #0284c7;
+    --rag-info-light: #f0f9ff;
+    --rag-dark: #1e293b;
+    --rag-gray: #64748b;
+    --rag-gray-light: #f8fafc;
+    --rag-border: #e2e8f0;
+    --rag-card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+    --rag-card-hover-shadow: 0 12px 28px -4px rgba(79, 70, 229, 0.15), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+}
+
+.rag-page-container {
+    padding-bottom: 3rem;
+}
+
+/* ==========================================================================
+   1. HERO BANNER - MODERN WHITE CARD THEME
+   ========================================================================== */
+
+.rag-hero-card {
+    position: relative !important;
+    overflow: hidden !important;
+    padding: 22px 26px !important;
+    border-radius: 14px !important;
+    background: #ffffff !important;
+    color: var(--rag-dark) !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 6px 16px -2px rgba(15, 23, 42, 0.04) !important;
+    border: 1px solid var(--rag-border) !important;
+    margin-bottom: 1.25rem !important;
+}
+
+.rag-hero-content {
+    position: relative !important;
+    z-index: 1 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 18px !important;
+}
+
+.rag-hero-kicker {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    padding: 4px 12px !important;
+    border-radius: 999px !important;
+    background: #eef2ff !important;
+    color: #4f46e5 !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+    margin-bottom: 6px !important;
+    border: 1px solid #c7d2fe !important;
+}
+
+.rag-hero-kicker.success,
+.rag-hero-kicker-success {
+    background: #ecfdf5 !important;
+    border: 1px solid #a7f3d0 !important;
+    color: #065f46 !important;
+}
+
+.rag-hero-kicker.warning,
+.rag-hero-kicker-warning {
+    background: #fffbeb !important;
+    border: 1px solid #fde68a !important;
+    color: #92400e !important;
+}
+
+.rag-hero-title {
+    font-size: 1.35rem !important;
+    font-weight: 800 !important;
+    color: #1e293b !important;
+    margin: 0 0 4px !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.015em !important;
+    text-shadow: none !important;
+}
+
+.rag-hero-copy {
+    max-width: 700px !important;
+    color: #64748b !important;
+    font-size: 0.85rem !important;
+    line-height: 1.55 !important;
+    margin-bottom: 0 !important;
+}
+
+/* RIGHT SUMMARY CARD */
+.rag-hero-summary {
+    min-width: 230px !important;
+    padding: 16px 20px !important;
+    border-radius: 12px !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+    color: #1e293b !important;
+}
+
+.rag-hero-summary-label {
+    font-size: 0.72rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    color: #64748b !important;
+    font-weight: 700 !important;
+}
+
+.rag-hero-summary-value {
+    margin: 4px 0 !important;
+    font-size: 1.85rem !important;
+    line-height: 1.15 !important;
+    font-weight: 800 !important;
+    color: #1e293b !important;
+    letter-spacing: -0.02em !important;
+}
+
+.rag-hero-progress {
+    width: 100% !important;
+    height: 7px !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+    background: #e2e8f0 !important;
+    border: none !important;
+    margin-top: 6px !important;
+}
+
+.rag-hero-progress > div {
+    height: 100% !important;
+    border-radius: inherit !important;
+    background: linear-gradient(90deg, var(--rag-primary, #4f46e5) 0%, #06b6d4 100%) !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    transform-origin: left !important;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.rag-hero-summary-meta {
+    margin-top: 8px !important;
+    color: #64748b !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+}
+
+.rag-hero-card .text-warning,
+.rag-hero-summary-meta .text-warning {
+    color: #d97706 !important;
+}
+
+.rag-hero-card .text-success,
+.rag-hero-summary-meta .text-success {
+    color: #059669 !important;
+}
+
+/* HERO ACTION BUTTONS (SOFT/OUTLINE ON WHITE) */
+.rag-hero-card .btn.rag-hero-btn-glass,
+.rag-hero-card .rag-hero-btn-glass,
+.rag-hero-btn-glass,
+a.rag-hero-btn-glass,
+button.rag-hero-btn-glass {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    background: #f8fafc !important;
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #475569 !important;
+    font-weight: 600 !important;
+    font-size: 0.8125rem !important;
+    line-height: 1.5 !important;
+    padding: 0.38rem 1rem !important;
+    border-radius: 999px !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease-in-out !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.rag-hero-card .btn.rag-hero-btn-glass:hover,
+.rag-hero-card .btn.rag-hero-btn-glass:focus,
+.rag-hero-card .rag-hero-btn-glass:hover,
+.rag-hero-card .rag-hero-btn-glass:focus,
+.rag-hero-btn-glass:hover,
+.rag-hero-btn-glass:focus,
+a.rag-hero-btn-glass:hover,
+a.rag-hero-btn-glass:focus {
+    background: #eef2ff !important;
+    background-color: #eef2ff !important;
+    color: #4338ca !important;
+    border-color: #c7d2fe !important;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.15) !important;
+    transform: translateY(-1px) !important;
+}
+
+.rag-hero-card .btn.rag-hero-btn-glass i,
+.rag-hero-card .rag-hero-btn-glass i,
+.rag-hero-btn-glass i,
+a.rag-hero-btn-glass i {
+    color: #6366f1 !important;
+    font-size: 0.875rem !important;
+    display: inline-block !important;
+    transition: color 0.2s ease;
+}
+
+.rag-hero-card .btn.rag-hero-btn-glass:hover i,
+.rag-hero-btn-glass:hover i {
+    color: #4338ca !important;
+}
+
+.rag-pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #10b981;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: rag-pulse 2s infinite;
+    display: inline-block;
+}
+
+.rag-pulse-dot.warning {
+    background-color: #f59e0b;
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+    animation: rag-pulse-warning 2s infinite;
+}
+
+.rag-pulse-dot.danger {
+    background-color: #ef4444;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+}
+
+@keyframes rag-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+@keyframes rag-pulse-warning {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    }
+}
+
+/* ==========================================================================
+   2. TOP STAT DECK (KPI CARDS)
+   ========================================================================== */
+
+.rag-stat-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid var(--rag-border);
+    box-shadow: var(--rag-card-shadow);
+    padding: 0.95rem 1.15rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.rag-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--rag-card-hover-shadow);
+    border-color: #c7d2fe;
+}
+
+.rag-stat-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--rag-primary), var(--rag-secondary));
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.rag-stat-card:hover::after {
+    opacity: 1;
+}
+
+.rag-stat-icon-wrapper {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    margin-bottom: 0.5rem;
+    transition: transform 0.25s ease;
+}
+
+.rag-stat-card:hover .rag-stat-icon-wrapper {
+    transform: scale(1.06);
+}
+
+.rag-stat-icon-primary {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(99, 102, 241, 0.22));
+    color: var(--rag-primary);
+}
+
+.rag-stat-icon-info {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(14, 165, 233, 0.22));
+    color: #0284c7;
+}
+
+.rag-stat-icon-warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(251, 191, 36, 0.22));
+    color: #d97706;
+}
+
+.rag-stat-icon-success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(52, 211, 153, 0.22));
+    color: #059669;
+}
+
+.rag-stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: var(--rag-dark);
+}
+
+.rag-stat-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--rag-gray);
+    margin-top: 0.15rem;
+}
+
+.rag-stat-subtext {
+    font-size: 0.74rem;
+    color: #94a3b8;
+    margin-top: 0.35rem;
+}
+
+/* ==========================================================================
+   3. NAVIGATION TABS (COCKPIT CONTROLLER)
+   ========================================================================== */
+
+.rag-nav-container {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 0.5rem;
+    border: 1px solid var(--rag-border);
+    box-shadow: var(--rag-card-shadow);
+    margin-bottom: 1.5rem;
+}
+
+.rag-nav-pills {
+    gap: 0.35rem;
+}
+
+.rag-nav-pills .nav-link {
+    border-radius: 10px;
+    padding: 0.65rem 1.15rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--rag-gray);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+}
+
+.rag-nav-pills .nav-link:hover {
+    color: var(--rag-primary);
+    background: var(--rag-primary-light);
+}
+
+.rag-nav-pills .nav-link.active {
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--rag-primary) 0%, #4338ca 100%);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.rag-nav-pills .nav-link .badge {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+}
+
+.rag-nav-pills .nav-link.active .badge {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+
+/* ==========================================================================
+   4. CONTENT PANELS & CARDS
+   ========================================================================== */
+
+.rag-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid var(--rag-border);
+    box-shadow: var(--rag-card-shadow);
+    margin-bottom: 1.75rem;
+    overflow: hidden;
+    transition: box-shadow 0.25s ease;
+}
+
+.rag-card-header {
+    background: #ffffff;
+    padding: 1rem 1.35rem;
+    border-bottom: 1px solid var(--rag-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.rag-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--rag-dark);
+    margin-bottom: 0.15rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.rag-card-subtitle {
+    font-size: 0.82rem;
+    color: var(--rag-gray);
+    margin-bottom: 0;
+}
+
+.rag-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+}
+
+.rag-card-actions .btn {
+    white-space: nowrap !important;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+}
+
+.rag-card-body {
+    padding: 1.25rem 1.35rem;
+}
+
+.rag-card-footer {
+    background: #f8fafc;
+    padding: 0.85rem 1.35rem;
+    border-top: 1px solid var(--rag-border);
+    font-size: 0.82rem;
+    color: var(--rag-gray);
+}
+
+/* ==========================================================================
+   5. UPLOAD DROPZONE & FILE INPUT
+   ========================================================================== */
+
+.rag-upload-dropzone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+}
+
+.rag-upload-dropzone:hover,
+.rag-upload-dropzone.dragover {
+    border-color: var(--rag-primary);
+    background: var(--rag-primary-light);
+}
+
+.rag-upload-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(99, 102, 241, 0.2));
+    color: var(--rag-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+    transition: transform 0.25s ease;
+}
+
+.rag-upload-dropzone:hover .rag-upload-icon {
+    transform: translateY(-4px) scale(1.05);
+}
+
+.rag-file-pill {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin: 0.15rem;
+    letter-spacing: 0.5px;
+}
+
+.rag-file-pdf { background: #fee2e2; color: #dc2626; }
+.rag-file-word { background: #dbeafe; color: #2563eb; }
+.rag-file-excel { background: #dcfce7; color: #16a34a; }
+.rag-file-ppt { background: #ffedd5; color: #ea580c; }
+.rag-file-img { background: #f3e8ff; color: #9333ea; }
+
+/* ==========================================================================
+   6. ACL MATRIX SELECTOR (Multi-Faceted Permissions)
+   ========================================================================== */
+
+.rag-acl-box {
+    background: #f8fafc;
+    border: 1px solid var(--rag-border);
+    border-radius: 14px;
+    padding: 1.15rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.rag-acl-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+}
+
+.rag-acl-box-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--rag-dark);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.rag-acl-badge-count {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 50rem;
+}
+
+.rag-acl-search {
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+
+.rag-acl-search input {
+    border-radius: 8px;
+    font-size: 0.82rem;
+    padding-left: 1.85rem;
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+}
+
+.rag-acl-search i {
+    position: absolute;
+    left: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 0.8rem;
+    pointer-events: none;
+}
+
+.rag-acl-list {
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 0.35rem;
+    flex: 1;
+}
+
+.rag-acl-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.rag-acl-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.rag-acl-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.4rem;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+}
+
+.rag-acl-item:hover {
+    border-color: #a5b4fc;
+    background: #fdfefe;
+}
+
+.rag-acl-item .form-check-input {
+    margin-top: 0;
+    cursor: pointer;
+}
+
+.rag-acl-item .form-check-label {
+    font-size: 0.83rem;
+    font-weight: 500;
+    color: #334155;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 0;
+    width: 100%;
+}
+
+.rag-acl-quick-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.rag-acl-quick-btn {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--rag-primary);
+    background: transparent;
+    border: none;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.rag-acl-quick-btn:hover {
+    background: var(--rag-primary-light);
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   7. KNOWLEDGE SOURCES ACCORDION & CARDS
+   ========================================================================== */
+
+.rag-source-item {
+    border: 1px solid var(--rag-border);
+    border-radius: 14px;
+    margin-bottom: 1rem;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.rag-source-item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+}
+
+.rag-source-header-btn {
+    width: 100%;
+    padding: 1.15rem 1.35rem;
+    background: #ffffff;
+    border: none;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.rag-source-header-btn:hover {
+    background: #f8fafc;
+}
+
+.rag-source-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--rag-dark);
+    margin-bottom: 0.2rem;
+}
+
+.rag-source-meta {
+    font-size: 0.8rem;
+    color: var(--rag-gray);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.rag-source-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.rag-sha-chip {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.72rem;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.rag-version-table {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.rag-version-table thead th {
+    background: #f8fafc;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+}
+
+.rag-version-table tbody td {
+    padding: 0.85rem 1rem;
+    font-size: 0.85rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* ==========================================================================
+   8. AI OUTBOX QUEUE TABLE
+   ========================================================================== */
+
+.rag-queue-table {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.rag-queue-table thead th {
+    background: #f8fafc;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.85rem 1rem;
+}
+
+.rag-queue-table tbody td {
+    padding: 0.95rem 1rem;
+    font-size: 0.85rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.rag-queue-table tbody tr:hover td {
+    background: #f8fafc;
+}
+
+.rag-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 50rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+.rag-status-success {
+    background: var(--rag-success-light);
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.rag-status-primary {
+    background: var(--rag-primary-light);
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+}
+
+.rag-status-info {
+    background: var(--rag-info-light);
+    color: #075985;
+    border: 1px solid #bae6fd;
+}
+
+.rag-status-warning {
+    background: var(--rag-warning-light);
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.rag-status-danger {
+    background: var(--rag-danger-light);
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.rag-status-secondary {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+/* ==========================================================================
+   9. TELEMETRY & CALIBRATION GAUGES
+   ========================================================================== */
+
+.rag-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (max-width: 1200px) {
+    .rag-metric-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .rag-metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
+    .rag-metric-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.rag-metric-tile {
+    background: #ffffff;
+    border: 1px solid var(--rag-border);
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rag-metric-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    border-color: #cbd5e1;
+}
+
+.rag-metric-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+    line-height: 1.25;
+    min-height: 2.5em;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.rag-metric-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--rag-dark);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rag-metric-subtext {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    line-height: 1.25;
+    margin-top: auto;
+}
+
+.rag-progress {
+    height: 6px;
+    border-radius: 50rem;
+    background-color: #e2e8f0;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.rag-progress-bar {
+    height: 100%;
+    border-radius: 50rem;
+    background: linear-gradient(90deg, var(--rag-primary), var(--rag-secondary));
+    transition: width 0.6s ease;
+}
+
+.rag-confidence-band-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.rag-band-high {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.rag-band-moderate {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.rag-band-abstain {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+/* ==========================================================================
+   10. RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+
+@media (max-width: 991.98px) {
+    .rag-hero-card {
+        padding: 1.5rem;
+    }
+    .rag-hero-title {
+        font-size: 1.35rem;
+    }
+    .rag-nav-pills {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 0.25rem;
+    }
+    .rag-nav-pills .nav-link {
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .rag-hero-card {
+        padding: 1.25rem 1rem;
+    }
+    .rag-stat-card {
+        padding: 1rem;
+    }
+    .rag-stat-value {
+        font-size: 1.5rem;
+    }
+}

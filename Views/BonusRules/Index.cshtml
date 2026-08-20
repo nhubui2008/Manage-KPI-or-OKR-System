@@ -39,16 +39,52 @@
     </header>
 
     <section class="bonus-rules-summary row g-3" aria-label="Tổng quan quy tắc thưởng">
-        <div class="col-6 col-xl-3"><article><span class="bonus-rules-summary-icon"><i class="bi bi-collection" aria-hidden="true"></i></span><div><span>Tổng quy tắc</span><strong>@rules.Count</strong><small>Đã được cấu hình</small></div></article></div>
-        <div class="col-6 col-xl-3"><article><span class="bonus-rules-summary-icon"><i class="bi bi-percent" aria-hidden="true"></i></span><div><span>Có phần trăm</span><strong>@percentageRuleCount</strong><small>Giá trị lớn hơn 0</small></div></article></div>
-        <div class="col-6 col-xl-3"><article><span class="bonus-rules-summary-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span><div><span>Có tiền cố định</span><strong>@fixedRuleCount</strong><small>Giá trị lớn hơn 0</small></div></article></div>
-        <div class="col-6 col-xl-3"><article><span class="bonus-rules-summary-icon"><i class="bi bi-award" aria-hidden="true"></i></span><div><span>Độ phủ xếp loại</span><strong>@coveredRankCount/@allRanks.Count</strong><small>Rank đã có quy tắc</small></div></article></div>
+        <div class="col-6 col-xl-3">
+            <article class="bonus-rules-summary-card bonus-rules-summary-card--primary">
+                <span class="bonus-rules-summary-icon"><i class="bi bi-collection" aria-hidden="true"></i></span>
+                <div>
+                    <span>Tổng quy tắc</span>
+                    <strong>@rules.Count</strong>
+                    <small>Đã được cấu hình</small>
+                </div>
+            </article>
+        </div>
+        <div class="col-6 col-xl-3">
+            <article class="bonus-rules-summary-card bonus-rules-summary-card--success">
+                <span class="bonus-rules-summary-icon"><i class="bi bi-percent" aria-hidden="true"></i></span>
+                <div>
+                    <span>Có phần trăm</span>
+                    <strong>@percentageRuleCount</strong>
+                    <small>Giá trị lớn hơn 0</small>
+                </div>
+            </article>
+        </div>
+        <div class="col-6 col-xl-3">
+            <article class="bonus-rules-summary-card bonus-rules-summary-card--info">
+                <span class="bonus-rules-summary-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
+                <div>
+                    <span>Có tiền cố định</span>
+                    <strong>@fixedRuleCount</strong>
+                    <small>Giá trị lớn hơn 0</small>
+                </div>
+            </article>
+        </div>
+        <div class="col-6 col-xl-3">
+            <article class="bonus-rules-summary-card bonus-rules-summary-card--warning">
+                <span class="bonus-rules-summary-icon"><i class="bi bi-award" aria-hidden="true"></i></span>
+                <div>
+                    <span>Độ phủ xếp loại</span>
+                    <strong>@coveredRankCount/@allRanks.Count</strong>
+                    <small>Rank đã có quy tắc</small>
+                </div>
+            </article>
+        </div>
     </section>
 
     <section class="bonus-rules-toolbar" aria-labelledby="bonus-filter-title">
         <div class="bonus-rules-toolbar-heading"><div><h2 id="bonus-filter-title">Tìm và lọc</h2><p>Tìm theo mã hoặc mô tả xếp loại, rồi sắp xếp danh sách ngay trên trang.</p></div><span id="bonusResultCount" role="status" aria-live="polite">@rules.Count quy tắc</span></div>
         <div class="bonus-rules-filter-grid">
-            <label class="bonus-rules-search"><span class="visually-hidden">Tìm theo mã hoặc mô tả xếp loại</span><i class="bi bi-search" aria-hidden="true"></i><input id="bonusSearch" type="search" placeholder="Tìm mã hoặc mô tả xếp loại" autocomplete="off" /><button id="bonusSearchClear" type="button" aria-label="Xóa nội dung tìm kiếm" hidden><i class="bi bi-x-lg" aria-hidden="true"></i></button></label>
+            <label class="bonus-rules-search"><span>Tìm kiếm</span><div class="bonus-search-input-wrap"><i class="bi bi-search" aria-hidden="true"></i><input id="bonusSearch" type="search" placeholder="Tìm theo mã hoặc mô tả xếp loại..." autocomplete="off" /><button id="bonusSearchClear" type="button" aria-label="Xóa nội dung tìm kiếm" hidden><i class="bi bi-x-lg" aria-hidden="true"></i></button></div></label>
             <label><span>Loại cấu hình</span><select id="bonusFilter" class="no-select2"><option value="all">Tất cả</option><option value="percentage">Có phần trăm</option><option value="fixed">Có tiền cố định</option><option value="both">Có cả hai</option><option value="empty">Chưa có giá trị thưởng</option></select></label>
             <label><span>Sắp xếp</span><select id="bonusSort" class="no-select2"><option value="default">Thứ tự mặc định</option><option value="rank-asc">Rank A–Z</option><option value="rank-desc">Rank Z–A</option><option value="percentage-asc">Phần trăm tăng dần</option><option value="percentage-desc">Phần trăm giảm dần</option><option value="fixed-asc">Tiền cố định tăng dần</option><option value="fixed-desc">Tiền cố định giảm dần</option></select></label>
             <button id="bonusReset" type="button" class="bonus-rules-secondary-action" disabled><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>Đặt lại</button>

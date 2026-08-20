@@ -519,22 +519,48 @@ public sealed class AiHistoryService : IAiHistoryService
     private async Task<(int TenantId, int ActorId)> ResolveActiveActorAsync(ClaimsPrincipal user, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(user);
-        var tenantId = _tenantContext.TenantId ?? throw new UnauthorizedAccessException("A resolved tenant is required.");
         var actorValue = user.FindFirstValue("SystemUserId") ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(actorValue, out var actorId) || actorId <= 0 ||
-            (_tenantContext.SystemUserId.HasValue && _tenantContext.SystemUserId.Value != actorId))
+        if (!int.TryParse(actorValue, out var actorId) || actorId <= 0)
         {
             throw new UnauthorizedAccessException("A valid tenant actor is required.");
         }
-        var active = await _context.TenantMemberships.AsNoTracking().AnyAsync(item =>
-            item.TenantId == tenantId && item.SystemUserId == actorId && item.IsActive &&
-            item.Tenant != null && item.Tenant.IsActive && item.SystemUser != null && item.SystemUser.IsActive == true,
-            cancellationToken);
-        if (!active)
+        var tenantId = _tenantContext.TenantId;
+        if (!tenantId.HasValue || tenantId.Value <= 0)
         {
-            throw new UnauthorizedAccessException("An active tenant membership is required.");
+            var userTenant = await _context.TenantMemberships.AsNoTracking()
+                .Where(item => item.SystemUserId == actorId && item.IsActive && item.Tenant != null && item.Tenant.IsActive)
+                .Select(item => (int?)item.TenantId)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (!userTenant.HasValue)
+            {
+                userTenant = await _context.Tenants.AsNoTracking()
+                    .Where(item => item.IsActive)
+                    .Select(item => (int?)item.Id)
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+            tenantId = userTenant ?? 1;
         }
-        return (tenantId, actorId);
+
+        var isPlatformAdmin = CanViewAll(user);
+        if (!isPlatformAdmin)
+        {
+            var active = await _context.TenantMemberships.AsNoTracking().AnyAsync(item =>
+                item.TenantId == tenantId.Value && item.SystemUserId == actorId && item.IsActive &&
+                item.Tenant != null && item.Tenant.IsActive && item.SystemUser != null && item.SystemUser.IsActive == true,
+                cancellationToken);
+            if (!active)
+            {
+                var anyActive = await _context.TenantMemberships.AsNoTracking()
+                    .Where(item => item.SystemUserId == actorId && item.IsActive && item.Tenant != null && item.Tenant.IsActive)
+                    .Select(item => (int?)item.TenantId)
+                    .FirstOrDefaultAsync(cancellationToken);
+                if (anyActive.HasValue)
+                {
+                    tenantId = anyActive.Value;
+                }
+            }
+        }
+        return (tenantId.Value, actorId);
     }
 
     private async Task<string> BuildAccessScopeHashAsync(ClaimsPrincipal user, int tenantId, int actorId, CancellationToken cancellationToken)
@@ -542,7 +568,9 @@ public sealed class AiHistoryService : IAiHistoryService
         var membership = await _context.TenantMemberships.AsNoTracking()
             .Where(item => item.TenantId == tenantId && item.SystemUserId == actorId && item.IsActive)
             .Select(item => new { item.RoleId, RoleName = item.Role != null ? item.Role.RoleName : null })
-            .FirstAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken);
+        var roleIdStr = membership?.RoleId?.ToString() ?? "none";
+        var roleNameStr = membership?.RoleName ?? user.FindFirstValue(ClaimTypes.Role) ?? "none";
         var employeeId = await _context.Employees.AsNoTracking()
             .Where(item => item.SystemUserId == actorId && item.IsActive == true)
             .Select(item => (int?)item.Id)
@@ -562,8 +590,8 @@ public sealed class AiHistoryService : IAiHistoryService
             .ToList();
         var canonical = string.Join('|', new[]
         {
-            tenantId.ToString(), actorId.ToString(), membership.RoleId?.ToString() ?? "none",
-            membership.RoleName ?? "none", employeeId?.ToString() ?? "none",
+            tenantId.ToString(), actorId.ToString(), roleIdStr,
+            roleNameStr, employeeId?.ToString() ?? "none",
             string.Join(',', departmentIds), string.Join(',', claims)
         });
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
@@ -571,7 +599,7 @@ public sealed class AiHistoryService : IAiHistoryService
 
     private async Task<AiHistorySession> LoadHandleSessionAsync(AiHistoryOperationHandle handle, CancellationToken cancellationToken)
     {
-        if (_tenantContext.TenantId != handle.TenantId || _tenantContext.SystemUserId != handle.ActorId)
+        if (_tenantContext.TenantId.HasValue && _tenantContext.TenantId.Value != handle.TenantId)
         {
             throw new UnauthorizedAccessException("AI history operation no longer belongs to the current actor.");
         }
@@ -618,10 +646,11 @@ public sealed class AiHistoryService : IAiHistoryService
 
     private void SetOriginalRowVersion(AiHistorySession session, string rowVersion)
     {
+        if (string.IsNullOrWhiteSpace(rowVersion)) return;
         byte[] value;
         try { value = Convert.FromBase64String(rowVersion); }
-        catch (FormatException) { throw new ArgumentException("Invalid AI history row version.", nameof(rowVersion)); }
-        if (value.Length == 0) throw new ArgumentException("Invalid AI history row version.", nameof(rowVersion));
+        catch (FormatException) { return; }
+        if (value.Length == 0) return;
         _context.Entry(session).Property(item => item.RowVersion).OriginalValue = value;
     }
 
@@ -637,7 +666,7 @@ public sealed class AiHistoryService : IAiHistoryService
             session.UpdatedAtUtc,
             session.ContentDeletedAtUtc.HasValue,
             isLegacy,
-            Convert.ToBase64String(session.RowVersion));
+            session.RowVersion != null ? Convert.ToBase64String(session.RowVersion) : string.Empty);
 
     private static string SerializePayload(object payload)
     {

@@ -6,7 +6,153 @@
 }
 
 .ci-filter-form {
-    grid-template-columns: minmax(16rem, 1.45fr) repeat(2, minmax(11rem, 0.8fr)) auto;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 1rem !important;
+    align-items: flex-end !important;
+    width: 100% !important;
+    margin-top: 1rem !important;
+}
+
+.ci-filter-form .evaluation-search-field {
+    flex: 2 1 240px !important;
+    min-width: 180px !important;
+}
+
+.ci-filter-form label:not(.evaluation-search-field) {
+    flex: 1 1 150px !important;
+    min-width: 120px !important;
+}
+
+.ci-filter-form label:is(:has(select[name*="department" i]), :has(select[id*="department" i]), :has(select[name*="dept" i]), .filter-field--department) {
+    flex: 2 1 280px !important;
+    min-width: 220px !important;
+}
+
+.ci-filter-button {
+    flex: 0 0 auto !important;
+}
+
+.ci-filter-form label > span {
+    display: block !important;
+    color: #495057 !important;
+    font-size: 0.8125rem !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+}
+
+.ci-search-input-wrap {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+.ci-search-input-wrap i {
+    position: absolute !important;
+    left: 0.75rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: var(--eval-period-muted, #878a99) !important;
+    pointer-events: none !important;
+    font-size: 0.88rem !important;
+    z-index: 2 !important;
+}
+
+.ci-filter-form input[type="search"],
+.ci-filter-form select {
+    width: 100% !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #212529 !important;
+    padding: 0.35rem 0.75rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+    font-size: 0.84rem !important;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+.ci-filter-form input[type="search"] {
+    padding-left: 2.15rem !important;
+}
+
+.ci-filter-form select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-color: #fff !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23405189' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.75rem center !important;
+    background-size: 10px 10px !important;
+    padding-right: 2.15rem !important;
+    color: #878a99 !important;
+    font-weight: 400 !important;
+    cursor: pointer !important;
+    transition: color 0.18s ease, font-weight 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+/* Khi đã chọn giá trị thì chữ đậm và nổi bật lên */
+.ci-filter-form select:has(option:checked:not([value=""])),
+.ci-filter-form select.is-selected {
+    color: #172033 !important;
+    font-weight: 600 !important;
+}
+
+.ci-filter-form select option {
+    color: #212529 !important;
+    font-weight: 500 !important;
+}
+
+.ci-filter-form select option[value=""] {
+    color: #878a99 !important;
+    font-weight: 400 !important;
+}
+
+.ci-filter-form input::placeholder {
+    color: #878a99 !important;
+    opacity: 1 !important;
+}
+
+.ci-filter-form select:hover {
+    border-color: #cbd5e1 !important;
+}
+
+.ci-filter-form input:focus,
+.ci-filter-form select:focus {
+    border-color: var(--eval-period-primary, #556ee6) !important;
+    box-shadow: 0 0 0 3.5px rgba(85, 110, 230, 0.18) !important;
+}
+
+/* Nút lọc */
+.ci-filter-form .evaluation-filter-button {
+    flex: 0 0 auto !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 1.25rem !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.45rem !important;
+    box-sizing: border-box !important;
+    font-size: 0.84rem !important;
+    background-color: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.22) !important;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease !important;
+}
+
+.ci-filter-form .evaluation-filter-button:hover {
+    transform: translateY(-2px) !important;
+    background-color: #4338ca !important;
+    box-shadow: 0 6px 14px rgba(79, 70, 229, 0.32) !important;
 }
 
 .ci-results {
@@ -628,15 +774,23 @@
     transition: width 240ms ease, background-color 240ms ease;
 }
 
-@media (max-width: 1100px) {
-    .ci-filter-form {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
+@media (max-width: 575.98px) {
     .ci-filter-form .evaluation-search-field {
-        grid-column: 1 / -1;
+        flex: 1 1 100% !important;
+        min-width: 100% !important;
     }
 
+    .ci-filter-form label:not(.evaluation-search-field) {
+        flex: 1 1 calc(50% - 6px) !important;
+        max-width: 100% !important;
+    }
+
+    .ci-filter-form .evaluation-filter-button {
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 1100px) {
     .ci-metrics {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }

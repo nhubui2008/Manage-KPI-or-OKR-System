@@ -16,7 +16,94 @@
         [AiHistoryFeatures.EvaluationReview] = "Nhận xét đánh giá",
         [AiHistoryFeatures.SmartAlertRefresh] = "Làm mới cảnh báo"
     };
+
     string FeatureLabel(string key) => featureLabels.TryGetValue(key, out var label) ? label : key;
+
+    string FeatureIcon(string key) => key switch
+    {
+        AiHistoryFeatures.Chat => "bi-chat-dots-fill",
+        AiHistoryFeatures.KpiSuggestion => "bi-lightbulb-fill",
+        AiHistoryFeatures.OkrKeyResultSuggestion => "bi-bullseye",
+        AiHistoryFeatures.GoalPlanning => "bi-flag-fill",
+        AiHistoryFeatures.PerformanceAnalysis => "bi-graph-up-arrow",
+        AiHistoryFeatures.CustomerSegment => "bi-people-fill",
+        AiHistoryFeatures.CheckInEvaluation => "bi-clipboard-check-fill",
+        AiHistoryFeatures.OkrKeyResultEvaluation => "bi-award-fill",
+        AiHistoryFeatures.EvaluationReview => "bi-chat-square-quote-fill",
+        AiHistoryFeatures.SmartAlertRefresh => "bi-bell-fill",
+        _ => "bi-stars"
+    };
+
+    string FeatureClass(string key) => key switch
+    {
+        AiHistoryFeatures.Chat => "feature-chat",
+        AiHistoryFeatures.KpiSuggestion => "feature-kpi-suggestion",
+        AiHistoryFeatures.OkrKeyResultSuggestion => "feature-okr-key-result-suggestion",
+        AiHistoryFeatures.GoalPlanning => "feature-goal-planning",
+        AiHistoryFeatures.PerformanceAnalysis => "feature-performance-analysis",
+        AiHistoryFeatures.CustomerSegment => "feature-customer-segment",
+        AiHistoryFeatures.CheckInEvaluation => "feature-check-in-evaluation",
+        AiHistoryFeatures.OkrKeyResultEvaluation => "feature-okr-key-result-evaluation",
+        AiHistoryFeatures.EvaluationReview => "feature-evaluation-review",
+        AiHistoryFeatures.SmartAlertRefresh => "feature-smart-alert-refresh",
+        _ => "feature-chat"
+    };
+
+    string StatusBadgeClass(string? status) => status switch
+    {
+        AiHistoryStatuses.Completed => "bg-success-subtle text-success",
+        AiHistoryStatuses.Applied => "bg-primary-subtle text-primary",
+        AiHistoryStatuses.AwaitingReview => "bg-warning-subtle text-warning",
+        AiHistoryStatuses.Rejected => "bg-danger-subtle text-danger",
+        AiHistoryStatuses.Failed => "bg-danger-subtle text-danger",
+        AiHistoryStatuses.Conflict => "bg-warning-subtle text-warning",
+        AiHistoryStatuses.Abstained => "bg-info-subtle text-info",
+        AiHistoryStatuses.ContentDeleted => "bg-secondary-subtle text-secondary",
+        _ => "bg-light text-muted"
+    };
+
+    string StatusLabel(string? status) => status switch
+    {
+        AiHistoryStatuses.Completed => "Hoàn tất",
+        AiHistoryStatuses.Applied => "Đã áp dụng",
+        AiHistoryStatuses.AwaitingReview => "Chờ xem xét",
+        AiHistoryStatuses.Rejected => "Đã từ chối",
+        AiHistoryStatuses.Failed => "Thất bại",
+        AiHistoryStatuses.Conflict => "Xung đột",
+        AiHistoryStatuses.Abstained => "Không xử lý",
+        AiHistoryStatuses.ContentDeleted => "Nội dung đã xóa",
+        AiHistoryStatuses.Pending => "Đang xử lý",
+        _ => status ?? "Không xác định"
+    };
+
+    string EntryKindBadgeClass(string? kind) => kind switch
+    {
+        AiHistoryEntryKinds.Input => "bg-primary-subtle text-primary",
+        AiHistoryEntryKinds.Output => "bg-success-subtle text-success",
+        AiHistoryEntryKinds.Warning => "bg-danger-subtle text-danger",
+        AiHistoryEntryKinds.Decision => "bg-warning-subtle text-warning",
+        _ => "bg-secondary-subtle text-secondary"
+    };
+
+    string EntryKindIcon(string? kind) => kind switch
+    {
+        AiHistoryEntryKinds.Input => "bi-person-circle",
+        AiHistoryEntryKinds.Output => "bi-stars",
+        AiHistoryEntryKinds.Warning => "bi-exclamation-triangle-fill",
+        AiHistoryEntryKinds.Decision => "bi-check2-circle",
+        _ => "bi-info-circle-fill"
+    };
+
+    string EntryKindLabel(string? kind) => kind switch
+    {
+        AiHistoryEntryKinds.Input => "Yêu cầu từ người dùng",
+        AiHistoryEntryKinds.Output => "Phản hồi từ AI",
+        AiHistoryEntryKinds.Warning => "Cảnh báo / Thông báo",
+        AiHistoryEntryKinds.Decision => "Quyết định xử lý",
+        AiHistoryEntryKinds.LegacyMetadata => "Metadata cũ",
+        _ => kind ?? "Mục lịch sử"
+    };
+
     string PrettyJson(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return string.Empty;
@@ -27,197 +114,633 @@
         }
         catch (JsonException) { return json; }
     }
+
+    var items = Model?.Page?.Items ?? (IReadOnlyList<AiHistorySessionSummary>)Array.Empty<AiHistorySessionSummary>();
+    var hasActiveFilters = !string.IsNullOrWhiteSpace(Model?.Page?.Search) ||
+                           !string.IsNullOrWhiteSpace(Model?.Page?.Feature) ||
+                           !string.IsNullOrWhiteSpace(Model?.Page?.Status) ||
+                           Model?.Page?.FromDate.HasValue == true ||
+                           Model?.Page?.ToDate.HasValue == true ||
+                           Model?.Page?.OwnerSystemUserId.HasValue == true;
+
+    var chatCount = items.Count(i => i.FeatureKey == AiHistoryFeatures.Chat);
+    var suggestionCount = items.Count(i => i.FeatureKey is AiHistoryFeatures.KpiSuggestion or AiHistoryFeatures.OkrKeyResultSuggestion);
+    var evaluationCount = items.Count(i => i.FeatureKey is AiHistoryFeatures.CheckInEvaluation or AiHistoryFeatures.OkrKeyResultEvaluation or AiHistoryFeatures.EvaluationReview or AiHistoryFeatures.PerformanceAnalysis);
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/ai-history.css" asp-append-version="true" />
 }
 
 <div class="container-fluid py-3 ai-history-page">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-        <div>
-            <h1 class="h4 mb-1"><i class="bi bi-clock-history text-primary me-2"></i>Lịch sử AI</h1>
-            <p class="text-muted mb-0">Xem lại nội dung AI theo tài khoản. Dữ liệu chính thức vẫn được quản lý trong nghiệp vụ gốc.</p>
+    <!-- BREADCRUMB & HEADER -->
+    <div class="ai-history-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Trang chủ</a></li>
+                <li class="breadcrumb-item"><span class="text-muted">Trợ lý AI</span></li>
+                <li class="breadcrumb-item active text-primary fw-semibold" aria-current="page">Lịch sử AI</li>
+            </ol>
+        </nav>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="ai-history-title-badge shadow-sm">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div>
+                    <h1 class="h4 mb-0 fw-bold text-dark">Lịch sử Trợ lý AI</h1>
+                    <p class="text-muted small mb-0">Theo dõi toàn bộ các phiên trò chuyện, gợi ý chỉ số, kế hoạch và đánh giá thông minh theo tài khoản.</p>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-primary shadow-sm px-3" data-ai-new-chat id="btnOpenNewChat">
+                    <i class="bi bi-plus-lg me-1"></i>Cuộc trò chuyện mới
+                </button>
+            </div>
         </div>
-        <button type="button" class="btn btn-primary" data-ai-new-chat>
-            <i class="bi bi-plus-lg me-1"></i>Cuộc trò chuyện mới
-        </button>
     </div>
 
+    <!-- STATS OVERVIEW CARDS -->
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="card ai-history-stat-card shadow-sm p-3 h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Tổng phiên hiển thị</p>
+                        <h4 class="fs-22 fw-bold mb-0 text-dark">@Model.Page.Items.Count</h4>
+                    </div>
+                    <div class="ai-history-stat-icon feature-chat">
+                        <i class="bi bi-layers-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card ai-history-stat-card shadow-sm p-3 h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Trò chuyện AI</p>
+                        <h4 class="fs-22 fw-bold mb-0 text-primary">@chatCount</h4>
+                    </div>
+                    <div class="ai-history-stat-icon feature-chat">
+                        <i class="bi bi-chat-dots-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card ai-history-stat-card shadow-sm p-3 h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Gợi ý KPI / OKR</p>
+                        <h4 class="fs-22 fw-bold mb-0 text-warning">@suggestionCount</h4>
+                    </div>
+                    <div class="ai-history-stat-icon feature-kpi-suggestion">
+                        <i class="bi bi-lightbulb-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card ai-history-stat-card shadow-sm p-3 h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-uppercase fw-semibold text-muted text-truncate mb-1 fs-12">Đánh giá & Phân tích</p>
+                        <h4 class="fs-22 fw-bold mb-0 text-success">@evaluationCount</h4>
+                    </div>
+                    <div class="ai-history-stat-icon feature-check-in-evaluation">
+                        <i class="bi bi-clipboard-check-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALERTS -->
     @if (TempData["SuccessMessage"] is string success)
     {
-        <div class="alert alert-success" role="status">@success</div>
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 d-flex align-items-center gap-2 mb-3" role="status">
+            <i class="bi bi-check-circle-fill fs-5"></i>
+            <div>@success</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     }
     @if (TempData["ErrorMessage"] is string error)
     {
-        <div class="alert alert-danger" role="alert">@error</div>
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 d-flex align-items-center gap-2 mb-3" role="alert">
+            <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+            <div>@error</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     }
 
-    <form method="get" class="card card-body border-0 shadow-sm mb-3" aria-label="Bộ lọc lịch sử AI">
-        <div class="row g-2 align-items-end">
-            <div class="col-12 col-lg-3">
-                <label class="form-label" for="historySearch">Tiêu đề</label>
-                <input class="form-control" id="historySearch" name="search" value="@Model.Page.Search" maxlength="200" />
-            </div>
-            <div class="col-6 col-lg-2">
-                <label class="form-label" for="historyFeature">Chức năng</label>
-                <select class="form-select" id="historyFeature" name="feature">
-                    <option value="">Tất cả</option>
-                    @foreach (var option in featureLabels)
+    <!-- FILTER & SEARCH CARD -->
+    <div class="card ai-history-filter-card mb-3">
+        <div class="card-body p-3">
+            <form method="get" asp-action="Index" id="historyFilterForm" aria-label="Bộ lọc lịch sử AI">
+                <div class="row g-2 align-items-end">
+                    <div class="col-12 col-md-4 col-lg-3 col-xl">
+                        <label class="form-label" for="historySearch">Tìm kiếm tiêu đề</label>
+                        <div class="ai-history-search-wrapper">
+                            <i class="bi bi-search ai-history-search-icon"></i>
+                            <input class="form-control ai-history-search-input" id="historySearch" name="search" value="@Model?.Page?.Search" placeholder="Tìm theo nội dung tiêu đề..." maxlength="200" />
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 col-xl-auto" style="min-width: 195px;">
+                        <label class="form-label" for="historyFeature">Chức năng</label>
+                        <select class="form-select" id="historyFeature" name="feature">
+                            <option value="">Tất cả chức năng</option>
+                            @foreach (var option in featureLabels)
+                            {
+                                <option value="@option.Key" selected="@(Model?.Page?.Feature == option.Key)">@option.Value</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 col-xl-auto" style="min-width: 135px;">
+                        <label class="form-label" for="historyStatus">Trạng thái</label>
+                        <select class="form-select" id="historyStatus" name="status">
+                            <option value="">Tất cả trạng thái</option>
+                            @foreach (var value in new[] { AiHistoryStatuses.Completed, AiHistoryStatuses.Applied, AiHistoryStatuses.AwaitingReview, AiHistoryStatuses.Rejected, AiHistoryStatuses.Failed, AiHistoryStatuses.ContentDeleted, AiHistoryStatuses.Abstained, AiHistoryStatuses.Conflict })
+                            {
+                                <option value="@value" selected="@(Model?.Page?.Status == value)">@StatusLabel(value)</option>
+                            }
+                        </select>
+                    </div>
+                    @if (Model?.Page?.CanViewAll == true)
                     {
-                        <option value="@option.Key" selected="@(Model.Page.Feature == option.Key)">@option.Value</option>
+                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 col-xl-auto" style="min-width: 155px;">
+                            <label class="form-label" for="historyOwner">Tài khoản</label>
+                            <select class="form-select" id="historyOwner" name="ownerSystemUserId">
+                                <option value="">Tất cả tài khoản</option>
+                                @foreach (var owner in Model.Page.OwnerOptions ?? Array.Empty<AiHistoryOwnerOption>())
+                                {
+                                    <option value="@owner.Id" selected="@(Model.Page.OwnerSystemUserId == owner.Id)">@owner.Name</option>
+                                }
+                            </select>
+                        </div>
                     }
-                </select>
-            </div>
-            <div class="col-6 col-lg-2">
-                <label class="form-label" for="historyStatus">Trạng thái</label>
-                <select class="form-select" id="historyStatus" name="status">
-                    <option value="">Tất cả</option>
-                    @foreach (var value in new[] { AiHistoryStatuses.Completed, AiHistoryStatuses.Abstained, AiHistoryStatuses.AwaitingReview, AiHistoryStatuses.Applied, AiHistoryStatuses.Rejected, AiHistoryStatuses.Conflict, AiHistoryStatuses.Failed, AiHistoryStatuses.ContentDeleted })
-                    {
-                        <option value="@value" selected="@(Model.Page.Status == value)">@value</option>
-                    }
-                </select>
-            </div>
-            @if (Model.Page.CanViewAll)
-            {
-                <div class="col-12 col-lg-2">
-                    <label class="form-label" for="historyOwner">Tài khoản</label>
-                    <select class="form-select" id="historyOwner" name="ownerSystemUserId">
-                        <option value="">Tất cả</option>
-                        @foreach (var owner in Model.Page.OwnerOptions)
+                    <div class="col-6 col-sm-3 col-md-2 col-lg-auto" style="min-width: 130px;">
+                        <label class="form-label" for="historyFrom">Từ ngày</label>
+                        <input class="form-control" type="date" id="historyFrom" name="fromDate" value="@Model?.Page?.FromDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-6 col-sm-3 col-md-2 col-lg-auto" style="min-width: 130px;">
+                        <label class="form-label" for="historyTo">Đến ngày</label>
+                        <input class="form-control" type="date" id="historyTo" name="toDate" value="@Model?.Page?.ToDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-auto d-flex gap-1">
+                        <button class="btn btn-primary ai-filter-btn" type="submit" title="Áp dụng lọc">
+                            <i class="bi bi-funnel-fill"></i>
+                        </button>
+                        @if (hasActiveFilters)
                         {
-                            <option value="@owner.Id" selected="@(Model.Page.OwnerSystemUserId == owner.Id)">@owner.Name</option>
+                            <a asp-action="Index" class="btn btn-light border ai-filter-btn" title="Xóa bộ lọc">
+                                <i class="bi bi-x-lg"></i>
+                            </a>
                         }
-                    </select>
+                    </div>
                 </div>
-            }
-            <div class="col-6 col-lg-1">
-                <label class="form-label" for="historyFrom">Từ ngày</label>
-                <input class="form-control" type="date" id="historyFrom" name="fromDate" value="@Model.Page.FromDate?.ToString("yyyy-MM-dd")" />
-            </div>
-            <div class="col-6 col-lg-1">
-                <label class="form-label" for="historyTo">Đến ngày</label>
-                <input class="form-control" type="date" id="historyTo" name="toDate" value="@Model.Page.ToDate?.ToString("yyyy-MM-dd")" />
-            </div>
-            <div class="col-12 col-lg-1 d-grid">
-                <button class="btn btn-outline-primary" type="submit">Lọc</button>
+            </form>
+
+            <!-- Quick Filter Pills -->
+            <div class="ai-quick-filter-pills mt-3 pt-2 border-top">
+                <a asp-action="Index" asp-route-search="@Model?.Page?.Search" class="ai-quick-filter-pill @(string.IsNullOrEmpty(Model?.Page?.Feature) ? "active" : "")">
+                    <i class="bi bi-grid-fill"></i> Tất cả
+                </a>
+                <a asp-action="Index" asp-route-feature="@AiHistoryFeatures.Chat" asp-route-search="@Model?.Page?.Search" class="ai-quick-filter-pill @(Model?.Page?.Feature == AiHistoryFeatures.Chat ? "active" : "")">
+                    <i class="bi bi-chat-dots-fill text-primary"></i> Trò chuyện
+                </a>
+                <a asp-action="Index" asp-route-feature="@AiHistoryFeatures.KpiSuggestion" asp-route-search="@Model?.Page?.Search" class="ai-quick-filter-pill @(Model?.Page?.Feature == AiHistoryFeatures.KpiSuggestion ? "active" : "")">
+                    <i class="bi bi-lightbulb-fill text-warning"></i> Gợi ý KPI
+                </a>
+                <a asp-action="Index" asp-route-feature="@AiHistoryFeatures.OkrKeyResultSuggestion" asp-route-search="@Model?.Page?.Search" class="ai-quick-filter-pill @(Model?.Page?.Feature == AiHistoryFeatures.OkrKeyResultSuggestion ? "active" : "")">
+                    <i class="bi bi-bullseye text-info"></i> Gợi ý Key Result
+                </a>
+                <a asp-action="Index" asp-route-feature="@AiHistoryFeatures.CheckInEvaluation" asp-route-search="@Model?.Page?.Search" class="ai-quick-filter-pill @(Model?.Page?.Feature == AiHistoryFeatures.CheckInEvaluation ? "active" : "")">
+                    <i class="bi bi-clipboard-check-fill text-success"></i> Đánh giá Check-in
+                </a>
+                <a asp-action="Index" asp-route-feature="@AiHistoryFeatures.PerformanceAnalysis" asp-route-search="@Model?.Page?.Search" class="ai-quick-filter-pill @(Model?.Page?.Feature == AiHistoryFeatures.PerformanceAnalysis ? "active" : "")">
+                    <i class="bi bi-graph-up-arrow text-danger"></i> Phân tích hiệu suất
+                </a>
             </div>
         </div>
-    </form>
+    </div>
 
+    <!-- MAIN CONTENT: SESSIONS LIST & DETAILS -->
     <div class="row g-3">
-        <div class="col-12 col-xl-4">
-            <section class="card border-0 shadow-sm h-100" aria-labelledby="historyListHeading">
-                <div class="card-header bg-white py-3"><strong id="historyListHeading">Các phiên gần đây</strong></div>
-                <div class="list-group list-group-flush ai-history-list">
-                    @if (Model.Page.Items.Count == 0)
+        <!-- LEFT COLUMN: SESSIONS LIST -->
+        <div class="col-12 col-lg-5 col-xl-5">
+            <section class="card ai-history-list-card shadow-sm h-100" aria-labelledby="historyListHeading">
+                <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between border-bottom">
+                    <strong id="historyListHeading" class="fs-14 text-dark d-flex align-items-center gap-1.5">
+                        <i class="bi bi-list-nested text-primary"></i>Các phiên gần đây
+                    </strong>
+                    <span class="badge rounded-pill bg-primary-subtle text-primary fw-semibold px-2.5 py-1">@items.Count phiên</span>
+                </div>
+                <div class="ai-history-list">
+                    @if (items.Count == 0)
                     {
-                        <div class="p-4 text-center text-muted">Chưa có lịch sử AI phù hợp.</div>
+                        <div class="p-5 text-center text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <p class="mb-1 fw-semibold">Không tìm thấy lịch sử phù hợp</p>
+                            <p class="small text-muted mb-3">Thử thay đổi từ khóa hoặc bộ lọc để xem các phiên khác.</p>
+                            @if (hasActiveFilters)
+                            {
+                                <a asp-action="Index" class="btn btn-sm btn-outline-primary">Xóa bộ lọc</a>
+                            }
+                        </div>
                     }
-                    @foreach (var item in Model.Page.Items)
+                    @foreach (var item in items)
                     {
-                        <a asp-action="Index" asp-route-id="@item.Id" class="list-group-item list-group-item-action @(Model.Selected?.Session.Id == item.Id ? "active" : "")">
-                            <div class="d-flex justify-content-between gap-2">
-                                <strong class="text-truncate">@(item.ContentDeleted ? "Nội dung đã xóa" : item.Title ?? "Lịch sử AI")</strong>
-                                <small class="text-nowrap">@item.UpdatedAtUtc.ToLocalTime().ToString("dd/MM HH:mm")</small>
+                        var isSelected = Model?.Selected?.Session.Id == item.Id;
+                        <a asp-action="Index"
+                           asp-route-id="@item.Id"
+                           asp-route-search="@Model?.Page?.Search"
+                           asp-route-feature="@Model?.Page?.Feature"
+                           asp-route-status="@Model?.Page?.Status"
+                           asp-route-fromDate="@Model?.Page?.FromDate?.ToString("yyyy-MM-dd")"
+                           asp-route-toDate="@Model?.Page?.ToDate?.ToString("yyyy-MM-dd")"
+                           asp-route-ownerSystemUserId="@Model?.Page?.OwnerSystemUserId"
+                           asp-route-page="@(Model?.Page?.PageNumber ?? 1)"
+                           class="ai-history-item @(isSelected ? "active" : "")">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="ai-history-item-avatar @FeatureClass(item.FeatureKey)">
+                                    <i class="bi @FeatureIcon(item.FeatureKey)"></i>
+                                </div>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                        <div class="ai-history-item-title text-truncate" title="@(item.ContentDeleted ? "Nội dung đã xóa" : item.Title ?? "Lịch sử AI")">
+                                            @(item.ContentDeleted ? "Nội dung đã xóa" : item.Title ?? "Lịch sử AI")
+                                        </div>
+                                        <span class="ai-history-item-time text-nowrap flex-shrink-0">
+                                            @item.UpdatedAtUtc.ToLocalTime().ToString("dd/MM HH:mm")
+                                        </span>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between gap-2 ai-history-item-meta">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="badge @StatusBadgeClass(item.Status) ai-status-badge">
+                                                @StatusLabel(item.Status)
+                                            </span>
+                                            @if (item.IsLegacy)
+                                            {
+                                                <span class="badge bg-secondary-subtle text-secondary ai-legacy-badge" title="Dữ liệu phiên cũ">
+                                                    <i class="bi bi-clock-history me-1"></i>Lịch sử cũ
+                                                </span>
+                                            }
+                                        </div>
+                                        @if (Model?.Page?.CanViewAll == true && !string.IsNullOrEmpty(item.OwnerName))
+                                        {
+                                            <span class="ai-history-item-owner text-truncate" title="@item.OwnerName">
+                                                <i class="bi bi-person me-1"></i>@item.OwnerName
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
                             </div>
-                            <div class="small mt-1">@FeatureLabel(item.FeatureKey) · @item.Status</div>
-                            @if (Model.Page.CanViewAll)
-                            {
-                                <div class="small opacity-75">@(item.OwnerName ?? "Hệ thống/không xác định")</div>
-                            }
-                            @if (item.IsLegacy)
-                            {
-                                <span class="badge text-bg-secondary mt-1">Lịch sử cũ</span>
-                            }
                         </a>
                     }
                 </div>
-                @if (Model.Page.TotalPages > 1)
+                @if ((Model?.Page?.TotalPages ?? 0) > 1)
                 {
-                    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
-                        <a class="btn btn-sm btn-outline-secondary @(Model.Page.PageNumber <= 1 ? "disabled" : "")" asp-action="Index" asp-route-page="@(Model.Page.PageNumber - 1)">Trước</a>
-                        <span class="small">Trang @Model.Page.PageNumber/@Model.Page.TotalPages</span>
-                        <a class="btn btn-sm btn-outline-secondary @(Model.Page.PageNumber >= Model.Page.TotalPages ? "disabled" : "")" asp-action="Index" asp-route-page="@(Model.Page.PageNumber + 1)">Sau</a>
+                    var pageNum = Model?.Page?.PageNumber ?? 1;
+                    var totalPgs = Model?.Page?.TotalPages ?? 1;
+                    <div class="card-footer bg-white py-2 px-3 d-flex justify-content-between align-items-center border-top">
+                        <a class="btn btn-sm btn-outline-secondary @(pageNum <= 1 ? "disabled" : "")"
+                           asp-action="Index"
+                           asp-route-page="@(pageNum - 1)"
+                           asp-route-search="@Model?.Page?.Search"
+                           asp-route-feature="@Model?.Page?.Feature"
+                           asp-route-status="@Model?.Page?.Status"
+                           asp-route-fromDate="@Model?.Page?.FromDate?.ToString("yyyy-MM-dd")"
+                           asp-route-toDate="@Model?.Page?.ToDate?.ToString("yyyy-MM-dd")"
+                           asp-route-ownerSystemUserId="@Model?.Page?.OwnerSystemUserId"
+                           asp-route-id="@Model?.Selected?.Session.Id">
+                            <i class="bi bi-chevron-left me-1"></i>Trước
+                        </a>
+                        <span class="small text-muted fw-semibold">Trang @pageNum / @totalPgs</span>
+                        <a class="btn btn-sm btn-outline-secondary @(pageNum >= totalPgs ? "disabled" : "")"
+                           asp-action="Index"
+                           asp-route-page="@(pageNum + 1)"
+                           asp-route-search="@Model?.Page?.Search"
+                           asp-route-feature="@Model?.Page?.Feature"
+                           asp-route-status="@Model?.Page?.Status"
+                           asp-route-fromDate="@Model?.Page?.FromDate?.ToString("yyyy-MM-dd")"
+                           asp-route-toDate="@Model?.Page?.ToDate?.ToString("yyyy-MM-dd")"
+                           asp-route-ownerSystemUserId="@Model?.Page?.OwnerSystemUserId"
+                           asp-route-id="@Model?.Selected?.Session.Id">
+                            Sau<i class="bi bi-chevron-right ms-1"></i>
+                        </a>
                     </div>
                 }
             </section>
         </div>
-        <div class="col-12 col-xl-8">
-            <section class="card border-0 shadow-sm h-100" aria-labelledby="historyDetailsHeading">
+
+        <!-- RIGHT COLUMN: SESSION DETAILS & TIMELINE -->
+        <div class="col-12 col-lg-7 col-xl-7">
+            <section class="card ai-history-detail-card shadow-sm h-100" aria-labelledby="historyDetailsHeading">
                 @if (Model.Selected == null)
                 {
-                    <div class="card-body d-flex align-items-center justify-content-center text-center text-muted ai-history-empty">
-                        <div><i class="bi bi-chat-square-text fs-1 d-block mb-2"></i>Chọn một mục để xem timeline.</div>
+                    <div class="card-body ai-history-empty">
+                        <div class="ai-history-empty-icon shadow-sm">
+                            <i class="bi bi-chat-square-text"></i>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1">Chưa chọn phiên làm việc</h5>
+                        <p class="text-muted small mb-3" style="max-width: 380px;">Chọn một mục từ danh sách bên trái để xem lại nội dung chi tiết hoặc bắt đầu cuộc trò chuyện AI mới.</p>
+                        <button type="button" class="btn btn-outline-primary" data-ai-new-chat>
+                            <i class="bi bi-plus-lg me-1"></i>Bắt đầu trò chuyện mới
+                        </button>
                     </div>
                 }
                 else
                 {
                     var selected = Model.Selected;
-                    <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-start gap-2">
-                        <div>
-                            <h2 class="h5 mb-1" id="historyDetailsHeading">@(selected.Session.ContentDeleted ? "Nội dung đã xóa" : selected.Session.Title ?? "Lịch sử AI")</h2>
-                            <div class="small text-muted">@FeatureLabel(selected.Session.FeatureKey) · @selected.Session.Status · @selected.Session.UpdatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
-                        </div>
-                        @if (selected.CanManage)
-                        {
-                            <div class="d-flex gap-2">
-                                @if (selected.Session.FeatureKey == AiHistoryFeatures.Chat)
-                                {
-                                    <a class="btn btn-sm btn-primary" href="?id=@selected.Session.Id&aiChatSession=@selected.Session.Id"><i class="bi bi-chat-dots me-1"></i>Tiếp tục Chat</a>
-                                }
-                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#renameHistory">Đổi tên</button>
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
+                            <div class="d-flex align-items-start gap-2.5">
+                                <div class="ai-history-title-badge @FeatureClass(selected.Session.FeatureKey) shadow-sm">
+                                    <i class="bi @FeatureIcon(selected.Session.FeatureKey)"></i>
+                                </div>
+                                <div>
+                                    <h2 class="h5 fw-bold mb-1 text-dark" id="historyDetailsHeading">
+                                        @(selected.Session.ContentDeleted ? "Nội dung đã xóa" : selected.Session.Title ?? "Lịch sử AI")
+                                    </h2>
+                                    <div class="d-flex flex-wrap align-items-center gap-2 small text-muted">
+                                        <span class="badge @FeatureClass(selected.Session.FeatureKey)">@FeatureLabel(selected.Session.FeatureKey)</span>
+                                        <span class="badge @StatusBadgeClass(selected.Session.Status)">@StatusLabel(selected.Session.Status)</span>
+                                        <span><i class="bi bi-calendar3 me-1"></i>@selected.Session.UpdatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                                        @if (!string.IsNullOrEmpty(selected.Session.OwnerName))
+                                        {
+                                            <span><i class="bi bi-person me-1"></i>@selected.Session.OwnerName</span>
+                                        }
+                                    </div>
+                                </div>
                             </div>
-                        }
+                            <div class="d-flex align-items-center gap-2">
+                                @if (selected.Session.FeatureKey == AiHistoryFeatures.Chat && selected.ContentAvailable)
+                                {
+                                    <button type="button" class="btn btn-sm btn-primary shadow-sm" id="btnContinueChat" data-session-id="@selected.Session.Id">
+                                        <i class="bi bi-chat-dots me-1"></i>Tiếp tục Chat
+                                    </button>
+                                }
+                                @if (selected.CanManage && !selected.Session.ContentDeleted)
+                                {
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#renameHistoryModal">
+                                        <i class="bi bi-pencil me-1"></i>Đổi tên
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#deleteHistoryModal">
+                                        <i class="bi bi-trash me-1"></i>Xóa nội dung
+                                    </button>
+                                }
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
+
+                    <div class="card-body p-3 p-md-4">
                         @if (!selected.ContentAvailable)
                         {
-                            <div class="alert alert-warning">@selected.ContentUnavailableReason</div>
+                            <div class="alert alert-warning d-flex align-items-center gap-2 border-0 shadow-sm mb-3">
+                                <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                                <div>@selected.ContentUnavailableReason</div>
+                            </div>
                         }
                         @if (selected.Session.IsLegacy && selected.Entries.All(entry => !entry.ContentAvailable))
                         {
-                            <div class="alert alert-secondary">Lịch sử cũ chỉ có metadata; input/output trước đây chưa từng được lưu.</div>
-                        }
-                        @if (selected.CanManage)
-                        {
-                            <div class="collapse mb-3" id="renameHistory">
-                                <form asp-action="Rename" method="post" class="input-group">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="SessionId" value="@selected.Session.Id" />
-                                    <input type="hidden" name="RowVersion" value="@selected.Session.RowVersion" />
-                                    <input class="form-control" name="Title" value="@selected.Session.Title" minlength="1" maxlength="200" required aria-label="Tên lịch sử AI" />
-                                    <button class="btn btn-outline-primary" type="submit">Lưu tên</button>
-                                </form>
+                            <div class="alert alert-secondary d-flex align-items-center gap-2 border-0 shadow-sm mb-3">
+                                <i class="bi bi-info-circle-fill fs-5"></i>
+                                <div>Lịch sử cũ chỉ có metadata kỹ thuật; dữ liệu input/output trước đây chưa từng được lưu vào hệ thống.</div>
                             </div>
                         }
+
+                        <!-- TIMELINE ENTRIES -->
                         <div class="ai-history-timeline">
                             @foreach (var entry in selected.Entries)
                             {
-                                <article class="ai-history-entry">
-                                    <div class="ai-history-dot"></div>
-                                    <div class="border rounded-3 p-3 bg-body-tertiary">
-                                        <div class="d-flex justify-content-between gap-2 mb-2">
-                                            <strong>@entry.EntryKind</strong>
-                                            <small class="text-muted">@entry.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</small>
+                                var dotClass = entry.EntryKind switch
+                                {
+                                    AiHistoryEntryKinds.Input => "dot-input",
+                                    AiHistoryEntryKinds.Output => "dot-output",
+                                    AiHistoryEntryKinds.Warning => "dot-warning",
+                                    AiHistoryEntryKinds.Decision => "dot-decision",
+                                    _ => ""
+                                };
+
+                                <article class="ai-history-entry" id="entry-@entry.Id">
+                                    <div class="ai-history-dot @dotClass" title="@EntryKindLabel(entry.EntryKind)"></div>
+                                    <div class="ai-history-card">
+                                        <!-- Entry Card Header -->
+                                        <div class="ai-history-card-header">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge @EntryKindBadgeClass(entry.EntryKind) d-inline-flex align-items-center gap-1">
+                                                    <i class="bi @EntryKindIcon(entry.EntryKind)"></i>
+                                                    @EntryKindLabel(entry.EntryKind)
+                                                </span>
+                                                <span class="badge @StatusBadgeClass(entry.Status)">@StatusLabel(entry.Status)</span>
+                                                @if (!string.IsNullOrWhiteSpace(entry.FailureCode))
+                                                {
+                                                    <span class="badge bg-danger-subtle text-danger font-monospace fs-11">@entry.FailureCode</span>
+                                                }
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <small class="text-muted fs-11">
+                                                    <i class="bi bi-clock me-1"></i>@entry.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")
+                                                </small>
+                                                @if (entry.ContentAvailable && !string.IsNullOrWhiteSpace(entry.PayloadJson))
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-light py-0 px-1 text-muted btn-copy-entry" data-payload="@entry.PayloadJson" title="Sao chép nội dung">
+                                                        <i class="bi bi-clipboard"></i>
+                                                    </button>
+                                                }
+                                            </div>
                                         </div>
-                                        <div class="small text-muted mb-2">@entry.Status @if (!string.IsNullOrWhiteSpace(entry.FailureCode)) { <span>· @entry.FailureCode</span> }</div>
-                                        @if (entry.ContentAvailable)
-                                        {
-                                            <pre class="ai-history-payload mb-0">@PrettyJson(entry.PayloadJson)</pre>
-                                        }
+
+                                        <!-- Entry Card Body with Smart Payload Renderer -->
+                                        <div class="ai-history-card-body">
+                                            @if (!entry.ContentAvailable)
+                                            {
+                                                <div class="text-muted small fst-italic">Nội dung chi tiết không khả dụng.</div>
+                                            }
+                                            else if (string.IsNullOrWhiteSpace(entry.PayloadJson))
+                                            {
+                                                <div class="text-muted small fst-italic">Không có nội dung dữ liệu cho bước này.</div>
+                                            }
+                                            else
+                                            {
+                                                @* SMART PARSING OF PAYLOAD JSON *@
+                                                JsonElement? rootElement = null;
+                                                try
+                                                {
+                                                    using var doc = JsonDocument.Parse(entry.PayloadJson);
+                                                    rootElement = doc.RootElement.Clone();
+                                                }
+                                                catch { }
+
+                                                @if (rootElement.HasValue)
+                                                {
+                                                    var root = rootElement.Value;
+
+                                                    @* 1. CHAT INPUT / PROMPT *@
+                                                    if (entry.EntryKind == AiHistoryEntryKinds.Input && (root.TryGetProperty("message", out var msgProp) || root.TryGetProperty("prompt", out msgProp)))
+                                                    {
+                                                        <div class="ai-view-chat-user shadow-sm">
+                                                            <div class="fw-semibold text-primary mb-1 fs-12"><i class="bi bi-person-fill me-1"></i>Câu hỏi từ người dùng:</div>
+                                                            <div class="text-dark">@msgProp.GetString()</div>
+                                                            @if (root.TryGetProperty("periodId", out var pId) && pId.ValueKind == JsonValueKind.Number)
+                                                            {
+                                                                <div class="mt-2 text-muted fs-11"><i class="bi bi-calendar-event me-1"></i>Kỳ đánh giá ID: #@pId.GetInt32()</div>
+                                                            }
+                                                        </div>
+                                                    }
+                                                    @* 2. CHAT OUTPUT / ANSWER *@
+                                                    else if (entry.EntryKind == AiHistoryEntryKinds.Output && (root.TryGetProperty("text", out var textProp) || root.TryGetProperty("answer", out textProp)))
+                                                    {
+                                                        var answerText = textProp.GetString() ?? string.Empty;
+                                                        <div class="ai-view-chat-bot shadow-sm">
+                                                            <div class="fw-semibold text-success mb-2 fs-12 d-flex align-items-center gap-1">
+                                                                <i class="bi bi-stars"></i> Phản hồi từ Trợ lý AI:
+                                                            </div>
+                                                            <div class="ai-rendered-markdown">
+                                                                @Html.Raw(FormatMarkdownText(answerText))
+                                                            </div>
+
+                                                            @* CITATIONS *@
+                                                            @if (root.TryGetProperty("citations", out var citationsProp) && citationsProp.ValueKind == JsonValueKind.Array && citationsProp.GetArrayLength() > 0)
+                                                            {
+                                                                <div class="ai-view-citations">
+                                                                    <div class="ai-view-citations-title"><i class="bi bi-bookmark-check me-1"></i>Nguồn tham chiếu:</div>
+                                                                    <div class="d-flex flex-wrap gap-1">
+                                                                        @foreach (var cit in citationsProp.EnumerateArray())
+                                                                        {
+                                                                            var title = cit.TryGetProperty("title", out var t) ? t.GetString() : "Tài liệu";
+                                                                            var docSection = cit.TryGetProperty("section", out var s) ? s.GetString() : null;
+                                                                            <span class="ai-view-citation-chip">
+                                                                                <i class="bi bi-file-earmark-text text-primary"></i>
+                                                                                <strong>@title</strong>
+                                                                                @if (!string.IsNullOrEmpty(docSection))
+                                                                                {
+                                                                                    <span class="text-muted">(@(docSection))</span>
+                                                                                }
+                                                                            </span>
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    }
+                                                    @* 3. KPI / OKR SUGGESTIONS *@
+                                                    else if (root.TryGetProperty("suggestions", out var sugProp) && sugProp.ValueKind == JsonValueKind.Array)
+                                                    {
+                                                        <div class="mb-2">
+                                                            <div class="fw-semibold text-dark mb-2 fs-13"><i class="bi bi-lightbulb-fill text-warning me-1"></i>Danh sách gợi ý đề xuất:</div>
+                                                            @foreach (var sug in sugProp.EnumerateArray())
+                                                            {
+                                                                var sugTitle = sug.TryGetProperty("title", out var st) ? st.GetString() : (sug.TryGetProperty("kpiName", out st) ? st.GetString() : (sug.TryGetProperty("keyResultTitle", out st) ? st.GetString() : "Gợi ý"));
+                                                                var sugTarget = sug.TryGetProperty("targetValue", out var tv) ? tv.ToString() : null;
+                                                                var sugUnit = sug.TryGetProperty("unit", out var un) ? un.GetString() : null;
+                                                                var sugDesc = sug.TryGetProperty("description", out var ds) ? ds.GetString() : (sug.TryGetProperty("rationale", out ds) ? ds.GetString() : null);
+                                                                var sugWeight = sug.TryGetProperty("weight", out var wt) ? wt.ToString() : null;
+
+                                                                <div class="ai-suggestion-item-card shadow-sm">
+                                                                    <div class="ai-suggestion-item-header">
+                                                                        <div class="ai-suggestion-title">
+                                                                            <i class="bi bi-check2-circle text-success me-1"></i>@sugTitle
+                                                                        </div>
+                                                                    </div>
+                                                                    @if (!string.IsNullOrEmpty(sugDesc))
+                                                                    {
+                                                                        <p class="text-muted small mb-2">@sugDesc</p>
+                                                                    }
+                                                                    <div class="ai-suggestion-metrics">
+                                                                        @if (!string.IsNullOrEmpty(sugTarget))
+                                                                        {
+                                                                            <span class="ai-metric-badge">
+                                                                                <i class="bi bi-bullseye text-primary"></i> Mục tiêu: <strong>@sugTarget @sugUnit</strong>
+                                                                            </span>
+                                                                        }
+                                                                        @if (!string.IsNullOrEmpty(sugWeight))
+                                                                        {
+                                                                            <span class="ai-metric-badge">
+                                                                                <i class="bi bi-pie-chart text-info"></i> Trọng số: <strong>@sugWeight%</strong>
+                                                                            </span>
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    }
+                                                    @* 4. EVALUATION / CHECK-IN REVIEW *@
+                                                    else if (root.TryGetProperty("aiScore", out var scoreProp) || root.TryGetProperty("score", out scoreProp) || root.TryGetProperty("commentary", out var commentProp))
+                                                    {
+                                                        var scoreVal = scoreProp.ValueKind != JsonValueKind.Undefined ? scoreProp.ToString() : null;
+                                                        var commentText = root.TryGetProperty("commentary", out var cm) ? cm.GetString() : (root.TryGetProperty("feedback", out cm) ? cm.GetString() : (root.TryGetProperty("evaluation", out cm) ? cm.GetString() : null));
+                                                        var riskLevel = root.TryGetProperty("riskLevel", out var rk) ? rk.GetString() : null;
+
+                                                        <div class="p-3 bg-light rounded-3 border">
+                                                            <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                                                                <div class="fw-bold text-dark fs-13"><i class="bi bi-clipboard-data text-primary me-1"></i>Kết quả đánh giá AI:</div>
+                                                                @if (!string.IsNullOrEmpty(scoreVal))
+                                                                {
+                                                                    <span class="badge bg-success fs-13 px-2 py-1">Điểm: @scoreVal</span>
+                                                                }
+                                                            </div>
+                                                            @if (!string.IsNullOrEmpty(riskLevel))
+                                                            {
+                                                                <div class="mb-2">
+                                                                    <span class="badge bg-warning-subtle text-warning">Mức độ rủi ro: @riskLevel</span>
+                                                                </div>
+                                                            }
+                                                            @if (!string.IsNullOrEmpty(commentText))
+                                                            {
+                                                                <div class="text-dark small mb-0 ai-rendered-markdown">
+                                                                    @Html.Raw(FormatMarkdownText(commentText))
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    }
+                                                    @* 5. WARNING OR ERROR *@
+                                                    else if (entry.EntryKind == AiHistoryEntryKinds.Warning || root.TryGetProperty("message", out var warnMsg))
+                                                    {
+                                                        var messageText = root.TryGetProperty("message", out var wm) ? wm.GetString() : (root.TryGetProperty("error", out wm) ? wm.GetString() : "Cảnh báo hệ thống.");
+                                                        <div class="alert alert-danger border-0 mb-0 d-flex align-items-start gap-2 shadow-sm">
+                                                            <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
+                                                            <div>
+                                                                <div class="fw-semibold">Thông báo cảnh báo:</div>
+                                                                <div class="small">@messageText</div>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    @* 6. FALLBACK / GENERAL DISPLAY *@
+                                                    else
+                                                    {
+                                                        <div class="bg-light p-3 rounded-3 border small">
+                                                            <div class="fw-semibold text-secondary mb-1">Chi tiết nội dung:</div>
+                                                            <pre class="mb-0 text-dark" style="white-space: pre-wrap; font-family: inherit; font-size: 0.88rem;">@PrettyJson(entry.PayloadJson)</pre>
+                                                        </div>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <pre class="mb-0 text-dark small" style="white-space: pre-wrap; font-family: inherit;">@entry.PayloadJson</pre>
+                                                }
+
+                                                <!-- Collapsible Raw JSON Drawer -->
+                                                <div class="mt-2 text-end">
+                                                    <button class="btn btn-sm btn-link text-muted text-decoration-none py-0 px-1 fs-11" type="button" data-bs-toggle="collapse" data-bs-target="#raw-json-@entry.Id" aria-expanded="false" aria-controls="raw-json-@entry.Id">
+                                                        <i class="bi bi-code-slash me-1"></i>Xem JSON kỹ thuật
+                                                    </button>
+                                                </div>
+                                                <div class="collapse" id="raw-json-@entry.Id">
+                                                    <div class="ai-history-json-wrapper">
+                                                        <button type="button" class="ai-history-json-copy-btn" data-payload="@PrettyJson(entry.PayloadJson)">
+                                                            <i class="bi bi-clipboard me-1"></i>Copy
+                                                        </button>
+                                                        <pre class="ai-history-json-pre">@PrettyJson(entry.PayloadJson)</pre>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
                                     </div>
                                 </article>
                             }
                         </div>
-                        @if (selected.CanManage)
-                        {
-                            <hr />
-                            <form asp-action="Delete" method="post" onsubmit="return confirm('Xóa vĩnh viễn nội dung lịch sử này? Draft, proposal, task và audit nghiệp vụ vẫn được giữ.');">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="SessionId" value="@selected.Session.Id" />
-                                <input type="hidden" name="RowVersion" value="@selected.Session.RowVersion" />
-                                <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash me-1"></i>Xóa nội dung lịch sử</button>
-                                <div class="form-text">Thao tác này không hủy hoặc hoàn tác dữ liệu nghiệp vụ đã tạo.</div>
-                            </form>
-                        }
                     </div>
                 }
             </section>
@@ -225,13 +748,183 @@
     </div>
 </div>
 
-<style>
-    .ai-history-list { max-height: 68vh; overflow-y: auto; }
-    .ai-history-empty { min-height: 28rem; }
-    .ai-history-timeline { position: relative; padding-left: 1.25rem; }
-    .ai-history-timeline::before { content: ""; position: absolute; left: .35rem; top: .5rem; bottom: .5rem; width: 2px; background: var(--bs-border-color); }
-    .ai-history-entry { position: relative; margin-bottom: 1rem; }
-    .ai-history-dot { position: absolute; left: -1.18rem; top: .65rem; width: .7rem; height: .7rem; border-radius: 50%; background: var(--bs-primary); }
-    .ai-history-payload { white-space: pre-wrap; word-break: break-word; font: inherit; font-size: .9rem; }
-    @@media (max-width: 1199.98px) { .ai-history-list { max-height: 24rem; } .ai-history-empty { min-height: 16rem; } }
-</style>
+<!-- RENAME MODAL -->
+@if (Model.Selected?.CanManage == true)
+{
+    <div class="modal fade" id="renameHistoryModal" tabindex="-1" aria-labelledby="renameHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <form asp-action="Rename" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="SessionId" value="@Model.Selected.Session.Id" />
+                    <input type="hidden" name="RowVersion" value="@Model.Selected.Session.RowVersion" />
+                    <div class="modal-header border-bottom">
+                        <h5 class="modal-title fs-15 fw-bold" id="renameHistoryModalLabel">
+                            <i class="bi bi-pencil-square text-primary me-2"></i>Đổi tên phiên lịch sử AI
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body py-3">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="sessionRenameInput">Tiêu đề phiên</label>
+                            <input class="form-control" id="sessionRenameInput" name="Title" value="@Model.Selected.Session.Title" minlength="1" maxlength="200" required placeholder="Nhập tiêu đề mới cho phiên..." />
+                            <div class="form-text">Tiêu đề giúp bạn dễ dàng tìm kiếm và tra cứu lại trong tương lai.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-top">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary px-3">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE CONTENT MODAL -->
+    <div class="modal fade" id="deleteHistoryModal" tabindex="-1" aria-labelledby="deleteHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <form asp-action="Delete" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="SessionId" value="@Model.Selected.Session.Id" />
+                    <input type="hidden" name="RowVersion" value="@Model.Selected.Session.RowVersion" />
+                    <div class="modal-header border-bottom">
+                        <h5 class="modal-title fs-15 fw-bold text-danger" id="deleteHistoryModalLabel">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận xóa nội dung lịch sử
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body py-3">
+                        <p class="mb-2 text-dark">Bạn có chắc chắn muốn <strong>xóa vĩnh viễn nội dung</strong> của phiên lịch sử AI này không?</p>
+                        <div class="alert alert-info py-2 px-3 small border-0 mb-0">
+                            <i class="bi bi-shield-check me-1"></i>Dữ liệu KPI, OKR, Check-in, Dự án và Nhật ký hệ thống (Audit log) liên quan vẫn được <strong>bảo lưu an toàn</strong>.
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-top">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy bỏ</button>
+                        <button type="submit" class="btn btn-danger px-3">
+                            <i class="bi bi-trash me-1"></i>Xóa nội dung
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- TOAST FEEDBACK -->
+<div class="ai-copy-toast" id="aiCopyToast">
+    <i class="bi bi-check2-circle text-success me-1"></i>Đã sao chép vào bộ nhớ tạm
+</div>
+
+@functions {
+    public static string FormatMarkdownText(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+
+        var lines = text.Replace("\r\n", "\n").Split('\n').Select(l => l.Trim()).ToArray();
+        var chunks = new List<string>();
+        string? currentListType = null;
+        var listItems = new List<string>();
+
+        string Escape(string v) => System.Net.WebUtility.HtmlEncode(v);
+        string Inline(string v)
+        {
+            var esc = Escape(v);
+            return System.Text.RegularExpressions.Regex.Replace(esc, @"\*\*(.*?)\*\*", "<strong>$1</strong>");
+        }
+
+        void FlushList()
+        {
+            if (listItems.Count > 0 && currentListType != null)
+            {
+                chunks.Add($"<{currentListType}>" + string.Join("", listItems.Select(li => $"<li>{Inline(li)}</li>")) + $"</{currentListType}>");
+                currentListType = null;
+                listItems.Clear();
+            }
+        }
+
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrEmpty(line))
+            {
+                FlushList();
+                continue;
+            }
+
+            var unorderedMatch = System.Text.RegularExpressions.Regex.Match(line, @"^[-*•]\s+(.+)$");
+            var orderedMatch = System.Text.RegularExpressions.Regex.Match(line, @"^\d+[.)]\s+(.+)$");
+
+            if (unorderedMatch.Success || orderedMatch.Success)
+            {
+                var nextType = unorderedMatch.Success ? "ul" : "ol";
+                if (currentListType != null && currentListType != nextType)
+                {
+                    FlushList();
+                }
+                currentListType = nextType;
+                listItems.Add(unorderedMatch.Success ? unorderedMatch.Groups[1].Value : orderedMatch.Groups[1].Value);
+                continue;
+            }
+
+            FlushList();
+            chunks.Add($"<p>{Inline(line)}</p>");
+        }
+
+        FlushList();
+        return string.Join("", chunks);
+    }
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Copy payload / text helper
+            const toast = document.getElementById('aiCopyToast');
+            function showToast(msg) {
+                if (!toast) return;
+                if (msg) toast.innerHTML = `<i class="bi bi-check2-circle text-success me-1"></i>${msg}`;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2000);
+            }
+
+            // Copy entry buttons
+            document.querySelectorAll('.btn-copy-entry, .ai-history-json-copy-btn').forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const payload = this.dataset.payload;
+                    if (payload) {
+                        navigator.clipboard.writeText(payload).then(() => {
+                            showToast('Đã sao chép vào bộ nhớ tạm');
+                        }).catch(() => {
+                            showToast('Không thể sao chép');
+                        });
+                    }
+                });
+            });
+
+            // Continue chat button integration
+            const continueChatBtn = document.getElementById('btnContinueChat');
+            if (continueChatBtn) {
+                continueChatBtn.addEventListener('click', function () {
+                    const sessionId = this.dataset.sessionId;
+                    if (window.aiChatWidget && typeof window.aiChatWidget.loadConversation === 'function') {
+                        window.aiChatWidget.loadConversation(sessionId);
+                    } else {
+                        // Fallback reload with query param
+                        window.location.href = `?id=${encodeURIComponent(sessionId)}&aiChatSession=${encodeURIComponent(sessionId)}`;
+                    }
+                });
+            }
+
+            // New chat button integration
+            document.querySelectorAll('[data-ai-new-chat]').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    if (window.aiChatWidget && typeof window.aiChatWidget.resetConversation === 'function') {
+                        window.aiChatWidget.resetConversation();
+                    }
+                });
+            });
+        });
+    </script>
+}

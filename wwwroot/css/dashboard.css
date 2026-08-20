@@ -1,6 +1,7 @@
 .vietmach-shell .dashboard-page {
     min-width: 0;
-    color: var(--vz-ink, #212529);
+    color: var(--vz-ink, #0f172a);
+    font-family: var(--font-family, 'Plus Jakarta Sans', 'Inter', sans-serif);
 }
 
 .vietmach-shell .dashboard-page-header {
@@ -8,73 +9,141 @@
     align-items: flex-end;
     justify-content: space-between;
     gap: 24px;
-    margin-bottom: 16px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--vz-border, #e9ebec);
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--vz-border, #f1f5f9);
 }
 
 .vietmach-shell .dashboard-page-heading h1 {
-    margin: 0 0 5px;
-    color: var(--vz-ink, #212529);
-    font-family: var(--vm-font-sans);
-    font-size: 1.25rem;
-    font-weight: 600;
-    letter-spacing: -0.015em;
+    margin: 0 0 6px;
+    color: #0f172a;
+    font-family: var(--font-family, 'Plus Jakarta Sans', 'Inter', sans-serif);
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
 .vietmach-shell .dashboard-page-heading .breadcrumb {
-    font-size: 0.75rem;
+    font-size: 0.78rem;
 }
 
 .vietmach-shell .dashboard-period-filter {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     flex: 0 0 auto;
-    gap: 0;
-    min-height: 38px;
-    overflow: hidden;
-    border: 1px solid var(--vz-border, #e9ebec);
-    border-radius: 4px;
-    background: #fff;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    width: 380px;
+    min-width: 320px;
+    max-width: 100%;
 }
 
-.vietmach-shell .dashboard-period-filter label {
+.vietmach-shell .dashboard-period-label {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    margin: 0;
-    min-height: 36px;
-    padding: 0 12px;
-    border-right: 1px solid var(--vz-border, #e9ebec);
-    background: #f3f6f9;
-    color: #3f4752;
+    gap: 6px;
+    margin-bottom: 6px;
+    color: #475569;
     font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.vietmach-shell .dashboard-period-label i {
+    color: var(--primary, #4361ee);
+    font-size: 0.875rem;
+}
+
+.vietmach-shell .dashboard-period-filter .select2-container,
+.vietmach-shell .dashboard-period-filter .form-select,
+.vietmach-shell .dashboard-period-select {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100%;
+}
+
+.vietmach-shell .dashboard-period-filter .form-select,
+.vietmach-shell .dashboard-period-select {
+    min-height: 42px;
+    height: 42px;
+    padding: 8px 36px 8px 14px;
+    font-size: 0.875rem;
     font-weight: 600;
-    white-space: nowrap;
+    color: #1e293b;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.vietmach-shell .dashboard-period-filter label i {
-    color: var(--primary);
+.vietmach-shell .dashboard-period-filter .select2-container--default .select2-selection--single {
+    min-height: 42px;
+    height: 42px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.vietmach-shell .dashboard-period-filter .form-select {
-    width: clamp(260px, 22vw, 320px);
-    min-height: 36px;
-    padding: 5px 36px 5px 14px;
-    border: 0;
-    border-radius: 0;
-    background-color: #fff;
-    font-size: 0.8125rem;
+.vietmach-shell .dashboard-period-filter .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 40px;
+    color: #1e293b;
+    font-size: 0.875rem;
     font-weight: 600;
-    box-shadow: none;
+    padding-left: 14px;
+    padding-right: 36px;
 }
 
-.vietmach-shell .dashboard-period-filter .form-select:focus {
-    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 42%, transparent);
+.vietmach-shell .dashboard-period-filter .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 40px;
+    right: 12px;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vietmach-shell .dashboard-period-filter .select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border-color: #64748b transparent transparent transparent;
+    border-width: 5px 4px 0 4px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.vietmach-shell .dashboard-period-filter .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+    border-color: transparent transparent var(--primary, #4361ee) transparent;
+    border-width: 0 4px 5px 4px;
+}
+
+.vietmach-shell .dashboard-period-filter .form-select:hover,
+.vietmach-shell .dashboard-period-select:hover,
+.vietmach-shell .dashboard-period-filter .select2-container--default .select2-selection--single:hover {
+    border-color: #cbd5e1;
+    background-color: #f8fafc;
+    box-shadow: 0 3px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+}
+
+.vietmach-shell .dashboard-period-filter .form-select:focus,
+.vietmach-shell .dashboard-period-select:focus,
+.vietmach-shell .dashboard-period-filter .select2-container--default.select2-container--focus .select2-selection--single,
+.vietmach-shell .dashboard-period-filter .select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--primary, #4361ee);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--primary, #4361ee) 16%, transparent), 0 1px 2px rgba(15, 23, 42, 0.05);
+    outline: none;
 }
 
 .vietmach-shell .dashboard-section {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .vietmach-shell .dashboard-section:last-of-type {
@@ -82,35 +151,36 @@
 }
 
 .vietmach-shell .dashboard-card {
+    position: relative;
     min-width: 0;
     margin: 0;
     overflow: hidden;
-    border: 1px solid var(--vz-border, #e9ebec);
-    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
     background: #fff;
-    box-shadow: 0 1px 2px rgba(30, 41, 59, 0.035);
-    transform: none;
+    box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
 }
 
 .vietmach-shell .dashboard-card:hover {
-    border-color: var(--vz-border, #e9ebec);
-    box-shadow: 0 2px 6px rgba(30, 41, 59, 0.065);
-    transform: none;
+    border-color: #cbd5e1;
+    box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.03);
+    transform: translateY(-2px);
 }
 
 .vietmach-shell .dashboard-card .card-body {
     min-width: 0;
-    padding: 16px;
+    padding: 18px;
 }
 
 .vietmach-shell .dashboard-card-header {
     display: flex;
-    min-height: 58px;
+    min-height: 60px;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 11px 16px;
-    border-bottom: 1px solid var(--vz-border, #e9ebec);
+    padding: 14px 18px;
+    border-bottom: 1px solid #f1f5f9;
     background: #fff;
 }
 
@@ -120,53 +190,101 @@
 
 .vietmach-shell .dashboard-card-header .card-title {
     margin: 0;
-    color: var(--vz-ink, #212529);
-    font-family: var(--vm-font-sans);
-    font-size: 0.875rem;
-    font-weight: 600;
-    letter-spacing: -0.005em;
+    color: #0f172a;
+    font-family: var(--font-family, 'Plus Jakarta Sans', 'Inter', sans-serif);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
 }
 
 .vietmach-shell .dashboard-card-header p {
     margin: 3px 0 0;
-    color: var(--vz-muted, #6d7080);
-    font-size: 0.72rem;
+    color: #64748b;
+    font-size: 0.75rem;
     line-height: 1.35;
+}
+
+/* Stat Cards & Dynamic Accent Colors */
+.vietmach-shell .dashboard-stat-card {
+    border-top: 3px solid #e2e8f0;
+}
+
+.vietmach-shell .dashboard-stat-card.stat-card--primary {
+    border-top-color: #6366f1;
+}
+
+.vietmach-shell .dashboard-stat-card.stat-card--success {
+    border-top-color: #10b981;
+}
+
+.vietmach-shell .dashboard-stat-card.stat-card--warning {
+    border-top-color: #f59e0b;
+}
+
+.vietmach-shell .dashboard-stat-card.stat-card--danger {
+    border-top-color: #f43f5e;
+}
+
+.vietmach-shell .dashboard-stat-card.stat-card--info {
+    border-top-color: #06b6d4;
 }
 
 .vietmach-shell .dashboard-stat-card .card-body {
     height: 100%;
-    min-height: 136px;
-    padding: 18px 16px;
+    min-height: 86px;
+    padding: 11px 15px;
 }
 
 .vietmach-shell .dashboard-stat-content {
     display: grid;
     height: 100%;
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 16px;
+    align-items: center;
+    gap: 12px;
 }
 
 .vietmach-shell .dashboard-stat-label {
-    margin: 0 0 8px;
-    color: var(--vz-muted, #6d7080);
-    font-family: var(--vm-font-sans);
+    margin: 0 0 3px;
+    color: #64748b;
+    font-family: var(--font-family, 'Plus Jakarta Sans', 'Inter', sans-serif);
     font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.035em;
+    font-weight: 700;
+    letter-spacing: 0.03em;
     line-height: 1.3;
     text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .vietmach-shell .dashboard-stat-value {
-    margin: 0 0 9px;
-    color: var(--vz-ink, #212529);
-    font-size: 1.55rem;
-    font-weight: 600;
+    margin: 0 0 3px;
+    color: #0f172a;
+    font-size: 1.35rem;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.025em;
-    line-height: 1;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.vietmach-shell .dashboard-stat-card.stat-card--primary .dashboard-stat-value {
+    color: #4f46e5;
+}
+
+.vietmach-shell .dashboard-stat-card.stat-card--success .dashboard-stat-value {
+    color: #059669;
+}
+
+.vietmach-shell .dashboard-stat-card.stat-card--info .dashboard-stat-value {
+    color: #0284c7;
+}
+
+.vietmach-shell .dashboard-stat-card.stat-card--warning .dashboard-stat-value {
+    color: #d97706;
+}
+
+.vietmach-shell .dashboard-stat-card.stat-card--danger .dashboard-stat-value {
+    color: #e11d48;
 }
 
 .vietmach-shell .dashboard-stat-meta {
@@ -174,25 +292,36 @@
     min-width: 0;
     align-items: center;
     flex-wrap: wrap;
-    gap: 6px;
-    color: var(--vz-muted, #6d7080);
-    font-size: 0.72rem;
+    gap: 8px;
+    color: #64748b;
+    font-size: 0.71875rem;
+    font-weight: 500;
+    line-height: 1.4;
 }
 
 .vietmach-shell .dashboard-stat-meta .badge {
-    border-radius: 3px;
-    font-size: 0.665rem;
-    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 99px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
 }
 
 .vietmach-shell .dashboard-stat-icon {
     display: inline-flex;
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
-    font-size: 1.15rem;
+    border-radius: 9px;
+    font-size: 1.1rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    transition: transform 0.2s ease;
+}
+
+.vietmach-shell .dashboard-stat-card:hover .dashboard-stat-icon {
+    transform: scale(1.08);
 }
 
 .vietmach-shell .dashboard-chart {
@@ -327,92 +456,142 @@
 }
 
 .vietmach-shell .dashboard-ranking-table thead th {
-    padding: 9px 16px;
-    border-bottom-color: var(--vz-border, #e9ebec);
-    background: #f3f6f9;
-    color: #4b5360;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.035em;
+    padding: 11px 18px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
 }
 
 .vietmach-shell .dashboard-ranking-table tbody td {
-    padding: 11px 16px;
-    border-color: var(--vz-border, #e9ebec);
+    padding: 13px 18px;
+    border-color: #f1f5f9;
 }
 
 .vietmach-shell .dashboard-employee-cell {
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 10px;
 }
 
 .vietmach-shell .dashboard-employee-avatar {
     display: inline-flex;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--primary) 12%, #fff);
-    color: var(--primary);
-    font-size: 0.72rem;
-    font-weight: 600;
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    color: #4338ca;
+    font-size: 0.78rem;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(67, 56, 202, 0.12);
 }
 
 .vietmach-shell .dashboard-rank-progress {
     display: flex;
     min-width: 190px;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .vietmach-shell .dashboard-rank-progress .progress {
     width: min(280px, 100%);
-    height: 6px;
-    border-radius: 3px;
-    background: #edf0f2;
+    height: 8px;
+    border-radius: 99px;
+    background: #f1f5f9;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.vietmach-shell .dashboard-rank-progress .progress-bar {
+    border-radius: 99px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .vietmach-shell .dashboard-rank-progress span {
     min-width: 50px;
-    font-size: 0.72rem;
-    font-weight: 600;
+    font-size: 0.75rem;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     text-align: right;
+}
+
+/* AI Assistant Cards */
+.vietmach-shell .dashboard-ai-card {
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    background: linear-gradient(145deg, #ffffff 0%, #faf5ff 100%);
+}
+
+.vietmach-shell .dashboard-ai-header {
+    background: transparent;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.12);
 }
 
 .vietmach-shell .dashboard-ai-header .card-title {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
+    color: #312e81;
 }
 
 .vietmach-shell .dashboard-ai-header .card-title i {
-    color: var(--primary);
+    color: #8b5cf6;
+    filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.4));
 }
 
 .vietmach-shell .dashboard-ai-action {
     display: inline-flex;
-    min-width: 112px;
-    min-height: 34px;
+    min-width: 114px;
+    min-height: 36px;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
     gap: 7px;
-    border-radius: 4px;
+    border: 1px solid #c7d2fe !important;
+    border-radius: 8px;
+    background: #eef2ff !important;
+    color: #4f46e5 !important;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.08);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .vietmach-shell .dashboard-ai-action i {
     width: 16px;
     text-align: center;
+    color: #6366f1 !important;
+    transition: color 0.2s ease;
+}
+
+.vietmach-shell .dashboard-ai-action:hover:not(:disabled) {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+}
+
+.vietmach-shell .dashboard-ai-action:hover:not(:disabled) i {
+    color: #ffffff !important;
+}
+
+.vietmach-shell .dashboard-ai-action:active:not(:disabled) {
+    transform: translateY(0);
 }
 
 .vietmach-shell .dashboard-ai-action:disabled {
     cursor: wait;
-    opacity: 0.72;
+    opacity: 0.65;
+    background: #f1f5f9 !important;
+    color: #94a3b8 !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: none;
 }
 
 .vietmach-shell .dashboard-ai-result {
@@ -422,16 +601,16 @@
 }
 
 .vietmach-shell .dashboard-ai-result .alert {
-    border-radius: 4px;
-    font-size: 0.75rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
 }
 
 .vietmach-shell .dashboard-insight {
-    margin-bottom: 10px;
-    padding: 10px 12px;
-    border: 1px solid var(--vz-border, #e9ebec);
-    border-radius: 4px;
-    background: #f8f9fb;
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
 }
 
 .vietmach-shell .dashboard-insight:last-child {
@@ -439,62 +618,63 @@
 }
 
 .vietmach-shell .dashboard-insight--primary {
-    border-color: color-mix(in srgb, var(--primary) 24%, #e9ebec);
-    background: color-mix(in srgb, var(--primary) 5%, #fff);
+    border-color: #c7d2fe;
+    background: #eef2ff;
 }
 
 .vietmach-shell .dashboard-insight--success {
-    border-color: #bfe4d3;
-    background: #f2faf6;
+    border-color: #a7f3d0;
+    background: #ecfdf5;
 }
 
 .vietmach-shell .dashboard-insight--warning {
-    border-color: #f2d9a8;
-    background: #fffaf0;
+    border-color: #fde68a;
+    background: #fffbeb;
 }
 
 .vietmach-shell .dashboard-insight--info {
-    border-color: #bfdde9;
-    background: #f2f9fc;
+    border-color: #a5f3fc;
+    background: #ecfeff;
 }
 
 .vietmach-shell .dashboard-insight-title {
-    color: var(--vz-ink, #212529);
-    font-size: 0.78rem;
-    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.8125rem;
+    font-weight: 700;
 }
 
 .vietmach-shell .dashboard-insight-detail,
 .vietmach-shell .dashboard-insight-source {
-    margin-top: 3px;
-    font-size: 0.72rem;
+    margin-top: 4px;
+    font-size: 0.75rem;
 }
 
 .vietmach-shell .dashboard-insight-source {
-    color: var(--vz-muted, #6d7080);
+    color: #64748b;
 }
 
 .vietmach-shell .dashboard-ai-section-title {
-    margin: 14px 0 8px;
-    color: #4b5360;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.035em;
+    margin: 16px 0 10px;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
 }
 
 .vietmach-shell .dashboard-ai-footnote {
-    margin: 10px 0 0;
-    color: var(--vz-muted, #6d7080);
-    font-size: 0.6875rem;
+    margin: 12px 0 0;
+    color: #64748b;
+    font-size: 0.72rem;
 }
 
 .vietmach-shell .dashboard-ai-segment {
-    margin-bottom: 10px;
-    padding: 12px;
-    border: 1px solid var(--vz-border, #e9ebec);
-    border-radius: 4px;
+    margin-bottom: 12px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
     background: #fff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
 }
 
 .vietmach-shell .dashboard-ai-segment:last-of-type {
@@ -516,7 +696,7 @@
     gap: 7px;
     padding: 7px 10px;
     border-color: var(--vz-border, #e9ebec);
-    border-radius: 4px;
+    border-radius: 8px;
     color: #343a40;
     text-align: left;
 }
@@ -585,7 +765,7 @@
     }
 
     .vietmach-shell .dashboard-period-filter .form-select {
-        width: min(320px, 65vw);
+        width: min(380px, 100%);
     }
 
     .vietmach-shell .dashboard-quick-actions {
@@ -604,13 +784,14 @@
     }
 
     .vietmach-shell .dashboard-period-filter {
-        align-items: stretch;
-        display: grid;
-        grid-template-columns: minmax(104px, auto) minmax(0, 1fr);
+        width: 100%;
+        display: block;
     }
 
-    .vietmach-shell .dashboard-period-filter .form-select {
+    .vietmach-shell .dashboard-period-filter .form-select,
+    .vietmach-shell .dashboard-period-select {
         width: 100%;
+        min-width: 100%;
     }
 
     .vietmach-shell .dashboard-section {

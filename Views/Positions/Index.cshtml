@@ -38,24 +38,40 @@
 
     <section class="evaluation-summary positions-summary" aria-label="Tổng quan chức vụ">
         <article>
-            <span>Chức vụ phù hợp</span>
-            <strong>@positionItems.Count</strong>
-            <small>Theo từ khóa hiện tại</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--primary">
+                <i class="bi bi-briefcase"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Chức vụ phù hợp</span>
+                <strong>@positionItems.Count</strong>
+            </div>
         </article>
         <article>
-            <span>Đã có cấp bậc</span>
-            <strong>@rankedPositionCount</strong>
-            <small>Sẵn sàng sắp xếp thứ tự</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--success">
+                <i class="bi bi-award"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Đã có cấp bậc</span>
+                <strong>@rankedPositionCount</strong>
+            </div>
         </article>
         <article>
-            <span>Cấp bậc đang dùng</span>
-            <strong>@distinctRankCount</strong>
-            <small>Số mức rank khác nhau</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--info">
+                <i class="bi bi-layers"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Cấp bậc đang dùng</span>
+                <strong>@distinctRankCount</strong>
+            </div>
         </article>
         <article>
-            <span>Chưa có cấp bậc</span>
-            <strong>@unrankedPositionCount</strong>
-            <small>Cần hoàn thiện cấu hình</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--warning">
+                <i class="bi bi-question-circle"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Chưa có cấp bậc</span>
+                <strong>@unrankedPositionCount</strong>
+            </div>
         </article>
     </section>
 
@@ -76,13 +92,15 @@
 
         <form asp-action="Index" method="get" class="evaluation-filter-form positions-filter-form">
             <label class="evaluation-search-field">
-                <span class="visually-hidden">Tìm theo mã hoặc tên chức vụ</span>
-                <i class="bi bi-search" aria-hidden="true"></i>
-                <input type="search"
-                       name="searchString"
-                       value="@currentSearch"
-                       placeholder="Mã hoặc tên chức vụ..."
-                       autocomplete="off" />
+                <span>Tìm kiếm</span>
+                <div class="evaluation-search-input-wrap">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input type="search"
+                           name="searchString"
+                           value="@currentSearch"
+                           placeholder="Mã hoặc tên chức vụ..."
+                           autocomplete="off" />
+                </div>
             </label>
             <button type="submit" class="evaluation-filter-button">
                 <i class="bi bi-search" aria-hidden="true"></i>

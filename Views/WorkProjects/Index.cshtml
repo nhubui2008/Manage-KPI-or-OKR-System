@@ -45,40 +45,48 @@
     </div>
 
     <!-- Summary Cards theo phạm vi lọc hiện tại -->
-    <section class="ops-summary" aria-label="Tóm tắt kết quả theo bộ lọc hiện tại">
-        <div class="ops-summary__item ops-summary__item--primary">
-            <div class="summary-head">
-                <span>Tổng dự án trong lọc</span>
-                <i class="bi bi-folder2 text-primary fs-5" aria-hidden="true"></i>
+    <div class="wp-summary-grid" aria-label="Tóm tắt kết quả theo bộ lọc hiện tại">
+        <div class="wp-stat-card wp-stat-card--primary">
+            <div class="wp-stat-card__head">
+                <span class="wp-stat-card__title">Tổng dự án trong lọc</span>
+                <span class="wp-stat-card__icon"><i class="bi bi-folder2"></i></span>
             </div>
-            <strong>@totalProjects</strong>
-            <small>Kết quả phù hợp hiện tại</small>
-        </div>
-        <div class="ops-summary__item">
-            <div class="summary-head">
-                <span>Đang hoạt động</span>
-                <i class="bi bi-activity text-success fs-5" aria-hidden="true"></i>
+            <div class="wp-stat-card__body">
+                <span class="wp-stat-card__value">@totalProjects</span>
+                <span class="wp-stat-card__desc">Kết quả phù hợp hiện tại</span>
             </div>
-            <strong>@activeProjects</strong>
-            <small>Đang triển khai trong lọc</small>
         </div>
-        <div class="ops-summary__item ops-summary__item--warning">
-            <div class="summary-head">
-                <span>Cần chú ý</span>
-                <i class="bi bi-exclamation-triangle text-warning fs-5" aria-hidden="true"></i>
+        <div class="wp-stat-card wp-stat-card--success">
+            <div class="wp-stat-card__head">
+                <span class="wp-stat-card__title">Đang hoạt động</span>
+                <span class="wp-stat-card__icon"><i class="bi bi-activity"></i></span>
             </div>
-            <strong>@attentionProjects</strong>
-            <small>@blockedProjects vướng · @overdueProjects trễ</small>
-        </div>
-        <div class="ops-summary__item ops-summary__item--danger">
-            <div class="summary-head">
-                <span>Quá hạn</span>
-                <i class="bi bi-calendar-x text-danger fs-5" aria-hidden="true"></i>
+            <div class="wp-stat-card__body">
+                <span class="wp-stat-card__value">@activeProjects</span>
+                <span class="wp-stat-card__desc">Đang triển khai trong lọc</span>
             </div>
-            <strong>@overdueProjects</strong>
-            <small>Trễ hạn công việc/dự án</small>
         </div>
-    </section>
+        <div class="wp-stat-card wp-stat-card--warning">
+            <div class="wp-stat-card__head">
+                <span class="wp-stat-card__title">Cần chú ý</span>
+                <span class="wp-stat-card__icon"><i class="bi bi-exclamation-triangle"></i></span>
+            </div>
+            <div class="wp-stat-card__body">
+                <span class="wp-stat-card__value">@attentionProjects</span>
+                <span class="wp-stat-card__desc">@blockedProjects vướng - @overdueProjects trễ</span>
+            </div>
+        </div>
+        <div class="wp-stat-card wp-stat-card--danger">
+            <div class="wp-stat-card__head">
+                <span class="wp-stat-card__title">Quá hạn</span>
+                <span class="wp-stat-card__icon"><i class="bi bi-calendar-x"></i></span>
+            </div>
+            <div class="wp-stat-card__body">
+                <span class="wp-stat-card__value">@overdueProjects</span>
+                <span class="wp-stat-card__desc">Trễ hạn công việc/dự án</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Filter Toolbar -->
     <form asp-action="Index" method="get" class="workprojects-filter">

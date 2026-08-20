@@ -93,11 +93,11 @@
             </ol>
         </div>
         <form method="get" asp-action="Index" class="dashboard-period-filter">
-            <label for="dashboardPeriod">
+            <label for="dashboardPeriod" class="dashboard-period-label">
                 <i class="bi bi-calendar3" aria-hidden="true"></i>
                 <span>Kỳ báo cáo</span>
             </label>
-            <select id="dashboardPeriod" name="periodId" class="form-select form-select-sm no-select2" onchange="this.form.submit()">
+            <select id="dashboardPeriod" name="periodId" class="form-select form-select-sm dashboard-period-select" onchange="this.form.submit()" aria-label="Chọn kỳ báo cáo">
                 <option value="" selected="@(selectedPeriod == null ? "selected" : null)">Tất cả kỳ</option>
                 @foreach (var period in allPeriods)
                 {
@@ -116,7 +116,7 @@
 
     <section class="row g-3 dashboard-section" aria-label="Chỉ số tổng quan">
         <div class="col-12 col-sm-6 col-xl-3">
-            <article class="card dashboard-card dashboard-stat-card h-100">
+            <article class="card dashboard-card dashboard-stat-card stat-card--primary h-100">
                 <div class="card-body">
                     <div class="dashboard-stat-content">
                         <div class="min-w-0">
@@ -133,7 +133,7 @@
             </article>
         </div>
         <div class="col-12 col-sm-6 col-xl-3">
-            <article class="card dashboard-card dashboard-stat-card h-100">
+            <article class="card dashboard-card dashboard-stat-card stat-card--success h-100">
                 <div class="card-body">
                     <div class="dashboard-stat-content">
                         <div class="min-w-0">
@@ -150,7 +150,7 @@
             </article>
         </div>
         <div class="col-12 col-sm-6 col-xl-3">
-            <article class="card dashboard-card dashboard-stat-card h-100">
+            <article class="card dashboard-card dashboard-stat-card stat-card--info h-100">
                 <div class="card-body">
                     <div class="dashboard-stat-content">
                         <div class="min-w-0">
@@ -164,7 +164,7 @@
             </article>
         </div>
         <div class="col-12 col-sm-6 col-xl-3">
-            <article class="card dashboard-card dashboard-stat-card h-100">
+            <article class="card dashboard-card dashboard-stat-card stat-card--warning h-100">
                 <div class="card-body">
                     <div class="dashboard-stat-content">
                         <div class="min-w-0">
@@ -345,7 +345,7 @@
                         <h2 class="card-title" id="aiPerformanceHeading"><i class="bi bi-stars" aria-hidden="true"></i>AI phân tích hiệu suất</h2>
                         <p>Tổng hợp rủi ro và hành động từ dữ liệu được phép</p>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary dashboard-ai-action" id="runAiPerformanceAnalysis" data-period-id="@(selectedPeriod?.Id)">
+                    <button type="button" class="btn btn-sm dashboard-ai-action" id="runAiPerformanceAnalysis" data-period-id="@(selectedPeriod?.Id)">
                         <i class="bi bi-magic" aria-hidden="true"></i><span>Phân tích</span>
                     </button>
                 </div>
@@ -361,7 +361,7 @@
                         <h2 class="card-title" id="aiSegmentHeading"><i class="bi bi-person-lines-fill" aria-hidden="true"></i>AI gợi ý tệp khách hàng</h2>
                         <p>Đề xuất có nguồn, không chấm điểm xác suất</p>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary dashboard-ai-action" id="runAiCustomerSegments" data-period-id="@(selectedPeriod?.Id)">
+                    <button type="button" class="btn btn-sm dashboard-ai-action" id="runAiCustomerSegments" data-period-id="@(selectedPeriod?.Id)">
                         <i class="bi bi-lightbulb" aria-hidden="true"></i><span>Gợi ý</span>
                     </button>
                 </div>

@@ -37,48 +37,58 @@
     color: #ffffff;
     background-color: #405189;
     box-shadow: 0 2px 6px rgba(64, 81, 137, 0.35);
+/* Status Badges & Icon subtle backgrounds */
+.bg-info-subtle,
+.badge-soft-info,
+.bg-info-subtle.avatar-title {
+    background-color: rgba(41, 156, 219, 0.12) !important;
+    color: #299cdb !important;
 }
 
-/* Status Badges */
-.badge-soft-primary {
-    color: #405189;
-    background-color: rgba(64, 81, 137, 0.1);
+.bg-primary-subtle,
+.badge-soft-primary,
+.bg-primary-subtle.avatar-title {
+    background-color: rgba(64, 81, 137, 0.12) !important;
+    color: #405189 !important;
 }
 
-.badge-soft-success {
-    color: #0ab39c;
-    background-color: rgba(10, 179, 156, 0.1);
+.bg-success-subtle,
+.badge-soft-success,
+.bg-success-subtle.avatar-title {
+    background-color: rgba(10, 179, 156, 0.12) !important;
+    color: #0ab39c !important;
 }
 
-.badge-soft-warning {
-    color: #f7b84b;
-    background-color: rgba(247, 184, 75, 0.1);
+.bg-warning-subtle,
+.badge-soft-warning,
+.bg-warning-subtle.avatar-title {
+    background-color: rgba(247, 184, 75, 0.15) !important;
+    color: #b7791f !important;
 }
 
-.badge-soft-danger {
-    color: #f06548;
-    background-color: rgba(240, 101, 72, 0.1);
+.bg-danger-subtle,
+.badge-soft-danger,
+.bg-danger-subtle.avatar-title {
+    background-color: rgba(240, 101, 72, 0.12) !important;
+    color: #f06548 !important;
 }
 
-.badge-soft-info {
-    color: #299cdb;
-    background-color: rgba(41, 156, 219, 0.1);
-}
-
-.badge-soft-secondary {
-    color: #3577f1;
-    background-color: rgba(53, 119, 241, 0.1);
+.bg-secondary-subtle,
+.badge-soft-secondary,
+.bg-secondary-subtle.avatar-title {
+    background-color: rgba(53, 119, 241, 0.12) !important;
+    color: #3577f1 !important;
 }
 
 /* Progress bar styling */
 .progress-sm {
     height: 6px;
-    border-radius: 4px;
+    border-radius: 999px;
 }
 
 .progress-md {
     height: 10px;
-    border-radius: 6px;
+    border-radius: 999px;
 }
 
 /* AI Assistant Glow Effect */
@@ -120,4 +130,40 @@
     padding-right: 2.2rem !important;
     background-position: right 0.75rem center !important;
 }
+
+/* Compact Summary Stat Cards */
+.kpi-checkins-wrapper .summary-stat-card .card-body,
+.summary-stat-card .card-body {
+    padding: 10px 14px !important;
+    min-height: 76px;
+}
+
+.kpi-checkins-wrapper .summary-stat-card .avatar-sm,
+.summary-stat-card .avatar-sm {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+}
+
+.kpi-checkins-wrapper .summary-stat-card .avatar-title,
+.summary-stat-card .avatar-title {
+    font-size: 1.15rem !important;
+    border-radius: 8px !important;
+}
+
+/* Force all icons to have transparent background (remove unwanted white boxes) */
+.kpi-checkins-wrapper i,
+.kpi-checkins-wrapper [class*="bi-"],
+.summary-stat-card .avatar-title i,
+.avatar-title i,
+.avatar-title [class*="bi-"],
+.ci-state i,
+.evaluation-quick-filters i,
+i.bi {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
 

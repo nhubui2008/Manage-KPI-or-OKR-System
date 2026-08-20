@@ -2,18 +2,30 @@
 @using Manage_KPI_or_OKR_System.Services.AI
 @using Manage_KPI_or_OKR_System.Services
 @{
-    ViewData["Title"] = "Vận hành AI và kho tri thức";
-    string StatusClass(string state) => state switch
+    ViewData["Title"] = "Vận hành AI & Kho Tri Thức RAG";
+    
+    string StatusBadge(string state) => state switch
     {
-        "Indexed" or "Completed" => "text-bg-success",
-        "DeadLetter" or "Failed" => "text-bg-danger",
-        "Cancelled" or "Superseded" => "text-bg-secondary",
-        "Leased" or "WaitingForMinerU" or "Indexing" => "text-bg-info",
-        _ => "text-bg-warning"
+        "Indexed" or "Completed" => "rag-status-success",
+        "DeadLetter" or "Failed" => "rag-status-danger",
+        "Cancelled" or "Superseded" => "rag-status-secondary",
+        "Leased" or "WaitingForMinerU" or "Indexing" => "rag-status-info",
+        _ => "rag-status-warning"
     };
+
+    string StatusIcon(string state) => state switch
+    {
+        "Indexed" or "Completed" => "bi-check-circle-fill",
+        "DeadLetter" or "Failed" => "bi-exclamation-triangle-fill",
+        "Cancelled" or "Superseded" => "bi-slash-circle",
+        "Leased" or "WaitingForMinerU" or "Indexing" => "bi-arrow-repeat",
+        _ => "bi-hourglass-split"
+    };
+
     string FormatBytes(long bytes) => bytes >= 1024 * 1024
         ? $"{bytes / 1024d / 1024d:N1} MB"
         : $"{Math.Max(1, bytes / 1024d):N0} KB";
+
     string FormatRate(double? value) => value.HasValue ? value.Value.ToString("P0") : "—";
     string FormatMinutes(double? value) => value.HasValue ? $"{value.Value:N1} phút" : "—";
     string FormatSampledRate(double? value, int sampleSize) => value.HasValue
@@ -25,586 +37,1182 @@
     string FormatAbsolutePoints(decimal? value) => value.HasValue
         ? $"{value.Value:0.##} điểm"
         : "—";
-    string ConfidenceBandClass(string code) => code switch
+
+    string ConfidenceBandStyle(string code) => code switch
     {
-        "High" => "text-bg-success",
-        "Moderate" => "text-bg-warning",
-        _ => "text-bg-secondary"
+        "High" => "rag-band-high",
+        "Moderate" => "rag-band-moderate",
+        _ => "rag-band-abstain"
     };
+
     var canViewAuditLogs = User.IsInRole("Admin") ||
                            User.IsInRole("Administrator") ||
                            User.HasClaim(PermissionClaimsTransformation.PermissionClaimType, "AUDITLOGS_VIEW");
 }
 
-<div class="container-fluid py-4" id="mainContent">
-    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
-        <div>
-            <div class="text-uppercase text-primary fw-semibold small mb-1">AI-native · Operations · RAG</div>
-            <h1 class="h3 mb-2">Vận hành AI và kho tri thức</h1>
-            <p class="text-muted mb-0">Theo dõi hàng đợi đánh giá check-in và quản trị nguồn RAG riêng theo tenant.</p>
+@section Styles {
+    <link rel="stylesheet" href="~/css/knowledge-documents.css" asp-append-version="true" />
+}
+
+<div class="container-fluid py-3 rag-page-container" id="mainContent">
+    <!-- BREADCRUMB -->
+    <nav aria-label="breadcrumb" class="mb-2">
+        <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Trang chủ</a></li>
+            <li class="breadcrumb-item"><span class="text-muted">Cài đặt hệ thống</span></li>
+            <li class="breadcrumb-item active text-primary fw-semibold" aria-current="page">Vận hành AI & Kho tri thức</li>
+        </ol>
+    </nav>
+
+    <!-- 1. HERO BANNER - VIBRANT & HIGH CONTRAST -->
+    <div class="rag-hero-card">
+        <div class="rag-hero-content">
+            <div class="min-w-0">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                    <span class="rag-hero-kicker">
+                        <i class="bi bi-stars"></i> AI-Native · RAG Engine
+                    </span>
+                    @if (Model.PipelineConfigured)
+                    {
+                        <span class="rag-hero-kicker rag-hero-kicker-success">
+                            <span class="rag-pulse-dot me-1"></span> @(Model.PipelineVersion ?? "MinerU + BGE-M3")
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="rag-hero-kicker rag-hero-kicker-warning">
+                            <span class="rag-pulse-dot warning me-1"></span> Ingestion Khóa An Toàn
+                        </span>
+                    }
+                </div>
+                <h1 id="ragHeroTitle" class="rag-hero-title">Vận hành AI & Kho tri thức RAG</h1>
+                <p class="rag-hero-copy">
+                    Giám sát chất lượng mô hình, quản trị tài liệu RAG nội bộ và kiểm soát hàng đợi đánh giá check-in AI theo từng tenant.
+                </p>
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+                    @if (canViewAuditLogs)
+                    {
+                        <a asp-controller="AuditLogs" asp-action="Index" class="btn btn-sm rag-hero-btn-glass rounded-pill px-3">
+                            <i class="bi bi-journal-text me-1"></i> Nhật ký Audit
+                        </a>
+                    }
+                    <a href="/AIHistory" class="btn btn-sm rag-hero-btn-glass rounded-pill px-3">
+                        <i class="bi bi-clock-history me-1"></i> Lịch sử AI
+                    </a>
+                </div>
+            </div>
+
+            <!-- RIGHT SUMMARY CARD -->
+            <div class="rag-hero-summary">
+                <div class="rag-hero-summary-label">Nguồn tri thức hoạt động</div>
+                <div class="rag-hero-summary-value">
+                    <span>@Model.ActiveDocumentCount</span><span class="opacity-75">/@Model.Documents.Count</span>
+                </div>
+                <div class="rag-hero-progress">
+                    <div style="transform: scaleX(@(Model.Documents.Count > 0 ? (Model.ActiveDocumentCount / (double)Model.Documents.Count).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "1")); transform-origin: left;"></div>
+                </div>
+                <div class="rag-hero-summary-meta">
+                    @if (Model.PipelineConfigured)
+                    {
+                        <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i> Pipeline sẵn sàng</span>
+                    }
+                    else
+                    {
+                        <span class="text-warning"><i class="bi bi-exclamation-circle-fill me-1"></i> Chờ kích hoạt</span>
+                    }
+                </div>
+            </div>
         </div>
-        @if (canViewAuditLogs)
-        {
-            <a asp-controller="AuditLogs" asp-action="Index" class="btn btn-outline-secondary">
-                <i class="bi bi-journal-text me-1" aria-hidden="true"></i> Xem audit
-            </a>
-        }
     </div>
 
+    <!-- ALERTS & SYSTEM NOTIFICATIONS -->
     @if (TempData["SuccessMessage"] is string success)
     {
-        <div class="alert alert-success" role="status">@success</div>
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm d-flex align-items-center gap-2 mb-3" role="status">
+            <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+            <div>@success</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
     }
     @if (TempData["ErrorMessage"] is string error)
     {
-        <div class="alert alert-danger" role="alert">@error</div>
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm d-flex align-items-center gap-2 mb-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+            <div>@error</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
     }
-    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 shadow-sm mb-3" role="alert"></div>
 
     @if (!Model.PipelineConfigured)
     {
-        <div class="alert alert-warning" role="alert">
-            <strong>Ingestion đang khóa an toàn.</strong>
-            Cấu hình <code>DocumentIngestion__PipelineVersion</code> bằng phiên bản MinerU/BGE-M3/index schema đã pin trước khi upload hoặc retry.
+        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-start gap-3 mb-4" role="alert">
+            <i class="bi bi-shield-lock-fill fs-4 text-warning mt-1"></i>
+            <div>
+                <h5 class="alert-heading fw-bold mb-1">Ingestion đang khóa an toàn</h5>
+                <p class="mb-0 small">
+                    Cấu hình <code>DocumentIngestion__PipelineVersion</code> bằng phiên bản MinerU/BGE-M3/index schema đã pin trong cấu hình hệ thống trước khi upload hoặc retry tài liệu.
+                </p>
+            </div>
         </div>
     }
 
-    <div class="row g-3 mb-4" aria-label="Tổng quan vận hành RAG">
-        <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm h-100"><div class="card-body">
-                <div class="text-muted small">Nguồn đang hoạt động</div>
-                <div class="display-6 fw-semibold">@Model.ActiveDocumentCount</div>
-            </div></div>
+    <!-- 2. TOP METRIC STAT DECK -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-2 mb-3" aria-label="Tổng quan chỉ số vận hành AI & RAG">
+        <div class="col">
+            <div class="rag-stat-card">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="rag-stat-icon-wrapper rag-stat-icon-primary">
+                            <i class="bi bi-database-check"></i>
+                        </div>
+                        <div class="rag-stat-value">@Model.ActiveDocumentCount</div>
+                        <div class="rag-stat-label">Nguồn tri thức hoạt động</div>
+                    </div>
+                </div>
+                <div class="rag-stat-subtext">
+                    <i class="bi bi-collection me-1"></i> Tổng @Model.Documents.Count tài liệu trong tenant
+                </div>
+            </div>
         </div>
-        <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm h-100"><div class="card-body">
-                <div class="text-muted small">Job đang xử lý</div>
-                <div class="display-6 fw-semibold text-primary">@Model.PendingJobCount</div>
-            </div></div>
+        
+        <div class="col">
+            <div class="rag-stat-card">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="rag-stat-icon-wrapper rag-stat-icon-info">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </div>
+                        <div class="rag-stat-value text-primary">@Model.PendingJobCount</div>
+                        <div class="rag-stat-label">Job RAG đang xử lý</div>
+                    </div>
+                    @if (Model.PendingJobCount > 0)
+                    {
+                        <span class="rag-pulse-dot"></span>
+                    }
+                </div>
+                <div class="rag-stat-subtext">
+                    <i class="bi bi-hourglass-split me-1"></i> Hàng đợi Ingestion & Worker
+                </div>
+            </div>
         </div>
-        <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm h-100"><div class="card-body">
-                <div class="text-muted small">Job cần xem lại</div>
-                <div class="display-6 fw-semibold @(Model.FailedJobCount > 0 ? "text-danger" : "text-success")">@Model.FailedJobCount</div>
-            </div></div>
+        
+        <div class="col">
+            <div class="rag-stat-card">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="rag-stat-icon-wrapper @(Model.FailedJobCount > 0 || Model.CheckInOutbox.DeadLetterCount > 0 ? "rag-stat-icon-warning" : "rag-stat-icon-success")">
+                            <i class="bi @(Model.FailedJobCount > 0 || Model.CheckInOutbox.DeadLetterCount > 0 ? "bi-exclamation-triangle-fill" : "bi-shield-check")"></i>
+                        </div>
+                        <div class="rag-stat-value @(Model.FailedJobCount > 0 ? "text-danger" : "text-success")">
+                            @Model.FailedJobCount
+                        </div>
+                        <div class="rag-stat-label">Job cần xem lại / DeadLetter</div>
+                    </div>
+                </div>
+                <div class="rag-stat-subtext">
+                    <i class="bi bi-inbox me-1"></i> @Model.CheckInOutbox.DeadLetterCount check-in dead-letter
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="rag-stat-card">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="rag-stat-icon-wrapper rag-stat-icon-success">
+                            <i class="bi bi-quote"></i>
+                        </div>
+                        <div class="rag-stat-value">@FormatRate(Model.Metrics.ProposalCitationCoverage)</div>
+                        <div class="rag-stat-label">Độ phủ trích dẫn Citation</div>
+                    </div>
+                </div>
+                <div class="rag-stat-subtext">
+                    <i class="bi bi-patch-check me-1"></i> @FormatRate(Model.Metrics.CurrentDirectCitationRate) citation trực tiếp
+                </div>
+            </div>
         </div>
     </div>
 
-    <section class="card border-0 shadow-sm mb-4" aria-labelledby="operationalMetricsHeading">
-        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between gap-2">
-            <div>
-                <h2 id="operationalMetricsHeading" class="h5 mb-1">Chất lượng vận hành AI/RAG</h2>
-                <p class="text-muted small mb-0">Metadata tenant trong @Model.Metrics.WindowDays ngày gần nhất; không chứa prompt hay nội dung tài liệu.</p>
-            </div>
-            <span class="badge text-bg-light border align-self-start">Cửa sổ @Model.Metrics.WindowDays ngày</span>
-        </div>
-        <div class="card-body">
-            <div class="row g-3" role="list" aria-label="Chỉ số vận hành AI và RAG">
-                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small">Index hoàn tất</div>
-                        <div class="h4 mb-1">@Model.Metrics.CompletedIndexJobCount</div>
-                        <small class="text-danger">@Model.Metrics.DeadLetterIndexJobCount dead-letter</small>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small">Tỷ lệ index thành công</div>
-                        <div class="h4 mb-1">@FormatRate(Model.Metrics.IngestionSuccessRate)</div>
-                        <small class="text-muted">Completed / terminal</small>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small">Job có retry</div>
-                        <div class="h4 mb-1">@FormatRate(Model.Metrics.RetriedJobRate)</div>
-                        <small class="text-muted">Attempt count &gt; 0</small>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small">Latency index</div>
-                        <div class="fw-semibold">TB @FormatMinutes(Model.Metrics.AverageLatencyMinutes)</div>
-                        <small class="text-muted">P95 @FormatMinutes(Model.Metrics.P95LatencyMinutes)</small>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small">Proposal có citation</div>
-                        <div class="h4 mb-1">@FormatRate(Model.Metrics.ProposalCitationCoverage)</div>
-                        <small class="text-muted">@Model.Metrics.ProposalCount proposal</small>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small">Citation hiện hành/trực tiếp</div>
-                        <div class="h4 mb-1">@FormatRate(Model.Metrics.CurrentDirectCitationRate)</div>
-                        <small class="text-muted">Abstain @FormatRate(Model.Metrics.AbstainRate)</small>
-                    </div>
-                </div>
-            </div>
-            <p class="small text-muted mt-3 mb-0">
-                Coverage ở đây đo proposal có ít nhất một citation metadata; không thay thế kiểm mẫu citation precision trước pilot.
-            </p>
-        </div>
-    </section>
+    <!-- 3. NAVIGATION TABS (OPERATIONS COCKPIT CONTROLLER) -->
+    <div class="rag-nav-container">
+        <ul class="nav nav-pills rag-nav-pills" id="ragTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="tab-sources-btn" data-bs-toggle="pill" data-bs-target="#tab-sources" type="button" role="tab" aria-controls="tab-sources" aria-selected="true">
+                    <i class="bi bi-folder2-open"></i> Kho Tài Liệu & Nguồn RAG
+                    <span class="badge bg-light text-dark ms-1">@Model.Documents.Count</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-upload-btn" data-bs-toggle="pill" data-bs-target="#tab-upload" type="button" role="tab" aria-controls="tab-upload" aria-selected="false">
+                    <i class="bi bi-cloud-arrow-up-fill"></i> Thêm Nguồn Mới & Phân Quyền
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-queue-btn" data-bs-toggle="pill" data-bs-target="#tab-queue" type="button" role="tab" aria-controls="tab-queue" aria-selected="false">
+                    <i class="bi bi-list-task"></i> Hàng Đợi AI Check-in Outbox
+                    @if (Model.CheckInOutbox.ActiveCount > 0)
+                    {
+                        <span class="badge bg-primary text-white ms-1">@Model.CheckInOutbox.ActiveCount</span>
+                    }
+                    @if (Model.CheckInOutbox.DeadLetterCount > 0)
+                    {
+                        <span class="badge bg-danger text-white ms-1">@Model.CheckInOutbox.DeadLetterCount!</span>
+                    }
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-metrics-btn" data-bs-toggle="pill" data-bs-target="#tab-metrics" type="button" role="tab" aria-controls="tab-metrics" aria-selected="false">
+                    <i class="bi bi-graph-up-arrow"></i> Chất Lượng Vận Hành RAG
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-calibration-btn" data-bs-toggle="pill" data-bs-target="#tab-calibration" type="button" role="tab" aria-controls="tab-calibration" aria-selected="false">
+                    <i class="bi bi-sliders"></i> Hiệu Chỉnh AI Calibration
+                </button>
+            </li>
+        </ul>
+    </div>
 
-    <section class="card border-0 shadow-sm mb-4" aria-labelledby="checkInCalibrationHeading">
-        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between gap-2">
-            <div>
-                <h2 id="checkInCalibrationHeading" class="h5 mb-1">Hiệu chỉnh AI đánh giá check-in</h2>
-                <p class="text-muted small mb-0">
-                    Cohort proposal check-in provisional được tạo trong @Model.CheckInCalibration.WindowDays ngày; chỉ dùng metadata tổng hợp của tenant, không hiển thị nhân viên, người duyệt, comment hay rationale.
-                </p>
-            </div>
-            <span class="badge text-bg-light border align-self-start">
-                Tỷ lệ/delta cần ≥ @Model.CheckInCalibration.MinimumSampleSize mẫu
-            </span>
-        </div>
-        <div class="card-body">
-            <div class="row g-3" role="list" aria-label="Chỉ số hiệu chỉnh AI đánh giá check-in">
-                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small">Proposal provisional</div>
-                        <div class="h4 mb-1">@Model.CheckInCalibration.ProposalCount</div>
-                        <small class="text-muted">@Model.CheckInCalibration.AwaitingHumanReviewCount đang chờ người duyệt</small>
+    <!-- TAB CONTENT PANELS -->
+    <div class="tab-content" id="ragTabContent">
+        
+        <!-- ===================================================================
+             TAB 1: KHO TÀI LIỆU & NGUỒN RAG
+             =================================================================== -->
+        <div class="tab-pane fade show active" id="tab-sources" role="tabpanel" aria-labelledby="tab-sources-btn">
+            <section class="rag-card" aria-labelledby="sourcesHeading">
+                <div class="rag-card-header">
+                    <div>
+                        <h2 id="sourcesHeading" class="rag-card-title">
+                            <i class="bi bi-database-fill text-primary"></i> Danh sách nguồn tài liệu RAG
+                        </h2>
+                        <p class="rag-card-subtitle">
+                            Quản lý các tài liệu đã lập chỉ mục (index), phiên bản và chính sách bảo mật truy cập (ACL).
+                        </p>
                     </div>
-                </div>
-                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small">Quyết định phân loại</div>
-                        <div class="h4 mb-1">@Model.CheckInCalibration.ClassifiedDecisionCount</div>
-                        <small class="text-muted">Dùng @Model.CheckInCalibration.AdoptedCount · không dùng @Model.CheckInCalibration.RejectedCount</small>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small">Tỷ lệ dùng đề xuất</div>
-                        <div class="h5 mb-1">@FormatSampledRate(Model.CheckInCalibration.AdoptionRate, Model.CheckInCalibration.ClassifiedDecisionCount)</div>
-                        <small class="text-muted">Review duyệt @Model.CheckInCalibration.AppliedToApprovedReviewCount · review từ chối @Model.CheckInCalibration.AppliedToRejectedReviewCount</small>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small">Điểm được chỉnh</div>
-                        <div class="h5 mb-1">@FormatSampledRate(Model.CheckInCalibration.ScoreEditRate, Model.CheckInCalibration.ComparedScoreCount)</div>
-                        <small class="text-muted">@Model.CheckInCalibration.ScoreEditedCount/@Model.CheckInCalibration.ComparedScoreCount bản áp dụng có đủ hai điểm</small>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small">Chênh AI–người duyệt</div>
-                        <div class="fw-semibold">MAE @FormatAbsolutePoints(Model.CheckInCalibration.AverageAbsoluteAiReviewerDelta)</div>
-                        <small class="text-muted">Có dấu @FormatSignedPoints(Model.CheckInCalibration.AverageSignedAiReviewerDelta) · n=@Model.CheckInCalibration.ComparedScoreCount</small>
-                    </div>
-                </div>
-                <div class="col-12 col-sm-6 col-xl-2" role="listitem">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted small">Abstain định tính</div>
-                        <div class="h5 mb-1">@FormatSampledRate(Model.CheckInCalibration.QualitativeAbstainRate, Model.CheckInCalibration.QualitativeProposalCount)</div>
-                        <small class="text-muted">@Model.CheckInCalibration.QualitativeAbstainCount/@Model.CheckInCalibration.QualitativeProposalCount proposal có ít nhất một tiêu chí abstain</small>
-                    </div>
-                </div>
-            </div>
-
-            @if (Model.CheckInCalibration.UnclassifiedDecisionCount > 0)
-            {
-                <div class="alert alert-warning py-2 mt-3 mb-0" role="status">
-                    Có @Model.CheckInCalibration.UnclassifiedDecisionCount quyết định metadata chưa thuộc contract hiện hành; các dòng này không đi vào mẫu số dùng/không dùng.
-                </div>
-            }
-
-            <div class="table-responsive mt-3">
-                <table class="table table-sm align-middle mb-0">
-                    <caption class="visually-hidden">Hiệu chỉnh đề xuất AI đánh giá check-in theo dải confidence</caption>
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col">Confidence band</th>
-                            <th scope="col" class="text-end">Proposal</th>
-                            <th scope="col" class="text-end">Quyết định</th>
-                            <th scope="col" class="text-end">Đã dùng</th>
-                            <th scope="col" class="text-end">Không dùng</th>
-                            <th scope="col">Tỷ lệ dùng</th>
-                            <th scope="col">MAE AI–người duyệt</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var band in Model.CheckInCalibration.ConfidenceBands)
-                        {
-                            <tr>
-                                <th scope="row"><span class="badge @ConfidenceBandClass(band.Code)">@band.Label</span></th>
-                                <td class="text-end">@band.ProposalCount</td>
-                                <td class="text-end">@band.ClassifiedDecisionCount</td>
-                                <td class="text-end">@band.AdoptedCount</td>
-                                <td class="text-end">@band.RejectedCount</td>
-                                <td>@FormatSampledRate(band.AdoptionRate, band.ClassifiedDecisionCount)</td>
-                                <td>
-                                    @FormatAbsolutePoints(band.AverageAbsoluteAiReviewerDelta)
-                                    <span class="text-muted small">(n=@band.ComparedScoreCount)</span>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            <p class="small text-muted mt-3 mb-0">
-                “Đã dùng” gồm quyết định accept metadata hoặc proposal được gắn vào review; không đồng nghĩa check-in được duyệt. “Điểm được chỉnh” chỉ so sánh điểm số ở precision hai chữ số, không suy đoán thay đổi comment. Dải Abstain dùng ngưỡng của đúng rubric/version gắn với từng proposal. Confidence là độ tin cậy dữ liệu, không phải xác suất AI đúng.
-            </p>
-        </div>
-    </section>
-
-    <section class="card border-0 shadow-sm mb-4" aria-labelledby="checkInOutboxHeading">
-        <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between gap-2">
-            <div>
-                <h2 id="checkInOutboxHeading" class="h5 mb-1">Hàng đợi AI đánh giá check-in</h2>
-                <p class="text-muted small mb-0">Chỉ lưu metadata vận chuyển; không hiển thị prompt, ghi chú check-in hay exception nội bộ.</p>
-            </div>
-            <div class="d-flex gap-2 align-self-start">
-                <span class="badge text-bg-primary">@Model.CheckInOutbox.ActiveCount đang xử lý</span>
-                <span class="badge @(Model.CheckInOutbox.DeadLetterCount > 0 ? "text-bg-danger" : "text-bg-success")">
-                    @Model.CheckInOutbox.DeadLetterCount dead-letter
-                </span>
-            </div>
-        </div>
-        <div class="card-body p-0">
-            @if (Model.CheckInOutbox.Rows.Count == 0)
-            {
-                <p class="text-muted text-center py-4 px-3 mb-0">Chưa có job đánh giá check-in trong tenant này.</p>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <caption class="visually-hidden">Tối đa 50 job AI đánh giá check-in gần nhất của tenant hiện tại</caption>
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col">Check-in</th>
-                                <th scope="col">Nhân viên / KPI</th>
-                                <th scope="col">Trạng thái</th>
-                                <th scope="col">Lần chạy</th>
-                                <th scope="col">Mã lỗi</th>
-                                <th scope="col" class="text-end">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var job in Model.CheckInOutbox.Rows)
-                            {
-                                <tr>
-                                    <td>
-                                        <span class="fw-semibold">#@job.CheckInId</span>
-                                        <div class="small text-muted">@job.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
-                                    </td>
-                                    <td>
-                                        <div class="fw-semibold">@job.EmployeeName</div>
-                                        <div class="small text-muted">@job.KpiName</div>
-                                    </td>
-                                    <td><span class="badge @StatusClass(job.State)">@job.State</span></td>
-                                    <td>@job.AttemptCount</td>
-                                    <td>
-                                        @if (string.IsNullOrWhiteSpace(job.FailureCode))
-                                        {
-                                            <span class="text-muted">—</span>
-                                        }
-                                        else
-                                        {
-                                            <code>@job.FailureCode</code>
-                                        }
-                                    </td>
-                                    <td class="text-end">
-                                        @if (job.CanRetry)
-                                        {
-                                            <form asp-action="RetryCheckInAi" method="post" class="d-inline">
-                                                <input type="hidden" name="OutboxId" value="@job.Id" />
-                                                <input type="hidden" name="RowVersion" value="@job.RowVersion" />
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                    <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i> Chạy lại
-                                                </button>
-                                            </form>
-                                        }
-                                        else
-                                        {
-                                            <span class="small text-muted">Tự động</span>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-        </div>
-        <div class="card-footer bg-white small text-muted">
-            Chạy lại chỉ áp dụng cho DeadLetter và server sẽ kiểm tra lại check-in Pending, nguồn hiện hành, tenant và row-version.
-        </div>
-    </section>
-
-    <section class="card border-0 shadow-sm mb-4" aria-labelledby="uploadHeading">
-        <div class="card-header bg-white py-3">
-            <h2 id="uploadHeading" class="h5 mb-1">Thêm nguồn tài liệu</h2>
-            <p class="text-muted small mb-0">Tệp tối đa 25 MB. Không lưu SAS, nội dung hoặc prompt trong SQL.</p>
-        </div>
-        <div class="card-body">
-            <form asp-action="Upload" method="post" enctype="multipart/form-data">
-                <input asp-for="Upload.SubmissionId" type="hidden" />
-                <div class="row g-3">
-                    <div class="col-12 col-lg-5">
-                        <label asp-for="Upload.Title" class="form-label"></label>
-                        <input asp-for="Upload.Title" class="form-control" maxlength="256" placeholder="Ví dụ: Quy chế đánh giá KPI 2026" />
-                        <span asp-validation-for="Upload.Title" class="text-danger small"></span>
-                    </div>
-                    <div class="col-12 col-lg-7">
-                        <label asp-for="Upload.File" class="form-label"></label>
-                        <input asp-for="Upload.File" class="form-control" type="file"
-                               accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.docx,.pptx,.xlsx" />
-                        <span asp-validation-for="Upload.File" class="text-danger small"></span>
-                    </div>
-                </div>
-
-                <fieldset class="mt-4">
-                    <legend class="h6">Ai được dùng nguồn này?</legend>
-                    <p class="text-muted small">Chọn ít nhất một người dùng, vai trò hoặc phòng ban. Server kiểm tra lại mọi lựa chọn theo tenant.</p>
-                    <div class="row g-3">
-                        <div class="col-12 col-lg-4">
-                            <div class="border rounded-3 p-3 h-100">
-                                <div class="fw-semibold mb-2">Vai trò</div>
-                                @for (var roleIndex = 0; roleIndex < Model.Roles.Count; roleIndex++)
-                                {
-                                    var option = Model.Roles[roleIndex];
-                                    var id = $"upload-role-{roleIndex}";
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="Upload.SelectedRoles" value="@option.Value" id="@id"
-                                               checked="@(Model.Upload.SelectedRoles.Contains(option.Value, StringComparer.OrdinalIgnoreCase))" />
-                                        <label class="form-check-label" for="@id">@option.Label</label>
-                                    </div>
-                                }
-                            </div>
+                    <div class="rag-card-actions">
+                        <div class="input-group input-group-sm" style="width: 220px;">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" class="form-control border-start-0" id="sourceSearchInput" placeholder="Tìm tên tài liệu..." />
                         </div>
-                        <div class="col-12 col-lg-4">
-                            <div class="border rounded-3 p-3 h-100" style="max-height: 220px; overflow:auto;">
-                                <div class="fw-semibold mb-2">Phòng ban</div>
-                                @foreach (var option in Model.Departments)
-                                {
-                                    var id = $"upload-department-{option.Value}";
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="Upload.SelectedDepartmentIds" value="@option.Value" id="@id"
-                                               checked="@(Model.Upload.SelectedDepartmentIds.Contains(option.Value))" />
-                                        <label class="form-check-label" for="@id">@option.Label</label>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-4">
-                            <div class="border rounded-3 p-3 h-100" style="max-height: 220px; overflow:auto;">
-                                <div class="fw-semibold mb-2">Người dùng cụ thể</div>
-                                @foreach (var option in Model.Users)
-                                {
-                                    var id = $"upload-user-{option.Value}";
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="Upload.SelectedUserIds" value="@option.Value" id="@id"
-                                               checked="@(Model.Upload.SelectedUserIds.Contains(option.Value))" />
-                                        <label class="form-check-label" for="@id">@option.Label</label>
-                                    </div>
-                                }
-                            </div>
-                        </div>
+                        <button class="btn btn-sm btn-primary px-3 text-nowrap" type="button" onclick="document.getElementById('tab-upload-btn').click();">
+                            <i class="bi bi-plus-lg me-1"></i> Tải lên mới
+                        </button>
                     </div>
-                </fieldset>
-
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-4">
-                    <small class="text-muted">Pipeline: @(Model.PipelineVersion ?? "chưa cấu hình")</small>
-                    <button class="btn btn-primary" type="submit" disabled="@(!Model.PipelineConfigured)">
-                        <i class="bi bi-cloud-arrow-up me-1" aria-hidden="true"></i> Upload và xếp hàng
-                    </button>
                 </div>
-            </form>
-        </div>
-    </section>
 
-    <section aria-labelledby="sourcesHeading">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <h2 id="sourcesHeading" class="h5 mb-0">Nguồn và phiên bản</h2>
-            <span class="badge text-bg-light border">@Model.Documents.Count nguồn</span>
-        </div>
-
-        @if (Model.Documents.Count == 0)
-        {
-            <div class="card border-0 shadow-sm"><div class="card-body text-center py-5">
-                <i class="bi bi-database-add display-5 text-muted" aria-hidden="true"></i>
-                <p class="mt-3 mb-0 text-muted">Chưa có nguồn RAG nào trong tenant này.</p>
-            </div></div>
-        }
-        else
-        {
-            <div class="accordion" id="knowledgeSourcesAccordion">
-                @for (var documentIndex = 0; documentIndex < Model.Documents.Count; documentIndex++)
-                {
-                    var document = Model.Documents[documentIndex];
-                    var headingId = $"source-heading-{document.Id:N}";
-                    var collapseId = $"source-collapse-{document.Id:N}";
-                    <article class="accordion-item border-0 shadow-sm mb-3">
-                        <h3 class="accordion-header" id="@headingId">
-                            <button class="accordion-button @(documentIndex == 0 ? "" : "collapsed")" type="button"
-                                    data-bs-toggle="collapse" data-bs-target="#@collapseId"
-                                    aria-expanded="@(documentIndex == 0 ? "true" : "false")" aria-controls="@collapseId">
-                                <span class="d-flex flex-wrap align-items-center gap-2">
-                                    <strong>@document.Title</strong>
-                                    @if (document.IsDeleted)
-                                    {
-                                        <span class="badge text-bg-secondary">Đã xóa mềm</span>
-                                    }
-                                    else if (!document.AccessPolicyValid)
-                                    {
-                                        <span class="badge text-bg-danger">ACL lỗi</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge text-bg-success">Đang hoạt động</span>
-                                    }
-                                </span>
+                <div class="rag-card-body">
+                    @if (Model.Documents.Count == 0)
+                    {
+                        <div class="text-center py-5">
+                            <div class="rag-upload-icon mx-auto mb-3">
+                                <i class="bi bi-database-add"></i>
+                            </div>
+                            <h4 class="h5 fw-bold text-dark mb-1">Chưa có nguồn tài liệu nào</h4>
+                            <p class="text-muted small mb-3">Tải lên quy chế, tài liệu đào tạo hoặc hướng dẫn KPI để AI tham chiếu câu trả lời và đánh giá.</p>
+                            <button class="btn btn-primary btn-sm px-3" onclick="document.getElementById('tab-upload-btn').click();">
+                                <i class="bi bi-cloud-arrow-up me-1"></i> Tải lên tài liệu đầu tiên
                             </button>
-                        </h3>
-                        <div id="@collapseId" class="accordion-collapse collapse @(documentIndex == 0 ? "show" : "")" aria-labelledby="@headingId">
-                            <div class="accordion-body">
-                                <div class="row g-2 small text-muted mb-3">
-                                    <div class="col-12 col-md-4">Owner: <strong class="text-body">@document.OwnerName</strong></div>
-                                    <div class="col-12 col-md-4">ACL v@document.AccessPolicyVersion: @document.UserPrincipalCount user · @document.RolePrincipalCount role · @document.DepartmentPrincipalCount phòng ban</div>
-                                    <div class="col-12 col-md-4">Cập nhật: @document.UpdatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
-                                </div>
-
-                                <div class="table-responsive">
-                                    <table class="table table-sm align-middle">
-                                        <caption class="visually-hidden">Phiên bản và trạng thái xử lý của nguồn @document.Title</caption>
-                                        <thead><tr>
-                                            <th>Phiên bản</th><th>Tệp</th><th>Trạng thái</th><th>Job gần nhất</th><th>Thời gian</th><th class="text-end">Thao tác</th>
-                                        </tr></thead>
-                                        <tbody>
-                                        @foreach (var version in document.Versions)
-                                        {
-                                            <tr>
-                                                <td><strong>v@version.VersionNumber</strong><div class="text-muted font-monospace small">@version.ContentSha256[..12]</div></td>
-                                                <td>@version.OriginalFileName<div class="text-muted small">@FormatBytes(version.FileSizeBytes)</div></td>
-                                                <td><span class="badge @StatusClass(version.Status)">@version.Status</span></td>
-                                                <td>
-                                                    @if (version.LatestJob == null)
-                                                    {
-                                                        <span class="text-muted">Chưa có job</span>
-                                                        @if (version.Status == "Failed")
-                                                        {
-                                                            <div class="small text-danger mt-1">Chọn lại đúng tệp ở mục “Thêm phiên bản mới” để tiếp tục upload an toàn.</div>
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="badge @StatusClass(version.LatestJob.State)">@version.LatestJob.State</span>
-                                                        <div class="small text-muted mt-1">Lần thử: @version.LatestJob.AttemptCount</div>
-                                                        @if (!string.IsNullOrWhiteSpace(version.LatestJob.FailureCode))
-                                                        {
-                                                            <code class="small">@version.LatestJob.FailureCode</code>
-                                                        }
-                                                    }
-                                                </td>
-                                                <td class="text-muted small">@version.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                                                <td class="text-end">
-                                                    @if (!document.IsDeleted && version.LatestJob?.CanRetry == true)
-                                                    {
-                                                        <form asp-action="Retry" method="post" class="d-inline">
-                                                            <input type="hidden" name="VersionId" value="@version.Id" />
-                                                            <input type="hidden" name="JobId" value="@version.LatestJob.Id" />
-                                                            <input type="hidden" name="RowVersion" value="@version.LatestJob.RowVersion" />
-                                                            <button type="submit" class="btn btn-sm btn-outline-primary" disabled="@(!Model.PipelineConfigured)">
-                                                                Chạy lại
-                                                            </button>
-                                                        </form>
-                                                    }
-                                                </td>
-                                            </tr>
-                                        }
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                @if (!document.IsDeleted)
-                                {
-                                    <div class="row g-3 mt-2">
-                                        <div class="col-12 col-xl-5">
-                                            <div class="border rounded-3 p-3 h-100">
-                                                <h4 class="h6">Thêm phiên bản mới</h4>
-                                                <form asp-action="Upload" method="post" enctype="multipart/form-data">
-                                                    <input type="hidden" name="Upload.DocumentId" value="@document.Id" />
-                                                    <input type="hidden" name="Upload.SubmissionId" value="@Guid.NewGuid()" />
-                                                    <label class="form-label" for="version-file-@document.Id">Tệp thay thế</label>
-                                                    <input class="form-control form-control-sm" id="version-file-@document.Id" name="Upload.File" type="file" required
-                                                           accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.docx,.pptx,.xlsx" />
-                                                    <button type="submit" class="btn btn-sm btn-primary mt-3" disabled="@(!Model.PipelineConfigured)">Upload phiên bản</button>
-                                                </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="accordion" id="knowledgeSourcesAccordion">
+                            @for (var documentIndex = 0; documentIndex < Model.Documents.Count; documentIndex++)
+                            {
+                                var document = Model.Documents[documentIndex];
+                                var headingId = $"source-heading-{document.Id:N}";
+                                var collapseId = $"source-collapse-{document.Id:N}";
+                                <div class="rag-source-item" data-document-title="@document.Title.ToLowerInvariant()">
+                                    <div class="rag-source-header-btn" id="@headingId"
+                                         data-bs-toggle="collapse" data-bs-target="#@collapseId"
+                                         aria-expanded="@(documentIndex == 0 ? "true" : "false")" aria-controls="@collapseId">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="rag-stat-icon-wrapper @(document.IsDeleted ? "rag-stat-icon-warning" : "rag-stat-icon-primary")" style="width: 40px; height: 40px; margin-bottom: 0;">
+                                                <i class="bi @(document.IsDeleted ? "bi-trash" : "bi-file-earmark-text-fill") fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <div class="rag-source-title">@document.Title</div>
+                                                <div class="rag-source-meta">
+                                                    <span class="rag-source-meta-item">
+                                                        <i class="bi bi-person text-muted"></i> @document.OwnerName
+                                                    </span>
+                                                    <span class="rag-source-meta-item">
+                                                        <i class="bi bi-clock text-muted"></i> @document.UpdatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                    </span>
+                                                    <span class="rag-source-meta-item">
+                                                        <i class="bi bi-shield-check text-muted"></i> ACL: @document.RolePrincipalCount vai trò, @document.DepartmentPrincipalCount phòng ban, @document.UserPrincipalCount người dùng
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="col-12 col-xl-7">
-                                            <div class="border rounded-3 p-3 h-100">
-                                                <h4 class="h6">Cập nhật ACL</h4>
-                                                <form asp-action="UpdateAccess" method="post">
-                                                    <input type="hidden" name="DocumentId" value="@document.Id" />
-                                                    <input type="hidden" name="RowVersion" value="@document.RowVersion" />
-                                                    <div class="row g-2 small">
-                                                        <div class="col-12 col-md-4">
-                                                            <div class="fw-semibold mb-1">Vai trò</div>
-                                                            @for (var roleIndex = 0; roleIndex < Model.Roles.Count; roleIndex++)
-                                                            {
-                                                                var option = Model.Roles[roleIndex];
-                                                                var rolePrincipal = KnowledgeDocumentAccessPolicy.CreateRolePrincipal(option.Value);
-                                                                var id = $"acl-role-{document.Id:N}-{roleIndex}";
-                                                                <div class="form-check">
-                                                                    <input class="form-check-input" type="checkbox" name="SelectedRoles" value="@option.Value" id="@id"
-                                                                           checked="@(rolePrincipal != null && document.SelectedRolePrincipals.Contains(rolePrincipal, StringComparer.Ordinal))" />
-                                                                    <label class="form-check-label" for="@id">@option.Label</label>
+                                        <div class="d-flex align-items-center gap-2">
+                                            @if (document.IsDeleted)
+                                            {
+                                                <span class="rag-status-badge rag-status-secondary"><i class="bi bi-trash"></i> Đã xóa mềm</span>
+                                            }
+                                            else if (!document.AccessPolicyValid)
+                                            {
+                                                <span class="rag-status-badge rag-status-danger"><i class="bi bi-exclamation-octagon"></i> ACL lỗi</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="rag-status-badge rag-status-success"><i class="bi bi-check-circle"></i> Đang hoạt động</span>
+                                            }
+                                            <span class="badge bg-light text-secondary border">v@document.AccessPolicyVersion</span>
+                                            <i class="bi bi-chevron-down text-muted ms-2"></i>
+                                        </div>
+                                    </div>
+
+                                    <div id="@collapseId" class="accordion-collapse collapse @(documentIndex == 0 ? "show" : "")" aria-labelledby="@headingId">
+                                        <div class="p-3 border-top bg-white">
+                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <h5 class="h6 fw-bold text-dark mb-0">Lịch sử các phiên bản (@document.Versions.Count phiên bản)</h5>
+                                            </div>
+
+                                            <div class="table-responsive">
+                                                <table class="table rag-version-table table-sm align-middle mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Phiên bản</th>
+                                                            <th>Tệp gốc</th>
+                                                            <th>Trạng thái Ingestion</th>
+                                                            <th>Job gần nhất</th>
+                                                            <th>Thời gian tạo</th>
+                                                            <th class="text-end">Thao tác</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var version in document.Versions)
+                                                        {
+                                                            <tr>
+                                                                <td>
+                                                                    <div class="d-flex align-items-center gap-2">
+                                                                        <span class="badge bg-primary-subtle text-primary fw-bold">v@version.VersionNumber</span>
+                                                                        <span class="rag-sha-chip" title="@version.ContentSha256">
+                                                                            @version.ContentSha256[..12]...
+                                                                        </span>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="fw-semibold text-dark">@version.OriginalFileName</div>
+                                                                    <div class="small text-muted">@FormatBytes(version.FileSizeBytes)</div>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="rag-status-badge @StatusBadge(version.Status)">
+                                                                        <i class="bi @StatusIcon(version.Status)"></i> @version.Status
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    @if (version.LatestJob == null)
+                                                                    {
+                                                                        <span class="text-muted small">Chưa có job</span>
+                                                                        @if (version.Status == "Failed")
+                                                                        {
+                                                                            <div class="small text-danger mt-1">Vui lòng tải lại tệp ở form dưới.</div>
+                                                                        }
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="rag-status-badge @StatusBadge(version.LatestJob.State)">
+                                                                            <i class="bi @StatusIcon(version.LatestJob.State)"></i> @version.LatestJob.State
+                                                                        </span>
+                                                                        <div class="small text-muted mt-1">Lần thử: @version.LatestJob.AttemptCount</div>
+                                                                        @if (!string.IsNullOrWhiteSpace(version.LatestJob.FailureCode))
+                                                                        {
+                                                                            <code class="small text-danger">@version.LatestJob.FailureCode</code>
+                                                                        }
+                                                                    }
+                                                                </td>
+                                                                <td class="text-muted small">
+                                                                    @version.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                                </td>
+                                                                <td class="text-end">
+                                                                    @if (!document.IsDeleted && version.LatestJob?.CanRetry == true)
+                                                                    {
+                                                                        <form asp-action="Retry" method="post" class="d-inline">
+                                                                            <input type="hidden" name="VersionId" value="@version.Id" />
+                                                                            <input type="hidden" name="JobId" value="@version.LatestJob.Id" />
+                                                                            <input type="hidden" name="RowVersion" value="@version.LatestJob.RowVersion" />
+                                                                            <button type="submit" class="btn btn-sm btn-outline-primary" disabled="@(!Model.PipelineConfigured)">
+                                                                                <i class="bi bi-arrow-clockwise me-1"></i> Chạy lại
+                                                                            </button>
+                                                                        </form>
+                                                                    }
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            @if (!document.IsDeleted)
+                                            {
+                                                <div class="row g-3 mt-3 pt-3 border-top">
+                                                    <!-- FORM THÊM PHIÊN BẢN MỚI -->
+                                                    <div class="col-12 col-xl-5">
+                                                        <div class="border rounded-3 p-3 h-100 bg-light-subtle">
+                                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                                <i class="bi bi-cloud-arrow-up text-primary"></i>
+                                                                <h4 class="h6 fw-bold mb-0">Thêm phiên bản tệp thay thế</h4>
+                                                            </div>
+                                                            <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                                                                <input type="hidden" name="Upload.DocumentId" value="@document.Id" />
+                                                                <input type="hidden" name="Upload.SubmissionId" value="@Guid.NewGuid()" />
+                                                                <div class="mb-3">
+                                                                    <label class="form-label small fw-semibold text-muted" for="version-file-@document.Id">Chọn tệp cập nhật</label>
+                                                                    <input class="form-control form-control-sm" id="version-file-@document.Id" name="Upload.File" type="file" required
+                                                                           accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.docx,.pptx,.xlsx" />
+                                                                    <div class="form-text small">Tệp PDF, DOCX, XLSX, PPTX, hình ảnh (tối đa 25MB).</div>
                                                                 </div>
-                                                            }
-                                                        </div>
-                                                        <div class="col-12 col-md-4">
-                                                            <div class="fw-semibold mb-1">Phòng ban</div>
-                                                            @foreach (var option in Model.Departments)
-                                                            {
-                                                                var id = $"acl-department-{document.Id:N}-{option.Value}";
-                                                                <div class="form-check">
-                                                                    <input class="form-check-input" type="checkbox" name="SelectedDepartmentIds" value="@option.Value" id="@id"
-                                                                           checked="@(document.SelectedDepartmentIds.Contains(option.Value))" />
-                                                                    <label class="form-check-label" for="@id">@option.Label</label>
-                                                                </div>
-                                                            }
-                                                        </div>
-                                                        <div class="col-12 col-md-4">
-                                                            <div class="fw-semibold mb-1">Người dùng</div>
-                                                            @foreach (var option in Model.Users)
-                                                            {
-                                                                var id = $"acl-user-{document.Id:N}-{option.Value}";
-                                                                <div class="form-check">
-                                                                    <input class="form-check-input" type="checkbox" name="SelectedUserIds" value="@option.Value" id="@id"
-                                                                           checked="@(document.SelectedUserIds.Contains(option.Value))" />
-                                                                    <label class="form-check-label" for="@id">@option.Label</label>
-                                                                </div>
-                                                            }
+                                                                <button type="submit" class="btn btn-sm btn-primary" disabled="@(!Model.PipelineConfigured)">
+                                                                    <i class="bi bi-cloud-upload me-1"></i> Tải lên phiên bản mới
+                                                                </button>
+                                                            </form>
                                                         </div>
                                                     </div>
-                                                    <button type="submit" class="btn btn-sm btn-outline-primary mt-3" disabled="@(!Model.PipelineConfigured)">Lưu ACL và re-index</button>
-                                                </form>
+
+                                                    <!-- FORM CẬP NHẬT PHÂN QUYỀN ACL -->
+                                                    <div class="col-12 col-xl-7">
+                                                        <div class="border rounded-3 p-3 h-100 bg-light-subtle">
+                                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                                <div class="d-flex align-items-center gap-2">
+                                                                    <i class="bi bi-shield-lock text-primary"></i>
+                                                                    <h4 class="h6 fw-bold mb-0">Cập nhật phân quyền ACL</h4>
+                                                                </div>
+                                                                <span class="badge bg-secondary-subtle text-secondary small">Tự động Re-index</span>
+                                                            </div>
+                                                            <form asp-action="UpdateAccess" method="post">
+                                                                <input type="hidden" name="DocumentId" value="@document.Id" />
+                                                                <input type="hidden" name="RowVersion" value="@document.RowVersion" />
+                                                                
+                                                                <div class="row g-2">
+                                                                    <div class="col-12 col-md-4">
+                                                                        <div class="border rounded p-2 bg-white" style="max-height: 160px; overflow-y: auto;">
+                                                                            <div class="fw-bold small text-muted mb-1">Vai trò (@Model.Roles.Count)</div>
+                                                                            @for (var roleIndex = 0; roleIndex < Model.Roles.Count; roleIndex++)
+                                                                            {
+                                                                                var option = Model.Roles[roleIndex];
+                                                                                var rolePrincipal = KnowledgeDocumentAccessPolicy.CreateRolePrincipal(option.Value);
+                                                                                var id = $"acl-role-{document.Id:N}-{roleIndex}";
+                                                                                <div class="form-check form-check-sm mb-1">
+                                                                                    <input class="form-check-input" type="checkbox" name="SelectedRoles" value="@option.Value" id="@id"
+                                                                                           checked="@(rolePrincipal != null && document.SelectedRolePrincipals.Contains(rolePrincipal, StringComparer.Ordinal))" />
+                                                                                    <label class="form-check-label small" for="@id">@option.Label</label>
+                                                                                </div>
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                    <div class="col-12 col-md-4">
+                                                                        <div class="border rounded p-2 bg-white" style="max-height: 160px; overflow-y: auto;">
+                                                                            <div class="fw-bold small text-muted mb-1">Phòng ban (@Model.Departments.Count)</div>
+                                                                            @foreach (var option in Model.Departments)
+                                                                            {
+                                                                                var id = $"acl-department-{document.Id:N}-{option.Value}";
+                                                                                <div class="form-check form-check-sm mb-1">
+                                                                                    <input class="form-check-input" type="checkbox" name="SelectedDepartmentIds" value="@option.Value" id="@id"
+                                                                                           checked="@(document.SelectedDepartmentIds.Contains(option.Value))" />
+                                                                                    <label class="form-check-label small" for="@id">@option.Label</label>
+                                                                                </div>
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div class="col-12 col-md-4">
+                                                                        <div class="border rounded p-2 bg-white" style="max-height: 160px; overflow-y: auto;">
+                                                                            <div class="fw-bold small text-muted mb-1">Người dùng (@Model.Users.Count)</div>
+                                                                            @foreach (var option in Model.Users)
+                                                                            {
+                                                                                var id = $"acl-user-{document.Id:N}-{option.Value}";
+                                                                                <div class="form-check form-check-sm mb-1">
+                                                                                    <input class="form-check-input" type="checkbox" name="SelectedUserIds" value="@option.Value" id="@id"
+                                                                                           checked="@(document.SelectedUserIds.Contains(option.Value))" />
+                                                                                    <label class="form-check-label small" for="@id">@option.Label</label>
+                                                                                </div>
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="d-flex align-items-center justify-content-between mt-3">
+                                                                    <button type="submit" class="btn btn-sm btn-outline-primary" disabled="@(!Model.PipelineConfigured)">
+                                                                        <i class="bi bi-save me-1"></i> Lưu ACL & Re-index
+                                                                    </button>
+                                                                    
+                                                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                                            onclick="if(confirm('Bạn có chắc chắn muốn xóa mềm nguồn này? Việc tìm kiếm retrieval sẽ bị khóa ngay.')) { document.getElementById('delete-form-@document.Id').submit(); }">
+                                                                        <i class="bi bi-trash me-1"></i> Xóa mềm nguồn
+                                                                    </button>
+                                                                </div>
+                                                            </form>
+                                                            
+                                                            <form id="delete-form-@document.Id" asp-action="Delete" method="post" class="d-none">
+                                                                <input type="hidden" name="DocumentId" value="@document.Id" />
+                                                                <input type="hidden" name="RowVersion" value="@document.RowVersion" />
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </section>
+        </div>
+
+        <!-- ===================================================================
+             TAB 2: THÊM NGUỒN MỚI & PHÂN QUYỀN (UPLOAD & ACL MATRIX)
+             =================================================================== -->
+        <div class="tab-pane fade" id="tab-upload" role="tabpanel" aria-labelledby="tab-upload-btn">
+            <section class="rag-card" aria-labelledby="uploadHeading">
+                <div class="rag-card-header">
+                    <div>
+                        <h2 id="uploadHeading" class="rag-card-title">
+                            <i class="bi bi-cloud-arrow-up-fill text-primary"></i> Tải lên nguồn tri thức & Phân quyền ACL
+                        </h2>
+                        <p class="rag-card-subtitle">
+                            Hỗ trợ tệp tài liệu tối đa 25 MB. Dữ liệu được trích xuất an toàn qua MinerU và nhúng vector BGE-M3.
+                        </p>
+                    </div>
+                    <div class="rag-card-actions">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 text-nowrap">
+                            <i class="bi bi-shield-check me-1"></i> ACL Cô lập theo Tenant
+                        </span>
+                    </div>
+                </div>
+
+                <div class="rag-card-body">
+                    <form asp-action="Upload" method="post" enctype="multipart/form-data" id="ragUploadForm">
+                        <input asp-for="Upload.SubmissionId" type="hidden" />
+
+                        <div class="row g-4">
+                            <!-- CỘT TRÁI: THÔNG TIN TÀI LIỆU & DROPZONE -->
+                            <div class="col-12 col-lg-5">
+                                <div class="mb-3">
+                                    <label asp-for="Upload.Title" class="form-label fw-bold text-dark">Tên nguồn tài liệu <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="bi bi-bookmark-fill text-primary"></i></span>
+                                        <input asp-for="Upload.Title" class="form-control" maxlength="256" placeholder="Ví dụ: Quy chế đánh giá KPI & Thưởng 2026" required />
+                                    </div>
+                                    <span asp-validation-for="Upload.Title" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-dark">Tệp tài liệu <span class="text-danger">*</span></label>
+                                    
+                                    <div class="rag-upload-dropzone" id="uploadDropzone">
+                                        <div class="rag-upload-icon">
+                                            <i class="bi bi-file-earmark-arrow-up"></i>
+                                        </div>
+                                        <h5 class="fw-bold text-dark mb-1" id="dropzoneText">Kéo & thả tệp vào đây hoặc nhấn để duyệt</h5>
+                                        <p class="text-muted small mb-2">Hỗ trợ các định dạng tiêu chuẩn (tối đa 25MB):</p>
+                                        <div class="d-flex flex-wrap justify-content-center gap-1 mb-2">
+                                            <span class="rag-file-pill rag-file-pdf">.PDF</span>
+                                            <span class="rag-file-pill rag-file-word">.DOCX</span>
+                                            <span class="rag-file-pill rag-file-excel">.XLSX</span>
+                                            <span class="rag-file-pill rag-file-ppt">.PPTX</span>
+                                            <span class="rag-file-pill rag-file-img">.PNG/.JPG</span>
+                                        </div>
+                                        <div id="fileSelectedInfo" class="d-none mt-2 alert alert-info py-2 px-3 mb-0 small text-start">
+                                            <i class="bi bi-check-circle-fill text-success me-1"></i> <strong id="selectedFileName"></strong> (<span id="selectedFileSize"></span>)
+                                        </div>
+                                        <input asp-for="Upload.File" class="d-none" type="file" id="realFileInput"
+                                               accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.docx,.pptx,.xlsx" required />
+                                    </div>
+                                    <span asp-validation-for="Upload.File" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <!-- CỘT PHẢI: MA TRẬN PHÂN QUYỀN ACL (ROLES, DEPTS, USERS) -->
+                            <div class="col-12 col-lg-7">
+                                <fieldset class="h-100">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <legend class="h6 fw-bold text-dark mb-0">Ai được quyền truy cập nguồn tri thức này?</legend>
+                                        <span class="badge bg-info-subtle text-info small">Chọn ít nhất 1 quyền</span>
+                                    </div>
+                                    <p class="text-muted small mb-3">
+                                        Server tự động kiểm tra và khóa quyền truy xuất RAG theo danh sách đã chọn.
+                                    </p>
+
+                                    <div class="row g-3">
+                                        <!-- VAI TRÒ -->
+                                        <div class="col-12 col-md-4">
+                                            <div class="rag-acl-box">
+                                                <div class="rag-acl-box-header">
+                                                    <span class="rag-acl-box-title">
+                                                        <i class="bi bi-person-badge text-primary"></i> Vai trò
+                                                    </span>
+                                                    <span class="rag-acl-badge-count" id="roleCountBadge">0/@Model.Roles.Count</span>
+                                                </div>
+                                                <div class="rag-acl-search">
+                                                    <i class="bi bi-search"></i>
+                                                    <input type="text" class="form-control form-control-sm" placeholder="Lọc vai trò..." onkeyup="filterAclList(this, 'roleAclList')" />
+                                                </div>
+                                                <div class="rag-acl-list" id="roleAclList">
+                                                    @for (var roleIndex = 0; roleIndex < Model.Roles.Count; roleIndex++)
+                                                    {
+                                                        var option = Model.Roles[roleIndex];
+                                                        var id = $"upload-role-{roleIndex}";
+                                                        <label class="rag-acl-item" for="@id">
+                                                            <input class="form-check-input" type="checkbox" name="Upload.SelectedRoles" value="@option.Value" id="@id"
+                                                                   checked="@(Model.Upload.SelectedRoles.Contains(option.Value, StringComparer.OrdinalIgnoreCase))"
+                                                                   onchange="updateAclBadges()" />
+                                                            <span class="form-check-label">@option.Label</span>
+                                                        </label>
+                                                    }
+                                                </div>
+                                                <div class="rag-acl-quick-actions">
+                                                    <button type="button" class="rag-acl-quick-btn" onclick="toggleAllAcl('roleAclList', true)">Tất cả</button>
+                                                    <button type="button" class="rag-acl-quick-btn" onclick="toggleAllAcl('roleAclList', false)">Bỏ chọn</button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- PHÒNG BAN -->
+                                        <div class="col-12 col-md-4">
+                                            <div class="rag-acl-box">
+                                                <div class="rag-acl-box-header">
+                                                    <span class="rag-acl-box-title">
+                                                        <i class="bi bi-building text-info"></i> Phòng ban
+                                                    </span>
+                                                    <span class="rag-acl-badge-count" id="deptCountBadge">0/@Model.Departments.Count</span>
+                                                </div>
+                                                <div class="rag-acl-search">
+                                                    <i class="bi bi-search"></i>
+                                                    <input type="text" class="form-control form-control-sm" placeholder="Lọc phòng ban..." onkeyup="filterAclList(this, 'deptAclList')" />
+                                                </div>
+                                                <div class="rag-acl-list" id="deptAclList">
+                                                    @foreach (var option in Model.Departments)
+                                                    {
+                                                        var id = $"upload-department-{option.Value}";
+                                                        <label class="rag-acl-item" for="@id">
+                                                            <input class="form-check-input" type="checkbox" name="Upload.SelectedDepartmentIds" value="@option.Value" id="@id"
+                                                                   checked="@(Model.Upload.SelectedDepartmentIds.Contains(option.Value))"
+                                                                   onchange="updateAclBadges()" />
+                                                            <span class="form-check-label">@option.Label</span>
+                                                        </label>
+                                                    }
+                                                </div>
+                                                <div class="rag-acl-quick-actions">
+                                                    <button type="button" class="rag-acl-quick-btn" onclick="toggleAllAcl('deptAclList', true)">Tất cả</button>
+                                                    <button type="button" class="rag-acl-quick-btn" onclick="toggleAllAcl('deptAclList', false)">Bỏ chọn</button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- NGƯỜI DÙNG CỤ THỂ -->
+                                        <div class="col-12 col-md-4">
+                                            <div class="rag-acl-box">
+                                                <div class="rag-acl-box-header">
+                                                    <span class="rag-acl-box-title">
+                                                        <i class="bi bi-people text-success"></i> Người dùng
+                                                    </span>
+                                                    <span class="rag-acl-badge-count" id="userCountBadge">0/@Model.Users.Count</span>
+                                                </div>
+                                                <div class="rag-acl-search">
+                                                    <i class="bi bi-search"></i>
+                                                    <input type="text" class="form-control form-control-sm" placeholder="Lọc người dùng..." onkeyup="filterAclList(this, 'userAclList')" />
+                                                </div>
+                                                <div class="rag-acl-list" id="userAclList">
+                                                    @foreach (var option in Model.Users)
+                                                    {
+                                                        var id = $"upload-user-{option.Value}";
+                                                        <label class="rag-acl-item" for="@id">
+                                                            <input class="form-check-input" type="checkbox" name="Upload.SelectedUserIds" value="@option.Value" id="@id"
+                                                                   checked="@(Model.Upload.SelectedUserIds.Contains(option.Value))"
+                                                                   onchange="updateAclBadges()" />
+                                                            <span class="form-check-label">@option.Label</span>
+                                                        </label>
+                                                    }
+                                                </div>
+                                                <div class="rag-acl-quick-actions">
+                                                    <button type="button" class="rag-acl-quick-btn" onclick="toggleAllAcl('userAclList', true)">Tất cả</button>
+                                                    <button type="button" class="rag-acl-quick-btn" onclick="toggleAllAcl('userAclList', false)">Bỏ chọn</button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <form asp-action="Delete" method="post" class="mt-3 text-end" onsubmit="return confirm('Xóa mềm nguồn này? Retrieval sẽ bị khóa ngay.');">
-                                        <input type="hidden" name="DocumentId" value="@document.Id" />
-                                        <input type="hidden" name="RowVersion" value="@document.RowVersion" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Xóa mềm nguồn</button>
-                                    </form>
-                                }
+                                </fieldset>
                             </div>
                         </div>
-                    </article>
-                }
-            </div>
-        }
-    </section>
+
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-4 pt-3 border-top">
+                            <div class="small text-muted">
+                                <i class="bi bi-info-circle me-1"></i> Trạng thái Ingestion: <strong>@(Model.PipelineVersion ?? "Chưa kích hoạt pipeline")</strong>
+                            </div>
+                            <button class="btn btn-primary px-4 py-2 fw-semibold shadow" type="submit" disabled="@(!Model.PipelineConfigured)">
+                                <i class="bi bi-cloud-arrow-up-fill me-1" aria-hidden="true"></i> Bắt đầu Upload & Xếp hàng Lập chỉ mục
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+
+        <!-- ===================================================================
+             TAB 3: HÀNG ĐỢI AI CHECK-IN OUTBOX
+             =================================================================== -->
+        <div class="tab-pane fade" id="tab-queue" role="tabpanel" aria-labelledby="tab-queue-btn">
+            <section class="rag-card" aria-labelledby="checkInOutboxHeading">
+                <div class="rag-card-header">
+                    <div>
+                        <h2 id="checkInOutboxHeading" class="rag-card-title">
+                            <i class="bi bi-inboxes-fill text-primary"></i> Hàng đợi AI đánh giá check-in (Outbox Queue)
+                        </h2>
+                        <p class="rag-card-subtitle">
+                            Theo dõi các yêu cầu đánh giá tự động check-in qua Outbox Worker bất đồng bộ.
+                        </p>
+                    </div>
+                    <div class="rag-card-actions">
+                        <span class="rag-status-badge rag-status-primary text-nowrap">
+                            <i class="bi bi-arrow-repeat"></i> @Model.CheckInOutbox.ActiveCount đang xử lý
+                        </span>
+                        <span class="rag-status-badge @(Model.CheckInOutbox.DeadLetterCount > 0 ? "rag-status-danger" : "rag-status-success") text-nowrap">
+                            <i class="bi @(Model.CheckInOutbox.DeadLetterCount > 0 ? "bi-exclamation-triangle" : "bi-check-all")"></i>
+                            @Model.CheckInOutbox.DeadLetterCount dead-letter
+                        </span>
+                    </div>
+                </div>
+
+                <div class="rag-card-body p-0">
+                    @if (Model.CheckInOutbox.Rows.Count == 0)
+                    {
+                        <div class="text-center py-5">
+                            <div class="rag-stat-icon-wrapper rag-stat-icon-success mx-auto mb-2">
+                                <i class="bi bi-check2-all"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark">Hàng đợi trống</h5>
+                            <p class="text-muted small mb-0">Chưa có job đánh giá check-in nào trong tenant này.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table rag-queue-table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Check-in ID</th>
+                                        <th>Nhân viên & KPI</th>
+                                        <th>Trạng thái Job</th>
+                                        <th>Lần chạy</th>
+                                        <th>Mã lỗi (Failure Code)</th>
+                                        <th class="text-end">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var job in Model.CheckInOutbox.Rows)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="fw-bold text-primary">#@job.CheckInId</div>
+                                                <div class="small text-muted">@job.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold text-dark">@job.EmployeeName</div>
+                                                <div class="small text-muted">@job.KpiName</div>
+                                            </td>
+                                            <td>
+                                                <span class="rag-status-badge @StatusBadge(job.State)">
+                                                    <i class="bi @StatusIcon(job.State)"></i> @job.State
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge @(job.AttemptCount > 1 ? "bg-warning-subtle text-warning" : "bg-light text-dark")">
+                                                    @job.AttemptCount lần
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @if (string.IsNullOrWhiteSpace(job.FailureCode))
+                                                {
+                                                    <span class="text-muted">—</span>
+                                                }
+                                                else
+                                                {
+                                                    <code class="text-danger">@job.FailureCode</code>
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                @if (job.CanRetry)
+                                                {
+                                                    <form asp-action="RetryCheckInAi" method="post" class="d-inline">
+                                                        <input type="hidden" name="OutboxId" value="@job.Id" />
+                                                        <input type="hidden" name="RowVersion" value="@job.RowVersion" />
+                                                        <button type="submit" class="btn btn-sm btn-danger shadow-sm">
+                                                            <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i> Chạy lại
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <span class="small text-muted"><i class="bi bi-clock me-1"></i> Tự động</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+
+                <div class="rag-card-footer">
+                    <i class="bi bi-shield-check me-1 text-primary"></i> Chạy lại (Retry) chỉ áp dụng cho job <strong>DeadLetter</strong> và server sẽ kiểm tra lại trạng thái Check-in Pending, nguồn tài liệu hiện hành, tenant và row-version.
+                </div>
+            </section>
+        </div>
+
+        <!-- ===================================================================
+             TAB 4: CHẤT LƯỢNG VẬN HÀNH RAG (TELEMETRY & METRICS)
+             =================================================================== -->
+        <div class="tab-pane fade" id="tab-metrics" role="tabpanel" aria-labelledby="tab-metrics-btn">
+            <section class="rag-card" aria-labelledby="operationalMetricsHeading">
+                <div class="rag-card-header">
+                    <div>
+                        <h2 id="operationalMetricsHeading" class="rag-card-title">
+                            <i class="bi bi-speedometer2 text-primary"></i> Chỉ số chất lượng vận hành RAG Engine
+                        </h2>
+                        <p class="rag-card-subtitle">
+                            Đo lường hiệu suất Indexing, Latency và mức độ phủ nguồn Citation trong @Model.Metrics.WindowDays ngày gần nhất.
+                        </p>
+                    </div>
+                    <div class="rag-card-actions">
+                        <span class="badge bg-light text-dark border px-3 py-2 text-nowrap">
+                            <i class="bi bi-calendar3 me-1"></i> Cửa sổ @Model.Metrics.WindowDays ngày
+                        </span>
+                    </div>
+                </div>
+
+                <div class="rag-card-body">
+                    <div class="rag-metric-grid">
+                        <div class="rag-metric-tile">
+                            <div class="rag-metric-title">
+                                <span>INDEX HOÀN TẤT</span>
+                                <i class="bi bi-check2-circle text-success fs-6"></i>
+                            </div>
+                            <div class="rag-metric-value text-success">@Model.Metrics.CompletedIndexJobCount</div>
+                            <div class="rag-metric-subtext text-danger">
+                                <i class="bi bi-exclamation-octagon me-1"></i> @Model.Metrics.DeadLetterIndexJobCount dead-letter
+                            </div>
+                        </div>
+
+                        <div class="rag-metric-tile">
+                            <div class="rag-metric-title">
+                                <span>INDEX THÀNH CÔNG</span>
+                                <i class="bi bi-pie-chart-fill text-primary fs-6"></i>
+                            </div>
+                            <div class="rag-metric-value text-primary">@FormatRate(Model.Metrics.IngestionSuccessRate)</div>
+                            <div class="rag-progress">
+                                <div class="rag-progress-bar" style="width: @(Model.Metrics.IngestionSuccessRate.HasValue ? $"{Model.Metrics.IngestionSuccessRate.Value * 100}%" : "0%")"></div>
+                            </div>
+                            <div class="rag-metric-subtext mt-1">Completed / Terminal</div>
+                        </div>
+
+                        <div class="rag-metric-tile">
+                            <div class="rag-metric-title">
+                                <span>JOB CÓ RETRY</span>
+                                <i class="bi bi-arrow-repeat text-warning fs-6"></i>
+                            </div>
+                            <div class="rag-metric-value text-warning">@FormatRate(Model.Metrics.RetriedJobRate)</div>
+                            <div class="rag-metric-subtext">Số lần thử &gt; 0</div>
+                        </div>
+
+                        <div class="rag-metric-tile">
+                            <div class="rag-metric-title">
+                                <span>LATENCY INDEX</span>
+                                <i class="bi bi-stopwatch text-info fs-6"></i>
+                            </div>
+                            <div class="rag-metric-value">@FormatMinutes(Model.Metrics.AverageLatencyMinutes)</div>
+                            <div class="rag-metric-subtext">
+                                P95: <strong>@FormatMinutes(Model.Metrics.P95LatencyMinutes)</strong>
+                            </div>
+                        </div>
+
+                        <div class="rag-metric-tile">
+                            <div class="rag-metric-title">
+                                <span>PROPOSAL CITATION</span>
+                                <i class="bi bi-file-text-fill text-primary fs-6"></i>
+                            </div>
+                            <div class="rag-metric-value text-primary">@FormatRate(Model.Metrics.ProposalCitationCoverage)</div>
+                            <div class="rag-metric-subtext">
+                                Tổng @Model.Metrics.ProposalCount proposal
+                            </div>
+                        </div>
+
+                        <div class="rag-metric-tile">
+                            <div class="rag-metric-title">
+                                <span>TRÍCH DẪN TRỰC TIẾP</span>
+                                <i class="bi bi-patch-check-fill text-success fs-6"></i>
+                            </div>
+                            <div class="rag-metric-value text-success">@FormatRate(Model.Metrics.CurrentDirectCitationRate)</div>
+                            <div class="rag-metric-subtext">
+                                Abstain: <strong>@FormatRate(Model.Metrics.AbstainRate)</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-light border rounded-3 mt-3 mb-0 small text-muted">
+                        <i class="bi bi-info-circle me-1"></i> Coverage đo lường proposal có ít nhất một citation metadata; không thay thế kiểm mẫu citation precision trước khi triển khai thực tế.
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ===================================================================
+             TAB 5: HIỆU CHỈNH AI & CONFIDENCE BANDS (CALIBRATION)
+             =================================================================== -->
+        <div class="tab-pane fade" id="tab-calibration" role="tabpanel" aria-labelledby="tab-calibration-btn">
+            <section class="rag-card" aria-labelledby="checkInCalibrationHeading">
+                <div class="rag-card-header">
+                    <div>
+                        <h2 id="checkInCalibrationHeading" class="rag-card-title">
+                            <i class="bi bi-sliders text-primary"></i> Hiệu chỉnh AI đánh giá check-in (Calibration)
+                        </h2>
+                        <p class="rag-card-subtitle">
+                            Thống kê độ lệch điểm số giữa AI và Người duyệt (Reviewer) trong @Model.CheckInCalibration.WindowDays ngày gần nhất.
+                        </p>
+                    </div>
+                    <div class="rag-card-actions">
+                        <span class="badge bg-light text-dark border px-3 py-2 text-nowrap">
+                            <i class="bi bi-funnel me-1"></i> Yêu cầu mẫu ≥ @Model.CheckInCalibration.MinimumSampleSize
+                        </span>
+                    </div>
+                </div>
+
+                <div class="rag-card-body">
+                    <div class="rag-metric-grid">
+                        <div class="rag-metric-tile">
+                            <div class="rag-metric-title">PROPOSAL PROVISIONAL</div>
+                            <div class="rag-metric-value">@Model.CheckInCalibration.ProposalCount</div>
+                            <div class="rag-metric-subtext">@Model.CheckInCalibration.AwaitingHumanReviewCount chờ duyệt</div>
+                        </div>
+
+                        <div class="rag-metric-tile">
+                            <div class="rag-metric-title">QUYẾT ĐỊNH PHÂN LOẠI</div>
+                            <div class="rag-metric-value">@Model.CheckInCalibration.ClassifiedDecisionCount</div>
+                            <div class="rag-metric-subtext">Dùng @Model.CheckInCalibration.AdoptedCount · Loại @Model.CheckInCalibration.RejectedCount</div>
+                        </div>
+
+                        <div class="rag-metric-tile">
+                            <div class="rag-metric-title">TỶ LỆ DÙNG ĐỀ XUẤT</div>
+                            <div class="rag-metric-value text-primary">
+                                @(Model.CheckInCalibration.AdoptionRate.HasValue ? Model.CheckInCalibration.AdoptionRate.Value.ToString("P0") : "—")
+                            </div>
+                            <div class="rag-metric-subtext">
+                                @(Model.CheckInCalibration.AdoptionRate.HasValue
+                                    ? $"Duyệt {Model.CheckInCalibration.AppliedToApprovedReviewCount} · Loại {Model.CheckInCalibration.AppliedToRejectedReviewCount}"
+                                    : $"Chưa đủ mẫu ({Model.CheckInCalibration.ClassifiedDecisionCount}/{Model.CheckInCalibration.MinimumSampleSize})")
+                            </div>
+                        </div>
+
+                        <div class="rag-metric-tile">
+                            <div class="rag-metric-title">TỶ LỆ ĐIỂM ĐƯỢC CHỈNH</div>
+                            <div class="rag-metric-value text-warning">
+                                @(Model.CheckInCalibration.ScoreEditRate.HasValue ? Model.CheckInCalibration.ScoreEditRate.Value.ToString("P0") : "—")
+                            </div>
+                            <div class="rag-metric-subtext">
+                                @(Model.CheckInCalibration.ScoreEditRate.HasValue
+                                    ? $"{Model.CheckInCalibration.ScoreEditedCount}/{Model.CheckInCalibration.ComparedScoreCount} bản chỉnh"
+                                    : $"Chưa đủ mẫu ({Model.CheckInCalibration.ComparedScoreCount}/{Model.CheckInCalibration.MinimumSampleSize})")
+                            </div>
+                        </div>
+
+                        <div class="rag-metric-tile">
+                            <div class="rag-metric-title">CHÊNH LỆCH AI–NGƯỜI DUYỆT</div>
+                            <div class="rag-metric-value">
+                                MAE @(Model.CheckInCalibration.AverageAbsoluteAiReviewerDelta.HasValue ? $"{Model.CheckInCalibration.AverageAbsoluteAiReviewerDelta.Value:0.##}" : "—")
+                            </div>
+                            <div class="rag-metric-subtext">Có dấu: @FormatSignedPoints(Model.CheckInCalibration.AverageSignedAiReviewerDelta)</div>
+                        </div>
+
+                        <div class="rag-metric-tile">
+                            <div class="rag-metric-title">ABSTAIN ĐỊNH TÍNH</div>
+                            <div class="rag-metric-value text-info">
+                                @(Model.CheckInCalibration.QualitativeAbstainRate.HasValue ? Model.CheckInCalibration.QualitativeAbstainRate.Value.ToString("P0") : "—")
+                            </div>
+                            <div class="rag-metric-subtext">
+                                @(Model.CheckInCalibration.QualitativeAbstainRate.HasValue
+                                    ? $"{Model.CheckInCalibration.QualitativeAbstainCount}/{Model.CheckInCalibration.QualitativeProposalCount} proposal"
+                                    : $"Chưa đủ mẫu ({Model.CheckInCalibration.QualitativeProposalCount}/{Model.CheckInCalibration.MinimumSampleSize})")
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (Model.CheckInCalibration.UnclassifiedDecisionCount > 0)
+                    {
+                        <div class="alert alert-warning py-2 mb-3" role="status">
+                            <i class="bi bi-exclamation-triangle me-1"></i> Có @Model.CheckInCalibration.UnclassifiedDecisionCount quyết định metadata chưa thuộc contract hiện hành.
+                        </div>
+                    }
+
+                    <!-- CONFIDENCE BAND TABLE -->
+                    <h5 class="h6 fw-bold text-dark mb-2">Phân bố độ tin cậy đề xuất theo Dải Confidence Band</h5>
+                    <div class="table-responsive">
+                        <table class="table rag-version-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Confidence Band</th>
+                                    <th class="text-end">Proposal</th>
+                                    <th class="text-end">Quyết định</th>
+                                    <th class="text-end">Đã dùng</th>
+                                    <th class="text-end">Không dùng</th>
+                                    <th>Tỷ lệ dùng</th>
+                                    <th>MAE AI–Người duyệt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var band in Model.CheckInCalibration.ConfidenceBands)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="rag-confidence-band-tag @ConfidenceBandStyle(band.Code)">
+                                                <i class="bi bi-tag-fill"></i> @band.Label
+                                            </span>
+                                        </td>
+                                        <td class="text-end fw-semibold">@band.ProposalCount</td>
+                                        <td class="text-end">@band.ClassifiedDecisionCount</td>
+                                        <td class="text-end text-success fw-semibold">@band.AdoptedCount</td>
+                                        <td class="text-end text-danger">@band.RejectedCount</td>
+                                        <td>
+                                            <span class="fw-semibold">@FormatSampledRate(band.AdoptionRate, band.ClassifiedDecisionCount)</span>
+                                        </td>
+                                        <td>
+                                            <span class="fw-semibold">@FormatAbsolutePoints(band.AverageAbsoluteAiReviewerDelta)</span>
+                                            <span class="text-muted small">(n=@band.ComparedScoreCount)</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="rag-card-footer mt-3 rounded">
+                        <i class="bi bi-info-circle me-1"></i> <strong>Lưu ý:</strong> “Đã dùng” gồm quyết định accept metadata hoặc proposal được gắn vào review. “Điểm được chỉnh” so sánh độ chênh lệch điểm số với độ chính xác 2 chữ số thập phân.
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Dropzone interaction
+        (function() {
+            const dropzone = document.getElementById('uploadDropzone');
+            const fileInput = document.getElementById('realFileInput');
+            const fileInfo = document.getElementById('fileSelectedInfo');
+            const fileNameSpan = document.getElementById('selectedFileName');
+            const fileSizeSpan = document.getElementById('selectedFileSize');
+
+            if (dropzone && fileInput) {
+                dropzone.addEventListener('click', () => fileInput.click());
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.add('dragover');
+                    });
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.remove('dragover');
+                    });
+                });
+
+                dropzone.addEventListener('drop', (e) => {
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        fileInput.files = e.dataTransfer.files;
+                        handleFileChange();
+                    }
+                });
+
+                fileInput.addEventListener('change', handleFileChange);
+
+                function handleFileChange() {
+                    if (fileInput.files && fileInput.files[0]) {
+                        const file = fileInput.files[0];
+                        fileNameSpan.textContent = file.name;
+                        const sizeKb = file.size / 1024;
+                        fileSizeSpan.textContent = sizeKb >= 1024
+                            ? (sizeKb / 1024).toFixed(1) + ' MB'
+                            : Math.round(sizeKb) + ' KB';
+                        fileInfo.classList.remove('d-none');
+                        
+                        const titleInput = document.querySelector('input[name="Upload.Title"]');
+                        if (titleInput && !titleInput.value) {
+                            const rawName = file.name.replace(/\.[^/.]+$/, "");
+                            titleInput.value = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+                        }
+                    }
+                }
+            }
+
+            // Quick search for sources list
+            const searchInput = document.getElementById('sourceSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.toLowerCase().trim();
+                    document.querySelectorAll('.rag-source-item').forEach(item => {
+                        const title = item.getAttribute('data-document-title') || '';
+                        item.style.display = title.includes(query) ? '' : 'none';
+                    });
+                });
+            }
+        })();
+
+        // Filter ACL Lists
+        function filterAclList(input, containerId) {
+            const query = input.value.toLowerCase().trim();
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.querySelectorAll('.rag-acl-item').forEach(item => {
+                const label = item.querySelector('.form-check-label')?.textContent.toLowerCase() || '';
+                item.style.display = label.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        // Quick Select All / None for ACL
+        function toggleAllAcl(containerId, check) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                if (cb.closest('.rag-acl-item')?.style.display !== 'none') {
+                    cb.checked = check;
+                }
+            });
+            updateAclBadges();
+        }
+
+        // Update selected badge counters
+        function updateAclBadges() {
+            const roleCount = document.querySelectorAll('#roleAclList input[type="checkbox"]:checked').length;
+            const totalRoles = document.querySelectorAll('#roleAclList input[type="checkbox"]').length;
+            const roleBadge = document.getElementById('roleCountBadge');
+            if (roleBadge) roleBadge.textContent = `${roleCount}/${totalRoles}`;
+
+            const deptCount = document.querySelectorAll('#deptAclList input[type="checkbox"]:checked').length;
+            const totalDepts = document.querySelectorAll('#deptAclList input[type="checkbox"]').length;
+            const deptBadge = document.getElementById('deptCountBadge');
+            if (deptBadge) deptBadge.textContent = `${deptCount}/${totalDepts}`;
+
+            const userCount = document.querySelectorAll('#userAclList input[type="checkbox"]:checked').length;
+            const totalUsers = document.querySelectorAll('#userAclList input[type="checkbox"]').length;
+            const userBadge = document.getElementById('userCountBadge');
+            if (userBadge) userBadge.textContent = `${userCount}/${totalUsers}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', updateAclBadges);
+    </script>
 }

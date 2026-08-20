@@ -40,29 +40,49 @@
 
     <section class="evaluation-summary" aria-label="Tổng quan kỳ đánh giá">
         <article>
-            <span>Tổng kỳ đánh giá</span>
-            <strong>@Model.Summary.TotalCount</strong>
-            <small>Trong phạm vi bộ lọc</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--primary">
+                <i class="bi bi-bullseye"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Tổng kỳ đánh giá</span>
+                <strong>@Model.Summary.TotalCount</strong>
+            </div>
         </article>
         <article class="evaluation-summary--running">
-            <span>Đang diễn ra</span>
-            <strong>@Model.Summary.InProgressCount</strong>
-            <small>Đang trong khoảng ngày</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--success">
+                <i class="bi bi-play-circle"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Đang diễn ra</span>
+                <strong>@Model.Summary.InProgressCount</strong>
+            </div>
         </article>
         <article class="evaluation-summary--upcoming">
-            <span>Sắp bắt đầu</span>
-            <strong>@Model.Summary.UpcomingCount</strong>
-            <small>Chưa đến ngày mở kỳ</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--info">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Sắp bắt đầu</span>
+                <strong>@Model.Summary.UpcomingCount</strong>
+            </div>
         </article>
         <article class="evaluation-summary--ending">
-            <span>Sắp kết thúc</span>
-            <strong>@Model.Summary.EndingSoonCount</strong>
-            <small>Trong 7 ngày tới</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--warning">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Sắp kết thúc</span>
+                <strong>@Model.Summary.EndingSoonCount</strong>
+            </div>
         </article>
         <article class="evaluation-summary--completed">
-            <span>Đã kết thúc</span>
-            <strong>@Model.Summary.CompletedCount</strong>
-            <small>Đã đóng hoặc quá ngày</small>
+            <div class="evaluation-summary__icon evaluation-summary__icon--completed">
+                <i class="bi bi-check2-circle"></i>
+            </div>
+            <div class="evaluation-summary__content">
+                <span>Đã kết thúc</span>
+                <strong>@Model.Summary.CompletedCount</strong>
+            </div>
         </article>
     </section>
 
@@ -82,9 +102,11 @@
 
         <form asp-action="Index" method="get" class="evaluation-filter-form">
             <label class="evaluation-search-field">
-                <span class="visually-hidden">Tìm theo tên kỳ đánh giá</span>
-                <i class="bi bi-search" aria-hidden="true"></i>
-                <input type="search" name="searchString" value="@Model.SearchString" placeholder="Tên kỳ đánh giá..." />
+                <span>Tìm kiếm</span>
+                <div class="evaluation-search-input-wrap">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input type="search" name="searchString" value="@Model.SearchString" placeholder="Tên kỳ đánh giá..." />
+                </div>
             </label>
 
             <label>

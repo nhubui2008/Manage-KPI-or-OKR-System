@@ -9,6 +9,21 @@
         root.dataset.employeesInitialized = "true";
         initializeDeactivateModal(root);
         initializeImportForm(root);
+        initializeSelectStyles(root);
+    }
+
+    function initializeSelectStyles(root) {
+        root.querySelectorAll("select").forEach(function (select) {
+            function updateState() {
+                if (select.value && select.value !== "" && select.value !== "all") {
+                    select.classList.add("is-selected");
+                } else {
+                    select.classList.remove("is-selected");
+                }
+            }
+            select.addEventListener("change", updateState);
+            updateState();
+        });
     }
 
     function initializeDeactivateModal(root) {

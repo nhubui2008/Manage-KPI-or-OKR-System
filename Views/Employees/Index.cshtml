@@ -76,25 +76,37 @@
     </header>
 
     <section class="employees-summary" aria-label="Tổng quan nhân sự trong kết quả hiện tại">
-        <article>
-            <span>Trong kết quả hiện tại</span>
-            <strong>@totalEmployees</strong>
-            <small>Trang @currentPageIndex · @totalPageCount trang</small>
+        <article class="employees-summary-card employees-summary-card--primary">
+            <span class="employees-summary-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+            <div>
+                <span>Trong kết quả hiện tại</span>
+                <strong>@totalEmployees</strong>
+                <small>Trang @currentPageIndex · @totalPageCount trang</small>
+            </div>
         </article>
-        <article>
-            <span>Đang làm việc</span>
-            <strong>@activeEmployees</strong>
-            <small>Hồ sơ còn hoạt động</small>
+        <article class="employees-summary-card employees-summary-card--success">
+            <span class="employees-summary-icon"><i class="bi bi-person-check" aria-hidden="true"></i></span>
+            <div>
+                <span>Đang làm việc</span>
+                <strong>@activeEmployees</strong>
+                <small>Hồ sơ còn hoạt động</small>
+            </div>
         </article>
-        <article>
-            <span>Đã phân công</span>
-            <strong>@assignedEmployees</strong>
-            <small>Có phòng ban hoặc chức vụ</small>
+        <article class="employees-summary-card employees-summary-card--info">
+            <span class="employees-summary-icon"><i class="bi bi-briefcase" aria-hidden="true"></i></span>
+            <div>
+                <span>Đã phân công</span>
+                <strong>@assignedEmployees</strong>
+                <small>Có phòng ban / chức vụ</small>
+            </div>
         </article>
-        <article>
-            <span>Ngừng hoạt động</span>
-            <strong>@inactiveEmployees</strong>
-            <small>Hồ sơ không còn hoạt động</small>
+        <article class="employees-summary-card employees-summary-card--danger">
+            <span class="employees-summary-icon"><i class="bi bi-person-x" aria-hidden="true"></i></span>
+            <div>
+                <span>Ngừng hoạt động</span>
+                <strong>@inactiveEmployees</strong>
+                <small>Hồ sơ không còn hoạt động</small>
+            </div>
         </article>
     </section>
 
@@ -113,11 +125,13 @@
             }
         </div>
 
-        <form asp-action="Index" method="get" class="employees-filter-form">
-            <label class="employees-search-field" for="employeeSearch">
-                <span class="visually-hidden">Tìm nhân viên</span>
-                <i class="bi bi-search" aria-hidden="true"></i>
-                <input type="search" id="employeeSearch" name="searchString" value="@ViewBag.CurrentSearch" placeholder="Mã hoặc tên nhân viên..." autocomplete="off" />
+        <form asp-action="Index" method="get" class="employees-filter-form evaluation-filter-form">
+            <label for="employeeSearch" class="employees-search-label evaluation-search-field">
+                <span>Tìm kiếm</span>
+                <div class="employees-search-field evaluation-search-input-wrap">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input type="search" id="employeeSearch" name="searchString" value="@ViewBag.CurrentSearch" placeholder="Mã hoặc tên nhân viên..." autocomplete="off" />
+                </div>
             </label>
 
             <label for="departmentFilter">
@@ -140,10 +154,12 @@
                 </select>
             </label>
 
-            <button type="submit" class="employees-btn employees-btn--filter">
-                <i class="bi bi-funnel" aria-hidden="true"></i>
-                <span>Lọc dữ liệu</span>
-            </button>
+            <div class="employees-filter-actions">
+                <button type="submit" class="employees-btn employees-btn--filter evaluation-filter-button">
+                    <i class="bi bi-funnel" aria-hidden="true"></i>
+                    <span>Lọc dữ liệu</span>
+                </button>
+            </div>
         </form>
     </section>
 
@@ -174,88 +190,7 @@
         }
         else
         {
-            <div class="employees-table-shell" aria-hidden="false">
-                <table class="employees-table" aria-label="Danh sách nhân viên">
-                    <thead>
-                        <tr>
-                            <th>Thông tin nhân viên</th>
-                            <th>Phòng ban</th>
-                            <th>Chức vụ</th>
-                            <th>Liên hệ</th>
-                            <th>Ngày vào làm</th>
-                            <th>Trạng thái</th>
-                            <th class="text-end">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var emp in pageEmployees)
-                        {
-                            var hasAssignment = assignments.TryGetValue(emp.Id, out var assign);
-                            var deptId = hasAssignment ? assign?.DepartmentId : null;
-                            var posId = hasAssignment ? assign?.PositionId : null;
-                            var deptName = deptId.HasValue && departments.ContainsKey(deptId.Value) ? departments[deptId.Value] : "Chưa phân bổ";
-                            var posName = posId.HasValue && positions.ContainsKey(posId.Value) ? positions[posId.Value] : "Chưa phân bổ";
-                            var statusClass = emp.IsActive == true ? "employees-status employees-status--active" : "employees-status employees-status--inactive";
-                            var statusText = emp.IsActive == true ? "Đang làm việc" : "Ngừng hoạt động";
-                            var avatarLetter = !string.IsNullOrWhiteSpace(emp.FullName) ? emp.FullName[0].ToString().ToUpperInvariant() : "NV";
-
-                            <tr>
-                                <td>
-                                    <div class="employee-name-cell">
-                                        <span class="employee-avatar" aria-hidden="true">@avatarLetter</span>
-                                        <div>
-                                            <strong>@emp.FullName</strong>
-                                            <small>Mã: @emp.EmployeeCode</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="employee-assignment-chip employee-assignment-chip--department"><i class="bi bi-building" aria-hidden="true"></i>@deptName</span></td>
-                                <td><span class="employee-assignment-chip"><i class="bi bi-briefcase" aria-hidden="true"></i>@posName</span></td>
-                                <td>
-                                    <div class="employee-contact">
-                                        <span><i class="bi bi-envelope" aria-hidden="true"></i>@(string.IsNullOrWhiteSpace(emp.Email) ? "Chưa cập nhật" : emp.Email)</span>
-                                        <span><i class="bi bi-telephone" aria-hidden="true"></i>@(string.IsNullOrWhiteSpace(emp.Phone) ? "Chưa cập nhật" : emp.Phone)</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="employee-join-date">
-                                        <strong>@(emp.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</strong>
-                                        <small>Ngày bắt đầu công tác</small>
-                                    </div>
-                                </td>
-                                <td><span class="@statusClass"><span aria-hidden="true"></span>@statusText</span></td>
-                                <td>
-                                    <div class="employees-actions">
-                                        <a asp-action="Details" asp-route-id="@emp.Id" class="employees-icon-btn" title="Xem chi tiết" aria-label="Xem chi tiết @emp.FullName">
-                                            <i class="bi bi-eye" aria-hidden="true"></i>
-                                        </a>
-                                        @if (canEditEmployee)
-                                        {
-                                            <a asp-action="Edit" asp-route-id="@emp.Id" class="employees-icon-btn" title="Chỉnh sửa" aria-label="Chỉnh sửa @emp.FullName">
-                                                <i class="bi bi-pencil" aria-hidden="true"></i>
-                                            </a>
-                                        }
-                                        @if (canDeleteEmployee && emp.IsActive == true)
-                                        {
-                                            <a asp-action="Delete" asp-route-id="@emp.Id"
-                                               class="employees-icon-btn employees-icon-btn--danger js-employee-deactivate"
-                                               title="Ngừng hoạt động"
-                                               aria-label="Ngừng hoạt động @emp.FullName"
-                                               data-employee-id="@emp.Id"
-                                               data-employee-name="@emp.FullName"
-                                               data-employee-code="@emp.EmployeeCode">
-                                                <i class="bi bi-person-dash" aria-hidden="true"></i>
-                                            </a>
-                                        }
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="employees-mobile-list" aria-hidden="false">
+            <div class="employees-card-grid" aria-label="Danh sách nhân viên">
                 @foreach (var emp in pageEmployees)
                 {
                     var hasAssignment = assignments.TryGetValue(emp.Id, out var assign);
@@ -265,23 +200,53 @@
                     var posName = posId.HasValue && positions.ContainsKey(posId.Value) ? positions[posId.Value] : "Chưa phân bổ";
                     var statusClass = emp.IsActive == true ? "employees-status employees-status--active" : "employees-status employees-status--inactive";
                     var statusText = emp.IsActive == true ? "Đang làm việc" : "Ngừng hoạt động";
+                    var avatarLetter = !string.IsNullOrWhiteSpace(emp.FullName) ? emp.FullName[0].ToString().ToUpperInvariant() : "NV";
 
                     <article class="employee-card">
-                        <div class="employee-card-topline">
-                            <span class="@statusClass"><span aria-hidden="true"></span>@statusText</span>
-                            <span class="employee-card-code">@emp.EmployeeCode</span>
+                        <div class="employee-card-header">
+                            <span class="employee-avatar employee-card-avatar" aria-hidden="true">@avatarLetter</span>
+                            <div class="employee-card-identity">
+                                <h2 class="employee-card-name" title="@emp.FullName">
+                                    <a asp-action="Details" asp-route-id="@emp.Id">@emp.FullName</a>
+                                </h2>
+                                <span class="employee-card-code">@emp.EmployeeCode</span>
+                            </div>
+                            <span class="@statusClass employee-card-status">
+                                <span class="status-dot" aria-hidden="true"></span>@statusText
+                            </span>
                         </div>
-                        <h2>@emp.FullName</h2>
-                        <p>@deptName · @posName</p>
-                        <dl>
-                            <div><dt>Ngày vào làm</dt><dd>@(emp.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</dd></div>
-                            <div><dt>Điện thoại</dt><dd>@(string.IsNullOrWhiteSpace(emp.Phone) ? "Chưa cập nhật" : emp.Phone)</dd></div>
-                        </dl>
-                        <div class="employee-contact">
-                            <span><i class="bi bi-envelope" aria-hidden="true"></i>@(string.IsNullOrWhiteSpace(emp.Email) ? "Chưa cập nhật email" : emp.Email)</span>
+
+                        <div class="employee-card-body">
+                            <div class="employee-card-dept-pos">
+                                <span class="employee-chip employee-chip--dept" title="@deptName">
+                                    <i class="bi bi-building" aria-hidden="true"></i><span>@deptName</span>
+                                </span>
+                                <span class="employee-chip employee-chip--pos" title="@posName">
+                                    <i class="bi bi-briefcase" aria-hidden="true"></i><span>@posName</span>
+                                </span>
+                            </div>
+
+                            <div class="employee-card-meta">
+                                <div class="employee-meta-row" title="Email: @(string.IsNullOrWhiteSpace(emp.Email) ? "Chưa cập nhật" : emp.Email)">
+                                    <i class="bi bi-envelope" aria-hidden="true"></i>
+                                    <span>@(string.IsNullOrWhiteSpace(emp.Email) ? "Chưa cập nhật email" : emp.Email)</span>
+                                </div>
+                                <div class="employee-meta-row" title="Điện thoại: @(string.IsNullOrWhiteSpace(emp.Phone) ? "Chưa cập nhật" : emp.Phone)">
+                                    <i class="bi bi-telephone" aria-hidden="true"></i>
+                                    <span>@(string.IsNullOrWhiteSpace(emp.Phone) ? "Chưa cập nhật SĐT" : emp.Phone)</span>
+                                </div>
+                                <div class="employee-meta-row" title="Ngày bắt đầu công tác">
+                                    <i class="bi bi-calendar-check" aria-hidden="true"></i>
+                                    <span>Vào làm: @(emp.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</span>
+                                </div>
+                            </div>
                         </div>
+
                         <div class="employee-card-footer">
-                            <a asp-action="Details" asp-route-id="@emp.Id">Xem chi tiết</a>
+                            <a asp-action="Details" asp-route-id="@emp.Id" class="employee-card-link">
+                                <span>Xem chi tiết</span>
+                                <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                            </a>
                             <div class="employees-actions">
                                 @if (canEditEmployee)
                                 {

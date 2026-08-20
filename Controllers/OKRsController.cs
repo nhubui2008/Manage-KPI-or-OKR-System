@@ -346,7 +346,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 okrTypeId.HasValue ||
                 !string.IsNullOrWhiteSpace(scope) ||
                 !string.IsNullOrWhiteSpace(quickFilter) ||
-                !string.Equals(sortBy, "attention", StringComparison.Ordinal);
+                !string.IsNullOrWhiteSpace(sortBy);
 
             var viewModel = new OkrIndexViewModel
             {
@@ -1769,11 +1769,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             return sortBy?.Trim().ToLowerInvariant() switch
             {
+                "attention" => "attention",
                 "recent" => "recent",
                 "progress-low" => "progress-low",
                 "progress-high" => "progress-high",
                 "cycle" => "cycle",
-                _ => "attention"
+                _ => ""
             };
         }
 

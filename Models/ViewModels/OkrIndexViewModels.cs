@@ -13,7 +13,7 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public int? OkrTypeId { get; init; }
         public string? Scope { get; init; }
         public string? QuickFilter { get; init; }
-        public string SortBy { get; init; } = "attention";
+        public string SortBy { get; init; } = "";
         public int? CurrentEmployeeId { get; init; }
 
         public bool CanCreateOkr { get; init; }

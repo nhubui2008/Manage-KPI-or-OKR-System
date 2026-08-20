@@ -30,9 +30,9 @@
 .okr-form-page .cf-panel {
     background: var(--okr-form-bg);
     border: 1px solid var(--okr-form-border);
-    border-radius: 4px;
+    border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.15);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
 }
 
 .okr-form-page .cf-panel__header {
@@ -52,7 +52,7 @@
 .okr-form-page .cf-section {
     background: #f8f9fa;
     border: 1px solid var(--okr-form-border);
-    border-radius: 4px;
+    border-radius: 10px;
     padding: 1.25rem;
     margin-bottom: 1.25rem;
 }
@@ -70,7 +70,7 @@
     justify-content: center;
     width: 34px;
     height: 34px;
-    border-radius: 4px;
+    border-radius: 8px;
     background: rgba(85, 110, 230, 0.1);
     color: var(--okr-form-primary);
     font-size: 1.1rem;
@@ -102,9 +102,9 @@
 .okr-form-page .cf-guide {
     background: var(--okr-form-bg);
     border: 1px solid var(--okr-form-border);
-    border-radius: 4px;
+    border-radius: 12px;
     padding: 1.25rem;
-    box-shadow: 0 1px 2px rgba(56, 65, 74, 0.15);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
 }
 
 .okr-form-page .cf-guide__identity {
@@ -122,7 +122,7 @@
     justify-content: center;
     width: 38px;
     height: 38px;
-    border-radius: 4px;
+    border-radius: 10px;
     background: rgba(85, 110, 230, 0.1);
     color: var(--okr-form-primary);
     font-size: 1.25rem;
@@ -180,7 +180,7 @@
     gap: 0.5rem;
     height: 36px;
     padding: 0 1.25rem;
-    border-radius: 4px;
+    border-radius: 8px;
     background-color: var(--okr-form-primary);
     border: 1px solid var(--okr-form-primary);
     color: #ffffff;
@@ -202,7 +202,7 @@
     justify-content: center;
     height: 36px;
     padding: 0 1.25rem;
-    border-radius: 4px;
+    border-radius: 8px;
     background-color: #f3f6f9;
     border: 1px solid var(--okr-form-border);
     color: #495057;

@@ -6,26 +6,70 @@
 }
 <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
 
-<main class="auth-page">
-    <partial name="_AuthBrandPanel" />
-    <section class="auth-form-panel" aria-labelledby="tenant-title">
-        <div class="auth-card">
-            <div class="auth-mobile-brand" aria-label="VietMach System, Manage KPI &amp; OKR"><span class="auth-brand-mark" aria-hidden="true"><i class="bi bi-bullseye"></i></span><span><strong>VietMach System</strong><small>Manage KPI &amp; OKR</small></span></div>
-            <header class="auth-header"><p class="auth-eyebrow">Không gian làm việc</p><h1 id="tenant-title">Chọn nơi bạn muốn tiếp tục</h1><p>Mỗi không gian có dữ liệu và quyền truy cập độc lập.</p></header>
+<div class="crystal-scene-container" id="crystalScene">
+    <!-- Ambient Glow -->
+    <div class="crystal-ambient-glow" aria-hidden="true">
+        <div class="ambient-orb ambient-orb-1"></div>
+        <div class="ambient-orb ambient-orb-2"></div>
+    </div>
+
+    <!-- Floating Crystals -->
+    <div class="crystal-objects-layer" aria-hidden="true">
+        <div class="crystal-item crystal-1" data-depth="0.045">
+            <svg viewBox="0 0 140 210" fill="none"><polygon points="70,10 125,75 105,185 35,160 15,65" fill="#c7d2fe" opacity="0.85" stroke="#fff" stroke-width="1.2" /></svg>
+        </div>
+        <div class="crystal-item crystal-2" data-depth="0.06">
+            <svg viewBox="0 0 155 250" fill="none"><polygon points="75,10 135,60 145,190 85,240 20,180 15,70" fill="#e0e7ff" opacity="0.85" stroke="#fff" stroke-width="1.2" /></svg>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <main class="auth-main-wrapper" id="authMainCard">
+        <div class="auth-brand-badge-wrap">
+            <a href="/" class="auth-crystal-badge" aria-label="VietMach System - Trang chủ" title="VietMach System">
+                <i class="bi bi-buildings" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        <section class="auth-crystal-card" aria-labelledby="tenant-title">
+            <header class="auth-card-header">
+                <p class="auth-eyebrow">Không gian làm việc</p>
+                <h1 id="tenant-title">Chọn nơi bạn muốn tiếp tục</h1>
+                <p>Mỗi không gian có dữ liệu và quyền truy cập độc lập.</p>
+            </header>
+
             @if (Model.Count == 0)
             {
-                <div class="auth-alert auth-alert-warning" role="status"><i class="bi bi-info-circle" aria-hidden="true"></i><span>Tài khoản chưa có membership đang hoạt động. Vui lòng liên hệ quản trị viên nền tảng.</span></div>
+                <div class="auth-alert auth-alert-warning" role="status">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    <span>Tài khoản chưa có membership đang hoạt động. Vui lòng liên hệ quản trị viên nền tảng.</span>
+                </div>
             }
             else
             {
                 <div class="auth-tenant-list">
                     @foreach (var tenant in Model)
                     {
-                        <form asp-action="SelectTenant" method="post"><input type="hidden" name="tenantId" value="@tenant.Id" /><input type="hidden" name="returnUrl" value="@returnUrl" /><button type="submit" class="auth-tenant-button"><span><strong>@tenant.Name</strong><small>@tenant.Code</small></span><i class="bi bi-arrow-right" aria-hidden="true"></i></button></form>
+                        <form asp-action="SelectTenant" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="tenantId" value="@tenant.Id" />
+                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                            <button type="submit" class="auth-tenant-button">
+                                <span><strong>@tenant.Name</strong><small>@tenant.Code</small></span>
+                                <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                            </button>
+                        </form>
                     }
                 </div>
             }
-            <div class="auth-status-actions"><a asp-action="Logout" class="auth-secondary">Đăng xuất</a></div>
-        </div>
-    </section>
-</main>
+
+            <div class="auth-status-actions">
+                <a asp-action="Logout" class="auth-secondary-btn">Đăng xuất</a>
+            </div>
+        </section>
+    </main>
+</div>
+
+@section Scripts {
+    <script src="~/js/login.js" asp-append-version="true"></script>
+}

@@ -32,18 +32,27 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [HasPermission("SYSUSERS_VIEW")]
-        public async Task<IActionResult> Index(string searchString, int? roleId, string status)
+        public async Task<IActionResult> Index(string? searchString, int? roleId, string? status, int page = 1)
         {
             if (!TryGetTenantId(out var tenantId))
             {
                 return Forbid();
             }
 
-            var query = _context.TenantMemberships
+            const int pageSize = 12;
+
+            var baseQuery = _context.TenantMemberships
                 .AsNoTracking()
                 .Where(membership =>
                     membership.TenantId == tenantId &&
                     membership.SystemUser != null);
+
+            var totalAll = await baseQuery.CountAsync();
+            var activeUserCount = await baseQuery.CountAsync(m => m.IsActive);
+            var lockedUserCount = totalAll - activeUserCount;
+            var unassignedRoleCount = await baseQuery.CountAsync(m => !m.RoleId.HasValue);
+
+            var query = baseQuery;
 
             if (!string.IsNullOrWhiteSpace(searchString))
             {
@@ -66,8 +75,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 query = query.Where(membership => !membership.IsActive);
             }
 
+            var totalCount = await query.CountAsync();
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+            page = Math.Clamp(page, 1, totalPages);
+
             var users = await query
                 .OrderByDescending(membership => membership.SystemUser!.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(membership => new SystemUser
                 {
                     Id = membership.SystemUserId,
@@ -89,6 +104,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.SearchString = searchString;
             ViewBag.RoleId = roleId;
             ViewBag.Status = status;
+            ViewBag.Page = page;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.TotalCount = totalCount;
+            ViewBag.PageSize = pageSize;
+            ViewBag.ActiveUserCount = activeUserCount;
+            ViewBag.LockedUserCount = lockedUserCount;
+            ViewBag.UnassignedRoleCount = unassignedRoleCount;
+            ViewBag.TotalAllUsers = totalAll;
 
             return View(users);
         }

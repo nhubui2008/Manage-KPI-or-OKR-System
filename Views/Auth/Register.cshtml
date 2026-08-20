@@ -5,27 +5,131 @@
 }
 <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
 
-<main class="auth-page">
-    <partial name="_AuthBrandPanel" />
-    <section class="auth-form-panel" aria-labelledby="register-title">
-        <a href="/" class="auth-back-link"><i class="bi bi-arrow-left" aria-hidden="true"></i> Về trang chủ</a>
-        <div class="auth-card auth-card-register">
-            <div class="auth-mobile-brand" aria-label="VietMach System, Manage KPI &amp; OKR"><span class="auth-brand-mark" aria-hidden="true"><i class="bi bi-bullseye"></i></span><span><strong>VietMach System</strong><small>Manage KPI &amp; OKR</small></span></div>
-            <header class="auth-header"><h1 id="register-title">Tạo tài khoản</h1><p>Khởi tạo tài khoản để quản lý KPI &amp; OKR hiệu quả hơn.</p></header>
-            <form asp-controller="Auth" asp-action="Register" method="post" class="auth-form" id="registerForm">
-                <div asp-validation-summary="ModelOnly" class="auth-alert auth-alert-danger registration-validation-summary" role="alert"></div>
-                <div class="auth-field"><label for="username">Tên đăng nhập</label><input asp-for="Username" class="auth-control" type="text" id="username" autocomplete="username" placeholder="Nhập tên đăng nhập" aria-describedby="usernameValidation" /><span asp-validation-for="Username" id="usernameValidation" class="auth-field-error" aria-live="polite"></span></div>
-                <div class="auth-field"><label for="email">Email</label><input asp-for="Email" class="auth-control" type="email" id="email" autocomplete="email" inputmode="email" placeholder="name@company.com" aria-describedby="emailValidation" /><span asp-validation-for="Email" id="emailValidation" class="auth-field-error" aria-live="polite"></span></div>
-                <div class="auth-field"><label for="password">Mật khẩu</label><div class="auth-password-wrap"><input asp-for="Password" class="auth-control" type="password" id="password" autocomplete="new-password" placeholder="Nhập mật khẩu" aria-describedby="passwordValidation passwordHint" /><button type="button" class="auth-password-toggle" id="passwordToggle" aria-label="Hiện mật khẩu" aria-controls="password" aria-pressed="false"><i class="bi bi-eye" aria-hidden="true"></i></button></div><span asp-validation-for="Password" id="passwordValidation" class="auth-field-error" aria-live="polite"></span><small class="auth-hint" id="passwordHint">Tối thiểu 6 ký tự, theo chính sách mật khẩu của hệ thống.</small></div>
-                <div class="auth-field"><label for="confirmPassword">Xác nhận mật khẩu</label><div class="auth-password-wrap"><input asp-for="ConfirmPassword" class="auth-control" type="password" id="confirmPassword" autocomplete="new-password" placeholder="Nhập lại mật khẩu" aria-describedby="confirmPasswordValidation" /><button type="button" class="auth-password-toggle" id="confirmPasswordToggle" aria-label="Hiện mật khẩu xác nhận" aria-controls="confirmPassword" aria-pressed="false"><i class="bi bi-eye" aria-hidden="true"></i></button></div><span asp-validation-for="ConfirmPassword" id="confirmPasswordValidation" class="auth-field-error" aria-live="polite"></span></div>
-                <button type="submit" class="auth-submit"><span class="button-text">Đăng ký</span><span class="button-loader" aria-hidden="true"><span class="auth-spinner"></span></span></button>
-            </form>
-            <div class="auth-divider"><span>Hoặc tiếp tục với</span></div>
-            <a asp-controller="Auth" asp-action="GoogleLogin" class="auth-google"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 7.4v3.2h4.6c-.2 1-.8 1.8-1.6 2.4v2h2.6c1.5-1.4 2.4-3.4 2.4-5.8 0-.6 0-1.1-.1-1.6H9z" fill="#4285F4"/><path d="M9 17c2.2 0 4-.7 5.4-1.9l-2.6-2c-.7.5-1.6.8-2.8.8-2.1 0-3.9-1.4-4.6-3.4H1.7v2.1C3.1 15.2 5.8 17 9 17z" fill="#34A853"/><path d="M4.4 10.5c-.2-.5-.2-1.1 0-1.6V6.8H1.7c-.6 1.2-.6 2.6 0 3.8l2.7-2.1z" fill="#FBBC04"/><path d="M9 4.2c1.2 0 2.3.4 3.1 1.2l2.3-2.3C12.9 1.8 11.1 1 9 1 5.8 1 3.1 2.8 1.7 5.4l2.7 2.1C5.1 5.6 6.9 4.2 9 4.2z" fill="#EA4335"/></svg>Đăng ký bằng Google</a>
-            <p class="auth-switch">Bạn đã có tài khoản? <a asp-controller="Auth" asp-action="Login">Đăng nhập</a></p>
+<div class="crystal-scene-container" id="crystalScene">
+    <!-- Ambient Glow -->
+    <div class="crystal-ambient-glow" aria-hidden="true">
+        <div class="ambient-orb ambient-orb-1"></div>
+        <div class="ambient-orb ambient-orb-2"></div>
+        <div class="ambient-orb ambient-orb-3"></div>
+    </div>
+
+    <!-- Floating Crystals -->
+    <div class="crystal-objects-layer" aria-hidden="true">
+        <div class="crystal-item crystal-1" data-depth="0.045">
+            <svg viewBox="0 0 140 210" fill="none"><polygon points="70,10 125,75 105,185 35,160 15,65" fill="#c7d2fe" opacity="0.85" stroke="#fff" stroke-width="1.2" /><polygon points="70,10 85,95 35,160 15,65" fill="#bae6fd" opacity="0.9" stroke="#fff" stroke-width="1" /></svg>
         </div>
-    </section>
-</main>
+        <div class="crystal-item crystal-2" data-depth="0.06">
+            <svg viewBox="0 0 155 250" fill="none"><polygon points="75,10 135,60 145,190 85,240 20,180 15,70" fill="#e0e7ff" opacity="0.85" stroke="#fff" stroke-width="1.2" /><polygon points="75,10 95,90 85,240 20,180 15,70" fill="#fbcfe8" opacity="0.8" stroke="#fff" stroke-width="1" /></svg>
+        </div>
+        <div class="crystal-item crystal-3" data-depth="0.05">
+            <svg viewBox="0 0 190 230" fill="none"><polygon points="95,15 165,55 180,155 125,215 45,195 15,115 35,45" fill="#ddd6fe" opacity="0.85" stroke="#fff" stroke-width="1.2" /></svg>
+        </div>
+        <div class="crystal-sparkle sparkle-1"></div>
+        <div class="crystal-sparkle sparkle-2"></div>
+    </div>
+
+    <!-- Top Nav -->
+    <nav class="auth-top-nav" aria-label="Điều hướng phụ">
+        <a href="/" class="auth-back-capsule" aria-label="Về trang chủ">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Về trang chủ</span>
+        </a>
+    </nav>
+
+    <!-- Main Card -->
+    <main class="auth-main-wrapper auth-card-register" id="authMainCard">
+        <div class="auth-brand-badge-wrap">
+            <a href="/" class="auth-crystal-badge" aria-label="VietMach System - Trang chủ" title="VietMach System">
+                <i class="bi bi-person-plus" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        <section class="auth-crystal-card" aria-labelledby="register-title">
+            <header class="auth-card-header">
+                <h1 id="register-title">Tạo tài khoản</h1>
+                <p>Khởi tạo tài khoản để quản lý KPI &amp; OKR hiệu quả hơn.</p>
+            </header>
+
+            <form asp-controller="Auth" asp-action="Register" method="post" class="auth-form" id="registerForm">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="auth-alert auth-alert-danger registration-validation-summary" role="alert"></div>
+
+                <!-- Username -->
+                <div class="auth-field">
+                    <label for="username">Tên đăng nhập</label>
+                    <div class="auth-input-wrapper">
+                        <i class="bi bi-person auth-input-icon" aria-hidden="true"></i>
+                        <input asp-for="Username" class="auth-control" type="text" id="username" autocomplete="username" placeholder="Nhập tên đăng nhập" aria-describedby="usernameValidation" />
+                    </div>
+                    <span asp-validation-for="Username" id="usernameValidation" class="auth-field-error" aria-live="polite"></span>
+                </div>
+
+                <!-- Email -->
+                <div class="auth-field">
+                    <label for="email">Email</label>
+                    <div class="auth-input-wrapper">
+                        <i class="bi bi-envelope auth-input-icon" aria-hidden="true"></i>
+                        <input asp-for="Email" class="auth-control" type="email" id="email" autocomplete="email" inputmode="email" placeholder="name@company.com" aria-describedby="emailValidation" />
+                    </div>
+                    <span asp-validation-for="Email" id="emailValidation" class="auth-field-error" aria-live="polite"></span>
+                </div>
+
+                <!-- Password -->
+                <div class="auth-field">
+                    <label for="password">Mật khẩu</label>
+                    <div class="auth-input-wrapper auth-password-wrap">
+                        <i class="bi bi-shield-lock auth-input-icon" aria-hidden="true"></i>
+                        <input asp-for="Password" class="auth-control" type="password" id="password" autocomplete="new-password" placeholder="Tối thiểu 6 ký tự" aria-describedby="passwordValidation passwordHint" />
+                        <button type="button" class="auth-password-toggle" id="passwordToggle" aria-label="Hiện mật khẩu" aria-controls="password" aria-pressed="false">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" id="passwordValidation" class="auth-field-error" aria-live="polite"></span>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="auth-field">
+                    <label for="confirmPassword">Xác nhận mật khẩu</label>
+                    <div class="auth-input-wrapper auth-password-wrap">
+                        <i class="bi bi-shield-check auth-input-icon" aria-hidden="true"></i>
+                        <input asp-for="ConfirmPassword" class="auth-control" type="password" id="confirmPassword" autocomplete="new-password" placeholder="Nhập lại mật khẩu" aria-describedby="confirmPasswordValidation" />
+                        <button type="button" class="auth-password-toggle" id="confirmPasswordToggle" aria-label="Hiện mật khẩu xác nhận" aria-controls="confirmPassword" aria-pressed="false">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="ConfirmPassword" id="confirmPasswordValidation" class="auth-field-error" aria-live="polite"></span>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="auth-submit-btn">
+                    <span class="button-text">Đăng ký tài khoản</span>
+                    <span class="button-loader" aria-hidden="true"><span class="auth-spinner"></span></span>
+                </button>
+            </form>
+
+            <div class="auth-crystal-divider" role="separator"><span>Hoặc</span></div>
+
+            <!-- Google Sign up -->
+            <div class="auth-social-wrap">
+                <a asp-controller="Auth" asp-action="GoogleLogin" class="auth-google-btn">
+                    <svg width="19" height="19" viewBox="0 0 18 18" aria-hidden="true">
+                        <path d="M9 7.4v3.2h4.6c-.2 1-.8 1.8-1.6 2.4v2h2.6c1.5-1.4 2.4-3.4 2.4-5.8 0-.6 0-1.1-.1-1.6H9z" fill="#4285F4"/>
+                        <path d="M9 17c2.2 0 4-.7 5.4-1.9l-2.6-2c-.7.5-1.6.8-2.8.8-2.1 0-3.9-1.4-4.6-3.4H1.7v2.1C3.1 15.2 5.8 17 9 17z" fill="#34A853"/>
+                        <path d="M4.4 10.5c-.2-.5-.2-1.1 0-1.6V6.8H1.7c-.6 1.2-.6 2.6 0 3.8l2.7-2.1z" fill="#FBBC04"/>
+                        <path d="M9 4.2c1.2 0 2.3.4 3.1 1.2l2.3-2.3C12.9 1.8 11.1 1 9 1 5.8 1 3.1 2.8 1.7 5.4l2.7 2.1C5.1 5.6 6.9 4.2 9 4.2z" fill="#EA4335"/>
+                    </svg>
+                    <span>Đăng ký bằng Google</span>
+                </a>
+            </div>
+
+            <footer class="auth-card-footer">
+                <p class="auth-switch-text">
+                    Bạn đã có tài khoản? <a asp-controller="Auth" asp-action="Login">Đăng nhập</a>
+                </p>
+            </footer>
+        </section>
+    </main>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
