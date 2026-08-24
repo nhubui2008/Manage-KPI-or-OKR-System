@@ -1,8 +1,41 @@
-**
-!external/
-!external/MinerU/
-!external/MinerU/**
-!deploy/
-!deploy/rag/
-!deploy/rag/**
+# Git and tools
+**/.git
+**/.gitignore
+**/.gitmodules
+**/.vs
+**/.vscode
+**/.codegraph
+**/.codex
+**/.dotnet
+**/.impeccable
+**/.agents
+
+# Build artifacts
+**/bin/
+**/obj/
+**/publish/
+**/tmp/
+**/artifacts/
+**/.build-check/
+
+# User-specific files
+**/*.user
+**/*.suo
+**/*.userosscache
+**/*.sln.docstates
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.docker.example
+
+# App runtime data & tests
+App_Data/DataProtection-Keys
+tests/
+docs/
+image/
+
+# External git submodules internal git data
 external/MinerU/.git
+

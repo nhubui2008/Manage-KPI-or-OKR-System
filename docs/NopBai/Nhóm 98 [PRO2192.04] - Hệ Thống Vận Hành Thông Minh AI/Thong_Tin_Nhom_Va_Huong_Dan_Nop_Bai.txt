@@ -1,0 +1,28 @@
+===========================================================================
+THÔNG TIN DỰ ÁN TỐT NGHIỆP - NHÓM 98 (PRO2192.04)
+===========================================================================
+
+1. ĐỀ TÀI: Hệ thống vận hành thông minh cho doang nghiệp vừa và nhỏ hỗ trợ quản lý đa cấp và đưa ra quyết định bằng AI
+2. GIẢNG VIÊN HƯỚNG DẪN: Thầy Phan Hoàng Khải (Email: khaiph2@fe.edu.vn | Zalo: 0367151727)
+3. LỚP: PRO2192.04
+
+4. DANH SÁCH THÀNH VIÊN:
+---------------------------------------------------------------------------
+STT  Mã SV       Họ và Tên                   Email                         
+---------------------------------------------------------------------------
+1    TB01544     Đoàn Quốc Khánh             khanhdqtb01544@gmail.com      
+2    TB01573     Nguyễn Thế Bảo              baonttb01573@gmail.com        
+3    TB01605     Vũ Hoàng Huy Nhật           nhatvhhtb01605@gmail.com      
+4    TB01649     Trần Thanh Phong            phongtttb01649@gmail.com      
+5    TB01758     Phạm Trần Anh Quân          quanptatb01758@gmail.com      
+6    TB01785     Bùi Nguyễn Anh Như          nhubnatb01785@gmail.com       
+7    TB01817     Phạm Trần An An             anptatb01817@gmail.com        
+---------------------------------------------------------------------------
+
+5. CẤU TRÚC VÀ QUY ĐỊNH NỘP BÀI:
+   📁 01_BaoCao_TaiLieu/       : Nộp file Word Báo cáo DATN (.docx), Slide thuyết trình (.pptx), SRS, Đặc tả.
+   📁 02_SourceCode_CSDL/      : Nộp file nén Source Code (.zip), File script CSDL (.sql), File hướng dẫn cài đặt (.txt/md).
+   📁 03_VideoDemo_MinhChung/  : Nộp Video Demo sản phẩm (.mp4) hoặc file Text chứa link Youtube/Google Drive demo.
+   📄 Phieu_Nhan_Xet_Va_Danh_Gia_DATN_Nhóm_95.docx : File phiếu nhận xét của Giảng viên hướng dẫn (Thầy Khải sẽ ghi nhận xét trực tiếp tại đây).
+
+LƯU Ý: Các nhóm nộp đúng hạn, kiểm tra mã nguồn không kèm folder bin/obj/node_modules để dung lượng gọn nhẹ.

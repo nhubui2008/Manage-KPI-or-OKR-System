@@ -1,0 +1,252 @@
+name: manage-kpi-okr
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Web Application (.NET 10 ASP.NET Core MVC)
+  # ----------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: manage-kpi-okr:latest
+    container_name: kpi-web-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-5208}:8080"
+    depends_on:
+      qdrant:
+        condition: service_started
+      minio:
+        condition: service_started
+      clamav:
+        condition: service_started
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection:-Server=sqlserver,1433;Database=manasys;User Id=sa;Password=YourStrong@Password123;Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets=True;Application Name=Manage-KPI-or-OKR-System;Connect Timeout=60}
+      - Database__RunMigrationsOnStartup=${Database__RunMigrationsOnStartup:-false}
+      - Qdrant__Endpoint=${DOCKER_QDRANT_ENDPOINT:-http://qdrant:6333}
+      - Qdrant__ApiKey=${Qdrant__ApiKey:-secret-kpi-qdrant-key}
+      - Qdrant__CollectionName=${Qdrant__CollectionName:-kpi-knowledge-v1}
+      - Qdrant__Dimensions=${Qdrant__Dimensions:-1024}
+      - Minio__Endpoint=${DOCKER_MINIO_ENDPOINT:-http://minio:9000}
+      - Minio__AccessKey=${Minio__AccessKey:-minioadmin}
+      - Minio__SecretKey=${Minio__SecretKey:-minioadminpassword123}
+      - Minio__BucketName=${Minio__BucketName:-kpi-knowledge}
+      - Minio__UseSsl=${Minio__UseSsl:-false}
+      - Minio__StableBaseUri=${Minio__StableBaseUri:-https://knowledge.local/kpi-knowledge}
+      - MalwareScanner__Host=${DOCKER_MALWARE_SCANNER_HOST:-clamav}
+      - MalwareScanner__Port=${MalwareScanner__Port:-3310}
+      - MalwareScanner__TimeoutSeconds=${MalwareScanner__TimeoutSeconds:-30}
+      - DeepSeek__BaseUrl=${DeepSeek__BaseUrl:-https://api.deepseek.com/v1/}
+      - DeepSeek__Model=${DeepSeek__Model:-deepseek-v4-pro}
+      - DeepSeek__ApiKey=${DeepSeek__ApiKey:-}
+      - DeepSeek__TimeoutSeconds=${DeepSeek__TimeoutSeconds:-30}
+      - AiAdvisoryRollout__KillSwitch=${AiAdvisoryRollout__KillSwitch:-true}
+      - AiAdvisoryRollout__CheckInEvaluationMode=${AiAdvisoryRollout__CheckInEvaluationMode:-Disabled}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - SmtpSettings__Server=${SmtpSettings__Server:-smtp.gmail.com}
+      - SmtpSettings__Port=${SmtpSettings__Port:-587}
+      - SmtpSettings__SenderName=${SmtpSettings__SenderName:-VietMach System}
+      - SmtpSettings__SenderEmail=${SmtpSettings__SenderEmail:-}
+      - SmtpSettings__Password=${SmtpSettings__Password:-}
+      - PasswordReset__PublicBaseUrl=${PasswordReset__PublicBaseUrl:-http://localhost:5208}
+      - DataProtection__KeysPath=/app/App_Data/DataProtection-Keys
+    volumes:
+      - app-dataprotection:/app/App_Data/DataProtection-Keys
+      - app-uploads:/app/wwwroot/uploads
+    networks:
+      - kpi-network
+
+  # ----------------------------------------------------------------------------
+  # 2. Microsoft SQL Server 2022
+  # ----------------------------------------------------------------------------
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: kpi-sqlserver
+    restart: unless-stopped
+    ports:
+      - "${SQL_PORT:-11433}:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-YourStrong@Password123}
+      MSSQL_PID: Developer
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: >
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${MSSQL_SA_PASSWORD:-YourStrong@Password123}" -C -Q "IF DB_ID('manasys') IS NULL CREATE DATABASE manasys; SELECT 1;" ||
+        /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${MSSQL_SA_PASSWORD:-YourStrong@Password123}" -Q "IF DB_ID('manasys') IS NULL CREATE DATABASE manasys; SELECT 1;"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - kpi-network
+
+  # ----------------------------------------------------------------------------
+  # 3. Qdrant Vector Database
+  # ----------------------------------------------------------------------------
+  qdrant:
+    image: qdrant/qdrant:v1.18.2
+    container_name: kpi-qdrant
+    restart: unless-stopped
+    ports:
+      - "${QDRANT_PORT:-16333}:6333"
+    environment:
+      QDRANT__SERVICE__API_KEY: ${Qdrant__ApiKey:-secret-kpi-qdrant-key}
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - kpi-network
+
+  # ----------------------------------------------------------------------------
+  # 4. MinIO Object Storage
+  # ----------------------------------------------------------------------------
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: kpi-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_API_PORT:-9200}:9000"
+      - "${MINIO_CONSOLE_PORT:-9201}:9001"
+    environment:
+      MINIO_ROOT_USER: ${Minio__AccessKey:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${Minio__SecretKey:-minioadminpassword123}
+    volumes:
+      - minio-data:/data
+    networks:
+      - kpi-network
+
+  # ----------------------------------------------------------------------------
+  # 5. ClamAV Malware Scanner
+  # ----------------------------------------------------------------------------
+  clamav:
+    image: clamav/clamav:1.4.5
+    container_name: kpi-clamav
+    restart: unless-stopped
+    ports:
+      - "${CLAMAV_PORT:-13310}:3310"
+    volumes:
+      - clamav-db:/var/lib/clamav
+    networks:
+      - kpi-network
+
+  # ----------------------------------------------------------------------------
+  # 6. Database Seeder (Profile: seed)
+  # ----------------------------------------------------------------------------
+  db-seed:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: kpi-db-seed
+    profiles: ["seed"]
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./seeddata.sql:/seeddata.sql:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        echo "Importing seeddata.sql into database manasys..."
+        /opt/mssql-tools18/bin/sqlcmd -S sqlserver,1433 -U sa -P "$${MSSQL_SA_PASSWORD:-YourStrong@Password123}" -C -I -d manasys -i /seeddata.sql || \
+        /opt/mssql-tools/bin/sqlcmd -S sqlserver,1433 -U sa -P "$${MSSQL_SA_PASSWORD:-YourStrong@Password123}" -I -d manasys -i /seeddata.sql
+        echo "Database seeded successfully!"
+    networks:
+      - kpi-network
+
+  # ----------------------------------------------------------------------------
+  # 7. MinerU PDF Parsing Service (Profile: mineru)
+  # ----------------------------------------------------------------------------
+  mineru:
+    profiles: ["mineru"]
+    build:
+      context: .
+      dockerfile: deploy/rag/MinerU.Dockerfile
+    image: kpi-mineru:0dfc9460
+    container_name: kpi-mineru
+    restart: unless-stopped
+    init: true
+    gpus: all
+    shm_size: "2gb"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      MINERU_MODEL_SOURCE: local
+      MINERU_API_MAX_CONCURRENT_REQUESTS: "1"
+      MINERU_API_OUTPUT_ROOT: /var/lib/mineru/output
+    volumes:
+      - mineru-output:/var/lib/mineru/output
+    networks:
+      - kpi-network
+
+  # ----------------------------------------------------------------------------
+  # 8. BGE-M3 Embedding Service (Profile: bge)
+  # ----------------------------------------------------------------------------
+  bge-m3:
+    profiles: ["bge"]
+    image: ghcr.io/huggingface/text-embeddings-inference:86-1.9@sha256:939883b22ab4616bebce5c35ab72b2132b40949955eac9e94661552312e1eaa9
+    container_name: kpi-bge-m3
+    restart: unless-stopped
+    gpus: all
+    ports:
+      - "127.0.0.1:8080:80"
+    command:
+      - --model-id
+      - BAAI/bge-m3
+      - --revision
+      - 5617a9f61b028005a4858fdac845db406aefb181
+      - --served-model-name
+      - BAAI/bge-m3
+      - --dtype
+      - float16
+      - --auto-truncate
+      - "false"
+      - --max-concurrent-requests
+      - "1"
+      - --max-client-batch-size
+      - "1"
+      - --max-batch-requests
+      - "1"
+      - --max-batch-tokens
+      - "8192"
+      - --payload-limit
+      - "100000"
+    volumes:
+      - bge-cache:/data
+    networks:
+      - kpi-network
+
+volumes:
+  sqlserver-data:
+    name: kpi-sqlserver-data
+  app-dataprotection:
+    name: kpi-app-dataprotection
+  app-uploads:
+    name: kpi-app-uploads
+  qdrant-data:
+    name: kpi-qdrant-data
+  minio-data:
+    name: kpi-minio-data
+  clamav-db:
+    name: kpi-clamav-db
+  mineru-output:
+    name: kpi-mineru-output
+  bge-cache:
+    name: kpi-bge-m3-cache
+
+networks:
+  kpi-network:
+    name: kpi-network
+    driver: bridge

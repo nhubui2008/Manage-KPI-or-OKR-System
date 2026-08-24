@@ -17,7 +17,7 @@ Quy trình tiền kiểm, backup, triển khai và xác minh migration SQL Serve
 - [Phân Quyền RBAC](#-phân-quyền-rbac)
 - [Tích Hợp AI](#-tích-hợp-ai)
 - [Cơ Sở Dữ Liệu](#-cơ-sở-dữ-liệu)
-- [Cài Đặt & Chạy](#-cài-đặt--chạy)
+- [Cài Đặt &amp; Chạy](#-cài-đặt--chạy)
 - [Tài Khoản Demo](#-tài-khoản-demo)
 - [Cấu Trúc Thư Mục](#-cấu-trúc-thư-mục)
 
@@ -70,18 +70,18 @@ Hệ thống quản lý KPI/OKR là giải pháp **end-to-end** cho doanh nghi�
 
 ## 🛠 Công Nghệ Sử Dụng
 
-| Thành phần | Công nghệ | Phiên bản |
-|---|---|---|
-| **Framework** | ASP.NET Core MVC | .NET 10.0 |
-| **ORM** | Entity Framework Core | 10.0.5 |
-| **Database** | SQL Server | 2019+ |
-| **AI Engine** | DeepSeek qua `IAIModelClient` + advisor/RAG có kiểm soát | Cấu hình theo môi trường |
-| **Auth** | Cookie + Google OAuth2 | — |
-| **Email** | SMTP (Gmail) | — |
-| **Export** | EPPlus (Excel) | 7.7.3 |
-| **Frontend** | Bootstrap 5 + Vanilla JS | — |
-| **Charts** | ApexCharts.js | — |
-| **Env Config** | DotNetEnv | 3.1.1 |
+| Thành phần         | Công nghệ                                                  | Phiên bản                   |
+| -------------------- | ------------------------------------------------------------ | ----------------------------- |
+| **Framework**  | ASP.NET Core MVC                                             | .NET 10.0                     |
+| **ORM**        | Entity Framework Core                                        | 10.0.5                        |
+| **Database**   | SQL Server                                                   | 2019+                         |
+| **AI Engine**  | DeepSeek qua`IAIModelClient` + advisor/RAG có kiểm soát | Cấu hình theo môi trường |
+| **Auth**       | Cookie + Google OAuth2                                       | —                            |
+| **Email**      | SMTP (Gmail)                                                 | —                            |
+| **Export**     | EPPlus (Excel)                                               | 7.7.3                         |
+| **Frontend**   | Bootstrap 5 + Vanilla JS                                     | —                            |
+| **Charts**     | ApexCharts.js                                                | —                            |
+| **Env Config** | DotNetEnv                                                    | 3.1.1                         |
 
 ---
 
@@ -89,14 +89,14 @@ Hệ thống quản lý KPI/OKR là giải pháp **end-to-end** cho doanh nghi�
 
 ### Module 1-2: Nền Tảng & Tổ Chức
 
-| Chức năng | Mô tả |
-|---|---|
-| **Vai trò (Roles)** | Admin, Director, Manager, HR, Employee — phân quyền chi tiết 60 permissions |
+| Chức năng                         | Mô tả                                                                                             |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Vai trò (Roles)**          | Admin, Director, Manager, HR, Employee — phân quyền chi tiết 60 permissions                     |
 | **Tài khoản (SystemUsers)** | Đăng nhập/đăng ký, Google OAuth, liên kết đặt lại mật khẩu một lần, đổi mật khẩu |
-| **Nhân viên (Employees)** | CRUD, import Excel, auto-gen mã (EMP001), gán phòng ban/chức vụ |
-| **Phòng ban (Departments)** | Cây phòng ban phân cấp, gán quản lý, 12 phòng ban demo |
-| **Chức vụ (Positions)** | 12 chức danh với RankLevel, auto-gen mã |
-| **Tham số hệ thống** | Cấu hình động: tần suất check-in, max KPI/OKR, ngưỡng đạt |
+| **Nhân viên (Employees)**   | CRUD, import Excel, auto-gen mã (EMP001), gán phòng ban/chức vụ                                |
+| **Phòng ban (Departments)**  | Cây phòng ban phân cấp, gán quản lý, 12 phòng ban demo                                      |
+| **Chức vụ (Positions)**     | 12 chức danh với RankLevel, auto-gen mã                                                          |
+| **Tham số hệ thống**       | Cấu hình động: tần suất check-in, max KPI/OKR, ngưỡng đạt                                 |
 
 ### Module 3: OKR & Mục Tiêu Chiến Lược
 
@@ -161,13 +161,13 @@ Authorization Flow:
 
 ### Ma Trận Quyền Theo Vai Trò
 
-| Vai trò | Phạm vi dữ liệu | Quyền chính |
-|---|---|---|
-| **Admin** | Toàn hệ thống | Toàn quyền (60 permissions) |
-| **Director** | Toàn công ty | OKR/KPI full, Mission full, Đánh giá + Duyệt, Báo cáo |
-| **Manager** | Phòng ban quản lý | OKR/KPI (View+Create+Edit), Check-in Review, Đánh giá |
-| **HR** | Toàn bộ nhân sự | Employees full, Kỳ đánh giá, Bonus, Báo cáo |
-| **Employee** | Cá nhân | Xem KPI/OKR, Check-in, Xem đánh giá |
+| Vai trò           | Phạm vi dữ liệu   | Quyền chính                                               |
+| ------------------ | -------------------- | ----------------------------------------------------------- |
+| **Admin**    | Toàn hệ thống     | Toàn quyền (60 permissions)                               |
+| **Director** | Toàn công ty       | OKR/KPI full, Mission full, Đánh giá + Duyệt, Báo cáo |
+| **Manager**  | Phòng ban quản lý | OKR/KPI (View+Create+Edit), Check-in Review, Đánh giá    |
+| **HR**       | Toàn bộ nhân sự  | Employees full, Kỳ đánh giá, Bonus, Báo cáo           |
+| **Employee** | Cá nhân            | Xem KPI/OKR, Check-in, Xem đánh giá                      |
 
 ### Data Scope (AccessScopeHelper)
 
@@ -199,20 +199,20 @@ AIController (API endpoints)
 
 ### Tính Năng AI
 
-| Tính năng | Mô tả |
-|---|---|
-| **AI Chat Widget** | Tư vấn KPI/OKR có citation/abstain từ snapshot được cấp quyền và RAG tenant/ACL; lưu hội thoại người dùng nhìn thấy trong lịch sử tài khoản, không lưu prompt nội bộ/raw provider response |
-| **Gợi ý KPI** | Bản nháp KPI strict JSON có citation, không có trần số lượng do ứng dụng đặt; server kiểm tra kỳ/quyền/đơn vị/ngưỡng, chỉ điền form và không tự tạo KPI |
-| **Phân tích hiệu suất** | Đánh giá performance theo kỳ, phòng ban, cá nhân |
-| **Phân khúc khách hàng** | Gợi ý customer segments cho Sales |
-| **AI Review** | Hỗ trợ viết nhận xét đánh giá |
-| **Smart Alerts** | Rule engine từ KPI/KR và check-in đã duyệt; gộp trùng và tự hết hạn ngay khi rủi ro được xử lý |
-| **Goal Planning Agent** | Lập danh sách task có assignee/deadline/phụ thuộc/rủi ro/citation, không có trần số task do agent đặt; Fit 35/25/20/10/10 do server tính, draft bền vững chỉ được tạo task sau khi người dùng xác nhận |
-| **KPI Check-in Evaluator** | Projected score/classification định lượng do server tính; rubric định tính được version hóa, confidence 40/25/20/15 và dưới 0,60 chỉ abstain phần định tính; proposal cũ chuyển `Stale`, con người chỉnh bản nháp và quyết định cuối |
-| **OKR KR Advisor** | Đánh giá candidate KR có nguồn trước khi con người cập nhật giá trị chính thức |
+| Tính năng                         | Mô tả                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **AI Chat Widget**            | Tư vấn KPI/OKR có citation/abstain từ snapshot được cấp quyền và RAG tenant/ACL; lưu hội thoại người dùng nhìn thấy trong lịch sử tài khoản, không lưu prompt nội bộ/raw provider response                                                                                                                                                        |
+| **Gợi ý KPI**               | Bản nháp KPI strict JSON có citation, không có trần số lượng do ứng dụng đặt; server kiểm tra kỳ/quyền/đơn vị/ngưỡng, chỉ điền form và không tự tạo KPI                                                                                                                                                                                         |
+| **Phân tích hiệu suất**   | Đánh giá performance theo kỳ, phòng ban, cá nhân                                                                                                                                                                                                                                                                                                                     |
+| **Phân khúc khách hàng**  | Gợi ý customer segments cho Sales                                                                                                                                                                                                                                                                                                                                         |
+| **AI Review**                 | Hỗ trợ viết nhận xét đánh giá                                                                                                                                                                                                                                                                                                                                       |
+| **Smart Alerts**              | Rule engine từ KPI/KR và check-in đã duyệt; gộp trùng và tự hết hạn ngay khi rủi ro được xử lý                                                                                                                                                                                                                                                             |
+| **Goal Planning Agent**       | Lập danh sách task có assignee/deadline/phụ thuộc/rủi ro/citation, không có trần số task do agent đặt; Fit 35/25/20/10/10 do server tính, draft bền vững chỉ được tạo task sau khi người dùng xác nhận                                                                                                                                             |
+| **KPI Check-in Evaluator**    | Projected score/classification định lượng do server tính; rubric định tính được version hóa, confidence 40/25/20/15 và dưới 0,60 chỉ abstain phần định tính; proposal cũ chuyển`Stale`, con người chỉnh bản nháp và quyết định cuối                                                                                                       |
+| **OKR KR Advisor**            | Đánh giá candidate KR có nguồn trước khi con người cập nhật giá trị chính thức                                                                                                                                                                                                                                                                               |
 | **AI operations & RAG admin** | Check-in outbox DeadLetter retry có kiểm tra source/row-version, bucket MinIO riêng tư, upload/version idempotent, ACL user/role/department, signature/ClamAV, MinerU, BGE-M3, Qdrant dense-vector retrieval với typed tenant/ACL filter, ingestion retry, metrics 30 ngày và SQL-authoritative recheck/de-index; còn cần retention policy và staging provider QA |
-| **Gợi ý/refine KR** | Trả bản nháp KR strict JSON có citation; server kiểm tra quyền, scope, source fingerprint, đơn vị và độ chính xác; con người chọn rồi gửi qua luồng tạo KR chuẩn |
-| **Lịch sử AI** | `/AIHistory` lưu input/output người dùng thực sự thấy theo session/entry, hỗ trợ tiếp tục Chat, đổi tên và xóa nội dung; Admin/Audit xem cùng tenant theo quyền hiện hành. `AIGenerationHistories` vẫn là legacy-only cho retention, không được đọc hay ghi mới. |
+| **Gợi ý/refine KR**         | Trả bản nháp KR strict JSON có citation; server kiểm tra quyền, scope, source fingerprint, đơn vị và độ chính xác; con người chọn rồi gửi qua luồng tạo KR chuẩn                                                                                                                                                                                      |
+| **Lịch sử AI**              | `/AIHistory` lưu input/output người dùng thực sự thấy theo session/entry, hỗ trợ tiếp tục Chat, đổi tên và xóa nội dung; Admin/Audit xem cùng tenant theo quyền hiện hành. `AIGenerationHistories` vẫn là legacy-only cho retention, không được đọc hay ghi mới.                                                                          |
 
 Tài liệu triển khai: [kiến trúc AI-native](docs/AI_NATIVE_ARCHITECTURE.md), [kế hoạch gốc đã phục hồi](docs/AI_NATIVE_IMPLEMENTATION_PLAN_RECOVERED.md) và [ma trận trạng thái thực hiện](docs/AI_NATIVE_PLAN_STATUS.md).
 
@@ -224,15 +224,15 @@ Tài liệu triển khai: [kiến trúc AI-native](docs/AI_NATIVE_ARCHITECTURE.m
 
 **45 entities** chia thành 7 nhóm:
 
-| Nhóm | Bảng | Mô tả |
-|---|---|---|
-| **Foundation** | Roles, Permissions, Role_Permissions, Statuses, SystemParameters | Nền tảng phân quyền & cấu hình |
-| **Organization** | Departments, Positions, SystemUsers, Employees, EmployeeAssignments, GradingRanks | Tổ chức & nhân sự |
-| **OKR** | MissionVisions, OKRTypes, OKRs, OKRKeyResults, OKR_Mission/Dept/Employee mappings | Mục tiêu chiến lược |
-| **KPI** | EvaluationPeriods, KPITypes, KPIProperties, KPIs, KPIDetails, KPI_Dept/Employee assignments, AdhocTasks | Chỉ tiêu đo lường |
-| **Check-in** | CheckInStatuses, FailReasons, KPICheckIns, CheckInDetails, CheckInHistoryLogs, GoalComments, OneOnOneMeetings, KPI_Result_Comparisons | Thực thi & theo dõi |
-| **Evaluation** | EvaluationResults, KPIAdjustmentHistories, BonusRules, RealtimeExpectedBonuses, HRExportReports, EvaluationReportSummaries, EvaluationReportIncidents | Đánh giá & thưởng |
-| **System** | SystemAlerts, AuditLogs, AIGenerationHistories | Hệ thống & AI |
+| Nhóm                  | Bảng                                                                                                                                                 | Mô tả                              |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| **Foundation**   | Roles, Permissions, Role_Permissions, Statuses, SystemParameters                                                                                      | Nền tảng phân quyền & cấu hình |
+| **Organization** | Departments, Positions, SystemUsers, Employees, EmployeeAssignments, GradingRanks                                                                     | Tổ chức & nhân sự                |
+| **OKR**          | MissionVisions, OKRTypes, OKRs, OKRKeyResults, OKR_Mission/Dept/Employee mappings                                                                     | Mục tiêu chiến lược             |
+| **KPI**          | EvaluationPeriods, KPITypes, KPIProperties, KPIs, KPIDetails, KPI_Dept/Employee assignments, AdhocTasks                                               | Chỉ tiêu đo lường               |
+| **Check-in**     | CheckInStatuses, FailReasons, KPICheckIns, CheckInDetails, CheckInHistoryLogs, GoalComments, OneOnOneMeetings, KPI_Result_Comparisons                 | Thực thi & theo dõi                |
+| **Evaluation**   | EvaluationResults, KPIAdjustmentHistories, BonusRules, RealtimeExpectedBonuses, HRExportReports, EvaluationReportSummaries, EvaluationReportIncidents | Đánh giá & thưởng               |
+| **System**       | SystemAlerts, AuditLogs, AIGenerationHistories                                                                                                        | Hệ thống & AI                      |
 
 ### ERD Tóm Tắt (Quan Hệ Chính)
 
@@ -261,13 +261,36 @@ File `seeddata.sql` tạo **240 nhân viên**, 12 phòng ban, 36 OKRs, 108 Key R
 
 ## 🚀 Cài Đặt & Chạy
 
-### Yêu Cầu
+### 🐳 Cách 1: Triển Khai Toàn Bộ Bằng Docker Compose (Khuyên Dùng)
+
+Toàn bộ hệ thống (Web App, SQL Server 2022, Qdrant Vector DB, MinIO Storage, ClamAV Antivirus) có thể được khởi chạy chỉ bằng 1 lệnh:
+
+```bash
+# 1. Khởi động toàn bộ stack dịch vụ ngầm
+docker compose up -d
+
+# 2. (Tùy chọn) Nạp dữ liệu mẫu ban đầu (240 nhân viên, OKR, KPI)
+docker compose --profile seed up db-seed
+# Hoặc chạy script: ./scripts/docker-seed-db.sh
+
+# 3. Xem logs và trạng thái các container
+docker compose ps
+docker compose logs -f app
+```
+
+Truy cập ứng dụng tại: **http://localhost:5208** (hoặc cổng cấu hình trong `.env`).
+
+---
+
+### 💻 Cách 2: Chạy Thủ Công Trên Máy Cục Bộ
+
+#### Yêu Cầu
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - SQL Server 2019+ (hoặc Azure SQL)
 - (Tùy chọn) DeepSeek API key và hạ tầng RAG cho các tính năng AI
 
-### Bước 1: Clone & Cấu Hình
+#### Bước 1: Clone & Cấu Hình
 
 ```bash
 git clone https://github.com/nhubui2008/Manage-KPI-or-OKR-System.git
@@ -350,13 +373,13 @@ dotnet run
 
 ## 👤 Tài Khoản Demo
 
-| Username | Password | Vai trò | Mô tả |
-|---|---|---|---|
-| `admin` | `123` | Admin | Toàn quyền hệ thống |
-| `director` | `123` | Director | Giám đốc - quản lý chiến lược |
-| `manager` | `123` | Manager | Trưởng phòng Công Nghệ |
-| `hr` | `123` | HR | Chuyên viên Nhân Sự |
-| `employee` | `123` | Employee | Nhân viên phòng IT |
+| Username     | Password | Vai trò | Mô tả                               |
+| ------------ | -------- | -------- | ------------------------------------- |
+| `admin`    | `123`  | Admin    | Toàn quyền hệ thống               |
+| `director` | `123`  | Director | Giám đốc - quản lý chiến lược |
+| `manager`  | `123`  | Manager  | Trưởng phòng Công Nghệ           |
+| `hr`       | `123`  | HR       | Chuyên viên Nhân Sự               |
+| `employee` | `123`  | Employee | Nhân viên phòng IT                 |
 
 > Mật khẩu mã hóa SHA-256. Seed data tạo thêm 235 tài khoản `user006`→`user240`.
 
@@ -425,6 +448,7 @@ Manage-KPI-or-OKR-System/
 ## 🔧 Các Tính Năng Kỹ Thuật Nổi Bật
 
 ### Security
+
 - **Anti-CSRF**: `AutoValidateAntiforgeryTokenAttribute` toàn cục
 - **Cookie Security**: HttpOnly, SameSite=Lax, Secure in production
 - **Data Protection**: Persistent keys survive app pool recycles
@@ -432,14 +456,17 @@ Manage-KPI-or-OKR-System/
 - **Forwarded Headers**: Configurable trusted proxies
 
 ### Performance
+
 - **AsNoTracking**: Read queries optimized
 - **Pagination**: `PaginatedList<T>` cho danh sách lớn
 - **AI input controls**: Giới hạn kích thước, timeout/retry hữu hạn, strict JSON và quota theo luồng
 
 ### Background Services
+
 - **AIHistoryCleanupService**: Mặc định không xóa. Chỉ dọn lịch sử AI legacy khi deployment bật cờ, tenant phê duyệt sau backup và retention hợp lệ; lịch sử tài khoản mới không tự xóa và vẫn không ghi prompt/context nội bộ/raw provider response.
 
 ### Workflow Engine
+
 - **KPI Status**: Bản nháp → Chờ duyệt → Đang thực hiện → Gần đạt → Hoàn thành/Không đạt/Từ chối/Hủy bỏ
 - **Check-in Review**: Pending → Approved/Rejected
 - **Evaluation**: Draft → Submitted → Director Reviewed

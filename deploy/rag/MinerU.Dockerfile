@@ -26,6 +26,7 @@ COPY --chown=10001:10001 deploy/rag/mineru.json /etc/mineru/mineru.json
 # Install only hash-locked runtime dependencies. The pinned source is imported
 # directly through PYTHONPATH, avoiding an unpinned PEP 517 build environment.
 RUN python3 -m pip install --no-cache-dir --require-hashes \
+        --extra-index-url https://download.pytorch.org/whl/cu130 \
         --break-system-packages -r /tmp/mineru-requirements.lock \
     && python3 -m pip cache purge \
     && python3 -c "from huggingface_hub import snapshot_download; snapshot_download('opendatalab/PDF-Extract-Kit-1.0', revision='ed6b654c018d742e65a17671e379c5e6ecc87ec9', local_dir='/opt/mineru-models')"

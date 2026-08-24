@@ -9,6 +9,8 @@
 bin/
 obj/
 out/
+.dotnet/
+
 
 ## User-specific files
 *.rsuser
