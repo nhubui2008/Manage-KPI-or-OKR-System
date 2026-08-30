@@ -267,12 +267,17 @@
         select.appendChild(first);
         (items || []).forEach(function (item) {
             var option = document.createElement("option");
-            option.value = item.id;
+            option.value = String(item.id);
             option.textContent = item.text;
-            if (item.parentId !== undefined && item.parentId !== null) option.dataset.okrId = item.parentId;
+            if (item.parentId !== undefined && item.parentId !== null) option.dataset.okrId = String(item.parentId);
             select.appendChild(option);
         });
-        if ((items || []).some(function (item) { return String(item.id) === String(selected || ""); })) select.value = selected;
+        if (selected !== undefined && selected !== null && String(selected) !== "") {
+            var hasMatch = (items || []).some(function (item) { return String(item.id) === String(selected); });
+            select.value = hasMatch ? String(selected) : "";
+        } else {
+            select.value = "";
+        }
         select.disabled = !!disabled;
         refreshSelect(select);
     }
@@ -299,6 +304,8 @@
     async function refreshAiOptions(source) {
         var controls = aiControls();
         if (!controls.employee || !controls.department || !controls.period || !controls.okr) return;
+        if (aiState.isRefreshing) return;
+        aiState.isRefreshing = true;
         if (source === "department") controls.employee.value = "";
         var previous = {
             employee: controls.employee.value,
@@ -326,7 +333,12 @@
             var departmentItems = (data.departments || []).map(function (item) { return { id: item.id, text: item.text || item.name }; });
             var periodItems = (data.periods || []).map(function (item) { return { id: item.id, text: item.text || item.name }; });
             var okrItems = (data.okrs || []).map(function (item) { return { id: item.id, text: item.text || item.name }; });
-            setSelectOptions(controls.department, "Không chọn cụ thể", departmentItems, previous.department, false);
+
+            var targetDept = previous.department;
+            if (source === "employee" && (data.selectedDepartmentId || data.SelectedDepartmentId)) {
+                targetDept = String(data.selectedDepartmentId || data.SelectedDepartmentId);
+            }
+            setSelectOptions(controls.department, "Không chọn cụ thể", departmentItems, targetDept, false);
             setSelectOptions(controls.employee, "Không chọn cụ thể", employeeItems, previous.employee, false);
             setSelectOptions(controls.period, periodItems.length ? "Chọn kỳ gần nhất" : "Chưa có kỳ khả dụng", periodItems, previous.period, !periodItems.length);
             setSelectOptions(controls.okr, okrItems.length ? "Không bắt buộc" : "Chưa có OKR khả dụng", okrItems, previous.okr, !okrItems.length);
@@ -337,6 +349,10 @@
             if (requestId !== aiState.requestId) return;
             if (controls.status) controls.status.textContent = "";
             toast({ tone: "warning", eyebrow: "AI Gợi ý KPI", title: "Không thể tải dữ liệu", message: error.message });
+        } finally {
+            if (requestId === aiState.requestId) {
+                aiState.isRefreshing = false;
+            }
         }
     }
 
