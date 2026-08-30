@@ -10,9 +10,9 @@
     --cf-danger: var(--danger, #b42318);
     --cf-success: #137a3d;
     width: 100%;
-    max-width: 1240px;
-    margin: 0 auto;
-    padding: 1.875rem 2rem 2.75rem;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 0 2rem;
     color: var(--cf-text);
 }
 
@@ -132,9 +132,10 @@
 
 .cf-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(17rem, 19rem);
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
     align-items: start;
-    gap: 1.25rem;
+    gap: 1.5rem;
+    width: 100%;
 }
 
 .cf-panel,
@@ -186,8 +187,9 @@
 }
 
 .cf-alert:empty,
-.cf-alert.validation-summary-valid {
-    display: none;
+.cf-alert.validation-summary-valid,
+.cf-alert:not(:has(li:not([style*="display:none"]):not([style*="display: none"]))) {
+    display: none !important;
 }
 
 .cf-alert ul {

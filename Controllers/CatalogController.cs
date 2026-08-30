@@ -35,13 +35,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             ViewBag.ActiveTab = tab;
 
-            ViewBag.KPITypes = await _context.KPITypes.OrderBy(x => x.Id).ToListAsync();
-            ViewBag.OKRTypes = await _context.OKRTypes.OrderBy(x => x.Id).ToListAsync();
-            ViewBag.KPIProperties = await _context.KPIProperties.OrderBy(x => x.Id).ToListAsync();
-            ViewBag.CheckInStatuses = await _context.CheckInStatuses.OrderBy(x => x.Id).ToListAsync();
-            ViewBag.FailReasons = await _context.FailReasons.OrderBy(x => x.Id).ToListAsync();
-            ViewBag.GradingRanks = await _context.GradingRanks.OrderBy(x => x.MinScore).ToListAsync();
-            ViewBag.Statuses = await _context.Statuses.OrderBy(x => x.StatusType).ThenBy(x => x.Id).ToListAsync();
+            ViewBag.KPITypes = await _context.KPITypes.AsNoTracking().OrderBy(x => x.Id).ToListAsync();
+            ViewBag.OKRTypes = await _context.OKRTypes.AsNoTracking().OrderBy(x => x.Id).ToListAsync();
+            ViewBag.KPIProperties = await _context.KPIProperties.AsNoTracking().OrderBy(x => x.Id).ToListAsync();
+            ViewBag.CheckInStatuses = await _context.CheckInStatuses.AsNoTracking().OrderBy(x => x.Id).ToListAsync();
+            ViewBag.FailReasons = await _context.FailReasons.AsNoTracking().OrderBy(x => x.Id).ToListAsync();
+            ViewBag.GradingRanks = await _context.GradingRanks.AsNoTracking().OrderBy(x => x.MinScore).ToListAsync();
+            ViewBag.Statuses = await _context.Statuses.AsNoTracking().OrderBy(x => x.StatusType).ThenBy(x => x.Id).ToListAsync();
 
             return View();
         }

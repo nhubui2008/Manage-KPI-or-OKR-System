@@ -28,7 +28,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewData["CurrentFilter"] = searchString;
 
             // Truy vấn các chức vụ chưa bị xóa
-            var query = _context.Positions.Where(p => p.IsActive == true).AsQueryable();
+            var query = _context.Positions.AsNoTracking().Where(p => p.IsActive == true).AsQueryable();
 
             // LỌC (SEARCH)
             if (!string.IsNullOrEmpty(searchString))
@@ -58,7 +58,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (string.IsNullOrEmpty(code)) return NotFound();
 
-            var position = await _context.Positions.FirstOrDefaultAsync(m => m.PositionCode == code && m.IsActive == true);
+            var position = await _context.Positions.AsNoTracking().FirstOrDefaultAsync(m => m.PositionCode == code && m.IsActive == true);
             if (position == null) return NotFound();
 
             return View(position);

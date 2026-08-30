@@ -90,11 +90,15 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
         .Take(pageSize)
         .ToListAsync();
     
-    // 5. LẤY DANH SÁCH ASSIGNMENTS VÀ CÁC TỪ ĐIỂN CHO VIEW
-    var assignmentsList = await _context.EmployeeAssignments
-        .Where(a => a.IsActive == true)
-        .OrderByDescending(a => a.EffectiveDate)
-        .ToListAsync();
+    // 5. LẤY DANH SÁCH ASSIGNMENTS VÀ CÁC TỪ ĐIỂN CHO VIEW (chỉ lấy cho trang hiện tại)
+    var pagedEmployeeIds = result.Select(e => e.Id).ToList();
+    var assignmentsList = pagedEmployeeIds.Any()
+        ? await _context.EmployeeAssignments
+            .AsNoTracking()
+            .Where(a => a.IsActive == true && a.EmployeeId.HasValue && pagedEmployeeIds.Contains(a.EmployeeId.Value))
+            .OrderByDescending(a => a.EffectiveDate)
+            .ToListAsync()
+        : new List<EmployeeAssignment>();
     var assignments = new Dictionary<int, EmployeeAssignment>();
     foreach (var assignment in assignmentsList)
     {
@@ -105,8 +109,8 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
     }
     
     ViewBag.Assignments = assignments;
-    ViewBag.Departments = await _context.Departments.ToDictionaryAsync(d => d.Id, d => d.DepartmentName);
-    ViewBag.Positions = await _context.Positions.ToDictionaryAsync(p => p.Id, p => p.PositionName);
+    ViewBag.Departments = await _context.Departments.AsNoTracking().ToDictionaryAsync(d => d.Id, d => d.DepartmentName);
+    ViewBag.Positions = await _context.Positions.AsNoTracking().ToDictionaryAsync(p => p.Id, p => p.PositionName);
     
     return View(new PaginatedList<Employee>(result, totalCount, pageIndex, pageSize));
 }
@@ -446,7 +450,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
         [HasPermission("EMPLOYEES_VIEW")]
         public async Task<IActionResult> Details(int id)
         {
-            var emp = await _context.Employees.FindAsync(id);
+            var emp = await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
             if (emp == null) return NotFound();
 
             if (emp.IsActive == false)
@@ -456,6 +460,7 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             }
             
             var assignment = await _context.EmployeeAssignments
+                .AsNoTracking()
                 .Where(a => a.EmployeeId == id && a.IsActive == true)
                 .OrderByDescending(a => a.EffectiveDate)
                 .FirstOrDefaultAsync();
@@ -463,34 +468,37 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
             // Lấy thông tin mục tiêu chiến lược
             if (emp.StrategicGoalId.HasValue)
             {
-                ViewBag.StrategicGoal = await _context.MissionVisions.FindAsync(emp.StrategicGoalId.Value);
+                ViewBag.StrategicGoal = await _context.MissionVisions.AsNoTracking().FirstOrDefaultAsync(m => m.Id == emp.StrategicGoalId.Value);
             }
 
             // Lấy thông tin tài khoản liên kết
             if (emp.SystemUserId.HasValue)
             {
                 ViewBag.SystemUser = await GetTenantSystemUsersQuery(includeInactive: true)
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(user => user.Id == emp.SystemUserId.Value);
             }
 
             // Lấy danh sách KPI được giao
             var assignedKPIs = await _context.KPI_Employee_Assignments
+                .AsNoTracking()
                 .Where(a => a.EmployeeId == id && (a.Status == null || a.Status == "Active"))
-                .Join(_context.KPIs, a => a.KPIId, k => k.Id, (a, k) => k)
+                .Join(_context.KPIs.AsNoTracking(), a => a.KPIId, k => k.Id, (a, k) => k)
                 .Where(k => k.IsActive == true)
                 .ToListAsync();
             ViewBag.AssignedKPIs = assignedKPIs;
 
             // Lấy danh sách OKR được giao
             var assignedOKRs = await _context.OKR_Employee_Allocations
+                .AsNoTracking()
                 .Where(a => a.EmployeeId == id)
-                .Join(_context.OKRs, a => a.OKRId, o => o.Id, (a, o) => o)
+                .Join(_context.OKRs.AsNoTracking(), a => a.OKRId, o => o.Id, (a, o) => o)
                 .ToListAsync();
             ViewBag.AssignedOKRs = assignedOKRs;
             
             ViewBag.Assignment = assignment;
-            ViewBag.Departments = await _context.Departments.ToDictionaryAsync(d => d.Id, d => d.DepartmentName);
-            ViewBag.Positions = await _context.Positions.ToDictionaryAsync(p => p.Id, p => p.PositionName);
+            ViewBag.Departments = await _context.Departments.AsNoTracking().ToDictionaryAsync(d => d.Id, d => d.DepartmentName);
+            ViewBag.Positions = await _context.Positions.AsNoTracking().ToDictionaryAsync(p => p.Id, p => p.PositionName);
             
             return View(emp);
         }

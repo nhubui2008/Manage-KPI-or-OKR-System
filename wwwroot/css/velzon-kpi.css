@@ -532,6 +532,13 @@ html.sidebar-expanded .vietmach-shell .main-content {
     background: var(--vz-canvas) !important;
 }
 
+.vietmach-shell .cf-page {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 !important;
+    padding: 0 0 2rem;
+}
+
 .vietmach-shell .page-header {
     margin-bottom: 16px;
     gap: 10px;
@@ -1214,11 +1221,27 @@ html.sidebar-expanded .vietmach-shell .main-content {
 }
 
 .vietmach-shell .cf-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(250px, 300px) !important;
-    gap: 16px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 340px !important;
+    gap: 24px !important;
+    align-items: start !important;
 }
 
-.vietmach-shell :is(.cf-panel, .cf-guide, .cf-section, .evaluation-filter-panel, .evaluation-results,
+.vietmach-shell .cf-section {
+    border: 0 !important;
+    border-bottom: 1px solid var(--vz-border) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+    padding: 1.35rem 0 1.45rem !important;
+}
+
+.vietmach-shell .cf-section:last-of-type {
+    border-bottom: 0 !important;
+}
+
+.vietmach-shell :is(.cf-panel, .cf-guide, .evaluation-filter-panel, .evaluation-results,
     .evaluation-period-card, .detail-section, .settings-group, .info-box, .task-edit-section,
     .catalog-table-shell, .catalog-pane, .rq-stat-card, .permission-stat-card,
     .mv-summary-card, .mv-foundation-card, .mv-goal-card, .mv-form-panel, .mv-form-guide,
@@ -1232,7 +1255,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease !important;
 }
 
-.vietmach-shell :is(.cf-panel, .cf-guide, .cf-section, .evaluation-filter-panel, .evaluation-results,
+.vietmach-shell :is(.cf-panel, .cf-guide, .evaluation-filter-panel, .evaluation-results,
     .evaluation-period-card, .detail-section, .settings-group, .info-box, .task-edit-section,
     .catalog-table-shell, .catalog-pane, .rq-stat-card, .permission-stat-card,
     .mv-summary-card, .mv-foundation-card, .mv-goal-card, .mv-form-panel, .mv-form-guide,
@@ -1241,7 +1264,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
     .project-card, .dashboard-card):hover {
     transform: translateY(-3px) !important;
     border-color: #cbd5e1 !important;
-    box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.04) !important;
+    box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08) !important;
 }
 
 .vietmach-shell :is(.cf-panel__header, .catalog-pane-header, .detail-section-title,

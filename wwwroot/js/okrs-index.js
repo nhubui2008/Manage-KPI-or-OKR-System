@@ -382,15 +382,15 @@
             const isInverseChecked = kr.IsInverse || kr.isInverse ? 'checked' : '';
             html += `
                 <tr>
-                    <td><input class="form-check-input ai-kr-checkbox" type="checkbox" checked data-index="${index}" aria-label="Chọn KR ${index + 1}"></td>
+                    <td class="text-center"><input class="form-check-input ai-kr-checkbox mt-2" type="checkbox" checked data-index="${index}" aria-label="Chọn KR ${index + 1}"></td>
                     <td>
                         <input type="text" class="form-control form-control-sm ai-kr-name" value="${name}" required aria-label="Tên KR ${index + 1}">
                         ${rationale ? `<div class="small text-muted mt-1 ai-kr-rationale">${rationale}</div>` : ''}
                     </td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm ai-kr-target" value="${escapeHtml(target)}" required aria-label="Chỉ tiêu KR ${index + 1}"></td>
                     <td><select class="form-select form-select-sm ai-kr-unit" required aria-label="Đơn vị KR ${index + 1}">${unitOptions || `<option value="${unit}" selected>${unit}</option>`}</select></td>
-                    <td>
-                        <div class="form-check form-switch">
+                    <td class="text-center">
+                        <div class="form-check form-switch d-inline-block mt-2">
                             <input class="form-check-input ai-kr-is-inverse" type="checkbox" ${isInverseChecked} aria-label="Chỉ tiêu thu nhỏ KR ${index + 1}">
                         </div>
                     </td>

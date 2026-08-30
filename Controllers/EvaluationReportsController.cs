@@ -26,6 +26,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Index(int? departmentId, string? cycle)
         {
             var departments = await _context.Departments
+                .AsNoTracking()
                 .Where(d => d.IsActive == true)
                 .OrderBy(d => d.DepartmentName)
                 .ToListAsync();
@@ -48,11 +49,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             // 1. Get OKRs associated with this department and cycle
             var okrIdsInDept = await _context.OKR_Department_Allocations
+                .AsNoTracking()
                 .Where(da => da.DepartmentId == departmentId)
                 .Select(da => da.OKRId)
                 .ToListAsync();
 
             var okrs = await _context.OKRs
+                .AsNoTracking()
                 .Where(o => okrIdsInDept.Contains(o.Id) && o.Cycle == cycle && o.IsActive == true)
                 .ToListAsync();
 
@@ -60,27 +63,32 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             // 2. Get Key Results for these OKRs
             var krs = await _context.OKRKeyResults
+                .AsNoTracking()
                 .Where(k => okrIds.Contains(k.OKRId ?? 0))
                 .ToListAsync();
 
             // 3. Get Employee and their Allocations for this department and these OKRs
             var employeesInDeptIds = await _context.EmployeeAssignments
+                .AsNoTracking()
                 .Where(ea => ea.DepartmentId == departmentId && ea.IsActive == true)
                 .Select(ea => ea.EmployeeId ?? 0)
                 .ToListAsync();
 
             var allocations = await _context.OKR_Employee_Allocations
+                .AsNoTracking()
                 .Where(a => okrIds.Contains(a.OKRId) && employeesInDeptIds.Contains(a.EmployeeId))
                 .ToListAsync();
 
             var employees = await _context.Employees
+                .AsNoTracking()
                 .Where(e => employeesInDeptIds.Contains(e.Id))
                 .ToDictionaryAsync(e => e.Id);
 
-            var failReasons = await _context.FailReasons.ToDictionaryAsync(r => r.Id, r => r.ReasonName);
-            var currentDept = await _context.Departments.FindAsync(departmentId);
+            var failReasons = await _context.FailReasons.AsNoTracking().ToDictionaryAsync(r => r.Id, r => r.ReasonName);
+            var currentDept = await _context.Departments.AsNoTracking().FirstOrDefaultAsync(d => d.Id == departmentId);
 
             var cycles = await _context.OKRs
+                .AsNoTracking()
                 .Where(o => !string.IsNullOrEmpty(o.Cycle))
                 .Select(o => o.Cycle!)
                 .Distinct()
@@ -101,9 +109,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             // 4. Get existing summary for the director
             var summary = await _context.EvaluationReportSummaries
+                .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.DepartmentId == departmentId && s.Cycle == cycle);
             ViewBag.DirectorSummary = summary?.Content ?? "";
             ViewBag.Incidents = await _context.EvaluationReportIncidents
+                .AsNoTracking()
                 .Where(i => i.DepartmentId == departmentId && i.Cycle == cycle)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();

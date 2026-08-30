@@ -25,7 +25,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("EVALRESULTS_VIEW")]
         public async Task<IActionResult> Index()
         {
-            var resultsQuery = _context.EvaluationResults.OrderByDescending(r => r.Id).AsQueryable();
+            var resultsQuery = _context.EvaluationResults.AsNoTracking().OrderByDescending(r => r.Id).AsQueryable();
 
             // Filter Results if Sales or Employee
             if (User.IsInRole("Sales") || User.IsInRole("sales") || 
@@ -34,7 +34,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (int.TryParse(userIdStr, out int userId))
                 {
-                    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
+                    var employee = await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.SystemUserId == userId);
                     if (employee != null)
                     {
                         resultsQuery = resultsQuery.Where(r => r.EmployeeId == employee.Id);
@@ -57,9 +57,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var results = await resultsQuery.ToListAsync();
 
-            var employees = await _context.Employees.ToDictionaryAsync(e => e.Id, e => e.FullName ?? "N/A");
-            var periods = await _context.EvaluationPeriods.ToDictionaryAsync(p => p.Id, p => p.PeriodName ?? "N/A");
-            var ranks = await _context.GradingRanks.ToDictionaryAsync(r => r.Id, r => r.RankCode ?? "N/A");
+            var employees = await _context.Employees.AsNoTracking().ToDictionaryAsync(e => e.Id, e => e.FullName ?? "N/A");
+            var periods = await _context.EvaluationPeriods.AsNoTracking().ToDictionaryAsync(p => p.Id, p => p.PeriodName ?? "N/A");
+            var allRanks = await _context.GradingRanks.AsNoTracking().ToListAsync();
+            var ranks = allRanks.ToDictionary(r => r.Id, r => r.RankCode ?? "N/A");
             var submitterIds = results
                 .Where(r => r.SubmittedById.HasValue)
                 .Select(r => r.SubmittedById!.Value)
@@ -67,7 +68,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Distinct()
                 .ToList();
             var workflowEmployees = submitterIds.Any()
-                ? await _context.Employees.Where(e => submitterIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName ?? "N/A")
+                ? await _context.Employees.AsNoTracking().Where(e => submitterIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName ?? "N/A")
                 : new Dictionary<int, string>();
 
             ViewBag.Employees = employees;
@@ -75,8 +76,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.Ranks = ranks;
             ViewBag.WorkflowEmployees = workflowEmployees;
             ViewBag.AllEmployees = await GetEvaluationAssignableEmployeesAsync();
-            ViewBag.AllPeriods = await GetWritableEvaluationPeriodsQuery().ToListAsync();
-            var allRanks = await _context.GradingRanks.ToListAsync();
+            ViewBag.AllPeriods = await GetWritableEvaluationPeriodsQuery().AsNoTracking().ToListAsync();
             ViewBag.AllRanks = allRanks;
             ViewBag.Classifications = allRanks.Where(r => !string.IsNullOrEmpty(r.Description))
                                               .Select(r => r.Description)
@@ -99,7 +99,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var currentEmployee = await GetCurrentEmployeeAsync();
-            var query = _context.EvaluationResults.AsQueryable();
+            var query = _context.EvaluationResults.AsNoTracking().AsQueryable();
 
             if (User.IsInRole("Director") || User.IsInRole("Admin") || User.IsInRole("Administrator"))
             {
@@ -123,17 +123,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Distinct()
                 .ToList();
             var employees = employeeIds.Any()
-                ? await _context.Employees.Where(e => employeeIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName ?? "N/A")
+                ? await _context.Employees.AsNoTracking().Where(e => employeeIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName ?? "N/A")
                 : new Dictionary<int, string>();
 
             var periodIds = results.Where(r => r.PeriodId.HasValue).Select(r => r.PeriodId!.Value).Distinct().ToList();
             var periods = periodIds.Any()
-                ? await _context.EvaluationPeriods.Where(p => periodIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.PeriodName ?? "N/A")
+                ? await _context.EvaluationPeriods.AsNoTracking().Where(p => periodIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.PeriodName ?? "N/A")
                 : new Dictionary<int, string>();
 
             var rankIds = results.Where(r => r.RankId.HasValue).Select(r => r.RankId!.Value).Distinct().ToList();
             var ranks = rankIds.Any()
-                ? await _context.GradingRanks.Where(r => rankIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id, r => r.RankCode ?? "N/A")
+                ? await _context.GradingRanks.AsNoTracking().Where(r => rankIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id, r => r.RankCode ?? "N/A")
                 : new Dictionary<int, string>();
 
             ViewBag.Employees = employees;
@@ -152,8 +152,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return Forbid();
 
             ViewBag.AllEmployees = await GetEvaluationAssignableEmployeesAsync();
-            ViewBag.AllPeriods = await GetWritableEvaluationPeriodsQuery().ToListAsync();
-            var allRanks = await _context.GradingRanks.ToListAsync();
+            ViewBag.AllPeriods = await GetWritableEvaluationPeriodsQuery().AsNoTracking().ToListAsync();
+            var allRanks = await _context.GradingRanks.AsNoTracking().ToListAsync();
             ViewBag.AllRanks = allRanks;
             ViewBag.Classifications = allRanks.Where(r => !string.IsNullOrEmpty(r.Description))
                                               .Select(r => r.Description)

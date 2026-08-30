@@ -31,7 +31,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             ViewBag.CurrentStatus = isActive;
 
             // Khởi tạo truy vấn danh sách phòng ban (bao gồm cả ngưng hoạt động)
-            var query = _context.Departments.AsQueryable();
+            var query = _context.Departments.AsNoTracking().AsQueryable();
 
             // LỌC (SEARCH): Nếu người dùng có nhập từ khóa
             if (!string.IsNullOrEmpty(searchString))
@@ -62,10 +62,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             // Lấy danh sách nhân viên để hiển thị tên Quản lý (Manager)
             var managerIds = departments.Where(d => d.ManagerId.HasValue).Select(d => d.ManagerId!.Value).Distinct().ToList();
-            var employees = await _context.Employees.Where(e => managerIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName);
+            var employees = managerIds.Any()
+                ? await _context.Employees.AsNoTracking().Where(e => managerIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName)
+                : new Dictionary<int, string?>();
             
             // Đếm số lượng nhân viên đang thuộc từng phòng ban
             var employeeCounts = await _context.EmployeeAssignments
+                .AsNoTracking()
                 .Where(a => a.IsActive == true && a.DepartmentId.HasValue)
                 .GroupBy(a => a.DepartmentId ?? 0)
                 .Select(g => new { DeptId = g.Key, Count = g.Count() })
@@ -85,21 +88,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (id == null) return NotFound();
 
-            var dept = await _context.Departments.FirstOrDefaultAsync(m => m.Id == id && m.IsActive == true);
+            var dept = await _context.Departments.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id && m.IsActive == true);
             if (dept == null) return NotFound();
 
             // Lấy thêm tên người quản lý
             ViewBag.ManagerName = dept.ManagerId.HasValue 
-                ? (await _context.Employees.FindAsync(dept.ManagerId.Value))?.FullName 
+                ? (await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == dept.ManagerId.Value))?.FullName 
                 : "Chưa phân công";
 
             // Lấy thêm tên phòng ban cấp trên
             ViewBag.ParentDeptName = dept.ParentDepartmentId.HasValue 
-                ? (await _context.Departments.FindAsync(dept.ParentDepartmentId.Value))?.DepartmentName 
+                ? (await _context.Departments.AsNoTracking().FirstOrDefaultAsync(d => d.Id == dept.ParentDepartmentId.Value))?.DepartmentName 
                 : "Không có (Cấp cao nhất)";
 
             // Đếm tổng nhân viên của phòng ban này
             var assignments = await _context.EmployeeAssignments
+                .AsNoTracking()
                 .Where(a => a.DepartmentId == id && a.IsActive == true)
                 .ToListAsync();
             ViewBag.EmployeeCount = assignments.Count;
@@ -108,13 +112,20 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var employeeIds = assignments.Select(a => a.EmployeeId).Where(eid => eid.HasValue).Select(eid => eid!.Value).ToList();
             var positionIds = assignments.Select(a => a.PositionId).Where(pid => pid.HasValue).Select(pid => pid!.Value).Distinct().ToList();
 
-            var employeeEntities = await _context.Employees
-                .Where(e => employeeIds.Contains(e.Id))
-                .ToListAsync();
-            var positions = await _context.Positions
-                .Where(p => positionIds.Contains(p.Id))
-                .ToDictionaryAsync(p => p.Id, p => p.PositionName);
+            var employeeEntities = employeeIds.Any()
+                ? await _context.Employees
+                    .AsNoTracking()
+                    .Where(e => employeeIds.Contains(e.Id))
+                    .ToListAsync()
+                : new List<Employee>();
+            var positions = positionIds.Any()
+                ? await _context.Positions
+                    .AsNoTracking()
+                    .Where(p => positionIds.Contains(p.Id))
+                    .ToDictionaryAsync(p => p.Id, p => p.PositionName)
+                : new Dictionary<int, string?>();
             ViewBag.Positions = await _context.Positions
+                .AsNoTracking()
                 .Where(p => p.IsActive == true)
                 .OrderBy(p => p.RankLevel)
                 .ThenBy(p => p.PositionName)
@@ -122,6 +133,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var activeEmployeeIdsInDept = employeeIds.ToHashSet();
             ViewBag.AvailableEmployees = await _context.Employees
+                .AsNoTracking()
                 .Where(e => e.IsActive == true && !activeEmployeeIdsInDept.Contains(e.Id))
                 .OrderBy(e => e.FullName)
                 .ToListAsync();
@@ -142,15 +154,19 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             // Lấy phòng ban con
             ViewBag.ChildDepartments = await _context.Departments
+                .AsNoTracking()
                 .Where(d => d.ParentDepartmentId == id && d.IsActive == true)
                 .ToListAsync();
 
             // Lấy KPI được giao cho phòng ban
             var kpiAssignments = await _context.KPI_Department_Assignments
+                .AsNoTracking()
                 .Where(k => k.DepartmentId == id)
                 .ToListAsync();
             var kpiIds = kpiAssignments.Select(k => k.KPIId).Distinct().ToList();
-            ViewBag.AssignedKPIs = await _context.KPIs.Where(k => kpiIds.Contains(k.Id)).ToListAsync();
+            ViewBag.AssignedKPIs = kpiIds.Any()
+                ? await _context.KPIs.AsNoTracking().Where(k => kpiIds.Contains(k.Id)).ToListAsync()
+                : new List<KPI>();
 
             return View(dept);
         }

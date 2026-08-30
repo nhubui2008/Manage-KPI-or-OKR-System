@@ -170,14 +170,25 @@ public sealed class CheckInAiEvaluationWorker : BackgroundService
 
                 await ProcessAsync(claimed, stoppingToken);
             }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (ObjectDisposedException)
             {
                 break;
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception, "Check-in AI outbox polling failed.");
-                await Task.Delay(EmptyPollDelay, stoppingToken);
+                try
+                {
+                    await Task.Delay(EmptyPollDelay, stoppingToken);
+                }
+                catch (Exception)
+                {
+                    break;
+                }
             }
         }
     }

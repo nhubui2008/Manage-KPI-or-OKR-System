@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
+using System.IO.Compression;
 using DotNetEnv;
 using OfficeOpenXml;
 using System.Net;
@@ -63,6 +65,29 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "image/svg+xml",
+        "application/json",
+        "application/javascript",
+        "text/css",
+        "text/html",
+        "text/plain"
+    });
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+builder.Services.Configure<HostOptions>(options =>
+{
+    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
 });
 
 // Đăng ký EmailService
@@ -463,7 +488,15 @@ app.UseStaticFiles(new StaticFileOptions
         if (extension.Equals(".css", StringComparison.OrdinalIgnoreCase) ||
             extension.Equals(".js", StringComparison.OrdinalIgnoreCase) ||
             extension.Equals(".woff", StringComparison.OrdinalIgnoreCase) ||
-            extension.Equals(".woff2", StringComparison.OrdinalIgnoreCase))
+            extension.Equals(".woff2", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".ttf", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".eot", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".png", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".svg", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".ico", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".webp", StringComparison.OrdinalIgnoreCase))
         {
             context.Context.Response.Headers.CacheControl = "public,max-age=604800";
         }

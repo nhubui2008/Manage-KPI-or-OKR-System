@@ -37,6 +37,8 @@
     color: #ffffff;
     background-color: #405189;
     box-shadow: 0 2px 6px rgba(64, 81, 137, 0.35);
+}
+
 /* Status Badges & Icon subtle backgrounds */
 .bg-info-subtle,
 .badge-soft-info,

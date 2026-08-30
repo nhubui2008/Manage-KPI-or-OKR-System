@@ -58,7 +58,11 @@ public sealed class DocumentIngestionWorker : BackgroundService
                 var processor = scope.ServiceProvider.GetRequiredService<IDocumentIngestionProcessor>();
                 await processor.ProcessAsync(lease, stoppingToken);
             }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (ObjectDisposedException)
             {
                 break;
             }
@@ -67,7 +71,14 @@ public sealed class DocumentIngestionWorker : BackgroundService
                 _logger.LogError(
                     "Document ingestion polling failed with {FailureType}.",
                     exception.GetType().Name);
-                await Task.Delay(EmptyPollDelay, stoppingToken);
+                try
+                {
+                    await Task.Delay(EmptyPollDelay, stoppingToken);
+                }
+                catch (Exception)
+                {
+                    break;
+                }
             }
         }
     }

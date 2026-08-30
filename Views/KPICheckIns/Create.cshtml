@@ -46,25 +46,23 @@
     ViewData["Title"] = progressPageTitle;
 }
 
-<link rel="stylesheet" href="~/css/velzon-kpi.css" asp-append-version="true" />
-<link rel="stylesheet" href="~/css/velzon-kpi-checkins.css" asp-append-version="true" />
-
 <div class="cf-page checkin-create-page kpi-checkins-wrapper" data-create-form>
     <!-- PAGE TITLE HEADER -->
-    <div class="row">
+    <div class="row mb-3">
         <div class="col-12">
-            <div class="page-title-box d-sm-flex align-items-center justify-content-between mb-3 evaluation-page-header">
-                <div>
+            <div class="page-title-box d-sm-flex align-items-center justify-content-between mb-3 cf-header">
+                <div class="cf-header__content">
                     <h4 class="mb-sm-0 fw-bold">@progressPageTitle</h4>
-                    <ol class="breadcrumb m-0 me-3 evaluation-breadcrumb">
+                    <ol class="breadcrumb m-0 me-3 cf-breadcrumb">
                         <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
                         <li class="breadcrumb-item"><a asp-action="Index">Check-in KPI</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Cập nhật mới</li>
                     </ol>
+                    <p class="text-muted mb-0 fs-13 mt-1 cf-header__description">Ghi nhận số liệu thực tế cho KPI để hệ thống tự động tính toán tiến độ và cảnh báo rủi ro.</p>
                 </div>
-                <div class="page-title-right">
-                    <a href="@safeReturnUrl" class="btn btn-soft-secondary btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
-                        <i class="bi bi-arrow-left"></i>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="@safeReturnUrl" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 cf-back-action">
+                        <i class="bi bi-arrow-left" aria-hidden="true"></i>
                         <span>Quay lại</span>
                     </a>
                 </div>
@@ -301,6 +299,7 @@
     <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/evaluation-periods.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/kpi-checkins.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/velzon-kpi-checkins.css" asp-append-version="true" />
 }
 
 @section Scripts {

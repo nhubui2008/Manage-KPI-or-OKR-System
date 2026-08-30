@@ -29,6 +29,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // 1. XỬ LÝ KỲ BÁO CÁO ĐỘNG TỪ DATABASE
             // ========================================
             var allPeriods = await _context.EvaluationPeriods
+                .AsNoTracking()
                 .Where(p => p.IsActive == true)
                 .OrderByDescending(p => p.StartDate)
                 .ToListAsync();
@@ -56,11 +57,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // ========================================
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
-            var employee = systemUserId.HasValue ? await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
+            var employee = systemUserId.HasValue ? await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.SystemUserId == systemUserId) : null;
 
-            var kpiQuery = _context.KPIs.Where(k => k.IsActive == true);
-            var okrQuery = _context.OKRs.Where(o => o.IsActive == true);
-            var checkInQuery = _context.KPICheckIns
+            var kpiQuery = _context.KPIs.AsNoTracking().Where(k => k.IsActive == true);
+            var okrQuery = _context.OKRs.AsNoTracking().Where(o => o.IsActive == true);
+            var checkInQuery = _context.KPICheckIns.AsNoTracking()
                 .Where(c => c.ReviewStatus == "Approved");
 
             if (selectedPeriod != null)
@@ -101,11 +102,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 if (employee != null)
                 {
                     var allocatedKpiIds = await _context.KPI_Employee_Assignments
+                        .AsNoTracking()
                         .Where(a => a.EmployeeId == employee.Id && (a.Status == null || a.Status == "Active"))
                         .Select(a => a.KPIId)
                         .ToListAsync();
 
                     var allocatedOkrIds = await _context.OKR_Employee_Allocations
+                        .AsNoTracking()
                         .Where(a => a.EmployeeId == employee.Id)
                         .Select(a => a.OKRId)
                         .ToListAsync();
@@ -130,6 +133,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                     var managedKpiIds = scopedEmployeeIds.Any()
                         ? await _context.KPI_Employee_Assignments
+                            .AsNoTracking()
                             .Where(a => scopedEmployeeIds.Contains(a.EmployeeId) && (a.Status == null || a.Status == "Active"))
                             .Select(a => a.KPIId)
                             .ToListAsync()
@@ -138,6 +142,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     if (scopedDepartmentIds.Any())
                     {
                         var departmentKpiIds = await _context.KPI_Department_Assignments
+                            .AsNoTracking()
                             .Where(a => scopedDepartmentIds.Contains(a.DepartmentId))
                             .Select(a => a.KPIId)
                             .ToListAsync();
@@ -149,6 +154,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                     var managedOkrIds = scopedEmployeeIds.Any()
                         ? await _context.OKR_Employee_Allocations
+                            .AsNoTracking()
                             .Where(a => scopedEmployeeIds.Contains(a.EmployeeId))
                             .Select(a => a.OKRId)
                             .ToListAsync()
@@ -157,6 +163,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     if (scopedDepartmentIds.Any())
                     {
                         var departmentOkrIds = await _context.OKR_Department_Allocations
+                            .AsNoTracking()
                             .Where(a => scopedDepartmentIds.Contains(a.DepartmentId))
                             .Select(a => a.OKRId)
                             .ToListAsync();
@@ -181,7 +188,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 ? 1
                 : isManagerScoped
                     ? scopedEmployeeIds.Count
-                    : await _context.Employees.CountAsync(e => e.IsActive == true);
+                    : await _context.Employees.AsNoTracking().CountAsync(e => e.IsActive == true);
             ViewBag.TotalOKRs = await okrQuery.CountAsync();
             var totalKpis = await kpiQuery.CountAsync();
             ViewBag.TotalKPIs = totalKpis;
@@ -192,7 +199,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // ========================================
             // Lấy tất cả check-in details có progress >= 100 => coi là "Đạt"
             var achievementSummary = await (
-                from detail in _context.CheckInDetails
+                from detail in _context.CheckInDetails.AsNoTracking()
                 join checkIn in checkInQuery on detail.CheckInId equals (int?)checkIn.Id
                 group detail by 1 into details
                 select new
@@ -211,8 +218,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // 4. TÍNH TIẾN ĐỘ OKR THỰC TẾ TỪ DB
             // ========================================
             var keyResults = await _context.OKRKeyResults
+                .AsNoTracking()
                 .Where(keyResult => keyResult.OKRId.HasValue &&
                     okrQuery.Select(okr => okr.Id).Contains(keyResult.OKRId.Value))
+                .Select(kr => new
+                {
+                    kr.CurrentValue,
+                    kr.TargetValue,
+                    kr.IsInverse
+                })
                 .ToListAsync();
 
             double okrProgressRate = 0;
@@ -239,12 +253,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     CheckIn = checkIn,
                     EmployeeName = checkIn.EmployeeId.HasValue
                         ? _context.Employees
+                            .AsNoTracking()
                             .Where(employeeRow => employeeRow.Id == checkIn.EmployeeId.Value)
                             .Select(employeeRow => employeeRow.FullName)
                             .FirstOrDefault()
                         : null,
                     KpiName = checkIn.KPIId.HasValue
                         ? _context.KPIs
+                            .AsNoTracking()
                             .Where(kpiRow => kpiRow.Id == checkIn.KPIId.Value)
                             .Select(kpiRow => kpiRow.KPIName)
                             .FirstOrDefault()
@@ -269,11 +285,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // 6. DEPARTMENTS DATA
             // ========================================
             var departmentCount = await _context.Departments
+                .AsNoTracking()
                 .Where(d => d.IsActive == true &&
                             (!isManagerScoped || scopedDepartmentIds.Contains(d.Id)))
                 .CountAsync();
             ViewBag.TotalDepartments = isEmployeeRole && employee != null
                 ? await _context.EmployeeAssignments
+                    .AsNoTracking()
                     .Where(ea => ea.EmployeeId == employee.Id && ea.IsActive == true && ea.DepartmentId.HasValue)
                     .Select(ea => ea.DepartmentId)
                     .Distinct()
@@ -283,12 +301,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // Tổng chức vụ
             ViewBag.TotalPositions = isEmployeeRole && employee != null
                 ? await _context.EmployeeAssignments
+                    .AsNoTracking()
                     .Where(ea => ea.EmployeeId == employee.Id && ea.IsActive == true && ea.PositionId.HasValue)
                     .Select(ea => ea.PositionId)
                     .Distinct()
                     .CountAsync()
                 : isManagerScoped
                     ? await _context.EmployeeAssignments
+                        .AsNoTracking()
                         .Where(ea => ea.IsActive == true &&
                                      ea.EmployeeId.HasValue &&
                                      scopedEmployeeIds.Contains(ea.EmployeeId.Value) &&
@@ -296,12 +316,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         .Select(ea => ea.PositionId)
                         .Distinct()
                         .CountAsync()
-                    : await _context.Positions.CountAsync(p => p.IsActive == true);
+                    : await _context.Positions.AsNoTracking().CountAsync(p => p.IsActive == true);
 
             // ========================================
             // 7. BIỂU ĐỒ OKR STATUS DISTRIBUTION
             // ========================================
             var okrStatusRows = await _context.Statuses
+                .AsNoTracking()
                 .Where(statusRow => statusRow.StatusType == "OKR")
                 .Select(statusRow => new
                 {
@@ -319,10 +340,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // 8. BIỂU ĐỒ HIỆU SUẤT PHÒNG BAN (TỪ DB)
             // ========================================
             int scopedEmployeeId = employee?.Id ?? 0;
-            var performanceQuery = from d in _context.Departments
-                                 join ea in _context.EmployeeAssignments on d.Id equals ea.DepartmentId
-                                 join ci in _context.KPICheckIns on ea.EmployeeId equals ci.EmployeeId
-                                 join cd in _context.CheckInDetails on ci.Id equals cd.CheckInId
+            var performanceQuery = from d in _context.Departments.AsNoTracking()
+                                 join ea in _context.EmployeeAssignments.AsNoTracking() on d.Id equals ea.DepartmentId
+                                 join ci in _context.KPICheckIns.AsNoTracking() on ea.EmployeeId equals ci.EmployeeId
+                                 join cd in _context.CheckInDetails.AsNoTracking() on ci.Id equals cd.CheckInId
                                  where d.IsActive == true
                                         && ea.IsActive == true
                                         && ci.ReviewStatus == "Approved"
@@ -353,6 +374,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var trendEndExclusive = new DateTime(now.Year, now.Month, 1).AddMonths(1);
             var trendStart = trendEndExclusive.AddMonths(-6);
             var monthlyCheckInQuery = _context.KPICheckIns
+                .AsNoTracking()
                 .Where(checkIn =>
                     checkIn.CheckInDate.HasValue &&
                     checkIn.CheckInDate >= trendStart &&
@@ -374,7 +396,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var monthlyAverages = await (
                 from checkIn in monthlyCheckInQuery
-                join detail in _context.CheckInDetails on (int?)checkIn.Id equals detail.CheckInId
+                join detail in _context.CheckInDetails.AsNoTracking() on (int?)checkIn.Id equals detail.CheckInId
                 where detail.ProgressPercentage != null
                 group detail by new
                 {
@@ -409,6 +431,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // 10. KPI STATUS DISTRIBUTION (MỚI)
             // ========================================
             var kpiStatusRows = await _context.Statuses
+                .AsNoTracking()
                 .Where(statusRow => statusRow.StatusType == "KPI")
                 .Select(statusRow => new
                 {
@@ -426,6 +449,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // 11. TOP NHÂN VIÊN HIỆU SUẤT CAO
             // ========================================
             var topCheckInQuery = _context.KPICheckIns
+                .AsNoTracking()
                 .Where(c => c.ReviewStatus == "Approved");
             if (startDate.HasValue && endExclusive.HasValue)
             {
@@ -447,7 +471,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var topEmployees = await (
                 from ci in topCheckInQuery
-                join cd in _context.CheckInDetails on ci.Id equals cd.CheckInId
+                join cd in _context.CheckInDetails.AsNoTracking() on ci.Id equals cd.CheckInId
                 where cd.ProgressPercentage != null
                 group cd by ci.EmployeeId into g
                 select new {
@@ -462,6 +486,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 Name = item.EmployeeId.HasValue
                     ? _context.Employees
+                        .AsNoTracking()
                         .Where(employeeRow => employeeRow.Id == item.EmployeeId.Value)
                         .Select(employeeRow => employeeRow.FullName)
                         .FirstOrDefault() ?? "N/A"

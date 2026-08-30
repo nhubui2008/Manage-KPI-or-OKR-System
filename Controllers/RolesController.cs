@@ -23,7 +23,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("ROLES_VIEW")]
         public async Task<IActionResult> Index()
         {
-            var roles = await _context.Roles.ToListAsync();
+            var roles = await _context.Roles.AsNoTracking().ToListAsync();
             return View(roles);
         }
 
@@ -110,11 +110,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("ROLES_VIEW")]
         public async Task<IActionResult> ManagePermissions(int id)
         {
-            var role = await _context.Roles.FindAsync(id);
+            var role = await _context.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
             if (role == null) return NotFound();
 
-            var allPermissions = await _context.Permissions.ToListAsync();
+            var allPermissions = await _context.Permissions.AsNoTracking().ToListAsync();
             var rolePermissionIds = await _context.Role_Permissions
+                .AsNoTracking()
                 .Where(rp => rp.RoleId == id)
                 .Select(rp => rp.PermissionId)
                 .ToListAsync();

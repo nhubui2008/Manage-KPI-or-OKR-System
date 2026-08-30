@@ -57,7 +57,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // can search at least one category.
             if (permissions["EMPLOYEES_VIEW"])
             {
-                var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
+                var employeeQuery = _context.Employees.AsNoTracking().Where(e => e.IsActive == true);
                 if (isRestrictedRole)
                 {
                     employeeQuery = currentEmployee != null
@@ -89,12 +89,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (permissions["KPIS_VIEW"])
             {
-                var kpiQuery = _context.KPIs.Where(k => k.IsActive == true);
+                var kpiQuery = _context.KPIs.AsNoTracking().Where(k => k.IsActive == true);
                 if (isRestrictedRole)
                 {
                     if (currentEmployee != null)
                     {
                         var allocatedKpiIds = await _context.KPI_Employee_Assignments
+                            .AsNoTracking()
                             .Where(a => a.EmployeeId == currentEmployee.Id && (a.Status == null || a.Status == "Active"))
                             .Select(a => a.KPIId)
                             .ToListAsync();
@@ -111,6 +112,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     {
                         var allocatedKpiIds = scopedEmployeeIds.Any()
                             ? await _context.KPI_Employee_Assignments
+                                .AsNoTracking()
                                 .Where(a => scopedEmployeeIds.Contains(a.EmployeeId) && (a.Status == null || a.Status == "Active"))
                                 .Select(a => a.KPIId)
                                 .ToListAsync()
@@ -119,6 +121,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         if (scopedDepartmentIds.Any())
                         {
                             var departmentKpiIds = await _context.KPI_Department_Assignments
+                                .AsNoTracking()
                                 .Where(a => scopedDepartmentIds.Contains(a.DepartmentId))
                                 .Select(a => a.KPIId)
                                 .ToListAsync();
@@ -151,12 +154,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (permissions["OKRS_VIEW"])
             {
-                var okrQuery = _context.OKRs.Where(o => o.IsActive == true);
+                var okrQuery = _context.OKRs.AsNoTracking().Where(o => o.IsActive == true);
                 if (isRestrictedRole)
                 {
                     if (currentEmployee != null)
                     {
                         var allocatedOkrIds = await _context.OKR_Employee_Allocations
+                            .AsNoTracking()
                             .Where(a => a.EmployeeId == currentEmployee.Id)
                             .Select(a => a.OKRId)
                             .ToListAsync();
@@ -173,6 +177,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     {
                         var allocatedOkrIds = scopedEmployeeIds.Any()
                             ? await _context.OKR_Employee_Allocations
+                                .AsNoTracking()
                                 .Where(a => scopedEmployeeIds.Contains(a.EmployeeId))
                                 .Select(a => a.OKRId)
                                 .ToListAsync()
@@ -181,6 +186,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         if (scopedDepartmentIds.Any())
                         {
                             var departmentOkrIds = await _context.OKR_Department_Allocations
+                                .AsNoTracking()
                                 .Where(a => scopedDepartmentIds.Contains(a.DepartmentId))
                                 .Select(a => a.OKRId)
                                 .ToListAsync();
@@ -213,12 +219,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (permissions["DEPARTMENTS_VIEW"])
             {
-                var departmentQuery = _context.Departments.Where(d => d.IsActive == true);
+                var departmentQuery = _context.Departments.AsNoTracking().Where(d => d.IsActive == true);
                 if (isRestrictedRole)
                 {
                     if (currentEmployee != null)
                     {
                         var departmentIds = await _context.EmployeeAssignments
+                            .AsNoTracking()
                             .Where(a => a.EmployeeId == currentEmployee.Id && a.IsActive == true && a.DepartmentId.HasValue)
                             .Select(a => a.DepartmentId!.Value)
                             .Distinct()

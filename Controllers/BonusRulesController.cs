@@ -16,13 +16,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("BONUSRULES_VIEW")]
         public async Task<IActionResult> Index()
         {
-            var rules = await _context.BonusRules.ToListAsync();
-            var ranks = await _context.GradingRanks.ToDictionaryAsync(r => r.Id, r => r.RankCode);
-            var rankDescriptions = await _context.GradingRanks.ToDictionaryAsync(r => r.Id, r => r.Description);
+            var rules = await _context.BonusRules.AsNoTracking().ToListAsync();
+            var allRanks = await _context.GradingRanks.AsNoTracking().ToListAsync();
+            var ranks = allRanks.ToDictionary(r => r.Id, r => r.RankCode);
+            var rankDescriptions = allRanks.ToDictionary(r => r.Id, r => r.Description);
 
             ViewBag.Ranks = ranks;
             ViewBag.RankDescriptions = rankDescriptions;
-            ViewBag.AllRanks = await _context.GradingRanks.ToListAsync();
+            ViewBag.AllRanks = allRanks;
 
             return View(rules);
         }
@@ -33,7 +34,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee")) return Forbid();
 
-            ViewBag.AllRanks = await _context.GradingRanks.ToListAsync();
+            ViewBag.AllRanks = await _context.GradingRanks.AsNoTracking().ToListAsync();
             return View();
         }
 
