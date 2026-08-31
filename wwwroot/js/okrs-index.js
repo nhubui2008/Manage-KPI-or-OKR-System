@@ -319,7 +319,10 @@
         }
     }
 
+    let aiLoadingTimer = null;
+
     function showAiSuggestError(message, title = 'Không tải được gợi ý AI') {
+        if (aiLoadingTimer) { clearInterval(aiLoadingTimer); aiLoadingTimer = null; }
         const loading = byId('aiLoadingIndicator');
         const content = byId('aiSuggestionContent');
         if (content) content.style.display = 'none';
@@ -330,16 +333,32 @@
     }
 
     function resetAiSuggestLoading() {
+        if (aiLoadingTimer) { clearInterval(aiLoadingTimer); aiLoadingTimer = null; }
         const loading = byId('aiLoadingIndicator');
         if (!loading) return;
         loading.style.display = 'block';
         loading.innerHTML = `
-            <div class="text-center py-5">
-                <div class="spinner-grow text-info" role="status" style="width: 3rem; height: 3rem;">
+            <div class="text-center py-4">
+                <div class="spinner-border text-info mb-3" role="status" style="width: 2.5rem; height: 2.5rem;">
                     <span class="visually-hidden">Loading...</span>
                 </div>
-                <p class="mt-3 text-muted">AI đang phân tích và tạo Kết quả then chốt...</p>
+                <h6 id="aiLoadingStepText" class="fw-bold text-dark mb-1">AI đang phân tích Objective...</h6>
+                <p class="small text-muted mb-0">Hệ thống đang trích xuất chỉ tiêu đo lường và tạo gợi ý Kết quả then chốt</p>
+                <div class="progress progress-sm mt-3 mx-auto" style="max-width: 260px; height: 4px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 100%"></div>
+                </div>
             </div>`;
+        const steps = [
+            'AI đang phân tích Objective...',
+            'Đang đối chiếu dữ liệu và xây dựng chỉ tiêu...',
+            'Đang hoàn tất danh sách Key Results gợi ý...'
+        ];
+        let stepIdx = 0;
+        aiLoadingTimer = setInterval(() => {
+            stepIdx = (stepIdx + 1) % steps.length;
+            const textEl = byId('aiLoadingStepText');
+            if (textEl) textEl.textContent = steps[stepIdx];
+        }, 1800);
     }
 
     function escapeHtml(value) {
@@ -352,6 +371,7 @@
     }
 
     function renderAiKrResults(data) {
+        if (aiLoadingTimer) { clearInterval(aiLoadingTimer); aiLoadingTimer = null; }
         currentAiHistorySessionId = data?.historySessionId || data?.HistorySessionId || currentAiHistorySessionId;
         const items = Array.isArray(data) ? data : (data?.items || data?.Items || []);
         if (!Array.isArray(items) || items.length === 0) {

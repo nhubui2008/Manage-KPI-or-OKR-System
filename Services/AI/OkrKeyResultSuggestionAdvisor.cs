@@ -367,7 +367,8 @@ public sealed class OkrKeyResultSuggestionAdvisor : IOkrKeyResultSuggestionAdvis
             " Return only strict JSON with exactly {\"suggestions\":[...]}. Every suggestion must contain exactly: keyResultName, targetValue, unit, isInverse, rationale, sourceIds. targetValue must be positive with at most two decimal places. unit must use allowedUnits. sourceIds must use only availableSourceIds and must include the OKR source.");
         var modelRequest = new AIModelRequest(
             new[] { system, new AIModelMessage("user", payload) },
-            Temperature: 0);
+            Temperature: 0,
+            EnableThinking: false);
 
         for (var attempt = 0; attempt < 2; attempt++)
         {
@@ -393,11 +394,30 @@ public sealed class OkrKeyResultSuggestionAdvisor : IOkrKeyResultSuggestionAdvis
                         "user",
                         "The previous response failed strict schema, citation, unit, precision, or duplicate validation. Return only the exact cited JSON schema or an empty suggestions array.")
                 },
-                Temperature: 0);
+                Temperature: 0,
+                EnableThinking: false);
         }
 
         throw new AIModelResponseValidationException(
             "AI did not return valid cited Key Result drafts.");
+    }
+
+    private static string CleanJson(string content)
+    {
+        var trimmed = content.Trim();
+        if (trimmed.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed[7..];
+        }
+        else if (trimmed.StartsWith("```", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[3..];
+        }
+        if (trimmed.EndsWith("```", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[..^3];
+        }
+        return trimmed.Trim();
     }
 
     private static List<OkrKeyResultSuggestionItem>? Parse(
@@ -413,7 +433,8 @@ public sealed class OkrKeyResultSuggestionAdvisor : IOkrKeyResultSuggestionAdvis
 
         try
         {
-            using var document = JsonDocument.Parse(content);
+            var json = CleanJson(content);
+            using var document = JsonDocument.Parse(json);
             var root = document.RootElement;
             if (root.ValueKind != JsonValueKind.Object ||
                 root.EnumerateObject().Count() != 1 ||

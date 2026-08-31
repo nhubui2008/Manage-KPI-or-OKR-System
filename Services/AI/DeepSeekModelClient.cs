@@ -139,6 +139,14 @@ public sealed class DeepSeekModelClient : IAIModelClient
             ["temperature"] = request.Temperature,
             ["tools"] = tools
         };
+        if (request.Tools == null || request.Tools.Count == 0)
+        {
+            if (request.Messages.Any(m => m.Content.Contains("strict JSON", StringComparison.OrdinalIgnoreCase) ||
+                                          m.Content.Contains("\"suggestions\"", StringComparison.OrdinalIgnoreCase)))
+            {
+                payload["response_format"] = new { type = "json_object" };
+            }
+        }
         if (request.EnableThinking.HasValue)
         {
             payload["thinking"] = new
