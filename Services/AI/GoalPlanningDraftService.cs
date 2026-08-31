@@ -1627,6 +1627,24 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
         }
     }
 
+    private static string CleanJson(string content)
+    {
+        var trimmed = content.Trim();
+        if (trimmed.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed[7..];
+        }
+        else if (trimmed.StartsWith("```", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[3..];
+        }
+        if (trimmed.EndsWith("```", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[..^3];
+        }
+        return trimmed.Trim();
+    }
+
     private static IReadOnlyList<AgentTaskText>? ParseAgentTasks(
         string? content,
         IReadOnlyList<EvidenceRef> evidence)
@@ -1636,7 +1654,7 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
             return null;
         }
 
-        var json = content.Trim();
+        var json = CleanJson(content);
 
         try
         {
