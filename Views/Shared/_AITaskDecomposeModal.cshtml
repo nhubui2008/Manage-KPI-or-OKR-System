@@ -1102,8 +1102,8 @@
                     ? 'success'
                     : 'info';
             const meta = byId('aiTaskAgentMeta');
-            meta.className = `alert alert-${modeTone} py-2 px-3 small mb-3`;
-            meta.textContent = `Chế độ: ${modeLabel}. Fit: ${fitMethodLabel}. Lịch sử: ${historyMethodLabel}. Con người là người quyết định cuối cùng.`;
+            meta.className = 'alert alert-light border py-2 px-3 small mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2';
+            meta.innerHTML = `<div><span class="badge bg-primary-subtle text-primary me-2"><i class="bi bi-robot me-1"></i>${escapeHtml(modeLabel)}</span><span class="text-muted small">Đã đề xuất ${candidates.length} task từ AI. Con người là người quyết định và duyệt cuối cùng.</span></div>`;
             renderProjectOptions({
                 sourceObjective: sourceName,
                 availableProjects: data.availableProjects || data.AvailableProjects || [],
@@ -1146,19 +1146,18 @@
             }));
             renderTasks(candidates);
             byId('aiTaskPreview').classList.remove('d-none');
-            const notices = [...warnings];
+            const actionableNotices = warnings.filter(w => !w.includes('FitScore dùng assignment') && !w.includes('không có nguồn RAG bổ sung') && !w.includes('lập kế hoạch từ dữ liệu'));
             if (candidates.some(task => {
                 const critique = fieldValue(task, 'critique', 'Critique', null);
                 const verdict = critique ? fieldValue(critique, 'verdict', 'Verdict', 1) : 1;
                 return String(verdict) !== '0' && String(verdict) !== 'Pass';
             })) {
-                notices.push('Critic đã đánh dấu ít nhất một task cần con người kiểm tra hoặc bổ sung dữ liệu trước khi xác nhận.');
+                actionableNotices.push('Một số task cần kiểm tra lại trước khi tạo.');
             }
-            if (candidates.some(task => fieldValue(task.confidence, 'shouldAbstain', 'ShouldAbstain', false) === true)) {
-                notices.push('Một hoặc nhiều task có bằng chứng chưa đủ; hãy kiểm tra nguồn, chỉnh sửa hoặc bỏ chọn trước khi tạo.');
-            }
-            if (notices.length) {
-                showAlert(notices.join(' '), generationMode === 'DeterministicFallback' ? 'warning' : 'info');
+            if (actionableNotices.length) {
+                showAlert(actionableNotices.join(' '), 'warning');
+            } else {
+                showAlert('');
             }
         }
 
