@@ -1568,24 +1568,48 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 return true;
             }
 
-            var managedDepartmentIds = await GetManagedDepartmentIdsAsync(manager);
-            if (!managedDepartmentIds.Any())
-            {
-                return false;
-            }
-
-            var departmentAllocated = await _context.OKR_Department_Allocations
+            var isDirectlyAllocated = await _context.OKR_Employee_Allocations
                 .AsNoTracking()
-                .AnyAsync(a => a.OKRId == okrId && managedDepartmentIds.Contains(a.DepartmentId));
-            if (departmentAllocated)
+                .AnyAsync(a => a.OKRId == okrId && a.EmployeeId == manager.Id);
+            if (isDirectlyAllocated)
             {
                 return true;
             }
 
-            var managedEmployeeIds = await GetEmployeeIdsInDepartmentsAsync(managedDepartmentIds);
-            return managedEmployeeIds.Any() && await _context.OKR_Employee_Allocations
+            var assignedDepartmentIds = await _context.EmployeeAssignments
                 .AsNoTracking()
-                .AnyAsync(a => a.OKRId == okrId && managedEmployeeIds.Contains(a.EmployeeId));
+                .Where(a => a.EmployeeId == manager.Id && a.IsActive == true && a.DepartmentId.HasValue)
+                .Select(a => a.DepartmentId!.Value)
+                .ToListAsync();
+
+            if (assignedDepartmentIds.Any() && await _context.OKR_Department_Allocations
+                    .AsNoTracking()
+                    .AnyAsync(a => a.OKRId == okrId && assignedDepartmentIds.Contains(a.DepartmentId)))
+            {
+                return true;
+            }
+
+            var managedDepartmentIds = await GetManagedDepartmentIdsAsync(manager);
+            if (managedDepartmentIds.Any())
+            {
+                var departmentAllocated = await _context.OKR_Department_Allocations
+                    .AsNoTracking()
+                    .AnyAsync(a => a.OKRId == okrId && managedDepartmentIds.Contains(a.DepartmentId));
+                if (departmentAllocated)
+                {
+                    return true;
+                }
+
+                var managedEmployeeIds = await GetEmployeeIdsInDepartmentsAsync(managedDepartmentIds);
+                if (managedEmployeeIds.Any() && await _context.OKR_Employee_Allocations
+                        .AsNoTracking()
+                        .AnyAsync(a => a.OKRId == okrId && managedEmployeeIds.Contains(a.EmployeeId)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private async Task<bool> CanCurrentManagerAssignDepartmentAsync(int departmentId)

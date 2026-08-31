@@ -351,6 +351,79 @@ public sealed class OKRsControllerKeyResultTests
         Assert.True(page1.NextPageNumber <= page1.TotalPages);
     }
 
+    [Fact]
+    public async Task UpdateKeyResultProgress_ManagerDirectlyAllocated_Succeeds()
+    {
+        await using var context = CreateContext();
+        var managerUser = new SystemUser { Id = 10, Username = "manager10", IsActive = true };
+        var managerEmployee = new Employee { Id = 20, SystemUserId = 10, FullName = "Manager User", Email = "mgr@test.com", Phone = "0123456789", IsActive = true };
+        var creatorEmployee = new Employee { Id = 30, FullName = "Director User", Email = "dir@test.com", Phone = "0123456788", IsActive = true };
+        var okr = new OKR { Id = 100, ObjectiveName = "Company Objective", CreatedById = creatorEmployee.Id, IsActive = true };
+        var kr = new OKRKeyResult { Id = 200, OKRId = 100, KeyResultName = "KR 1", TargetValue = 100, CurrentValue = 0, Unit = "%" };
+        var alloc = new OKR_Employee_Allocation { OKRId = 100, EmployeeId = managerEmployee.Id, AllocatedValue = 50 };
+
+        context.SystemUsers.Add(managerUser);
+        context.Employees.AddRange(managerEmployee, creatorEmployee);
+        context.OKRs.Add(okr);
+        context.OKRKeyResults.Add(kr);
+        context.OKR_Employee_Allocations.Add(alloc);
+        await context.SaveChangesAsync();
+
+        var managerPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "10"),
+            new Claim(ClaimTypes.Role, "Manager")
+        }, "Test"));
+
+        var controller = CreateController(context);
+        controller.ControllerContext.HttpContext.User = managerPrincipal;
+
+        var result = await controller.UpdateKeyResultProgress(kr.Id, 75);
+
+        Assert.IsType<RedirectToActionResult>(result);
+        var updatedKr = await context.OKRKeyResults.FindAsync(kr.Id);
+        Assert.NotNull(updatedKr);
+        Assert.Equal(75, updatedKr.CurrentValue);
+    }
+
+    [Fact]
+    public async Task UpdateKeyResultProgress_ManagerDepartmentAssigned_Succeeds()
+    {
+        await using var context = CreateContext();
+        var managerUser = new SystemUser { Id = 11, Username = "manager11", IsActive = true };
+        var managerEmployee = new Employee { Id = 21, SystemUserId = 11, FullName = "Manager User 11", Email = "mgr11@test.com", Phone = "0123456787", IsActive = true };
+        var department = new Department { Id = 50, DepartmentName = "Sales Dept", IsActive = true };
+        var assignment = new EmployeeAssignment { Id = 1, EmployeeId = managerEmployee.Id, DepartmentId = department.Id, IsActive = true };
+        var okr = new OKR { Id = 101, ObjectiveName = "Sales Objective", CreatedById = 99, IsActive = true };
+        var kr = new OKRKeyResult { Id = 201, OKRId = 101, KeyResultName = "Sales Target KR", TargetValue = 100, CurrentValue = 0, Unit = "%" };
+        var deptAlloc = new OKR_Department_Allocation { OKRId = 101, DepartmentId = department.Id };
+
+        context.SystemUsers.Add(managerUser);
+        context.Employees.Add(managerEmployee);
+        context.Departments.Add(department);
+        context.EmployeeAssignments.Add(assignment);
+        context.OKRs.Add(okr);
+        context.OKRKeyResults.Add(kr);
+        context.OKR_Department_Allocations.Add(deptAlloc);
+        await context.SaveChangesAsync();
+
+        var managerPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "11"),
+            new Claim(ClaimTypes.Role, "Manager")
+        }, "Test"));
+
+        var controller = CreateController(context);
+        controller.ControllerContext.HttpContext.User = managerPrincipal;
+
+        var result = await controller.UpdateKeyResultProgress(kr.Id, 60);
+
+        Assert.IsType<RedirectToActionResult>(result);
+        var updatedKr = await context.OKRKeyResults.FindAsync(kr.Id);
+        Assert.NotNull(updatedKr);
+        Assert.Equal(60, updatedKr.CurrentValue);
+    }
+
     private static async Task<(OKR Okr, WorkProject Project)> SeedOkrWithLinkedProjectAsync(MiniERPDbContext context)
     {
         var okr = new OKR

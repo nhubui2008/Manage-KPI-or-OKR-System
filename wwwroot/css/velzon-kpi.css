@@ -581,7 +581,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 .vietmach-shell :is(.card, .content-card, .stat-card, .glass-card, .table-card, .kpi-card, .okr-card,
     .mission-vision-card, .workproject-card, .evaluation-card, .dashboard-card, .project-card,
     .ops-summary__item, .mv-summary-card, .mv-foundation-card, .mv-goal-card, .okr-summary__item,
-    .okr-objective-card, .okr-panel, .workprojects-filter, .cf-panel, .cf-guide, .cf-section) {
+    .okr-objective-card, .okr-panel, .workprojects-filter, .cf-panel, .cf-guide) {
     border: 1px solid var(--vz-border) !important;
     border-radius: 12px !important;
     background: var(--vz-surface) !important;
@@ -601,7 +601,7 @@ html.sidebar-expanded .vietmach-shell .main-content {
 .vietmach-shell :is(.card, .content-card, .stat-card, .glass-card, .table-card, .kpi-card, .okr-card,
     .mission-vision-card, .workproject-card, .evaluation-card, .dashboard-card, .project-card,
     .ops-summary__item, .mv-summary-card, .mv-foundation-card, .mv-goal-card, .okr-summary__item,
-    .okr-objective-card, .okr-panel, .workprojects-filter, .cf-panel, .cf-guide, .cf-section):hover {
+    .okr-objective-card, .okr-panel, .workprojects-filter, .cf-panel, .cf-guide):hover {
     border-color: #cbd5e1 !important;
     box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.08), 0 4px 10px rgba(15, 23, 42, 0.04) !important;
     transform: translateY(-3px) !important;

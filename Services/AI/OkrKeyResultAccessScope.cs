@@ -42,37 +42,66 @@ internal static class OkrKeyResultAccessScope
                 return true;
             }
 
+            if (await context.OKR_Employee_Allocations.AsNoTracking().AnyAsync(
+                    item => item.OKRId == okrId && item.EmployeeId == employee.Id,
+                    cancellationToken))
+            {
+                return true;
+            }
+
+            var assignedDepartmentIds = await context.EmployeeAssignments
+                .AsNoTracking()
+                .Where(item =>
+                    item.EmployeeId == employee.Id &&
+                    item.IsActive == true &&
+                    item.DepartmentId.HasValue)
+                .Select(item => item.DepartmentId!.Value)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            if (assignedDepartmentIds.Count > 0 &&
+                await context.OKR_Department_Allocations.AsNoTracking().AnyAsync(
+                    item => item.OKRId == okrId &&
+                            assignedDepartmentIds.Contains(item.DepartmentId),
+                    cancellationToken))
+            {
+                return true;
+            }
+
             var managedDepartmentIds = await context.Departments
                 .AsNoTracking()
                 .Where(item => item.ManagerId == employee.Id && item.IsActive == true)
                 .Select(item => item.Id)
                 .ToListAsync(cancellationToken);
-            if (managedDepartmentIds.Count == 0)
+            if (managedDepartmentIds.Count > 0)
             {
-                return false;
+                if (await context.OKR_Department_Allocations
+                        .AsNoTracking()
+                        .AnyAsync(
+                            item => item.OKRId == okrId &&
+                                    managedDepartmentIds.Contains(item.DepartmentId),
+                            cancellationToken))
+                {
+                    return true;
+                }
+
+                if (await context.OKR_Employee_Allocations
+                        .AsNoTracking()
+                        .AnyAsync(
+                            allocation =>
+                                allocation.OKRId == okrId &&
+                                context.EmployeeAssignments.Any(assignment =>
+                                    assignment.EmployeeId == allocation.EmployeeId &&
+                                    assignment.IsActive == true &&
+                                    assignment.DepartmentId.HasValue &&
+                                    managedDepartmentIds.Contains(assignment.DepartmentId.Value)),
+                            cancellationToken))
+                {
+                    return true;
+                }
             }
 
-            if (await context.OKR_Department_Allocations
-                    .AsNoTracking()
-                    .AnyAsync(
-                        item => item.OKRId == okrId &&
-                                managedDepartmentIds.Contains(item.DepartmentId),
-                        cancellationToken))
-            {
-                return true;
-            }
-
-            return await context.OKR_Employee_Allocations
-                .AsNoTracking()
-                .AnyAsync(
-                    allocation =>
-                        allocation.OKRId == okrId &&
-                        context.EmployeeAssignments.Any(assignment =>
-                            assignment.EmployeeId == allocation.EmployeeId &&
-                            assignment.IsActive == true &&
-                            assignment.DepartmentId.HasValue &&
-                            managedDepartmentIds.Contains(assignment.DepartmentId.Value)),
-                    cancellationToken);
+            return false;
         }
 
         if (!AccessScopeHelper.IsEmployeeOrSales(user) || employee == null)
