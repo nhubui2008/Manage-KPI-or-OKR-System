@@ -1096,11 +1096,23 @@
             const modeLabel = generationModeLabels[generationMode] || generationMode;
             const fitMethodLabel = fitMethodLabels[fitMethod] || fitMethod;
             const historyMethodLabel = historyMethodLabels[historyMethod] || historyMethod;
-            const modeTone = generationMode === 'DeterministicFallback'
-                ? 'warning'
-                : generationMode === 'AgentWithRag'
-                    ? 'success'
-                    : 'info';
+
+            const candidates = (data.tasks || data.Tasks || []).map(task => ({
+                title: fieldValue(task, 'title', 'Title'),
+                description: fieldValue(task, 'description', 'Description'),
+                priority: 'Normal',
+                kanbanStatus: 'Todo',
+                kpiImpactWeight: 1,
+                fit: fieldValue(task, 'fit', 'Fit', {}),
+                confidence: fieldValue(task, 'confidence', 'Confidence', {}),
+                evidence: fieldValue(task, 'evidence', 'Evidence', []),
+                critique: fieldValue(task, 'critique', 'Critique', null),
+                outcomeHistory: fieldValue(task, 'outcomeHistory', 'OutcomeHistory', null),
+                suggestedAssignee: fieldValue(task, 'suggestedAssignee', 'SuggestedAssignee', null),
+                plan: fieldValue(task, 'plan', 'Plan', {}),
+                isSelected: true
+            }));
+
             const meta = byId('aiTaskAgentMeta');
             meta.className = 'alert alert-light border py-2 px-3 small mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2';
             meta.innerHTML = `<div><span class="badge bg-primary-subtle text-primary me-2"><i class="bi bi-robot me-1"></i>${escapeHtml(modeLabel)}</span><span class="text-muted small">Đã đề xuất ${candidates.length} task từ AI. Con người là người quyết định và duyệt cuối cùng.</span></div>`;
@@ -1129,24 +1141,15 @@
             byId('aiTaskSourceId').value = state.sourceId || '';
             byId('aiTaskSourceName').textContent = sourceName;
             byId('aiTaskRejectBtn').classList.toggle('d-none', !state.draftActionId);
-            const candidates = (data.tasks || data.Tasks || []).map(task => ({
-                title: fieldValue(task, 'title', 'Title'),
-                description: fieldValue(task, 'description', 'Description'),
-                priority: 'Normal',
-                kanbanStatus: 'Todo',
-                kpiImpactWeight: 1,
-                fit: fieldValue(task, 'fit', 'Fit', {}),
-                confidence: fieldValue(task, 'confidence', 'Confidence', {}),
-                evidence: fieldValue(task, 'evidence', 'Evidence', []),
-                critique: fieldValue(task, 'critique', 'Critique', null),
-                outcomeHistory: fieldValue(task, 'outcomeHistory', 'OutcomeHistory', null),
-                suggestedAssignee: fieldValue(task, 'suggestedAssignee', 'SuggestedAssignee', null),
-                plan: fieldValue(task, 'plan', 'Plan', {}),
-                isSelected: true
-            }));
+
             renderTasks(candidates);
             byId('aiTaskPreview').classList.remove('d-none');
-            const actionableNotices = warnings.filter(w => !w.includes('FitScore dùng assignment') && !w.includes('không có nguồn RAG bổ sung') && !w.includes('lập kế hoạch từ dữ liệu'));
+            const actionableNotices = warnings.filter(w => 
+                !w.includes('FitScore') && 
+                !w.includes('RAG không trả về') && 
+                !w.includes('không có nguồn RAG') && 
+                !w.includes('lập kế hoạch từ dữ liệu') &&
+                !w.includes('mô hình cohort'));
             if (candidates.some(task => {
                 const critique = fieldValue(task, 'critique', 'Critique', null);
                 const verdict = critique ? fieldValue(critique, 'verdict', 'Verdict', 1) : 1;
@@ -1162,6 +1165,9 @@
         }
 
         async function runDecompose() {
+            if (state.isRunning || state.isConfirming || state.isRejecting) {
+                return;
+            }
             showAlert('');
             byId('aiTaskLoading').classList.remove('d-none');
             byId('aiTaskPreview').classList.add('d-none');
