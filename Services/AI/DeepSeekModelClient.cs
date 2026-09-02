@@ -142,18 +142,18 @@ public sealed class DeepSeekModelClient : IAIModelClient
         if (request.Tools == null || request.Tools.Count == 0)
         {
             if (request.Messages.Any(m => m.Content.Contains("strict JSON", StringComparison.OrdinalIgnoreCase) ||
-                                          m.Content.Contains("\"suggestions\"", StringComparison.OrdinalIgnoreCase)))
+                                          m.Content.Contains("\"suggestions\"", StringComparison.OrdinalIgnoreCase) ||
+                                          m.Content.Contains("only JSON", StringComparison.OrdinalIgnoreCase) ||
+                                          m.Content.Contains("JSON", StringComparison.OrdinalIgnoreCase)))
             {
                 payload["response_format"] = new { type = "json_object" };
             }
         }
-        if (request.EnableThinking.HasValue)
+        var enableThinking = request.EnableThinking ?? false;
+        payload["thinking"] = new
         {
-            payload["thinking"] = new
-            {
-                type = request.EnableThinking.Value ? "enabled" : "disabled"
-            };
-        }
+            type = enableThinking ? "enabled" : "disabled"
+        };
         return payload;
     }
 

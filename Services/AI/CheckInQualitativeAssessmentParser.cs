@@ -13,6 +13,24 @@ public static class CheckInQualitativeAssessmentParser
 {
     private const int MaximumRationaleCharacters = 280;
 
+    private static string CleanJson(string content)
+    {
+        var trimmed = content.Trim();
+        if (trimmed.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed[7..];
+        }
+        else if (trimmed.StartsWith("```", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[3..];
+        }
+        if (trimmed.EndsWith("```", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[..^3];
+        }
+        return trimmed.Trim();
+    }
+
     public static IReadOnlyDictionary<int, CheckInQualitativeCriterionDraft> Parse(
         string? content,
         IReadOnlyList<EvaluationCriterion> criteria,
@@ -29,7 +47,7 @@ public static class CheckInQualitativeAssessmentParser
             .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
         try
         {
-            using var document = JsonDocument.Parse(content);
+            using var document = JsonDocument.Parse(CleanJson(content));
             var root = document.RootElement;
             if (root.ValueKind != JsonValueKind.Object ||
                 root.EnumerateObject().Any(property => property.Name != "criteria") ||

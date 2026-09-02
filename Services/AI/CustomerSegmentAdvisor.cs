@@ -250,6 +250,24 @@ public sealed class CustomerSegmentAdvisor : ICustomerSegmentAdvisor
             "AI did not return valid cited customer-segment advice.");
     }
 
+    private static string CleanJson(string content)
+    {
+        var trimmed = content.Trim();
+        if (trimmed.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = trimmed[7..];
+        }
+        else if (trimmed.StartsWith("```", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[3..];
+        }
+        if (trimmed.EndsWith("```", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[..^3];
+        }
+        return trimmed.Trim();
+    }
+
     private static GeneratedSegments? Parse(
         string? content,
         IReadOnlyCollection<string> allowedSourceIds,
@@ -261,7 +279,7 @@ public sealed class CustomerSegmentAdvisor : ICustomerSegmentAdvisor
         }
         try
         {
-            using var document = JsonDocument.Parse(content);
+            using var document = JsonDocument.Parse(CleanJson(content));
             var root = document.RootElement;
             if (root.ValueKind != JsonValueKind.Object ||
                 root.EnumerateObject().Count() != 1 ||
