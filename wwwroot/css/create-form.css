@@ -258,6 +258,8 @@
 .cf-field,
 .cf-field-group {
     min-width: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .cf-field--full {
@@ -270,6 +272,7 @@
     justify-content: space-between;
     gap: 0.75rem;
     margin-bottom: 0.45rem;
+    order: 1;
 }
 
 .cf-field > label,
@@ -283,6 +286,35 @@
     font-size: 0.82rem;
     font-weight: 750;
     line-height: 1.4;
+    order: 1;
+}
+
+.cf-field > .cf-control,
+.cf-field > .select2-container,
+.cf-field > .input-group,
+.cf-field > select,
+.cf-field > input,
+.cf-field > textarea {
+    order: 2;
+}
+
+.cf-field > .cf-validation,
+.cf-field > label.error,
+.cf-field > span.field-validation-error,
+.cf-field > span.field-validation-valid {
+    order: 3;
+    margin: 0.3rem 0 0;
+    font-size: 0.75rem;
+    color: var(--cf-danger, #b42318);
+}
+
+.cf-field > .cf-hint,
+.cf-field > .cf-dynamic-hint {
+    order: 4;
+}
+
+.cf-field > .cf-empty-state {
+    order: 5;
 }
 
 .cf-label-row label {

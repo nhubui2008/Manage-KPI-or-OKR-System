@@ -127,6 +127,10 @@
             } else if (filteredKpis.length === 1) {
                 kpiSelect.value = String(filteredKpis[0].id);
             }
+
+            if (window.AppComboBox && typeof window.AppComboBox.sync === "function") {
+                window.AppComboBox.sync(kpiSelect);
+            }
         }
 
         function setEmptyPreview() {

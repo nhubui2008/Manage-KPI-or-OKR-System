@@ -98,7 +98,7 @@
                     <div class="cf-field-grid">
                         <div class="cf-field">
                             <label for="employeeSelect">Nhân viên <span class="cf-required" aria-label="bắt buộc">*</span></label>
-                            <select asp-for="EmployeeId" id="employeeSelect" class="form-select cf-control no-select2" required aria-describedby="employeeHint">
+                            <select asp-for="EmployeeId" id="employeeSelect" class="form-select cf-control" required aria-describedby="employeeHint">
                                 @if (employees.Count != 1)
                                 {
                                     <option value="">Chọn nhân viên</option>
@@ -118,7 +118,7 @@
 
                         <div class="cf-field">
                             <label for="kpiSelect">KPI cần cập nhật <span class="cf-required" aria-label="bắt buộc">*</span></label>
-                            <select asp-for="KPIId" id="kpiSelect" class="form-select cf-control no-select2" required aria-describedby="kpiHint">
+                            <select asp-for="KPIId" id="kpiSelect" class="form-select cf-control" required aria-describedby="kpiHint">
                                 @if (kpis.Count != 1)
                                 {
                                     <option value="">Chọn nhân viên trước</option>

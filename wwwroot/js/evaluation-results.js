@@ -103,8 +103,18 @@
     const editCommentField = modal.querySelector('#editReviewComment');
 
     if (editIdField) editIdField.value = resultId || '';
-    if (editEmpIdField) editEmpIdField.value = employeeId || '';
-    if (editPeriodIdField) editPeriodIdField.value = periodId || '';
+    if (editEmpIdField) {
+      editEmpIdField.value = employeeId || '';
+      if (window.AppComboBox && typeof window.AppComboBox.sync === 'function') {
+        window.AppComboBox.sync(editEmpIdField);
+      }
+    }
+    if (editPeriodIdField) {
+      editPeriodIdField.value = periodId || '';
+      if (window.AppComboBox && typeof window.AppComboBox.sync === 'function') {
+        window.AppComboBox.sync(editPeriodIdField);
+      }
+    }
     if (editScoreField) editScoreField.value = score || '';
     if (editRankDisplay) editRankDisplay.textContent = rankId ? (state.selectedRankScale?.find(r => r.id == rankId)?.rankCode || 'N/A') : 'N/A';
     if (editClassDisplay) editClassDisplay.textContent = classification || 'Chưa phân loại';

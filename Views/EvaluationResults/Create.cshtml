@@ -61,7 +61,7 @@
                     <div class="cf-field-grid">
                         <div class="cf-field">
                             <label asp-for="EmployeeId">Nhân viên <span class="cf-required" aria-label="bắt buộc">*</span></label>
-                            <select asp-for="EmployeeId" class="form-select cf-control no-select2" aria-describedby="employeeHint" aria-required="true" required>
+                            <select asp-for="EmployeeId" class="form-select cf-control" aria-describedby="employeeHint" aria-required="true" required>
                                 <option value="">-- Chọn nhân viên --</option>
                                 @foreach (var e in allEmployees)
                                 {
@@ -73,7 +73,7 @@
                         </div>
                         <div class="cf-field">
                             <label asp-for="PeriodId">Kỳ đánh giá <span class="cf-required" aria-label="bắt buộc">*</span></label>
-                            <select asp-for="PeriodId" class="form-select cf-control no-select2" aria-describedby="periodHint" aria-required="true" required>
+                            <select asp-for="PeriodId" class="form-select cf-control" aria-describedby="periodHint" aria-required="true" required>
                                 <option value="">-- Chọn kỳ đánh giá --</option>
                                 @foreach (var p in allPeriods)
                                 {

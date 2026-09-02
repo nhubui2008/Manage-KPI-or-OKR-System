@@ -2028,35 +2028,106 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // =========================================================
-    // THÊM MỚI: Khởi tạo Select2 Toàn cục (Global Select2)
+    // Quản lý ComboBox & Tìm kiếm Toàn cục (Global Select2 / ComboBox Search)
     // =========================================================
 
-    function initGlobalSelect2() {
+    function normalizeVietnameseText(str) {
+        if (!str) return '';
+        return String(str)
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .replace(/Đ/g, 'd')
+            .toLowerCase()
+            .trim();
+    }
+
+    function vietnameseFilterMatcher(params, data) {
+        // Khi không có từ khóa tìm kiếm hoặc từ khóa rỗng, hiển thị toàn bộ danh sách
+        if (!params.term || !params.term.trim()) {
+            return data;
+        }
+
+        // Bỏ qua nếu không có trường text
+        if (typeof data.text === 'undefined') {
+            return null;
+        }
+
+        // Hỗ trợ cấu trúc nhóm (optgroup)
+        if (data.children && data.children.length > 0) {
+            var match = $.extend(true, {}, data);
+            for (var c = data.children.length - 1; c >= 0; c--) {
+                var child = data.children[c];
+                var matches = vietnameseFilterMatcher(params, child);
+                if (!matches) {
+                    match.children.splice(c, 1);
+                }
+            }
+            if (match.children.length > 0) {
+                return match;
+            }
+            return null;
+        }
+
+        // Chuẩn hóa từ khóa tìm kiếm
+        var normalizedTerm = normalizeVietnameseText(params.term);
+        var normalizedText = normalizeVietnameseText(data.text);
+
+        // Bổ sung dữ liệu tìm kiếm tùy biến từ data-search nếu có
+        var customSearch = data.element ? $(data.element).data('search') : '';
+        if (customSearch) {
+            normalizedText += ' ' + normalizeVietnameseText(String(customSearch));
+        }
+
+        // Tìm kiếm theo từng phần (substring match) không phân biệt hoa/thường, không phân biệt dấu
+        if (normalizedText.indexOf(normalizedTerm) > -1) {
+            return data;
+        }
+
+        return null;
+    }
+
+    function initGlobalSelect2(rootElement) {
         if (typeof jQuery === 'undefined' || typeof jQuery.fn.select2 === 'undefined') {
-            console.error('Select2: jQuery hoặc Select2 library chưa được tải.');
+            console.warn('Select2: jQuery hoặc thư viện Select2 chưa được tải.');
             return;
         }
 
-        // Tìm tất cả các thẻ <select> chưa được khởi tạo
-        $('select:not(.select2-hidden-accessible):not(.no-select2)').each(function () {
-            const $el = $(this);
-            
+        var $scope = rootElement ? $(rootElement) : $(document);
+
+        // Tìm tất cả các thẻ <select> chưa được khởi tạo và không bị loại trừ
+        var $targets = $scope.is('select:not(.select2-hidden-accessible):not(.no-select2)')
+            ? $scope
+            : $scope.find('select:not(.select2-hidden-accessible):not(.no-select2)');
+
+        $targets.each(function () {
+            var $el = $(this);
+
+            // Bỏ qua các select nằm trong mẫu clone (template)
+            if ($el.closest('template, [data-template]').length > 0) return;
+
             // Cấu hình dựa trên data attributes hoặc mặc định
-            const placeholder = $el.data('placeholder') || $el.find('option[value=""]').text() || 'Chọn một tùy chọn';
-            const allowClearData = $el.data('allow-clear');
-            const allowClear = allowClearData !== undefined
-                ? allowClearData === true || allowClearData === 'true'
+            var placeholder = $el.data('placeholder') || $el.find('option[value=""]').text() || 'Chọn một tùy chọn';
+            var allowClearData = $el.data('allow-clear');
+            var allowClear = allowClearData !== undefined
+                ? (allowClearData === true || allowClearData === 'true')
                 : !$el.prop('required');
-            
-            // Chỉ hiện ô tìm kiếm nếu số lượng option > 8
-            const minResultsForSearch = $el.data('minimum-results-for-search') || ($el.find('option').length > 8 ? 0 : -1);
+
+            // Ngưỡng hiển thị ô tìm kiếm: mặc định nếu >= 5 options hoặc có data-search="true"
+            var optionCount = $el.find('option').length;
+            var allowSearch = $el.data('search') !== false && $el.data('search') !== 'false';
+            var explicitMin = $el.data('minimum-results-for-search');
+            var minResultsForSearch = explicitMin !== undefined
+                ? Number(explicitMin)
+                : (allowSearch && optionCount >= 5 ? 0 : -1);
 
             // Tìm component modal gần nhất nếu có để gán dropdownParent nhằm tránh lỗi focus trên Modal Bootstrap
-            const modalParent = $el.closest('.modal');
-            const selectOptions = {
+            var modalParent = $el.closest('.modal');
+            var selectOptions = {
                 placeholder: placeholder,
                 allowClear: allowClear,
                 minimumResultsForSearch: minResultsForSearch,
+                matcher: vietnameseFilterMatcher,
                 width: '100%',
                 language: {
                     noResults: function () { return "Không tìm thấy kết quả"; },
@@ -2070,26 +2141,115 @@ document.addEventListener('DOMContentLoaded', function () {
 
             $el.select2(selectOptions);
 
-            // Forward Select2's jQuery-only changes once for native listeners.
-            $el.on('change.select2', function (event) {
-                if (!event.originalEvent) {
-                    this.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-                
-                // Trigger validation if available
-                if (typeof $(this).valid === 'function') {
-                    $(this).valid();
+            // Tự động gán placeholder và autofocus cho ô Search Box khi dropdown mở
+            $el.on('select2:open', function () {
+                var searchField = document.querySelector('.select2-container--open .select2-search__field');
+                if (searchField) {
+                    var searchPlaceholder = $el.data('search-placeholder') || '🔍 Tìm kiếm...';
+                    searchField.setAttribute('placeholder', searchPlaceholder);
+                    searchField.setAttribute('aria-label', searchPlaceholder);
+                    window.setTimeout(function () {
+                        searchField.focus();
+                    }, 20);
                 }
             });
+
+            // Forward Select2's jQuery-only changes once for native listeners.
+            $el.on('change.select2', function (event, data) {
+                if (!event.originalEvent && (!data || !data.silent)) {
+                    this.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+
+                // Chỉ validate khi form đã được submit trước đó (tránh hiện lỗi khi chưa submit)
+                var form = this.form;
+                if (form && typeof $(form).data === 'function') {
+                    var validator = $(form).data('validator');
+                    if (validator && validator.submitted && Object.keys(validator.submitted).length > 0) {
+                        if (typeof $(this).valid === 'function') {
+                            $(this).valid();
+                        }
+                    }
+                }
+            });
+
+            // Lắng nghe thay đổi động của thẻ <select> (MutationObserver) để tự động làm mới Select2
+            if (window.MutationObserver && !$el.data('select2-observer-attached')) {
+                $el.data('select2-observer-attached', true);
+                var selectEl = this;
+                var observer = new MutationObserver(function () {
+                    if ($el.hasClass('select2-hidden-accessible')) {
+                        var newOptionCount = $el.find('option').length;
+                        var isSearchAllowed = $el.data('search') !== false && $el.data('search') !== 'false';
+                        var customMin = $el.data('minimum-results-for-search');
+                        var updatedMin = customMin !== undefined
+                            ? Number(customMin)
+                            : (isSearchAllowed && newOptionCount >= 5 ? 0 : -1);
+
+                        var select2Instance = $el.data('select2');
+                        if (select2Instance && select2Instance.options) {
+                            select2Instance.options.set('minimumResultsForSearch', updatedMin);
+                        }
+                        $el.trigger('change.select2', { silent: true });
+                    }
+                });
+                observer.observe(selectEl, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'readonly'] });
+            }
         });
     }
+
+    // Cấu hình vị trí hiển thị lỗi jQuery Validation để luôn nằm dưới ComboBox / Select2
+    if (typeof jQuery !== 'undefined' && typeof jQuery.validator !== 'undefined') {
+        jQuery.extend(jQuery.validator.messages, {
+            required: "Vui lòng chọn thông tin này."
+        });
+
+        var originalErrorPlacement = jQuery.validator.defaults.errorPlacement;
+        jQuery.validator.setDefaults({
+            errorPlacement: function (error, element) {
+                var $element = $(element);
+                var $valMsg = $element.closest('.cf-field, .form-group, .mb-3, label').find('[data-valmsg-for="' + ($element.attr('name') || '') + '"], .cf-validation');
+                if ($valMsg.length) {
+                    $valMsg.empty().append(error);
+                    return;
+                }
+                if ($element.hasClass('select2-hidden-accessible')) {
+                    var $container = $element.next('.select2-container');
+                    if ($container.length) {
+                        error.insertAfter($container);
+                        return;
+                    }
+                }
+                if (typeof originalErrorPlacement === 'function') {
+                    originalErrorPlacement.call(this, error, element);
+                } else {
+                    error.insertAfter(element);
+                }
+            }
+        });
+    }
+
+    // Export ra namespace toàn cục AppComboBox
+    window.AppComboBox = {
+        init: initGlobalSelect2,
+        normalize: normalizeVietnameseText,
+        matcher: vietnameseFilterMatcher,
+        sync: function (element) {
+            if (!element) return;
+            var $el = $(element);
+            if ($el.hasClass('select2-hidden-accessible')) {
+                $el.trigger('change.select2', { silent: true });
+            } else {
+                initGlobalSelect2($el);
+            }
+        }
+    };
 
     // Khởi tạo lần đầu
     initGlobalSelect2();
 
     // Hỗ trợ khởi tạo lại khi có dynamic content (AJAX/Modal)
-    $(document).on('shown.bs.modal', function() {
-        initGlobalSelect2();
+    $(document).on('shown.bs.modal', function (e) {
+        initGlobalSelect2(e.target);
     });
 
     // Xuất ra window để gọi thủ công nếu cần
