@@ -2121,8 +2121,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 ? Number(explicitMin)
                 : (allowSearch && optionCount >= 5 ? 0 : -1);
 
-            // Tìm component modal gần nhất nếu có để gán dropdownParent nhằm tránh lỗi focus trên Modal Bootstrap
+            // Tìm component cha phù hợp để gán dropdownParent nhằm định vị chính xác
             var modalParent = $el.closest('.modal');
+            var customParentSelector = $el.data('dropdown-parent');
+            var customParent = customParentSelector ? $(customParentSelector) : null;
+            var filterParent = $el.closest('.dashboard-period-filter');
             var selectOptions = {
                 placeholder: placeholder,
                 allowClear: allowClear,
@@ -2137,6 +2140,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (modalParent.length > 0) {
                 selectOptions.dropdownParent = modalParent;
+            } else if (customParent && customParent.length > 0) {
+                selectOptions.dropdownParent = customParent;
+            } else if (filterParent.length > 0) {
+                selectOptions.dropdownParent = filterParent;
             }
 
             $el.select2(selectOptions);

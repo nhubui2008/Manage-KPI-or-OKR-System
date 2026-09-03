@@ -423,9 +423,10 @@ html.sidebar-expanded .vietmach-shell .sidebar-link i {
     color: var(--primary-darker) !important;
 }
 
-/* Topbar and content ----------------------------------------------------- */
 .vietmach-shell .main-content {
+    flex: 1 1 0%;
     min-width: 0;
+    width: calc(100% - var(--vz-sidebar-width));
     min-height: 100vh;
     margin-left: var(--vz-sidebar-width);
     background: var(--vz-canvas) !important;
@@ -433,7 +434,16 @@ html.sidebar-expanded .vietmach-shell .sidebar-link i {
 }
 
 html.sidebar-expanded .vietmach-shell .main-content {
+    width: calc(100% - var(--vz-sidebar-width-expanded));
     margin-left: var(--vz-sidebar-width-expanded);
+}
+
+@media (max-width: 991.98px) {
+    .vietmach-shell .main-content,
+    html.sidebar-expanded .vietmach-shell .main-content {
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
 }
 
 .vietmach-shell #page-topbar.top-header {
