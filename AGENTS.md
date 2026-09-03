@@ -11,6 +11,26 @@ In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the re
 If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
 <!-- CODEGRAPH_END -->
 
+## Project Guardrails
+
+All agent work in this repository must follow the global project guardrails defined in [`.agents/project-guardrails.md`](.agents/project-guardrails.md). These guardrails enforce:
+
+1. **Scope as a hard boundary** — do only what was requested; ask before expanding.
+2. **Maintainability** — clear naming, simple flow, small focused units, explicit comments.
+3. **Clean code rules** — read before modifying; follow the 6-tier commenting standard; follow repo conventions.
+4. **Preserve existing behavior** — do not change unrelated interfaces, schemas, or formatting.
+5. **Self-review** — deliberate review of actual changes before delivery.
+6. **Validation** — run all applicable checks proportional to scope and risk.
+7. **Fix errors immediately** — do not deliver a known broken state.
+8. **No false claims** — never claim a check was run if it was not.
+9. **Definition of Done** — all 14 checklist items must be satisfied before marking `Done`.
+10. **Required working sequence** — Understand → Inspect → Plan → Implement → Review → Validate → Repair → Deliver.
+11. **Frontend UI design workflow** — use [`.agents/references/frontend-design-intelligence.md`](.agents/references/frontend-design-intelligence.md) for style direction and [`.agents/references/frontend-review-checklist.md`](.agents/references/frontend-review-checklist.md) for implementation review.
+
+When guardrails conflict with other instructions, follow the priority order in section 13 of the guardrails document.
+
+Source: `/run/media/cua/DATA1/proj/skills/SKILL.md` (project-guardrails skill).
+
 ## Vibe-Coding Default
 
 The user works outcome-first and normally sends short Vietnamese prompts. When a prompt clearly asks to build, change, or fix something, own the normal local workflow from discovery through implementation and verification.
@@ -85,3 +105,13 @@ All agents inherit the skills available in the current Codex session. Skills are
 - When a skill is selected, read its complete `SKILL.md`, follow its workflow, and briefly state why it applies.
 - Explicit user requests for or against a skill override automatic selection.
 - If a skill conflicts with this repository's conventions or the requested scope, follow the repository and user instructions.
+
+### Shared Skills Directory
+
+The global skills library lives at `/run/media/cua/DATA1/proj/skills` (762 skills, 11 domains). Use it when a task requires domain-specific guidance beyond the project-level `.agents/` skills.
+
+- **Discovery:** run `skill find-for "<task description>"` or `skill search "<keyword>"` to locate relevant skills.
+- **Reading:** read the recommended `SKILL.md` with `view_file` before applying its workflow.
+- **Project guardrails** (`.agents/project-guardrails.md`) always apply and take precedence over domain skills.
+- **Project skill** (`.agents/skill.md`) contains repo-specific conventions and also takes precedence over domain skills.
+- Domain skills supplement but never override project-level instructions.
