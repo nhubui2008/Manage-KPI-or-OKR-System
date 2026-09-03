@@ -3,8 +3,6 @@
    Full Feature Showcase, Role Simulator, Live System Previews, Micro-Interactions
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
-
 :root {
     --crystal-bg-base: #f8fafc;
     --crystal-canvas: #fafcff;
@@ -751,6 +749,12 @@ body.vietmach-public,
     z-index: 2;
 }
 
+.nova-sticky-screen picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
 .nova-sticky-screen img {
     width: 100%;
     height: 100%;
@@ -920,7 +924,7 @@ body.vietmach-public,
     box-shadow: var(--crystal-shadow-lg);
 }
 
-.nova-role-card h4 {
+.nova-role-card :is(h3, h4) {
     margin: 0 0 12px;
     font-size: 22px;
     font-weight: 800;
@@ -1156,7 +1160,7 @@ body.vietmach-public,
     line-height: 1.65;
     max-width: 320px;
 }
-.nova-footer-col h5 {
+.nova-footer-col :is(h4, h5) {
     margin: 0 0 16px;
     font-size: 14px;
     font-weight: 700;

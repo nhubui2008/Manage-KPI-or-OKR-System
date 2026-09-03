@@ -6,10 +6,7 @@
 }
 
 @section Styles {
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/landing.min.css" asp-append-version="true" />
 }
 
 <a class="nova-skip" href="#main-content">Bỏ qua điều hướng</a>
@@ -17,7 +14,7 @@
 <!-- ===== HEADER NAVIGATION ===== -->
 <header class="nova-header">
     <div class="nova-container nova-nav">
-        <a class="nova-brand" asp-controller="Home" asp-action="Index" aria-label="NextGen System - Trang chủ">
+        <a class="nova-brand" asp-controller="Home" asp-action="Index">
             <span class="nova-brand-mark">NG</span>
             <span><strong>NextGen</strong><small>Performance system</small></span>
         </a>
@@ -118,7 +115,7 @@
                                 <span><small>Nhịp độ tổ chức</small><strong>Xu hướng tăng trưởng</strong></span>
                                 <b>78%</b>
                             </div>
-                            <div class="nova-bars" aria-label="Tiến độ 6 tuần tăng từ 51 đến 78 phần trăm">
+                            <div class="nova-bars" role="img" aria-label="Tiến độ 6 tuần tăng từ 51 đến 78 phần trăm">
                                 <i style="--bar:51%"></i>
                                 <i style="--bar:58%"></i>
                                 <i style="--bar:63%"></i>
@@ -320,22 +317,40 @@
 
                             <div class="nova-sticky-screens">
                                 <div class="nova-sticky-screen active" id="screen-dashboard" data-url="https://vietmach.app/dashboard" data-index="1 / 6">
-                                    <img src="~/images/landing/screenshot_dashboard.png" asp-append-version="true" alt="Dashboard Ban Lãnh Đạo" />
+                                    <picture>
+                                        <source srcset="~/images/landing/screenshot_dashboard.webp" type="image/webp" asp-append-version="true" />
+                                        <img src="~/images/landing/screenshot_dashboard.png" asp-append-version="true" alt="Dashboard Ban Lãnh Đạo" width="701" height="438" loading="lazy" decoding="async" />
+                                    </picture>
                                 </div>
                                 <div class="nova-sticky-screen" id="screen-okr" data-url="https://vietmach.app/okrs/tree" data-index="2 / 6">
-                                    <img src="~/images/landing/screenshot_okr.png" asp-append-version="true" alt="Cây Mục Tiêu OKR" />
+                                    <picture>
+                                        <source srcset="~/images/landing/screenshot_okr.webp" type="image/webp" asp-append-version="true" />
+                                        <img src="~/images/landing/screenshot_okr.png" asp-append-version="true" alt="Cây Mục Tiêu OKR" width="701" height="438" loading="lazy" decoding="async" />
+                                    </picture>
                                 </div>
                                 <div class="nova-sticky-screen" id="screen-checkin" data-url="https://vietmach.app/checkins/weekly" data-index="3 / 6">
-                                    <img src="~/images/landing/screenshot_checkin.png" asp-append-version="true" alt="Check-in Tiến Độ" />
+                                    <picture>
+                                        <source srcset="~/images/landing/screenshot_checkin.webp" type="image/webp" asp-append-version="true" />
+                                        <img src="~/images/landing/screenshot_checkin.png" asp-append-version="true" alt="Check-in Tiến Độ" width="701" height="438" loading="lazy" decoding="async" />
+                                    </picture>
                                 </div>
                                 <div class="nova-sticky-screen" id="screen-ai" data-url="https://vietmach.app/ai/assistant" data-index="4 / 6">
-                                    <img src="~/images/landing/ai_hero_light.png" asp-append-version="true" alt="Trợ Lý AI Gemini" />
+                                    <picture>
+                                        <source srcset="~/images/landing/ai_hero_light.webp" type="image/webp" asp-append-version="true" />
+                                        <img src="~/images/landing/ai_hero_light.png" asp-append-version="true" alt="Trợ Lý AI Gemini" width="701" height="438" loading="lazy" decoding="async" />
+                                    </picture>
                                 </div>
                                 <div class="nova-sticky-screen" id="screen-evaluation" data-url="https://vietmach.app/evaluations/period" data-index="5 / 6">
-                                    <img src="~/images/landing/screenshot_evaluation.png" asp-append-version="true" alt="Đánh Giá &amp; Xếp Loại" />
+                                    <picture>
+                                        <source srcset="~/images/landing/screenshot_evaluation.webp" type="image/webp" asp-append-version="true" />
+                                        <img src="~/images/landing/screenshot_evaluation.png" asp-append-version="true" alt="Đánh Giá &amp; Xếp Loại" width="701" height="438" loading="lazy" decoding="async" />
+                                    </picture>
                                 </div>
                                 <div class="nova-sticky-screen" id="screen-reports" data-url="https://vietmach.app/reports/analytics" data-index="6 / 6">
-                                    <img src="~/images/landing/screenshot_reports.png" asp-append-version="true" alt="Báo Cáo Đa Chiều" />
+                                    <picture>
+                                        <source srcset="~/images/landing/screenshot_reports.webp" type="image/webp" asp-append-version="true" />
+                                        <img src="~/images/landing/screenshot_reports.png" asp-append-version="true" alt="Báo Cáo Đa Chiều" width="701" height="438" loading="lazy" decoding="async" />
+                                    </picture>
                                 </div>
                             </div>
                         </div>
@@ -438,7 +453,7 @@
                 <!-- Role Cards Content -->
                 <div class="nova-role-display">
                     <div class="nova-role-card" data-role-card="director">
-                        <h4>Góc nhìn Chiến Lược dành cho Ban Giám Đốc</h4>
+                        <h3>Góc nhìn Chiến Lược dành cho Ban Giám Đốc</h3>
                         <p>Giám đốc nắm bắt tức thì tỷ lệ hoàn thành OKR công ty, phát hiện phòng ban cần hỗ trợ và điều chỉnh nguồn lực nhanh chóng.</p>
                         <ul class="nova-role-checklist">
                             <li><i class="bi bi-check-circle-fill"></i> Xem bản đồ mục tiêu công ty và liên kết các phòng ban</li>
@@ -448,7 +463,7 @@
                     </div>
 
                     <div class="nova-role-card" data-role-card="manager" style="display: none;">
-                        <h4>Không gian Quản Lý Đội Ngũ dành cho Trưởng Phòng</h4>
+                        <h3>Không gian Quản Lý Đội Ngũ dành cho Trưởng Phòng</h3>
                         <p>Giúp quản lý dễ dàng phân bổ chỉ tiêu công bằng, theo dõi tiến độ từng thành viên và đồng hành thông qua buổi check-in hàng tuần.</p>
                         <ul class="nova-role-checklist">
                             <li><i class="bi bi-check-circle-fill"></i> Phân bổ mục tiêu phòng ban thành Key Results cho cấp dưới</li>
@@ -458,7 +473,7 @@
                     </div>
 
                     <div class="nova-role-card" data-role-card="employee" style="display: none;">
-                        <h4>Không gian Làm Việc Chủ Động dành cho Nhân Viên</h4>
+                        <h3>Không gian Làm Việc Chủ Động dành cho Nhân Viên</h3>
                         <p>Nhân viên luôn biết rõ mình cần đạt được kết quả gì, tiến độ hiện tại ra sao và đóng góp như thế nào vào thành công chung của công ty.</p>
                         <ul class="nova-role-checklist">
                             <li><i class="bi bi-check-circle-fill"></i> Xem danh sách OKR &amp; KPI cá nhân được giao trong kỳ</li>
@@ -468,7 +483,7 @@
                     </div>
 
                     <div class="nova-role-card" data-role-card="hr" style="display: none;">
-                        <h4>Trung Tâm Quản Trị Chu Kỳ dành cho Nhân Sự (HR)</h4>
+                        <h3>Trung Tâm Quản Trị Chu Kỳ dành cho Nhân Sự (HR)</h3>
                         <p>HR dễ dàng khởi tạo các chu kỳ đánh giá (Tháng/Quý/Năm), chuẩn hóa biểu mẫu KPI và tổng hợp kết quả xếp hạng tự động.</p>
                         <ul class="nova-role-checklist">
                             <li><i class="bi bi-check-circle-fill"></i> Mở và đóng các kỳ đánh giá hiệu suất của toàn công ty</li>
@@ -665,7 +680,7 @@
                 <p>Nền tảng Quản trị Mục tiêu OKR &amp; Hiệu suất KPI Toàn diện tích hợp AI cho doanh nghiệp Việt Nam.</p>
             </div>
             <div class="nova-footer-col">
-                <h5>Sản phẩm</h5>
+                <h3>Sản phẩm</h3>
                 <ul>
                     <li><a href="#showcase">Dashboard Ban Lãnh Đạo</a></li>
                     <li><a href="#showcase">Cây Mục Tiêu OKR</a></li>
@@ -674,7 +689,7 @@
                 </ul>
             </div>
             <div class="nova-footer-col">
-                <h5>Giải pháp</h5>
+                <h3>Giải pháp</h3>
                 <ul>
                     <li><a href="#vai-tro">Dành cho Giám Đốc</a></li>
                     <li><a href="#vai-tro">Dành cho Trưởng Phòng</a></li>
@@ -683,7 +698,7 @@
                 </ul>
             </div>
             <div class="nova-footer-col">
-                <h5>Hệ thống</h5>
+                <h3>Hệ thống</h3>
                 <ul>
                     <li><a asp-controller="Auth" asp-action="Login">Đăng nhập tài khoản</a></li>
                     <li><a asp-controller="Auth" asp-action="Register">Đăng ký dùng thử</a></li>
@@ -701,5 +716,5 @@
 </footer>
 
 @section Scripts {
-    <script src="~/js/landing.js" asp-append-version="true"></script>
+    <script src="~/js/landing.min.js" asp-append-version="true" defer></script>
 }

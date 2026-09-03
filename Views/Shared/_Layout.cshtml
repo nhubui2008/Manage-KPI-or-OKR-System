@@ -77,13 +77,31 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Non-blocking Google Fonts with font-display: swap -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+    </noscript>
+
+    <!-- Non-blocking Bootstrap Icons -->
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    </noscript>
     
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/vendor/velzon/css/app.min.css" />
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
+
+    @if (isInternalPage)
+    {
+        <!-- Admin dashboard specific stylesheets (avoid loading on landing or auth pages) -->
+        <link rel="stylesheet" href="~/vendor/velzon/css/app.min.css" />
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        <link rel="stylesheet" href="~/css/velzon-kpi.css" asp-append-version="true" />
+    }
     <style id="brand-theme">
         :root {
             --vm-font-sans: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -119,19 +137,21 @@
         @Html.Raw(Manage_KPI_or_OKR_System.Services.SystemSettingsService.EncodeCustomCssForStyleBlock(appBranding.CustomCss))
     </style>
     
-    <!-- Restore sidebar state immediately to prevent layout shift -->
-    <script>
-        (function() {
-            const sidebarState = localStorage.getItem('sidebarState');
-            const desktopDefault = window.matchMedia('(min-width: 992px)').matches;
-            if (desktopDefault && (sidebarState === 'expanded' || sidebarState === null)) {
-                document.documentElement.classList.add('sidebar-expanded');
-            } else {
-                document.documentElement.classList.remove('sidebar-expanded');
-            }
-        })();
-    </script>
-    <link rel="stylesheet" href="~/css/velzon-kpi.css" asp-append-version="true" />
+    @if (isInternalPage)
+    {
+        <!-- Restore sidebar state immediately to prevent layout shift on internal pages -->
+        <script>
+            (function() {
+                const sidebarState = localStorage.getItem('sidebarState');
+                const desktopDefault = window.matchMedia('(min-width: 992px)').matches;
+                if (desktopDefault && (sidebarState === 'expanded' || sidebarState === null)) {
+                    document.documentElement.classList.add('sidebar-expanded');
+                } else {
+                    document.documentElement.classList.remove('sidebar-expanded');
+                }
+            })();
+        </script>
+    }
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="@bodyVariant vietmach-shell">
@@ -734,15 +754,19 @@
         }
     }
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
     @if (isInternalPage)
     {
-        <script src="~/js/management-ui.js" asp-append-version="true"></script>
+        <!-- Libraries only required for authenticated internal management dashboard -->
+        <script src="~/lib/jquery/dist/jquery.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    }
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+    <script src="~/js/site.js" asp-append-version="true" defer></script>
+    @if (isInternalPage)
+    {
+        <script src="~/js/management-ui.js" asp-append-version="true" defer></script>
     }
 
     @if (TempData["ToastErrorMessage"] != null || TempData["ToastSuccessMessage"] != null || TempData["ToastWarningMessage"] != null || TempData["ToastInfoMessage"] != null || TempData["SuccessMessage"] != null || TempData["ErrorMessage"] != null)

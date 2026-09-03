@@ -2089,7 +2089,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function initGlobalSelect2(rootElement) {
         if (typeof jQuery === 'undefined' || typeof jQuery.fn.select2 === 'undefined') {
-            console.warn('Select2: jQuery hoặc thư viện Select2 chưa được tải.');
             return;
         }
 
@@ -2251,13 +2250,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    // Khởi tạo lần đầu
-    initGlobalSelect2();
+    // Khởi tạo nếu jQuery và Select2 khả dụng trên trang hiện tại
+    if (typeof jQuery !== 'undefined') {
+        initGlobalSelect2();
 
-    // Hỗ trợ khởi tạo lại khi có dynamic content (AJAX/Modal)
-    $(document).on('shown.bs.modal', function (e) {
-        initGlobalSelect2(e.target);
-    });
+        // Hỗ trợ khởi tạo lại khi có dynamic content (AJAX/Modal)
+        $(document).on('shown.bs.modal', function (e) {
+            initGlobalSelect2(e.target);
+        });
+    }
 
     // Xuất ra window để gọi thủ công nếu cần
     window.refreshSelect2 = initGlobalSelect2;

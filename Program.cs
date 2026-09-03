@@ -502,7 +502,8 @@ app.UseStaticFiles(new StaticFileOptions
             extension.Equals(".ico", StringComparison.OrdinalIgnoreCase) ||
             extension.Equals(".webp", StringComparison.OrdinalIgnoreCase))
         {
-            context.Context.Response.Headers.CacheControl = "public,max-age=604800";
+            // Cache static assets for 1 year with immutable flag (fingerprinted via asp-append-version)
+            context.Context.Response.Headers.CacheControl = "public,max-age=31536000,immutable";
         }
     }
 });
