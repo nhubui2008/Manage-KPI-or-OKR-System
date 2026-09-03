@@ -116,6 +116,91 @@ public sealed class TenantIsolationTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => firstTenant.SaveChangesAsync());
     }
 
+    [Fact]
+    public async Task Entity_updated_via_db_update_without_changing_tenant_succeeds_in_production_request()
+    {
+        var databaseName = Guid.NewGuid().ToString();
+        await using (var setup = CreateContext(databaseName, new TenantContext()))
+        {
+            setup.Tenants.Add(new Tenant { Id = 1, Name = "Tenant one", Code = "one" });
+            await setup.SaveChangesAsync();
+        }
+
+        var tenantOne = new TenantContext();
+        tenantOne.SetRequest(1, systemUserId: 1);
+        await using var db = CreateContext(databaseName, tenantOne);
+
+        var department = new Department { DepartmentCode = "DEV", DepartmentName = "Development" };
+        db.Departments.Add(department);
+        await db.SaveChangesAsync();
+
+        department.DepartmentName = "Software Development";
+        db.Update(department);
+
+        var exception = await Record.ExceptionAsync(() => db.SaveChangesAsync());
+        Assert.Null(exception);
+
+        var updated = await db.Departments.SingleAsync(d => d.DepartmentCode == "DEV");
+        Assert.Equal("Software Development", updated.DepartmentName);
+    }
+
+    [Fact]
+    public async Task Entity_updated_with_different_tenant_throws_cross_tenant_exception()
+    {
+        var databaseName = Guid.NewGuid().ToString();
+        await using (var setup = CreateContext(databaseName, new TenantContext()))
+        {
+            setup.Tenants.AddRange(
+                new Tenant { Id = 1, Name = "Tenant one", Code = "one" },
+                new Tenant { Id = 2, Name = "Tenant two", Code = "two" });
+            await setup.SaveChangesAsync();
+        }
+
+        var tenantOne = new TenantContext();
+        tenantOne.SetRequest(1, systemUserId: 1);
+        await using var db = CreateContext(databaseName, tenantOne);
+
+        var department = new Department { DepartmentCode = "HR", DepartmentName = "Human Resources" };
+        db.Departments.Add(department);
+        await db.SaveChangesAsync();
+
+        // Mutating TenantId away from current tenant throws
+        db.Entry(department).Property<int>("TenantId").CurrentValue = 2;
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => db.SaveChangesAsync());
+        Assert.Contains("cannot be modified or deleted from another tenant", exception.Message);
+    }
+
+    [Fact]
+    public async Task Entity_updated_from_foreign_tenant_into_current_tenant_throws_immutable_exception()
+    {
+        var databaseName = Guid.NewGuid().ToString();
+        await using (var setup = CreateContext(databaseName, new TenantContext()))
+        {
+            setup.Tenants.AddRange(
+                new Tenant { Id = 1, Name = "Tenant one", Code = "one" },
+                new Tenant { Id = 2, Name = "Tenant two", Code = "two" });
+            await setup.SaveChangesAsync();
+        }
+
+        var tenantOne = new TenantContext();
+        tenantOne.SetRequest(1, systemUserId: 1);
+        await using var db = CreateContext(databaseName, tenantOne);
+
+        var department = new Department { DepartmentCode = "OPS", DepartmentName = "Operations" };
+        db.Departments.Add(department);
+        await db.SaveChangesAsync();
+
+        // Simulate an entity originally belonging to tenant 2 being repointed to tenant 1
+        var entry = db.Entry(department);
+        entry.Property<int>("TenantId").OriginalValue = 2;
+        entry.Property<int>("TenantId").CurrentValue = 1;
+        entry.Property<int>("TenantId").IsModified = true;
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => db.SaveChangesAsync());
+        Assert.Contains("TenantId is immutable after an entity is created", exception.Message);
+    }
+
     private static MiniERPDbContext CreateContext(string databaseName, ITenantContext tenantContext) =>
         new(new DbContextOptionsBuilder<MiniERPDbContext>()
             .UseInMemoryDatabase(databaseName)

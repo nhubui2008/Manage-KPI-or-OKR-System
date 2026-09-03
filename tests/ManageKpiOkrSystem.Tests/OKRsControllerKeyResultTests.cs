@@ -424,6 +424,38 @@ public sealed class OKRsControllerKeyResultTests
         Assert.Equal(60, updatedKr.CurrentValue);
     }
 
+    [Fact]
+    public async Task UpdateKeyResultProgress_InProductionTenant_Succeeds()
+    {
+        var tenantContext = new Manage_KPI_or_OKR_System.Services.Tenancy.TenantContext();
+        tenantContext.SetRequest(1, systemUserId: 1);
+        var options = new DbContextOptionsBuilder<MiniERPDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        await using var context = new MiniERPDbContext(options, tenantContext);
+
+        var adminUser = new SystemUser { Id = 1, Username = "admin", IsActive = true };
+        var employee = new Employee { Id = 1, SystemUserId = 1, FullName = "Admin User", Email = "admin@test.com", Phone = "0123456789", IsActive = true };
+        var okr = new OKR { Id = 105, ObjectiveName = "Production Objective", CreatedById = 1, IsActive = true };
+        var kr = new OKRKeyResult { Id = 205, OKRId = 105, KeyResultName = "Production KR", TargetValue = 100, CurrentValue = 0, Unit = "%" };
+
+        context.SystemUsers.Add(adminUser);
+        context.Employees.Add(employee);
+        context.OKRs.Add(okr);
+        context.OKRKeyResults.Add(kr);
+        await context.SaveChangesAsync();
+
+        var controller = CreateController(context);
+
+        var result = await controller.UpdateKeyResultProgress(kr.Id, 85);
+
+        Assert.IsType<RedirectToActionResult>(result);
+        var updatedKr = await context.OKRKeyResults.FindAsync(kr.Id);
+        Assert.NotNull(updatedKr);
+        Assert.Equal(85, updatedKr.CurrentValue);
+        Assert.Equal("Gần đạt", updatedKr.ResultStatus);
+    }
+
     private static async Task<(OKR Okr, WorkProject Project)> SeedOkrWithLinkedProjectAsync(MiniERPDbContext context)
     {
         var okr = new OKR

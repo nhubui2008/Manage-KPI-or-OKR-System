@@ -838,7 +838,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
             decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, kr.TargetValue ?? 0, kr.IsInverse);
             kr.ResultStatus = ProgressHelper.GetResultStatus(progress);
 
-            _context.Update(kr);
             await _context.SaveChangesAsync();
             if (kr.OKRId.HasValue)
             {
@@ -941,7 +940,6 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 // Update the existing allocation
                 existingAllocation.AllocatedValue = allocatedValue;
-                _context.OKR_Employee_Allocations.Update(existingAllocation);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Nhân viên này đã được phân bổ cho mục tiêu này. Hệ thống đã cập nhật lại giá trị thành công!";
             }

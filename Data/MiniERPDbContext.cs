@@ -728,7 +728,13 @@ namespace Manage_KPI_or_OKR_System.Data
 
                     if (entry.State == EntityState.Modified && tenantProperty.IsModified)
                     {
-                        throw new InvalidOperationException("TenantId is immutable after an entity is created.");
+                        if (tenantProperty.OriginalValue != null &&
+                            !Equals(tenantProperty.OriginalValue, tenantProperty.CurrentValue))
+                        {
+                            throw new InvalidOperationException("TenantId is immutable after an entity is created.");
+                        }
+
+                        tenantProperty.IsModified = false;
                     }
                 }
 
