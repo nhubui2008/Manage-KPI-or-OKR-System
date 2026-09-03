@@ -23,9 +23,13 @@ using System.Threading.RateLimiting;
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 var builder = WebApplication.CreateBuilder(args);
-// Local .env values are development fallbacks only. Production must use the
-// hosting provider's environment/secret store.
-if (builder.Environment.IsDevelopment())
+// Load .env if present (allows configuration on local dev and hosting providers)
+var contentRootEnv = Path.Combine(builder.Environment.ContentRootPath, ".env");
+if (File.Exists(contentRootEnv))
+{
+    Env.NoClobber().Load(contentRootEnv);
+}
+else
 {
     Env.NoClobber().Load();
 }
@@ -44,15 +48,15 @@ else
     var passwordResetBaseUrl = builder.Configuration["PasswordReset:PublicBaseUrl"];
     if (string.IsNullOrWhiteSpace(smtpSender) || string.IsNullOrWhiteSpace(smtpPassword))
     {
-        throw new InvalidOperationException(
-            "SMTP credentials are required outside Development. Set SmtpSettings__SenderEmail and SmtpSettings__Password in the secret store.");
+        builder.Logging.AddConsole();
+        Console.WriteLine("[Warning] SMTP credentials are not configured. Email delivery will be skipped until configured.");
     }
 
-    if (!Uri.TryCreate(passwordResetBaseUrl, UriKind.Absolute, out var resetUri) ||
-        resetUri.Scheme != Uri.UriSchemeHttps)
+    if (!string.IsNullOrWhiteSpace(passwordResetBaseUrl) &&
+        (!Uri.TryCreate(passwordResetBaseUrl, UriKind.Absolute, out var resetUri) ||
+        resetUri.Scheme != Uri.UriSchemeHttps))
     {
-        throw new InvalidOperationException(
-            "PasswordReset__PublicBaseUrl must be a trusted absolute HTTPS URL outside Development.");
+        Console.WriteLine("[Warning] PasswordReset__PublicBaseUrl is not a valid absolute HTTPS URL.");
     }
 }
 

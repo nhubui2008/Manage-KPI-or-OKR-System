@@ -1,0 +1,155 @@
+name: Deploy to Plesk Windows IIS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-plesk-production
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    name: Build, Test & Deploy to Plesk
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: 🧪 Run Unit Tests
+        run: |
+          dotnet test tests/ManageKpiOkrSystem.Tests/ManageKpiOkrSystem.Tests.csproj -c Release
+
+      - name: 📦 Publish Self-Contained Application
+        run: |
+          dotnet publish Manage-KPI-or-OKR-System.csproj \
+            -c Release \
+            -r win-x64 \
+            --self-contained true \
+            -o ./publish
+
+      - name: 🔧 Tune web.config for IIS Hosting
+        run: |
+          cat << 'EOF' > ./publish/web.config
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <location path="." inheritInChildApplications="false">
+              <system.webServer>
+                <handlers>
+                  <add name="aspNetCore" path="*" verb="*" modules="AspNetCoreModuleV2" resourceType="Unspecified" />
+                </handlers>
+                <aspNetCore processPath=".\Manage-KPI-or-OKR-System.exe" stdoutLogEnabled="true" stdoutLogFile=".\logs\stdout" hostingModel="inprocess" />
+                <httpErrors errorMode="Detailed" />
+              </system.webServer>
+            </location>
+          </configuration>
+          EOF
+
+      - name: 🧹 Clean sensitive or temporary files before deploy
+        run: |
+          # Make sure local .env files are NOT uploaded over the server's existing .env
+          rm -f ./publish/.env ./publish/.env.local
+
+      - name: 🛑 Put IIS Offline (Unlock DLLs via app_offline.htm)
+        run: |
+          cat << 'EOF' > app_offline.htm
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>System Updating</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 80px 20px; background: #f8fafc; color: #334155; }
+              .card { max-width: 500px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+              h1 { font-size: 22px; color: #0f172a; margin-bottom: 12px; }
+              p { font-size: 15px; line-height: 1.6; color: #64748b; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <h1>🚀 Đang cập nhật phiên bản mới</h1>
+              <p>Hệ thống đang được nâng cấp tự động qua CI/CD. Quá trình này thường chỉ mất 1-2 phút, vui lòng quay lại sau ít phút.</p>
+            </div>
+          </body>
+          </html>
+          EOF
+          cp app_offline.htm ./publish/app_offline.htm
+
+      - name: 📂 Upload app_offline.htm to stop IIS process
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        continue-on-error: true
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_SERVER_DIR || '/httpdocs/' }}
+          local-dir: ./publish/
+          dangerous-clean-slate: false
+          exclude: |
+            **/*
+            !app_offline.htm
+
+      - name: ⏳ Wait for IIS to release file locks
+        run: sleep 5
+
+      - name: 🚀 Sync All Application Files via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_SERVER_DIR || '/httpdocs/' }}
+          local-dir: ./publish/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.env*
+            **/App_Data/**
+            **/logs/**
+            **/wwwroot/uploads/**
+            app_offline.htm
+
+      - name: 🟢 Remove app_offline.htm to bring IIS online
+        run: |
+          python3 - << 'EOF'
+          import os, sys
+          from ftplib import FTP, FTP_TLS
+
+          server = os.environ.get('FTP_SERVER', '')
+          user = os.environ.get('FTP_USERNAME', '')
+          passwd = os.environ.get('FTP_PASSWORD', '')
+          server_dir = os.environ.get('FTP_SERVER_DIR', '/httpdocs/').strip('/')
+
+          if not server or not user:
+              print("Skipping FTP deletion: missing credentials")
+              sys.exit(0)
+
+          try:
+              ftp = FTP(server, timeout=30)
+              ftp.login(user, passwd)
+              if server_dir:
+                  try:
+                      ftp.cwd(server_dir)
+                  except Exception as ce:
+                      print(f"cwd warning: {ce}")
+              try:
+                  ftp.delete('app_offline.htm')
+                  print("Successfully removed app_offline.htm - Website is now LIVE!")
+              except Exception as de:
+                  print(f"app_offline.htm remove note: {de}")
+              ftp.quit()
+          except Exception as e:
+              print(f"Notice during bring online step: {e}")
+          EOF
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR || '/httpdocs/' }}

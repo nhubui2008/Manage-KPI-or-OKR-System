@@ -10,6 +10,8 @@ bin/
 obj/
 out/
 .dotnet/
+publish/
+publish-plesk*
 
 
 ## User-specific files
