@@ -101,48 +101,58 @@ namespace Manage_KPI_or_OKR_System.Controllers
             bool isManagerScoped = AccessScopeHelper.IsManagerScoped(User);
 
             // Xác định các góc nhìn (View Modes) mà user có quyền truy cập
+            // QUY TẮC: Chỉ Admin mới được quyền đổi cách hiển thị dashboard. Các vai trò khác cố định góc nhìn theo vai trò.
             var allowedViewModes = new List<string>();
-            if (isAdmin || isDirector)
+            string activeViewMode;
+
+            if (isAdmin)
             {
+                allowedViewModes.Add(DashboardViewModes.Overview);
                 allowedViewModes.Add(DashboardViewModes.Director);
                 allowedViewModes.Add(DashboardViewModes.Manager);
                 allowedViewModes.Add(DashboardViewModes.Employee);
-                allowedViewModes.Add(DashboardViewModes.Overview);
-            }
-            else if (isManager)
-            {
-                allowedViewModes.Add(DashboardViewModes.Manager);
-                allowedViewModes.Add(DashboardViewModes.Employee);
-            }
-            else if (isHR)
-            {
-                allowedViewModes.Add(DashboardViewModes.Overview);
-                allowedViewModes.Add(DashboardViewModes.Employee);
+
+                if (!string.IsNullOrWhiteSpace(viewMode) && allowedViewModes.Any(m => string.Equals(m, viewMode, StringComparison.OrdinalIgnoreCase)))
+                {
+                    activeViewMode = allowedViewModes.First(m => string.Equals(m, viewMode, StringComparison.OrdinalIgnoreCase));
+                }
+                else
+                {
+                    activeViewMode = DashboardViewModes.Overview;
+                }
             }
             else
             {
-                allowedViewModes.Add(DashboardViewModes.Employee);
+                // Các phân quyền khác cố định theo vai trò, bỏ qua viewMode truyền vào
+                string fixedMode;
+                if (isDirector)
+                {
+                    fixedMode = DashboardViewModes.Director;
+                }
+                else if (isManager)
+                {
+                    fixedMode = DashboardViewModes.Manager;
+                }
+                else if (isHR)
+                {
+                    fixedMode = DashboardViewModes.Overview;
+                }
+                else
+                {
+                    fixedMode = DashboardViewModes.Employee;
+                }
+
+                activeViewMode = fixedMode;
+                allowedViewModes.Add(fixedMode);
             }
 
-            // Xác định Active View Mode
-            string activeViewMode;
-            if (!string.IsNullOrWhiteSpace(viewMode) && allowedViewModes.Any(m => string.Equals(m, viewMode, StringComparison.OrdinalIgnoreCase)))
-            {
-                activeViewMode = allowedViewModes.First(m => string.Equals(m, viewMode, StringComparison.OrdinalIgnoreCase));
-            }
-            else
-            {
-                if (isDirector) activeViewMode = DashboardViewModes.Director;
-                else if (isManager) activeViewMode = DashboardViewModes.Manager;
-                else if (isAdmin || isHR) activeViewMode = DashboardViewModes.Overview;
-                else activeViewMode = DashboardViewModes.Employee;
-            }
-
+            ViewBag.IsAdmin = isAdmin;
             ViewBag.ActiveViewMode = activeViewMode;
             ViewBag.AllowedViewModes = allowedViewModes;
 
             var common = new DashboardCommonViewModel
             {
+                IsAdmin = isAdmin,
                 SelectedPeriodId = selectedPeriod?.Id,
                 SelectedPeriod = selectedPeriod,
                 AllPeriods = allPeriods,
@@ -357,6 +367,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                     where latestCd != null && latestCd.ProgressPercentage < 50
                                     select new DirectorAtRiskGoalItem
                                     {
+                                        Id = k.Id,
                                         Title = k.KPIName ?? "KPI",
                                         Type = "KPI",
                                         OwnerOrDept = "Toàn công ty",

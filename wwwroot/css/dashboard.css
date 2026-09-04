@@ -964,3 +964,181 @@
     padding: 16px;
 }
 
+/* ==========================================================================
+   DIRECTOR (EXECUTIVE) DASHBOARD ENHANCEMENTS
+   ========================================================================== */
+.nextgen-shell .director-briefing-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+    box-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.04);
+}
+
+.nextgen-shell .director-health-pulse {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nextgen-shell .director-health-pulse.pulse-success {
+    background-color: rgba(16, 185, 129, 0.12);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.08);
+}
+
+.nextgen-shell .director-health-pulse.pulse-warning {
+    background-color: rgba(245, 158, 11, 0.12);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.08);
+}
+
+.nextgen-shell .director-health-pulse.pulse-danger {
+    background-color: rgba(239, 68, 68, 0.12);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.08);
+}
+
+.nextgen-shell .director-briefing-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 28px;
+    border-color: #f1f5f9 !important;
+}
+
+.nextgen-shell .briefing-metric-item {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.8125rem;
+}
+
+.nextgen-shell .dashboard-stat-progress {
+    width: 100%;
+    height: 4px;
+    background-color: #f1f5f9;
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+}
+
+.nextgen-shell .dashboard-stat-progress-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nextgen-shell .director-donut-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 14px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.nextgen-shell .director-donut-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: #475569;
+    font-weight: 500;
+}
+
+.nextgen-shell .director-donut-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.nextgen-shell .director-matrix-tabs {
+    display: inline-flex;
+    gap: 4px;
+    background-color: #f1f5f9;
+    padding: 3px;
+    border-radius: 8px;
+}
+
+.nextgen-shell .director-matrix-tab-btn {
+    border: none;
+    background: transparent;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nextgen-shell .director-matrix-tab-btn:hover {
+    color: #0f172a;
+    background-color: rgba(255, 255, 255, 0.6);
+}
+
+.nextgen-shell .director-matrix-tab-btn.active {
+    background-color: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.nextgen-shell .director-rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    background-color: #f1f5f9;
+}
+
+.nextgen-shell .director-rank-badge.rank-1 {
+    background-color: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.nextgen-shell .director-rank-badge.rank-2 {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.nextgen-shell .director-rank-badge.rank-3 {
+    background-color: #ffedd5;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+}
+
+.nextgen-shell .btn-ghost-primary {
+    color: #4f46e5;
+    background: transparent;
+    border: none;
+    padding: 3px 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.nextgen-shell .btn-ghost-primary:hover {
+    color: #4338ca;
+    background-color: rgba(79, 70, 229, 0.08);
+}
+
+.nextgen-shell .shadow-xs {
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.nextgen-shell .fs-8 {
+    font-size: 0.625rem !important;
+}
+
+

@@ -489,6 +489,29 @@
         });
     }
 
+    function initDirectorMatrixFilters() {
+        const tabButtons = document.querySelectorAll('.director-matrix-tab-btn');
+        const tableRows = document.querySelectorAll('.director-dept-row');
+        if (!tabButtons.length || !tableRows.length) return;
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', function () {
+                tabButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const filter = this.getAttribute('data-filter') || 'all';
+
+                tableRows.forEach(row => {
+                    const category = row.getAttribute('data-category') || '';
+                    if (filter === 'all' || category === filter) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
+
     function renderDirectorCharts(data, theme, reducedMotion) {
         // 1. Dept comparison bar chart
         const deptCanvas = document.getElementById('directorDeptChart');
@@ -500,9 +523,25 @@
             if (hasData) {
                 const options = getBaseChartOptions(theme, reducedMotion);
                 options.plugins.legend.display = false;
+                options.plugins.tooltip = {
+                    ...options.plugins.tooltip,
+                    callbacks: {
+                        label: context => ` Tiến độ hoàn thành: ${context.parsed.y}%`
+                    }
+                };
                 options.scales = {
-                    x: { grid: { display: false }, ticks: { color: theme.muted, font: { family: chartFontFamily, size: 10 } } },
-                    y: { beginAtZero: true, max: 100, ticks: { callback: v => `${v}%`, color: theme.muted, font: { family: chartFontFamily, size: 10 } } }
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { color: theme.muted, font: { family: chartFontFamily, size: 11, weight: '600' } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: theme.grid, drawTicks: false },
+                        border: { display: false },
+                        ticks: { callback: v => `${v}%`, color: theme.muted, font: { family: chartFontFamily, size: 10 } }
+                    }
                 };
                 const chart = new window.Chart(deptCanvas, {
                     type: 'bar',
@@ -511,8 +550,8 @@
                         datasets: [{
                             data: values,
                             backgroundColor: values.map(v => v >= 80 ? theme.success : v >= 50 ? theme.warning : theme.danger),
-                            borderRadius: 4,
-                            maxBarThickness: 28
+                            borderRadius: 6,
+                            maxBarThickness: 32
                         }]
                     },
                     options
@@ -521,7 +560,7 @@
             }
         }
 
-        // 2. OKR status donut
+        // 2. OKR status donut with center text and status pills
         const okrCanvas = document.getElementById('directorOkrStatusChart');
         if (okrCanvas) {
             const labels = Array.isArray(data.directorOkrLabels) ? data.directorOkrLabels : [];
@@ -529,16 +568,27 @@
             const hasData = values.some(v => v > 0);
             setChartState('directorOkrStatusChart', 'directorOkrStatusChartState', !hasData);
             if (hasData) {
+                const totalOkrs = data.directorTotalOkrs ?? values.reduce((a, b) => a + b, 0);
                 const options = getBaseChartOptions(theme, reducedMotion);
-                options.cutout = '70%';
+                options.cutout = '72%';
                 options.plugins.legend.position = 'bottom';
+                options.plugins.legend.labels.padding = 10;
+                options.plugins.dashboardCenterText = {
+                    value: totalOkrs,
+                    label: 'Mục tiêu OKR',
+                    color: theme.text,
+                    mutedColor: theme.muted
+                };
+
+                const sliceColors = [theme.primary, theme.success, theme.warning, theme.danger, theme.info];
                 const chart = new window.Chart(okrCanvas, {
                     type: 'doughnut',
+                    plugins: [centerTextPlugin],
                     data: {
                         labels,
                         datasets: [{
                             data: values,
-                            backgroundColor: [theme.primary, theme.success, theme.warning, theme.danger, theme.info],
+                            backgroundColor: sliceColors,
                             borderWidth: 2,
                             borderColor: theme.surface
                         }]
@@ -546,6 +596,20 @@
                     options
                 });
                 chartRegistry.set('directorOkr', chart);
+
+                // Render detail pill indicators below donut
+                const legendContainer = document.getElementById('directorOkrLegend');
+                if (legendContainer) {
+                    const legendHtml = labels.map((lbl, idx) => {
+                        const count = values[idx] || 0;
+                        const color = sliceColors[idx % sliceColors.length];
+                        return `<span class="director-donut-legend-item">
+                            <span class="director-donut-legend-dot" style="background-color: ${color};"></span>
+                            <span>${escapeHtml(lbl)}: <strong>${count}</strong></span>
+                        </span>`;
+                    }).join('');
+                    legendContainer.innerHTML = legendHtml;
+                }
             }
         }
 
@@ -559,9 +623,25 @@
             if (hasData) {
                 const options = getBaseChartOptions(theme, reducedMotion);
                 options.plugins.legend.display = false;
+                options.plugins.tooltip = {
+                    ...options.plugins.tooltip,
+                    callbacks: {
+                        label: context => ` Tiến độ bình quân: ${context.parsed.y}%`
+                    }
+                };
                 options.scales = {
-                    x: { grid: { display: false }, ticks: { color: theme.muted, font: { family: chartFontFamily, size: 10 } } },
-                    y: { beginAtZero: true, max: 100, ticks: { callback: v => `${v}%`, color: theme.muted, font: { family: chartFontFamily, size: 10 } } }
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { color: theme.muted, font: { family: chartFontFamily, size: 11 } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: theme.grid, drawTicks: false },
+                        border: { display: false },
+                        ticks: { callback: v => `${v}%`, color: theme.muted, font: { family: chartFontFamily, size: 10 } }
+                    }
                 };
                 const chart = new window.Chart(trendCanvas, {
                     type: 'line',
@@ -572,10 +652,12 @@
                             data: values,
                             borderColor: theme.primary,
                             backgroundColor: theme.primarySoft,
-                            borderWidth: 2,
+                            borderWidth: 2.5,
                             fill: true,
-                            tension: 0.35,
-                            pointRadius: 3
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: theme.primary
                         }]
                     },
                     options
@@ -690,6 +772,7 @@
 
         destroyCharts();
         bindAiActions();
+        initDirectorMatrixFilters();
 
         const data = readDashboardData(root);
         if (!data) {

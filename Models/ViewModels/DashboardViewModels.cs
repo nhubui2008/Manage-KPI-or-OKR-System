@@ -19,6 +19,7 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public List<EvaluationPeriod> AllPeriods { get; set; } = new();
         public string ActiveViewMode { get; set; } = DashboardViewModes.Employee;
         public List<string> AllowedViewModes { get; set; } = new();
+        public bool IsAdmin { get; set; }
         public Employee? CurrentEmployee { get; set; }
         public string? UserFullName { get; set; }
         public string? CurrentPositionName { get; set; }
@@ -27,6 +28,7 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
 
     public class DirectorAtRiskGoalItem
     {
+        public int? Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Type { get; set; } = "KPI"; // "KPI" hoặc "OKR"
         public string OwnerOrDept { get; set; } = string.Empty;
@@ -34,6 +36,7 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public string StatusLabel { get; set; } = string.Empty;
         public string StatusBadgeClass { get; set; } = "badge-soft-danger";
         public DateTime? DueDate { get; set; }
+        public bool IsOverdue => DueDate.HasValue && DueDate.Value.Date < DateTime.Today;
     }
 
     public class DirectorDeptSummaryItem
@@ -64,6 +67,13 @@ namespace Manage_KPI_or_OKR_System.Models.ViewModels
         public string Trend6MonthsDataJson { get; set; } = "[]";
         public string OkrStatusLabelsJson { get; set; } = "[]";
         public string OkrStatusDataJson { get; set; } = "[]";
+
+        // Calculated helper properties for Executive Overview
+        public int ExcellentDeptCount => DeptSummaries.Count(d => d.AvgProgress >= 80);
+        public int OnTrackDeptCount => DeptSummaries.Count(d => d.AvgProgress >= 50 && d.AvgProgress < 80);
+        public int AtRiskDeptCount => DeptSummaries.Count(d => d.AvgProgress < 50);
+        public string TopPerformingDeptName => DeptSummaries.OrderByDescending(d => d.AvgProgress).FirstOrDefault()?.DepartmentName ?? "Chưa có";
+        public double TopPerformingDeptRate => DeptSummaries.OrderByDescending(d => d.AvgProgress).FirstOrDefault()?.AvgProgress ?? 0;
     }
 
     public class ManagerPendingCheckInItem

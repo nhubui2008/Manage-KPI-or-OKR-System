@@ -27,6 +27,9 @@ namespace Manage_KPI_or_OKR_System.Models.AI
         public bool AdvisoryOnly { get; set; } = true;
         public List<EvidenceRef> Citations { get; set; } = new();
         public List<string> Warnings { get; set; } = new();
+        public string? HallucinationRisk { get; set; }
+        public double? ConfidenceScore { get; set; }
+        public string? AssessmentNote { get; set; }
     }
 
     /// <summary>

@@ -38,7 +38,7 @@
         <div class="dashboard-page-heading">
             <div class="d-flex align-items-center gap-2">
                 <h1 class="h3 mb-0">@pageTitle</h1>
-                @if (common.AllowedViewModes.Count > 1)
+                @if (common.IsAdmin && common.AllowedViewModes.Count > 1)
                 {
                     <span class="badge badge-soft-primary fs-7">
                         <i class="bi bi-shield-check me-1"></i>Đa góc nhìn
@@ -56,8 +56,8 @@
         <div class="dashboard-header-toolbar d-flex flex-wrap align-items-center gap-2">
             <!-- Form Lọc Kỳ Báo Cáo & Chuyển Đổi Góc Nhìn -->
             <form method="get" asp-action="Index" class="d-flex flex-wrap align-items-center gap-2">
-                <!-- Dropdown Chuyển Đổi Góc Nhìn (Chỉ hiển thị khi có từ 2 vai trò trở lên) -->
-                @if (common.AllowedViewModes.Count > 1)
+                <!-- Dropdown Chuyển Đổi Góc Nhìn (Chỉ hiển thị khi là Quản trị viên - Admin) -->
+                @if (common.IsAdmin && common.AllowedViewModes.Count > 1)
                 {
                     <div class="dashboard-filter-item">
                         <label for="dashboardViewMode" class="dashboard-filter-label text-muted small fw-medium mb-0 me-1">
@@ -153,7 +153,8 @@
                 "directorTrendLabels": @Html.Raw(Model.Director.Trend6MonthsLabelsJson),
                 "directorTrendData": @Html.Raw(Model.Director.Trend6MonthsDataJson),
                 "directorOkrLabels": @Html.Raw(Model.Director.OkrStatusLabelsJson),
-                "directorOkrData": @Html.Raw(Model.Director.OkrStatusDataJson)
+                "directorOkrData": @Html.Raw(Model.Director.OkrStatusDataJson),
+                "directorTotalOkrs": @Model.Director.TotalCompanyOKRs
                 </text>
             }
             else if (activeMode == DashboardViewModes.Manager && Model.Manager != null)

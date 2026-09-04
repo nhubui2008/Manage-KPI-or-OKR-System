@@ -88,9 +88,8 @@ public sealed class ChatAdvisorTests
     [Theory]
     [InlineData("extra-property")]
     [InlineData("fake-source")]
-    [InlineData("missing-source")]
     [InlineData("tool-call")]
-    public async Task AnswerAsync_RejectsMalformedOrUncitedOutput(string variant)
+    public async Task AnswerAsync_RejectsMalformedOutput(string variant)
     {
         var setup = await CreateScenarioAsync(includeBusinessEvidence: true);
         await using var context = setup.Context;
@@ -99,7 +98,6 @@ public sealed class ChatAdvisorTests
             "extra-property" =>
                 $$"""{"answer":"Có dữ liệu.","sourceIds":["{{sourceIds[0]}}"],"score":90}""",
             "fake-source" => ValidResponse("forged:source"),
-            "missing-source" => "{\"answer\":\"Có dữ liệu.\",\"sourceIds\":[]}",
             _ => ValidResponse(sourceIds[0])
         }, returnToolCall: variant == "tool-call");
         var advisor = CreateAdvisor(
@@ -121,6 +119,65 @@ public sealed class ChatAdvisorTests
         Assert.Empty(await context.AgentRuns.ToListAsync());
         Assert.Empty(await context.EvidenceReferenceMetadata.ToListAsync());
         Assert.Empty(await context.AIGenerationHistories.ToListAsync());
+    }
+
+    [Fact]
+    public async Task AnswerAsync_UncitedGeneralQuestion_SucceedsWithHallucinationAssessment()
+    {
+        var setup = await CreateScenarioAsync(includeBusinessEvidence: true);
+        await using var context = setup.Context;
+        var model = new DynamicChatModelClient(_ =>
+            """{"answer":"Giám đốc điều hành phụ trách quản lý chung toàn công ty.","sourceIds":[],"hallucinationRisk":"High","confidenceScore":0.35,"assessmentNote":"Kiến thức mở, không có dữ liệu nội bộ để đối soát"}""");
+        var advisor = CreateAdvisor(
+            context,
+            setup.TenantContext,
+            model,
+            new EmptyEvidenceRetriever());
+
+        var response = await advisor.AnswerAsync(
+            new AIChatRequest
+            {
+                Message = "Giám đốc tên gì?",
+                PeriodId = setup.Period.Id
+            },
+            setup.Principal);
+
+        Assert.True(response.Success);
+        Assert.NotNull(response.Text);
+        Assert.Equal("High", response.HallucinationRisk);
+        Assert.NotNull(response.ConfidenceScore);
+        Assert.True(response.ConfidenceScore <= 0.5);
+        Assert.NotEmpty(response.AssessmentNote!);
+        Assert.Empty(response.Citations);
+        Assert.Single(await context.AgentRuns.ToListAsync());
+    }
+
+    [Fact]
+    public async Task AnswerAsync_CitedAnswer_SucceedsWithLowHallucinationRisk()
+    {
+        var setup = await CreateScenarioAsync(includeBusinessEvidence: true);
+        await using var context = setup.Context;
+        var model = new DynamicChatModelClient(sourceIds =>
+            $$"""{"answer":"Tiến độ hiện tại là 72%.","sourceIds":["{{sourceIds[0]}}"],"hallucinationRisk":"VeryLow","confidenceScore":0.95,"assessmentNote":"Xác thực từ dữ liệu KPI/OKR"}""");
+        var advisor = CreateAdvisor(
+            context,
+            setup.TenantContext,
+            model,
+            new EmptyEvidenceRetriever());
+
+        var response = await advisor.AnswerAsync(
+            new AIChatRequest
+            {
+                Message = "Tiến độ hiện tại?",
+                PeriodId = setup.Period.Id
+            },
+            setup.Principal);
+
+        Assert.True(response.Success);
+        Assert.NotNull(response.Text);
+        Assert.Equal("VeryLow", response.HallucinationRisk);
+        Assert.True(response.ConfidenceScore >= 0.85);
+        Assert.NotEmpty(response.Citations);
     }
 
     [Fact]

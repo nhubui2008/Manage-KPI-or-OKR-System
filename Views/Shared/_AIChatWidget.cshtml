@@ -304,6 +304,82 @@
             margin-bottom: 0;
         }
 
+        /* Hallucination Risk & Confidence Assessment Badge */
+        .ai-hallucination-badge {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-top: 10px;
+            padding: 7px 11px;
+            border-radius: 9px;
+            font-size: 0.74rem;
+            line-height: 1.35;
+            transition: all 0.2s ease;
+        }
+
+        .ai-hallucination-badge .ai-risk-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        .ai-hallucination-badge .ai-risk-header i {
+            font-size: 0.88rem;
+            flex-shrink: 0;
+        }
+
+        .ai-hallucination-badge .ai-risk-score {
+            letter-spacing: -0.01em;
+        }
+
+        .ai-hallucination-badge .ai-risk-note {
+            font-size: 0.70rem;
+            opacity: 0.92;
+            padding-left: 20px;
+            color: inherit;
+        }
+
+        /* Very Low Risk (Green) */
+        .ai-hallucination-badge.ai-risk-verylow {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+        .ai-hallucination-badge.ai-risk-verylow i {
+            color: #16a34a;
+        }
+
+        /* Low Risk (Emerald) */
+        .ai-hallucination-badge.ai-risk-low {
+            background-color: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+        }
+        .ai-hallucination-badge.ai-risk-low i {
+            color: #10b981;
+        }
+
+        /* Medium Risk (Amber) */
+        .ai-hallucination-badge.ai-risk-medium {
+            background-color: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #92400e;
+        }
+        .ai-hallucination-badge.ai-risk-medium i {
+            color: #d97706;
+        }
+
+        /* High Risk (Orange / Red) */
+        .ai-hallucination-badge.ai-risk-high {
+            background-color: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
+        }
+        .ai-hallucination-badge.ai-risk-high i {
+            color: #ea580c;
+        }
+
         /* Typing Dots */
         .ai-typing-dot {
             display: inline-block;
@@ -696,7 +772,12 @@
                         const role = entry.entryKind === 'Input' ? 'user' : 'assistant';
                         history.push({ role, text });
                         const citations = role === 'assistant' && Array.isArray(payload.citations) ? payload.citations : [];
-                        renderMessage(role === 'assistant' ? 'bot' : 'user', text, false, citations);
+                        const assessment = role === 'assistant' ? {
+                            hallucinationRisk: payload.hallucinationRisk,
+                            confidenceScore: payload.confidenceScore,
+                            assessmentNote: payload.assessmentNote
+                        } : null;
+                        renderMessage(role === 'assistant' ? 'bot' : 'user', text, false, citations, assessment);
                     }
                     currentSessionId = sessionId;
                     setOpen(true);
@@ -706,7 +787,7 @@
                 }
             }
 
-            function renderMessage(role, text, pending, citations) {
+            function renderMessage(role, text, pending, citations, assessment) {
                 clearEmptyState();
                 const row = document.createElement('div');
                 row.className = `ai-message ai-message-${role}`;
@@ -725,8 +806,9 @@
                     bubble.innerHTML = '<span class="ai-typing-dot"></span><span class="ai-typing-dot"></span><span class="ai-typing-dot"></span>';
                 } else {
                     bubble.innerHTML = formatAiText(text);
-                    appendCitations(bubble, citations);
                     if (role === 'bot') {
+                        appendHallucinationBadge(bubble, assessment?.hallucinationRisk, assessment?.confidenceScore, assessment?.assessmentNote);
+                        appendCitations(bubble, citations);
                         appendActions(bubble, text);
                     }
                 }
@@ -734,6 +816,64 @@
                 messages.appendChild(row);
                 messages.scrollTop = messages.scrollHeight;
                 return bubble;
+            }
+
+            function appendHallucinationBadge(bubble, risk, score, note) {
+                if (!risk && (score == null || isNaN(score))) return;
+
+                const normalizedRisk = (risk || '').toLowerCase();
+                let riskClass = 'ai-risk-low';
+                let riskText = 'Cao';
+                let iconClass = 'bi-shield-check';
+
+                const pct = score != null && !isNaN(score) ? Math.round(score * 100) : null;
+
+                if (normalizedRisk === 'verylow') {
+                    riskClass = 'ai-risk-verylow';
+                    riskText = 'Rất cao';
+                    iconClass = 'bi-shield-fill-check';
+                } else if (normalizedRisk === 'low') {
+                    riskClass = 'ai-risk-low';
+                    riskText = 'Cao';
+                    iconClass = 'bi-shield-check';
+                } else if (normalizedRisk === 'medium') {
+                    riskClass = 'ai-risk-medium';
+                    riskText = 'Trung bình';
+                    iconClass = 'bi-shield-exclamation';
+                } else if (normalizedRisk === 'high') {
+                    riskClass = 'ai-risk-high';
+                    riskText = 'Rủi ro ảo giác cao';
+                    iconClass = 'bi-exclamation-octagon-fill';
+                }
+
+                function escapeVal(val) {
+                    if (window.escapeHtml) return window.escapeHtml(val || '');
+                    return String(val || '')
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#039;');
+                }
+
+                const badge = document.createElement('div');
+                badge.className = `ai-hallucination-badge ${riskClass}`;
+                if (note) {
+                    badge.title = note;
+                }
+
+                const pctLabel = pct !== null ? `${pct}%` : '';
+                const scoreHtml = pctLabel ? `<strong>${pctLabel}</strong> (${riskText})` : `<strong>${riskText}</strong>`;
+
+                badge.innerHTML = `
+                    <div class="ai-risk-header">
+                        <i class="bi ${iconClass}"></i>
+                        <span class="ai-risk-score">Độ tin cậy: ${scoreHtml}</span>
+                    </div>
+                    ${note ? `<div class="ai-risk-note">${escapeVal(note)}</div>` : ''}
+                `;
+
+                bubble.appendChild(badge);
             }
 
             function appendActions(bubble, text) {
@@ -1218,6 +1358,7 @@
                     const answer = data.text || data.warnings?.[0] || 'Tôi không thể cung cấp câu trả lời vượt ngoài phạm vi quyền hạn của bạn.';
                     currentSessionId = data.historySessionId || currentSessionId;
                     pendingBubble.innerHTML = formatAiText(answer);
+                    appendHallucinationBadge(pendingBubble, data.hallucinationRisk, data.confidenceScore, data.assessmentNote);
                     appendCitations(pendingBubble, data.citations);
                     appendActions(pendingBubble, answer);
                     if (data.text) history.push({ role: 'assistant', text: data.text });
