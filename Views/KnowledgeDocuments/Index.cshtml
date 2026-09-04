@@ -142,7 +142,16 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
         </div>
     }
-    <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0 shadow-sm mb-3" role="alert"></div>
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm d-flex align-items-start gap-2 mb-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger mt-1 flex-shrink-0"></i>
+            <div class="flex-grow-1">
+                <div asp-validation-summary="ModelOnly" class="mb-0"></div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
 
     @if (!Model.PipelineConfigured)
     {

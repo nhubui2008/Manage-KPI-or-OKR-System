@@ -92,7 +92,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                try 
+                try
                 {
                     _context.Roles.Remove(role);
                     await _context.SaveChangesAsync();
@@ -223,9 +223,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 if (!await _context.Permissions.AnyAsync(p => p.PermissionCode == code.Trim()))
                 {
-                    _context.Permissions.Add(new Permission { 
-                        PermissionCode = code.Trim(), 
-                        PermissionName = code.Replace("_", " ").ToLower() 
+                    _context.Permissions.Add(new Permission
+                    {
+                        PermissionCode = code.Trim(),
+                        PermissionName = code.Replace("_", " ").ToLower()
                     });
                     addedCount++;
                 }

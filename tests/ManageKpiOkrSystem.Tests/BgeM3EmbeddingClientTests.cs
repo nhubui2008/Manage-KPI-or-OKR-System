@@ -158,13 +158,13 @@ public sealed class BgeM3EmbeddingClientTests
     private static BgeM3Options CreateOptions(
         string? endpoint = null,
         string apiKey = "") => new()
-    {
-        Endpoint = endpoint ?? EmbeddingsEndpoint.AbsoluteUri,
-        ApiKey = apiKey,
-        Model = BgeM3Options.PinnedModel,
-        Dimensions = 1024,
-        TimeoutSeconds = 20
-    };
+        {
+            Endpoint = endpoint ?? EmbeddingsEndpoint.AbsoluteUri,
+            ApiKey = apiKey,
+            Model = BgeM3Options.PinnedModel,
+            Dimensions = 1024,
+            TimeoutSeconds = 20
+        };
 
     private static BgeM3EmbeddingClient CreateClient(
         CapturingHandler handler,

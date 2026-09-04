@@ -252,7 +252,7 @@ public sealed class AiProposalPersistence : IAiProposalPersistence
             // A plain Serializable range read lets two first writers take
             // compatible shared locks and deadlock while both insert.
             _ = await _context.Database.SqlQuery<int>(
-                    $"SELECT [Id] AS [Value] FROM [dbo].[KPICheckIns] WITH (UPDLOCK, HOLDLOCK) WHERE [TenantId] = {tenantId} AND [Id] = {checkIn.Id}")
+                    $"SELECT [Id] AS [Value] FROM [KPICheckIns] WITH (UPDLOCK, HOLDLOCK) WHERE [TenantId] = {tenantId} AND [Id] = {checkIn.Id}")
                 .SingleOrDefaultAsync(cancellationToken);
         }
         var currentCheckIn = await _context.KPICheckIns
@@ -484,10 +484,10 @@ public sealed class AiProposalPersistence : IAiProposalPersistence
         var band = shouldAbstain
             ? EvidenceConfidenceBand.Abstain
             : normalized switch
-        {
-            < .80d => EvidenceConfidenceBand.Moderate,
-            _ => EvidenceConfidenceBand.High
-        };
+            {
+                < .80d => EvidenceConfidenceBand.Moderate,
+                _ => EvidenceConfidenceBand.High
+            };
         return new EvidenceConfidence(
             normalized,
             band,

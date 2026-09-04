@@ -2340,7 +2340,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .ToList();
 
             var kpis = await _context.KPIs
-                .Where(k => k.IsActive == true && 
+                .Where(k => k.IsActive == true &&
                             (allAssignedKpiIds.Contains(k.Id) || (k.AssignerId.HasValue && employeeIds.Contains(k.AssignerId.Value))))
                 .ToListAsync();
 
@@ -2356,13 +2356,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (kpiIds.Any() && employeeIds.Any())
             {
                 var latestCheckInIds = await _context.KPICheckIns
-                    .Where(c => c.EmployeeId.HasValue && employeeIds.Contains(c.EmployeeId.Value) && 
+                    .Where(c => c.EmployeeId.HasValue && employeeIds.Contains(c.EmployeeId.Value) &&
                                 c.KPIId.HasValue && kpiIds.Contains(c.KPIId.Value))
                     .GroupBy(c => new { c.EmployeeId, c.KPIId })
                     .Select(g => g.OrderByDescending(x => x.CheckInDate).Select(x => x.Id).FirstOrDefault())
                     .ToListAsync();
-                
-                var latestCheckInsFull = latestCheckInIds.Any() 
+
+                var latestCheckInsFull = latestCheckInIds.Any()
                     ? await _context.KPICheckIns.Where(c => latestCheckInIds.Contains(c.Id)).ToListAsync()
                     : new List<KPICheckIn>();
 
@@ -2371,7 +2371,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             var latestCheckInIdsFull = latestCheckInsDict.Values.Select(c => c.Id).ToList();
-            
+
             var checkInDetails = latestCheckInIdsFull.Any()
                 ? await _context.CheckInDetails
                     .Where(d => d.CheckInId.HasValue && latestCheckInIdsFull.Contains(d.CheckInId.Value))
@@ -2396,7 +2396,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var empDirectKpis = directKpiAssignments.Where(a => a.EmployeeId == empId).ToList();
                 var empDeptIds = employeeDepartmentPairs.Where(a => a.EmployeeId == empId).Select(a => a.DepartmentId).ToList();
                 var empDeptKpiIds = departmentKpiAssignments.Where(a => empDeptIds.Contains(a.DepartmentId)).Select(a => a.KPIId).ToList();
-                
+
                 var empAssignedKpiIds = empDirectKpis.Select(a => a.KPIId)
                     .Concat(empDeptKpiIds)
                     .Distinct()
@@ -2417,7 +2417,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     var period = kpi.PeriodId.HasValue && periods.ContainsKey(kpi.PeriodId.Value)
                         ? periods[kpi.PeriodId.Value]
                         : null;
-                    
+
                     var individualTarget = KpiCheckInScheduleHelper.CalculateIndividualTarget(kpiDetail, assignmentWeight);
                     var deadlineAt = checkIn?.DeadlineAt ?? (kpiDetail != null
                         ? KpiCheckInScheduleHelper.ResolveDeadlineForCheckIn(DateTime.Now, kpiDetail, period)

@@ -28,7 +28,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var resultsQuery = _context.EvaluationResults.AsNoTracking().OrderByDescending(r => r.Id).AsQueryable();
 
             // Filter Results if Sales or Employee
-            if (User.IsInRole("Sales") || User.IsInRole("sales") || 
+            if (User.IsInRole("Sales") || User.IsInRole("sales") ||
                 User.IsInRole("Employee") || User.IsInRole("employee"))
             {
                 var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -148,7 +148,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("EVALRESULTS_CREATE")]
         public async Task<IActionResult> Create()
         {
-            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
+            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR")))
                 return Forbid();
 
             ViewBag.AllEmployees = await GetEvaluationAssignableEmployeesAsync();
@@ -167,7 +167,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("EVALRESULTS_CREATE")]
         public async Task<IActionResult> Create(EvaluationResultInputViewModel input)
         {
-            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
+            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR")))
                 return Forbid();
 
             if (ModelState.IsValid)
@@ -225,7 +225,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("EVALRESULTS_EDIT")]
         public async Task<IActionResult> Edit(EvaluationResultInputViewModel input)
         {
-            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
+            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR")))
                 return Forbid();
 
             if (!ModelState.IsValid)
@@ -405,7 +405,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("EVALRESULTS_DELETE")]
         public async Task<IActionResult> Delete(int id)
         {
-            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR"))) 
+            if (!(User.IsInRole("Admin") || User.IsInRole("Administrator") || User.IsInRole("Manager") || User.IsInRole("HR")))
                 return Forbid();
 
             var result = await _context.EvaluationResults.FindAsync(id);

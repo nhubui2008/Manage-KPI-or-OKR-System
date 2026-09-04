@@ -112,7 +112,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         .Where(a => a.EmployeeId == employee.Id)
                         .Select(a => a.OKRId)
                         .ToListAsync();
-                    
+
                     kpiQuery = kpiQuery.Where(k => allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id);
                     okrQuery = okrQuery.Where(o => allocatedOkrIds.Contains(o.Id) || o.CreatedById == employee.Id);
                     checkInQuery = checkInQuery.Where(c => c.EmployeeId == employee.Id);
@@ -332,7 +332,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .ToListAsync();
             var okrLabels = okrStatusRows.Select(row => row.StatusName).ToList();
             var okrData = okrStatusRows.Select(row => row.Count).ToList();
-            
+
             ViewBag.OKRStatusLabels = JsonSerializer.Serialize(okrLabels);
             ViewBag.OKRStatusData = JsonSerializer.Serialize(okrData);
 
@@ -341,21 +341,22 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // ========================================
             int scopedEmployeeId = employee?.Id ?? 0;
             var performanceQuery = from d in _context.Departments.AsNoTracking()
-                                 join ea in _context.EmployeeAssignments.AsNoTracking() on d.Id equals ea.DepartmentId
-                                 join ci in _context.KPICheckIns.AsNoTracking() on ea.EmployeeId equals ci.EmployeeId
-                                 join cd in _context.CheckInDetails.AsNoTracking() on ci.Id equals cd.CheckInId
-                                 where d.IsActive == true
-                                        && ea.IsActive == true
-                                        && ci.ReviewStatus == "Approved"
-                                        && (!startDate.HasValue || ci.CheckInDate >= startDate.Value)
-                                       && (!endExclusive.HasValue || ci.CheckInDate < endExclusive.Value)
-                                       && (!isEmployeeRole || ci.EmployeeId == scopedEmployeeId)
-                                       && (!isManagerScoped || (ci.EmployeeId.HasValue && scopedEmployeeIds.Contains(ci.EmployeeId.Value)))
-                                 group cd by d.DepartmentName into g
-                                 select new {
-                                     DeptName = g.Key,
-                                     AvgProgress = (double)(g.Average(x => x.ProgressPercentage) ?? 0)
-                                 };
+                                   join ea in _context.EmployeeAssignments.AsNoTracking() on d.Id equals ea.DepartmentId
+                                   join ci in _context.KPICheckIns.AsNoTracking() on ea.EmployeeId equals ci.EmployeeId
+                                   join cd in _context.CheckInDetails.AsNoTracking() on ci.Id equals cd.CheckInId
+                                   where d.IsActive == true
+                                          && ea.IsActive == true
+                                          && ci.ReviewStatus == "Approved"
+                                          && (!startDate.HasValue || ci.CheckInDate >= startDate.Value)
+                                         && (!endExclusive.HasValue || ci.CheckInDate < endExclusive.Value)
+                                         && (!isEmployeeRole || ci.EmployeeId == scopedEmployeeId)
+                                         && (!isManagerScoped || (ci.EmployeeId.HasValue && scopedEmployeeIds.Contains(ci.EmployeeId.Value)))
+                                   group cd by d.DepartmentName into g
+                                   select new
+                                   {
+                                       DeptName = g.Key,
+                                       AvgProgress = (double)(g.Average(x => x.ProgressPercentage) ?? 0)
+                                   };
 
             var deptPerformance = await performanceQuery
                 .OrderByDescending(p => p.AvgProgress)
@@ -441,7 +442,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .ToListAsync();
             var kpiStatusLabels = kpiStatusRows.Select(row => row.StatusName).ToList();
             var kpiStatusData = kpiStatusRows.Select(row => row.Count).ToList();
-            
+
             ViewBag.KPIStatusLabels = JsonSerializer.Serialize(kpiStatusLabels);
             ViewBag.KPIStatusData = JsonSerializer.Serialize(kpiStatusData);
 
@@ -474,7 +475,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 join cd in _context.CheckInDetails.AsNoTracking() on ci.Id equals cd.CheckInId
                 where cd.ProgressPercentage != null
                 group cd by ci.EmployeeId into g
-                select new {
+                select new
+                {
                     EmployeeId = g.Key,
                     AvgProgress = g.Average(x => (double?)x.ProgressPercentage) ?? 0,
                     CheckInCount = g.Count()
@@ -496,7 +498,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             })
             .ToListAsync();
 
-            ViewBag.TopEmployees = topEmployees.Select(t => new {
+            ViewBag.TopEmployees = topEmployees.Select(t => new
+            {
                 t.Name,
                 AvgProgress = Math.Round(t.AvgProgress, 1),
                 t.CheckInCount

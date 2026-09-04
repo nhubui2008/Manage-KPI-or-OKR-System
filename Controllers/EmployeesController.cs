@@ -28,99 +28,99 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         // Sửa hàm Index để nhận thêm 2 tham số: searchString và isActive
-[HasPermission("EMPLOYEES_VIEW")]
-public async Task<IActionResult> Index(string searchString, string isActive, int? departmentId, int? pageNumber)
-{
-    const int pageSize = 12;
-    var pageIndex = pageNumber is > 0 ? pageNumber.Value : 1;
-    // Bắt đầu bằng việc lấy toàn bộ danh sách (chưa thực hiện truy vấn xuống DB vội)
-    var employeesQuery = _context.Employees.AsQueryable();
-
-    // 1. XỬ LÝ NÚT LỌC (TÌM KIẾM THEO TÊN / MÃ)
-    if (!string.IsNullOrEmpty(searchString))
-    {
-        // Tìm kiếm không phân biệt chữ hoa chữ thường
-        employeesQuery = employeesQuery.Where(e =>
-            (e.FullName ?? string.Empty).Contains(searchString) ||
-            (e.EmployeeCode ?? string.Empty).Contains(searchString));
-    }
-
-    // 2. XỬ LÝ LỌC THEO TRẠNG THÁI (Đang làm việc / Đã nghỉ việc)
-    if (!string.IsNullOrEmpty(isActive))
-    {
-        if (isActive == "true")
+        [HasPermission("EMPLOYEES_VIEW")]
+        public async Task<IActionResult> Index(string searchString, string isActive, int? departmentId, int? pageNumber)
         {
-            employeesQuery = employeesQuery.Where(e => e.IsActive == true);
+            const int pageSize = 12;
+            var pageIndex = pageNumber is > 0 ? pageNumber.Value : 1;
+            // Bắt đầu bằng việc lấy toàn bộ danh sách (chưa thực hiện truy vấn xuống DB vội)
+            var employeesQuery = _context.Employees.AsQueryable();
+
+            // 1. XỬ LÝ NÚT LỌC (TÌM KIẾM THEO TÊN / MÃ)
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                // Tìm kiếm không phân biệt chữ hoa chữ thường
+                employeesQuery = employeesQuery.Where(e =>
+                    (e.FullName ?? string.Empty).Contains(searchString) ||
+                    (e.EmployeeCode ?? string.Empty).Contains(searchString));
+            }
+
+            // 2. XỬ LÝ LỌC THEO TRẠNG THÁI (Đang làm việc / Đã nghỉ việc)
+            if (!string.IsNullOrEmpty(isActive))
+            {
+                if (isActive == "true")
+                {
+                    employeesQuery = employeesQuery.Where(e => e.IsActive == true);
+                }
+                else if (isActive == "false")
+                {
+                    employeesQuery = employeesQuery.Where(e => e.IsActive == false);
+                }
+            }
+
+            // 3. XỬ LÝ LỌC THEO PHÒNG BAN
+            if (departmentId.HasValue)
+            {
+                employeesQuery = employeesQuery.Where(e =>
+                    _context.EmployeeAssignments.Any(a =>
+                        a.EmployeeId == e.Id &&
+                        a.DepartmentId == departmentId &&
+                        a.IsActive == true));
+            }
+
+            // 4. LƯU LẠI GIÁ TRỊ TÌM KIẾM ĐỂ HIỂN THỊ LÊN GIAO DIỆN SAU KHI LỌC XONG
+            ViewBag.CurrentSearch = searchString;
+            ViewBag.CurrentStatus = isActive;
+            ViewBag.CurrentDepartment = departmentId;
+            ViewBag.PageNumber = pageIndex;
+
+            // 5. LẤY KẾT QUẢ CUỐI CÙNG SAU KHI LỌC VÀ TRẢ VỀ VIEW
+            var orderedQuery = employeesQuery
+                .OrderByDescending(e => e.CreatedAt)
+                .AsNoTracking();
+            var totalCount = await orderedQuery.CountAsync();
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+            if (pageIndex > totalPages)
+            {
+                pageIndex = totalPages;
+            }
+
+            var result = await orderedQuery
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // 5. LẤY DANH SÁCH ASSIGNMENTS VÀ CÁC TỪ ĐIỂN CHO VIEW (chỉ lấy cho trang hiện tại)
+            var pagedEmployeeIds = result.Select(e => e.Id).ToList();
+            var assignmentsList = pagedEmployeeIds.Any()
+                ? await _context.EmployeeAssignments
+                    .AsNoTracking()
+                    .Where(a => a.IsActive == true && a.EmployeeId.HasValue && pagedEmployeeIds.Contains(a.EmployeeId.Value))
+                    .OrderByDescending(a => a.EffectiveDate)
+                    .ToListAsync()
+                : new List<EmployeeAssignment>();
+            var assignments = new Dictionary<int, EmployeeAssignment>();
+            foreach (var assignment in assignmentsList)
+            {
+                if (assignment.EmployeeId.HasValue && !assignments.ContainsKey(assignment.EmployeeId.Value))
+                {
+                    assignments[assignment.EmployeeId.Value] = assignment;
+                }
+            }
+
+            ViewBag.Assignments = assignments;
+            ViewBag.Departments = await _context.Departments.AsNoTracking().ToDictionaryAsync(d => d.Id, d => d.DepartmentName);
+            ViewBag.Positions = await _context.Positions.AsNoTracking().ToDictionaryAsync(p => p.Id, p => p.PositionName);
+
+            return View(new PaginatedList<Employee>(result, totalCount, pageIndex, pageSize));
         }
-        else if (isActive == "false")
-        {
-            employeesQuery = employeesQuery.Where(e => e.IsActive == false);
-        }
-    }
-
-    // 3. XỬ LÝ LỌC THEO PHÒNG BAN
-    if (departmentId.HasValue)
-    {
-        employeesQuery = employeesQuery.Where(e =>
-            _context.EmployeeAssignments.Any(a =>
-                a.EmployeeId == e.Id &&
-                a.DepartmentId == departmentId &&
-                a.IsActive == true));
-    }
-
-    // 4. LƯU LẠI GIÁ TRỊ TÌM KIẾM ĐỂ HIỂN THỊ LÊN GIAO DIỆN SAU KHI LỌC XONG
-    ViewBag.CurrentSearch = searchString;
-    ViewBag.CurrentStatus = isActive;
-    ViewBag.CurrentDepartment = departmentId;
-    ViewBag.PageNumber = pageIndex;
-
-    // 5. LẤY KẾT QUẢ CUỐI CÙNG SAU KHI LỌC VÀ TRẢ VỀ VIEW
-    var orderedQuery = employeesQuery
-        .OrderByDescending(e => e.CreatedAt)
-        .AsNoTracking();
-    var totalCount = await orderedQuery.CountAsync();
-    var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
-    if (pageIndex > totalPages)
-    {
-        pageIndex = totalPages;
-    }
-
-    var result = await orderedQuery
-        .Skip((pageIndex - 1) * pageSize)
-        .Take(pageSize)
-        .ToListAsync();
-    
-    // 5. LẤY DANH SÁCH ASSIGNMENTS VÀ CÁC TỪ ĐIỂN CHO VIEW (chỉ lấy cho trang hiện tại)
-    var pagedEmployeeIds = result.Select(e => e.Id).ToList();
-    var assignmentsList = pagedEmployeeIds.Any()
-        ? await _context.EmployeeAssignments
-            .AsNoTracking()
-            .Where(a => a.IsActive == true && a.EmployeeId.HasValue && pagedEmployeeIds.Contains(a.EmployeeId.Value))
-            .OrderByDescending(a => a.EffectiveDate)
-            .ToListAsync()
-        : new List<EmployeeAssignment>();
-    var assignments = new Dictionary<int, EmployeeAssignment>();
-    foreach (var assignment in assignmentsList)
-    {
-        if (assignment.EmployeeId.HasValue && !assignments.ContainsKey(assignment.EmployeeId.Value))
-        {
-            assignments[assignment.EmployeeId.Value] = assignment;
-        }
-    }
-    
-    ViewBag.Assignments = assignments;
-    ViewBag.Departments = await _context.Departments.AsNoTracking().ToDictionaryAsync(d => d.Id, d => d.DepartmentName);
-    ViewBag.Positions = await _context.Positions.AsNoTracking().ToDictionaryAsync(p => p.Id, p => p.PositionName);
-    
-    return View(new PaginatedList<Employee>(result, totalCount, pageIndex, pageSize));
-}
 
         [HasPermission("EMPLOYEES_CREATE")]
         public async Task<IActionResult> Create()
         {
             // Sinh mã nhân viên tự động
             string nextEmployeeCode = await _codeGenerator.GenerateEmployeeCodeAsync();
-            
+
             ViewData["NextEmployeeCode"] = nextEmployeeCode;
             ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username");
             ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", null);
@@ -157,13 +157,13 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
                 {
                     ViewBag.ErrorMessage = $"Mã nhân viên '{employee.EmployeeCode}' đã có người sử dụng. Vui lòng nhập mã khác!";
                     ModelState.AddModelError("EmployeeCode", "Mã này đã tồn tại.");
-                    
+
                     ViewData["NextEmployeeCode"] = await _codeGenerator.GenerateEmployeeCodeAsync();
                     ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username");
                     ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
                     ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
                     ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
-                    
+
                     return View(employee);
                 }
 
@@ -215,7 +215,7 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
             ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
             ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
             ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
-            
+
             return View(employee);
         }
 
@@ -246,160 +246,160 @@ public async Task<IActionResult> Index(string searchString, string isActive, int
         }
 
         [HttpPost]
-[ValidateAntiForgeryToken]
-[HasPermission("EMPLOYEES_EDIT")]
-// SỬA ĐIỂM 1: Thêm IsActive vào Bind và xóa tham số rời bool isActive = false
-public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,DateOfBirth,Phone,Email,TaxCode,JoinDate,SystemUserId,IsActive,StrategicGoalId")] Employee employee, int? departmentId, int? positionId)
-{
-    if (id != employee.Id)
-    {
-        return NotFound();
-    }
-
-	    await ValidateStrategicGoalAsync(employee.StrategicGoalId);
-	    if (employee.SystemUserId.HasValue &&
-	        !await IsCurrentTenantUserAsync(employee.SystemUserId.Value))
-	    {
-	        ModelState.AddModelError(
-	            nameof(Employee.SystemUserId),
-	            "Tài khoản không thuộc không gian làm việc hiện tại.");
-	    }
-
-    if (ModelState.IsValid)
-    {
-        // KIỂM TRA TRÙNG LẬP TÀI KHOẢN LIÊN KẾT (Trừ chính nhân viên này)
-        if (employee.SystemUserId.HasValue)
+        [ValidateAntiForgeryToken]
+        [HasPermission("EMPLOYEES_EDIT")]
+        // SỬA ĐIỂM 1: Thêm IsActive vào Bind và xóa tham số rời bool isActive = false
+        public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,DateOfBirth,Phone,Email,TaxCode,JoinDate,SystemUserId,IsActive,StrategicGoalId")] Employee employee, int? departmentId, int? positionId)
         {
-            bool isUserLinked = await _context.Employees.AnyAsync(e => e.SystemUserId == employee.SystemUserId && e.Id != id);
-            if (isUserLinked)
-            {
-                ViewBag.ErrorMessage = "Tài khoản này đã được liên kết với nhân viên khác, vui lòng chọn tài khoản khác!";
-                ModelState.AddModelError("SystemUserId", "Tài khoản này đã bị chiếm dụng.");
-
-                ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username", employee.SystemUserId);
-                ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
-                ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
-                ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
-
-                return View(employee);
-            }
-        }
-
-        try
-        {
-            // Cập nhật thông tin nhân viên
-            var existingEmp = await _context.Employees.FirstOrDefaultAsync(e => e.Id == id && e.IsActive == true);
-            if (existingEmp == null)
+            if (id != employee.Id)
             {
                 return NotFound();
             }
 
-            var previousSystemUserId = existingEmp.SystemUserId;
-
-            // Cập nhật các trường
-            existingEmp.FullName = employee.FullName;
-            existingEmp.DateOfBirth = employee.DateOfBirth;
-            existingEmp.Phone = employee.Phone;
-            existingEmp.Email = employee.Email;
-            existingEmp.TaxCode = employee.TaxCode;
-            existingEmp.JoinDate = employee.JoinDate;
-            existingEmp.SystemUserId = employee.SystemUserId;
-            existingEmp.StrategicGoalId = employee.StrategicGoalId;
-            
-            // SỬA ĐIỂM 2: Lấy IsActive từ model gửi lên thay vì tham số phụ
-            existingEmp.IsActive = employee.IsActive;
-
-            // Keep deactivation consistent with the dedicated Delete flow.  The
-            // edit form can also change IsActive; leaving assignments and the
-            // linked login active would keep an inactive employee in KPI scopes
-            // and allow the linked account to remain usable.
-            if (employee.IsActive != true)
+            await ValidateStrategicGoalAsync(employee.StrategicGoalId);
+            if (employee.SystemUserId.HasValue &&
+                !await IsCurrentTenantUserAsync(employee.SystemUserId.Value))
             {
-                var activeAssignments = await _context.EmployeeAssignments
-                    .Where(a => a.EmployeeId == id && a.IsActive == true)
-                    .ToListAsync();
-                foreach (var activeAssignment in activeAssignments)
+                ModelState.AddModelError(
+                    nameof(Employee.SystemUserId),
+                    "Tài khoản không thuộc không gian làm việc hiện tại.");
+            }
+
+            if (ModelState.IsValid)
+            {
+                // KIỂM TRA TRÙNG LẬP TÀI KHOẢN LIÊN KẾT (Trừ chính nhân viên này)
+                if (employee.SystemUserId.HasValue)
                 {
-                    activeAssignment.IsActive = false;
+                    bool isUserLinked = await _context.Employees.AnyAsync(e => e.SystemUserId == employee.SystemUserId && e.Id != id);
+                    if (isUserLinked)
+                    {
+                        ViewBag.ErrorMessage = "Tài khoản này đã được liên kết với nhân viên khác, vui lòng chọn tài khoản khác!";
+                        ModelState.AddModelError("SystemUserId", "Tài khoản này đã bị chiếm dụng.");
+
+                        ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username", employee.SystemUserId);
+                        ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
+                        ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
+                        ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
+
+                        return View(employee);
+                    }
                 }
 
-                var systemUserIdsToDeactivate = new[] { previousSystemUserId, existingEmp.SystemUserId }
-                    .Where(userId => userId.HasValue)
-                    .Select(userId => userId!.Value)
-                    .Distinct()
-                    .ToList();
-                if (systemUserIdsToDeactivate.Any())
+                try
                 {
-                    var tenantId = _context.CurrentTenantId;
-                    var linkedMemberships = await _context.TenantMemberships
-                        .Where(membership =>
-                            tenantId.HasValue &&
-                            membership.TenantId == tenantId.Value &&
-                            systemUserIdsToDeactivate.Contains(membership.SystemUserId))
-                        .ToListAsync();
-                    foreach (var membership in linkedMemberships)
+                    // Cập nhật thông tin nhân viên
+                    var existingEmp = await _context.Employees.FirstOrDefaultAsync(e => e.Id == id && e.IsActive == true);
+                    if (existingEmp == null)
                     {
-                        membership.IsActive = false;
+                        return NotFound();
+                    }
+
+                    var previousSystemUserId = existingEmp.SystemUserId;
+
+                    // Cập nhật các trường
+                    existingEmp.FullName = employee.FullName;
+                    existingEmp.DateOfBirth = employee.DateOfBirth;
+                    existingEmp.Phone = employee.Phone;
+                    existingEmp.Email = employee.Email;
+                    existingEmp.TaxCode = employee.TaxCode;
+                    existingEmp.JoinDate = employee.JoinDate;
+                    existingEmp.SystemUserId = employee.SystemUserId;
+                    existingEmp.StrategicGoalId = employee.StrategicGoalId;
+
+                    // SỬA ĐIỂM 2: Lấy IsActive từ model gửi lên thay vì tham số phụ
+                    existingEmp.IsActive = employee.IsActive;
+
+                    // Keep deactivation consistent with the dedicated Delete flow.  The
+                    // edit form can also change IsActive; leaving assignments and the
+                    // linked login active would keep an inactive employee in KPI scopes
+                    // and allow the linked account to remain usable.
+                    if (employee.IsActive != true)
+                    {
+                        var activeAssignments = await _context.EmployeeAssignments
+                            .Where(a => a.EmployeeId == id && a.IsActive == true)
+                            .ToListAsync();
+                        foreach (var activeAssignment in activeAssignments)
+                        {
+                            activeAssignment.IsActive = false;
+                        }
+
+                        var systemUserIdsToDeactivate = new[] { previousSystemUserId, existingEmp.SystemUserId }
+                            .Where(userId => userId.HasValue)
+                            .Select(userId => userId!.Value)
+                            .Distinct()
+                            .ToList();
+                        if (systemUserIdsToDeactivate.Any())
+                        {
+                            var tenantId = _context.CurrentTenantId;
+                            var linkedMemberships = await _context.TenantMemberships
+                                .Where(membership =>
+                                    tenantId.HasValue &&
+                                    membership.TenantId == tenantId.Value &&
+                                    systemUserIdsToDeactivate.Contains(membership.SystemUserId))
+                                .ToListAsync();
+                            foreach (var membership in linkedMemberships)
+                            {
+                                membership.IsActive = false;
+                            }
+                        }
+                    }
+
+                    _context.Update(existingEmp);
+                    await _context.SaveChangesAsync();
+
+                    // Cập nhật hoặc tạo EmployeeAssignment (only active employees can
+                    // receive a current assignment).
+                    var assignment = await _context.EmployeeAssignments
+                        .Where(a => a.EmployeeId == id && a.IsActive == true)
+                        .OrderByDescending(a => a.EffectiveDate)
+                        .FirstOrDefaultAsync();
+
+                    if (existingEmp.IsActive == true && assignment != null)
+                    {
+                        assignment.DepartmentId = departmentId;
+                        assignment.PositionId = positionId;
+                        assignment.EffectiveDate = DateTime.Now;
+                        _context.Update(assignment);
+                    }
+                    else if (existingEmp.IsActive == true && (departmentId.HasValue || positionId.HasValue))
+                    {
+                        var newAssignment = new EmployeeAssignment
+                        {
+                            EmployeeId = id,
+                            DepartmentId = departmentId,
+                            PositionId = positionId,
+                            EffectiveDate = DateTime.Now,
+                            IsActive = true
+                        };
+                        _context.EmployeeAssignments.Add(newAssignment);
+                    }
+
+                    await _context.SaveChangesAsync();
+                    TempData["SuccessMessage"] = "Cập nhật nhân viên thành công!";
+
+                    // Sửa lại Redirect về Index để tiện thao tác (hoặc giữ nguyên Details tùy bạn)
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!EmployeeExists(employee.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
                     }
                 }
             }
 
-            _context.Update(existingEmp);
-            await _context.SaveChangesAsync();
+            ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username", employee.SystemUserId);
+            ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
+            ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
+            ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
 
-            // Cập nhật hoặc tạo EmployeeAssignment (only active employees can
-            // receive a current assignment).
-            var assignment = await _context.EmployeeAssignments
-                .Where(a => a.EmployeeId == id && a.IsActive == true)
-                .OrderByDescending(a => a.EffectiveDate)
-                .FirstOrDefaultAsync();
-
-            if (existingEmp.IsActive == true && assignment != null)
-            {
-                assignment.DepartmentId = departmentId;
-                assignment.PositionId = positionId;
-                assignment.EffectiveDate = DateTime.Now;
-                _context.Update(assignment);
-            }
-            else if (existingEmp.IsActive == true && (departmentId.HasValue || positionId.HasValue))
-            {
-                var newAssignment = new EmployeeAssignment
-                {
-                    EmployeeId = id,
-                    DepartmentId = departmentId,
-                    PositionId = positionId,
-                    EffectiveDate = DateTime.Now,
-                    IsActive = true
-                };
-                _context.EmployeeAssignments.Add(newAssignment);
-            }
-
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Cập nhật nhân viên thành công!";
-            
-            // Sửa lại Redirect về Index để tiện thao tác (hoặc giữ nguyên Details tùy bạn)
-            return RedirectToAction(nameof(Index)); 
+            return View(employee);
         }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!EmployeeExists(employee.Id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-    }
-
-    ViewData["SystemUserId"] = new SelectList(GetTenantSystemUsersQuery(), "Id", "Username", employee.SystemUserId);
-    ViewData["DepartmentId"] = new SelectList(_context.Departments.Where(d => d.IsActive == true), "Id", "DepartmentName", departmentId);
-    ViewData["PositionId"] = new SelectList(_context.Positions.Where(p => p.IsActive == true), "Id", "PositionName", positionId);
-    ViewData["StrategicGoalId"] = await GetStrategicGoalSelectListAsync(employee.StrategicGoalId);
-
-    return View(employee);
-}
 
         private async Task ValidateStrategicGoalAsync(int? strategicGoalId)
         {
@@ -458,13 +458,13 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
                 TempData["ErrorMessage"] = "Nhân viên này đã nghỉ việc, không thể xem chi tiết thông tin!";
                 return RedirectToAction(nameof(Index));
             }
-            
+
             var assignment = await _context.EmployeeAssignments
                 .AsNoTracking()
                 .Where(a => a.EmployeeId == id && a.IsActive == true)
                 .OrderByDescending(a => a.EffectiveDate)
                 .FirstOrDefaultAsync();
-            
+
             // Lấy thông tin mục tiêu chiến lược
             if (emp.StrategicGoalId.HasValue)
             {
@@ -495,11 +495,11 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
                 .Join(_context.OKRs.AsNoTracking(), a => a.OKRId, o => o.Id, (a, o) => o)
                 .ToListAsync();
             ViewBag.AssignedOKRs = assignedOKRs;
-            
+
             ViewBag.Assignment = assignment;
             ViewBag.Departments = await _context.Departments.AsNoTracking().ToDictionaryAsync(d => d.Id, d => d.DepartmentName);
             ViewBag.Positions = await _context.Positions.AsNoTracking().ToDictionaryAsync(p => p.Id, p => p.PositionName);
-            
+
             return View(emp);
         }
 
@@ -776,19 +776,19 @@ public async Task<IActionResult> Edit(int id, [Bind("Id,EmployeeCode,FullName,Da
 
         [HasPermission("EMPLOYEES_VIEW")]
         // Hàm tạo và tải file Excel mẫu
-[HttpGet]
-public IActionResult DownloadTemplate()
-{
-    ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
-    
-    using (var package = new ExcelPackage())
-    {
-        // Tạo 1 sheet mới tên là DanhSachNhanVien
-        var worksheet = package.Workbook.Worksheets.Add("DanhSachNhanVien");
-
-        // Đặt tiêu đề cho các cột, khớp chính xác với logic ImportExcel.
-        string[] headers =
+        [HttpGet]
+        public IActionResult DownloadTemplate()
         {
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+
+            using (var package = new ExcelPackage())
+            {
+                // Tạo 1 sheet mới tên là DanhSachNhanVien
+                var worksheet = package.Workbook.Worksheets.Add("DanhSachNhanVien");
+
+                // Đặt tiêu đề cho các cột, khớp chính xác với logic ImportExcel.
+                string[] headers =
+                {
             "Mã nhân viên (Bỏ trống sẽ tự sinh)",
             "Họ và tên (*Bắt buộc)",
             "Ngày sinh",
@@ -798,36 +798,36 @@ public IActionResult DownloadTemplate()
             "Ngày vào làm"
         };
 
-        for (int i = 0; i < headers.Length; i++)
-        {
-            worksheet.Cells[1, i + 1].Value = headers[i];
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    worksheet.Cells[1, i + 1].Value = headers[i];
+                }
+
+                worksheet.Cells[2, 1].Value = "";
+                worksheet.Cells[2, 2].Value = "Nguyễn Văn A";
+                worksheet.Cells[2, 3].Value = "01/01/1995";
+                worksheet.Cells[2, 4].Value = "0901234567";
+                worksheet.Cells[2, 5].Value = "nguyenvana@example.com";
+                worksheet.Cells[2, 6].Value = "1234567890";
+                worksheet.Cells[2, 7].Value = "01/04/2026";
+
+                // Format làm đẹp file Excel: In đậm dòng 1 và tự động giãn độ rộng cột
+                worksheet.Cells["A1:G1"].Style.Font.Bold = true;
+                worksheet.Cells["A1:G1"].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                worksheet.Cells["A1:G1"].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                worksheet.Cells.AutoFitColumns();
+
+                // Biến file excel thành dữ liệu để tải về
+                var stream = new MemoryStream();
+                package.SaveAs(stream);
+                stream.Position = 0; // Đặt con trỏ về đầu stream để đọc
+
+                // Trả file về cho trình duyệt tải xuống
+                string excelName = $"Template_NhanVien_{DateTime.Now:yyyyMMdd}.xlsx";
+                return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);
+            }
         }
 
-        worksheet.Cells[2, 1].Value = "";
-        worksheet.Cells[2, 2].Value = "Nguyễn Văn A";
-        worksheet.Cells[2, 3].Value = "01/01/1995";
-        worksheet.Cells[2, 4].Value = "0901234567";
-        worksheet.Cells[2, 5].Value = "nguyenvana@example.com";
-        worksheet.Cells[2, 6].Value = "1234567890";
-        worksheet.Cells[2, 7].Value = "01/04/2026";
-
-        // Format làm đẹp file Excel: In đậm dòng 1 và tự động giãn độ rộng cột
-        worksheet.Cells["A1:G1"].Style.Font.Bold = true;
-        worksheet.Cells["A1:G1"].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-        worksheet.Cells["A1:G1"].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-        worksheet.Cells.AutoFitColumns();
-
-        // Biến file excel thành dữ liệu để tải về
-        var stream = new MemoryStream();
-        package.SaveAs(stream);
-        stream.Position = 0; // Đặt con trỏ về đầu stream để đọc
-
-        // Trả file về cho trình duyệt tải xuống
-        string excelName = $"Template_NhanVien_{DateTime.Now:yyyyMMdd}.xlsx";
-        return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelName);
-    }
-}
-        
         [HasPermission("EMPLOYEES_VIEW")]
         [HttpGet]
         public async Task<IActionResult> ExportReport(string searchString, string isActive, int? departmentId)
@@ -860,7 +860,7 @@ public IActionResult DownloadTemplate()
             var employees = await employeesQuery.OrderByDescending(e => e.CreatedAt).ToListAsync();
             var departments = await _context.Departments.ToDictionaryAsync(d => d.Id, d => d.DepartmentName);
             var positions = await _context.Positions.ToDictionaryAsync(p => p.Id, p => p.PositionName);
-            
+
             var assignmentsList = await _context.EmployeeAssignments
                 .Where(a => a.IsActive == true)
                 .OrderByDescending(a => a.EffectiveDate)
@@ -875,7 +875,7 @@ public IActionResult DownloadTemplate()
             using (var package = new ExcelPackage())
             {
                 var worksheet = package.Workbook.Worksheets.Add("DanhSachNhanVien");
-                
+
                 // Tiêu đề cột
                 string[] headers = { "Mã NV", "Họ và tên", "Email", "Số điện thoại", "Ngày vào làm", "Phòng ban", "Chức vụ", "Trạng thái" };
                 for (int i = 0; i < headers.Length; i++)

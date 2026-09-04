@@ -193,7 +193,7 @@ namespace Manage_KPI_or_OKR_System.Data
             modelBuilder.Entity<AiHistorySession>().HasAlternateKey(session => new { session.TenantId, session.Id });
             modelBuilder.Entity<AiHistorySession>()
                 .HasIndex(session => new
-                    { session.TenantId, session.OwnerSystemUserId, session.ContentDeletedAtUtc, session.UpdatedAtUtc });
+                { session.TenantId, session.OwnerSystemUserId, session.ContentDeletedAtUtc, session.UpdatedAtUtc });
             modelBuilder.Entity<AiHistorySession>().ToTable(table =>
             {
                 table.HasCheckConstraint(
@@ -247,7 +247,7 @@ namespace Manage_KPI_or_OKR_System.Data
                 .OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<AgentDraftAction>()
                 .HasIndex(action => new
-                    { action.TenantId, action.SourceEntityType, action.SourceEntityId, action.SourceVersion, action.ActionType })
+                { action.TenantId, action.SourceEntityType, action.SourceEntityId, action.SourceVersion, action.ActionType })
                 .IsUnique();
             modelBuilder.Entity<AgentDraftAction>()
                 .HasIndex(action => new { action.TenantId, action.AgentRunId })
@@ -270,7 +270,7 @@ namespace Manage_KPI_or_OKR_System.Data
                 .HasPrincipalKey("TenantId", nameof(EvaluationResult.Id))
                 .OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<AiEvaluationProposal>().HasIndex(p => new
-                { p.TenantId, p.SourceEntityType, p.SourceEntityId, p.SourceVersion }).IsUnique();
+            { p.TenantId, p.SourceEntityType, p.SourceEntityId, p.SourceVersion }).IsUnique();
             modelBuilder.Entity<AiEvaluationProposal>().HasAlternateKey(p => new { p.TenantId, p.Id });
             modelBuilder.Entity<AiEvaluationProposal>().HasOne<AgentRunRecord>().WithMany().HasForeignKey(p => p.AgentRunId)
                 .OnDelete(DeleteBehavior.SetNull);
@@ -293,7 +293,7 @@ namespace Manage_KPI_or_OKR_System.Data
             });
             modelBuilder.Entity<AiEvaluationCriterionResult>()
                 .HasIndex(result => new
-                    { result.TenantId, result.AiEvaluationProposalId, result.EvaluationCriterionId })
+                { result.TenantId, result.AiEvaluationProposalId, result.EvaluationCriterionId })
                 .IsUnique();
             modelBuilder.Entity<AiEvaluationCriterionResult>().ToTable(table =>
             {
@@ -404,7 +404,7 @@ namespace Manage_KPI_or_OKR_System.Data
                 .OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<KnowledgeChunk>()
                 .HasIndex(chunk => new
-                    { chunk.TenantId, chunk.DocumentVersionId, chunk.PipelineVersion, chunk.AccessPolicyVersion, chunk.Ordinal })
+                { chunk.TenantId, chunk.DocumentVersionId, chunk.PipelineVersion, chunk.AccessPolicyVersion, chunk.Ordinal })
                 .IsUnique();
             modelBuilder.Entity<KnowledgeChunk>().ToTable(table =>
             {
@@ -425,7 +425,7 @@ namespace Manage_KPI_or_OKR_System.Data
                 .OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<DocumentIngestionJob>()
                 .HasIndex(job => new
-                    { job.TenantId, job.DocumentVersionId, job.Operation, job.PipelineVersion, job.AccessPolicyVersion })
+                { job.TenantId, job.DocumentVersionId, job.Operation, job.PipelineVersion, job.AccessPolicyVersion })
                 .IsUnique();
             modelBuilder.Entity<DocumentIngestionJob>().ToTable(table =>
             {

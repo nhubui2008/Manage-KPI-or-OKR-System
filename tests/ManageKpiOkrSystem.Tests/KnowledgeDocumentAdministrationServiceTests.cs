@@ -94,6 +94,44 @@ public sealed class KnowledgeDocumentAdministrationServiceTests
     }
 
     [Fact]
+    public async Task UploadAsync_WhenBlobStoreThrowsHttpRequestException_ThrowsKnowledgeDocumentAdministrationExceptionWithClearMessage()
+    {
+        await using var scenario = await CreateScenarioAsync();
+        scenario.BlobStore.OnPutIfAbsent = _ => throw new HttpRequestException("Connection actively refused by host 127.0.0.1:9100");
+        var input = Upload("policy.pdf", "%PDF-1.7 blob failure", title: "Quy chế KPI");
+        input.SelectedRoles = new[] { "Admin" };
+
+        var ex = await Assert.ThrowsAsync<KnowledgeDocumentAdministrationException>(
+            () => scenario.Service.UploadAsync(input));
+
+        Assert.Contains("Không thể kết nối đến kho lưu trữ đối tượng MinIO/S3", ex.Message);
+        Assert.Contains("127.0.0.1:9100", ex.Message);
+    }
+
+    [Fact]
+    public async Task UploadAsync_WhenPipelineVersionInvalid_ThrowsKnowledgeDocumentAdministrationException()
+    {
+        await using var scenario = await CreateScenarioAsync();
+        var invalidIngestionOptions = Options.Create(new DocumentIngestionOptions { PipelineVersion = "" });
+        var serviceWithInvalidPipeline = new KnowledgeDocumentAdministrationService(
+            scenario.Context,
+            scenario.TenantContext,
+            scenario.BlobStore,
+            new DocumentIngestionQueue(scenario.Context, scenario.TenantContext),
+            Options.Create(new KnowledgeStorageOptions()),
+            Options.Create(new MinerUOptions()),
+            invalidIngestionOptions);
+
+        var input = Upload("policy.pdf", "%PDF-1.7 invalid pipeline", title: "Quy chế KPI");
+        input.SelectedRoles = new[] { "Admin" };
+
+        var ex = await Assert.ThrowsAsync<KnowledgeDocumentAdministrationException>(
+            () => serviceWithInvalidPipeline.UploadAsync(input));
+
+        Assert.Contains("Cấu hình pipeline xử lý tài liệu RAG", ex.Message);
+    }
+
+    [Fact]
     public async Task UploadAsync_RejectsCrossTenantAclBeforeBlobWrite()
     {
         await using var scenario = await CreateScenarioAsync();
@@ -823,12 +861,18 @@ public sealed class KnowledgeDocumentAdministrationServiceTests
         public Uri GetStableUri(string relativePath) =>
             new($"https://blob.example.test/container/{relativePath}");
 
+        public Func<string, Task<Uri>>? OnPutIfAbsent { get; set; }
+
         public Task<Uri> PutIfAbsentAsync(
             string stableUri,
             ReadOnlyMemory<byte> content,
             string contentType,
             CancellationToken cancellationToken = default)
         {
+            if (OnPutIfAbsent != null)
+            {
+                return OnPutIfAbsent(stableUri);
+            }
             PutCount++;
             LastWrittenUri = stableUri;
             return Task.FromResult(new Uri(stableUri));

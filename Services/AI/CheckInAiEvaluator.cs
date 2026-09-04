@@ -454,10 +454,10 @@ public sealed class CheckInAiEvaluator : ICheckInAiEvaluator
         var band = shouldAbstain
             ? EvidenceConfidenceBand.Abstain
             : normalized switch
-        {
-            < .80d => EvidenceConfidenceBand.Moderate,
-            _ => EvidenceConfidenceBand.High
-        };
+            {
+                < .80d => EvidenceConfidenceBand.Moderate,
+                _ => EvidenceConfidenceBand.High
+            };
         return new EvidenceConfidence(
             normalized,
             band,

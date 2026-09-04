@@ -15,7 +15,7 @@ using Microsoft.Extensions.Options;
 
 namespace Manage_KPI_or_OKR_System.Services.AI;
 
-public sealed class KnowledgeDocumentAdministrationException(string message) : Exception(message);
+public sealed class KnowledgeDocumentAdministrationException(string message, Exception? innerException = null) : Exception(message, innerException);
 
 public sealed record KnowledgeDocumentUploadResult(
     Guid DocumentId,
@@ -482,13 +482,27 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
     private static double? Ratio(int numerator, int denominator) =>
         denominator == 0 ? null : numerator / (double)denominator;
 
+    private string GetValidatedPipelineVersion()
+    {
+        try
+        {
+            return _ingestionOptions.ValidateAndGetPipelineVersion();
+        }
+        catch (InvalidOperationException exception)
+        {
+            throw new KnowledgeDocumentAdministrationException(
+                "Cấu hình pipeline xử lý tài liệu RAG (DocumentIngestion:PipelineVersion) chưa hợp lệ hoặc chưa được thiết lập. Vui lòng kiểm tra lại cấu hình hệ thống.",
+                exception);
+        }
+    }
+
     public async Task<KnowledgeDocumentUploadResult> UploadAsync(
         KnowledgeDocumentUploadInput input,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
         var (tenantId, actorId) = ResolveActor();
-        var pipelineVersion = _ingestionOptions.ValidateAndGetPipelineVersion();
+        var pipelineVersion = GetValidatedPipelineVersion();
         var upload = await ReadAndValidateFileAsync(input.File, cancellationToken);
         var submissionId = input.SubmissionId == Guid.Empty ? Guid.NewGuid() : input.SubmissionId;
         var reservation = await ReserveUploadAsync(
@@ -511,11 +525,27 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
         // ambiguity or process crash can therefore never create an untracked
         // private object. Conditional create also prevents concurrent retries
         // from overwriting the same immutable source.
-        await _blobStore.PutIfAbsentAsync(
-            reservation.StableUri.AbsoluteUri,
-            upload.Content,
-            upload.ContentType,
-            cancellationToken);
+        try
+        {
+            await _blobStore.PutIfAbsentAsync(
+                reservation.StableUri.AbsoluteUri,
+                upload.Content,
+                upload.ContentType,
+                cancellationToken);
+        }
+        catch (HttpRequestException exception)
+        {
+            throw new KnowledgeDocumentAdministrationException(
+                $"Không thể kết nối đến kho lưu trữ đối tượng MinIO/S3 để tải tệp lên. Vui lòng kiểm tra dịch vụ MinIO đang chạy (127.0.0.1:9100). Chi tiết: {exception.Message}",
+                exception);
+        }
+        catch (Exception exception) when (exception is not KnowledgeDocumentAdministrationException and not OperationCanceledException)
+        {
+            throw new KnowledgeDocumentAdministrationException(
+                $"Lỗi khi lưu trữ tệp vào kho đối tượng MinIO/S3: {exception.Message}",
+                exception);
+        }
+
         return await FinalizeUploadAsync(
             reservation,
             pipelineVersion,
@@ -604,7 +634,17 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
                     .Where(version => version.DocumentId == documentId)
                     .MaxAsync(version => (int?)version.VersionNumber, cancellationToken) ?? 0) + 1;
                 var relativePath = $"rag/{tenantId}/documents/{documentId:N}/versions/{submissionId:N}/{upload.Sha256}{upload.Extension}";
-                var stableUri = _blobStore.GetStableUri(relativePath);
+                Uri stableUri;
+                try
+                {
+                    stableUri = _blobStore.GetStableUri(relativePath);
+                }
+                catch (InvalidOperationException exception)
+                {
+                    throw new KnowledgeDocumentAdministrationException(
+                        $"Cấu hình dịch vụ lưu trữ đối tượng MinIO/S3 không hợp lệ: {exception.Message}",
+                        exception);
+                }
                 var version = new KnowledgeDocumentVersion
                 {
                     Id = submissionId,
@@ -897,7 +937,7 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
     {
         ArgumentNullException.ThrowIfNull(input);
         var (tenantId, actorId) = ResolveActor();
-        var pipelineVersion = _ingestionOptions.ValidateAndGetPipelineVersion();
+        var pipelineVersion = GetValidatedPipelineVersion();
         await using var transaction = _context.Database.IsRelational()
             ? await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
             : null;
@@ -993,7 +1033,7 @@ public sealed class KnowledgeDocumentAdministrationService : IKnowledgeDocumentA
     {
         ArgumentNullException.ThrowIfNull(input);
         var (_, actorId) = ResolveActor();
-        var pipelineVersion = _ingestionOptions.ValidateAndGetPipelineVersion();
+        var pipelineVersion = GetValidatedPipelineVersion();
         await using var transaction = _context.Database.IsRelational()
             ? await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
             : null;

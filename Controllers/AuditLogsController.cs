@@ -33,7 +33,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .Select(r => r.Id)
                     .ToListAsync();
 
-                query = query.Where(l => 
+                query = query.Where(l =>
                     (l.ActionType != null && l.ActionType.Contains(searchString)) ||
                     (l.ImpactedTable != null && l.ImpactedTable.Contains(searchString)) ||
                     (l.SystemUser != null && l.SystemUser.Username != null && l.SystemUser.Username.Contains(searchString)) ||

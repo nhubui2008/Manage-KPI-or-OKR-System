@@ -11,20 +11,20 @@ namespace Manage_KPI_or_OKR_System.ViewModels
         public DateTime? CreatedAt { get; set; }
         public DateTime? TrialEndTime { get; set; }
         public bool IsActive { get; set; }
-        
-        public double RemainingTrialHours 
+
+        public double RemainingTrialHours
         {
-            get 
+            get
             {
                 if (!TrialEndTime.HasValue) return 0;
                 var remaining = TrialEndTime.Value - DateTime.Now;
                 return remaining.TotalHours > 0 ? remaining.TotalHours : 0;
             }
         }
-        
-        public string StatusText 
+
+        public string StatusText
         {
-            get 
+            get
             {
                 if (!IsActive) return "Bị khóa";
                 if (!TrialEndTime.HasValue) return "Khách hàng chính thức";

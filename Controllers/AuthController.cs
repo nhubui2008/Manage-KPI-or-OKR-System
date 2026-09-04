@@ -873,147 +873,147 @@ namespace Manage_KPI_or_OKR_System.Controllers
         }
 
         [AllowAnonymous]
-public IActionResult AccessDenied()
-{
-    return View();
-}
-// ==========================================
-// HỒ SƠ CÁ NHÂN
-// ==========================================
-[Authorize]
-public async Task<IActionResult> MyProfile()
-{
-    // 1. Lấy ID của người dùng đang đăng nhập
-    var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if (!int.TryParse(userIdStr, out int userId)) return RedirectToAction("Login");
-
-    // 2. Lấy thông tin tài khoản
-    var user = await _context.SystemUsers.FindAsync(userId);
-    if (user == null) return NotFound();
-
-    // 3. Lấy tên Quyền (Role)
-    var roleName = AuthRoleHelper.GetRoleNameOrDefault(null);
-    if (user.RoleId.HasValue)
-    {
-        var role = await _context.Roles.FindAsync(user.RoleId);
-        if (role != null) roleName = AuthRoleHelper.GetRoleNameOrDefault(role);
-    }
-    ViewBag.RoleName = roleName;
-
-    // 4. Tìm xem tài khoản này có được liên kết với nhân viên nào không
-    var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
-    ViewBag.EmployeeInfo = employee;
-
-    return View(user);
-}
-
-// ==========================================
-// GOOGLE AUTHENTICATION
-// ==========================================
-[AllowAnonymous]
-public IActionResult GoogleLogin()
-{
-    var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleResponse") };
-    return Challenge(properties, GoogleDefaults.AuthenticationScheme);
-}
-
-[AllowAnonymous]
-public async Task<IActionResult> GoogleResponse()
-{
-    // The Google OAuth middleware intercepts the callback at /signin-google, authenticates the user,
-    // and then signs them into the default SignInScheme (which is CookieAuthenticationDefaults.AuthenticationScheme).
-    // It then redirects here. So we must read from the Cookie scheme to get Google's claims.
-    var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-    if (!result.Succeeded || result.Principal == null)
-    {
-        TempData["ErrorMessage"] = "Đăng nhập bằng Google thất bại.";
-        return RedirectToAction("Login");
-    }
-
-    var email = result.Principal.FindFirstValue(ClaimTypes.Email);
-    var name = result.Principal.FindFirstValue(ClaimTypes.Name);
-    var externalSubject = result.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
-
-    if (string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(externalSubject))
-    {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        TempData["ErrorMessage"] = "Không thể lấy thông tin Email từ tài khoản Google của bạn.";
-        return RedirectToAction("Login");
-    }
-
-    // External identities are linked by provider subject, never by an
-    // unverified local email match. This prevents account pre-hijacking.
-    var user = await _context.SystemUsers.FirstOrDefaultAsync(candidate =>
-        candidate.ExternalProvider == "Google" &&
-        candidate.ExternalSubject == externalSubject);
-
-    // 2. Nếu chưa có, tạo tự động (hoặc liên kết)
-    if (user == null)
-    {
-        // Tên đăng nhập mặc định là phần trước @ của email
-        var defaultUsername = email.Split('@')[0];
-        
-        // Kiểm tra xem username đã tồn tại chưa (nếu có thì thêm số ngẫu nhiên)
-        if (await _context.SystemUsers.AnyAsync(u => u.Email == email))
+        public IActionResult AccessDenied()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            TempData["ErrorMessage"] = "Email này đã có tài khoản cục bộ. Hãy đăng nhập bằng mật khẩu rồi liên kết Google trong phần cài đặt tài khoản.";
-            return RedirectToAction("Login");
+            return View();
+        }
+        // ==========================================
+        // HỒ SƠ CÁ NHÂN
+        // ==========================================
+        [Authorize]
+        public async Task<IActionResult> MyProfile()
+        {
+            // 1. Lấy ID của người dùng đang đăng nhập
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out int userId)) return RedirectToAction("Login");
+
+            // 2. Lấy thông tin tài khoản
+            var user = await _context.SystemUsers.FindAsync(userId);
+            if (user == null) return NotFound();
+
+            // 3. Lấy tên Quyền (Role)
+            var roleName = AuthRoleHelper.GetRoleNameOrDefault(null);
+            if (user.RoleId.HasValue)
+            {
+                var role = await _context.Roles.FindAsync(user.RoleId);
+                if (role != null) roleName = AuthRoleHelper.GetRoleNameOrDefault(role);
+            }
+            ViewBag.RoleName = roleName;
+
+            // 4. Tìm xem tài khoản này có được liên kết với nhân viên nào không
+            var employee = await _context.Employees.FirstOrDefaultAsync(e => e.SystemUserId == userId);
+            ViewBag.EmployeeInfo = employee;
+
+            return View(user);
         }
 
-        if (await _context.SystemUsers.AnyAsync(u => u.Username == defaultUsername))
+        // ==========================================
+        // GOOGLE AUTHENTICATION
+        // ==========================================
+        [AllowAnonymous]
+        public IActionResult GoogleLogin()
         {
-            defaultUsername += "-" + Guid.NewGuid().ToString("N")[..8];
+            var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleResponse") };
+            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
         }
 
-        user = new SystemUser
+        [AllowAnonymous]
+        public async Task<IActionResult> GoogleResponse()
         {
-            Username = defaultUsername,
-            Email = email,
-            PasswordHash = PasswordHelper.HashPassword(Guid.NewGuid().ToString()),
-            RoleId = null,
-            IsActive = true,
-            CreatedAt = DateTime.Now,
-            LastPasswordChange = DateTime.Now,
-            ExternalProvider = "Google",
-            ExternalSubject = externalSubject
-        };
+            // The Google OAuth middleware intercepts the callback at /signin-google, authenticates the user,
+            // and then signs them into the default SignInScheme (which is CookieAuthenticationDefaults.AuthenticationScheme).
+            // It then redirects here. So we must read from the Cookie scheme to get Google's claims.
+            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-        _context.SystemUsers.Add(user);
-        _context.PurchaseRegistrations.Add(new PurchaseRegistration
-        {
-            Email = email,
-            SelectedPlan = "Free Trial",
-            Status = "Chờ xử lý",
-            AdminNotes = "Đăng ký qua Google; chờ quản trị viên kích hoạt tenant.",
-            CreatedAt = DateTime.Now
-        });
-        await _context.SaveChangesAsync();
-    }
+            if (!result.Succeeded || result.Principal == null)
+            {
+                TempData["ErrorMessage"] = "Đăng nhập bằng Google thất bại.";
+                return RedirectToAction("Login");
+            }
 
-    if (user.IsActive == false)
-    {
-        TempData["ErrorMessage"] = "Tài khoản của bạn đã bị vô hiệu hóa.";
-        return RedirectToAction("Login");
-    }
+            var email = result.Principal.FindFirstValue(ClaimTypes.Email);
+            var name = result.Principal.FindFirstValue(ClaimTypes.Name);
+            var externalSubject = result.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    // 3. Đăng nhập vào hệ thống MiniERP qua Cookie
-    await SignInSystemUserAsync(user, email: email);
+            if (string.IsNullOrEmpty(email) || string.IsNullOrWhiteSpace(externalSubject))
+            {
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                TempData["ErrorMessage"] = "Không thể lấy thông tin Email từ tài khoản Google của bạn.";
+                return RedirectToAction("Login");
+            }
 
-    var hasTenant = await _context.TenantMemberships.AnyAsync(membership =>
-        membership.SystemUserId == user.Id &&
-        membership.IsActive &&
-        membership.Tenant != null &&
-        membership.Tenant.IsActive);
-    if (!hasTenant)
-    {
-        TempData["SuccessMessage"] = "Tài khoản Google đã được xác thực và đang chờ quản trị viên kích hoạt không gian làm việc.";
-        return RedirectToAction(nameof(PendingActivation));
-    }
+            // External identities are linked by provider subject, never by an
+            // unverified local email match. This prevents account pre-hijacking.
+            var user = await _context.SystemUsers.FirstOrDefaultAsync(candidate =>
+                candidate.ExternalProvider == "Google" &&
+                candidate.ExternalSubject == externalSubject);
 
-    return RedirectToAction("Index", "Dashboard");
-}
+            // 2. Nếu chưa có, tạo tự động (hoặc liên kết)
+            if (user == null)
+            {
+                // Tên đăng nhập mặc định là phần trước @ của email
+                var defaultUsername = email.Split('@')[0];
+
+                // Kiểm tra xem username đã tồn tại chưa (nếu có thì thêm số ngẫu nhiên)
+                if (await _context.SystemUsers.AnyAsync(u => u.Email == email))
+                {
+                    await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    TempData["ErrorMessage"] = "Email này đã có tài khoản cục bộ. Hãy đăng nhập bằng mật khẩu rồi liên kết Google trong phần cài đặt tài khoản.";
+                    return RedirectToAction("Login");
+                }
+
+                if (await _context.SystemUsers.AnyAsync(u => u.Username == defaultUsername))
+                {
+                    defaultUsername += "-" + Guid.NewGuid().ToString("N")[..8];
+                }
+
+                user = new SystemUser
+                {
+                    Username = defaultUsername,
+                    Email = email,
+                    PasswordHash = PasswordHelper.HashPassword(Guid.NewGuid().ToString()),
+                    RoleId = null,
+                    IsActive = true,
+                    CreatedAt = DateTime.Now,
+                    LastPasswordChange = DateTime.Now,
+                    ExternalProvider = "Google",
+                    ExternalSubject = externalSubject
+                };
+
+                _context.SystemUsers.Add(user);
+                _context.PurchaseRegistrations.Add(new PurchaseRegistration
+                {
+                    Email = email,
+                    SelectedPlan = "Free Trial",
+                    Status = "Chờ xử lý",
+                    AdminNotes = "Đăng ký qua Google; chờ quản trị viên kích hoạt tenant.",
+                    CreatedAt = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+            }
+
+            if (user.IsActive == false)
+            {
+                TempData["ErrorMessage"] = "Tài khoản của bạn đã bị vô hiệu hóa.";
+                return RedirectToAction("Login");
+            }
+
+            // 3. Đăng nhập vào hệ thống MiniERP qua Cookie
+            await SignInSystemUserAsync(user, email: email);
+
+            var hasTenant = await _context.TenantMemberships.AnyAsync(membership =>
+                membership.SystemUserId == user.Id &&
+                membership.IsActive &&
+                membership.Tenant != null &&
+                membership.Tenant.IsActive);
+            if (!hasTenant)
+            {
+                TempData["SuccessMessage"] = "Tài khoản Google đã được xác thực và đang chờ quản trị viên kích hoạt không gian làm việc.";
+                return RedirectToAction(nameof(PendingActivation));
+            }
+
+            return RedirectToAction("Index", "Dashboard");
+        }
 
         [HttpPost]
         [Authorize]

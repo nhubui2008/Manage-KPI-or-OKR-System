@@ -28,7 +28,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Index()
         {
             ViewData["IsSaaSAdmin"] = true;
-            
+
             var totalRegistrations = await _context.PurchaseRegistrations.CountAsync();
             var pendingRegistrations = await _context.PurchaseRegistrations.CountAsync(p => p.Status == "Chờ xử lý");
             var activeUsers = await _context.SystemUsers.CountAsync(u => u.IsActive == true);
@@ -51,7 +51,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Registrations()
         {
             ViewData["IsSaaSAdmin"] = true;
-            
+
             var adminRoleIds = await _context.Roles
                 .Where(r => r.RoleName == "Admin" || r.RoleName == "Administrator")
                 .Select(r => r.Id)
@@ -261,7 +261,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Sum(t => t.Amount);
             var activeUsersCount = await _context.SystemUsers.CountAsync(u => u.IsActive == true);
             ViewBag.ARPU = activeUsersCount > 0 ? ViewBag.TotalRevenue / activeUsersCount : 0;
-            
+
             return View(transactions);
         }
 
@@ -280,17 +280,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
         {
             ViewData["IsSaaSAdmin"] = true;
             var paramKeys = new[] { "SaaS_BrandName", "SaaS_SupportEmail", "SaaS_TrialTime", "SaaS_AllowRegistration", "SaaS_MaintenanceMode" };
-            
+
             var existingParams = await _context.SystemParameters.Where(p => paramKeys.Contains(p.ParameterCode)).ToListAsync();
-            
+
             if (!existingParams.Any(p => p.ParameterCode == "SaaS_BrandName")) _context.SystemParameters.Add(new SystemParameter { ParameterCode = "SaaS_BrandName", Value = "VIETMACH MiniERP SaaS" });
             if (!existingParams.Any(p => p.ParameterCode == "SaaS_SupportEmail")) _context.SystemParameters.Add(new SystemParameter { ParameterCode = "SaaS_SupportEmail", Value = "support@vietmach.com" });
             if (!existingParams.Any(p => p.ParameterCode == "SaaS_TrialTime")) _context.SystemParameters.Add(new SystemParameter { ParameterCode = "SaaS_TrialTime", Value = "30m" });
             if (!existingParams.Any(p => p.ParameterCode == "SaaS_AllowRegistration")) _context.SystemParameters.Add(new SystemParameter { ParameterCode = "SaaS_AllowRegistration", Value = "true" });
             if (!existingParams.Any(p => p.ParameterCode == "SaaS_MaintenanceMode")) _context.SystemParameters.Add(new SystemParameter { ParameterCode = "SaaS_MaintenanceMode", Value = "false" });
-            
+
             await _context.SaveChangesAsync();
-            
+
             var settings = await _context.SystemParameters.Where(p => paramKeys.Contains(p.ParameterCode)).ToListAsync();
             return View(settings);
         }
@@ -299,12 +299,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateSettings(string brandName, string supportEmail, string trialTime, string allowRegistration, string maintenanceMode)
         {
-            var p1 = await _context.SystemParameters.FirstOrDefaultAsync(p => p.ParameterCode == "SaaS_BrandName"); if(p1 != null) p1.Value = brandName;
-            var p2 = await _context.SystemParameters.FirstOrDefaultAsync(p => p.ParameterCode == "SaaS_SupportEmail"); if(p2 != null) p2.Value = supportEmail;
-            var p3 = await _context.SystemParameters.FirstOrDefaultAsync(p => p.ParameterCode == "SaaS_TrialTime"); if(p3 != null) p3.Value = trialTime;
-            var p4 = await _context.SystemParameters.FirstOrDefaultAsync(p => p.ParameterCode == "SaaS_AllowRegistration"); if(p4 != null) p4.Value = (allowRegistration == "on").ToString().ToLower();
-            var p5 = await _context.SystemParameters.FirstOrDefaultAsync(p => p.ParameterCode == "SaaS_MaintenanceMode"); if(p5 != null) p5.Value = (maintenanceMode == "on").ToString().ToLower();
-            
+            var p1 = await _context.SystemParameters.FirstOrDefaultAsync(p => p.ParameterCode == "SaaS_BrandName"); if (p1 != null) p1.Value = brandName;
+            var p2 = await _context.SystemParameters.FirstOrDefaultAsync(p => p.ParameterCode == "SaaS_SupportEmail"); if (p2 != null) p2.Value = supportEmail;
+            var p3 = await _context.SystemParameters.FirstOrDefaultAsync(p => p.ParameterCode == "SaaS_TrialTime"); if (p3 != null) p3.Value = trialTime;
+            var p4 = await _context.SystemParameters.FirstOrDefaultAsync(p => p.ParameterCode == "SaaS_AllowRegistration"); if (p4 != null) p4.Value = (allowRegistration == "on").ToString().ToLower();
+            var p5 = await _context.SystemParameters.FirstOrDefaultAsync(p => p.ParameterCode == "SaaS_MaintenanceMode"); if (p5 != null) p5.Value = (maintenanceMode == "on").ToString().ToLower();
+
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã cập nhật cấu hình hệ thống SaaS.";
             return RedirectToAction(nameof(Settings));
@@ -313,15 +313,15 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Security()
         {
             ViewData["IsSaaSAdmin"] = true;
-            
+
             var adminRoleIds = await _context.Roles.Where(r => r.RoleName == "Admin" || r.RoleName == "Administrator").Select(r => r.Id).ToListAsync();
             var admins = await _context.SystemUsers.Where(u => u.RoleId.HasValue && adminRoleIds.Contains(u.RoleId.Value)).ToListAsync();
-            
+
             var logs = await _context.AuditLogs.Include(a => a.SystemUser).OrderByDescending(a => a.LogTime).Take(20).ToListAsync();
-            
+
             ViewBag.Admins = admins;
             ViewBag.AuditLogs = logs;
-            
+
             return View();
         }
     }

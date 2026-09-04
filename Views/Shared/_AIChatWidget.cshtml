@@ -22,13 +22,14 @@
             </div>
             <div class="ai-chat-messages" id="aiChatMessages">
                 <div class="ai-message ai-message-bot">
-                    <div class="ai-message-bubble">Xin chào, tôi có thể hỗ trợ bạn xem tiến độ KPI/OKR, phân tích rủi ro hoặc gợi ý bước cải thiện tiếp theo.</div>
+                    <div class="ai-message-bubble">Xin chào, tôi có thể giúp gì cho bạn</div>
                 </div>
             </div>
             <div class="ai-chat-actions">
-                <button type="button" data-ai-prompt="Tóm tắt tiến độ KPI hiện tại của tôi">Tiến độ KPI</button>
-                <button type="button" data-ai-prompt="KPI nào đang có rủi ro không đạt?">KPI rủi ro</button>
-                <button type="button" data-ai-prompt="Gợi ý đúng 3 hành động cải thiện hiệu suất tuần này, đánh số 1, 2, 3 và mỗi hành động có cách làm cụ thể">Gợi ý cải thiện</button>
+                <button type="button" data-ai-prompt="Hôm nay tôi phải làm gì?"><i class="bi bi-calendar-check text-success"></i> Việc hôm nay</button>
+                <button type="button" data-ai-prompt="Tóm tắt tiến độ KPI hiện tại của tôi"><i class="bi bi-graph-up text-primary"></i> Tiến độ KPI</button>
+                <button type="button" data-ai-prompt="KPI nào đang có rủi ro không đạt?"><i class="bi bi-exclamation-triangle text-danger"></i> KPI rủi ro</button>
+                <button type="button" data-ai-prompt="Gợi ý đúng 3 hành động cải thiện hiệu suất tuần này, đánh số 1, 2, 3 và mỗi hành động có cách làm cụ thể"><i class="bi bi-lightning-charge text-warning"></i> Gợi ý cải thiện</button>
             </div>
             <form class="ai-chat-form" id="aiChatForm">
                 <textarea id="aiChatInput" aria-label="Nhập câu hỏi cho trợ lý AI" rows="1" placeholder="Hỏi AI về KPI/OKR..."></textarea>
@@ -62,7 +63,7 @@
             function resetConversation() {
                 history.splice(0, history.length);
                 currentSessionId = null;
-                messages.innerHTML = '<div class="ai-message ai-message-bot"><div class="ai-message-bubble">Xin chào, tôi có thể hỗ trợ bạn xem tiến độ KPI/OKR, phân tích rủi ro hoặc gợi ý bước cải thiện tiếp theo.</div></div>';
+                messages.innerHTML = '<div class="ai-message ai-message-bot"><div class="ai-message-bubble">Xin chào, tôi có thể giúp gì cho bạn</div></div>';
                 input.value = '';
                 setOpen(true);
             }
@@ -106,11 +107,39 @@
                 } else {
                     bubble.innerHTML = formatAiText(text);
                     appendCitations(bubble, citations);
+                    if (role === 'bot') {
+                        appendActions(bubble, text);
+                    }
                 }
                 row.appendChild(bubble);
                 messages.appendChild(row);
                 messages.scrollTop = messages.scrollHeight;
                 return bubble;
+            }
+
+            function appendActions(bubble, text) {
+                if (!text || !navigator.clipboard) return;
+                const bar = document.createElement('div');
+                bar.className = 'ai-message-footer-actions';
+                const copyBtn = document.createElement('button');
+                copyBtn.type = 'button';
+                copyBtn.className = 'ai-copy-btn';
+                copyBtn.title = 'Sao chép câu trả lời';
+                copyBtn.setAttribute('aria-label', 'Sao chép câu trả lời');
+                copyBtn.innerHTML = '<i class="bi bi-clipboard"></i> <span>Sao chép</span>';
+                copyBtn.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        copyBtn.innerHTML = '<i class="bi bi-check-lg text-success"></i> <span class="text-success">Đã sao chép!</span>';
+                        setTimeout(() => {
+                            copyBtn.innerHTML = '<i class="bi bi-clipboard"></i> <span>Sao chép</span>';
+                        }, 2000);
+                    } catch {
+                        // ignore clipboard failure
+                    }
+                });
+                bar.appendChild(copyBtn);
+                bubble.appendChild(bar);
             }
 
             function appendCitations(bubble, citations) {
@@ -121,7 +150,7 @@
                 container.className = 'ai-message-citations';
                 const label = document.createElement('div');
                 label.className = 'd-flex align-items-center gap-1 fw-bold mb-1 small text-dark';
-                label.innerHTML = '<i class="bi bi-quote text-primary"></i> <span>Nguồn trích dẫn RAG:</span>';
+                label.innerHTML = '<i class="bi bi-quote text-primary"></i> <span>Nguồn trích dẫn:</span>';
                 const list = document.createElement('ul');
                 list.className = 'list-unstyled mb-0 d-flex flex-column gap-1';
                 items.forEach(citation => {
@@ -141,14 +170,8 @@
             }
 
             function formatAiText(text) {
-                const lines = String(text || '')
-                    .replace(/\r\n/g, '\n')
-                    .split('\n')
-                    .map(line => line.trim());
-
-                const chunks = [];
-                let listType = null;
-                let listItems = [];
+                if (!text) return '';
+                let raw = String(text || '').replace(/\r\n/g, '\n');
 
                 function escape(value) {
                     if (window.escapeHtml) return window.escapeHtml(value || '');
@@ -160,41 +183,385 @@
                         .replace(/'/g, '&#039;');
                 }
 
-                function inlineMarkdown(value) {
-                    return escape(value).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                // Check and extract greeting
+                let greetingHtml = '';
+                const greetingMatch = raw.match(/^(Xin chào(?:,|\s+tôi)\s+có thể giúp gì cho bạn[.!?:;]*\s*)/i);
+                if (greetingMatch) {
+                    greetingHtml = `<div class="ai-greeting-banner"><i class="bi bi-stars"></i> <span>${escape(greetingMatch[1].trim())}</span></div>`;
+                    raw = raw.substring(greetingMatch[0].length).trim();
+                }
+
+                // Helper to render inline markdown: bold, italic, inline code, status/priority pills
+                function inlineMarkdown(val) {
+                    let s = escape(val || '');
+                    s = s.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    s = s.replace(/(^|[^\*])\*([^\*]+)\*([^\*]|$)/g, '$1<em>$2</em>$3');
+                    s = s.replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>');
+
+                    // Status pills
+                    s = s.replace(/\b(InProgress|Đang làm|Đang thực hiện)\b/gi,
+                        '<span class="ai-pill ai-pill-inprogress"><i class="bi bi-arrow-repeat"></i> $1</span>');
+                    s = s.replace(/\b(Done|Completed|Hoàn thành)\b/gi,
+                        '<span class="ai-pill ai-pill-done"><i class="bi bi-check-circle-fill"></i> $1</span>');
+                    s = s.replace(/\b(Todo|Chưa làm|Chờ xử lý)\b/gi,
+                        '<span class="ai-pill ai-pill-todo"><i class="bi bi-circle"></i> $1</span>');
+                    s = s.replace(/\b(AtRisk|Rủi ro|Chậm tiến độ)\b/gi,
+                        '<span class="ai-pill ai-pill-atrisk"><i class="bi bi-exclamation-triangle-fill"></i> $1</span>');
+
+                    // Priority pills
+                    s = s.replace(/\b(Urgent|Khẩn cấp)\b/gi,
+                        '<span class="ai-pill ai-pill-urgent"><i class="bi bi-lightning-fill"></i> $1</span>');
+                    s = s.replace(/\b(High|Ưu tiên cao|Ưu tiên High)\b/gi,
+                        '<span class="ai-pill ai-pill-high"><i class="bi bi-arrow-up-circle-fill"></i> $1</span>');
+                    s = s.replace(/\b(Normal|Trung bình)\b/gi,
+                        '<span class="ai-pill ai-pill-normal">$1</span>');
+                    s = s.replace(/\b(Low|Thấp)\b/gi,
+                        '<span class="ai-pill ai-pill-low">$1</span>');
+
+                    // Date badges
+                    s = s.replace(/((?:hạn chót|hạn|due(?:\s*date)?):?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}))/gi,
+                        '<span class="ai-pill ai-pill-date"><i class="bi bi-calendar3"></i> $2</span>');
+
+                    // Progress percentages
+                    s = s.replace(/((?:tiến độ|progress|tiến độ mới nhất)?\s*:?\s*(\d+(?:\.\d+)?)\s*%)/gi,
+                        '<span class="ai-pill ai-pill-prog"><i class="bi bi-pie-chart-fill"></i> $2%</span>');
+
+                    return s;
+                }
+
+                // Card data extractor
+                function extractCardData(lineText) {
+                    const clean = lineText.replace(/\*\*/g, '').trim();
+                    let type = null;
+                    let id = null;
+
+                    const workMatch = clean.match(/(?:Công việc|WorkItem|Task)\s*#?(\d+)/i);
+                    const okrMatch = clean.match(/OKR\s*#?(\d+)/i);
+                    const kpiMatch = clean.match(/KPI\s*#?(\d+)/i);
+
+                    if (workMatch) {
+                        type = 'workitem';
+                        id = workMatch[1];
+                    } else if (okrMatch) {
+                        type = 'okr';
+                        id = okrMatch[1];
+                    } else if (kpiMatch) {
+                        type = 'kpi';
+                        id = kpiMatch[1];
+                    }
+                    if (!type) return null;
+
+                    // Extract title
+                    let title = null;
+                    const parenOkrMatch = clean.match(/OKR\s*#?\d+\s*\(([^,)]+)/i);
+                    const parenTaskMatch = clean.match(/^(?:[-*]\s*)?(.*?)(?:\s*\((?:Công việc|OKR|KPI)\s*#?\d+\))/i);
+                    const colonMatch = clean.match(/(?:Công việc|OKR|KPI)\s*#?\d+\s*:\s*([^,(;\n]+)/i);
+
+                    if (parenTaskMatch && parenTaskMatch[1].trim()) {
+                        title = parenTaskMatch[1].trim().replace(/^[-*]\s*/, '');
+                    } else if (colonMatch && colonMatch[1].trim()) {
+                        title = colonMatch[1].trim();
+                    } else if (parenOkrMatch && parenOkrMatch[1].trim()) {
+                        title = parenOkrMatch[1].trim();
+                    }
+
+                    // Extract Status
+                    let status = null;
+                    const statusMatch = clean.match(/(?:trạng thái|status)\s*[:=]?\s*([a-zA-Z\u00C0-\u1EF9]+)/i);
+                    if (statusMatch) status = statusMatch[1].trim();
+
+                    // Extract Priority
+                    let priority = null;
+                    const prioMatch = clean.match(/(?:ưu tiên|priority|mức ưu tiên)\s*[:=]?\s*([a-zA-Z\u00C0-\u1EF9]+)/i);
+                    if (prioMatch) priority = prioMatch[1].trim();
+
+                    // Extract Due Date
+                    let dueDate = null;
+                    const dueMatch = clean.match(/(?:hạn chót|hạn|due(?:\s*date)?)\s*[:=]?\s*([\d]{1,2}[\/\-][\d]{1,2}[\/\-][\d]{2,4})/i);
+                    if (dueMatch) dueDate = dueMatch[1].trim();
+
+                    // Extract Progress
+                    let progress = null;
+                    const progMatch = clean.match(/(?:tiến độ|progress|tiến độ mới nhất|progress\s*TB)?\s*[:=]?\s*(\d+(?:\.\d+)?)\s*%/i);
+                    if (progMatch) {
+                        progress = parseFloat(progMatch[1]);
+                    }
+
+                    return {
+                        type,
+                        id,
+                        title: title || `${type === 'workitem' ? 'Công việc' : type.toUpperCase()} #${id}`,
+                        status,
+                        priority,
+                        dueDate,
+                        progress
+                    };
+                }
+
+                function renderCard(data) {
+                    const typeLabel = data.type === 'workitem' ? 'Công việc' : data.type.toUpperCase();
+                    const typeIcon = data.type === 'workitem' ? 'bi-check2-square text-primary'
+                                   : data.type === 'okr' ? 'bi-bullseye text-purple'
+                                   : 'bi-graph-up-arrow text-success';
+
+                    let priorityHtml = '';
+                    if (data.priority) {
+                        const pLower = data.priority.toLowerCase();
+                        let pClass = 'ai-pill-normal';
+                        let pIcon = '';
+                        if (pLower.includes('urgent') || pLower.includes('khẩn')) {
+                            pClass = 'ai-pill-urgent';
+                            pIcon = '<i class="bi bi-lightning-fill"></i> ';
+                        } else if (pLower.includes('high') || pLower.includes('cao')) {
+                            pClass = 'ai-pill-high';
+                            pIcon = '<i class="bi bi-arrow-up-circle-fill"></i> ';
+                        } else if (pLower.includes('low') || pLower.includes('thấp')) {
+                            pClass = 'ai-pill-low';
+                        }
+                        priorityHtml = `<span class="ai-pill ${pClass}">${pIcon}${escape(data.priority)}</span>`;
+                    }
+
+                    let statusHtml = '';
+                    if (data.status) {
+                        const sLower = data.status.toLowerCase();
+                        let sClass = 'ai-pill-todo';
+                        let sIcon = '<i class="bi bi-circle"></i> ';
+                        if (sLower.includes('inprogress') || sLower.includes('đang')) {
+                            sClass = 'ai-pill-inprogress';
+                            sIcon = '<i class="bi bi-arrow-repeat"></i> ';
+                        } else if (sLower.includes('done') || sLower.includes('hoàn thành')) {
+                            sClass = 'ai-pill-done';
+                            sIcon = '<i class="bi bi-check-circle-fill"></i> ';
+                        } else if (sLower.includes('risk') || sLower.includes('rủi ro') || sLower.includes('trễ')) {
+                            sClass = 'ai-pill-atrisk';
+                            sIcon = '<i class="bi bi-exclamation-triangle-fill"></i> ';
+                        }
+                        statusHtml = `<span class="ai-pill ${sClass}">${sIcon}${escape(data.status)}</span>`;
+                    }
+
+                    let dateHtml = '';
+                    if (data.dueDate) {
+                        dateHtml = `<span class="ai-pill ai-pill-date"><i class="bi bi-calendar3"></i> ${escape(data.dueDate)}</span>`;
+                    }
+
+                    let progressHtml = '';
+                    if (data.progress !== null && !isNaN(data.progress)) {
+                        const pVal = Math.min(Math.max(data.progress, 0), 100);
+                        let fillClass = 'fill-info';
+                        if (pVal >= 70) fillClass = 'fill-success';
+                        else if (pVal < 30) fillClass = 'fill-warning';
+                        progressHtml = `
+                            <div class="ai-card-progress">
+                                <div class="ai-progress-track">
+                                    <div class="ai-progress-fill ${fillClass}" style="width: ${pVal}%;"></div>
+                                </div>
+                                <span class="ai-progress-label">${data.progress}%</span>
+                            </div>
+                        `;
+                    }
+
+                    return `
+                        <div class="ai-card ai-card-${data.type}">
+                            <div class="ai-card-top">
+                                <span class="ai-card-type"><i class="bi ${typeIcon}"></i> ${typeLabel} #${escape(data.id)}</span>
+                                ${priorityHtml}
+                            </div>
+                            <div class="ai-card-title">${escape(data.title)}</div>
+                            ${(statusHtml || dateHtml) ? `<div class="ai-card-meta">${statusHtml}${dateHtml}</div>` : ''}
+                            ${progressHtml}
+                        </div>
+                    `;
+                }
+
+                // Helper to format a block of text that might have embedded card patterns
+                function formatBlock(blockText) {
+                    const cardRegex = /(?:(?:Công việc|WorkItem|Task)\s*#\d+|OKR\s*#\d+|KPI\s*#\d+)[^(.\n]*\([^)]+\)/gi;
+                    const matches = [...blockText.matchAll(cardRegex)];
+
+                    if (!matches.length) {
+                        return `<p class="ai-context-note">${inlineMarkdown(blockText)}</p>`;
+                    }
+
+                    let out = '';
+                    let lastIdx = 0;
+                    for (const m of matches) {
+                        const cardStr = m[0];
+                        const matchStart = m.index;
+                        const matchEnd = matchStart + cardStr.length;
+
+                        const before = blockText.substring(lastIdx, matchStart).trim();
+                        if (before) {
+                            const cleanedBefore = before
+                                .replace(/^(?:Ngoài ra,\s*|\.\s*Ngoài ra,\s*|\.\s*)/i, '')
+                                .replace(/\s*(?:cũng cần được chú ý|được chú ý)\.?\s*$/i, '')
+                                .trim();
+                            if (cleanedBefore) {
+                                out += `<p class="ai-context-note">${inlineMarkdown(cleanedBefore)}</p>`;
+                            }
+                        }
+
+                        const cardData = extractCardData(cardStr);
+                        if (cardData) {
+                            out += renderCard(cardData);
+                        } else {
+                            out += `<p class="ai-context-note">${inlineMarkdown(cardStr)}</p>`;
+                        }
+                        lastIdx = matchEnd;
+                    }
+
+                    const after = blockText.substring(lastIdx).trim();
+                    if (after) {
+                        const cleanedAfter = after.replace(/^(?:\.\s*|\s*,\s*|và\s*)/i, '').trim();
+                        if (cleanedAfter) {
+                            out += `<p class="ai-sub-note">${inlineMarkdown(cleanedAfter)}</p>`;
+                        }
+                    }
+
+                    return out;
+                }
+
+                // Parse line-by-line
+                const lines = raw.split('\n').map(l => l.trim());
+                const chunks = [];
+                let stepItems = [];
+                let listItems = [];
+                let tableRows = [];
+
+                function flushSteps() {
+                    if (!stepItems.length) return;
+                    chunks.push(`<div class="ai-step-list">${stepItems.map((item, idx) => `
+                        <div class="ai-step-item">
+                            <div class="ai-step-num">${idx + 1}</div>
+                            <div class="ai-step-body">${inlineMarkdown(item)}</div>
+                        </div>
+                    `).join('')}</div>`);
+                    stepItems = [];
                 }
 
                 function flushList() {
-                    if (!listItems.length || !listType) return;
-                    chunks.push(`<${listType}>${listItems.map(item => `<li>${inlineMarkdown(item)}</li>`).join('')}</${listType}>`);
-                    listType = null;
+                    if (!listItems.length) return;
+                    chunks.push(`<ul class="ai-styled-list">${listItems.map(item => `<li>${inlineMarkdown(item)}</li>`).join('')}</ul>`);
                     listItems = [];
                 }
 
-                lines.forEach(line => {
-                    if (!line) {
-                        flushList();
-                        return;
+                function flushTable() {
+                    if (!tableRows.length) return;
+                    const rows = tableRows.map(r => r.replace(/^\||\|$/g, '').split('|').map(c => c.trim()));
+                    if (rows.length >= 1) {
+                        const header = rows[0];
+                        const body = rows.slice(rows.length > 1 && rows[1].every(c => /^:?-+:?$/.test(c)) ? 2 : 1);
+                        let tbl = '<div class="ai-table-wrap"><table class="ai-table"><thead><tr>';
+                        header.forEach(h => tbl += `<th>${inlineMarkdown(h)}</th>`);
+                        tbl += '</tr></thead><tbody>';
+                        body.forEach(row => {
+                            tbl += '<tr>';
+                            row.forEach(cell => tbl += `<td>${inlineMarkdown(cell)}</td>`);
+                            tbl += '</tr>';
+                        });
+                        tbl += '</tbody></table></div>';
+                        chunks.push(tbl);
                     }
+                    tableRows = [];
+                }
 
-                    const unordered = line.match(/^[-*]\s+(.+)$/);
-                    const ordered = line.match(/^\d+[.)]\s+(.+)$/);
-                    if (unordered || ordered) {
-                        const nextListType = unordered ? 'ul' : 'ol';
-                        if (listType && listType !== nextListType) {
-                            flushList();
-                        }
-                        listType = nextListType;
-                        listItems.push((unordered || ordered)[1]);
-                        return;
-                    }
-
+                function flushAll() {
+                    flushSteps();
                     flushList();
-                    chunks.push(`<p>${inlineMarkdown(line)}</p>`);
-                });
+                    flushTable();
+                }
 
-                flushList();
-                return `<div class="ai-message-content">${chunks.join('')}</div>`;
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (!line) {
+                        flushAll();
+                        continue;
+                    }
+
+                    // Table row
+                    if (/^\|.+\|$/.test(line)) {
+                        flushSteps();
+                        flushList();
+                        tableRows.push(line);
+                        continue;
+                    } else {
+                        flushTable();
+                    }
+
+                    // Heading
+                    const headingMatch = line.match(/^#{1,4}\s+(.+)$/);
+                    if (headingMatch) {
+                        flushAll();
+                        const hText = headingMatch[1];
+                        const emojiMatch = hText.match(/^([\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{27BF}])/u);
+                        const emoji = emojiMatch ? emojiMatch[1] : '📌';
+                        const title = emojiMatch ? hText.substring(emoji.length).trim() : hText;
+                        chunks.push(`
+                            <div class="ai-section-header">
+                                <span class="ai-section-icon">${emoji}</span>
+                                <span class="ai-section-title">${escape(title)}</span>
+                            </div>
+                        `);
+                        continue;
+                    }
+
+                    // Divider
+                    if (/^---+|\*\*\*+$/.test(line)) {
+                        flushAll();
+                        chunks.push('<hr class="ai-divider">');
+                        continue;
+                    }
+
+                    // Callout
+                    const calloutMatch = line.match(/^>\s+(.+)$/);
+                    if (calloutMatch) {
+                        flushAll();
+                        chunks.push(`
+                            <div class="ai-callout">
+                                <i class="bi bi-info-circle-fill"></i>
+                                <div>${inlineMarkdown(calloutMatch[1])}</div>
+                            </div>
+                        `);
+                        continue;
+                    }
+
+                    // Numbered step
+                    const stepMatch = line.match(/^\d+[.)]\s+(.+)$/);
+                    if (stepMatch) {
+                        flushList();
+                        stepItems.push(stepMatch[1]);
+                        continue;
+                    } else {
+                        flushSteps();
+                    }
+
+                    // Check if line (or line + next line) is a card
+                    let cardData = extractCardData(line);
+                    if (!cardData && i + 1 < lines.length && /^[*-]\s+/.test(lines[i + 1])) {
+                        cardData = extractCardData(line + ' ' + lines[i + 1]);
+                        if (cardData) i++;
+                    }
+
+                    if (cardData) {
+                        flushAll();
+                        chunks.push(renderCard(cardData));
+                        continue;
+                    }
+
+                    // Unordered bullet item
+                    const bulletMatch = line.match(/^[-*]\s+(.+)$/);
+                    if (bulletMatch) {
+                        listItems.push(bulletMatch[1]);
+                        continue;
+                    } else {
+                        flushList();
+                    }
+
+                    // Regular text block or paragraph
+                    chunks.push(formatBlock(line));
+                }
+
+                flushAll();
+                return `${greetingHtml}<div class="ai-message-content">${chunks.join('')}</div>`;
             }
 
             async function sendPrompt(prompt) {
@@ -227,10 +594,11 @@
                         pendingBubble.innerHTML = formatAiText(data.warnings?.[0] || 'AI chưa sẵn sàng. Vui lòng thử lại sau.');
                         return;
                     }
-                    const answer = data.text || data.warnings?.[0] || 'Chưa đủ dữ liệu để trả lời có căn cứ.';
+                    const answer = data.text || data.warnings?.[0] || 'Tôi không thể cung cấp câu trả lời vượt ngoài phạm vi quyền hạn của bạn.';
                     currentSessionId = data.historySessionId || currentSessionId;
                     pendingBubble.innerHTML = formatAiText(answer);
                     appendCitations(pendingBubble, data.citations);
+                    appendActions(pendingBubble, answer);
                     if (data.text) history.push({ role: 'assistant', text: data.text });
                 } catch {
                     pendingBubble.innerHTML = formatAiText('Không thể kết nối AI. Vui lòng thử lại sau.');

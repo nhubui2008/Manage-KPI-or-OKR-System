@@ -37,7 +37,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!string.IsNullOrEmpty(searchString))
             {
                 searchString = searchString.Trim().ToLower();
-                query = query.Where(d => 
+                query = query.Where(d =>
                     (d.DepartmentName != null && d.DepartmentName.ToLower().Contains(searchString)) ||
                     (d.DepartmentCode != null && d.DepartmentCode.ToLower().Contains(searchString))
                 );
@@ -65,7 +65,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var employees = managerIds.Any()
                 ? await _context.Employees.AsNoTracking().Where(e => managerIds.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.FullName)
                 : new Dictionary<int, string?>();
-            
+
             // Đếm số lượng nhân viên đang thuộc từng phòng ban
             var employeeCounts = await _context.EmployeeAssignments
                 .AsNoTracking()
@@ -92,13 +92,13 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (dept == null) return NotFound();
 
             // Lấy thêm tên người quản lý
-            ViewBag.ManagerName = dept.ManagerId.HasValue 
-                ? (await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == dept.ManagerId.Value))?.FullName 
+            ViewBag.ManagerName = dept.ManagerId.HasValue
+                ? (await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == dept.ManagerId.Value))?.FullName
                 : "Chưa phân công";
 
             // Lấy thêm tên phòng ban cấp trên
-            ViewBag.ParentDeptName = dept.ParentDepartmentId.HasValue 
-                ? (await _context.Departments.AsNoTracking().FirstOrDefaultAsync(d => d.Id == dept.ParentDepartmentId.Value))?.DepartmentName 
+            ViewBag.ParentDeptName = dept.ParentDepartmentId.HasValue
+                ? (await _context.Departments.AsNoTracking().FirstOrDefaultAsync(d => d.Id == dept.ParentDepartmentId.Value))?.DepartmentName
                 : "Không có (Cấp cao nhất)";
 
             // Đếm tổng nhân viên của phòng ban này
@@ -300,7 +300,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 TempData["SuccessMessage"] = "Đã thêm phòng ban thành công!";
                 return RedirectToAction(nameof(Index));
             }
-            
+
             // Nếu lỗi, load lại dữ liệu cho Dropdown
             ViewBag.Employees = await _context.Employees.ToDictionaryAsync(e => e.Id, e => e.FullName);
             ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true).ToListAsync();
@@ -358,7 +358,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 if (await IsCircularReference(id, dept.ParentDepartmentId))
                 {
                     ModelState.AddModelError("ParentDepartmentId", "Phòng ban không thể trực thuộc cấp dưới của mình!");
-                    
+
                     // Nạp lại dữ liệu cho Dropdown trước khi trả về View
                     ViewBag.Employees = await _context.Employees.Where(e => e.IsActive == true).ToDictionaryAsync(e => e.Id, e => e.FullName);
                     ViewBag.Departments = await _context.Departments.Where(d => d.IsActive == true && d.Id != id).ToListAsync();
@@ -409,7 +409,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             // 1. Kiểm tra nhân viên đang thuộc phòng ban
             var activeEmployeesCount = await _context.EmployeeAssignments
                 .CountAsync(a => a.DepartmentId == id && a.IsActive == true);
-            
+
             // 2. Kiểm tra xem có phòng ban con nào còn hoạt động không
             var hasChildDepts = await _context.Departments.AnyAsync(d => d.ParentDepartmentId == id && d.IsActive == true);
 
@@ -432,7 +432,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             dept.IsActive = false;
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = $"Đã ngưng hoạt động phòng ban '{dept.DepartmentName}' thành công!";
-            
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -478,7 +478,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         private async Task<bool> IsCircularReference(int deptId, int? newParentId)
         {
             if (!newParentId.HasValue) return false;
-            
+
             var currentCheckId = newParentId;
             var visited = new HashSet<int>();
 
@@ -486,7 +486,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 // Nếu gặp chính nó trong chuỗi phả hệ ngược lên => Có vòng lặp
                 if (currentCheckId.Value == deptId) return true;
-                
+
                 // Tránh lặp vô hạn nếu dữ liệu DB hiện tại đã bị lỗi cấu trúc
                 if (visited.Contains(currentCheckId.Value)) break;
                 visited.Add(currentCheckId.Value);

@@ -89,7 +89,7 @@ public sealed class EvaluationRubricsController : Controller
             if (_context.Database.IsRelational())
             {
                 _ = await _context.Database.SqlQuery<int>(
-                        $"SELECT [Id] AS [Value] FROM [dbo].[KPIs] WITH (UPDLOCK, HOLDLOCK) WHERE [TenantId] = {tenantId.Value} AND [Id] = {input.KpiId}")
+                        $"SELECT [Id] AS [Value] FROM [KPIs] WITH (UPDLOCK, HOLDLOCK) WHERE [TenantId] = {tenantId.Value} AND [Id] = {input.KpiId}")
                     .SingleOrDefaultAsync(cancellationToken);
             }
 

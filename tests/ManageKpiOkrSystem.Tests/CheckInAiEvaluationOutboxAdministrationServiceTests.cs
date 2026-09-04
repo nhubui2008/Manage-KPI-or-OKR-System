@@ -75,11 +75,12 @@ public sealed class CheckInAiEvaluationOutboxAdministrationServiceTests
     }
 
     [Fact]
-    public async Task RetryDeadLetterAsync_RejectsChangedSourceWithoutReactivatingOldJob()
+    public async Task RetryDeadLetterAsync_RecalculatesChangedSourceVersion()
     {
         var scenario = await CreateScenarioAsync();
         await using var context = scenario.Context;
         var item = await AddDeadLetterAsync(scenario);
+        var originalSourceVersion = item.SourceVersion;
         var detail = await context.CheckInDetails.SingleAsync(candidate => candidate.CheckInId == scenario.CheckInId);
         detail.AchievedValue = 90m;
         await context.SaveChangesAsync();
@@ -87,16 +88,16 @@ public sealed class CheckInAiEvaluationOutboxAdministrationServiceTests
             context,
             scenario.TenantContext);
 
-        var exception = await Assert.ThrowsAsync<CheckInAiOutboxAdministrationException>(() =>
-            service.RetryDeadLetterAsync(new CheckInAiOutboxRetryInput
-            {
-                OutboxId = item.Id,
-                RowVersion = Convert.ToBase64String(item.RowVersion)
-            }));
+        var retried = await service.RetryDeadLetterAsync(new CheckInAiOutboxRetryInput
+        {
+            OutboxId = item.Id,
+            RowVersion = Convert.ToBase64String(item.RowVersion)
+        });
 
-        Assert.Contains("nguồn", exception.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal("DeadLetter", item.State);
-        Assert.Empty(await context.AuditLogs.ToListAsync());
+        Assert.True(retried);
+        var reloaded = await context.CheckInAiEvaluationOutbox.SingleAsync(candidate => candidate.Id == item.Id);
+        Assert.Equal("Pending", reloaded.State);
+        Assert.NotEqual(originalSourceVersion, reloaded.SourceVersion);
     }
 
     [Fact]

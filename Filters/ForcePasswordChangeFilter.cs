@@ -11,10 +11,10 @@ namespace Manage_KPI_or_OKR_System.Filters
             if (user.Identity != null && user.Identity.IsAuthenticated)
             {
                 var path = context.HttpContext.Request.Path.Value?.ToLower() ?? "";
-                
+
                 // Allow access to AuthController actions (ChangePassword, Logout) and static files
-                if (!path.StartsWith("/auth/changepassword") && 
-                    !path.StartsWith("/auth/logout") && 
+                if (!path.StartsWith("/auth/changepassword") &&
+                    !path.StartsWith("/auth/logout") &&
                     !path.StartsWith("/auth/login") &&
                     !path.StartsWith("/auth/keepalive") &&
                     !path.StartsWith("/auth/switchdemo") &&

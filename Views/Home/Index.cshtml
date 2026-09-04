@@ -23,7 +23,6 @@
             <a href="#tinh-nang">Tính năng lõi</a>
             <a href="#vai-tro">Phân quyền vai trò</a>
             <a href="#quy-trinh">Quy trình</a>
-            <a href="#bang-gia">Bảng giá</a>
             <a href="#faq">Hỏi đáp</a>
         </nav>
         <div class="nova-actions">
@@ -537,60 +536,6 @@
         </div>
     </section>
 
-    <!-- ===== SAAS PRICING PACKAGES ===== -->
-    @if (Model?.Any() == true)
-    {
-        <section id="bang-gia" class="nova-pricing-section">
-            <div class="nova-container">
-                <div class="nova-section-heading nova-center">
-                    <p class="nova-kicker">Bảng giá dịch vụ</p>
-                    <h2>Lựa chọn gói phù hợp với <em>quy mô của bạn.</em></h2>
-                    <p>Linh hoạt nâng cấp hoặc thay đổi gói dịch vụ bất kỳ lúc nào theo tốc độ tăng trưởng của doanh nghiệp.</p>
-                </div>
-                <div class="nova-pricing-grid">
-                    @foreach (var package in Model)
-                    {
-                        <article class="nova-price @(package.IsPopular ? "is-popular" : "")">
-                            @if (package.IsPopular)
-                            {
-                                <span class="nova-popular">Được chọn nhiều nhất</span>
-                            }
-                            <h3>@package.PackageName</h3>
-                            <p>@package.Description</p>
-                            <div class="nova-price-value">
-                                @if (package.PricePerMonth > 0)
-                                {
-                                    <strong>@package.PricePerMonth.ToString("N0")</strong>
-                                    <span>VNĐ / tháng</span>
-                                }
-                                else
-                                {
-                                    <strong>Liên hệ</strong>
-                                    <span>Tùy chỉnh theo doanh nghiệp</span>
-                                }
-                            </div>
-                            <ul>
-                                <li>Tối đa <strong>@package.MaxUsers người dùng</strong></li>
-                                <li>Quản lý OKR &amp; KPI định lượng</li>
-                                <li>Nhật ký Check-in và Cảnh báo tiến độ</li>
-                                @if (package.HasAdvancedOKR)
-                                {
-                                    <li>Cây phân rã OKR đa cấp độ nâng cao</li>
-                                }
-                                @if (package.HasAIInsight)
-                                {
-                                    <li>Trợ lý AI Gemini phân tích chuyên sâu</li>
-                                }
-                            </ul>
-                            <a class="nova-button @(package.IsPopular ? "" : "nova-button-ghost")" asp-controller="Auth" asp-action="Register" asp-route-plan="@package.PackageName">
-                                Chọn @package.PackageName
-                            </a>
-                        </article>
-                    }
-                </div>
-            </div>
-        </section>
-    }
 
     <!-- ===== FAQ ACCORDION ===== -->
     <section id="faq" class="nova-faq-section">
@@ -702,7 +647,6 @@
                 <ul>
                     <li><a asp-controller="Auth" asp-action="Login">Đăng nhập tài khoản</a></li>
                     <li><a asp-controller="Auth" asp-action="Register">Đăng ký dùng thử</a></li>
-                    <li><a href="#bang-gia">Bảng giá dịch vụ</a></li>
                     <li><a href="#faq">Trung tâm hỏi đáp</a></li>
                 </ul>
             </div>

@@ -21,7 +21,7 @@ namespace Manage_KPI_or_OKR_System.Models
         [StringLength(255)]
         public string? Email { get; set; }
         [StringLength(50)]
-        public string?  TaxCode { get; set; }
+        public string? TaxCode { get; set; }
         public DateTime? JoinDate { get; set; }
         public int? SystemUserId { get; set; }
         public bool? IsActive { get; set; } = true;

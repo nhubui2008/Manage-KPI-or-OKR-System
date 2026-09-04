@@ -4,6 +4,8 @@ using Manage_KPI_or_OKR_System.Services.AI;
 using Manage_KPI_or_OKR_System.Services.Tenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Manage_KPI_or_OKR_System.Controllers;
 
@@ -22,15 +24,18 @@ public sealed class KnowledgeDocumentsController : Controller
     private readonly IKnowledgeDocumentAdministrationService _administration;
     private readonly ICheckInAiEvaluationOutboxAdministrationService _checkInOutbox;
     private readonly ITenantContext _tenantContext;
+    private readonly ILogger<KnowledgeDocumentsController> _logger;
 
     public KnowledgeDocumentsController(
         IKnowledgeDocumentAdministrationService administration,
         ICheckInAiEvaluationOutboxAdministrationService checkInOutbox,
-        ITenantContext tenantContext)
+        ITenantContext tenantContext,
+        ILogger<KnowledgeDocumentsController>? logger = null)
     {
         _administration = administration;
         _checkInOutbox = checkInOutbox;
         _tenantContext = tenantContext;
+        _logger = logger ?? NullLogger<KnowledgeDocumentsController>.Instance;
     }
 
     [HttpGet]
@@ -77,6 +82,18 @@ public sealed class KnowledgeDocumentsController : Controller
             ModelState.AddModelError(string.Empty, exception.Message);
             return View(nameof(Index), await BuildIndexAsync(input, cancellationToken));
         }
+        catch (HttpRequestException exception)
+        {
+            _logger.LogError(exception, "Lỗi kết nối mạng/kho lưu trữ khi tải lên tài liệu RAG.");
+            ModelState.AddModelError(string.Empty, $"Không thể kết nối đến dịch vụ lưu trữ đối tượng (MinIO/S3): {exception.Message}. Vui lòng kiểm tra dịch vụ đang hoạt động.");
+            return View(nameof(Index), await BuildIndexAsync(input, cancellationToken));
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Lỗi không xác định khi tải lên tài liệu RAG.");
+            ModelState.AddModelError(string.Empty, $"Lỗi hệ thống khi tải tài liệu lên: {exception.Message}");
+            return View(nameof(Index), await BuildIndexAsync(input, cancellationToken));
+        }
     }
 
     [HttpPost]
@@ -99,6 +116,11 @@ public sealed class KnowledgeDocumentsController : Controller
         catch (KnowledgeDocumentAdministrationException exception)
         {
             TempData["ErrorMessage"] = exception.Message;
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Lỗi khi cập nhật quyền truy cập tài liệu RAG.");
+            TempData["ErrorMessage"] = $"Lỗi hệ thống khi cập nhật quyền: {exception.Message}";
         }
         return RedirectToAction(nameof(Index));
     }
@@ -124,6 +146,11 @@ public sealed class KnowledgeDocumentsController : Controller
         {
             TempData["ErrorMessage"] = exception.Message;
         }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Lỗi khi xóa tài liệu RAG.");
+            TempData["ErrorMessage"] = $"Lỗi hệ thống khi xóa tài liệu: {exception.Message}";
+        }
         return RedirectToAction(nameof(Index));
     }
 
@@ -148,6 +175,11 @@ public sealed class KnowledgeDocumentsController : Controller
         {
             TempData["ErrorMessage"] = exception.Message;
         }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Lỗi khi xử lý lại phiên bản tài liệu RAG.");
+            TempData["ErrorMessage"] = $"Lỗi hệ thống khi yêu cầu xử lý lại: {exception.Message}";
+        }
         return RedirectToAction(nameof(Index));
     }
 
@@ -171,6 +203,11 @@ public sealed class KnowledgeDocumentsController : Controller
         catch (CheckInAiOutboxAdministrationException exception)
         {
             TempData["ErrorMessage"] = exception.Message;
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Lỗi khi xử lý lại outbox check-in AI.");
+            TempData["ErrorMessage"] = $"Lỗi hệ thống khi yêu cầu xử lý lại job: {exception.Message}";
         }
         return RedirectToAction(nameof(Index));
     }

@@ -50,10 +50,10 @@ public class HasPermissionFilter : IAuthorizationFilter
         // 3. Lấy tên Role của User hiện tại từ Claims
         // ClaimsIdentity.Role thông thường chứa RoleName
         var userRoles = ProjectRoleProfileHelper.GetAuthorizationRoleNames(user);
-        
+
         if (!userRoles.Any())
         {
-            context.Result = new ForbidResult(); 
+            context.Result = new ForbidResult();
             return;
         }
 
@@ -81,9 +81,9 @@ public class HasPermissionFilter : IAuthorizationFilter
         // 4. Kiểm tra quyền trong Database từ bảng Role_Permissions liên kết Role và Permission
         // Chỉ cần CÓ ÍT NHẤT 1 permission trong danh sách là đủ (OR logic)
         var hasPermission = dbContext.Role_Permissions
-            .Join(dbContext.Permissions, 
-                  rp => rp.PermissionId, 
-                  p => p.Id, 
+            .Join(dbContext.Permissions,
+                  rp => rp.PermissionId,
+                  p => p.Id,
                   (rp, p) => new { rp, p })
             .Join(dbContext.Roles,
                   combined => combined.rp.RoleId,
@@ -93,7 +93,7 @@ public class HasPermissionFilter : IAuthorizationFilter
 
         if (!hasPermission)
         {
-            context.Result = new ForbidResult(); 
+            context.Result = new ForbidResult();
         }
     }
 }

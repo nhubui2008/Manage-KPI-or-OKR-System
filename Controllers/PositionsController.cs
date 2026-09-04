@@ -34,7 +34,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (!string.IsNullOrEmpty(searchString))
             {
                 searchString = searchString.Trim().ToLower();
-                query = query.Where(p => 
+                query = query.Where(p =>
                     (p.PositionName != null && p.PositionName.ToLower().Contains(searchString)) ||
                     (p.PositionCode != null && p.PositionCode.ToLower().Contains(searchString))
                 );
@@ -222,7 +222,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             position.IsActive = false;
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã xóa chức vụ thành công!";
-            
+
             return RedirectToAction(nameof(Index));
         }
 

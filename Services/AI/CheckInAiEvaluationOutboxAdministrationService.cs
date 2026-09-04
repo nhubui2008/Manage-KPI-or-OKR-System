@@ -139,20 +139,24 @@ public sealed class CheckInAiEvaluationOutboxAdministrationService
 
         var checkIn = await _context.KPICheckIns
             .SingleOrDefaultAsync(candidate => candidate.Id == item.CheckInId, cancellationToken);
-        if (checkIn == null ||
-            !string.Equals(checkIn.ReviewStatus?.Trim(), Pending, StringComparison.OrdinalIgnoreCase))
+        var reviewStatus = checkIn?.ReviewStatus?.Trim();
+        var isPending = string.Equals(reviewStatus, Pending, StringComparison.OrdinalIgnoreCase);
+        var isApproved = string.Equals(reviewStatus, "Approved", StringComparison.OrdinalIgnoreCase);
+        if (checkIn == null || (!isPending && !isApproved))
         {
             throw new CheckInAiOutboxAdministrationException(
-                "Check-in không còn ở trạng thái chờ duyệt nên không thể chạy lại đánh giá AI.");
+                "Check-in không còn ở trạng thái có thể đánh giá (Pending hoặc Approved).");
         }
         var currentSourceVersion = await CheckInAiSourceVersion.ResolveAsync(
             _context,
             checkIn,
             cancellationToken);
+        // When the check-in status changed (e.g. Pending → Approved) the source
+        // version shifts.  Recalculate and update so the worker will not immediately
+        // cancel with "source_changed".
         if (currentSourceVersion != item.SourceVersion)
         {
-            throw new CheckInAiOutboxAdministrationException(
-                "Dữ liệu nguồn của check-in đã thay đổi. Hãy dùng yêu cầu đánh giá mới thay vì chạy lại job cũ.");
+            item.SourceVersion = currentSourceVersion;
         }
 
         var oldData = JsonSerializer.Serialize(new

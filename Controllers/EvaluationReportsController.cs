@@ -94,7 +94,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Distinct()
                 .OrderByDescending(c => c)
                 .ToListAsync();
-            
+
             if (!cycles.Any()) cycles = new List<string> { $"Q1-{DateTime.Now.Year}" };
 
             ViewBag.OKRs = okrs;
@@ -238,7 +238,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             using (var package = new ExcelPackage())
             {
                 var worksheet = package.Workbook.Worksheets.Add("BaoCaoDanhGia");
-                
+
                 // Header Styling
                 worksheet.Cells[1, 1].Value = $"BÁO CÁO PHÂN BỔ & ĐÁNH GIÁ CHỈ TIÊU - {currentDept?.DepartmentName?.ToUpper() ?? "N/A"}";
                 worksheet.Cells[1, 1, 1, 8].Merge = true;

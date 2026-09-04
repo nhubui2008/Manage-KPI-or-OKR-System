@@ -172,7 +172,7 @@ public class HomeController : Controller
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RegisterPurchase(
-        string email, 
+        string email,
         string plan,
         [FromServices] IEmailService emailService)
     {

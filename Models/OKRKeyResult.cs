@@ -20,9 +20,9 @@ namespace Manage_KPI_or_OKR_System.Models
         public int? FailReasonId { get; set; }
         [StringLength(50)]
         public string? ResultStatus { get; set; }
-        
+
         [NotMapped]
-        public decimal Progress 
+        public decimal Progress
         {
             get => Helpers.ProgressHelper.CalculateProgress(CurrentValue ?? 0, TargetValue ?? 0, IsInverse);
         }

@@ -401,7 +401,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             int? employeeId)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
+                User.IsInRole("Sales") || User.IsInRole("sales"))
                 return Forbid();
 
             NormalizeOkrCoreFields(model);
@@ -482,9 +482,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            
+
             await PopulateOkrCreateListsAsync(missionId, departmentId, employeeId, model.Cycle);
-            
+
             return View(model);
         }
 
@@ -637,7 +637,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> AddKeyResult(OKRKeyResult kr)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
+                User.IsInRole("Sales") || User.IsInRole("sales"))
                 return Forbid();
             if (!kr.OKRId.HasValue)
             {
@@ -833,7 +833,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             kr.CurrentValue = currentValue;
-            
+
             // Calculate Status using ProgressHelper
             decimal progress = ProgressHelper.CalculateProgress(kr.CurrentValue ?? 0, kr.TargetValue ?? 0, kr.IsInverse);
             kr.ResultStatus = ProgressHelper.GetResultStatus(progress);
@@ -854,7 +854,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> EditKeyResult(OKRKeyResult model)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
+                User.IsInRole("Sales") || User.IsInRole("sales"))
                 return Forbid();
 
             var validationError = ValidateKeyResultInput(model, requireZeroCurrentOnCreate: false);
@@ -901,7 +901,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> AllocateTarget(int okrId, int employeeId, decimal allocatedValue)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
+                User.IsInRole("Sales") || User.IsInRole("sales"))
                 return Forbid();
 
             // Validation: Value must be positive
@@ -946,7 +946,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
             else
             {
                 // Create new allocation
-                var allocation = new OKR_Employee_Allocation {
+                var allocation = new OKR_Employee_Allocation
+                {
                     OKRId = okrId,
                     EmployeeId = employeeId,
                     AllocatedValue = allocatedValue
@@ -1015,7 +1016,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> DeleteKeyResult(int id)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
+                User.IsInRole("Sales") || User.IsInRole("sales"))
                 return Forbid();
 
             var kr = await _context.OKRKeyResults.FindAsync(id);
@@ -1052,7 +1053,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 _context.OKRKeyResults.Remove(kr);
                 await _context.SaveChangesAsync();
-                
+
                 var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == okrId);
                 TempData["SuccessMessage"] = $"Đã xóa KR thành công! Tiến độ mục tiêu còn lại: {okr?.TotalProgress}%";
             }
@@ -1705,7 +1706,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                User.IsInRole("Sales") || User.IsInRole("sales")) 
+                User.IsInRole("Sales") || User.IsInRole("sales"))
                 return Forbid();
 
             var okr = await _context.OKRs
@@ -2123,8 +2124,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     message = "Objective, yêu cầu chỉnh sửa hoặc danh sách KR không hợp lệ."
                 });
             }
-            catch (AIModelResponseValidationException)
+            catch (AIModelResponseValidationException exception)
             {
+                _logger.LogWarning(exception, "OKR Key Result suggestion validation failed: {Message}", exception.Message);
                 return StatusCode(502, new
                 {
                     success = false,

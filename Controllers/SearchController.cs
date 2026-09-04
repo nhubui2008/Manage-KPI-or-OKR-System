@@ -75,7 +75,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .Where(e => (e.FullName != null && e.FullName.ToLower().Contains(term)) ||
                                 (e.EmployeeCode != null && e.EmployeeCode.ToLower().Contains(term)))
                     .Take(5)
-                    .Select(e => new SearchResult {
+                    .Select(e => new SearchResult
+                    {
                         Id = e.Id,
                         Title = e.FullName ?? "N/A",
                         Subtitle = $"Mã NV: {e.EmployeeCode}",
@@ -140,7 +141,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var kpis = await kpiQuery
                     .Where(k => k.KPIName != null && k.KPIName.ToLower().Contains(term))
                     .Take(5)
-                    .Select(k => new SearchResult {
+                    .Select(k => new SearchResult
+                    {
                         Id = k.Id,
                         Title = k.KPIName ?? "N/A",
                         Subtitle = "Chỉ số hiệu suất",
@@ -205,7 +207,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var okrs = await okrQuery
                     .Where(o => o.ObjectiveName != null && o.ObjectiveName.ToLower().Contains(term))
                     .Take(5)
-                    .Select(o => new SearchResult {
+                    .Select(o => new SearchResult
+                    {
                         Id = o.Id,
                         Title = o.ObjectiveName ?? "N/A",
                         Subtitle = "Mục tiêu then chốt",
@@ -248,7 +251,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .Where(d => (d.DepartmentName != null && d.DepartmentName.ToLower().Contains(term)) ||
                                 (d.DepartmentCode != null && d.DepartmentCode.ToLower().Contains(term)))
                     .Take(5)
-                    .Select(d => new SearchResult {
+                    .Select(d => new SearchResult
+                    {
                         Id = d.Id,
                         Title = d.DepartmentName ?? "N/A",
                         Subtitle = $"Mã PB: {d.DepartmentCode}",

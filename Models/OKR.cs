@@ -30,7 +30,7 @@ namespace Manage_KPI_or_OKR_System.Models
             get
             {
                 if (KeyResults == null || !KeyResults.Any()) return 0;
-                
+
                 decimal total = 0;
                 foreach (var kr in KeyResults)
                 {

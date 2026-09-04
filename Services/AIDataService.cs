@@ -198,6 +198,24 @@ namespace Manage_KPI_or_OKR_System.Services
                 .OrderBy(kr => kr.Id)
                 .ToListAsync();
 
+            var workItemsQuery = _context.WorkItems
+                .AsNoTracking()
+                .Where(w => w.IsActive == true && w.KanbanStatus != "Done");
+
+            if (!scope.CanSeeAll)
+            {
+                workItemsQuery = workItemsQuery.Where(w =>
+                    (w.AssigneeId.HasValue && scope.EmployeeIds.Contains(w.AssigneeId.Value)) ||
+                    (w.DepartmentId.HasValue && scope.DepartmentIds.Contains(w.DepartmentId.Value)));
+            }
+
+            var workItems = await workItemsQuery
+                .OrderBy(w => w.DueDate.HasValue ? 0 : 1)
+                .ThenBy(w => w.DueDate)
+                .ThenByDescending(w => w.Priority == "Urgent" ? 3 : w.Priority == "High" ? 2 : 1)
+                .Take(15)
+                .ToListAsync();
+
             var builder = NewContextHeader(scope, selectedPeriod);
             builder.AppendLine("KPI dang hien thi:");
             if (!kpis.Any()) builder.AppendLine("- Chua co KPI trong pham vi du lieu nay.");
@@ -219,6 +237,16 @@ namespace Manage_KPI_or_OKR_System.Services
                 builder.AppendLine($"- OKR #{okr.Id}: {BoundChatText(okr.ObjectiveName, 255)}; cycle {BoundChatText(okr.Cycle, 50)}; progress TB {Math.Round(avg, 1)}%.");
             }
 
+            builder.AppendLine("Cong viec can lam (WorkItems):");
+            if (!workItems.Any()) builder.AppendLine("- Chua co cong viec ton dong.");
+            foreach (var item in workItems)
+            {
+                var due = item.DueDate.HasValue ? item.DueDate.Value.ToString("dd/MM/yyyy") : "Khong co han chot";
+                var isMyTask = scope.CurrentEmployeeId.HasValue && item.AssigneeId == scope.CurrentEmployeeId.Value;
+                var assignedTag = isMyTask ? " [giao cho ban]" : "";
+                builder.AppendLine($"- Cong viec #{item.Id}{assignedTag}: {BoundChatText(item.Title, 200)}; trang thai: {item.KanbanStatus}; muc uu tien: {item.Priority}; han chot: {due}; tien do: {FormatDecimal(item.ProgressPercentage)}%.");
+            }
+
             builder.AppendLine("Check-in gan day:");
             if (!recentCheckIns.Any()) builder.AppendLine("- Chua co check-in gan day.");
             foreach (var checkIn in recentCheckIns)
@@ -229,7 +257,7 @@ namespace Manage_KPI_or_OKR_System.Services
 
             return new AuthorizedChatContext(
                 builder.ToString(),
-                kpis.Count > 0 || okrs.Count > 0 || recentCheckIns.Count > 0);
+                kpis.Count > 0 || okrs.Count > 0 || recentCheckIns.Count > 0 || workItems.Count > 0);
         }
 
         private static string BoundChatText(string? value, int maximumLength)

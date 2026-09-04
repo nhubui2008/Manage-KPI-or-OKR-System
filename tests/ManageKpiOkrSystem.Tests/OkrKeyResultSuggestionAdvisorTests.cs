@@ -115,6 +115,32 @@ public sealed class OkrKeyResultSuggestionAdvisorTests
     }
 
     [Fact]
+    public async Task SuggestAsync_MapsUnitAliasesToCanonicalUnits()
+    {
+        var setup = await CreateScenarioAsync();
+        await using var context = setup.Context;
+        var sourceId = $"okr:{setup.Okr.Id}";
+        var model = new RecordingModelClient(_ =>
+            $$"""
+            {"suggestions":[
+              {{Suggestion(sourceId, "Số lần demo thành công", "Lan", "10")}},
+              {{Suggestion(sourceId, "Tỷ lệ không lỗi", "Phần trăm", "100")}},
+              {{Suggestion(sourceId, "Chi phí phát sinh", "VND", "5000000", isInverse: true)}}
+            ]}
+            """);
+        var advisor = new OkrKeyResultSuggestionAdvisor(context, model, setup.TenantContext);
+
+        var response = await advisor.SuggestAsync(
+            new OkrKeyResultSuggestionRequest { OkrId = setup.Okr.Id },
+            setup.Principal);
+
+        Assert.Equal(3, response.Items.Count);
+        Assert.Equal("Lần", response.Items[0].Unit);
+        Assert.Equal("%", response.Items[1].Unit);
+        Assert.Equal("VNĐ", response.Items[2].Unit);
+    }
+
+    [Fact]
     public async Task SuggestAsync_RefinesReviewedDraftsWithoutPersistingDraftText()
     {
         var setup = await CreateScenarioAsync();

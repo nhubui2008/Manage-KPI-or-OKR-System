@@ -918,14 +918,14 @@ public sealed class GoalPlanningDraftService : IGoalPlanningDraftService
     private static GoalPlanningDraftRequest CreateSourceRequest(
         string sourceType,
         int sourceId) => GoalPlanningSourceVersion.NormalizeSourceType(sourceType) switch
-    {
-        "KPI" => new GoalPlanningDraftRequest(KpiId: sourceId),
-        "OKR" => new GoalPlanningDraftRequest(OkrId: sourceId),
-        "OKRKeyResult" => new GoalPlanningDraftRequest(OkrKeyResultId: sourceId),
-        "WorkProject" => new GoalPlanningDraftRequest(WorkProjectId: sourceId),
-        _ => throw new AIAdvisorySourceConflictException(
-            "Loại nguồn của bản nháp Goal Planning không còn hợp lệ.")
-    };
+        {
+            "KPI" => new GoalPlanningDraftRequest(KpiId: sourceId),
+            "OKR" => new GoalPlanningDraftRequest(OkrId: sourceId),
+            "OKRKeyResult" => new GoalPlanningDraftRequest(OkrKeyResultId: sourceId),
+            "WorkProject" => new GoalPlanningDraftRequest(WorkProjectId: sourceId),
+            _ => throw new AIAdvisorySourceConflictException(
+                "Loại nguồn của bản nháp Goal Planning không còn hợp lệ.")
+        };
 
     private void SupersedeDraft(
         AgentRunRecord run,

@@ -146,11 +146,63 @@ public sealed class ChatAdvisorTests
 
         Assert.Null(response.Text);
         Assert.NotEmpty(response.Warnings);
+        Assert.Equal("Tôi không thể cung cấp câu trả lời vượt ngoài phạm vi quyền hạn của bạn.", response.Warnings[0]);
         Assert.Equal(0, model.CallCount);
         var citation = Assert.Single(response.Citations);
         Assert.Equal(0, citation.Reliability);
         Assert.False(citation.IsDirectlyRelevant);
         Assert.Single(await context.AgentRuns.ToListAsync());
+    }
+
+    [Fact]
+    public async Task AnswerAsync_WithOnlyWorkItems_ProvidesBusinessEvidenceAndAnswersActionQuestions()
+    {
+        var setup = await CreateScenarioAsync(includeBusinessEvidence: false);
+        await using var context = setup.Context;
+        var project = new WorkProject
+        {
+            ProjectCode = "PRJ-01",
+            ProjectName = "Dự án kế toán",
+            IsActive = true
+        };
+        context.WorkProjects.Add(project);
+        await context.SaveChangesAsync();
+
+        context.WorkItems.Add(new WorkItem
+        {
+            WorkProjectId = project.Id,
+            Title = "Báo cáo kiểm toán quý",
+            AssigneeId = setup.Employee.Id,
+            Priority = "Urgent",
+            KanbanStatus = "InProgress",
+            DueDate = DateTime.Today.AddDays(1),
+            ProgressPercentage = 40m,
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+
+        var model = new DynamicChatModelClient(sourceIds =>
+            $$"""{"answer":"Xin chào, tôi có thể giúp gì cho bạn. Hôm nay bạn nên ưu tiên hoàn thiện Báo cáo kiểm toán quý.","sourceIds":["{{sourceIds[0]}}"]}""");
+        var advisor = CreateAdvisor(
+            context,
+            setup.TenantContext,
+            model,
+            new EmptyEvidenceRetriever());
+
+        var response = await advisor.AnswerAsync(
+            new AIChatRequest
+            {
+                Message = "Hôm nay tôi phải làm gì?",
+                PeriodId = setup.Period.Id
+            },
+            setup.Principal);
+
+        Assert.NotNull(response.Text);
+        Assert.StartsWith("Xin chào, tôi có thể giúp gì cho bạn", response.Text);
+        Assert.Contains("Cong viec #", model.LastRequestText);
+        Assert.Contains("Urgent", model.LastRequestText);
+        Assert.Single(response.Citations);
+        Assert.Equal("authorized-chat-snapshot", response.Citations[0].SourceType);
     }
 
     [Fact]

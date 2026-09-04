@@ -280,10 +280,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 _ => filteredQuery.OrderByDescending(k => k.CreatedAt).ThenByDescending(k => k.Id)
             };
             var projectedQuery = sortedQuery.Select(kpi => new
-                {
-                    Kpi = kpi,
-                    TotalCount = filteredQuery.Count(),
-                    MineCount = currentEmployeeId > 0
+            {
+                Kpi = kpi,
+                TotalCount = filteredQuery.Count(),
+                MineCount = currentEmployeeId > 0
                         ? filteredQuery.Count(candidate =>
                             _context.KPI_Employee_Assignments.Any(assignment =>
                                 assignment.KPIId == candidate.Id &&
@@ -293,54 +293,54 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                 assignment.KPIId == candidate.Id &&
                                 currentEmployeeDepartmentIds.Contains(assignment.DepartmentId)))
                         : 0,
-                    AllocatedCount = filteredQuery.Count(candidate =>
-                        _context.KPI_Employee_Assignments.Any(assignment =>
-                            assignment.KPIId == candidate.Id &&
-                            (assignment.Status == null || assignment.Status == "Active")) ||
-                        _context.KPI_Department_Assignments.Any(assignment =>
-                            assignment.KPIId == candidate.Id)),
-                    InProgressCount = filteredQuery.Count(candidate =>
-                        candidate.StatusId.HasValue &&
-                        executableKpiStatusIds.Contains(candidate.StatusId.Value)),
-                    PendingCount = filteredQuery.Count(candidate =>
-                        !candidate.StatusId.HasValue ||
-                        candidate.StatusId == 0 ||
-                        candidate.StatusId == pendingKpiStatusId),
-                    Detail = _context.KPIDetails
+                AllocatedCount = filteredQuery.Count(candidate =>
+                    _context.KPI_Employee_Assignments.Any(assignment =>
+                        assignment.KPIId == candidate.Id &&
+                        (assignment.Status == null || assignment.Status == "Active")) ||
+                    _context.KPI_Department_Assignments.Any(assignment =>
+                        assignment.KPIId == candidate.Id)),
+                InProgressCount = filteredQuery.Count(candidate =>
+                    candidate.StatusId.HasValue &&
+                    executableKpiStatusIds.Contains(candidate.StatusId.Value)),
+                PendingCount = filteredQuery.Count(candidate =>
+                    !candidate.StatusId.HasValue ||
+                    candidate.StatusId == 0 ||
+                    candidate.StatusId == pendingKpiStatusId),
+                Detail = _context.KPIDetails
                         .Where(detail => detail.KPIId == kpi.Id)
                         .OrderBy(detail => detail.Id)
                         .FirstOrDefault(),
-                    PeriodName = kpi.PeriodId.HasValue
+                PeriodName = kpi.PeriodId.HasValue
                         ? _context.EvaluationPeriods
                             .Where(period => period.Id == kpi.PeriodId.Value)
                             .Select(period => period.PeriodName)
                             .FirstOrDefault()
                         : null,
-                    TypeName = kpi.KPITypeId.HasValue
+                TypeName = kpi.KPITypeId.HasValue
                         ? _context.KPITypes
                             .Where(type => type.Id == kpi.KPITypeId.Value)
                             .Select(type => type.TypeName)
                             .FirstOrDefault()
                         : null,
-                    OkrName = kpi.OKRId.HasValue
+                OkrName = kpi.OKRId.HasValue
                         ? _context.OKRs
                             .Where(okr => okr.Id == kpi.OKRId.Value)
                             .Select(okr => okr.ObjectiveName)
                             .FirstOrDefault()
                         : null,
-                    KeyResultName = kpi.OKRKeyResultId.HasValue
+                KeyResultName = kpi.OKRKeyResultId.HasValue
                         ? _context.OKRKeyResults
                             .Where(keyResult => keyResult.Id == kpi.OKRKeyResultId.Value)
                             .Select(keyResult => keyResult.KeyResultName)
                             .FirstOrDefault()
                         : null,
-                    AssignerName = kpi.AssignerId.HasValue
+                AssignerName = kpi.AssignerId.HasValue
                         ? _context.Employees
                             .Where(employee => employee.Id == kpi.AssignerId.Value)
                             .Select(employee => employee.FullName)
                             .FirstOrDefault()
                         : null
-                });
+            });
             var pageRows = await projectedQuery
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
@@ -618,35 +618,36 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             // Fetch check-ins joined with their details to get actual values and notes
             var recentCheckIns = await (from ci in _context.KPICheckIns
-                                       join d in _context.CheckInDetails on ci.Id equals d.CheckInId into details
-                                       from d in details.DefaultIfEmpty()
-                                       join e in _context.Employees on ci.EmployeeId equals e.Id into emps
-                                       from e in emps.DefaultIfEmpty()
-                                       join r in _context.FailReasons on ci.FailReasonId equals r.Id into reasons
-                                       from r in reasons.DefaultIfEmpty()
-                                       join rev in _context.Employees on ci.ReviewedById equals rev.Id into reviewers
-                                       from rev in reviewers.DefaultIfEmpty()
-                                       where ci.KPIId == id
-                                       orderby ci.CheckInDate descending
-                                       select new {
-                                           ci.Id,
+                                        join d in _context.CheckInDetails on ci.Id equals d.CheckInId into details
+                                        from d in details.DefaultIfEmpty()
+                                        join e in _context.Employees on ci.EmployeeId equals e.Id into emps
+                                        from e in emps.DefaultIfEmpty()
+                                        join r in _context.FailReasons on ci.FailReasonId equals r.Id into reasons
+                                        from r in reasons.DefaultIfEmpty()
+                                        join rev in _context.Employees on ci.ReviewedById equals rev.Id into reviewers
+                                        from rev in reviewers.DefaultIfEmpty()
+                                        where ci.KPIId == id
+                                        orderby ci.CheckInDate descending
+                                        select new
+                                        {
+                                            ci.Id,
                                             ci.CheckInDate,
                                             ci.DeadlineAt,
                                             ci.IsLate,
                                             ci.StatusId,
-                                           ci.ReviewStatus,
-                                           ci.ReviewScore,
-                                           ci.ReviewComment,
-                                           ci.ReviewedAt,
+                                            ci.ReviewStatus,
+                                            ci.ReviewScore,
+                                            ci.ReviewComment,
+                                            ci.ReviewedAt,
                                             AchievedValue = (decimal?)d.AchievedValue,
                                             ProgressPercentage = (decimal?)d.ProgressPercentage,
                                             ExpectedValueAtDeadline = (decimal?)d.ExpectedValueAtDeadline,
                                             ScheduleProgressPercentage = (decimal?)d.ScheduleProgressPercentage,
-                                           Note = d.Note,
-                                           employeeName = e.FullName,
-                                           reviewerName = rev.FullName,
-                                           failReason = r.ReasonName
-                                       })
+                                            Note = d.Note,
+                                            employeeName = e.FullName,
+                                            reviewerName = rev.FullName,
+                                            failReason = r.ReasonName
+                                        })
                                        .Take(10)
                                        .ToListAsync();
 
@@ -683,17 +684,18 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (contributorEmployeeIds.Any())
             {
                 var latestCheckInsQuery = from ci in _context.KPICheckIns
-                                         join d in _context.CheckInDetails on ci.Id equals d.CheckInId
-                                         where ci.KPIId == id &&
-                                               contributorEmployeeIds.Contains(ci.EmployeeId ?? 0) &&
-                                               ci.ReviewStatus == "Approved"
-                                         group new { ci, d } by ci.EmployeeId into g
-                                         select new {
-                                             EmployeeId = g.Key ?? 0,
-                                             AchievedValue = g.OrderByDescending(x => x.ci.CheckInDate)
-                                                 .Select(x => x.d.AchievedValue ?? 0)
-                                                 .FirstOrDefault()
-                                         };
+                                          join d in _context.CheckInDetails on ci.Id equals d.CheckInId
+                                          where ci.KPIId == id &&
+                                                contributorEmployeeIds.Contains(ci.EmployeeId ?? 0) &&
+                                                ci.ReviewStatus == "Approved"
+                                          group new { ci, d } by ci.EmployeeId into g
+                                          select new
+                                          {
+                                              EmployeeId = g.Key ?? 0,
+                                              AchievedValue = g.OrderByDescending(x => x.ci.CheckInDate)
+                                                  .Select(x => x.d.AchievedValue ?? 0)
+                                                  .FirstOrDefault()
+                                          };
 
                 var latestValues = await latestCheckInsQuery.ToListAsync();
                 totalGroupAchieved = latestValues.Sum(v => v.AchievedValue);
@@ -1068,16 +1070,17 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             // Fetch employees grouped by department
             var groupedEmployees = await (from e in _context.Employees
-                                        where employeeQuery.Select(x => x.Id).Contains(e.Id)
-                                        join ea in _context.EmployeeAssignments.Where(a => a.IsActive == true) on e.Id equals ea.EmployeeId into eas
-                                        from ea in eas.DefaultIfEmpty()
-                                        join d in _context.Departments on ea.DepartmentId equals d.Id into ds
-                                        from d in ds.DefaultIfEmpty()
-                                        orderby d.DepartmentName ?? "Phòng ban khác", e.FullName
-                                        select new {
-                                            Employee = e,
-                                            DepartmentName = d.DepartmentName ?? "Phòng ban khác"
-                                        })
+                                          where employeeQuery.Select(x => x.Id).Contains(e.Id)
+                                          join ea in _context.EmployeeAssignments.Where(a => a.IsActive == true) on e.Id equals ea.EmployeeId into eas
+                                          from ea in eas.DefaultIfEmpty()
+                                          join d in _context.Departments on ea.DepartmentId equals d.Id into ds
+                                          from d in ds.DefaultIfEmpty()
+                                          orderby d.DepartmentName ?? "Phòng ban khác", e.FullName
+                                          select new
+                                          {
+                                              Employee = e,
+                                              DepartmentName = d.DepartmentName ?? "Phòng ban khác"
+                                          })
                                         .ToListAsync();
 
             var groupedData = groupedEmployees
