@@ -851,6 +851,41 @@
         }
     }
 
+    @@media (max-width: 767.98px) {
+        .kanban-board {
+            grid-template-columns: repeat(6, minmax(82vw, 320px));
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            padding-inline: 4px;
+        }
+
+        .kanban-column {
+            scroll-snap-align: center;
+            height: clamp(480px, calc(100dvh - 280px), 640px);
+        }
+
+        .kanban-quick-tools {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .kanban-search,
+        .kanban-sort {
+            width: 100% !important;
+        }
+
+        .kanban-filter-group {
+            overflow-x: auto;
+            flex-wrap: nowrap !important;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .kanban-filter-group .btn {
+            flex-shrink: 0;
+        }
+    }
+
     .kanban-column {
         background: #f8fafc;
         border: 1px solid var(--card-border);

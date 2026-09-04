@@ -821,7 +821,12 @@
     }
 
     .nextgen-shell .dashboard-stat-card .card-body {
-        min-height: 128px;
+        min-height: auto;
+        padding: 12px 14px;
+    }
+
+    .nextgen-shell .dashboard-stat-card .fs-4 {
+        font-size: 1.25rem !important;
     }
 
     .nextgen-shell .dashboard-chart--trend {

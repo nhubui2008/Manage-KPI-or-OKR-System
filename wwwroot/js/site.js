@@ -1161,11 +1161,20 @@ document.addEventListener('DOMContentLoaded', function () {
     function syncSidebarAccessibility(isExpanded) {
         const isMobile = mobileViewport.matches;
         sidebarToggle?.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+        document.getElementById('mobileBottomMenuBtn')?.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
         overlay?.setAttribute('tabindex', isMobile && isExpanded ? '0' : '-1');
         document.body.classList.toggle('mobile-navigation-open', isMobile && isExpanded);
         if (sidebar) {
             sidebar.setAttribute('aria-hidden', isMobile && !isExpanded ? 'true' : 'false');
         }
+    }
+
+    const mobileBottomMenuBtn = document.getElementById('mobileBottomMenuBtn');
+    if (mobileBottomMenuBtn && sidebarToggle) {
+        mobileBottomMenuBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            sidebarToggle.click();
+        });
     }
 
     if (sidebarToggle) {
@@ -1183,6 +1192,26 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // Tự động gán data-label cho các ô bảng dữ liệu để hiển thị Adaptive Cards trên mobile
+    function setupAdaptiveTableCards(root) {
+        const scope = root && root.querySelectorAll ? root : document;
+        const tables = scope.querySelectorAll('.evaluation-table, .catalog-table, .data-table, .table-adaptive-cards, .table-responsive > .table:not(.table-no-cards)');
+        tables.forEach(function (table) {
+            const thList = Array.from(table.querySelectorAll('thead th'));
+            if (!thList.length) return;
+            const headers = thList.map(th => th.textContent.trim().replace(/\s+/g, ' '));
+            table.querySelectorAll('tbody tr').forEach(function (row) {
+                const cells = Array.from(row.querySelectorAll('td'));
+                cells.forEach(function (cell, idx) {
+                    if (!cell.getAttribute('data-label') && headers[idx] && headers[idx] !== '') {
+                        cell.setAttribute('data-label', headers[idx]);
+                    }
+                });
+            });
+        });
+    }
+    setupAdaptiveTableCards();
 
     function closeMobileSidebar() {
         document.documentElement.classList.remove('sidebar-expanded');
@@ -1628,6 +1657,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function refreshDynamicPageBehaviors() {
         window.applyMeasurementUnitBehavior?.(pageContent);
         window.refreshSelect2?.();
+        setupAdaptiveTableCards(pageContent);
         document.dispatchEvent(new CustomEvent('instant:navigation-ready', {
             detail: { path: window.location.pathname, root: pageContent }
         }));

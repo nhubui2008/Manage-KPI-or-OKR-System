@@ -605,6 +605,17 @@
                         <button type="button" id="sidebarToggle" class="sidebar-toggle" aria-label="Thu gọn hoặc mở rộng thanh điều hướng" aria-expanded="false" aria-controls="sidebar">
                             <i class="bi bi-list"></i>
                         </button>
+                        <a href="/Dashboard" class="header-mobile-brand d-lg-none text-decoration-none" aria-label="Trang chủ">
+                            @if (appBranding.HasLogo)
+                            {
+                                <img src="@appBranding.LogoUrl" alt="@appBranding.CompanyName" class="header-mobile-brand-img" />
+                            }
+                            else
+                            {
+                                <i class="bi bi-hexagon-fill header-mobile-brand-icon"></i>
+                            }
+                            <span class="header-mobile-brand-title">@appBranding.ShortName</span>
+                        </a>
                         @if (canUseQuickSearch)
                         {
                             <button type="button" id="mobileSearchToggle" class="header-icon-btn mobile-search-toggle" aria-label="Mở tìm kiếm nhanh" aria-expanded="false" aria-controls="headerSearch">
@@ -748,6 +759,51 @@
                 </footer>
             </div>
         </div>
+        @if (isInternalPage && User.Identity != null && User.Identity.IsAuthenticated)
+        {
+            <!-- Mobile Bottom Navigation Bar (Thumb-zone Quick Access) -->
+            <nav id="mobileBottomNav" class="mobile-bottom-nav d-lg-none" aria-label="Điều hướng nhanh trên di động">
+                <div class="mobile-bottom-nav__inner">
+                    @if (showDashboard)
+                    {
+                        var isDashActive = currentController.Equals("Dashboard", StringComparison.OrdinalIgnoreCase);
+                        <a href="/Dashboard" class="mobile-bottom-nav__item @(isDashActive ? "is-active" : "")" aria-current="@(isDashActive ? "page" : "false")">
+                            <span class="mobile-bottom-nav__icon"><i class="bi bi-grid-1x2-fill"></i></span>
+                            <span class="mobile-bottom-nav__label">Tổng quan</span>
+                        </a>
+                    }
+                    @if (showWorkProjects)
+                    {
+                        var isWorkActive = currentController.Equals("WorkProjects", StringComparison.OrdinalIgnoreCase);
+                        <a href="/WorkProjects" class="mobile-bottom-nav__item @(isWorkActive ? "is-active" : "")" aria-current="@(isWorkActive ? "page" : "false")">
+                            <span class="mobile-bottom-nav__icon"><i class="bi bi-kanban-fill"></i></span>
+                            <span class="mobile-bottom-nav__label">Công việc</span>
+                        </a>
+                    }
+                    @if (showOkrs || showKpis)
+                    {
+                        var isGoalActive = currentController.Equals("OKRs", StringComparison.OrdinalIgnoreCase) || currentController.Equals("KPIs", StringComparison.OrdinalIgnoreCase);
+                        var goalUrl = showOkrs ? "/OKRs" : "/KPIs";
+                        <a href="@goalUrl" class="mobile-bottom-nav__item @(isGoalActive ? "is-active" : "")" aria-current="@(isGoalActive ? "page" : "false")">
+                            <span class="mobile-bottom-nav__icon"><i class="bi bi-bullseye"></i></span>
+                            <span class="mobile-bottom-nav__label">Mục tiêu</span>
+                        </a>
+                    }
+                    @if (showSelfCheckIns || showManagerTracking)
+                    {
+                        var isCheckinActive = currentController.Equals("KPICheckIns", StringComparison.OrdinalIgnoreCase);
+                        <a href="/KPICheckIns" class="mobile-bottom-nav__item @(isCheckinActive ? "is-active" : "")" aria-current="@(isCheckinActive ? "page" : "false")">
+                            <span class="mobile-bottom-nav__icon"><i class="bi bi-pencil-square"></i></span>
+                            <span class="mobile-bottom-nav__label">Check-in</span>
+                        </a>
+                    }
+                    <button type="button" id="mobileBottomMenuBtn" class="mobile-bottom-nav__item mobile-bottom-nav__toggle" aria-label="Mở toàn bộ danh mục menu" aria-controls="sidebar" aria-expanded="false">
+                        <span class="mobile-bottom-nav__icon"><i class="bi bi-grid"></i></span>
+                        <span class="mobile-bottom-nav__label">Menu</span>
+                    </button>
+                </div>
+            </nav>
+        }
         @if (canUseAiAdvisor)
         {
             @await Html.PartialAsync("_AIChatWidget")

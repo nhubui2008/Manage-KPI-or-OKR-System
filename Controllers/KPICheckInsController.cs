@@ -578,7 +578,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
         [HasPermission("KPICHECKINS_CREATE", "CHECKINS_CREATE", "EMPLOYEE_UPDATE_KPI_PROGRESS")]
         public async Task<IActionResult> Create(int? kpiId, int? employeeId, string? returnUrl)
         {
-            await PopulateCreateViewBag();
+            await PopulateCreateViewBag(kpiId);
             ViewBag.ReturnUrl = returnUrl;
 
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -590,6 +590,11 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (employeeId.HasValue && allEmployees?.Any(candidate => candidate.Id == employeeId.Value) == true)
             {
                 model.EmployeeId = employeeId.Value;
+            }
+            else if (employee != null && (User.IsInRole("Employee") || User.IsInRole("employee") ||
+                                          User.IsInRole("Sales") || User.IsInRole("sales")))
+            {
+                model.EmployeeId = employee.Id;
             }
 
             if (kpiId.HasValue)
@@ -611,19 +616,12 @@ namespace Manage_KPI_or_OKR_System.Controllers
                         ViewBag.KPIData = filteredData;
                     }
                 }
-
-                // Nếu là Employee, tự động gán EmployeeId
-                if (employee != null && (User.IsInRole("Employee") || User.IsInRole("employee") ||
-                                       User.IsInRole("Sales") || User.IsInRole("sales")))
-                {
-                    model.EmployeeId = employee.Id;
-                }
             }
 
             return View(model);
         }
 
-        private async Task PopulateCreateViewBag()
+        private async Task PopulateCreateViewBag(int? requestedKpiId = null)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int? systemUserId = int.TryParse(userIdStr, out int uid) ? uid : null;
@@ -639,13 +637,14 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var kpiQuery = _context.KPIs.Where(k => k.IsActive == true &&
                                                     k.StatusId.HasValue &&
                                                     executableKpiStatusIds.Contains(k.StatusId.Value) &&
-                                                    k.PeriodId.HasValue &&
-                                                    _context.EvaluationPeriods.Any(p =>
-                                                        p.Id == k.PeriodId.Value &&
-                                                        p.IsActive == true &&
-                                                        p.StatusId.HasValue && writablePeriodStatusIds.Contains(p.StatusId.Value) &&
-                                                        p.StartDate.HasValue && p.StartDate.Value.Date <= today &&
-                                                        p.EndDate.HasValue && p.EndDate.Value.Date >= today));
+                                                    ((requestedKpiId.HasValue && k.Id == requestedKpiId.Value) ||
+                                                     (k.PeriodId.HasValue &&
+                                                      _context.EvaluationPeriods.Any(p =>
+                                                          p.Id == k.PeriodId.Value &&
+                                                          p.IsActive == true &&
+                                                          p.StatusId.HasValue && writablePeriodStatusIds.Contains(p.StatusId.Value) &&
+                                                          p.StartDate.HasValue && p.StartDate.Value.Date <= today &&
+                                                          p.EndDate.HasValue && p.EndDate.Value.Date >= today))));
             var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
 
             bool isManager = User.IsInRole("Manager") || User.IsInRole("manager");
@@ -1068,7 +1067,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (!ModelState.IsValid)
             {
-                await PopulateCreateViewBag();
+                await PopulateCreateViewBag(model.KPIId);
                 ViewBag.AchievedValue = AchievedValue;
                 ViewBag.Note = Note;
                 ViewBag.ReturnUrl = returnUrl;
@@ -1184,7 +1183,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (!ModelState.IsValid)
             {
-                await PopulateCreateViewBag();
+                await PopulateCreateViewBag(model.KPIId);
                 ViewBag.AchievedValue = AchievedValue;
                 ViewBag.Note = Note;
                 ViewBag.ReturnUrl = returnUrl;
