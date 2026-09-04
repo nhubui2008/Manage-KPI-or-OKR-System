@@ -180,12 +180,12 @@
                                                     string krColor = ProgressHelper.GetProgressColorClass(krPercent);
                                                     var krName = string.IsNullOrWhiteSpace(kr.KeyResultName) ? $"KR #{kr.Id}" : kr.KeyResultName;
 
-                                                    <div class="okr-kr-row">
+                                                    <div class="okr-kr-row" data-kr-id="@kr.Id">
                                                         <div class="okr-kr-row__main">
                                                             <div class="okr-kr-row__name">@krIndex. @krName</div>
                                                             <div class="okr-kr-row__meta">
                                                                 <span>Mục tiêu: @String.Format("{0:N0}", kr.TargetValue) @kr.Unit</span>
-                                                                <span>Hiện tại: @String.Format("{0:N1}", kr.CurrentValue ?? 0) @kr.Unit</span>
+                                                                <span class="okr-kr-current-val">Hiện tại: @String.Format("{0:N1}", kr.CurrentValue ?? 0) @kr.Unit</span>
                                                                 @if (kr.IsInverse)
                                                                 {
                                                                     <span class="okr-kr-inverse"><i class="bi bi-info-circle" aria-hidden="true"></i> Giảm thiểu</span>
@@ -238,6 +238,7 @@
                                                                           data-confirm-label="Xóa vĩnh viễn"
                                                                           data-confirm-require-text="XÓA"
                                                                           data-confirm-require-label="Nhập “XÓA” để xác nhận xóa Key Result">
+                                                                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
                                                                         <button type="submit" class="btn btn-sm okr-icon-btn okr-icon-btn--danger"
                                                                                 title="Xóa @krName"
                                                                                 aria-label="Xóa Key Result #@kr.Id: @krName">

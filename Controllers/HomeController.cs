@@ -258,11 +258,11 @@ public class HomeController : Controller
                 ? null
                 : HtmlEncoder.Default.Encode(setupUrl);
 
-            string emailSubject = "Tài khoản VIETMACH của bạn đã được tạo";
+            string emailSubject = "Tài khoản NextGen của bạn đã được tạo";
             string emailBody = $@"
 <div style=""font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);"">
     <div style=""background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 40px 20px; text-align: center;"">
-        <h1 style=""color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;"">VIETMACH</h1>
+        <h1 style=""color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;"">NextGen</h1>
         <p style=""color: #bfdbfe; margin: 10px 0 0 0; font-size: 16px; font-weight: 500;"">Nền tảng Quản trị Hiệu suất Toàn diện</p>
     </div>
     <div style=""padding: 40px 30px;"">
@@ -273,8 +273,8 @@ public class HomeController : Controller
                 : $"<p><a href=\"{encodedSetupUrl}\" style=\"display:inline-block;background:#2563eb;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600\">Thiết lập mật khẩu</a></p><p style=\"color:#64748b;font-size:14px\">Liên kết dùng một lần và hết hạn sau 15 phút.</p>")}
     </div>
     <div style=""background-color: #f1f5f9; padding: 20px; text-align: center; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0;"">
-        <p style=""margin: 0; font-weight: 600;"">&copy; {DateTime.Now.Year} VietMach System. Mọi quyền được bảo lưu.</p>
-        <p style=""margin: 8px 0 0 0;"">Email hỗ trợ: support@vietmach.com | Hotline: 1900 0000</p>
+        <p style=""margin: 0; font-weight: 600;"">&copy; {DateTime.Now.Year} NextGen System. Mọi quyền được bảo lưu.</p>
+        <p style=""margin: 8px 0 0 0;"">Email hỗ trợ: support@nextgen.com | Hotline: 1900 0000</p>
     </div>
 </div>";
 

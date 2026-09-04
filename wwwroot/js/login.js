@@ -1,5 +1,5 @@
 /**
- * LIGHT 3D CRYSTAL AUTH JAVASCRIPT - VIETMACH SYSTEM
+ * LIGHT 3D CRYSTAL AUTH JAVASCRIPT - NEXTGEN SYSTEM
  * Features:
  * 1. Password Visibility Toggle
  * 2. Form Validation & Loading Spinner State

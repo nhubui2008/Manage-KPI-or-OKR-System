@@ -805,31 +805,64 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [HasPermission("OKRS_EDIT", "EMPLOYEE_UPDATE_KPI_PROGRESS")]
-        public async Task<IActionResult> UpdateKeyResultProgress(int krId, decimal currentValue)
+        public async Task<IActionResult> UpdateKeyResultProgress(int krId, decimal currentValue, string? returnUrl = null)
         {
+            var isAjaxRequest = string.Equals(
+                Request.Headers["X-Requested-With"].ToString(),
+                "XMLHttpRequest",
+                StringComparison.OrdinalIgnoreCase) ||
+                (Request.Headers.ContainsKey("Accept") && Request.Headers["Accept"].ToString().Contains("application/json"));
+
+            // Culture-safe decimal parsing fallback if model binding failed
+            if (!ModelState.IsValid && Request.HasFormContentType && Request.Form.TryGetValue("currentValue", out var rawValueStr))
+            {
+                var normalized = rawValueStr.ToString().Trim().Replace(',', '.');
+                if (decimal.TryParse(normalized, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedValue))
+                {
+                    currentValue = parsedValue;
+                    ModelState.Clear();
+                }
+            }
+
             var kr = await _context.OKRKeyResults.FindAsync(krId);
             if (kr == null)
             {
+                if (isAjaxRequest)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy Key Result cần cập nhật." });
+                }
                 TempData["ErrorMessage"] = "Không tìm thấy Key Result cần cập nhật.";
-                return RedirectToAction(nameof(Index));
+                return RedirectWithReturnUrl(returnUrl);
             }
 
             if (!kr.OKRId.HasValue || !await _context.OKRs
                     .AsNoTracking()
                     .AnyAsync(o => o.Id == kr.OKRId.Value && o.IsActive == true))
             {
+                if (isAjaxRequest)
+                {
+                    return NotFound(new { success = false, message = "OKR không tồn tại hoặc đã bị vô hiệu hóa." });
+                }
                 return NotFound("OKR không tồn tại hoặc đã bị vô hiệu hóa.");
             }
 
             if (!kr.OKRId.HasValue || !await CanCurrentUserUpdateOkrProgressAsync(kr.OKRId.Value))
             {
+                if (isAjaxRequest)
+                {
+                    return StatusCode(403, new { success = false, message = "Bạn không có quyền cập nhật tiến độ OKR này." });
+                }
                 return Forbid();
             }
 
             if (currentValue < 0)
             {
+                if (isAjaxRequest)
+                {
+                    return BadRequest(new { success = false, message = "Giá trị tiến độ không được nhỏ hơn 0." });
+                }
                 TempData["ErrorMessage"] = "Giá trị tiến độ không được nhỏ hơn 0.";
-                return RedirectToAction(nameof(Index));
+                return RedirectWithReturnUrl(returnUrl, kr.OKRId);
             }
 
             kr.CurrentValue = currentValue;
@@ -844,14 +877,65 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 await TouchOkrUpdatedAtAsync(kr.OKRId.Value);
             }
 
-            TempData["SuccessMessage"] = "Đã cập nhật tiến độ Key Result và đánh giá thành công!";
+            var okr = kr.OKRId.HasValue
+                ? await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId.Value)
+                : null;
+            decimal okrTotalProgress = okr?.TotalProgress ?? 0m;
+
+            if (isAjaxRequest)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    krId = kr.Id,
+                    okrId = kr.OKRId,
+                    currentValue = kr.CurrentValue,
+                    targetValue = kr.TargetValue,
+                    unit = kr.Unit,
+                    progress = Math.Round(progress, 1),
+                    resultStatus = kr.ResultStatus,
+                    progressBarClass = ProgressHelper.GetProgressColorClass(progress),
+                    okrTotalProgress = Math.Round(okrTotalProgress, 1),
+                    okrProgressBarClass = ProgressHelper.GetProgressColorClass(okrTotalProgress),
+                    message = $"Đã cập nhật tiến độ KR '{kr.KeyResultName}' thành công ({progress:0.#}%)."
+                });
+            }
+
+            TempData["SuccessMessage"] = $"Đã cập nhật tiến độ Key Result thành công! Tiến độ mới: {progress:0.#}% (Mục tiêu: {okrTotalProgress:0.#}%)";
+
+            return RedirectWithReturnUrl(returnUrl, kr.OKRId);
+        }
+
+        private IActionResult RedirectWithReturnUrl(string? returnUrl, int? okrId = null)
+        {
+            if (!string.IsNullOrWhiteSpace(returnUrl))
+            {
+                var cleanUrl = returnUrl.Split('#')[0];
+                var isLocal = Url != null
+                    ? Url.IsLocalUrl(cleanUrl)
+                    : (cleanUrl.StartsWith("/") && !cleanUrl.StartsWith("//") && !cleanUrl.StartsWith("/\\"));
+                if (isLocal)
+                {
+                    var targetUrl = returnUrl;
+                    if (okrId.HasValue && !targetUrl.Contains("#"))
+                    {
+                        targetUrl += $"#heading-{okrId.Value}";
+                    }
+                    return LocalRedirect(targetUrl);
+                }
+            }
+
+            if (okrId.HasValue)
+            {
+                return RedirectToAction(nameof(Index), new { expandOkrId = okrId.Value });
+            }
 
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
         [HasPermission("OKRS_EDIT")]
-        public async Task<IActionResult> EditKeyResult(OKRKeyResult model)
+        public async Task<IActionResult> EditKeyResult(OKRKeyResult model, string? returnUrl = null)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales"))
@@ -861,7 +945,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             if (validationError != null)
             {
                 TempData["ErrorMessage"] = validationError;
-                return RedirectToAction(nameof(Index));
+                return RedirectWithReturnUrl(returnUrl, model.OKRId);
             }
 
             var kr = await _context.OKRKeyResults.FindAsync(model.Id);
@@ -893,7 +977,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == kr.OKRId);
                 TempData["SuccessMessage"] = $"Đã cập nhật KR thành công! Tiến độ mục tiêu hiện tại: {okr?.TotalProgress}%";
             }
-            return RedirectToAction(nameof(Index));
+            return RedirectWithReturnUrl(returnUrl, model.OKRId ?? kr?.OKRId);
         }
 
         [HttpPost]
@@ -1013,7 +1097,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
         [HttpPost]
         [HasPermission("OKRS_DELETE")]
-        public async Task<IActionResult> DeleteKeyResult(int id)
+        public async Task<IActionResult> DeleteKeyResult(int id, string? returnUrl = null)
         {
             if (User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales"))
@@ -1038,7 +1122,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 {
                     TempData["ErrorMessage"] =
                         $"Không thể xóa Key Result vì còn {linkedActiveTasks} task đang liên kết. Hãy hoàn tất/xóa task trên Kanban trước, hoặc giữ KR để không tạo orphan mapping.";
-                    return RedirectToAction(nameof(Index));
+                    return RedirectWithReturnUrl(returnUrl, okrId);
                 }
 
                 // Detach historical inactive tasks so hard-delete does not leave broken FK expectations.
@@ -1056,8 +1140,9 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
                 var okr = await _context.OKRs.Include(o => o.KeyResults).FirstOrDefaultAsync(o => o.Id == okrId);
                 TempData["SuccessMessage"] = $"Đã xóa KR thành công! Tiến độ mục tiêu còn lại: {okr?.TotalProgress}%";
+                return RedirectWithReturnUrl(returnUrl, okrId);
             }
-            return RedirectToAction(nameof(Index));
+            return RedirectWithReturnUrl(returnUrl);
         }
 
         [HasPermission("OKRS_VIEW")]

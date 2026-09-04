@@ -1,6 +1,6 @@
 # 🎓 Hướng Dẫn Sử Dụng Bộ Slide Thuyết Trình Báo Cáo DATN (FPT Polytechnic)
 
-Bộ slide HTML 16:9 chuẩn học đường FPT Polytechnic (Theme cam `#F37021` + trắng) phục vụ báo cáo bảo vệ dự án tốt nghiệp 30 phút cho **Nhóm VietMach (7 thành viên)**.
+Bộ slide HTML 16:9 chuẩn học đường FPT Polytechnic (Theme cam `#F37021` + trắng) phục vụ báo cáo bảo vệ dự án tốt nghiệp 30 phút cho **Nhóm NextGen (7 thành viên)**.
 
 ---
 

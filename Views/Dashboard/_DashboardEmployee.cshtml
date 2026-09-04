@@ -1,0 +1,281 @@
+@model Manage_KPI_or_OKR_System.Models.ViewModels.EmployeeDashboardViewModel
+
+<!-- NHÂN VIÊN / EMPLOYEE DASHBOARD -->
+<div class="dashboard-role-view dashboard-employee-view">
+    <!-- Action Banner & Quick Check-in CTA -->
+    <div class="card dashboard-card bg-primary-subtle border-primary-subtle mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-12 col-md-8">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar-md bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                            <i class="bi bi-person-workspace"></i>
+                        </div>
+                        <div>
+                            <h2 class="fs-5 fw-bold mb-1 text-primary-emphasis">Không Gian Hiệu Suất Cá Nhân</h2>
+                            <p class="text-muted mb-0 small">
+                                Kỳ đánh giá hiện tại: Điểm hoàn thành của bạn đang đạt <strong class="text-primary">@Model.PersonalKpiScore%</strong>.
+                                Hạn check-in tiếp theo: <strong class="@Model.NextCheckInUrgencyClass">@Model.NextCheckInDeadlineText</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+                    <a href="/KPICheckIns" class="btn btn-primary btn-load shadow-sm px-4">
+                        <i class="bi bi-plus-circle me-1"></i>Cập nhật Check-in ngay
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <section class="row g-3 dashboard-section" aria-label="Chỉ số cá nhân">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="card dashboard-card dashboard-stat-card stat-card--primary h-100">
+                <div class="card-body">
+                    <div class="dashboard-stat-header">
+                        <span class="dashboard-stat-label">Tiến Độ KPI Cá Nhân</span>
+                        <span class="dashboard-stat-icon" aria-hidden="true">
+                            <i class="bi bi-speedometer2"></i>
+                        </span>
+                    </div>
+                    <div class="dashboard-stat-value">@Model.PersonalKpiScore%</div>
+                    <div class="dashboard-stat-footer">
+                        <span class="badge @(Model.PersonalKpiScore >= 80 ? "badge-soft-success" : Model.PersonalKpiScore >= 50 ? "badge-soft-warning" : "badge-soft-danger")">
+                            @(Model.PersonalKpiScore >= 80 ? "Đạt chỉ tiêu" : Model.PersonalKpiScore >= 50 ? "Đang nỗ lực" : "Cần tăng tốc")
+                        </span>
+                        <span class="text-muted ms-2">Bình quân các chỉ số</span>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="card dashboard-card dashboard-stat-card stat-card--success h-100">
+                <div class="card-body">
+                    <div class="dashboard-stat-header">
+                        <span class="dashboard-stat-label">Xếp Loại Dự Kiến</span>
+                        <span class="dashboard-stat-icon" aria-hidden="true">
+                            <i class="bi bi-trophy"></i>
+                        </span>
+                    </div>
+                    <div class="dashboard-stat-value fs-4">@Model.EstimatedRank</div>
+                    <div class="dashboard-stat-footer">
+                        <span class="badge @Model.RankBadgeClass">Tạm tính kỳ này</span>
+                        <span class="text-muted ms-2">Dựa trên KPI đạt</span>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="card dashboard-card dashboard-stat-card stat-card--info h-100">
+                <div class="card-body">
+                    <div class="dashboard-stat-header">
+                        <span class="dashboard-stat-label">Mục Tiêu Được Giao</span>
+                        <span class="dashboard-stat-icon" aria-hidden="true">
+                            <i class="bi bi-bullseye"></i>
+                        </span>
+                    </div>
+                    <div class="dashboard-stat-value">@Model.AssignedKpisCount <span class="fs-6 text-muted font-normal">KPI</span></div>
+                    <div class="dashboard-stat-footer">
+                        <span class="badge badge-soft-info">
+                            <i class="bi bi-link-45deg me-1"></i>@Model.AssignedOkrsCount OKR liên kết
+                        </span>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="card dashboard-card dashboard-stat-card stat-card--warning h-100">
+                <div class="card-body">
+                    <div class="dashboard-stat-header">
+                        <span class="dashboard-stat-label">Công Việc Cần Làm</span>
+                        <span class="dashboard-stat-icon" aria-hidden="true">
+                            <i class="bi bi-list-task"></i>
+                        </span>
+                    </div>
+                    <div class="dashboard-stat-value @(Model.PendingTasksCount > 0 ? "text-primary" : "text-success")">
+                        @Model.PendingTasksCount
+                    </div>
+                    <div class="dashboard-stat-footer">
+                        <span class="badge @(Model.PendingTasksCount > 0 ? "badge-soft-warning" : "badge-soft-success")">
+                            @(Model.PendingTasksCount > 0 ? "Đang thực hiện" : "Đã xong tất cả")
+                        </span>
+                        <span class="text-muted ms-2">Task Kanban</span>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <!-- My KPIs Table -->
+    <section class="row g-3 dashboard-section" aria-label="Danh sách KPI cá nhân">
+        <div class="col-12">
+            <article class="card dashboard-card">
+                <header class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="card-title mb-0">Danh Sách KPI Cá Nhân Đang Đảm Nhiệm</h2>
+                        <small class="text-muted">Chi tiết các chỉ số đo lường hiệu suất và kết quả thực tế</small>
+                    </div>
+                    <a href="/KPIs" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-right me-1"></i>Xem tất cả KPI
+                    </a>
+                </header>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-nowrap align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Mã</th>
+                                    <th scope="col">Tên chỉ số KPI</th>
+                                    <th scope="col" class="text-end">Chỉ tiêu</th>
+                                    <th scope="col" class="text-end">Thực tế đạt</th>
+                                    <th scope="col" class="text-center">Đơn vị</th>
+                                    <th scope="col" style="min-width: 170px;">Tiến độ</th>
+                                    <th scope="col">Tình trạng</th>
+                                    <th scope="col" class="text-end">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.PersonalKpis.Any())
+                                {
+                                    @foreach (var kpi in Model.PersonalKpis)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="badge badge-soft-secondary">@kpi.KpiCode</span>
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold text-truncate" style="max-width: 240px;" title="@kpi.KpiName">@kpi.KpiName</div>
+                                            </td>
+                                            <td class="text-end fw-semibold">@kpi.TargetValue.ToString("N0")</td>
+                                            <td class="text-end fw-bold text-primary">@kpi.CurrentValue.ToString("N0")</td>
+                                            <td class="text-center text-muted">@kpi.Unit</td>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="progress flex-grow-1" style="height: 8px;">
+                                                        <div class="progress-bar @kpi.StatusColorClass" role="progressbar" style="width: @(Math.Min(kpi.ProgressPercentage, 100))%" aria-valuenow="@kpi.ProgressPercentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                                    </div>
+                                                    <span class="small fw-bold">@kpi.ProgressPercentage%</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge @(kpi.ProgressPercentage >= 100 ? "badge-soft-success" : kpi.ProgressPercentage >= 70 ? "badge-soft-primary" : kpi.ProgressPercentage >= 40 ? "badge-soft-warning" : "badge-soft-danger")">
+                                                    @kpi.StatusLabel
+                                                </span>
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="/KPICheckIns?searchString=@kpi.KpiName" class="btn btn-sm btn-outline-primary" title="Cập nhật báo cáo cho KPI này">
+                                                    <i class="bi bi-pencil-square me-1"></i>Check-in
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">Bạn chưa được phân bổ KPI nào trong kỳ này</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <!-- Assigned Tasks & Personal History Trend -->
+    <section class="row g-3 dashboard-section" aria-label="Nhiệm vụ công việc và lịch sử tiến độ">
+        <div class="col-12 col-lg-7">
+            <article class="card dashboard-card h-100">
+                <header class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="card-title mb-0">Công Việc Dự Án Của Tôi</h2>
+                        <small class="text-muted">Các task Kanban đang thực hiện hoặc sắp đến hạn</small>
+                    </div>
+                    <a href="/WorkProjects" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-kanban me-1"></i>Bảng Kanban
+                    </a>
+                </header>
+                <div class="card-body p-0">
+                    @if (Model.AssignedTasks.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover table-nowrap align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col">Tên công việc</th>
+                                        <th scope="col">Dự án</th>
+                                        <th scope="col">Ưu tiên</th>
+                                        <th scope="col">Hạn chót</th>
+                                        <th scope="col">Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var task in Model.AssignedTasks)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="fw-semibold text-truncate" style="max-width: 200px;" title="@task.TaskName">@task.TaskName</div>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">@task.ProjectName</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge @task.PriorityBadgeClass">@task.Priority</span>
+                                            </td>
+                                            <td>
+                                                <small class="@(task.IsOverdue ? "text-danger fw-bold" : "text-muted")">
+                                                    @(task.DueDate?.ToString("dd/MM/yyyy") ?? "Không có hạn")
+                                                    @if (task.IsOverdue)
+                                                    {
+                                                        <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Quá hạn"></i>
+                                                    }
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark">@task.Status</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-4 text-center text-muted">
+                            <i class="bi bi-check2-circle fs-2 text-success d-block mb-2"></i>
+                            Bạn không có nhiệm vụ công việc nào đang chờ xử lý!
+                        </div>
+                    }
+                </div>
+            </article>
+        </div>
+
+        <div class="col-12 col-lg-5">
+            <article class="card dashboard-card h-100">
+                <header class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title mb-0">Lịch Sử Tiến Độ 6 Tháng Gần Nhất</h2>
+                        <small class="text-muted">Đồ thị tăng trưởng kết quả KPI của riêng bạn</small>
+                    </div>
+                </header>
+                <div class="card-body">
+                    <div class="dashboard-chart-container" style="position: relative; height: 260px;">
+                        <canvas id="employeePersonalTrendChart" aria-label="Biểu đồ tiến độ cá nhân" role="img"></canvas>
+                        <div id="employeePersonalTrendChartState" class="dashboard-chart-empty" hidden>
+                            <i class="bi bi-graph-up fs-1 text-muted" aria-hidden="true"></i>
+                            <span class="mt-2 text-muted">Chưa có dữ liệu lịch sử check-in</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+</div>

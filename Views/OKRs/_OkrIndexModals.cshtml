@@ -259,8 +259,10 @@
                     <span id="updateKrNameDisplay" class="text-truncate">KR: </span>
                 </div>
 
-                <form asp-controller="OKRs" asp-action="UpdateKeyResultProgress" method="post" data-submit-guard>
+                <form asp-controller="OKRs" asp-action="UpdateKeyResultProgress" method="post" id="updateKrProgressForm">
                     <input type="hidden" name="krId" id="updateKrId" />
+                    <input type="hidden" name="okrId" id="updateKrOkrId" />
+                    <input type="hidden" name="returnUrl" id="updateKrReturnUrl" />
 
                     <div class="form-icon-group">
                         <label for="updateKrCurrentValue">Thực tế hiện tại</label>
@@ -302,8 +304,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng biểu mẫu sửa Key Result"></button>
             </div>
             <div class="modal-body p-4">
-                <form asp-controller="OKRs" asp-action="EditKeyResult" method="post" data-measurement-scope data-submit-guard>
+                <form asp-controller="OKRs" asp-action="EditKeyResult" method="post" data-measurement-scope data-submit-guard id="editKrForm">
                     <input type="hidden" name="Id" id="editKrId" />
+                    <input type="hidden" name="returnUrl" id="editKrReturnUrl" />
                     <div class="mb-3">
                         <label class="form-label" for="editKrName">Mô tả Key Result <span class="text-danger">*</span></label>
                         <input type="text" name="KeyResultName" id="editKrName" class="form-control" required>

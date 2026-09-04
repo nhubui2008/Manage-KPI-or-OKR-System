@@ -283,8 +283,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             var existingParams = await _context.SystemParameters.Where(p => paramKeys.Contains(p.ParameterCode)).ToListAsync();
 
-            if (!existingParams.Any(p => p.ParameterCode == "SaaS_BrandName")) _context.SystemParameters.Add(new SystemParameter { ParameterCode = "SaaS_BrandName", Value = "VIETMACH MiniERP SaaS" });
-            if (!existingParams.Any(p => p.ParameterCode == "SaaS_SupportEmail")) _context.SystemParameters.Add(new SystemParameter { ParameterCode = "SaaS_SupportEmail", Value = "support@vietmach.com" });
+            if (!existingParams.Any(p => p.ParameterCode == "SaaS_BrandName")) _context.SystemParameters.Add(new SystemParameter { ParameterCode = "SaaS_BrandName", Value = "NextGen MiniERP SaaS" });
+            if (!existingParams.Any(p => p.ParameterCode == "SaaS_SupportEmail")) _context.SystemParameters.Add(new SystemParameter { ParameterCode = "SaaS_SupportEmail", Value = "support@nextgen.com" });
             if (!existingParams.Any(p => p.ParameterCode == "SaaS_TrialTime")) _context.SystemParameters.Add(new SystemParameter { ParameterCode = "SaaS_TrialTime", Value = "30m" });
             if (!existingParams.Any(p => p.ParameterCode == "SaaS_AllowRegistration")) _context.SystemParameters.Add(new SystemParameter { ParameterCode = "SaaS_AllowRegistration", Value = "true" });
             if (!existingParams.Any(p => p.ParameterCode == "SaaS_MaintenanceMode")) _context.SystemParameters.Add(new SystemParameter { ParameterCode = "SaaS_MaintenanceMode", Value = "false" });

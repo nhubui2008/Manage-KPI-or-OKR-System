@@ -479,4 +479,4 @@ Dự án sử dụng EPPlus với NonCommercial License.
 
 ---
 
-*Phát triển bởi VietMach Team — ASP.NET 10 + AI model gateway/RAG + SQL Server*
+*Phát triển bởi NextGen Team — ASP.NET 10 + AI model gateway/RAG + SQL Server*

@@ -456,6 +456,64 @@ public sealed class OKRsControllerKeyResultTests
         Assert.Equal("Gần đạt", updatedKr.ResultStatus);
     }
 
+    [Fact]
+    public async Task UpdateKeyResultProgress_AjaxRequest_ReturnsJsonWithUpdatedKrAndOkrProgress()
+    {
+        await using var context = CreateContext();
+        var adminUser = new SystemUser { Id = 1, Username = "admin", IsActive = true };
+        var employee = new Employee { Id = 1, SystemUserId = 1, FullName = "Admin User", Email = "admin@test.com", Phone = "0123456789", IsActive = true };
+        var okr = new OKR { Id = 110, ObjectiveName = "Company Objective", CreatedById = 1, IsActive = true };
+        var kr = new OKRKeyResult { Id = 210, OKRId = 110, KeyResultName = "Sales KR", TargetValue = 100, CurrentValue = 10, Unit = "%" };
+
+        context.SystemUsers.Add(adminUser);
+        context.Employees.Add(employee);
+        context.OKRs.Add(okr);
+        context.OKRKeyResults.Add(kr);
+        await context.SaveChangesAsync();
+
+        var controller = CreateController(context);
+        controller.ControllerContext.HttpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
+
+        var result = await controller.UpdateKeyResultProgress(kr.Id, 80);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(okResult.Value);
+        dynamic val = okResult.Value;
+        Assert.True((bool)val.success);
+        Assert.Equal(80m, (decimal)val.progress);
+        Assert.Equal("Gần đạt", (string)val.resultStatus);
+        Assert.Equal(110, (int)val.okrId);
+
+        var updatedKr = await context.OKRKeyResults.FindAsync(kr.Id);
+        Assert.NotNull(updatedKr);
+        Assert.Equal(80, updatedKr.CurrentValue);
+    }
+
+    [Fact]
+    public async Task UpdateKeyResultProgress_WithReturnUrl_RedirectsToReturnUrl()
+    {
+        await using var context = CreateContext();
+        var adminUser = new SystemUser { Id = 1, Username = "admin", IsActive = true };
+        var employee = new Employee { Id = 1, SystemUserId = 1, FullName = "Admin User", Email = "admin@test.com", Phone = "0123456789", IsActive = true };
+        var okr = new OKR { Id = 111, ObjectiveName = "Objective 111", CreatedById = 1, IsActive = true };
+        var kr = new OKRKeyResult { Id = 211, OKRId = 111, KeyResultName = "KR 211", TargetValue = 100, CurrentValue = 0, Unit = "%" };
+
+        context.SystemUsers.Add(adminUser);
+        context.Employees.Add(employee);
+        context.OKRs.Add(okr);
+        context.OKRKeyResults.Add(kr);
+        await context.SaveChangesAsync();
+
+        var controller = CreateController(context);
+        var localUrl = "/OKRs?pageNumber=2&searchString=test";
+
+        var result = await controller.UpdateKeyResultProgress(kr.Id, 50, returnUrl: localUrl);
+
+        var redirectResult = Assert.IsType<LocalRedirectResult>(result);
+        Assert.Contains(localUrl, redirectResult.Url);
+        Assert.Contains("#heading-111", redirectResult.Url);
+    }
+
     private static async Task<(OKR Okr, WorkProject Project)> SeedOkrWithLinkedProjectAsync(MiniERPDbContext context)
     {
         var okr = new OKR

@@ -167,7 +167,7 @@
                                 </label>
                                 <div class="sys-input-wrapper">
                                     <i class="bi bi-app-indicator sys-input-icon"></i>
-                                    <input asp-for="Branding.ProductName" class="form-control sys-input-has-icon" maxlength="200" required placeholder="VietMach KPI/OKR System" />
+                                    <input asp-for="Branding.ProductName" class="form-control sys-input-has-icon" maxlength="200" required placeholder="NextGen KPI/OKR System" />
                                 </div>
                                 <span asp-validation-for="Branding.ProductName" class="text-danger small"></span>
                                 <p class="sys-field-hint">Hiển thị trên thanh tiêu đề trình duyệt, email thông báo và metadata trang.</p>
@@ -179,7 +179,7 @@
                                 </label>
                                 <div class="sys-input-wrapper">
                                     <i class="bi bi-layout-sidebar-inset sys-input-icon"></i>
-                                    <input asp-for="Branding.ShortName" class="form-control sys-input-has-icon" maxlength="80" required placeholder="VietMach System" />
+                                    <input asp-for="Branding.ShortName" class="form-control sys-input-has-icon" maxlength="80" required placeholder="NextGen System" />
                                 </div>
                                 <span asp-validation-for="Branding.ShortName" class="text-danger small"></span>
                                 <p class="sys-field-hint">Tên hiển thị bên cạnh Logo trên thanh menu điều hướng.</p>
@@ -191,7 +191,7 @@
                                 </label>
                                 <div class="sys-input-wrapper">
                                     <i class="bi bi-building sys-input-icon"></i>
-                                    <input asp-for="Branding.CompanyName" class="form-control sys-input-has-icon" maxlength="120" required placeholder="VietMach Corp" />
+                                    <input asp-for="Branding.CompanyName" class="form-control sys-input-has-icon" maxlength="120" required placeholder="NextGen Corp" />
                                 </div>
                                 <span asp-validation-for="Branding.CompanyName" class="text-danger small"></span>
                             </div>
@@ -354,14 +354,14 @@
                             <span>Gợi ý phối màu 1-Click (Preset Color Palettes)</span>
                         </div>
                         <div class="sys-presets-grid">
-                            <button type="button" class="sys-preset-btn" data-preset="vietmach">
+                            <button type="button" class="sys-preset-btn" data-preset="nextgen">
                                 <span class="sys-preset-dots">
                                     <span class="sys-preset-dot" style="background: #7b68ee;"></span>
                                     <span class="sys-preset-dot" style="background: #6647f0;"></span>
                                     <span class="sys-preset-dot" style="background: #ffffff;"></span>
                                     <span class="sys-preset-dot" style="background: #292d34;"></span>
                                 </span>
-                                <span>VietMach Violet</span>
+                                <span>NextGen Violet</span>
                             </button>
 
                             <button type="button" class="sys-preset-btn" data-preset="indigo">
@@ -552,7 +552,7 @@
                                 </label>
                                 <div class="sys-input-wrapper">
                                     <i class="bi bi-stars sys-input-icon text-primary"></i>
-                                    <input asp-for="Branding.AiAssistantName" class="form-control sys-input-has-icon" maxlength="120" placeholder="VietMach AI Assistant" />
+                                    <input asp-for="Branding.AiAssistantName" class="form-control sys-input-has-icon" maxlength="120" placeholder="NextGen AI Assistant" />
                                 </div>
                                 <span asp-validation-for="Branding.AiAssistantName" class="text-danger small"></span>
                             </div>
@@ -600,7 +600,7 @@
                                 <label asp-for="Branding.Author" class="sys-field-label">
                                     <span>Tác giả (Meta Author)</span>
                                 </label>
-                                <input asp-for="Branding.Author" class="form-control" maxlength="120" placeholder="VietMach" />
+                                <input asp-for="Branding.Author" class="form-control" maxlength="120" placeholder="NextGen" />
                                 <span asp-validation-for="Branding.Author" class="text-danger small"></span>
                             </div>
 
@@ -608,7 +608,7 @@
                                 <label asp-for="Branding.FooterText" class="sys-field-label">
                                     <span>Nội dung bản quyền chân trang (Footer)</span>
                                 </label>
-                                <textarea asp-for="Branding.FooterText" class="form-control" rows="2" maxlength="500" placeholder="© {year} VietMach - All rights reserved."></textarea>
+                                <textarea asp-for="Branding.FooterText" class="form-control" rows="2" maxlength="500" placeholder="© {year} NextGen - All rights reserved."></textarea>
                                 <p class="sys-field-hint">Sử dụng token <code>{year}</code> để hệ thống tự động thay thế bằng năm hiện tại.</p>
                                 <span asp-validation-for="Branding.FooterText" class="text-danger small"></span>
                             </div>
@@ -991,7 +991,7 @@
 
             // 4. PRESET COLOR PALETTES
             const presets = {
-                vietmach: {
+                nextgen: {
                     Branding_PrimaryColor: '#7b68ee',
                     Branding_PrimaryDarkColor: '#6647f0',
                     Branding_SidebarColor: '#ffffff',

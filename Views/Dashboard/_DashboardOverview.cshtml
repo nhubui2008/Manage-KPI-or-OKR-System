@@ -1,0 +1,340 @@
+@model Manage_KPI_or_OKR_System.Models.ViewModels.OverviewDashboardViewModel
+
+@{
+    string GetKpiStatusColor(double rate)
+    {
+        if (rate >= 80) return "success";
+        if (rate >= 50) return "warning";
+        return "danger";
+    }
+
+    string GetKpiStatusText(double rate)
+    {
+        if (rate >= 80) return "Tốt";
+        if (rate >= 50) return "Trung bình";
+        if (rate > 0) return "Cần cải thiện";
+        return "Chưa có dữ liệu";
+    }
+
+    string GetOkrStatusColor(double rate)
+    {
+        if (rate >= 70) return "success";
+        if (rate >= 40) return "warning";
+        return "danger";
+    }
+
+    string GetOkrStatusText(double rate)
+    {
+        if (rate >= 70) return "Đúng tiến độ";
+        if (rate >= 40) return "Đang bám sát";
+        if (rate > 0) return "Chậm tiến độ";
+        return "Chưa có dữ liệu";
+    }
+
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("Administrator");
+    var userPermissions = User.Claims
+        .Where(c => c.Type == Manage_KPI_or_OKR_System.Services.PermissionClaimsTransformation.PermissionClaimType)
+        .Select(c => c.Value)
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    bool HasDashboardPermission(string code) => isAdmin || userPermissions.Contains(code);
+
+    var showEmployees = HasDashboardPermission("EMPLOYEES_VIEW");
+    var showKpis = HasDashboardPermission("KPIS_VIEW");
+    var showOkrs = HasDashboardPermission("OKRS_VIEW");
+    var showEvaluationResults = HasDashboardPermission("EVALRESULTS_VIEW");
+    var showCheckIns = HasDashboardPermission("KPICHECKINS_VIEW");
+    var showDepartments = HasDashboardPermission("DEPARTMENTS_VIEW");
+
+    var quickActions = new[]
+    {
+        new { Visible = showEmployees, Href = "/Employees", Icon = "bi-people", Label = "Nhân sự" },
+        new { Visible = showKpis, Href = "/KPIs", Icon = "bi-speedometer2", Label = "Quản lý KPI" },
+        new { Visible = showOkrs, Href = "/OKRs", Icon = "bi-bullseye", Label = "Quản lý OKR" },
+        new { Visible = showEvaluationResults, Href = "/EvaluationResults", Icon = "bi-award", Label = "Đánh giá" },
+        new { Visible = showCheckIns, Href = "/KPICheckIns", Icon = "bi-check2-square", Label = "Check-in" },
+        new { Visible = showDepartments, Href = "/Departments", Icon = "bi-diagram-3", Label = "Phòng ban" }
+    }.Where(action => action.Visible).ToList();
+}
+
+<!-- QUẢN TRỊ VIÊN / HR / TỔNG QUAN HỆ THỐNG -->
+<div class="dashboard-role-view dashboard-overview-view">
+    <section class="row g-3 dashboard-section" aria-label="Chỉ số tổng quan">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="card dashboard-card dashboard-stat-card stat-card--primary h-100">
+                <div class="card-body">
+                    <div class="dashboard-stat-content">
+                        <div class="min-w-0">
+                            <p class="dashboard-stat-label">Tỷ lệ KPI đạt</p>
+                            <p class="dashboard-stat-value">@Model.KPIAchievementRate%</p>
+                            <div class="dashboard-stat-meta">
+                                <span class="badge bg-@GetKpiStatusColor(Model.KPIAchievementRate)-subtle text-@GetKpiStatusColor(Model.KPIAchievementRate)">@GetKpiStatusText(Model.KPIAchievementRate)</span>
+                                <span>@Model.TotalKPIs KPI</span>
+                            </div>
+                        </div>
+                        <span class="dashboard-stat-icon bg-primary-subtle text-primary"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="card dashboard-card dashboard-stat-card stat-card--success h-100">
+                <div class="card-body">
+                    <div class="dashboard-stat-content">
+                        <div class="min-w-0">
+                            <p class="dashboard-stat-label">Tiến độ OKR</p>
+                            <p class="dashboard-stat-value">@Model.OKRProgressRate%</p>
+                            <div class="dashboard-stat-meta">
+                                <span class="badge bg-@GetOkrStatusColor(Model.OKRProgressRate)-subtle text-@GetOkrStatusColor(Model.OKRProgressRate)">@GetOkrStatusText(Model.OKRProgressRate)</span>
+                                <span>@Model.TotalOKRs mục tiêu</span>
+                            </div>
+                        </div>
+                        <span class="dashboard-stat-icon bg-success-subtle text-success"><i class="bi bi-bullseye" aria-hidden="true"></i></span>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="card dashboard-card dashboard-stat-card stat-card--info h-100">
+                <div class="card-body">
+                    <div class="dashboard-stat-content">
+                        <div class="min-w-0">
+                            <p class="dashboard-stat-label">Nhân sự toàn hệ thống</p>
+                            <p class="dashboard-stat-value">@Model.TotalEmployees</p>
+                            <div class="dashboard-stat-meta"><span>Đang hoạt động</span></div>
+                        </div>
+                        <span class="dashboard-stat-icon bg-info-subtle text-info"><i class="bi bi-people" aria-hidden="true"></i></span>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <article class="card dashboard-card dashboard-stat-card stat-card--warning h-100">
+                <div class="card-body">
+                    <div class="dashboard-stat-content">
+                        <div class="min-w-0">
+                            <p class="dashboard-stat-label">Check-in đã duyệt</p>
+                            <p class="dashboard-stat-value">@Model.TotalCheckIns</p>
+                            <div class="dashboard-stat-meta"><span>Dữ liệu hợp lệ</span></div>
+                        </div>
+                        <span class="dashboard-stat-icon bg-warning-subtle text-warning"><i class="bi bi-check2-square" aria-hidden="true"></i></span>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="row g-3 dashboard-section" aria-label="Tiến độ và hoạt động">
+        <div class="col-xl-8">
+            <article class="card dashboard-card h-100" aria-labelledby="kpiTrendHeading">
+                <div class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title" id="kpiTrendHeading">Xu hướng tiến độ KPI</h2>
+                        <p>6 tháng gần nhất · dữ liệu check-in đã duyệt</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="dashboard-chart dashboard-chart--trend" data-dashboard-chart="trend">
+                        <canvas id="mainDashboardChart" role="img" aria-label="Biểu đồ xu hướng tiến độ KPI trong 6 tháng gần nhất"></canvas>
+                        <div class="dashboard-empty-state" id="mainDashboardChartState" role="status" hidden>
+                            <i class="bi bi-graph-up" aria-hidden="true"></i>
+                            <strong>Chưa có dữ liệu tiến độ</strong>
+                            <span>Check-in đã duyệt sẽ tạo xu hướng tại đây.</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <div class="col-xl-4">
+            <article class="card dashboard-card h-100" aria-labelledby="recentCheckinHeading">
+                <div class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title" id="recentCheckinHeading">Check-in gần đây</h2>
+                        <p>Tối đa 5 hoạt động mới nhất</p>
+                    </div>
+                </div>
+                <div class="card-body dashboard-activity-list">
+                    @if (Model.RecentCheckIns.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var checkIn in Model.RecentCheckIns)
+                            {
+                                var employeeName = checkIn.EmployeeId.HasValue && Model.EmployeeNames.ContainsKey(checkIn.EmployeeId.Value)
+                                    ? Model.EmployeeNames[checkIn.EmployeeId.Value]
+                                    : "N/A";
+                                var kpiName = checkIn.KPIId.HasValue && Model.KPINames.ContainsKey(checkIn.KPIId.Value)
+                                    ? Model.KPINames[checkIn.KPIId.Value]
+                                    : "N/A";
+                                <li class="list-group-item">
+                                    <span class="dashboard-activity-icon"><i class="bi bi-check-lg" aria-hidden="true"></i></span>
+                                    <span class="dashboard-activity-content">
+                                        <strong title="@employeeName">@employeeName</strong>
+                                        <span title="@kpiName">@kpiName</span>
+                                    </span>
+                                    <time datetime="@(checkIn.CheckInDate?.ToString("O"))">@(checkIn.CheckInDate?.ToString("dd/MM HH:mm") ?? "")</time>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="dashboard-empty-state" role="status">
+                            <i class="bi bi-inbox" aria-hidden="true"></i>
+                            <strong>Chưa có check-in</strong>
+                            <span>Hoạt động mới sẽ hiển thị tại đây.</span>
+                        </div>
+                    }
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="row g-3 dashboard-section" aria-label="Phân tích hiệu suất">
+        <div class="col-xl-4">
+            <article class="card dashboard-card h-100" aria-labelledby="okrStatusHeading">
+                <div class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title" id="okrStatusHeading">Trạng thái OKR</h2>
+                        <p>Phân bổ theo trạng thái hiện tại</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="dashboard-chart dashboard-chart--donut" data-dashboard-chart="okr-status">
+                        <canvas id="okrStatusChart" role="img" aria-label="Biểu đồ phân bổ trạng thái OKR"></canvas>
+                    </div>
+                    <p class="dashboard-chart-note" id="okrStatusChartNote" role="status" hidden>Chưa có OKR trong phạm vi đã chọn.</p>
+                </div>
+            </article>
+        </div>
+        <div class="col-xl-8">
+            <article class="card dashboard-card h-100" aria-labelledby="departmentPerformanceHeading">
+                <div class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title" id="departmentPerformanceHeading">Hiệu suất theo phòng ban</h2>
+                        <p>5 phòng ban có dữ liệu tiến độ nổi bật</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="dashboard-chart dashboard-chart--departments" data-dashboard-chart="departments">
+                        <canvas id="deptPerformanceChart" role="img" aria-label="Biểu đồ hiệu suất trung bình theo phòng ban"></canvas>
+                        <div class="dashboard-empty-state" id="deptPerformanceChartState" role="status" hidden>
+                            <i class="bi bi-bar-chart" aria-hidden="true"></i>
+                            <strong>Chưa có dữ liệu phòng ban</strong>
+                            <span>Dữ liệu hiệu suất đã duyệt sẽ hiển thị tại đây.</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="dashboard-section">
+        <article class="card dashboard-card" aria-labelledby="topEmployeesHeading">
+            <div class="card-header dashboard-card-header">
+                <div>
+                    <h2 class="card-title" id="topEmployeesHeading">Top 5 nhân viên hiệu suất cao</h2>
+                    <p>Xếp hạng từ check-in đã duyệt trong phạm vi dữ liệu</p>
+                </div>
+            </div>
+            @if (Model.TopEmployees != null && Model.TopEmployees.Any())
+            {
+                <div class="table-responsive dashboard-ranking-table-wrap">
+                    <table class="table table-hover table-nowrap align-middle mb-0 dashboard-ranking-table">
+                        <thead><tr><th scope="col">Xếp hạng</th><th scope="col">Nhân viên</th><th scope="col">Tiến độ trung bình</th><th scope="col">Check-in</th></tr></thead>
+                        <tbody>
+                            @{ var rank = 1; }
+                            @foreach (var emp in Model.TopEmployees)
+                            {
+                                var progress = emp.AvgProgress;
+                                var progressColor = progress >= 100 ? "success" : progress >= 70 ? "primary" : progress >= 40 ? "warning" : "danger";
+                                <tr>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">#@rank</span></td>
+                                    <td>
+                                        <div class="dashboard-employee-cell">
+                                            <span class="dashboard-employee-avatar">@(string.IsNullOrEmpty(emp.Name) ? 'N' : emp.Name[0])</span>
+                                            <span class="fw-medium">@emp.Name</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="dashboard-rank-progress">
+                                            <div class="progress"><div class="progress-bar bg-@progressColor" role="progressbar" style="width: @(Math.Min(progress, 100))%" aria-valuenow="@Math.Min(progress, 100)" aria-valuemin="0" aria-valuemax="100"></div></div>
+                                            <span class="text-@progressColor">@emp.AvgProgress%</span>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-light text-body border">@emp.CheckInCount lần</span></td>
+                                </tr>
+                                rank++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="card-body">
+                    <div class="dashboard-empty-state dashboard-empty-state--compact" role="status">
+                        <i class="bi bi-trophy" aria-hidden="true"></i>
+                        <strong>Chưa đủ dữ liệu xếp hạng</strong>
+                        <span>Cần thêm check-in đã duyệt để xác định top nhân viên.</span>
+                    </div>
+                </div>
+            }
+        </article>
+    </section>
+
+    <section class="row g-3 dashboard-section" aria-label="Điều hướng và chi tiết hệ thống">
+        <div class="col-xl-7">
+            <article class="card dashboard-card h-100" aria-labelledby="quickLinksHeading">
+                <div class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title" id="quickLinksHeading">Truy cập nhanh</h2>
+                        <p>Các chức năng phù hợp với quyền hiện tại</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (quickActions.Any())
+                    {
+                        <nav class="dashboard-quick-actions" aria-label="Truy cập nhanh">
+                            @foreach (var action in quickActions)
+                            {
+                                <a href="@action.Href" class="btn btn-light border dashboard-quick-action">
+                                    <i class="bi @action.Icon" aria-hidden="true"></i><span>@action.Label</span><i class="bi bi-arrow-right-short dashboard-quick-action-arrow" aria-hidden="true"></i>
+                                </a>
+                            }
+                        </nav>
+                    }
+                    else
+                    {
+                        <div class="dashboard-empty-state dashboard-empty-state--compact" role="status">
+                            <i class="bi bi-shield-check" aria-hidden="true"></i>
+                            <strong>Chưa có chức năng truy cập nhanh</strong>
+                            <span>Các lối tắt sẽ xuất hiện khi tài khoản được cấp quyền.</span>
+                        </div>
+                    }
+                </div>
+            </article>
+        </div>
+        <div class="col-xl-5">
+            <article class="card dashboard-card h-100" aria-labelledby="systemDetailHeading">
+                <div class="card-header dashboard-card-header">
+                    <div>
+                        <h2 class="card-title" id="systemDetailHeading">Chi tiết hệ thống</h2>
+                        <p>Số liệu trong phạm vi dữ liệu hiện tại</p>
+                    </div>
+                </div>
+                <div class="table-responsive dashboard-system-table-wrap">
+                    <table class="table table-sm table-nowrap align-middle mb-0 dashboard-system-table">
+                        <tbody>
+                            <tr><th scope="row"><i class="bi bi-diagram-3" aria-hidden="true"></i>Phòng ban</th><td>@Model.TotalDepartments</td></tr>
+                            <tr><th scope="row"><i class="bi bi-person-badge" aria-hidden="true"></i>Chức vụ</th><td>@Model.TotalPositions</td></tr>
+                            <tr><th scope="row"><i class="bi bi-people" aria-hidden="true"></i>Nhân viên</th><td>@Model.TotalEmployees</td></tr>
+                            <tr><th scope="row"><i class="bi bi-bullseye" aria-hidden="true"></i>OKR đang hoạt động</th><td>@Model.TotalOKRs</td></tr>
+                            <tr><th scope="row"><i class="bi bi-speedometer2" aria-hidden="true"></i>KPI đang hoạt động</th><td>@Model.TotalKPIs</td></tr>
+                            <tr><th scope="row"><i class="bi bi-check2-square" aria-hidden="true"></i>Check-in đã duyệt</th><td>@Model.TotalCheckIns</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </div>
+    </section>
+</div>

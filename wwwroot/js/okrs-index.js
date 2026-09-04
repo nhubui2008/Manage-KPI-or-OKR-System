@@ -98,6 +98,9 @@
         const form = byId('editKrModal')?.querySelector('form');
         resetForm(form);
         setValue('editKrId', id);
+        if (byId('editKrReturnUrl')) {
+            setValue('editKrReturnUrl', window.location.pathname + window.location.search);
+        }
         setValue('editKrName', name || '');
         setValue('editKrTarget', normalizeDecimalValue(target));
         setValue('editKrCurrent', normalizeDecimalValue(current));
@@ -117,12 +120,18 @@
         getModal('editKrModal')?.show();
     }
 
-    function openUpdateProgressModal(krId, krName, currentVal, unit) {
+    function openUpdateProgressModal(krId, krName, currentVal, unit, okrId) {
         if (!byId('updateKrProgressModal')) return;
         const form = byId('updateKrProgressModal')?.querySelector('form');
         resetForm(form);
         resetKrAiPanel();
         setValue('updateKrId', krId);
+        if (byId('updateKrOkrId')) {
+            setValue('updateKrOkrId', okrId || '');
+        }
+        if (byId('updateKrReturnUrl')) {
+            setValue('updateKrReturnUrl', window.location.pathname + window.location.search);
+        }
         setText('updateKrNameDisplay', 'KR: ' + (krName || ''));
         setValue('updateKrCurrentValue', normalizeDecimalValue(currentVal));
         const config = window.applyMeasurementUnitConfigToInputs
@@ -130,6 +139,96 @@
             : { suffix: unit || '' };
         setText('updateKrUnitDisplay', config.suffix || unit || '');
         getModal('updateKrProgressModal')?.show();
+    }
+
+    function updateKrRowInDom(data) {
+        const row = document.querySelector(`.okr-kr-row[data-kr-id="${data.krId}"]`) ||
+                    document.querySelector(`.js-update-kr-progress[data-kr-id="${data.krId}"]`)?.closest('.okr-kr-row');
+        if (!row) return;
+
+        // Current value display
+        const currentSpan = row.querySelector('.okr-kr-current-val') ||
+                            Array.from(row.querySelectorAll('.okr-kr-row__meta span')).find(s => s.textContent && s.textContent.includes('Hiện tại:'));
+        if (currentSpan) {
+            const formattedCurrent = Number(data.currentValue).toLocaleString('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            currentSpan.textContent = `Hiện tại: ${formattedCurrent} ${data.unit || ''}`.trim();
+        }
+
+        // Result Status badge
+        const badge = row.querySelector('.okr-kr-row__progress-labels .okr-risk-badge');
+        if (badge && data.resultStatus) {
+            badge.textContent = data.resultStatus;
+        }
+
+        // Progress percentage label
+        const percentLabel = row.querySelector('.okr-kr-row__progress-labels strong');
+        const progressInt = Math.round(data.progress);
+        if (percentLabel) {
+            percentLabel.textContent = `${progressInt}%`;
+        }
+
+        // Progress bar
+        const progressBar = row.querySelector('.progress-bar');
+        const progressWrapper = row.querySelector('.progress');
+        const progressWidth = Math.min(100, Math.max(0, progressInt));
+        if (progressBar) {
+            progressBar.style.width = `${progressWidth}%`;
+            if (data.progressBarClass) {
+                progressBar.className = `progress-bar ${data.progressBarClass}`;
+            }
+        }
+        if (progressWrapper) {
+            progressWrapper.setAttribute('aria-valuenow', progressWidth);
+            const krName = row.querySelector('.okr-kr-row__name')?.textContent?.trim() || `KR #${data.krId}`;
+            progressWrapper.setAttribute('aria-label', `Tiến độ ${krName}, ${progressInt} phần trăm`);
+        }
+
+        // Update data attributes on buttons in this row
+        const updateBtn = row.querySelector('.js-update-kr-progress');
+        if (updateBtn) {
+            updateBtn.dataset.krCurrent = String(data.currentValue);
+        }
+        const editBtn = row.querySelector('.js-edit-kr');
+        if (editBtn) {
+            editBtn.dataset.krCurrent = String(data.currentValue);
+        }
+    }
+
+    function updateOkrCardProgressInDom(okrId, totalProgress, barClass) {
+        const card = document.querySelector(`.okr-objective-card[data-okr-id="${okrId}"]`);
+        if (!card) return;
+
+        const progressInt = Math.round(totalProgress);
+        const progressWidth = Math.min(100, Math.max(0, progressInt));
+
+        const okrLabel = card.querySelector('.okr-objective-progress__labels strong');
+        if (okrLabel) {
+            okrLabel.textContent = `${progressInt}%`;
+        }
+
+        const progressBar = card.querySelector('.okr-objective-progress .progress-bar');
+        const progressWrapper = card.querySelector('.okr-objective-progress .progress');
+        if (progressBar) {
+            progressBar.style.width = `${progressWidth}%`;
+            if (barClass) {
+                progressBar.className = `progress-bar ${barClass}`;
+            }
+        }
+        if (progressWrapper) {
+            progressWrapper.setAttribute('aria-valuenow', progressWidth);
+        }
+
+        const progressContainer = card.querySelector('.okr-objective-progress');
+        if (progressContainer) {
+            progressContainer.setAttribute('aria-label', `Tiến độ OKR #${okrId}: ${progressInt} phần trăm`);
+        }
+
+        if (progressInt >= 40) {
+            const riskBadge = card.querySelector('.okr-risk-badge--low');
+            if (riskBadge) {
+                riskBadge.remove();
+            }
+        }
     }
 
     function resetKrAiPanel() {
@@ -621,12 +720,16 @@
             if (progressBtn) {
                 event.preventDefault();
                 event.stopPropagation();
+                const okrCard = progressBtn.closest('.okr-objective-card');
+                const okrId = okrCard ? (okrCard.dataset.okrId || '') : '';
                 openUpdateProgressModal(
                     progressBtn.dataset.krId,
                     progressBtn.dataset.krName || '',
                     progressBtn.dataset.krCurrent || '0',
-                    progressBtn.dataset.krUnit || ''
+                    progressBtn.dataset.krUnit || '',
+                    okrId
                 );
+                return;
             }
         });
 
@@ -660,6 +763,70 @@
             }
         });
         byId('updateKrProgressModal')?.addEventListener('hidden.bs.modal', resetKrAiPanel);
+
+        const updateKrForm = byId('updateKrProgressForm') || byId('updateKrProgressModal')?.querySelector('form');
+        if (updateKrForm) {
+            updateKrForm.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                const submitBtn = byId('updateKrSubmitBtn');
+                if (submitBtn && submitBtn.dataset.submitting === 'true') return;
+
+                const krId = byId('updateKrId')?.value;
+                const currentValue = byId('updateKrCurrentValue')?.value;
+                if (!krId || currentValue === '') {
+                    window.AppFeedback?.toast?.({
+                        tone: 'warning',
+                        title: 'Thiếu dữ liệu',
+                        message: 'Vui lòng nhập giá trị tiến độ hợp lệ.'
+                    });
+                    return;
+                }
+
+                setSubmitLoading(submitBtn, true, '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang cập nhật...');
+
+                try {
+                    const formData = new FormData(updateKrForm);
+                    const response = await fetch(updateKrForm.action || '/OKRs/UpdateKeyResultProgress', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            ...(window.antiForgeryHeaders ? window.antiForgeryHeaders() : {})
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || 'Không thể cập nhật tiến độ KR.');
+                    }
+
+                    // 1. Update KR row in DOM
+                    updateKrRowInDom(data);
+
+                    // 2. Update parent OKR progress in DOM
+                    if (data.okrId) {
+                        updateOkrCardProgressInDom(data.okrId, data.okrTotalProgress, data.okrProgressBarClass);
+                    }
+
+                    getModal('updateKrProgressModal')?.hide();
+
+                    window.AppFeedback?.toast?.({
+                        tone: 'success',
+                        title: 'Thành công',
+                        message: data.message || 'Đã cập nhật tiến độ Key Result thành công!'
+                    });
+                } catch (error) {
+                    window.AppFeedback?.toast?.({
+                        tone: 'error',
+                        title: 'Lỗi cập nhật',
+                        message: error.message || 'Có lỗi xảy ra khi cập nhật tiến độ.'
+                    });
+                } finally {
+                    setSubmitLoading(submitBtn, false);
+                }
+            });
+        }
 
         // Reset AI modal state when closed.
         byId('aiSuggestKrModal')?.addEventListener('hidden.bs.modal', function () {
@@ -789,6 +956,31 @@
                     setSubmitLoading(btn, false);
                 });
         });
+
+        // Auto-expand OKR if navigated via anchor or expandOkrId
+        const hash = window.location.hash;
+        if (hash) {
+            const targetEl = document.querySelector(hash);
+            if (targetEl) {
+                const collapseEl = targetEl.classList.contains('accordion-collapse')
+                    ? targetEl
+                    : targetEl.closest('.accordion-item')?.querySelector('.accordion-collapse');
+                if (collapseEl && typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
+                    bootstrap.Collapse.getOrCreateInstance(collapseEl).show();
+                    setTimeout(() => targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
+                }
+            }
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            const expandId = urlParams.get('expandOkrId');
+            if (expandId) {
+                const collapseEl = document.getElementById('collapseOkr' + expandId);
+                if (collapseEl && typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
+                    bootstrap.Collapse.getOrCreateInstance(collapseEl).show();
+                    setTimeout(() => collapseEl.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
+                }
+            }
+        }
 
         // Expose for any remaining callers.
         window.openAddKrModal = openAddKrModal;

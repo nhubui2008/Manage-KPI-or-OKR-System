@@ -21,7 +21,7 @@ namespace Manage_KPI_or_OKR_System.Helpers
             return viewContext.ViewData["Keywords"] as string ?? defaultKeywords;
         }
 
-        public static string GetCanonicalUrl(ViewContext viewContext, string baseUrl = "https://vietmach-kpi.com")
+        public static string GetCanonicalUrl(ViewContext viewContext, string baseUrl = "https://nextgen-kpi.com")
         {
             var path = viewContext.HttpContext.Request.Path;
             return $"{baseUrl}{path}";

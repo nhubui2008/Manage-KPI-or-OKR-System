@@ -31,7 +31,7 @@
     }
 
     function getThemeColor(name, fallback) {
-        const shellStyle = getComputedStyle(document.querySelector('.vietmach-shell') || document.body);
+        const shellStyle = getComputedStyle(document.querySelector('.nextgen-shell') || document.body);
         const rootStyle = getComputedStyle(document.documentElement);
         const bodyStyle = getComputedStyle(document.body);
         return shellStyle.getPropertyValue(name).trim() || rootStyle.getPropertyValue(name).trim() || bodyStyle.getPropertyValue(name).trim() || fallback;
@@ -489,6 +489,201 @@
         });
     }
 
+    function renderDirectorCharts(data, theme, reducedMotion) {
+        // 1. Dept comparison bar chart
+        const deptCanvas = document.getElementById('directorDeptChart');
+        if (deptCanvas) {
+            const labels = Array.isArray(data.directorDeptLabels) ? data.directorDeptLabels : [];
+            const values = Array.isArray(data.directorDeptData) ? data.directorDeptData.map(Number) : [];
+            const hasData = values.some(v => v > 0);
+            setChartState('directorDeptChart', 'directorDeptChartState', !hasData);
+            if (hasData) {
+                const options = getBaseChartOptions(theme, reducedMotion);
+                options.plugins.legend.display = false;
+                options.scales = {
+                    x: { grid: { display: false }, ticks: { color: theme.muted, font: { family: chartFontFamily, size: 10 } } },
+                    y: { beginAtZero: true, max: 100, ticks: { callback: v => `${v}%`, color: theme.muted, font: { family: chartFontFamily, size: 10 } } }
+                };
+                const chart = new window.Chart(deptCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: values.map(v => v >= 80 ? theme.success : v >= 50 ? theme.warning : theme.danger),
+                            borderRadius: 4,
+                            maxBarThickness: 28
+                        }]
+                    },
+                    options
+                });
+                chartRegistry.set('directorDept', chart);
+            }
+        }
+
+        // 2. OKR status donut
+        const okrCanvas = document.getElementById('directorOkrStatusChart');
+        if (okrCanvas) {
+            const labels = Array.isArray(data.directorOkrLabels) ? data.directorOkrLabels : [];
+            const values = Array.isArray(data.directorOkrData) ? data.directorOkrData.map(Number) : [];
+            const hasData = values.some(v => v > 0);
+            setChartState('directorOkrStatusChart', 'directorOkrStatusChartState', !hasData);
+            if (hasData) {
+                const options = getBaseChartOptions(theme, reducedMotion);
+                options.cutout = '70%';
+                options.plugins.legend.position = 'bottom';
+                const chart = new window.Chart(okrCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: [theme.primary, theme.success, theme.warning, theme.danger, theme.info],
+                            borderWidth: 2,
+                            borderColor: theme.surface
+                        }]
+                    },
+                    options
+                });
+                chartRegistry.set('directorOkr', chart);
+            }
+        }
+
+        // 3. 6 Months trend
+        const trendCanvas = document.getElementById('directorTrendChart');
+        if (trendCanvas) {
+            const labels = Array.isArray(data.directorTrendLabels) ? data.directorTrendLabels : [];
+            const values = Array.isArray(data.directorTrendData) ? data.directorTrendData.map(Number) : [];
+            const hasData = labels.length > 0 && values.some(v => v > 0);
+            setChartState('directorTrendChart', 'directorTrendChartState', !hasData);
+            if (hasData) {
+                const options = getBaseChartOptions(theme, reducedMotion);
+                options.plugins.legend.display = false;
+                options.scales = {
+                    x: { grid: { display: false }, ticks: { color: theme.muted, font: { family: chartFontFamily, size: 10 } } },
+                    y: { beginAtZero: true, max: 100, ticks: { callback: v => `${v}%`, color: theme.muted, font: { family: chartFontFamily, size: 10 } } }
+                };
+                const chart = new window.Chart(trendCanvas, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Tiến độ bình quân',
+                            data: values,
+                            borderColor: theme.primary,
+                            backgroundColor: theme.primarySoft,
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 3
+                        }]
+                    },
+                    options
+                });
+                chartRegistry.set('directorTrend', chart);
+            }
+        }
+    }
+
+    function renderManagerCharts(data, theme, reducedMotion) {
+        // 1. Team distribution donut
+        const distCanvas = document.getElementById('managerTeamDistChart');
+        if (distCanvas) {
+            const labels = Array.isArray(data.managerTeamLabels) ? data.managerTeamLabels : [];
+            const values = Array.isArray(data.managerTeamData) ? data.managerTeamData.map(Number) : [];
+            const hasData = values.some(v => v > 0);
+            setChartState('managerTeamDistChart', 'managerTeamDistChartState', !hasData);
+            if (hasData) {
+                const options = getBaseChartOptions(theme, reducedMotion);
+                options.cutout = '65%';
+                options.plugins.legend.position = 'bottom';
+                const chart = new window.Chart(distCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: [theme.success, theme.warning, theme.danger],
+                            borderWidth: 2,
+                            borderColor: theme.surface
+                        }]
+                    },
+                    options
+                });
+                chartRegistry.set('managerTeamDist', chart);
+            }
+        }
+
+        // 2. Dept KPIs bar
+        const kpiCanvas = document.getElementById('managerKpiBarChart');
+        if (kpiCanvas) {
+            const labels = Array.isArray(data.managerKpiLabels) ? data.managerKpiLabels : [];
+            const values = Array.isArray(data.managerKpiData) ? data.managerKpiData.map(Number) : [];
+            const hasData = values.some(v => v > 0);
+            setChartState('managerKpiBarChart', 'managerKpiBarChartState', !hasData);
+            if (hasData) {
+                const options = getBaseChartOptions(theme, reducedMotion);
+                options.plugins.legend.display = false;
+                options.scales = {
+                    x: { grid: { display: false }, ticks: { color: theme.muted, font: { family: chartFontFamily, size: 10 } } },
+                    y: { beginAtZero: true, max: 100, ticks: { callback: v => `${v}%`, color: theme.muted, font: { family: chartFontFamily, size: 10 } } }
+                };
+                const chart = new window.Chart(kpiCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: theme.primary,
+                            borderRadius: 4,
+                            maxBarThickness: 24
+                        }]
+                    },
+                    options
+                });
+                chartRegistry.set('managerKpi', chart);
+            }
+        }
+    }
+
+    function renderEmployeeCharts(data, theme, reducedMotion) {
+        const trendCanvas = document.getElementById('employeePersonalTrendChart');
+        if (!trendCanvas) return;
+
+        const labels = Array.isArray(data.employeeTrendLabels) ? data.employeeTrendLabels : [];
+        const values = Array.isArray(data.employeeTrendData) ? data.employeeTrendData.map(Number) : [];
+        const hasData = labels.length > 0 && values.some(v => v > 0);
+        setChartState('employeePersonalTrendChart', 'employeePersonalTrendChartState', !hasData);
+        if (!hasData) return;
+
+        const options = getBaseChartOptions(theme, reducedMotion);
+        options.plugins.legend.display = false;
+        options.scales = {
+            x: { grid: { display: false }, ticks: { color: theme.muted, font: { family: chartFontFamily, size: 10 } } },
+            y: { beginAtZero: true, max: 100, ticks: { callback: v => `${v}%`, color: theme.muted, font: { family: chartFontFamily, size: 10 } } }
+        };
+
+        const chart = new window.Chart(trendCanvas, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Tiến độ KPI cá nhân',
+                    data: values,
+                    borderColor: theme.primary,
+                    backgroundColor: theme.primarySoft,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointBackgroundColor: theme.primary
+                }]
+            },
+            options
+        });
+        chartRegistry.set('employeeTrend', chart);
+    }
+
     function init() {
         const root = document.querySelector('.dashboard-page');
         if (!root) return;
@@ -508,6 +703,13 @@
 
         const theme = getChartTheme();
         const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // Render role-specific charts
+        renderDirectorCharts(data, theme, reducedMotion);
+        renderManagerCharts(data, theme, reducedMotion);
+        renderEmployeeCharts(data, theme, reducedMotion);
+
+        // Render overview charts
         renderTrendChart(data, theme, reducedMotion);
         renderOkrStatusChart(data, theme, reducedMotion);
         renderDepartmentChart(data, theme, reducedMotion);

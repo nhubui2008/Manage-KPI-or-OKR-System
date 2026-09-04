@@ -22,7 +22,7 @@
         '.catalog-table-shell'
     ];
 
-    if (!shell?.classList.contains('vietmach-shell') || !mainContent) {
+    if (!shell?.classList.contains('nextgen-shell') || !mainContent) {
         return;
     }
 

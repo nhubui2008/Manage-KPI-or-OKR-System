@@ -1,5 +1,5 @@
 /**
- * LIGHT 3D CRYSTAL LANDING JAVASCRIPT - VIETMACH SYSTEM
+ * LIGHT 3D CRYSTAL LANDING JAVASCRIPT - NEXTGEN SYSTEM
  * Interactive Sticky Scroll Showcase, Role Simulator, FAQ Accordion, Header Blur
  */
 

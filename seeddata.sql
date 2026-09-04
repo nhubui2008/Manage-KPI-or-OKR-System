@@ -392,11 +392,11 @@ GO
 SET IDENTITY_INSERT [SystemUsers] ON;
 INSERT INTO [SystemUsers] ([Id], [Username], [Email], [PasswordHash], [LastPasswordChange], [RoleId], [IsActive], [CreatedAt], [CreatedById])
 VALUES
-    (1, N'admin',    N'admin@bizenfoods.com',    N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 1, 1, GETDATE(), NULL),
-    (2, N'director', N'director@bizenfoods.com', N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 2, 1, GETDATE(), NULL),
-    (3, N'manager',  N'manager@bizenfoods.com',  N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 3, 1, GETDATE(), NULL),
-    (4, N'hr',       N'hr@bizenfoods.com',       N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 4, 1, GETDATE(), NULL),
-    (5, N'employee', N'employee@bizenfoods.com', N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 5, 1, GETDATE(), NULL);
+    (1, N'admin',    N'admin@nextgen.com',    N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 1, 1, GETDATE(), NULL),
+    (2, N'director', N'director@nextgen.com', N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 2, 1, GETDATE(), NULL),
+    (3, N'manager',  N'manager@nextgen.com',  N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 3, 1, GETDATE(), NULL),
+    (4, N'hr',       N'hr@nextgen.com',       N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 4, 1, GETDATE(), NULL),
+    (5, N'employee', N'employee@nextgen.com', N'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3', GETDATE(), 5, 1, GETDATE(), NULL);
 SET IDENTITY_INSERT [SystemUsers] OFF;
 GO
 
@@ -414,11 +414,11 @@ GO
 SET IDENTITY_INSERT [Employees] ON;
 INSERT INTO [Employees] ([Id], [EmployeeCode], [FullName], [DateOfBirth], [Phone], [Email], [TaxCode], [JoinDate], [SystemUserId], [IsActive], [StrategicGoalId], [CreatedAt], [CreatedById])
 VALUES
-    (1, N'BZ001', N'Nguyễn Minh Quân', '1985-05-15', N'0901000001', N'admin@bizenfoods.com',    N'0100000001', '2020-01-01', 1, 1, NULL, GETDATE(), NULL),
-    (2, N'BZ002', N'Trần Thu Hà',      '1980-08-20', N'0901000002', N'director@bizenfoods.com', N'0100000002', '2020-01-01', 2, 1, NULL, GETDATE(), NULL),
-    (3, N'BZ003', N'Lê Hoàng Nam',     '1988-03-10', N'0901000003', N'manager@bizenfoods.com',  N'0100000003', '2021-03-01', 3, 1, NULL, GETDATE(), NULL),
-    (4, N'BZ004', N'Phạm Ngọc Mai',    '1990-11-25', N'0901000004', N'hr@bizenfoods.com',       N'0100000004', '2021-06-01', 4, 1, NULL, GETDATE(), NULL),
-    (5, N'BZ005', N'Hoàng Gia Bảo',    '1995-07-14', N'0901000005', N'employee@bizenfoods.com', N'0100000005', '2022-01-01', 5, 1, NULL, GETDATE(), NULL);
+    (1, N'BZ001', N'Nguyễn Minh Quân', '1985-05-15', N'0901000001', N'admin@nextgen.com',    N'0100000001', '2020-01-01', 1, 1, NULL, GETDATE(), NULL),
+    (2, N'BZ002', N'Trần Thu Hà',      '1980-08-20', N'0901000002', N'director@nextgen.com', N'0100000002', '2020-01-01', 2, 1, NULL, GETDATE(), NULL),
+    (3, N'BZ003', N'Lê Hoàng Nam',     '1988-03-10', N'0901000003', N'manager@nextgen.com',  N'0100000003', '2021-03-01', 3, 1, NULL, GETDATE(), NULL),
+    (4, N'BZ004', N'Phạm Ngọc Mai',    '1990-11-25', N'0901000004', N'hr@nextgen.com',       N'0100000004', '2021-06-01', 4, 1, NULL, GETDATE(), NULL),
+    (5, N'BZ005', N'Hoàng Gia Bảo',    '1995-07-14', N'0901000005', N'employee@nextgen.com', N'0100000005', '2022-01-01', 5, 1, NULL, GETDATE(), NULL);
 SET IDENTITY_INSERT [Employees] OFF;
 GO
 
@@ -550,8 +550,8 @@ GO
 SET IDENTITY_INSERT [MissionVisions] ON;
 INSERT INTO [MissionVisions] ([Id], [TargetYear], [Content], [FinancialTarget], [IsActive], [CreatedAt], [CreatedById], [MissionVisionType])
 VALUES
-    (1, 2026, N'Đưa Bizen trở thành thương hiệu thực phẩm đóng gói được tin chọn tại các kênh bán lẻ trọng điểm', 50000000000.00, 1, GETDATE(), 2, N'YearlyGoal'),
-    (2, 2026, N'Chuẩn hóa chất lượng, truy xuất nguồn gốc và giao hàng đúng hạn trên toàn chuỗi cung ứng Bizen',   NULL,           1, GETDATE(), 2, N'YearlyGoal');
+    (1, 2026, N'Đưa NextGen trở thành thương hiệu thực phẩm đóng gói được tin chọn tại các kênh bán lẻ trọng điểm', 50000000000.00, 1, GETDATE(), 2, N'YearlyGoal'),
+    (2, 2026, N'Chuẩn hóa chất lượng, truy xuất nguồn gốc và giao hàng đúng hạn trên toàn chuỗi cung ứng NextGen',   NULL,           1, GETDATE(), 2, N'YearlyGoal');
 SET IDENTITY_INSERT [MissionVisions] OFF;
 GO
 
@@ -561,7 +561,7 @@ GO
 SET IDENTITY_INSERT [OKRs] ON;
 INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById])
 VALUES
-    (1, N'Tăng trưởng doanh thu thực phẩm Bizen 30% so với năm trước',       1, N'Q2-2026', 2, 1, GETDATE(), 2),
+    (1, N'Tăng trưởng doanh thu thực phẩm NextGen 30% so với năm trước',       1, N'Q2-2026', 2, 1, GETDATE(), 2),
     (2, N'Chuẩn hóa sản xuất, kiểm định chất lượng và truy xuất nguồn gốc',  2, N'Q2-2026', 2, 1, GETDATE(), 3),
     (3, N'Hoàn thành các nhiệm vụ vận hành được giao đúng hạn',              3, N'Q2-2026', 2, 1, GETDATE(), 5);
 SET IDENTITY_INSERT [OKRs] OFF;
@@ -610,7 +610,7 @@ INSERT INTO [KPI_Employee_Assignments] ([KPIId], [EmployeeId]) VALUES (1, 5), (2
 GO
 
 -- ============================================================
--- MODULE 16: BIZEN FOOD SEED DATA (240 MEMBERS, FOOD OPERATIONS, PROJECT KPIS)
+-- MODULE 16: NEXTGEN FOOD SEED DATA (240 MEMBERS, FOOD OPERATIONS, PROJECT KPIS)
 -- Keeps foundation seed data above, then replaces the compact sample org
 -- with deterministic set-based data for realistic dev/test scenarios.
 -- ============================================================
@@ -704,12 +704,12 @@ NamedUsers AS
             ELSE CONCAT(gn.GivenSlug, N'.', ln.LastSlug, RIGHT('000' + CAST(n.Id AS varchar(3)), 3))
         END AS Username,
         CASE n.Id
-            WHEN 1 THEN N'admin@bizenfoods.com'
-            WHEN 2 THEN N'director@bizenfoods.com'
-            WHEN 3 THEN N'manager@bizenfoods.com'
-            WHEN 4 THEN N'hr@bizenfoods.com'
-            WHEN 5 THEN N'employee@bizenfoods.com'
-            ELSE CONCAT(gn.GivenSlug, N'.', ln.LastSlug, RIGHT('000' + CAST(n.Id AS varchar(3)), 3), N'@bizenfoods.com')
+            WHEN 1 THEN N'admin@nextgen.com'
+            WHEN 2 THEN N'director@nextgen.com'
+            WHEN 3 THEN N'manager@nextgen.com'
+            WHEN 4 THEN N'hr@nextgen.com'
+            WHEN 5 THEN N'employee@nextgen.com'
+            ELSE CONCAT(gn.GivenSlug, N'.', ln.LastSlug, RIGHT('000' + CAST(n.Id AS varchar(3)), 3), N'@nextgen.com')
         END AS Email
     FROM Numbers n
     CROSS APPLY
@@ -778,12 +778,12 @@ NamedEmployees AS
             ELSE CONCAT(ln.LastName, N' ', mn.MiddleName, N' ', gn.GivenName)
         END AS FullName,
         CASE n.Id
-            WHEN 1 THEN N'admin@bizenfoods.com'
-            WHEN 2 THEN N'director@bizenfoods.com'
-            WHEN 3 THEN N'manager@bizenfoods.com'
-            WHEN 4 THEN N'hr@bizenfoods.com'
-            WHEN 5 THEN N'employee@bizenfoods.com'
-            ELSE CONCAT(gn.GivenSlug, N'.', ln.LastSlug, RIGHT('000' + CAST(n.Id AS varchar(3)), 3), N'@bizenfoods.com')
+            WHEN 1 THEN N'admin@nextgen.com'
+            WHEN 2 THEN N'director@nextgen.com'
+            WHEN 3 THEN N'manager@nextgen.com'
+            WHEN 4 THEN N'hr@nextgen.com'
+            WHEN 5 THEN N'employee@nextgen.com'
+            ELSE CONCAT(gn.GivenSlug, N'.', ln.LastSlug, RIGHT('000' + CAST(n.Id AS varchar(3)), 3), N'@nextgen.com')
         END AS Email
     FROM Numbers n
     CROSS APPLY
@@ -895,7 +895,7 @@ DECLARE @DeptProjects TABLE
 
 INSERT INTO @DeptProjects ([DepartmentId], [DepartmentName], [ProjectAlias], [ManagerId])
 VALUES
-    (1,  N'Ban Giám Đốc',                 N'Bizen Strategy',      2),
+    (1,  N'Ban Giám Đốc',                 N'NextGen Strategy',      2),
     (2,  N'Phòng Nhân Sự',                N'Talent Kitchen',      4),
     (3,  N'Nhà Máy Sản Xuất',             N'Smart Factory',       3),
     (4,  N'Phòng Kinh Doanh Kênh Phân Phối', N'Distributor Growth', 6),
@@ -913,7 +913,7 @@ INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [Is
 SELECT
     (d.DepartmentId - 1) * 3 + t.TemplateId AS Id,
     CASE t.TemplateId
-        WHEN 1 THEN CONCAT(N'Dự án ', d.ProjectAlias, N' đạt mốc vận hành Bizen Q2-2026')
+        WHEN 1 THEN CONCAT(N'Dự án ', d.ProjectAlias, N' đạt mốc vận hành NextGen Q2-2026')
         WHEN 2 THEN CONCAT(N'Nâng cao hiệu quả vận hành ', d.DepartmentName)
         ELSE CONCAT(N'Chuẩn hóa chất lượng, truy xuất và tự động hóa ', d.ProjectAlias)
     END AS ObjectiveName,
@@ -1026,7 +1026,7 @@ DECLARE @KpiTemplates TABLE
 
 INSERT INTO @DeptProjects ([DepartmentId], [DepartmentName], [ProjectAlias], [ManagerId])
 VALUES
-    (1,  N'Ban Giám Đốc',                 N'Bizen Strategy',      2),
+    (1,  N'Ban Giám Đốc',                 N'NextGen Strategy',      2),
     (2,  N'Phòng Nhân Sự',                N'Talent Kitchen',      4),
     (3,  N'Nhà Máy Sản Xuất',             N'Smart Factory',       3),
     (4,  N'Phòng Kinh Doanh Kênh Phân Phối', N'Distributor Growth', 6),
@@ -1054,7 +1054,7 @@ INSERT INTO [KPIs] ([Id], [PeriodId], [KPIName], [Description], [PropertyId], [K
 SELECT
     (d.DepartmentId - 1) * 7 + t.TemplateId AS Id,
     2,
-    CONCAT(N'Bizen ', d.ProjectAlias, N' - ', t.TemplateName),
+    CONCAT(N'NextGen ', d.ProjectAlias, N' - ', t.TemplateName),
     CONCAT(N'KPI vận hành thực phẩm cho ', d.DepartmentName, N', phục vụ theo dõi sản xuất, chất lượng, phân phối và công việc.'),
     t.PropertyId,
     t.KPITypeId,
@@ -1146,7 +1146,7 @@ GO
 -- KPI check-in seed: partial, approved progress for in-progress KPI scenarios.
 -- These rows make dashboards, KPI lists and detail pages show work that is
 -- clearly underway but not completed yet.
-DECLARE @BizenKpiCheckIns TABLE
+DECLARE @NextGenKpiCheckIns TABLE
 (
     RowId INT PRIMARY KEY,
     KPIId INT NOT NULL,
@@ -1202,7 +1202,7 @@ ContributorCounts AS
     FROM SelectedAssignments
     GROUP BY KPIId
 ),
-BizenRows AS
+NextGenRows AS
 (
     SELECT
         ROW_NUMBER() OVER (ORDER BY sa.KPIId, sa.EmployeeId, slot.SlotIndex) AS RowId,
@@ -1236,7 +1236,7 @@ BizenRows AS
     INNER JOIN ContributorCounts cc ON cc.KPIId = sa.KPIId
     CROSS JOIN (VALUES (1), (2)) AS slot(SlotIndex)
 )
-INSERT INTO @BizenKpiCheckIns
+INSERT INTO @NextGenKpiCheckIns
 (
     RowId,
     KPIId,
@@ -1262,7 +1262,7 @@ SELECT
     ContributorCount,
     ProgressRatio,
     ExpectedRatio
-FROM BizenRows;
+FROM NextGenRows;
 
 SET IDENTITY_INSERT [KPICheckIns] ON;
 INSERT INTO [KPICheckIns]
@@ -1305,11 +1305,11 @@ SELECT
     ReviewerId,
     DATEADD(HOUR, 2, CheckInDate),
     CASE
-        WHEN ProgressRatio >= ExpectedRatio THEN N'Dữ liệu Bizen: tiến độ đang đi đúng hướng, tiếp tục bám mốc Q2.'
-        ELSE N'Dữ liệu Bizen: KPI đang thực hiện dở, cần tăng tốc trong các lần check-in tiếp theo.'
+        WHEN ProgressRatio >= ExpectedRatio THEN N'Dữ liệu NextGen: tiến độ đang đi đúng hướng, tiếp tục bám mốc Q2.'
+        ELSE N'Dữ liệu NextGen: KPI đang thực hiện dở, cần tăng tốc trong các lần check-in tiếp theo.'
     END,
     CAST(ProgressRatio * 100 AS DECIMAL(5,2))
-FROM @BizenKpiCheckIns;
+FROM @NextGenKpiCheckIns;
 SET IDENTITY_INSERT [KPICheckIns] OFF;
 
 SET IDENTITY_INSERT [CheckInDetails] ON;
@@ -1331,10 +1331,10 @@ SELECT
     ROUND((TargetValue * ExpectedRatio) / ContributorCount, 2),
     CAST(ROUND((ProgressRatio / ExpectedRatio) * 100, 2) AS DECIMAL(18,2)),
     CASE SlotIndex
-        WHEN 1 THEN N'Check-in Bizen đầu kỳ: đã bắt đầu triển khai, còn nhiều hạng mục đang mở.'
-        ELSE N'Check-in Bizen giữa kỳ: KPI đang làm dở, có số liệu tiến độ nhưng chưa đạt mục tiêu.'
+        WHEN 1 THEN N'Check-in NextGen đầu kỳ: đã bắt đầu triển khai, còn nhiều hạng mục đang mở.'
+        ELSE N'Check-in NextGen giữa kỳ: KPI đang làm dở, có số liệu tiến độ nhưng chưa đạt mục tiêu.'
     END
-FROM @BizenKpiCheckIns;
+FROM @NextGenKpiCheckIns;
 SET IDENTITY_INSERT [CheckInDetails] OFF;
 
 SET IDENTITY_INSERT [CheckInHistoryLogs] ON;
@@ -1343,16 +1343,16 @@ SELECT
     RowId,
     RowId,
     CONCAT(
-        N'Bizen partial KPI progress | KPI #', KPIId,
+        N'NextGen partial KPI progress | KPI #', KPIId,
         N' | Employee #', EmployeeId,
         N' | Progress ', CAST(CAST(ProgressRatio * 100 AS DECIMAL(5,2)) AS NVARCHAR(20)), N'%'
     ),
     DATEADD(MINUTE, 5, CheckInDate)
-FROM @BizenKpiCheckIns;
+FROM @NextGenKpiCheckIns;
 SET IDENTITY_INSERT [CheckInHistoryLogs] OFF;
 GO
 
--- Bizen work projects and active tasks: these make employee accounts usable
+-- NextGen work projects and active tasks: these make employee accounts usable
 -- for receiving, viewing, updating and commenting on real work items.
 SET IDENTITY_INSERT [WorkProjects] ON;
 INSERT INTO [WorkProjects]
@@ -1375,9 +1375,9 @@ INSERT INTO [WorkProjects]
     [SourceOKRId]
 )
 VALUES
-    (1, N'BZ-PROD-TRACE', N'Chuẩn hóa truy xuất nguyên liệu Q2', N'Theo dõi lô nguyên liệu, hồ sơ kiểm định và dữ liệu truy xuất cho nhà máy Bizen.', 3, N'High',   N'Active', 35.00, 1, '2026-04-01', '2026-06-30', GETDATE(), GETDATE(), 3, 1, 7),
-    (2, N'BZ-DIST-GROW',  N'Mở rộng điểm bán sản phẩm Bizen',    N'Phối hợp kinh doanh, marketing và chăm sóc khách hàng để mở mới điểm bán thực phẩm đóng gói.', 6, N'High',   N'Active', 42.00, 1, '2026-04-05', '2026-06-30', GETDATE(), GETDATE(), 6, 1, 10),
-    (3, N'BZ-NEW-SKU',    N'Ra mắt dòng bánh ngũ cốc Bizen',     N'R&D, QA và marketing phối hợp hoàn thiện công thức, bao bì và kế hoạch ra mắt sản phẩm mới.', 11, N'Normal', N'Active', 28.00, 1, '2026-04-10', '2026-07-15', GETDATE(), GETDATE(), 11, 1, 25),
+    (1, N'BZ-PROD-TRACE', N'Chuẩn hóa truy xuất nguyên liệu Q2', N'Theo dõi lô nguyên liệu, hồ sơ kiểm định và dữ liệu truy xuất cho nhà máy NextGen.', 3, N'High',   N'Active', 35.00, 1, '2026-04-01', '2026-06-30', GETDATE(), GETDATE(), 3, 1, 7),
+    (2, N'BZ-DIST-GROW',  N'Mở rộng điểm bán sản phẩm NextGen',    N'Phối hợp kinh doanh, marketing và chăm sóc khách hàng để mở mới điểm bán thực phẩm đóng gói.', 6, N'High',   N'Active', 42.00, 1, '2026-04-05', '2026-06-30', GETDATE(), GETDATE(), 6, 1, 10),
+    (3, N'BZ-NEW-SKU',    N'Ra mắt dòng bánh ngũ cốc NextGen',     N'R&D, QA và marketing phối hợp hoàn thiện công thức, bao bì và kế hoạch ra mắt sản phẩm mới.', 11, N'Normal', N'Active', 28.00, 1, '2026-04-10', '2026-07-15', GETDATE(), GETDATE(), 11, 1, 25),
     (4, N'BZ-COLD-CHAIN', N'Ổn định tồn kho lạnh và giao hàng',  N'Chuẩn hóa tồn kho, điều phối kho vận và giảm rủi ro giao hàng trễ cho sản phẩm cần kiểm soát nhiệt độ.', 9, N'High', N'Active', 51.00, 1, '2026-04-01', '2026-06-30', GETDATE(), GETDATE(), 9, 1, 19);
 SET IDENTITY_INSERT [WorkProjects] OFF;
 GO
@@ -1426,7 +1426,7 @@ VALUES
     (2, 1, N'Cập nhật dữ liệu truy xuất cho ca sản xuất sáng', N'Nhập dữ liệu lô sản xuất, mã nguyên liệu và kết quả kiểm tra nhanh vào hồ sơ truy xuất.', 5, 3, 3, 19, 23, N'Normal', N'Todo',       0.00, 0.40, '2026-04-10', '2026-06-25', NULL, GETDATE(), GETDATE(), 1),
     (3, 1, N'Rà soát biểu mẫu QA cho thành phẩm', N'Kiểm tra lại checklist cảm quan, chỉ tiêu vi sinh và quy trình lưu mẫu.', 13, 3, 11, 73, 93, N'High', N'Review', 78.00, 0.50, '2026-04-11', '2026-06-18', NULL, GETDATE(), GETDATE(), 1),
     (4, 2, N'Lập danh sách 20 điểm bán ưu tiên', N'Chọn điểm bán theo khu vực, doanh số dự kiến và điều kiện bảo quản sản phẩm.', 22, 6, 4, 22, 28, N'High', N'InProgress', 50.00, 0.60, '2026-04-09', '2026-06-28', NULL, GETDATE(), GETDATE(), 1),
-    (5, 2, N'Chuẩn bị bộ tài liệu bán hàng Bizen', N'Hoàn thiện bảng giá, hình ảnh sản phẩm và quy trình đặt hàng cho nhà phân phối.', 22, 6, 4, 23, 30, N'Normal', N'Todo', 10.00, 0.40, '2026-04-12', '2026-06-26', NULL, GETDATE(), GETDATE(), 1),
+    (5, 2, N'Chuẩn bị bộ tài liệu bán hàng NextGen', N'Hoàn thiện bảng giá, hình ảnh sản phẩm và quy trình đặt hàng cho nhà phân phối.', 22, 6, 4, 23, 30, N'Normal', N'Todo', 10.00, 0.40, '2026-04-12', '2026-06-26', NULL, GETDATE(), GETDATE(), 1),
     (6, 2, N'Thu thập phản hồi nhà phân phối hiện hữu', N'Ghi nhận vấn đề về bao bì, tồn kho và tốc độ giao hàng để cải tiến Q2.', 26, 6, 8, 53, 66, N'Normal', N'InProgress', 45.00, 0.50, '2026-04-14', '2026-06-24', NULL, GETDATE(), GETDATE(), 1),
     (7, 3, N'Chốt công thức mẫu bánh ngũ cốc ít đường', N'Hoàn thiện công thức thử nghiệm, định mức nguyên liệu và chỉ tiêu cảm quan.', 27, 11, 9, 57, 73, N'High', N'InProgress', 40.00, 0.70, '2026-04-15', '2026-07-01', NULL, GETDATE(), GETDATE(), 1),
     (8, 3, N'Kiểm tra bao bì thử nghiệm theo tiêu chuẩn nhãn', N'Đối chiếu thành phần, cảnh báo dị ứng, hạn sử dụng và quy định nhãn hàng thực phẩm.', 29, 11, 11, 74, NULL, N'Normal', N'Todo', 5.00, 0.30, '2026-04-18', '2026-07-05', NULL, GETDATE(), GETDATE(), 1),
@@ -1499,13 +1499,13 @@ IF @KpiCount < 70
     THROW 51006, N'Seed validation failed: KPIs must be at least 70.', 1;
 
 IF @KpiCheckInCount < 150
-    THROW 51008, N'Seed validation failed: Bizen KPI check-ins must be at least 150.', 1;
+    THROW 51008, N'Seed validation failed: NextGen KPI check-ins must be at least 150.', 1;
 
 IF @WorkProjectCount < 4
-    THROW 51009, N'Seed validation failed: Bizen active work projects must be at least 4.', 1;
+    THROW 51009, N'Seed validation failed: NextGen active work projects must be at least 4.', 1;
 
 IF @WorkItemCount < 10
-    THROW 51010, N'Seed validation failed: Bizen active work items must be at least 10.', 1;
+    THROW 51010, N'Seed validation failed: NextGen active work items must be at least 10.', 1;
 
 IF @EmployeeAssignableTaskCount < 2
     THROW 51011, N'Seed validation failed: employee account must have active assignable work items.', 1;
@@ -1600,9 +1600,9 @@ IF EXISTS
 (
     SELECT 1
     FROM [Employees]
-    WHERE [FullName] LIKE N'Nhân viên Bizen [0-9][0-9][0-9]'
-       OR [FullName] LIKE N'Trưởng phòng Bizen [0-9][0-9][0-9]'
-       OR [FullName] LIKE N'Chuyên viên nhân sự Bizen [0-9][0-9][0-9]'
+    WHERE [FullName] LIKE N'Nhân viên NextGen [0-9][0-9][0-9]'
+       OR [FullName] LIKE N'Trưởng phòng NextGen [0-9][0-9][0-9]'
+       OR [FullName] LIKE N'Chuyên viên nhân sự NextGen [0-9][0-9][0-9]'
 )
     THROW 51016, N'Seed validation failed: generated users must have concrete person names and name-based usernames.', 1;
 
@@ -1611,7 +1611,7 @@ IF (SELECT COUNT(DISTINCT [Username]) FROM [SystemUsers]) <> @UserCount
     THROW 51017, N'Seed validation failed: usernames and employee full names must be unique.', 1;
 
 PRINT N'';
-PRINT N'=== BIZEN SEED SUMMARY ===';
+PRINT N'=== NEXTGEN SEED SUMMARY ===';
 PRINT CONCAT(N'SystemUsers: ', @UserCount);
 PRINT CONCAT(N'Employees: ', @EmployeeCount);
 PRINT CONCAT(N'Departments: ', @DepartmentCount);
@@ -1620,8 +1620,8 @@ PRINT CONCAT(N'OKRs: ', @OkrCount);
 PRINT CONCAT(N'KPIs: ', @KpiCount);
 PRINT CONCAT(N'KPI employee assignments: ', @KpiEmployeeAssignmentCount);
 PRINT CONCAT(N'KPI partial check-ins: ', @KpiCheckInCount);
-PRINT CONCAT(N'Bizen work projects: ', @WorkProjectCount);
-PRINT CONCAT(N'Bizen work items: ', @WorkItemCount);
+PRINT CONCAT(N'NextGen work projects: ', @WorkProjectCount);
+PRINT CONCAT(N'NextGen work items: ', @WorkItemCount);
 PRINT CONCAT(N'Employee active tasks: ', @EmployeeAssignableTaskCount);
 PRINT CONCAT(N'Permissions: ', @PermissionCount);
 PRINT CONCAT(N'Admin permissions: ', @AdminPermissionCount);
@@ -1657,7 +1657,7 @@ BEGIN
 END
 
 PRINT N'';
-PRINT N'=== SEED DATA BIZEN HOÀN TẤT ===';
+PRINT N'=== SEED DATA NEXTGEN HOÀN TẤT ===';
 PRINT N'';
 PRINT N'TÀI KHOẢN MẪU (mật khẩu: 123):';
 PRINT N'  admin     -> Admin (Toàn quyền)';
@@ -5870,7 +5870,7 @@ SET IDENTITY_INSERT [OKRs] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 266)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (266, N'OKR 2026 #066: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 2, N'Q2/2026', 2, 1, '2026-06-08 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 267)
-        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (267, N'OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 2, N'Q3/2026', 2, 1, '2026-07-10 09:00:00', 1, 1);
+        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (267, N'OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 2, N'Q3/2026', 2, 1, '2026-07-10 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 268)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (268, N'OKR 2026 #068: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 2, N'Năm 2026', 1, 1, '2026-08-12 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 269)
@@ -5890,7 +5890,7 @@ SET IDENTITY_INSERT [OKRs] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 276)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (276, N'OKR 2026 #076: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 2, N'Năm 2026', 2, 1, '2026-07-03 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 277)
-        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (277, N'OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 2, N'Q3/2026', 1, 1, '2026-08-05 09:00:00', 1, 1);
+        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (277, N'OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 2, N'Q3/2026', 1, 1, '2026-08-05 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 278)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (278, N'OKR 2026 #078: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 2, N'Q3/2026', 1, 1, '2026-09-01 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 279)
@@ -5910,7 +5910,7 @@ SET IDENTITY_INSERT [OKRs] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 286)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (286, N'OKR 2026 #086: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 2, N'Q3/2026', 1, 1, '2026-08-23 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 287)
-        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (287, N'OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 2, N'Q3/2026', 1, 1, '2026-09-01 09:00:00', 1, 1);
+        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (287, N'OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 2, N'Q3/2026', 1, 1, '2026-09-01 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 288)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (288, N'OKR 2026 #088: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 2, N'Năm 2026', 3, 1, '2026-01-02 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 289)
@@ -5930,7 +5930,7 @@ SET IDENTITY_INSERT [OKRs] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 296)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (296, N'OKR 2026 #096: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 2, N'Năm 2026', 1, 1, '2026-09-01 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 297)
-        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (297, N'OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 2, N'Q1/2026', 3, 1, '2026-01-20 09:00:00', 1, 1);
+        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (297, N'OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 2, N'Q1/2026', 3, 1, '2026-01-20 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 298)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (298, N'OKR 2026 #098: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 2, N'Q1/2026', 3, 1, '2026-02-22 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 299)
@@ -5950,7 +5950,7 @@ SET IDENTITY_INSERT [OKRs] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 306)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (306, N'OKR 2026 #106: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 2, N'Q1/2026', 3, 1, '2026-01-13 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 307)
-        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (307, N'OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 2, N'Q1/2026', 3, 1, '2026-02-15 09:00:00', 1, 1);
+        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (307, N'OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 2, N'Q1/2026', 3, 1, '2026-02-15 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 308)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (308, N'OKR 2026 #108: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 2, N'Năm 2026', 3, 1, '2026-03-17 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 309)
@@ -5970,7 +5970,7 @@ SET IDENTITY_INSERT [OKRs] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 316)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (316, N'OKR 2026 #116: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 2, N'Năm 2026', 3, 1, '2026-02-08 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 317)
-        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (317, N'OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 2, N'Q1/2026', 3, 1, '2026-03-10 09:00:00', 1, 1);
+        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (317, N'OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 2, N'Q1/2026', 3, 1, '2026-03-10 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 318)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (318, N'OKR 2026 #118: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 2, N'Q2/2026', 2, 1, '2026-04-12 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 319)
@@ -6378,11 +6378,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 698)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (698, 266, N'KR #698: Chỉ số then chốt 3 cho OKR 2026 #066: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 10.0, 3.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 699)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (699, 267, N'KR #699: Chỉ số then chốt 1 cho OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 100.0, 40.0, N'%', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (699, 267, N'KR #699: Chỉ số then chốt 1 cho OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 100.0, 40.0, N'%', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 700)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (700, 267, N'KR #700: Chỉ số then chốt 2 cho OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 50.0, 20.0, N'Tỷ VNĐ', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (700, 267, N'KR #700: Chỉ số then chốt 2 cho OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 50.0, 20.0, N'Tỷ VNĐ', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 701)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (701, 267, N'KR #701: Chỉ số then chốt 3 cho OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 10.0, 4.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (701, 267, N'KR #701: Chỉ số then chốt 3 cho OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 10.0, 4.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 702)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (702, 268, N'KR #702: Chỉ số then chốt 1 cho OKR 2026 #068: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 100.0, 50.0, N'%', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 703)
@@ -6438,11 +6438,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 728)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (728, 276, N'KR #728: Chỉ số then chốt 3 cho OKR 2026 #076: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 10.0, 7.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 729)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (729, 277, N'KR #729: Chỉ số then chốt 1 cho OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 100.0, 80.0, N'%', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (729, 277, N'KR #729: Chỉ số then chốt 1 cho OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 100.0, 80.0, N'%', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 730)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (730, 277, N'KR #730: Chỉ số then chốt 2 cho OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 50.0, 40.0, N'Tỷ VNĐ', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (730, 277, N'KR #730: Chỉ số then chốt 2 cho OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 50.0, 40.0, N'Tỷ VNĐ', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 731)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (731, 277, N'KR #731: Chỉ số then chốt 3 cho OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 10.0, 8.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (731, 277, N'KR #731: Chỉ số then chốt 3 cho OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 10.0, 8.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 732)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (732, 278, N'KR #732: Chỉ số then chốt 1 cho OKR 2026 #078: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 100.0, 30.0, N'%', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 733)
@@ -6498,11 +6498,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 758)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (758, 286, N'KR #758: Chỉ số then chốt 3 cho OKR 2026 #086: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 10.0, 5.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 759)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (759, 287, N'KR #759: Chỉ số then chốt 1 cho OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 100.0, 60.0, N'%', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (759, 287, N'KR #759: Chỉ số then chốt 1 cho OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 100.0, 60.0, N'%', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 760)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (760, 287, N'KR #760: Chỉ số then chốt 2 cho OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 50.0, 30.0, N'Tỷ VNĐ', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (760, 287, N'KR #760: Chỉ số then chốt 2 cho OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 50.0, 30.0, N'Tỷ VNĐ', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 761)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (761, 287, N'KR #761: Chỉ số then chốt 3 cho OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 10.0, 6.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (761, 287, N'KR #761: Chỉ số then chốt 3 cho OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 10.0, 6.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 762)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (762, 288, N'KR #762: Chỉ số then chốt 1 cho OKR 2026 #088: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 763)
@@ -6558,11 +6558,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 788)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (788, 296, N'KR #788: Chỉ số then chốt 3 cho OKR 2026 #096: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 10.0, 3.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 789)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (789, 297, N'KR #789: Chỉ số then chốt 1 cho OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (789, 297, N'KR #789: Chỉ số then chốt 1 cho OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 790)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (790, 297, N'KR #790: Chỉ số then chốt 2 cho OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 50.0, 50.0, N'Tỷ VNĐ', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (790, 297, N'KR #790: Chỉ số then chốt 2 cho OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 50.0, 50.0, N'Tỷ VNĐ', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 791)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (791, 297, N'KR #791: Chỉ số then chốt 3 cho OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (791, 297, N'KR #791: Chỉ số then chốt 3 cho OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 792)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (792, 298, N'KR #792: Chỉ số then chốt 1 cho OKR 2026 #098: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 793)
@@ -6618,11 +6618,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 818)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (818, 306, N'KR #818: Chỉ số then chốt 3 cho OKR 2026 #106: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 819)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (819, 307, N'KR #819: Chỉ số then chốt 1 cho OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (819, 307, N'KR #819: Chỉ số then chốt 1 cho OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 820)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (820, 307, N'KR #820: Chỉ số then chốt 2 cho OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 50.0, 50.0, N'Tỷ VNĐ', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (820, 307, N'KR #820: Chỉ số then chốt 2 cho OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 50.0, 50.0, N'Tỷ VNĐ', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 821)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (821, 307, N'KR #821: Chỉ số then chốt 3 cho OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (821, 307, N'KR #821: Chỉ số then chốt 3 cho OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 822)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (822, 308, N'KR #822: Chỉ số then chốt 1 cho OKR 2026 #108: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 823)
@@ -6678,11 +6678,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 848)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (848, 316, N'KR #848: Chỉ số then chốt 3 cho OKR 2026 #116: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 849)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (849, 317, N'KR #849: Chỉ số then chốt 1 cho OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (849, 317, N'KR #849: Chỉ số then chốt 1 cho OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 850)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (850, 317, N'KR #850: Chỉ số then chốt 2 cho OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 50.0, 50.0, N'Tỷ VNĐ', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (850, 317, N'KR #850: Chỉ số then chốt 2 cho OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 50.0, 50.0, N'Tỷ VNĐ', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 851)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (851, 317, N'KR #851: Chỉ số then chốt 3 cho OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (851, 317, N'KR #851: Chỉ số then chốt 3 cho OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 852)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (852, 318, N'KR #852: Chỉ số then chốt 1 cho OKR 2026 #118: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 100.0, 70.0, N'%', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 853)
@@ -16734,7 +16734,7 @@ SET IDENTITY_INSERT [OKRs] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 266)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (266, N'OKR 2026 #066: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 2, N'Q2/2026', 2, 1, '2026-06-08 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 267)
-        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (267, N'OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 2, N'Q3/2026', 2, 1, '2026-07-10 09:00:00', 1, 1);
+        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (267, N'OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 2, N'Q3/2026', 2, 1, '2026-07-10 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 268)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (268, N'OKR 2026 #068: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 2, N'Năm 2026', 1, 1, '2026-08-12 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 269)
@@ -16754,7 +16754,7 @@ SET IDENTITY_INSERT [OKRs] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 276)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (276, N'OKR 2026 #076: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 2, N'Năm 2026', 2, 1, '2026-07-03 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 277)
-        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (277, N'OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 2, N'Q3/2026', 1, 1, '2026-08-05 09:00:00', 1, 1);
+        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (277, N'OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 2, N'Q3/2026', 1, 1, '2026-08-05 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 278)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (278, N'OKR 2026 #078: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 2, N'Q3/2026', 1, 1, '2026-09-01 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 279)
@@ -16774,7 +16774,7 @@ SET IDENTITY_INSERT [OKRs] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 286)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (286, N'OKR 2026 #086: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 2, N'Q3/2026', 1, 1, '2026-08-23 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 287)
-        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (287, N'OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 2, N'Q3/2026', 1, 1, '2026-09-01 09:00:00', 1, 1);
+        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (287, N'OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 2, N'Q3/2026', 1, 1, '2026-09-01 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 288)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (288, N'OKR 2026 #088: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 2, N'Năm 2026', 3, 1, '2026-01-02 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 289)
@@ -16794,7 +16794,7 @@ SET IDENTITY_INSERT [OKRs] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 296)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (296, N'OKR 2026 #096: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 2, N'Năm 2026', 1, 1, '2026-09-01 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 297)
-        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (297, N'OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 2, N'Q1/2026', 3, 1, '2026-01-20 09:00:00', 1, 1);
+        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (297, N'OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 2, N'Q1/2026', 3, 1, '2026-01-20 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 298)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (298, N'OKR 2026 #098: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 2, N'Q1/2026', 3, 1, '2026-02-22 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 299)
@@ -16814,7 +16814,7 @@ SET IDENTITY_INSERT [OKRs] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 306)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (306, N'OKR 2026 #106: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 2, N'Q1/2026', 3, 1, '2026-01-13 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 307)
-        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (307, N'OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 2, N'Q1/2026', 3, 1, '2026-02-15 09:00:00', 1, 1);
+        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (307, N'OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 2, N'Q1/2026', 3, 1, '2026-02-15 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 308)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (308, N'OKR 2026 #108: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 2, N'Năm 2026', 3, 1, '2026-03-17 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 309)
@@ -16834,7 +16834,7 @@ SET IDENTITY_INSERT [OKRs] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 316)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (316, N'OKR 2026 #116: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 2, N'Năm 2026', 3, 1, '2026-02-08 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 317)
-        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (317, N'OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 2, N'Q1/2026', 3, 1, '2026-03-10 09:00:00', 1, 1);
+        INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (317, N'OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 2, N'Q1/2026', 3, 1, '2026-03-10 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 318)
         INSERT INTO [OKRs] ([Id], [ObjectiveName], [OKRTypeId], [Cycle], [StatusId], [IsActive], [CreatedAt], [CreatedById], [TenantId]) VALUES (318, N'OKR 2026 #118: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 2, N'Q2/2026', 2, 1, '2026-04-12 09:00:00', 1, 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRs] WHERE [Id] = 319)
@@ -17242,11 +17242,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 698)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (698, 266, N'KR #698: Chỉ số then chốt 3 cho OKR 2026 #066: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 10.0, 3.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 699)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (699, 267, N'KR #699: Chỉ số then chốt 1 cho OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 100.0, 40.0, N'%', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (699, 267, N'KR #699: Chỉ số then chốt 1 cho OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 100.0, 40.0, N'%', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 700)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (700, 267, N'KR #700: Chỉ số then chốt 2 cho OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 50.0, 20.0, N'Tỷ VNĐ', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (700, 267, N'KR #700: Chỉ số then chốt 2 cho OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 50.0, 20.0, N'Tỷ VNĐ', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 701)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (701, 267, N'KR #701: Chỉ số then chốt 3 cho OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 10.0, 4.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (701, 267, N'KR #701: Chỉ số then chốt 3 cho OKR 2026 #067: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 10.0, 4.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 702)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (702, 268, N'KR #702: Chỉ số then chốt 1 cho OKR 2026 #068: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 100.0, 50.0, N'%', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 703)
@@ -17302,11 +17302,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 728)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (728, 276, N'KR #728: Chỉ số then chốt 3 cho OKR 2026 #076: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 10.0, 7.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 729)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (729, 277, N'KR #729: Chỉ số then chốt 1 cho OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 100.0, 80.0, N'%', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (729, 277, N'KR #729: Chỉ số then chốt 1 cho OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 100.0, 80.0, N'%', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 730)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (730, 277, N'KR #730: Chỉ số then chốt 2 cho OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 50.0, 40.0, N'Tỷ VNĐ', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (730, 277, N'KR #730: Chỉ số then chốt 2 cho OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 50.0, 40.0, N'Tỷ VNĐ', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 731)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (731, 277, N'KR #731: Chỉ số then chốt 3 cho OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 10.0, 8.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (731, 277, N'KR #731: Chỉ số then chốt 3 cho OKR 2026 #077: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 10.0, 8.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 732)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (732, 278, N'KR #732: Chỉ số then chốt 1 cho OKR 2026 #078: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 100.0, 30.0, N'%', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 733)
@@ -17362,11 +17362,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 758)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (758, 286, N'KR #758: Chỉ số then chốt 3 cho OKR 2026 #086: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 10.0, 5.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 759)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (759, 287, N'KR #759: Chỉ số then chốt 1 cho OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 100.0, 60.0, N'%', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (759, 287, N'KR #759: Chỉ số then chốt 1 cho OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 100.0, 60.0, N'%', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 760)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (760, 287, N'KR #760: Chỉ số then chốt 2 cho OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 50.0, 30.0, N'Tỷ VNĐ', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (760, 287, N'KR #760: Chỉ số then chốt 2 cho OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 50.0, 30.0, N'Tỷ VNĐ', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 761)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (761, 287, N'KR #761: Chỉ số then chốt 3 cho OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 10.0, 6.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (761, 287, N'KR #761: Chỉ số then chốt 3 cho OKR 2026 #087: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 10.0, 6.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 762)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (762, 288, N'KR #762: Chỉ số then chốt 1 cho OKR 2026 #088: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 763)
@@ -17422,11 +17422,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 788)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (788, 296, N'KR #788: Chỉ số then chốt 3 cho OKR 2026 #096: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 10.0, 3.0, N'Sản phẩm', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 789)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (789, 297, N'KR #789: Chỉ số then chốt 1 cho OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (789, 297, N'KR #789: Chỉ số then chốt 1 cho OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 790)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (790, 297, N'KR #790: Chỉ số then chốt 2 cho OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 50.0, 50.0, N'Tỷ VNĐ', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (790, 297, N'KR #790: Chỉ số then chốt 2 cho OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 50.0, 50.0, N'Tỷ VNĐ', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 791)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (791, 297, N'KR #791: Chỉ số then chốt 3 cho OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (791, 297, N'KR #791: Chỉ số then chốt 3 cho OKR 2026 #097: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 792)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (792, 298, N'KR #792: Chỉ số then chốt 1 cho OKR 2026 #098: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 793)
@@ -17482,11 +17482,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 818)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (818, 306, N'KR #818: Chỉ số then chốt 3 cho OKR 2026 #106: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 819)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (819, 307, N'KR #819: Chỉ số then chốt 1 cho OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (819, 307, N'KR #819: Chỉ số then chốt 1 cho OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 820)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (820, 307, N'KR #820: Chỉ số then chốt 2 cho OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 50.0, 50.0, N'Tỷ VNĐ', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (820, 307, N'KR #820: Chỉ số then chốt 2 cho OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 50.0, 50.0, N'Tỷ VNĐ', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 821)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (821, 307, N'KR #821: Chỉ số then chốt 3 cho OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (821, 307, N'KR #821: Chỉ số then chốt 3 cho OKR 2026 #107: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 822)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (822, 308, N'KR #822: Chỉ số then chốt 1 cho OKR 2026 #108: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 823)
@@ -17542,11 +17542,11 @@ SET IDENTITY_INSERT [OKRKeyResults] ON;
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 848)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (848, 316, N'KR #848: Chỉ số then chốt 3 cho OKR 2026 #116: Cải tiến quy trình Kaizen Lean giảm lãng phí nguyên liệu Q3/2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 849)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (849, 317, N'KR #849: Chỉ số then chốt 1 cho OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (849, 317, N'KR #849: Chỉ số then chốt 1 cho OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 100.0, 100.0, N'%', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 850)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (850, 317, N'KR #850: Chỉ số then chốt 2 cho OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 50.0, 50.0, N'Tỷ VNĐ', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (850, 317, N'KR #850: Chỉ số then chốt 2 cho OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 50.0, 50.0, N'Tỷ VNĐ', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 851)
-        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (851, 317, N'KR #851: Chỉ số then chốt 3 cho OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic Bizen 2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
+        INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (851, 317, N'KR #851: Chỉ số then chốt 3 cho OKR 2026 #117: Phát triển thương hiệu thực phẩm Organic NextGen 2026', 10.0, 10.0, N'Sản phẩm', 0, NULL, N'Hoàn thành', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 852)
         INSERT INTO [OKRKeyResults] ([Id], [OKRId], [KeyResultName], [TargetValue], [CurrentValue], [Unit], [IsInverse], [FailReasonId], [ResultStatus], [TenantId]) VALUES (852, 318, N'KR #852: Chỉ số then chốt 1 cho OKR 2026 #118: Nâng cao tỷ lệ giao hàng đúng hạn OTIF đạt 98.5% Q3/2026', 100.0, 70.0, N'%', 0, NULL, N'Đang thực hiện', 1);
     IF NOT EXISTS (SELECT 1 FROM [OKRKeyResults] WHERE [Id] = 853)

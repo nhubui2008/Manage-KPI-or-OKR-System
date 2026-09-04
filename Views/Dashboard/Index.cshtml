@@ -1,443 +1,192 @@
-@using Manage_KPI_or_OKR_System.Models
+@using Manage_KPI_or_OKR_System.Models.ViewModels
+@model DashboardContainerViewModel
+
 @{
-    ViewData["Title"] = "Dashboard";
+    var common = Model.Common;
+    var activeMode = Model.ActiveViewMode;
+    var allPeriods = common.AllPeriods;
+    var selectedPeriod = common.SelectedPeriod;
 
-    var totalEmployees = (int)(ViewBag.TotalEmployees ?? 0);
-    var totalOKRs = (int)(ViewBag.TotalOKRs ?? 0);
-    var totalKPIs = (int)(ViewBag.TotalKPIs ?? 0);
-    var totalCheckIns = (int)(ViewBag.TotalCheckIns ?? 0);
-    var totalDepartments = (int)(ViewBag.TotalDepartments ?? 0);
-    var totalPositions = (int)(ViewBag.TotalPositions ?? 0);
-    var recentCheckIns = ViewBag.RecentCheckIns as List<KPICheckIn> ?? new List<KPICheckIn>();
-    var employeeNames = ViewBag.EmployeeNames as Dictionary<int, string> ?? new Dictionary<int, string>();
-    var kpiNames = ViewBag.KPINames as Dictionary<int, string> ?? new Dictionary<int, string>();
-    var kpiAchievementRate = (double)(ViewBag.KPIAchievementRate ?? 0.0);
-    var okrProgressRate = (double)(ViewBag.OKRProgressRate ?? 0.0);
-    var selectedPeriod = ViewBag.SelectedPeriod as EvaluationPeriod;
-    var allPeriods = ViewBag.AllPeriods as List<EvaluationPeriod> ?? new List<EvaluationPeriod>();
-    var topEmployees = ViewBag.TopEmployees as IEnumerable<dynamic>;
-
-    string GetKpiStatusColor(double rate)
+    string pageTitle;
+    string pageSubtitle;
+    switch (activeMode)
     {
-        if (rate >= 80) return "success";
-        if (rate >= 50) return "warning";
-        return "danger";
+        case DashboardViewModes.Director:
+            pageTitle = "Tổng Quan Ban Giám Đốc";
+            pageSubtitle = "Báo cáo chiến lược, mục tiêu OKR và hiệu suất toàn công ty";
+            break;
+        case DashboardViewModes.Manager:
+            pageTitle = "Quản Lý Đội Ngũ & Phòng Ban";
+            pageSubtitle = $"Theo dõi tiến độ {common.CurrentDepartmentName ?? "phòng ban"}, phê duyệt check-in và năng suất thành viên";
+            break;
+        case DashboardViewModes.Employee:
+            pageTitle = "Không Gian Hiệu Suất Cá Nhân";
+            pageSubtitle = $"Theo dõi KPI cá nhân, hạn check-in và tiến độ nhiệm vụ được giao ({common.UserFullName})";
+            break;
+        case DashboardViewModes.Overview:
+        default:
+            pageTitle = "Tổng Quan Vận Hành Hệ Thống";
+            pageSubtitle = "Giám sát tổng thể hoạt động OKR, KPI và nhân sự toàn doanh nghiệp";
+            break;
     }
 
-    string GetKpiStatusText(double rate)
-    {
-        if (rate >= 80) return "Tốt";
-        if (rate >= 50) return "Trung bình";
-        if (rate > 0) return "Cần cải thiện";
-        return "Chưa có dữ liệu";
-    }
-
-    string GetOkrStatusColor(double rate)
-    {
-        if (rate >= 70) return "success";
-        if (rate >= 40) return "warning";
-        return "danger";
-    }
-
-    string GetOkrStatusText(double rate)
-    {
-        if (rate >= 70) return "Đúng tiến độ";
-        if (rate >= 40) return "Đang bám sát";
-        if (rate > 0) return "Chậm tiến độ";
-        return "Chưa có dữ liệu";
-    }
-
-    var isAdmin = User.IsInRole("Admin") || User.IsInRole("Administrator");
-    var isManagerWorkflow = Manage_KPI_or_OKR_System.Helpers.AccessScopeHelper.IsManagerScoped(User);
-    var isEmployeeWorkflow = Manage_KPI_or_OKR_System.Helpers.AccessScopeHelper.IsEmployeeOrSales(User);
-    var isProjectManagerAi = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsProjectManagerAi(User);
-    var isKpiOkrDeveloper = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsKpiOkrDeveloper(User);
-    var isOperationsDeveloper = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsOperationsDeveloper(User);
-    var isTester = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsTester(User);
-    var isCatalogDeveloper = Manage_KPI_or_OKR_System.Helpers.ProjectRoleProfileHelper.IsCatalogDeveloper(User);
-    var hasSpecializedProjectRole = isProjectManagerAi || isKpiOkrDeveloper || isOperationsDeveloper || isTester || isCatalogDeveloper;
-    var userPermissions = User.Claims
-        .Where(c => c.Type == Manage_KPI_or_OKR_System.Services.PermissionClaimsTransformation.PermissionClaimType)
-        .Select(c => c.Value)
-        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-    bool HasDashboardPermission(string code) => isAdmin || userPermissions.Contains(code);
-
-    var showEmployees = !isManagerWorkflow && !isEmployeeWorkflow && HasDashboardPermission("EMPLOYEES_VIEW");
-    var showKpis = HasDashboardPermission("KPIS_VIEW");
-    var showOkrs = HasDashboardPermission("OKRS_VIEW") && (!hasSpecializedProjectRole || isProjectManagerAi || isKpiOkrDeveloper);
-    var showEvaluationResults = !isEmployeeWorkflow && HasDashboardPermission("EVALRESULTS_VIEW");
-    var showSelfCheckIns = !isManagerWorkflow && HasDashboardPermission("KPICHECKINS_VIEW");
-    var showManagerTracking = isManagerWorkflow &&
-        (HasDashboardPermission("KPICHECKINS_VIEW") || HasDashboardPermission("KPICHECKINS_REVIEW") || HasDashboardPermission("KPIS_VIEW"));
-    var showDepartments = !isManagerWorkflow && !isEmployeeWorkflow && HasDashboardPermission("DEPARTMENTS_VIEW");
-
-    var quickActions = new[]
-    {
-        new { Visible = showEmployees, Href = "/Employees", Icon = "bi-people", Label = "Nhân sự" },
-        new { Visible = showKpis, Href = "/KPIs", Icon = "bi-speedometer2", Label = isEmployeeWorkflow ? "KPI cá nhân" : "Quản lý KPI" },
-        new { Visible = showOkrs, Href = "/OKRs", Icon = "bi-bullseye", Label = isEmployeeWorkflow ? "Mục tiêu được giao" : "Quản lý OKR" },
-        new { Visible = showEvaluationResults, Href = "/EvaluationResults", Icon = "bi-award", Label = "Đánh giá" },
-        new { Visible = showSelfCheckIns || showManagerTracking, Href = showManagerTracking ? "/KPICheckIns/EmployeeTracking" : "/KPICheckIns", Icon = "bi-check2-square", Label = showManagerTracking ? "Theo dõi check-in" : "Check-in" },
-        new { Visible = showDepartments, Href = "/Departments", Icon = "bi-diagram-3", Label = "Phòng ban" }
-    }.Where(action => action.Visible).ToList();
+    ViewData["Title"] = pageTitle;
 }
 
-<div class="dashboard-page">
+<div class="dashboard-page" data-active-mode="@activeMode">
     <header class="dashboard-page-header">
         <div class="dashboard-page-heading">
-            <h1>Tổng quan hệ thống</h1>
-            <ol class="breadcrumb mb-0" aria-label="Breadcrumb">
+            <div class="d-flex align-items-center gap-2">
+                <h1 class="h3 mb-0">@pageTitle</h1>
+                @if (common.AllowedViewModes.Count > 1)
+                {
+                    <span class="badge badge-soft-primary fs-7">
+                        <i class="bi bi-shield-check me-1"></i>Đa góc nhìn
+                    </span>
+                }
+            </div>
+            <p class="text-muted small mb-0 mt-1">@pageSubtitle</p>
+            <ol class="breadcrumb mb-0 mt-2" aria-label="Breadcrumb">
                 <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+                <li class="breadcrumb-item"><a href="/Dashboard">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@activeMode</li>
             </ol>
         </div>
-        <form method="get" asp-action="Index" class="dashboard-period-filter">
-            <label for="dashboardPeriod" class="dashboard-period-label">
-                <i class="bi bi-calendar3" aria-hidden="true"></i>
-                <span>Kỳ báo cáo</span>
-            </label>
-            <select id="dashboardPeriod" name="periodId" class="form-select form-select-sm dashboard-period-select" onchange="this.form.submit()" aria-label="Chọn kỳ báo cáo">
-                <option value="" selected="@(selectedPeriod == null ? "selected" : null)">Tất cả kỳ</option>
-                @foreach (var period in allPeriods)
+
+        <div class="dashboard-header-toolbar d-flex flex-wrap align-items-center gap-2">
+            <!-- Form Lọc Kỳ Báo Cáo & Chuyển Đổi Góc Nhìn -->
+            <form method="get" asp-action="Index" class="d-flex flex-wrap align-items-center gap-2">
+                <!-- Dropdown Chuyển Đổi Góc Nhìn (Chỉ hiển thị khi có từ 2 vai trò trở lên) -->
+                @if (common.AllowedViewModes.Count > 1)
                 {
-                    var isSelected = selectedPeriod?.Id == period.Id;
-                    <option value="@period.Id" selected="@(isSelected ? "selected" : null)">
-                        @period.PeriodName
-                        @if (period.StartDate.HasValue && period.EndDate.HasValue)
-                        {
-                            <text> (@period.StartDate.Value.ToString("dd/MM/yy") - @period.EndDate.Value.ToString("dd/MM/yy"))</text>
-                        }
-                    </option>
+                    <div class="dashboard-filter-item">
+                        <label for="dashboardViewMode" class="dashboard-filter-label text-muted small fw-medium mb-0 me-1">
+                            <i class="bi bi-person-badge me-1"></i>Góc nhìn:
+                        </label>
+                        <select id="dashboardViewMode" name="viewMode" class="form-select form-select-sm dashboard-view-select" onchange="this.form.submit()" aria-label="Chọn góc nhìn dashboard">
+                            @foreach (var mode in common.AllowedViewModes)
+                            {
+                                string label = mode switch
+                                {
+                                    DashboardViewModes.Director => "Ban Giám đốc (Executive)",
+                                    DashboardViewModes.Manager => "Trưởng phòng (Manager)",
+                                    DashboardViewModes.Employee => "Nhân viên (Cá nhân)",
+                                    DashboardViewModes.Overview => "Toàn hệ thống (Admin/HR)",
+                                    _ => mode
+                                };
+                                <option value="@mode" selected="@(mode.Equals(activeMode, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
+                                    @label
+                                </option>
+                            }
+                        </select>
+                    </div>
                 }
-            </select>
-        </form>
+
+                <!-- Chọn Kỳ Báo Cáo -->
+                <div class="dashboard-filter-item">
+                    <label for="dashboardPeriod" class="dashboard-filter-label text-muted small fw-medium mb-0 me-1">
+                        <i class="bi bi-calendar3 me-1"></i>Kỳ báo cáo:
+                    </label>
+                    <select id="dashboardPeriod" name="periodId" class="form-select form-select-sm dashboard-period-select" onchange="this.form.submit()" aria-label="Chọn kỳ báo cáo">
+                        <option value="" selected="@(selectedPeriod == null ? "selected" : null)">Tất cả các kỳ</option>
+                        @foreach (var period in allPeriods)
+                        {
+                            var isSelected = selectedPeriod?.Id == period.Id;
+                            <option value="@period.Id" selected="@(isSelected ? "selected" : null)">
+                                @period.PeriodName
+                                @if (period.StartDate.HasValue && period.EndDate.HasValue)
+                                {
+                                    <text> (@period.StartDate.Value.ToString("dd/MM/yy") - @period.EndDate.Value.ToString("dd/MM/yy"))</text>
+                                }
+                            </option>
+                        }
+                    </select>
+                </div>
+            </form>
+        </div>
     </header>
 
-    <section class="row g-3 dashboard-section" aria-label="Chỉ số tổng quan">
-        <div class="col-12 col-sm-6 col-xl-3">
-            <article class="card dashboard-card dashboard-stat-card stat-card--primary h-100">
-                <div class="card-body">
-                    <div class="dashboard-stat-content">
-                        <div class="min-w-0">
-                            <p class="dashboard-stat-label">Tỷ lệ KPI đạt</p>
-                            <p class="dashboard-stat-value">@kpiAchievementRate%</p>
-                            <div class="dashboard-stat-meta">
-                                <span class="badge bg-@GetKpiStatusColor(kpiAchievementRate)-subtle text-@GetKpiStatusColor(kpiAchievementRate)">@GetKpiStatusText(kpiAchievementRate)</span>
-                                <span>@totalKPIs KPI</span>
-                            </div>
-                        </div>
-                        <span class="dashboard-stat-icon bg-primary-subtle text-primary"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
-                    </div>
-                </div>
-            </article>
-        </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <article class="card dashboard-card dashboard-stat-card stat-card--success h-100">
-                <div class="card-body">
-                    <div class="dashboard-stat-content">
-                        <div class="min-w-0">
-                            <p class="dashboard-stat-label">Tiến độ OKR</p>
-                            <p class="dashboard-stat-value">@okrProgressRate%</p>
-                            <div class="dashboard-stat-meta">
-                                <span class="badge bg-@GetOkrStatusColor(okrProgressRate)-subtle text-@GetOkrStatusColor(okrProgressRate)">@GetOkrStatusText(okrProgressRate)</span>
-                                <span>@totalOKRs mục tiêu</span>
-                            </div>
-                        </div>
-                        <span class="dashboard-stat-icon bg-success-subtle text-success"><i class="bi bi-bullseye" aria-hidden="true"></i></span>
-                    </div>
-                </div>
-            </article>
-        </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <article class="card dashboard-card dashboard-stat-card stat-card--info h-100">
-                <div class="card-body">
-                    <div class="dashboard-stat-content">
-                        <div class="min-w-0">
-                            <p class="dashboard-stat-label">Nhân viên trong phạm vi</p>
-                            <p class="dashboard-stat-value">@totalEmployees</p>
-                            <div class="dashboard-stat-meta"><span>Đang hoạt động</span></div>
-                        </div>
-                        <span class="dashboard-stat-icon bg-info-subtle text-info"><i class="bi bi-people" aria-hidden="true"></i></span>
-                    </div>
-                </div>
-            </article>
-        </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <article class="card dashboard-card dashboard-stat-card stat-card--warning h-100">
-                <div class="card-body">
-                    <div class="dashboard-stat-content">
-                        <div class="min-w-0">
-                            <p class="dashboard-stat-label">Check-in đã duyệt</p>
-                            <p class="dashboard-stat-value">@totalCheckIns</p>
-                            <div class="dashboard-stat-meta"><span>@(selectedPeriod != null ? $"Trong kỳ {selectedPeriod.PeriodName}" : "Trong phạm vi dữ liệu")</span></div>
-                        </div>
-                        <span class="dashboard-stat-icon bg-warning-subtle text-warning"><i class="bi bi-check2-square" aria-hidden="true"></i></span>
-                    </div>
-                </div>
-            </article>
-        </div>
-    </section>
+    <!-- CONTENT THEO VAI TRÒ CHUYÊN BIỆT -->
+    <main class="dashboard-main-content mt-3">
+        @switch (activeMode)
+        {
+            case DashboardViewModes.Director:
+                if (Model.Director != null)
+                {
+                    @await Html.PartialAsync("_DashboardDirector", Model.Director)
+                }
+                break;
 
-    <section class="row g-3 dashboard-section" aria-label="Tiến độ và hoạt động">
-        <div class="col-xl-8">
-            <article class="card dashboard-card h-100" aria-labelledby="kpiTrendHeading">
-                <div class="card-header dashboard-card-header">
-                    <div>
-                        <h2 class="card-title" id="kpiTrendHeading">Xu hướng tiến độ KPI</h2>
-                        <p>6 tháng gần nhất · dữ liệu check-in đã duyệt</p>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="dashboard-chart dashboard-chart--trend" data-dashboard-chart="trend">
-                        <canvas id="mainDashboardChart" role="img" aria-label="Biểu đồ xu hướng tiến độ KPI trong 6 tháng gần nhất"></canvas>
-                        <div class="dashboard-empty-state" id="mainDashboardChartState" role="status" hidden>
-                            <i class="bi bi-graph-up" aria-hidden="true"></i>
-                            <strong>Chưa có dữ liệu tiến độ</strong>
-                            <span>Check-in đã duyệt sẽ tạo xu hướng tại đây.</span>
-                        </div>
-                    </div>
-                </div>
-            </article>
-        </div>
-        <div class="col-xl-4">
-            <article class="card dashboard-card h-100" aria-labelledby="recentCheckinHeading">
-                <div class="card-header dashboard-card-header">
-                    <div>
-                        <h2 class="card-title" id="recentCheckinHeading">Check-in gần đây</h2>
-                        <p>Tối đa 5 hoạt động mới nhất</p>
-                    </div>
-                </div>
-                <div class="card-body dashboard-activity-list">
-                    @if (recentCheckIns.Any())
-                    {
-                        <ul class="list-group list-group-flush">
-                            @foreach (var checkIn in recentCheckIns)
-                            {
-                                var employeeName = checkIn.EmployeeId.HasValue && employeeNames.ContainsKey(checkIn.EmployeeId.Value)
-                                    ? employeeNames[checkIn.EmployeeId.Value]
-                                    : "N/A";
-                                var kpiName = checkIn.KPIId.HasValue && kpiNames.ContainsKey(checkIn.KPIId.Value)
-                                    ? kpiNames[checkIn.KPIId.Value]
-                                    : "N/A";
-                                <li class="list-group-item">
-                                    <span class="dashboard-activity-icon"><i class="bi bi-check-lg" aria-hidden="true"></i></span>
-                                    <span class="dashboard-activity-content">
-                                        <strong title="@employeeName">@employeeName</strong>
-                                        <span title="@kpiName">@kpiName</span>
-                                    </span>
-                                    <time datetime="@(checkIn.CheckInDate?.ToString("O"))">@(checkIn.CheckInDate?.ToString("dd/MM HH:mm") ?? "")</time>
-                                </li>
-                            }
-                        </ul>
-                    }
-                    else
-                    {
-                        <div class="dashboard-empty-state" role="status">
-                            <i class="bi bi-inbox" aria-hidden="true"></i>
-                            <strong>Chưa có check-in</strong>
-                            <span>Hoạt động mới sẽ hiển thị tại đây.</span>
-                        </div>
-                    }
-                </div>
-            </article>
-        </div>
-    </section>
+            case DashboardViewModes.Manager:
+                if (Model.Manager != null)
+                {
+                    @await Html.PartialAsync("_DashboardManager", Model.Manager)
+                }
+                break;
 
-    <section class="row g-3 dashboard-section" aria-label="Phân tích hiệu suất">
-        <div class="col-xl-4">
-            <article class="card dashboard-card h-100" aria-labelledby="okrStatusHeading">
-                <div class="card-header dashboard-card-header">
-                    <div>
-                        <h2 class="card-title" id="okrStatusHeading">Trạng thái OKR</h2>
-                        <p>Phân bổ theo trạng thái hiện tại</p>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="dashboard-chart dashboard-chart--donut" data-dashboard-chart="okr-status">
-                        <canvas id="okrStatusChart" role="img" aria-label="Biểu đồ phân bổ trạng thái OKR"></canvas>
-                    </div>
-                    <p class="dashboard-chart-note" id="okrStatusChartNote" role="status" hidden>Chưa có OKR trong phạm vi đã chọn.</p>
-                </div>
-            </article>
-        </div>
-        <div class="col-xl-8">
-            <article class="card dashboard-card h-100" aria-labelledby="departmentPerformanceHeading">
-                <div class="card-header dashboard-card-header">
-                    <div>
-                        <h2 class="card-title" id="departmentPerformanceHeading">Hiệu suất theo phòng ban</h2>
-                        <p>5 phòng ban có dữ liệu tiến độ nổi bật</p>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="dashboard-chart dashboard-chart--departments" data-dashboard-chart="departments">
-                        <canvas id="deptPerformanceChart" role="img" aria-label="Biểu đồ hiệu suất trung bình theo phòng ban"></canvas>
-                        <div class="dashboard-empty-state" id="deptPerformanceChartState" role="status" hidden>
-                            <i class="bi bi-bar-chart" aria-hidden="true"></i>
-                            <strong>Chưa có dữ liệu phòng ban</strong>
-                            <span>Dữ liệu hiệu suất đã duyệt sẽ hiển thị tại đây.</span>
-                        </div>
-                    </div>
-                </div>
-            </article>
-        </div>
-    </section>
+            case DashboardViewModes.Employee:
+                if (Model.Employee != null)
+                {
+                    @await Html.PartialAsync("_DashboardEmployee", Model.Employee)
+                }
+                break;
 
-    <section class="dashboard-section">
-        <article class="card dashboard-card" aria-labelledby="topEmployeesHeading">
-            <div class="card-header dashboard-card-header">
-                <div>
-                    <h2 class="card-title" id="topEmployeesHeading">Top 5 nhân viên hiệu suất cao</h2>
-                    <p>Xếp hạng từ check-in đã duyệt trong phạm vi dữ liệu</p>
-                </div>
-            </div>
-            @if (topEmployees != null && topEmployees.Any())
-            {
-                <div class="table-responsive dashboard-ranking-table-wrap">
-                    <table class="table table-hover table-nowrap align-middle mb-0 dashboard-ranking-table">
-                        <thead><tr><th scope="col">Xếp hạng</th><th scope="col">Nhân viên</th><th scope="col">Tiến độ trung bình</th><th scope="col">Check-in</th></tr></thead>
-                        <tbody>
-                            @{ var rank = 1; }
-                            @foreach (var employee in topEmployees)
-                            {
-                                var progress = (double)employee.AvgProgress;
-                                var progressColor = progress >= 100 ? "success" : progress >= 70 ? "primary" : progress >= 40 ? "warning" : "danger";
-                                <tr>
-                                    <td><span class="badge bg-secondary-subtle text-secondary">#@rank</span></td>
-                                    <td>
-                                        <div class="dashboard-employee-cell">
-                                            <span class="dashboard-employee-avatar">@(((string)employee.Name)?[0])</span>
-                                            <span class="fw-medium">@employee.Name</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="dashboard-rank-progress">
-                                            <div class="progress"><div class="progress-bar bg-@progressColor" role="progressbar" style="width: @(Math.Min(progress, 100))%" aria-valuenow="@Math.Min(progress, 100)" aria-valuemin="0" aria-valuemax="100"></div></div>
-                                            <span class="text-@progressColor">@employee.AvgProgress%</span>
-                                        </div>
-                                    </td>
-                                    <td><span class="badge bg-light text-body border">@employee.CheckInCount lần</span></td>
-                                </tr>
-                                rank++;
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                <div class="card-body">
-                    <div class="dashboard-empty-state dashboard-empty-state--compact" role="status">
-                        <i class="bi bi-trophy" aria-hidden="true"></i>
-                        <strong>Chưa đủ dữ liệu xếp hạng</strong>
-                        <span>Cần thêm check-in đã duyệt để xác định top nhân viên.</span>
-                    </div>
-                </div>
-            }
-        </article>
-    </section>
+            case DashboardViewModes.Overview:
+            default:
+                if (Model.Overview != null)
+                {
+                    @await Html.PartialAsync("_DashboardOverview", Model.Overview)
+                }
+                break;
+        }
+    </main>
 
-    <section class="row g-3 dashboard-section" aria-label="Trợ lý AI">
-        <div class="col-lg-6">
-            <article class="card dashboard-card dashboard-ai-card h-100" aria-labelledby="aiPerformanceHeading">
-                <div class="card-header dashboard-card-header dashboard-ai-header">
-                    <div>
-                        <h2 class="card-title" id="aiPerformanceHeading"><i class="bi bi-stars" aria-hidden="true"></i>AI phân tích hiệu suất</h2>
-                        <p>Tổng hợp rủi ro và hành động từ dữ liệu được phép</p>
-                    </div>
-                    <button type="button" class="btn btn-sm dashboard-ai-action" id="runAiPerformanceAnalysis" data-period-id="@(selectedPeriod?.Id)">
-                        <i class="bi bi-magic" aria-hidden="true"></i><span>Phân tích</span>
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div id="aiPerformanceAnalysisResult" class="dashboard-ai-result text-muted" role="status" aria-live="polite">Chọn kỳ báo cáo rồi bấm phân tích để nhận tổng quan, rủi ro và hành động tham khảo có nguồn từ check-in đã duyệt.</div>
-                </div>
-            </article>
-        </div>
-        <div class="col-lg-6">
-            <article class="card dashboard-card dashboard-ai-card h-100" aria-labelledby="aiSegmentHeading">
-                <div class="card-header dashboard-card-header dashboard-ai-header">
-                    <div>
-                        <h2 class="card-title" id="aiSegmentHeading"><i class="bi bi-person-lines-fill" aria-hidden="true"></i>AI gợi ý tệp khách hàng</h2>
-                        <p>Đề xuất có nguồn, không chấm điểm xác suất</p>
-                    </div>
-                    <button type="button" class="btn btn-sm dashboard-ai-action" id="runAiCustomerSegments" data-period-id="@(selectedPeriod?.Id)">
-                        <i class="bi bi-lightbulb" aria-hidden="true"></i><span>Gợi ý</span>
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div id="aiCustomerSegmentsResult" class="dashboard-ai-result text-muted" role="status" aria-live="polite">AI dựa trên phạm vi KPI/OKR và dữ liệu doanh thu được phép để đề xuất phân khúc khách hàng có căn cứ.</div>
-                </div>
-            </article>
-        </div>
-    </section>
-
-    <section class="row g-3 dashboard-section" aria-label="Điều hướng và chi tiết hệ thống">
-        <div class="col-xl-7">
-            <article class="card dashboard-card h-100" aria-labelledby="quickLinksHeading">
-                <div class="card-header dashboard-card-header">
-                    <div>
-                        <h2 class="card-title" id="quickLinksHeading">Truy cập nhanh</h2>
-                        <p>Các chức năng phù hợp với quyền hiện tại</p>
-                    </div>
-                </div>
-                <div class="card-body">
-                    @if (quickActions.Any())
-                    {
-                        <nav class="dashboard-quick-actions" aria-label="Truy cập nhanh">
-                            @foreach (var action in quickActions)
-                            {
-                                <a href="@action.Href" class="btn btn-light border dashboard-quick-action">
-                                    <i class="bi @action.Icon" aria-hidden="true"></i><span>@action.Label</span><i class="bi bi-arrow-right-short dashboard-quick-action-arrow" aria-hidden="true"></i>
-                                </a>
-                            }
-                        </nav>
-                    }
-                    else
-                    {
-                        <div class="dashboard-empty-state dashboard-empty-state--compact" role="status">
-                            <i class="bi bi-shield-check" aria-hidden="true"></i>
-                            <strong>Chưa có chức năng truy cập nhanh</strong>
-                            <span>Các lối tắt sẽ xuất hiện khi tài khoản được cấp quyền.</span>
-                        </div>
-                    }
-                </div>
-            </article>
-        </div>
-        <div class="col-xl-5">
-            <article class="card dashboard-card h-100" aria-labelledby="systemDetailHeading">
-                <div class="card-header dashboard-card-header">
-                    <div>
-                        <h2 class="card-title" id="systemDetailHeading">Chi tiết hệ thống</h2>
-                        <p>Số liệu trong phạm vi dữ liệu hiện tại</p>
-                    </div>
-                </div>
-                <div class="table-responsive dashboard-system-table-wrap">
-                    <table class="table table-sm table-nowrap align-middle mb-0 dashboard-system-table">
-                        <tbody>
-                            <tr><th scope="row"><i class="bi bi-diagram-3" aria-hidden="true"></i>Phòng ban</th><td>@totalDepartments</td></tr>
-                            <tr><th scope="row"><i class="bi bi-person-badge" aria-hidden="true"></i>Chức vụ</th><td>@totalPositions</td></tr>
-                            <tr><th scope="row"><i class="bi bi-people" aria-hidden="true"></i>Nhân viên</th><td>@totalEmployees</td></tr>
-                            <tr><th scope="row"><i class="bi bi-bullseye" aria-hidden="true"></i>OKR đang hoạt động</th><td>@totalOKRs</td></tr>
-                            <tr><th scope="row"><i class="bi bi-speedometer2" aria-hidden="true"></i>KPI đang hoạt động</th><td>@totalKPIs</td></tr>
-                            <tr><th scope="row"><i class="bi bi-check2-square" aria-hidden="true"></i>Check-in đã duyệt</th><td>@totalCheckIns</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </article>
-        </div>
-    </section>
-
+    <!-- METADATA VÀ DỮ LIỆU JSON BIỂU ĐỒ CHO CLIENT JAVASCRIPT -->
     <script type="application/json" id="dashboardData">
         {
-            "okrLabels": @Html.Raw(ViewBag.OKRStatusLabels ?? "[]"),
-            "okrData": @Html.Raw(ViewBag.OKRStatusData ?? "[]"),
-            "departmentLabels": @Html.Raw(ViewBag.DeptLabels ?? "[]"),
-            "departmentProgress": @Html.Raw(ViewBag.DeptProgress ?? "[]"),
-            "trendLabels": @Html.Raw(ViewBag.MainChartLabels ?? "[]"),
-            "trendData": @Html.Raw(ViewBag.MainChartData ?? "[]"),
-            "totalOkrs": @totalOKRs,
-            "totalCheckIns": @totalCheckIns
+            "activeMode": "@activeMode",
+            @if (activeMode == DashboardViewModes.Director && Model.Director != null)
+            {
+                <text>
+                "directorDeptLabels": @Html.Raw(Model.Director.DeptPerformanceLabelsJson),
+                "directorDeptData": @Html.Raw(Model.Director.DeptPerformanceDataJson),
+                "directorTrendLabels": @Html.Raw(Model.Director.Trend6MonthsLabelsJson),
+                "directorTrendData": @Html.Raw(Model.Director.Trend6MonthsDataJson),
+                "directorOkrLabels": @Html.Raw(Model.Director.OkrStatusLabelsJson),
+                "directorOkrData": @Html.Raw(Model.Director.OkrStatusDataJson)
+                </text>
+            }
+            else if (activeMode == DashboardViewModes.Manager && Model.Manager != null)
+            {
+                <text>
+                "managerTeamLabels": @Html.Raw(Model.Manager.TeamDistributionLabelsJson),
+                "managerTeamData": @Html.Raw(Model.Manager.TeamDistributionDataJson),
+                "managerKpiLabels": @Html.Raw(Model.Manager.DeptKpiProgressLabelsJson),
+                "managerKpiData": @Html.Raw(Model.Manager.DeptKpiProgressDataJson)
+                </text>
+            }
+            else if (activeMode == DashboardViewModes.Employee && Model.Employee != null)
+            {
+                <text>
+                "employeeTrendLabels": @Html.Raw(Model.Employee.PersonalTrendLabelsJson),
+                "employeeTrendData": @Html.Raw(Model.Employee.PersonalTrendDataJson)
+                </text>
+            }
+            else if (Model.Overview != null)
+            {
+                <text>
+                "okrLabels": @Html.Raw(Model.Overview.OKRStatusLabelsJson),
+                "okrData": @Html.Raw(Model.Overview.OKRStatusDataJson),
+                "departmentLabels": @Html.Raw(Model.Overview.DeptLabelsJson),
+                "departmentProgress": @Html.Raw(Model.Overview.DeptProgressJson),
+                "trendLabels": @Html.Raw(Model.Overview.MainChartLabelsJson),
+                "trendData": @Html.Raw(Model.Overview.MainChartDataJson),
+                "kpiLabels": @Html.Raw(Model.Overview.KPIStatusLabelsJson),
+                "kpiData": @Html.Raw(Model.Overview.KPIStatusDataJson),
+                "totalOkrs": @Model.Overview.TotalOKRs,
+                "totalCheckIns": @Model.Overview.TotalCheckIns
+                </text>
+            }
         }
     </script>
 </div>

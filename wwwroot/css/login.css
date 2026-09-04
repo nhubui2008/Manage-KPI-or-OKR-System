@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LIGHT 3D CRYSTAL AUTH THEME - VIETMACH SYSTEM (ENLARGED PREMIUM EDITION)
+   LIGHT 3D CRYSTAL AUTH THEME - NEXTGEN SYSTEM (ENLARGED PREMIUM EDITION)
    Visual Language: Central Floating Glass Card + 3D Prismatic Crystals + Ambient Pastel Glow
    ========================================================================== */
 
@@ -26,7 +26,7 @@
 }
 
 /* Base Body Styling */
-body.vietmach-auth {
+body.nextgen-auth {
     min-height: 100vh;
     margin: 0;
     padding: 0;
@@ -50,29 +50,29 @@ body.vietmach-auth {
     -moz-osx-font-smoothing: grayscale;
 }
 
-body.vietmach-auth,
-.vietmach-auth input,
-.vietmach-auth button,
-.vietmach-auth select,
-.vietmach-auth textarea,
-.vietmach-auth h1,
-.vietmach-auth h2,
-.vietmach-auth h3,
-.vietmach-auth p,
-.vietmach-auth span,
-.vietmach-auth a,
-.vietmach-auth label {
+body.nextgen-auth,
+.nextgen-auth input,
+.nextgen-auth button,
+.nextgen-auth select,
+.nextgen-auth textarea,
+.nextgen-auth h1,
+.nextgen-auth h2,
+.nextgen-auth h3,
+.nextgen-auth p,
+.nextgen-auth span,
+.nextgen-auth a,
+.nextgen-auth label {
     font-family: var(--crystal-font) !important;
 }
 
 /* Selection */
-.vietmach-auth ::selection {
+.nextgen-auth ::selection {
     background: #c7d2fe;
     color: #312e81;
 }
 
 /* Focus Visible */
-.vietmach-auth :is(a, button, input, [tabindex]):focus-visible {
+.nextgen-auth :is(a, button, input, [tabindex]):focus-visible {
     outline: 2px solid var(--crystal-primary);
     outline-offset: 2px;
 }
@@ -1218,7 +1218,7 @@ body.vietmach-auth,
 
 /* Reduced Motion Mode for Accessibility */
 @media (prefers-reduced-motion: reduce) {
-    .vietmach-auth *,
+    .nextgen-auth *,
     .ambient-orb,
     .crystal-item,
     .crystal-sparkle {
