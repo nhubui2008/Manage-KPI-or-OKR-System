@@ -7,6 +7,68 @@ namespace ManageKpiOkrSystem.Tests;
 
 public sealed class CheckInAiSourceVersionTests
 {
+    /// <summary>
+    /// Verifies that an entity created with local time (e.g. DateTime.Now) produces
+    /// the exact same source version as when reloaded from SQL Server (DateTimeKind.Unspecified),
+    /// preventing spurious 'source_changed' outbox worker cancellations.
+    /// </summary>
+    [Fact]
+    public void Resolve_IsDeterministicForLocalAndUnspecifiedDatabaseDates()
+    {
+        var checkInLocal = new KPICheckIn
+        {
+            Id = 1095,
+            EmployeeId = 5,
+            KPIId = 5,
+            CheckInDate = new DateTime(2026, 9, 5, 8, 8, 20, DateTimeKind.Local),
+            DeadlineAt = new DateTime(2026, 6, 24, 10, 0, 0, DateTimeKind.Local),
+            IsLate = true,
+            ReviewStatus = "Pending"
+        };
+        var checkInDb = new KPICheckIn
+        {
+            Id = 1095,
+            EmployeeId = 5,
+            KPIId = 5,
+            CheckInDate = new DateTime(2026, 9, 5, 8, 8, 20, DateTimeKind.Unspecified),
+            DeadlineAt = new DateTime(2026, 6, 24, 10, 0, 0, DateTimeKind.Unspecified),
+            IsLate = true,
+            ReviewStatus = "Pending"
+        };
+        var candidate = new CheckInDetail
+        {
+            Id = 1095,
+            CheckInId = 1095,
+            AchievedValue = 80m,
+            ProgressPercentage = 100m,
+            ExpectedValueAtDeadline = 1494.51m,
+            ScheduleProgressPercentage = 100m,
+            Note = "ko có \r\n"
+        };
+        var kpi = new KPI
+        {
+            Id = 5,
+            PeriodId = 2,
+            KPIName = "Bizen Bizen Strategy - Sự cố an toàn thực phẩm tồn đọng",
+            IsActive = true
+        };
+        var detail = new KPIDetail
+        {
+            Id = 5,
+            KPIId = 5,
+            TargetValue = 16m,
+            PassThreshold = 16m,
+            FailThreshold = 32m,
+            IsInverse = true,
+            DeadlineDate = new DateTime(2026, 6, 30, 0, 0, 0, DateTimeKind.Unspecified)
+        };
+
+        var hashLocal = CheckInAiSourceVersion.Resolve(checkInLocal, candidate, kpi, detail, null, null, null, null, null, null, 100m);
+        var hashDb = CheckInAiSourceVersion.Resolve(checkInDb, candidate, kpi, detail, null, null, null, null, null, null, 100m);
+
+        Assert.Equal(hashLocal, hashDb);
+    }
+
     [Fact]
     public void Resolve_ChangesWhenRubricInputsOrApprovedBaselineChange()
     {
@@ -92,6 +154,12 @@ public sealed class CheckInAiSourceVersionTests
     [Fact]
     public void Resolve_IsDeterministicForEquivalentUnspecifiedAndUtcDatabaseDates()
     {
+        var local = new KPICheckIn
+        {
+            Id = 1,
+            CheckInDate = new DateTime(2026, 7, 20, 8, 0, 0, DateTimeKind.Local),
+            ReviewStatus = "Pending"
+        };
         var unspecified = new KPICheckIn
         {
             Id = 1,
@@ -105,6 +173,9 @@ public sealed class CheckInAiSourceVersionTests
             ReviewStatus = "Pending"
         };
 
+        Assert.Equal(
+            CheckInAiSourceVersion.Resolve(local),
+            CheckInAiSourceVersion.Resolve(unspecified));
         Assert.Equal(
             CheckInAiSourceVersion.Resolve(unspecified),
             CheckInAiSourceVersion.Resolve(utc));

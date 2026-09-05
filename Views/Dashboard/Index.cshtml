@@ -63,7 +63,7 @@
                         <label for="dashboardViewMode" class="dashboard-filter-label text-muted small fw-medium mb-0 me-1">
                             <i class="bi bi-person-badge me-1"></i>Góc nhìn:
                         </label>
-                        <select id="dashboardViewMode" name="viewMode" class="form-select form-select-sm dashboard-view-select" onchange="this.form.submit()" aria-label="Chọn góc nhìn dashboard">
+                        <select id="dashboardViewMode" name="viewMode" class="form-select form-select-sm dashboard-view-select no-select2" onchange="this.form.submit()" aria-label="Chọn góc nhìn dashboard">
                             @foreach (var mode in common.AllowedViewModes)
                             {
                                 string label = mode switch
@@ -87,7 +87,7 @@
                     <label for="dashboardPeriod" class="dashboard-filter-label text-muted small fw-medium mb-0 me-1">
                         <i class="bi bi-calendar3 me-1"></i>Kỳ báo cáo:
                     </label>
-                    <select id="dashboardPeriod" name="periodId" class="form-select form-select-sm dashboard-period-select" onchange="this.form.submit()" aria-label="Chọn kỳ báo cáo">
+                    <select id="dashboardPeriod" name="periodId" class="form-select form-select-sm dashboard-period-select no-select2" onchange="this.form.submit()" aria-label="Chọn kỳ báo cáo">
                         <option value="" selected="@(selectedPeriod == null ? "selected" : null)">Tất cả các kỳ</option>
                         @foreach (var period in allPeriods)
                         {

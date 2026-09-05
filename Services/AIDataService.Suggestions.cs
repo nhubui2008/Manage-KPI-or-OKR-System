@@ -49,13 +49,24 @@ namespace Manage_KPI_or_OKR_System.Services
                 .ThenBy(e => e.Id)
                 .ToListAsync();
             var employeeIds = employeeList.Select(e => e.Id).ToList();
+            var assignmentQuery = _context.EmployeeAssignments
+                .AsNoTracking()
+                .Where(a => a.EmployeeId.HasValue &&
+                            employeeIds.Contains(a.EmployeeId.Value) &&
+                            a.IsActive == true &&
+                            a.DepartmentId.HasValue);
+
+            if (target.EffectiveDepartmentId.HasValue)
+            {
+                assignmentQuery = assignmentQuery.Where(a => a.DepartmentId == target.EffectiveDepartmentId.Value);
+            }
+            else if (!scope.CanSeeAll && !scope.IsHR)
+            {
+                assignmentQuery = assignmentQuery.Where(a => scope.DepartmentIds.Contains(a.DepartmentId!.Value));
+            }
+
             var employeeAssignments = employeeIds.Any()
-                ? await _context.EmployeeAssignments
-                    .AsNoTracking()
-                    .Where(a => a.EmployeeId.HasValue &&
-                                employeeIds.Contains(a.EmployeeId.Value) &&
-                                a.IsActive == true)
-                    .ToListAsync()
+                ? await assignmentQuery.ToListAsync()
                 : new List<EmployeeAssignment>();
             var latestAssignmentByEmployee = employeeAssignments
                 .GroupBy(a => a.EmployeeId!.Value)
@@ -137,7 +148,11 @@ namespace Manage_KPI_or_OKR_System.Services
 
             if (request.EmployeeId.HasValue)
             {
-                var assignment = await GetActiveAssignmentAsync(request.EmployeeId.Value);
+                var allowedDepts = (!scope.CanSeeAll && !scope.IsHR) ? scope.DepartmentIds : null;
+                var assignment = await GetActiveAssignmentAsync(
+                    request.EmployeeId.Value,
+                    target.EffectiveDepartmentId,
+                    allowedDepts);
                 var department = assignment?.DepartmentId != null
                     ? await _context.Departments.AsNoTracking()
                         .FirstOrDefaultAsync(item => item.Id == assignment.DepartmentId.Value && item.IsActive == true)
@@ -287,14 +302,28 @@ namespace Manage_KPI_or_OKR_System.Services
 
             if (employeeId.HasValue)
             {
-                var assignment = await GetActiveAssignmentAsync(employeeId.Value);
-                target.EffectiveDepartmentId = assignment?.DepartmentId;
-
-                if (departmentId.HasValue && target.EffectiveDepartmentId != departmentId)
+                if (departmentId.HasValue)
                 {
-                    throw new ArgumentException(
-                        "Nhan vien khong thuoc phong ban da chon.",
-                        nameof(departmentId));
+                    var hasAssignmentInDepartment = await _context.EmployeeAssignments
+                        .AsNoTracking()
+                        .AnyAsync(a => a.EmployeeId == employeeId.Value &&
+                                       a.DepartmentId == departmentId.Value &&
+                                       a.IsActive == true);
+
+                    if (!hasAssignmentInDepartment)
+                    {
+                        throw new ArgumentException(
+                            "Nhan vien khong thuoc phong ban da chon.",
+                            nameof(departmentId));
+                    }
+
+                    target.EffectiveDepartmentId = departmentId.Value;
+                }
+                else
+                {
+                    var allowedDepts = (!scope.CanSeeAll && !scope.IsHR) ? scope.DepartmentIds : null;
+                    var assignment = await GetActiveAssignmentAsync(employeeId.Value, null, allowedDepts);
+                    target.EffectiveDepartmentId = assignment?.DepartmentId;
                 }
 
                 if (target.EffectiveDepartmentId.HasValue)

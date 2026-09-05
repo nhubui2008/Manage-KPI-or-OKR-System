@@ -74,14 +74,14 @@
 
 .nextgen-shell .dashboard-period-filter .select2-container,
 .nextgen-shell .dashboard-period-filter .form-select,
-.nextgen-shell .dashboard-period-select {
+.nextgen-shell .dashboard-period-filter .dashboard-period-select {
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100%;
 }
 
 .nextgen-shell .dashboard-period-filter .form-select,
-.nextgen-shell .dashboard-period-select {
+.nextgen-shell .dashboard-period-filter .dashboard-period-select {
     min-height: 42px;
     height: 42px;
     padding: 8px 36px 8px 14px;
@@ -138,7 +138,7 @@
 }
 
 .nextgen-shell .dashboard-period-filter .form-select:hover,
-.nextgen-shell .dashboard-period-select:hover,
+.nextgen-shell .dashboard-period-filter .dashboard-period-select:hover,
 .nextgen-shell .dashboard-period-filter .select2-container--default .select2-selection--single:hover {
     border-color: #cbd5e1;
     background-color: #f8fafc;
@@ -146,7 +146,7 @@
 }
 
 .nextgen-shell .dashboard-period-filter .form-select:focus,
-.nextgen-shell .dashboard-period-select:focus,
+.nextgen-shell .dashboard-period-filter .dashboard-period-select:focus,
 .nextgen-shell .dashboard-period-filter .select2-container--default.select2-container--focus .select2-selection--single,
 .nextgen-shell .dashboard-period-filter .select2-container--default.select2-container--open .select2-selection--single {
     border-color: var(--primary, #4361ee);
@@ -802,7 +802,7 @@
     }
 
     .nextgen-shell .dashboard-period-filter .form-select,
-    .nextgen-shell .dashboard-period-select {
+    .nextgen-shell .dashboard-period-filter .dashboard-period-select {
         width: 100%;
         min-width: 100%;
     }
@@ -886,8 +886,26 @@
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 3px 10px;
+    padding: 2px 8px 2px 10px;
+    min-height: 38px;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    max-width: 100%;
+}
+
+.dashboard-filter-item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
+}
+
+.dashboard-filter-item:focus-within {
+    border-color: var(--primary, #4361ee);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #4361ee) 16%, transparent);
+}
+
+.dashboard-filter-label {
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .dashboard-view-select,
@@ -896,15 +914,40 @@
     background-color: transparent !important;
     box-shadow: none !important;
     font-weight: 600;
+    font-size: 0.84rem;
     color: #1e293b;
     cursor: pointer;
-    padding-right: 28px;
+    padding: 3px 26px 3px 6px;
+    width: auto;
+    max-width: 320px;
+    min-width: 0;
+    text-overflow: ellipsis;
+    background-position: right 6px center;
 }
 
 .dashboard-view-select:focus,
 .dashboard-period-select:focus {
     outline: none !important;
     box-shadow: none !important;
+}
+
+@media (max-width: 575.98px) {
+    .dashboard-header-toolbar,
+    .dashboard-header-toolbar form {
+        width: 100%;
+    }
+
+    .dashboard-filter-item {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .dashboard-view-select,
+    .dashboard-period-select {
+        flex: 1 1 auto;
+        max-width: calc(100% - 100px);
+    }
 }
 
 .badge-soft-primary {

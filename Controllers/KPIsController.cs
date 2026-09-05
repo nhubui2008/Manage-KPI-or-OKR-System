@@ -120,8 +120,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 .Select(status => status.Id)
                 .ToList();
 
-            var isManager = User.IsInRole("Manager") || User.IsInRole("manager");
-            var isDirector = User.IsInRole("Director") || User.IsInRole("director");
+            var isManager = AccessScopeHelper.IsManager(User);
+            var isDirector = AccessScopeHelper.IsDirector(User);
             var isEmployeeOrSales = AccessScopeHelper.IsEmployeeOrSales(User);
             var isRestrictedRole = isManager || isDirector || isEmployeeOrSales;
             var systemUserId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedSystemUserId)
@@ -1024,7 +1024,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                TempData["SuccessMessage"] = "Đã tạo KPI và chuyển sang trạng thái chờ duyệt.";
+                TempData["SuccessMessage"] = "Đã tạo KPI và chuyển sang trạng thái chờ duyệt. Quản lý có thể phê duyệt KPI để bắt đầu check-in.";
                 return RedirectToAction(nameof(Index));
             }
             catch

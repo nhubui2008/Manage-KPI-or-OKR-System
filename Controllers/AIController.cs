@@ -252,6 +252,10 @@ namespace Manage_KPI_or_OKR_System.Controllers
             {
                 return StatusCode(403, new SuggestKpiOptionsResponse { Success = false, Warnings = { ex.Message } });
             }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new SuggestKpiOptionsResponse { Success = false, Warnings = { ex.Message } });
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to load KPI suggestion options");

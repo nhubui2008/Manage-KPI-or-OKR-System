@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Manage_KPI_or_OKR_System.Data;
+using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Models.AI;
 using Manage_KPI_or_OKR_System.Services.Tenancy;
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +59,13 @@ public sealed class CheckInAiEvaluationQueue : ICheckInAiEvaluationQueue
         if (checkIn == null ||
             !string.Equals(reviewStatus, "Pending", StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(reviewStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+        var hasDetail = _context.ChangeTracker.Entries<CheckInDetail>()
+            .Any(e => e.State != EntityState.Deleted && e.Entity.CheckInId == workItem.CheckInId) ||
+            await _context.CheckInDetails.AnyAsync(d => d.CheckInId == workItem.CheckInId, cancellationToken);
+        if (!hasDetail)
         {
             return false;
         }
@@ -375,6 +383,13 @@ public sealed class CheckInAiEvaluationWorker : BackgroundService
                 await MarkTerminalAsync(context, workItem, Cancelled, "source_not_evaluable", cancellationToken);
                 return;
             }
+            var hasDetail = await context.CheckInDetails
+                .AnyAsync(detail => detail.CheckInId == workItem.CheckInId, cancellationToken);
+            if (!hasDetail)
+            {
+                await MarkTerminalAsync(context, workItem, Cancelled, "source_not_evaluable", cancellationToken);
+                return;
+            }
             var currentSourceVersion = await CheckInAiSourceVersion.ResolveAsync(
                 context,
                 currentCheckIn,
@@ -452,6 +467,18 @@ public sealed class CheckInAiEvaluationWorker : BackgroundService
                 workItem,
                 exception.ReasonCode,
                 cancellationToken);
+        }
+        catch (InvalidOperationException exception) when (exception.Message.Contains("measurable detail", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning(
+                exception,
+                "Check-in AI evaluation cancelled for outbox item {OutboxId} because check-in has no measurable detail.",
+                workItem.Id);
+            using var recoveryScope = _scopeFactory.CreateScope();
+            var recoveryTenant = recoveryScope.ServiceProvider.GetRequiredService<TenantContext>();
+            recoveryTenant.SetBackgroundTenant(workItem.TenantId, workItem.SystemUserId);
+            var recoveryContext = recoveryScope.ServiceProvider.GetRequiredService<MiniERPDbContext>();
+            await MarkTerminalAsync(recoveryContext, workItem, Cancelled, "source_not_evaluable", cancellationToken);
         }
         catch (Exception exception)
         {

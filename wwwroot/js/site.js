@@ -2125,9 +2125,9 @@ document.addEventListener('DOMContentLoaded', function () {
         var $scope = rootElement ? $(rootElement) : $(document);
 
         // Tìm tất cả các thẻ <select> chưa được khởi tạo và không bị loại trừ
-        var $targets = $scope.is('select:not(.select2-hidden-accessible):not(.no-select2)')
+        var $targets = $scope.is('select:not(.select2-hidden-accessible):not(.no-select2):not(.dashboard-period-select):not(.dashboard-view-select)')
             ? $scope
-            : $scope.find('select:not(.select2-hidden-accessible):not(.no-select2)');
+            : $scope.find('select:not(.select2-hidden-accessible):not(.no-select2):not(.dashboard-period-select):not(.dashboard-view-select)');
 
         $targets.each(function () {
             var $el = $(this);

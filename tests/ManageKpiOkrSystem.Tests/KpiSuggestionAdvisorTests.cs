@@ -73,11 +73,61 @@ public sealed class KpiSuggestionAdvisorTests
         Assert.Equal(6, response.Suggestions.Count);
     }
 
+    [Fact]
+    public async Task SuggestAsync_InverseZeroTargetAndColloquialUnits_NormalizedSuccessfully()
+    {
+        var setup = await CreateScenarioAsync();
+        await using var context = setup.Context;
+        var model = new DynamicKpiModelClient((primarySourceId, _) =>
+            $$"""
+            {
+                "suggestions": [
+                    {{Suggestion(primarySourceId, "Số lỗi sau bàn giao", "cái", 0, 1, 2, true)}},
+                    {{Suggestion(primarySourceId, "Tỷ lệ dự án đạt chuẩn", "phần trăm", 100, 95, 80, false)}},
+                    {{Suggestion(primarySourceId, "Thời gian xử lý sự cố", "tiếng", 0, 0, 2, true)}}
+                ]
+            }
+            """);
+        var advisor = CreateAdvisor(context, setup.TenantContext, model);
+
+        var response = await advisor.SuggestAsync(
+            new SuggestKpiRequest { PeriodId = setup.Period.Id },
+            setup.Principal);
+
+        Assert.Equal(3, response.Suggestions.Count);
+        Assert.Equal(1, model.CallCount);
+
+        var s1 = response.Suggestions[0];
+        Assert.Equal("Số lỗi sau bàn giao", s1.Name);
+        Assert.Equal("Sản phẩm", s1.Unit);
+        Assert.Equal(1m, s1.TargetValue);
+        Assert.Equal(1m, s1.PassThreshold);
+        Assert.Equal(2m, s1.FailThreshold);
+        Assert.True(s1.IsInverse);
+
+        var s2 = response.Suggestions[1];
+        Assert.Equal("Tỷ lệ dự án đạt chuẩn", s2.Name);
+        Assert.Equal("%", s2.Unit);
+        Assert.Equal(100m, s2.TargetValue);
+        Assert.Equal(95m, s2.PassThreshold);
+        Assert.Equal(80m, s2.FailThreshold);
+        Assert.False(s2.IsInverse);
+
+        var s3 = response.Suggestions[2];
+        Assert.Equal("Thời gian xử lý sự cố", s3.Name);
+        Assert.Equal("Giờ", s3.Unit);
+        Assert.Equal(1m, s3.TargetValue);
+        Assert.Equal(1m, s3.PassThreshold);
+        Assert.Equal(2m, s3.FailThreshold);
+        Assert.True(s3.IsInverse);
+    }
+
     [Theory]
     [InlineData("extra-field")]
     [InlineData("fake-source")]
     [InlineData("invalid-thresholds")]
     [InlineData("unsupported-unit")]
+    [InlineData("zero-target-forward")]
     public async Task SuggestAsync_RejectsNonStrictOrInvalidDraftsAndPersistsNothing(string variant)
     {
         var setup = await CreateScenarioAsync();
@@ -87,6 +137,7 @@ public sealed class KpiSuggestionAdvisorTests
             "extra-field" => ThreeSuggestions(primarySourceId, "\"score\":90,"),
             "fake-source" => ValidResponse("forged:source"),
             "invalid-thresholds" => ThreeSuggestions(primarySourceId, target: 100, pass: 120, fail: 80),
+            "zero-target-forward" => ThreeSuggestions(primarySourceId, target: 0, pass: 0, fail: 0),
             _ => ThreeSuggestions(primarySourceId, unit: "USD")
         });
         var advisor = CreateAdvisor(context, setup.TenantContext, model);
@@ -268,6 +319,84 @@ public sealed class KpiSuggestionAdvisorTests
             setup.Principal,
             new SuggestKpiOptionsRequest());
         Assert.Empty(closed.Periods);
+    }
+
+    [Fact]
+    public async Task SuggestionOptions_SupportsEmployeeWithMultipleActiveAssignmentsAcrossDepartments()
+    {
+        var setup = await CreateScenarioAsync("Manager");
+        await using var context = setup.Context;
+        setup.Department.ManagerId = setup.Employee.Id;
+
+        var otherDepartment = new Department
+        {
+            DepartmentCode = "FIN",
+            DepartmentName = "Phòng tài chính",
+            IsActive = true
+        };
+        context.Departments.Add(otherDepartment);
+        await context.SaveChangesAsync();
+
+        var multiDeptEmployee = new Employee
+        {
+            EmployeeCode = "MULTI-EMP",
+            FullName = "Multi dept employee",
+            Email = "multi@example.test",
+            Phone = "0900000003",
+            IsActive = true
+        };
+        context.Employees.Add(multiDeptEmployee);
+        await context.SaveChangesAsync();
+
+        // Older assignment in managed department
+        context.EmployeeAssignments.Add(new EmployeeAssignment
+        {
+            EmployeeId = multiDeptEmployee.Id,
+            DepartmentId = setup.Department.Id,
+            EffectiveDate = DateTime.Today.AddYears(-2),
+            IsActive = true
+        });
+        // Newer assignment in unmanaged department
+        context.EmployeeAssignments.Add(new EmployeeAssignment
+        {
+            EmployeeId = multiDeptEmployee.Id,
+            DepartmentId = otherDepartment.Id,
+            EffectiveDate = DateTime.Today.AddMonths(-1),
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+
+        var service = new AIDataService(context);
+
+        // 1. Selecting specific managed department and employee should succeed and return that department
+        var optionsWithDept = await service.GetKpiSuggestionOptionsAsync(
+            setup.Principal,
+            new SuggestKpiOptionsRequest
+            {
+                EmployeeId = multiDeptEmployee.Id,
+                DepartmentId = setup.Department.Id
+            });
+        Assert.Equal(setup.Department.Id, optionsWithDept.SelectedDepartmentId);
+
+        // 2. Selecting employee without department should resolve to the managed department, not throw UnauthorizedAccessException
+        var optionsWithoutDept = await service.GetKpiSuggestionOptionsAsync(
+            setup.Principal,
+            new SuggestKpiOptionsRequest
+            {
+                EmployeeId = multiDeptEmployee.Id
+            });
+        Assert.Equal(setup.Department.Id, optionsWithoutDept.SelectedDepartmentId);
+
+        // 3. Building suggestion context should succeed and reference the managed department
+        var advisorContext = await service.BuildKpiSuggestionContextAsync(
+            setup.Principal,
+            new SuggestKpiRequest
+            {
+                EmployeeId = multiDeptEmployee.Id,
+                DepartmentId = setup.Department.Id,
+                PeriodId = setup.Period.Id
+            });
+        Assert.Contains(setup.Department.DepartmentName!, advisorContext.Text);
     }
 
     private static KpiSuggestionAdvisor CreateAdvisor(

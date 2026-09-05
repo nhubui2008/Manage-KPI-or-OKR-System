@@ -586,11 +586,26 @@ namespace Manage_KPI_or_OKR_System.Controllers
             var vm = new EmployeeDashboardViewModel();
             if (employee == null) return vm;
 
-            // 1. KPI cá nhân được phân bổ
+            // 1. KPI cá nhân và phòng ban được phân bổ
+            var employeeDeptIds = await _context.EmployeeAssignments.AsNoTracking()
+                .Where(a => a.EmployeeId == employee.Id && a.IsActive == true && a.DepartmentId.HasValue)
+                .Select(a => a.DepartmentId!.Value)
+                .Distinct()
+                .ToListAsync();
+
             var allocatedKpiIds = await _context.KPI_Employee_Assignments.AsNoTracking()
                 .Where(a => a.EmployeeId == employee.Id && (a.Status == null || a.Status == "Active"))
                 .Select(a => a.KPIId)
                 .ToListAsync();
+
+            if (employeeDeptIds.Count > 0)
+            {
+                var deptKpiIds = await _context.KPI_Department_Assignments.AsNoTracking()
+                    .Where(a => employeeDeptIds.Contains(a.DepartmentId))
+                    .Select(a => a.KPIId)
+                    .ToListAsync();
+                allocatedKpiIds = allocatedKpiIds.Concat(deptKpiIds).Distinct().ToList();
+            }
 
             var kpiQuery = _context.KPIs.AsNoTracking()
                 .Where(k => k.IsActive == true && (allocatedKpiIds.Contains(k.Id) || k.AssignerId == employee.Id));
@@ -825,10 +840,25 @@ namespace Manage_KPI_or_OKR_System.Controllers
 
             if (isEmployeeRole && employee != null)
             {
-                var allocatedKpiIds = await _context.KPI_Employee_Assignments.AsNoTracking()
+                var employeeDeptIds = await _context.EmployeeAssignments.AsNoTracking()
+                    .Where(a => a.EmployeeId == employee.Id && a.IsActive == true && a.DepartmentId.HasValue)
+                    .Select(a => a.DepartmentId!.Value)
+                    .Distinct()
+                    .ToListAsync();
+
+                var employeeKpiIds = await _context.KPI_Employee_Assignments.AsNoTracking()
                     .Where(a => a.EmployeeId == employee.Id && (a.Status == null || a.Status == "Active"))
                     .Select(a => a.KPIId)
                     .ToListAsync();
+
+                var deptKpiIds = employeeDeptIds.Count > 0
+                    ? await _context.KPI_Department_Assignments.AsNoTracking()
+                        .Where(a => employeeDeptIds.Contains(a.DepartmentId))
+                        .Select(a => a.KPIId)
+                        .ToListAsync()
+                    : new List<int>();
+
+                var allocatedKpiIds = employeeKpiIds.Concat(deptKpiIds).Distinct().ToList();
                 var allocatedOkrIds = await _context.OKR_Employee_Allocations.AsNoTracking()
                     .Where(a => a.EmployeeId == employee.Id)
                     .Select(a => a.OKRId)

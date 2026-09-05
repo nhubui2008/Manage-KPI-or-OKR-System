@@ -210,11 +210,29 @@ namespace Manage_KPI_or_OKR_System.Services
                     group => Math.Round(group.Average(value => value.Progress), 1));
         }
 
-        private async Task<EmployeeAssignment?> GetActiveAssignmentAsync(int employeeId)
+        private async Task<EmployeeAssignment?> GetActiveAssignmentAsync(
+            int employeeId,
+            int? departmentId = null,
+            IEnumerable<int>? allowedDepartmentIds = null)
         {
-            return await _context.EmployeeAssignments
+            var query = _context.EmployeeAssignments
                 .AsNoTracking()
-                .Where(a => a.EmployeeId == employeeId && a.IsActive == true)
+                .Where(a => a.EmployeeId == employeeId && a.IsActive == true);
+
+            if (departmentId.HasValue)
+            {
+                query = query.Where(a => a.DepartmentId == departmentId.Value);
+            }
+            else if (allowedDepartmentIds != null)
+            {
+                var allowedList = allowedDepartmentIds.ToList();
+                if (allowedList.Any())
+                {
+                    query = query.Where(a => a.DepartmentId.HasValue && allowedList.Contains(a.DepartmentId.Value));
+                }
+            }
+
+            return await query
                 .OrderByDescending(a => a.EffectiveDate)
                 .ThenByDescending(a => a.Id)
                 .FirstOrDefaultAsync();

@@ -270,6 +270,155 @@ public sealed class KPIsControllerBusinessFlowTests
         Assert.NotNull(method.GetCustomAttribute<ValidateAntiForgeryTokenAttribute>());
     }
 
+    [Fact]
+    public async Task Create_ManagerAllocatingEmployeeAndDepartment_MakesKpiVisibleToBothManagerAndEmployee()
+    {
+        await using var context = CreateContext();
+        var setup = await AddKpiSetupAsync(context);
+
+        var manager = new Employee
+        {
+            FullName = "Quản lý Phòng Ban",
+            EmployeeCode = "MGR01",
+            Phone = "0900000010",
+            Email = "mgr01@example.com",
+            SystemUserId = 1,
+            IsActive = true
+        };
+        var employee = new Employee
+        {
+            FullName = "Nhân viên Dự án",
+            EmployeeCode = "EMP01",
+            Phone = "0900000011",
+            Email = "emp01@example.com",
+            SystemUserId = 2,
+            IsActive = true
+        };
+        context.Employees.AddRange(manager, employee);
+        await context.SaveChangesAsync();
+
+        var department = new Department
+        {
+            DepartmentName = "Phòng Công Nghệ",
+            DepartmentCode = "TECH",
+            ManagerId = manager.Id,
+            IsActive = true
+        };
+        context.Departments.Add(department);
+        await context.SaveChangesAsync();
+
+        context.EmployeeAssignments.AddRange(
+            new EmployeeAssignment { EmployeeId = manager.Id, DepartmentId = department.Id, IsActive = true },
+            new EmployeeAssignment { EmployeeId = employee.Id, DepartmentId = department.Id, IsActive = true });
+        await context.SaveChangesAsync();
+
+        // Manager creates KPI with AI suggested scope (both department and employee assigned)
+        var managerController = CreateController(context, "Manager", FormValues(100, 80, 50), userId: "1");
+        var model = ValidInput(setup);
+        model.KPIName = "KPI hiệu suất đội ngũ";
+        model.DepartmentIds = new List<int> { department.Id };
+        model.EmployeeIds = new List<int> { employee.Id };
+        model.Weights = new List<string> { "100" };
+
+        var createResult = await managerController.Create(model);
+        Assert.IsType<RedirectToActionResult>(createResult);
+
+        // Verify persisted KPI has both department and employee assignments
+        var savedKpi = await context.KPIs.FirstOrDefaultAsync(k => k.KPIName == "KPI hiệu suất đội ngũ");
+        Assert.NotNull(savedKpi);
+        Assert.Equal(setup.Pending.Id, savedKpi.StatusId);
+        Assert.True(await context.KPIDetails.AnyAsync(d => d.KPIId == savedKpi.Id));
+        Assert.True(await context.KPI_Department_Assignments.AnyAsync(d => d.KPIId == savedKpi.Id && d.DepartmentId == department.Id));
+        Assert.True(await context.KPI_Employee_Assignments.AnyAsync(e => e.KPIId == savedKpi.Id && e.EmployeeId == employee.Id));
+
+        // Manager views index -> sees newly created KPI
+        var managerIndexResult = await managerController.Index(null, null);
+        var managerView = Assert.IsType<ViewResult>(managerIndexResult);
+        var managerModel = Assert.IsType<KpiIndexViewModel>(managerView.Model);
+        Assert.Contains(managerModel.Items, item => item.Id == savedKpi.Id);
+
+        // Employee views index -> sees newly created KPI assigned to them
+        var employeeController = CreateController(context, "Employee", userId: "2");
+        var employeeIndexResult = await employeeController.Index(null, null);
+        var employeeView = Assert.IsType<ViewResult>(employeeIndexResult);
+        var employeeModel = Assert.IsType<KpiIndexViewModel>(employeeView.Model);
+        Assert.Contains(employeeModel.Items, item => item.Id == savedKpi.Id);
+    }
+
+    [Fact]
+    public async Task Index_ProjectManagerAi_IsRecognizedAsManagerAndCanApproveKpi()
+    {
+        await using var context = CreateContext();
+        var setup = await AddKpiSetupAsync(context);
+
+        var pmAi = new Employee
+        {
+            FullName = "Project Manager AI User",
+            EmployeeCode = "PMAI01",
+            Phone = "0900000020",
+            Email = "pmai@example.com",
+            SystemUserId = 1,
+            IsActive = true
+        };
+        var teamMember = new Employee
+        {
+            FullName = "Team Developer",
+            EmployeeCode = "DEV01",
+            Phone = "0900000021",
+            Email = "dev01@example.com",
+            SystemUserId = 2,
+            IsActive = true
+        };
+        context.Employees.AddRange(pmAi, teamMember);
+        await context.SaveChangesAsync();
+
+        var department = new Department
+        {
+            DepartmentName = "Ban AI",
+            DepartmentCode = "AI",
+            ManagerId = pmAi.Id,
+            IsActive = true
+        };
+        context.Departments.Add(department);
+        await context.SaveChangesAsync();
+
+        context.EmployeeAssignments.AddRange(
+            new EmployeeAssignment { EmployeeId = pmAi.Id, DepartmentId = department.Id, IsActive = true },
+            new EmployeeAssignment { EmployeeId = teamMember.Id, DepartmentId = department.Id, IsActive = true });
+
+        var kpi = new KPI
+        {
+            KPIName = "KPI dự án AI",
+            PeriodId = setup.Period.Id,
+            KPITypeId = setup.Type.Id,
+            StatusId = setup.Pending.Id,
+            AssignerId = pmAi.Id,
+            CreatedById = pmAi.Id,
+            IsActive = true,
+            CreatedAt = DateTime.Now
+        };
+        context.KPIs.Add(kpi);
+        await context.SaveChangesAsync();
+        context.KPI_Employee_Assignments.Add(new KPI_Employee_Assignment
+        {
+            KPIId = kpi.Id,
+            EmployeeId = teamMember.Id,
+            Weight = 1m,
+            Status = "Active"
+        });
+        await context.SaveChangesAsync();
+
+        // Controller with role ProjectManagerAI
+        var controller = CreateController(context, ProjectRoleProfileHelper.ProjectManagerAiRole, userId: "1", permissions: new[] { "KPIS_CREATE" });
+        var result = await controller.Index(null, null);
+
+        var view = Assert.IsType<ViewResult>(result);
+        var model = Assert.IsType<KpiIndexViewModel>(view.Model);
+        Assert.Contains(model.Items, item => item.Id == kpi.Id);
+        Assert.True(model.CanCreateKpi);
+        Assert.True(model.CanApproveKpi);
+    }
+
     private static KpiCreateViewModel ValidInput(
         (EvaluationPeriod Period, KPIType Type, Status Pending, Status InProgress) setup)
     {
@@ -320,15 +469,22 @@ public sealed class KPIsControllerBusinessFlowTests
     private static KPIsController CreateController(
         MiniERPDbContext context,
         string role,
-        Dictionary<string, StringValues>? formValues = null)
+        Dictionary<string, StringValues>? formValues = null,
+        string userId = "1",
+        IEnumerable<string>? permissions = null)
     {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim(ClaimTypes.Role, role)
+        };
+        if (permissions != null)
+        {
+            claims.AddRange(permissions.Select(p => new Claim("Permission", p)));
+        }
         var httpContext = new DefaultHttpContext
         {
-            User = new ClaimsPrincipal(new ClaimsIdentity(new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, "1"),
-                new Claim(ClaimTypes.Role, role)
-            }, "Test"))
+            User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"))
         };
         httpContext.Request.Form = new FormCollection(formValues ?? new Dictionary<string, StringValues>());
         var controller = new KPIsController(context)

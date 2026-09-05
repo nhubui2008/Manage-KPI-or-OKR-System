@@ -338,9 +338,13 @@
             if (source === "employee" && (data.selectedDepartmentId || data.SelectedDepartmentId)) {
                 targetDept = String(data.selectedDepartmentId || data.SelectedDepartmentId);
             }
+            var targetPeriod = previous.period;
+            if (!targetPeriod && periodItems.length > 0) {
+                targetPeriod = String(periodItems[0].id);
+            }
             setSelectOptions(controls.department, "Không chọn cụ thể", departmentItems, targetDept, false);
             setSelectOptions(controls.employee, "Không chọn cụ thể", employeeItems, previous.employee, false);
-            setSelectOptions(controls.period, periodItems.length ? "Chọn kỳ gần nhất" : "Chưa có kỳ khả dụng", periodItems, previous.period, !periodItems.length);
+            setSelectOptions(controls.period, periodItems.length ? "Chọn kỳ gần nhất" : "Chưa có kỳ khả dụng", periodItems, targetPeriod, !periodItems.length);
             setSelectOptions(controls.okr, okrItems.length ? "Không bắt buộc" : "Chưa có OKR khả dụng", okrItems, previous.okr, !okrItems.length);
             aiState.keyResults = (data.keyResults || []).map(function (item) { return { id: item.id, text: item.text || item.name, parentId: item.parentId ?? item.okrId }; });
             renderAiKeyResults(previous.kr);
@@ -434,24 +438,49 @@
             inverseField.checked = isInverse === true;
             inverseField.dispatchEvent(new Event("change", { bubbles: true }));
         }
-        var controls = aiControls();
-        if (controls.period?.value) {
-            var period = q("#PeriodId");
-            if (period) {
-                period.value = controls.period.value;
-                period.dispatchEvent(new Event("change", { bubbles: true }));
-                refreshSelect(period);
+
+        var typeSelect = q("#KPITypeId");
+        if (typeSelect && (!typeSelect.value || typeSelect.value === "")) {
+            if (typeSelect.options.length > 1) {
+                typeSelect.value = typeSelect.options[1].value;
+                typeSelect.dispatchEvent(new Event("input", { bubbles: true }));
+                typeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+                refreshSelect(typeSelect);
             }
         }
+
+        var controls = aiControls();
+        var periodSelect = q("#PeriodId");
+        var periodVal = controls.period?.value || "";
+        if (!periodVal && controls.period?.options?.length > 1) {
+            periodVal = controls.period.options[1].value;
+        }
+        if (!periodVal && periodSelect && periodSelect.options?.length > 1) {
+            periodVal = periodSelect.options[1].value;
+        }
+        if (periodSelect && periodVal) {
+            periodSelect.value = periodVal;
+            periodSelect.dispatchEvent(new Event("input", { bubbles: true }));
+            periodSelect.dispatchEvent(new Event("change", { bubbles: true }));
+            refreshSelect(periodSelect);
+        }
+
         if (controls.okr?.value) {
             var okr = q("#okrSelect");
-            if (okr) { okr.value = controls.okr.value; okr.dispatchEvent(new Event("change", { bubbles: true })); }
+            if (okr) {
+                okr.value = controls.okr.value;
+                okr.dispatchEvent(new Event("input", { bubbles: true }));
+                okr.dispatchEvent(new Event("change", { bubbles: true }));
+                refreshSelect(okr);
+            }
         }
         window.setTimeout(function () {
             if (controls.kr?.value) {
                 var keyResult = q("#keyResultSelect");
                 if (keyResult) {
                     keyResult.value = controls.kr.value;
+                    keyResult.dispatchEvent(new Event("input", { bubbles: true }));
+                    keyResult.dispatchEvent(new Event("change", { bubbles: true }));
                     refreshSelect(keyResult);
                 }
             }
@@ -463,7 +492,8 @@
                 employeeCheckbox.checked = true;
                 employeeCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
             }
-        } else if (controls.department?.value) {
+        }
+        if (controls.department?.value) {
             var departmentCheckbox = root.querySelector('input[name="DepartmentIds"][value="' + controls.department.value + '"]');
             if (departmentCheckbox && !departmentCheckbox.checked) {
                 departmentCheckbox.checked = true;

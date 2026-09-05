@@ -841,6 +841,18 @@
                                                 {
                                                     <span class="text-muted">—</span>
                                                 }
+                                                else if (job.FailureCode == "source_changed")
+                                                {
+                                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" title="Dữ liệu check-in hoặc KPI đã cập nhật phiên bản mới; job snapshot cũ đã được thay thế">
+                                                        <i class="bi bi-clock-history me-1"></i> source_changed
+                                                    </span>
+                                                }
+                                                else if (job.FailureCode == "source_not_evaluable")
+                                                {
+                                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" title="Check-in không có chi tiết đo lường hoặc chưa ở trạng thái có thể đánh giá">
+                                                        <i class="bi bi-info-circle me-1"></i> source_not_evaluable
+                                                    </span>
+                                                }
                                                 else
                                                 {
                                                     <code class="text-danger">@job.FailureCode</code>

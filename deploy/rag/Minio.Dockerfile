@@ -21,6 +21,7 @@ LABEL org.opencontainers.image.source="https://github.com/minio/minio" \
       org.opencontainers.image.revision="9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a" \
       org.opencontainers.image.licenses="AGPL-3.0-only"
 COPY --from=build /out/minio /usr/local/bin/minio
+RUN mkdir -p /data && chown -R 10001:10001 /data
 USER 10001:10001
 EXPOSE 9000 9001
 VOLUME ["/data"]

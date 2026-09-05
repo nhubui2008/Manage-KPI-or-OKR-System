@@ -647,8 +647,8 @@ namespace Manage_KPI_or_OKR_System.Controllers
                                                           p.EndDate.HasValue && p.EndDate.Value.Date >= today))));
             var employeeQuery = _context.Employees.Where(e => e.IsActive == true);
 
-            bool isManager = User.IsInRole("Manager") || User.IsInRole("manager");
-            bool isDirector = User.IsInRole("Director") || User.IsInRole("director");
+            bool isManager = AccessScopeHelper.IsManager(User);
+            bool isDirector = AccessScopeHelper.IsDirector(User);
             bool isRestrictedRole = isManager || isDirector ||
                 User.IsInRole("Employee") || User.IsInRole("employee") ||
                 User.IsInRole("Sales") || User.IsInRole("sales");
@@ -1838,7 +1838,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
                     .Distinct()
                     .ToList();
             }
-            else if ((User.IsInRole("Manager") || User.IsInRole("manager")) && currentEmployee != null)
+            else if (AccessScopeHelper.IsManager(User) && currentEmployee != null)
             {
                 var managedDeptIds = managerIdsByDepartment
                     .Where(d => d.ManagerId == currentEmployee.Id)
@@ -2665,7 +2665,7 @@ namespace Manage_KPI_or_OKR_System.Controllers
             }
 
             if (reviewer == null ||
-                !(User.IsInRole("Manager") || User.IsInRole("manager")) ||
+                !AccessScopeHelper.IsManager(User) ||
                 checkIn.EmployeeId == reviewer.Id)
             {
                 return false;

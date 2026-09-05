@@ -214,6 +214,7 @@ public static class CheckInAiSourceVersion
         {
             null => string.Empty,
             DateTime date => NormalizeUtc(date).Ticks.ToString(CultureInfo.InvariantCulture),
+            DateTimeOffset offset => offset.UtcTicks.ToString(CultureInfo.InvariantCulture),
             decimal number => number.ToString("G29", CultureInfo.InvariantCulture),
             bool flag => flag ? "1" : "0",
             IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture) ?? string.Empty,
@@ -226,12 +227,7 @@ public static class CheckInAiSourceVersion
     }
 
     private static DateTime NormalizeUtc(DateTime value) =>
-        value.Kind switch
-        {
-            DateTimeKind.Utc => value,
-            DateTimeKind.Local => value.ToUniversalTime(),
-            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
-        };
+        DateTime.SpecifyKind(value, DateTimeKind.Unspecified);
 
     private static DateTimeOffset ToDateTimeOffset(DateTime value) =>
         new(NormalizeUtc(value));

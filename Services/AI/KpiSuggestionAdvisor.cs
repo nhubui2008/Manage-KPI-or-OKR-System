@@ -39,30 +39,70 @@ public sealed class KpiSuggestionAdvisor : IKpiSuggestionAdvisor
         "rationale",
         "sourceIds"
     };
-    private static readonly IReadOnlyDictionary<string, string> AllowedUnits =
-        KpiCreateViewModel.MeasurementUnitOptions.ToDictionary(
+    private static readonly IReadOnlyDictionary<string, string> AllowedUnits = BuildAllowedUnitsMap();
+
+    private static Dictionary<string, string> BuildAllowedUnitsMap()
+    {
+        var map = KpiCreateViewModel.MeasurementUnitOptions.ToDictionary(
             option => option.Value,
             option => option.Value,
             StringComparer.OrdinalIgnoreCase);
+
+        var synonyms = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["cái"] = "Sản phẩm",
+            ["chiếc"] = "Sản phẩm",
+            ["lỗi"] = "Lần",
+            ["vụ"] = "Lần",
+            ["ca"] = "Lần",
+            ["tiếng"] = "Giờ",
+            ["h"] = "Giờ",
+            ["ngày công"] = "Ngày",
+            ["task"] = "Công việc",
+            ["nhiệm vụ"] = "Công việc",
+            ["project"] = "Dự án",
+            ["phần trăm"] = "%",
+            ["pct"] = "%",
+            ["vnd"] = "VNĐ",
+            ["dong"] = "VNĐ",
+            ["đồng"] = "VNĐ",
+            ["tr"] = "Triệu VNĐ",
+            ["triệu"] = "Triệu VNĐ",
+            ["trieu vnd"] = "Triệu VNĐ"
+        };
+
+        foreach (var (synonym, target) in synonyms)
+        {
+            if (map.ContainsKey(target) && !map.ContainsKey(synonym))
+            {
+                map[synonym] = target;
+            }
+        }
+
+        return map;
+    }
 
     private readonly MiniERPDbContext _context;
     private readonly IAIDataService _dataService;
     private readonly IAIModelClient _modelClient;
     private readonly ITenantContext _tenantContext;
     private readonly IAiHistoryService? _history;
+    private readonly Microsoft.Extensions.Logging.ILogger<KpiSuggestionAdvisor>? _logger;
 
     public KpiSuggestionAdvisor(
         MiniERPDbContext context,
         IAIDataService dataService,
         IAIModelClient modelClient,
         ITenantContext tenantContext,
-        IAiHistoryService? history = null)
+        IAiHistoryService? history = null,
+        Microsoft.Extensions.Logging.ILogger<KpiSuggestionAdvisor>? logger = null)
     {
         _context = context;
         _dataService = dataService;
         _modelClient = modelClient;
         _tenantContext = tenantContext;
         _history = history;
+        _logger = logger;
     }
 
     public async Task<SuggestKpiResponse> SuggestAsync(
@@ -247,11 +287,11 @@ public sealed class KpiSuggestionAdvisor : IKpiSuggestionAdvisor
         {
             authorizedContext = contextText,
             availableSourceIds = allowedSourceIds,
-            allowedUnits = AllowedUnits.Values.ToArray()
+            allowedUnits = AllowedUnits.Values.Distinct().ToArray()
         });
         var system = new AIModelMessage(
             "system",
-            "You are an expert Vietnamese enterprise KPI planning advisor. Based on the authorized planning context, generate 2 to 4 distinct, highly relevant, measurable Vietnamese KPI drafts tailored for the specified department, employee, period, or OKR. These are advisory drafts only: do not claim they are approved or write official values. Return only strict JSON with exactly {\"suggestions\":[...]}. Each suggestion must contain exactly 8 properties: name, targetValue, unit, passThreshold, failThreshold, isInverse, rationale, sourceIds. Rules:\n- name: concise, measurable Vietnamese KPI name.\n- targetValue: positive number representing the target.\n- unit: MUST be chosen strictly from the allowedUnits list. Never use units outside allowedUnits.\n- isInverse: boolean. True if lower value is better, false if higher is better.\n- passThreshold: positive number or null.\n- failThreshold: positive number or null.\n- Direction rule: If isInverse is false, targetValue >= passThreshold >= failThreshold (or null). If isInverse is true, targetValue <= passThreshold <= failThreshold (or null).\n- rationale: concise Vietnamese explanation justifying this KPI draft.\n- sourceIds: array containing availableSourceIds, and MUST include the authorized-kpi-planning-snapshot source ID.\nIf the authorized context has no writable period or completely lacks context, return {\"suggestions\":[]}.");
+            "You are an expert Vietnamese enterprise KPI planning advisor. Based on the authorized planning context, generate 2 to 4 distinct, highly relevant, measurable Vietnamese KPI drafts tailored for the specified department, employee, period, or OKR. These are advisory drafts only: do not claim they are approved or write official values. Return only strict JSON with exactly {\"suggestions\":[...]}. Each suggestion must contain exactly 8 properties: name, targetValue, unit, passThreshold, failThreshold, isInverse, rationale, sourceIds. Rules:\n- name: concise, measurable Vietnamese KPI name.\n- targetValue: number strictly greater than 0 (> 0). NEVER use 0, even for inverse or defect-reduction KPIs (for defect/error KPIs, specify an allowable positive limit like 1 or a percentage).\n- unit: MUST be chosen strictly from the allowedUnits list. Never use units outside allowedUnits.\n- isInverse: boolean. True if lower value is better, false if higher is better.\n- passThreshold: positive number or null.\n- failThreshold: positive number or null.\n- Direction rule: If isInverse is false, targetValue >= passThreshold >= failThreshold (or null). If isInverse is true, targetValue <= passThreshold <= failThreshold (or null).\n- rationale: concise Vietnamese explanation justifying this KPI draft.\n- sourceIds: array containing availableSourceIds, and MUST include the authorized-kpi-planning-snapshot source ID.\nIf the authorized context has no writable period or completely lacks context, return {\"suggestions\":[]}.");
         var modelRequest = new AIModelRequest(
             new[] { system, new AIModelMessage("user", payload) },
             Temperature: 0,
@@ -267,6 +307,7 @@ public sealed class KpiSuggestionAdvisor : IKpiSuggestionAdvisor
             {
                 return parsed;
             }
+            _logger?.LogWarning("KPI suggestion parsing attempt {Attempt} failed for content: {Content}", attempt + 1, response.Content);
             modelRequest = new AIModelRequest(
                 new[]
                 {
@@ -274,7 +315,7 @@ public sealed class KpiSuggestionAdvisor : IKpiSuggestionAdvisor
                     new AIModelMessage("user", payload),
                     new AIModelMessage(
                         "user",
-                        "The previous response failed schema or KPI business-rule validation. Ensure unit is strictly one of allowedUnits, thresholds follow target/pass/fail direction, and sourceIds are valid from availableSourceIds. Return only the exact cited JSON schema.")
+                        "The previous response failed schema or KPI business-rule validation. Reminders:\n- targetValue must be strictly greater than 0 (> 0, NEVER 0 even when isInverse is true).\n- unit must be chosen strictly from allowedUnits.\n- thresholds must follow direction rule: if isInverse is false: targetValue >= passThreshold >= failThreshold; if isInverse is true: targetValue <= passThreshold <= failThreshold.\n- sourceIds must be from availableSourceIds and MUST include the authorized-kpi-planning-snapshot source ID.\n- Each suggestion must contain exactly the 8 required properties with no extra fields.\nReturn only the exact cited JSON schema.")
                 },
                 Temperature: 0,
                 EnableThinking: false);
@@ -352,15 +393,53 @@ public sealed class KpiSuggestionAdvisor : IKpiSuggestionAdvisor
                 if (name == null || rationale == null || unitValue == null ||
                     !AllowedUnits.TryGetValue(unitValue, out var canonicalUnit) ||
                     !names.Add(name) ||
-                    element.GetProperty("isInverse").ValueKind is not (JsonValueKind.True or JsonValueKind.False) ||
-                    !TryReadDecimal(element.GetProperty("targetValue"), required: true, out var targetValue) ||
-                    !TryReadDecimal(element.GetProperty("passThreshold"), required: false, out var passThreshold) ||
-                    !TryReadDecimal(element.GetProperty("failThreshold"), required: false, out var failThreshold))
+                    element.GetProperty("isInverse").ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                 {
                     return null;
                 }
 
                 var isInverse = element.GetProperty("isInverse").GetBoolean();
+                var targetWasNormalizedFromZero = false;
+
+                decimal? targetValue;
+                if (!TryReadDecimal(element.GetProperty("targetValue"), required: true, out targetValue))
+                {
+                    if (isInverse &&
+                        element.GetProperty("targetValue").ValueKind == JsonValueKind.Number &&
+                        element.GetProperty("targetValue").TryGetDecimal(out var zeroTarget) &&
+                        zeroTarget == 0m)
+                    {
+                        targetValue = 1m;
+                        targetWasNormalizedFromZero = true;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+
+                if (!TryReadDecimal(element.GetProperty("passThreshold"), required: false, out var passThreshold) ||
+                    !TryReadDecimal(element.GetProperty("failThreshold"), required: false, out var failThreshold))
+                {
+                    return null;
+                }
+
+                if (targetWasNormalizedFromZero)
+                {
+                    if (passThreshold.HasValue && passThreshold.Value < targetValue!.Value)
+                    {
+                        passThreshold = targetValue.Value;
+                    }
+                    if (failThreshold.HasValue)
+                    {
+                        var comp = passThreshold ?? targetValue!.Value;
+                        if (failThreshold.Value < comp)
+                        {
+                            failThreshold = comp + 1m;
+                        }
+                    }
+                }
+
                 if (!IsValidThresholds(targetValue!.Value, passThreshold, failThreshold, isInverse))
                 {
                     return null;
