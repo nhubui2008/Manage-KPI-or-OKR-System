@@ -1,6 +1,7 @@
 using Manage_KPI_or_OKR_System.Models;
 using Manage_KPI_or_OKR_System.Models.AI;
 using Manage_KPI_or_OKR_System.Services.AI;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace ManageKpiOkrSystem.Tests;
@@ -63,10 +64,21 @@ public sealed class CheckInAiSourceVersionTests
             DeadlineDate = new DateTime(2026, 6, 30, 0, 0, 0, DateTimeKind.Unspecified)
         };
 
-        var hashLocal = CheckInAiSourceVersion.Resolve(checkInLocal, candidate, kpi, detail, null, null, null, null, null, null, 100m);
-        var hashDb = CheckInAiSourceVersion.Resolve(checkInDb, candidate, kpi, detail, null, null, null, null, null, null, 100m);
+        var period = new EvaluationPeriod
+        {
+            Id = 2,
+            PeriodName = "Quý 2/2026",
+            StartDate = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Unspecified),
+            EndDate = new DateTime(2026, 12, 31, 0, 0, 0, DateTimeKind.Unspecified),
+            IsActive = true
+        };
+
+        var hashLocal = CheckInAiSourceVersion.Resolve(checkInLocal, candidate, kpi, detail, period, null, null, null, null, null, 100m);
+        var hashDb = CheckInAiSourceVersion.Resolve(checkInDb, candidate, kpi, detail, period, null, null, null, null, null, 100m);
 
         Assert.Equal(hashLocal, hashDb);
+        // Ensure non-zero hash is generated
+        Assert.NotEqual(0L, hashLocal);
     }
 
     [Fact]

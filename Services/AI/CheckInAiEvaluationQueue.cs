@@ -396,6 +396,12 @@ public sealed class CheckInAiEvaluationWorker : BackgroundService
                 cancellationToken);
             if (currentSourceVersion != workItem.SourceVersion)
             {
+                _logger.LogWarning(
+                    "Check-in AI evaluation cancelled for outbox item {OutboxId} (check-in {CheckInId}) due to source version mismatch. Outbox: {OutboxVersion}, Current: {CurrentVersion}",
+                    workItem.Id,
+                    workItem.CheckInId,
+                    workItem.SourceVersion,
+                    currentSourceVersion);
                 await MarkTerminalAsync(context, workItem, Cancelled, "source_changed", cancellationToken);
                 return;
             }
